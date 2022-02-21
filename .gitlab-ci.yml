@@ -1,0 +1,31 @@
+default:
+  image: docker.m.daocloud.io/golang:1.17.3
+  tags:
+    - my-runner
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - scheduler_failure
+  before_script:
+    - echo "before_script"
+    - git version
+    - go version
+    - go env -w GO111MODULE=on
+    - go env -w GOPROXY="https://goproxy.cn,direct"
+    - env
+
+variables:
+  GET_SOURCES_ATTEMPTS: 3
+
+stages:
+  - test
+
+unit-test:
+  stage: test
+  tags:
+    - my-runner
+  script:
+    - make unit-test
+

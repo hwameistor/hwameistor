@@ -1,0 +1,44 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: dce-uds-disk-checker
+  namespace: local-storage-system
+spec:
+  selector:
+    matchLabels:
+      app: dce-uds-disk-checker
+  template:
+    metadata:
+      labels:
+        app: dce-uds-disk-checker
+    spec:
+      serviceAccount: storage-admin
+      priorityClassName: system-node-critical
+      hostNetwork: false
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: checker
+          image: 10.6.170.180/uds/dce-uds-disk-checker:1.0-integrate_ldm_v1
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true
+            capabilities:
+              add: ["SYS_ADMIN"]
+            allowPrivilegeEscalation: true
+          env:
+            - name: MY_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: MY_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: host-dev
+              mountPath: /dev
+      volumes:
+        - name: host-dev
+          hostPath:
+            path: /dev
