@@ -23,7 +23,7 @@ spec:
                 operator: In
                 values:
                 - dce-uds-local-storage
-            topologyKey: uds.dce.daocloud.io/local-storage-topology-node
+            topologyKey: localstorage.hwameistor.io/local-storage-topology-node
       serviceAccount: storage-admin
       containers:
         - name: provisioner
@@ -71,5 +71,5 @@ spec:
       volumes:
         - name: socket-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/local.storage.daocloud.io
+            path: /var/lib/kubelet/plugins/local.storage.hwameistor.io
             type: DirectoryOrCreate

@@ -19,9 +19,9 @@ type FakeLocalStorageAlerts struct {
 	Fake *FakeUdsV1alpha1
 }
 
-var localstoragealertsResource = schema.GroupVersionResource{Group: "uds.dce.daocloud.io", Version: "v1alpha1", Resource: "localstoragealerts"}
+var localstoragealertsResource = schema.GroupVersionResource{Group: "localstorage.hwameistor.io", Version: "v1alpha1", Resource: "localstoragealerts"}
 
-var localstoragealertsKind = schema.GroupVersionKind{Group: "uds.dce.daocloud.io", Version: "v1alpha1", Kind: "LocalStorageAlert"}
+var localstoragealertsKind = schema.GroupVersionKind{Group: "localstorage.hwameistor.io", Version: "v1alpha1", Kind: "LocalStorageAlert"}
 
 // Get takes name of the localStorageAlert, and returns the corresponding localStorageAlert object, and an error if there is any.
 func (c *FakeLocalStorageAlerts) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.LocalStorageAlert, err error) {

@@ -16,7 +16,7 @@ const (
 
 	ControllerLeaseName = "dce-uds-local-storage-master"
 
-	TopologyNodeKey = "uds.dce.daocloud.io/local-storage-topology-node"
+	TopologyNodeKey = "localstorage.hwameistor.io/local-storage-topology-node"
 )
 
 // LocalStorageMember interface

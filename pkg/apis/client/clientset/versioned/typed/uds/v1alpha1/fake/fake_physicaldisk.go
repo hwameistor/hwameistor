@@ -19,9 +19,9 @@ type FakePhysicalDisks struct {
 	Fake *FakeUdsV1alpha1
 }
 
-var physicaldisksResource = schema.GroupVersionResource{Group: "uds.dce.daocloud.io", Version: "v1alpha1", Resource: "physicaldisks"}
+var physicaldisksResource = schema.GroupVersionResource{Group: "localstorage.hwameistor.io", Version: "v1alpha1", Resource: "physicaldisks"}
 
-var physicaldisksKind = schema.GroupVersionKind{Group: "uds.dce.daocloud.io", Version: "v1alpha1", Kind: "PhysicalDisk"}
+var physicaldisksKind = schema.GroupVersionKind{Group: "localstorage.hwameistor.io", Version: "v1alpha1", Kind: "PhysicalDisk"}
 
 // Get takes name of the physicalDisk, and returns the corresponding physicalDisk object, and an error if there is any.
 func (c *FakePhysicalDisks) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.PhysicalDisk, err error) {

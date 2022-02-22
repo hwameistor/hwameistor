@@ -19,9 +19,9 @@ type FakeLocalVolumeReplicas struct {
 	Fake *FakeUdsV1alpha1
 }
 
-var localvolumereplicasResource = schema.GroupVersionResource{Group: "uds.dce.daocloud.io", Version: "v1alpha1", Resource: "localvolumereplicas"}
+var localvolumereplicasResource = schema.GroupVersionResource{Group: "localstorage.hwameistor.io", Version: "v1alpha1", Resource: "localvolumereplicas"}
 
-var localvolumereplicasKind = schema.GroupVersionKind{Group: "uds.dce.daocloud.io", Version: "v1alpha1", Kind: "LocalVolumeReplica"}
+var localvolumereplicasKind = schema.GroupVersionKind{Group: "localstorage.hwameistor.io", Version: "v1alpha1", Kind: "LocalVolumeReplica"}
 
 // Get takes name of the localVolumeReplica, and returns the corresponding localVolumeReplica object, and an error if there is any.
 func (c *FakeLocalVolumeReplicas) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.LocalVolumeReplica, err error) {

@@ -17,7 +17,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: uds.dce.daocloud.io/local-storage
+              - key: localstorage.hwameistor.io/local-storage
                 operator: In
                 values:
                 - "true"
@@ -33,11 +33,11 @@ spec:
           args:
             - "--v=5"
             - "--csi-address=/csi/csi.sock"
-            - "--kubelet-registration-path=/var/lib/kubelet/plugins/local.storage.daocloud.io/csi.sock"
+            - "--kubelet-registration-path=/var/lib/kubelet/plugins/local.storage.hwameistor.io/csi.sock"
           lifecycle:
             preStop:
               exec:
-                command: ["/bin/sh", "-c", "rm -rf /registration/local.storage.daocloud.io /registration/local.storage.daocloud.io-reg.sock"]
+                command: ["/bin/sh", "-c", "rm -rf /registration/local.storage.hwameistor.io /registration/local.storage.hwameistor.io-reg.sock"]
           env:
             - name: KUBE_NODE_NAME
               valueFrom:
@@ -88,9 +88,9 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: CSI_ENDPOINT
-              value: unix://var/lib/kubelet/plugins/local.storage.daocloud.io/csi.sock
+              value: unix://var/lib/kubelet/plugins/local.storage.hwameistor.io/csi.sock
             - name: NODE_ANNOTATION_KEY_STORAGE_IPV4
-              value: uds.dce.daocloud.io/storage-ipv4
+              value: localstorage.hwameistor.io/storage-ipv4
           volumeMounts:
             - name: plugin-dir
               mountPath: /var/lib/kubelet/plugins
@@ -108,7 +108,7 @@ spec:
       volumes:
         - name: socket-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/local.storage.daocloud.io
+            path: /var/lib/kubelet/plugins/local.storage.hwameistor.io
             type: DirectoryOrCreate
         - name: plugin-dir
           hostPath:

@@ -1,5 +1,5 @@
 default:
-  image: docker.m.daocloud.io/golang:1.17.3
+  image: docker.m.hwameistor.io/golang:1.17.3
   tags:
     - my-runner
   retry:

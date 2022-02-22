@@ -2739,7 +2739,7 @@ metadata:
   name: "pulsar-prometheus-data"
   namespace: pulsar
   labels:
-    uds.daocloud.io/storage-type: dvol
+    localstorage.hwameistor.io/storage-type: dvol
 spec:
   resources:
     requests:
@@ -2772,7 +2772,7 @@ metadata:
   name: "pulsar-pulsar-manager-data"
   namespace: pulsar
   labels:
-    uds.daocloud.io/storage-type: dvol
+    localstorage.hwameistor.io/storage-type: dvol
 spec:
   resources:
     requests:
@@ -4373,7 +4373,7 @@ spec:
   - metadata:
       name: "pulsar-bookie-journal"
       labels:
-        uds.daocloud.io/storage-type: dvol
+        localstorage.hwameistor.io/storage-type: dvol
     spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
@@ -4383,7 +4383,7 @@ spec:
   - metadata:
       name: "pulsar-bookie-ledgers"
       labels:
-        uds.daocloud.io/storage-type: dvol
+        localstorage.hwameistor.io/storage-type: dvol
     spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
@@ -5150,7 +5150,7 @@ spec:
   - metadata:
       name: "pulsar-zookeeper-data"
       labels:
-        uds.daocloud.io/storage-type: dvol
+        localstorage.hwameistor.io/storage-type: dvol
     spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:

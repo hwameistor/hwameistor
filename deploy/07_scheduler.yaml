@@ -21,7 +21,7 @@ data:
     pluginConfig:
     - name: "dlocal-scheduler-plugin"
       args:
-        csiDriverName: "local.storage.daocloud.io"
+        csiDriverName: "local.storage.hwameistor.io"
 
 ---
 

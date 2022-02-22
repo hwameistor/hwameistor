@@ -19,9 +19,9 @@ type FakeLocalVolumeExpands struct {
 	Fake *FakeUdsV1alpha1
 }
 
-var localvolumeexpandsResource = schema.GroupVersionResource{Group: "uds.dce.daocloud.io", Version: "v1alpha1", Resource: "localvolumeexpands"}
+var localvolumeexpandsResource = schema.GroupVersionResource{Group: "localstorage.hwameistor.io", Version: "v1alpha1", Resource: "localvolumeexpands"}
 
-var localvolumeexpandsKind = schema.GroupVersionKind{Group: "uds.dce.daocloud.io", Version: "v1alpha1", Kind: "LocalVolumeExpand"}
+var localvolumeexpandsKind = schema.GroupVersionKind{Group: "localstorage.hwameistor.io", Version: "v1alpha1", Kind: "LocalVolumeExpand"}
 
 // Get takes name of the localVolumeExpand, and returns the corresponding localVolumeExpand object, and an error if there is any.
 func (c *FakeLocalVolumeExpands) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.LocalVolumeExpand, err error) {

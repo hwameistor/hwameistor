@@ -68,12 +68,12 @@ dce-10-6-161-25   Ready    <none>            10d   v1.18.6
 dce-10-6-161-26   Ready    <none>            10d   v1.18.6
 dce-10-6-161-27   Ready    <none>            10d   v1.18.6
 
-# 2. Add DLocal config for each selected node as an annotation, key is "uds.dce.daocloud.io/local-storage-conf"
-$ kubectl annotate node dce-10-6-161-27 uds.dce.daocloud.io/local-storage-conf='{"storage":{"volumeKind": "LVM", "ramdiskTotalCapacity": "1GB"}}'
+# 2. Add DLocal config for each selected node as an annotation, key is "localstorage.hwameistor.io/local-storage-conf"
+$ kubectl annotate node dce-10-6-161-27 localstorage.hwameistor.io/local-storage-conf='{"storage":{"volumeKind": "LVM", "ramdiskTotalCapacity": "1GB"}}'
 node/dce-10-6-161-27 annotated
 
-# 3. Add DLocal label for each selected node, key is "uds.dce.daocloud.io/local-storage"
-$ kubectl label node dce-10-6-161-27 uds.dce.daocloud.io/local-storage=true
+# 3. Add DLocal label for each selected node, key is "localstorage.hwameistor.io/local-storage"
+$ kubectl label node dce-10-6-161-27 localstorage.hwameistor.io/local-storage=true
 node/dce-10-6-161-27 labeled
 
 # *** Important notes ***
@@ -131,9 +131,9 @@ $ kubectl apply -f deploy/storageclass-ram.yaml
 # check for storageclass
 $ kubectl get sc
 NAME                     PROVISIONER                 RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
-local-storage-hdd-disk   local.storage.daocloud.io   Delete          WaitForFirstConsumer   false                  21d
-local-storage-hdd-lvm    local.storage.daocloud.io   Delete          WaitForFirstConsumer   true                   21d
-local-storage-hdd-ram    local.storage.daocloud.io   Delete          WaitForFirstConsumer   false                  15d
+local-storage-hdd-disk   local.storage.hwameistor.io   Delete          WaitForFirstConsumer   false                  21d
+local-storage-hdd-lvm    local.storage.hwameistor.io   Delete          WaitForFirstConsumer   true                   21d
+local-storage-hdd-ram    local.storage.hwameistor.io   Delete          WaitForFirstConsumer   false                  15d
 ```
 
 ### Step 4: Create PVC

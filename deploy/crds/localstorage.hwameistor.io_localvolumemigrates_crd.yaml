@@ -1,46 +1,42 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: localvolumeconverts.uds.dce.daocloud.io
+  name: localvolumemigrates.localstorage.hwameistor.io
 spec:
-  group: uds.dce.daocloud.io
+  group: localstorage.hwameistor.io
   names:
-    kind: LocalVolumeConvert
-    listKind: LocalVolumeConvertList
-    plural: localvolumeconverts
+    kind: LocalVolumeMigrate
+    listKind: LocalVolumeMigrateList
+    plural: localvolumemigrates
     shortNames:
-    - lvconvert
-    singular: localvolumeconvert
+    - lvmigrate
+    singular: localvolumemigrate
   scope: Cluster
   versions:
   - additionalPrinterColumns:
-    - description: Name of the volume to convert
+    - description: Name of the volume to be migrated
       jsonPath: .spec.volumeName
       name: volume
       type: string
-    - description: Number of volume replica
-      jsonPath: .spec.replicaNumber
-      name: replicas
-      type: integer
-    - description: State of the expansion
+    - description: Node name of the volume replica to be migrated
+      jsonPath: .spec.nodeName
+      name: node
+      type: string
+    - description: Node name of the new volume replica
+      jsonPath: .status.targetNodeName
+      name: target
+      type: string
+    - description: State of the migration
       jsonPath: .status.state
       name: state
       type: string
-    - description: Event message of the expansion
-      jsonPath: .status.message
-      name: message
-      type: string
-    - description: Abort the operation
-      jsonPath: .spec.abort
-      name: abort
-      type: boolean
     - jsonPath: .metadata.creationTimestamp
       name: age
       type: date
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: LocalVolumeConvert is the Schema for the localvolumeconverts
+        description: LocalVolumeMigrate is the Schema for the localvolumemigrates
           API
         properties:
           apiVersion:
@@ -56,29 +52,36 @@ spec:
           metadata:
             type: object
           spec:
-            description: LocalVolumeConvertSpec defines the desired state of LocalVolumeConvert
+            description: LocalVolumeMigrateSpec defines the desired state of LocalVolumeMigrate
             properties:
               abort:
                 default: false
                 type: boolean
-              replicaNumber:
-                description: ReplicaNumber is the number of replicas which the volume
-                  will be converted to currently, only support the case of converting
-                  a non-HA volume to HA
-                format: int64
-                maximum: 2
-                minimum: 2
-                type: integer
+              nodeName:
+                type: string
               volumeName:
                 type: string
+            required:
+            - nodeName
+            - volumeName
             type: object
           status:
-            description: LocalVolumeConvertStatus defines the observed state of LocalVolumeConvert
+            description: LocalVolumeMigrateStatus defines the observed state of LocalVolumeMigrate
             properties:
               message:
+                description: error message to describe some states
                 type: string
+              replicaNumber:
+                description: record the volume's replica number, it will be set internally
+                format: int64
+                type: integer
               state:
-                description: State is state type of resources
+                description: State of the operation, e.g. submitted, started, completed,
+                  abort, ...
+                type: string
+              targetNodeName:
+                description: record the node where the specified replica is migrated
+                  to
                 type: string
             type: object
         type: object

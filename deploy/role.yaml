@@ -67,7 +67,7 @@ rules:
   verbs:
   - get
 - apiGroups:
-  - storage.daocloud.io
+  - storage.hwameistor.io
   resources:
   - '*'
   - snapshotpolicies
@@ -82,7 +82,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - local.storage.daocloud.io
+  - local.storage.hwameistor.io
   resources:
   - '*'
   - controllers
@@ -95,7 +95,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - uds.dce.daocloud.io
+  - localstorage.hwameistor.io
   resources:
   - '*'
   - localvolumereplicas

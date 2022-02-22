@@ -18,7 +18,7 @@ type UdsV1alpha1Interface interface {
 	PhysicalDisksGetter
 }
 
-// UdsV1alpha1Client is used to interact with features provided by the uds.dce.daocloud.io group.
+// UdsV1alpha1Client is used to interact with features provided by the localstorage.hwameistor.io group.
 type UdsV1alpha1Client struct {
 	restClient rest.Interface
 }

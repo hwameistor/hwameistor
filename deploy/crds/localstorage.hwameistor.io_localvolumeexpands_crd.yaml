@@ -1,34 +1,38 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: localvolumemigrates.uds.dce.daocloud.io
+  name: localvolumeexpands.localstorage.hwameistor.io
 spec:
-  group: uds.dce.daocloud.io
+  group: localstorage.hwameistor.io
   names:
-    kind: LocalVolumeMigrate
-    listKind: LocalVolumeMigrateList
-    plural: localvolumemigrates
+    kind: LocalVolumeExpand
+    listKind: LocalVolumeExpandList
+    plural: localvolumeexpands
     shortNames:
-    - lvmigrate
-    singular: localvolumemigrate
+    - lvexpand
+    singular: localvolumeexpand
   scope: Cluster
   versions:
   - additionalPrinterColumns:
-    - description: Name of the volume to be migrated
-      jsonPath: .spec.volumeName
-      name: volume
-      type: string
-    - description: Node name of the volume replica to be migrated
-      jsonPath: .spec.nodeName
-      name: node
-      type: string
-    - description: Node name of the new volume replica
-      jsonPath: .status.targetNodeName
-      name: target
-      type: string
-    - description: State of the migration
+    - description: New capacity of the volume
+      jsonPath: .spec.requiredCapacityBytes
+      name: newCapacity
+      type: integer
+    - description: Abort the operation
+      jsonPath: .spec.abort
+      name: abort
+      type: boolean
+    - description: State of the expansion
       jsonPath: .status.state
       name: state
+      type: string
+    - description: Sub-operations on each volume replica expansion
+      jsonPath: .status.subs
+      name: subs
+      type: string
+    - description: Event message of the expansion
+      jsonPath: .status.message
+      name: message
       type: string
     - jsonPath: .metadata.creationTimestamp
       name: age
@@ -36,8 +40,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: LocalVolumeMigrate is the Schema for the localvolumemigrates
-          API
+        description: LocalVolumeExpand is the Schema for the localvolumeexpands API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -52,37 +55,34 @@ spec:
           metadata:
             type: object
           spec:
-            description: LocalVolumeMigrateSpec defines the desired state of LocalVolumeMigrate
+            description: LocalVolumeExpandSpec defines the desired state of LocalVolumeExpand
             properties:
               abort:
                 default: false
                 type: boolean
-              nodeName:
-                type: string
+              requiredCapacityBytes:
+                format: int64
+                minimum: 4194304
+                type: integer
               volumeName:
                 type: string
-            required:
-            - nodeName
-            - volumeName
             type: object
           status:
-            description: LocalVolumeMigrateStatus defines the observed state of LocalVolumeMigrate
+            description: LocalVolumeExpandStatus defines the observed state of LocalVolumeExpand
             properties:
-              message:
-                description: error message to describe some states
-                type: string
-              replicaNumber:
-                description: record the volume's replica number, it will be set internally
+              allocatedCapacityBytes:
                 format: int64
                 type: integer
+              message:
+                type: string
               state:
-                description: State of the operation, e.g. submitted, started, completed,
-                  abort, ...
+                description: State is state type of resources
                 type: string
-              targetNodeName:
-                description: record the node where the specified replica is migrated
-                  to
-                type: string
+              subs:
+                description: sub resources at different node.
+                items:
+                  type: string
+                type: array
             type: object
         type: object
     served: true

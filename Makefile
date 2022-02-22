@@ -1,5 +1,5 @@
 DOCKER_REGISTRY ?= 10.6.170.180/uds
-RELEASE_DOCKER_REGISTRY ?= daocloud.io/daocloud
+RELEASE_DOCKER_REGISTRY ?= hwameistor.io/hwameistor
 
 GO_VERSION = $(shell go version)
 BUILD_TIME = ${shell date +%Y-%m-%dT%H:%M:%SZ}

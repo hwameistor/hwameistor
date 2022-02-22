@@ -91,14 +91,14 @@ const (
 
 // misc
 const (
-	CSIDriverName = "local.storage.daocloud.io"
+	CSIDriverName = "local.storage.hwameistor.io"
 
 	VendorName = "DaoCloud.io"
 )
 
 // k8snode
 const (
-	LocalStorageConfigAnnotationName = "uds.dce.daocloud.io/local-storage-conf"
+	LocalStorageConfigAnnotationName = "localstorage.hwameistor.io/local-storage-conf"
 
 	StorageIPv4AddressAnnotationKeyEnv = "NODE_ANNOTATION_KEY_STORAGE_IPV4"
 )

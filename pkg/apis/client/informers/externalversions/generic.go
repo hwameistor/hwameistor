@@ -36,7 +36,7 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=uds.dce.daocloud.io, Version=v1alpha1
+	// Group=localstorage.hwameistor.io, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("localstoragealerts"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Uds().V1alpha1().LocalStorageAlerts().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("localstoragenodes"):

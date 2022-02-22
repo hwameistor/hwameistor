@@ -2,7 +2,7 @@
 
 // Package v1alpha1 contains API Schema definitions for the uds v1alpha1 API group
 // +k8s:deepcopy-gen=package,register
-// +groupName=uds.dce.daocloud.io
+// +groupName=localstorage.hwameistor.io
 package v1alpha1
 
 import (
@@ -21,7 +21,7 @@ func AddToScheme(s *runtime.Scheme) error {
 
 var (
 	// SchemeGroupVersion is group version used to register these objects
-	SchemeGroupVersion = schema.GroupVersion{Group: "uds.dce.daocloud.io", Version: "v1alpha1"}
+	SchemeGroupVersion = schema.GroupVersion{Group: "localstorage.hwameistor.io", Version: "v1alpha1"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme for Local Storage Member
 	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
