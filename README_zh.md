@@ -1,6 +1,6 @@
-# DaoCloud Local Storage System (DLocal)
+# Local Storage System (DLocal)
 
-简体中文 | [英文](https://gitlab.daocloud.cn/ndx/engineering/storage/local-storage/-/blob/master/README.md)
+简体中文 | [英文](https://github.com/Angel0507/local-storage/blob/main/README.md)
 
 ## 介绍
 
