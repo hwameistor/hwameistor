@@ -11,9 +11,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
-	"github.com/HwameiStor/local-storage/pkg/common"
-	"github.com/HwameiStor/local-storage/pkg/member/node/configer"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"github.com/hwameiStor/local-storage/pkg/common"
+	"github.com/hwameiStor/local-storage/pkg/member/node/configer"
 )
 
 type configManager struct {

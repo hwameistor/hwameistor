@@ -2,7 +2,7 @@ package storage
 
 import (
 	"fmt"
-	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	"github.com/golang/mock/gomock"
 	"testing"
 )

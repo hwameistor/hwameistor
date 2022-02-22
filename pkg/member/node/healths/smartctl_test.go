@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/HwameiStor/local-storage/pkg/exechelper"
+	"github.com/hwameiStor/local-storage/pkg/exechelper"
 )
 
 func TestNewSmartCtl(t *testing.T) {

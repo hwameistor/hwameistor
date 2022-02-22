@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/HwameiStor/local-storage/pkg/apis/client/clientset/versioned"
-	"github.com/HwameiStor/local-storage/pkg/apis/client/informers/externalversions/internalinterfaces"
+	"github.com/hwameiStor/local-storage/pkg/apis/client/clientset/versioned"
+	"github.com/hwameiStor/local-storage/pkg/apis/client/informers/externalversions/internalinterfaces"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"

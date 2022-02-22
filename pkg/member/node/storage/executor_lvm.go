@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
-	"github.com/HwameiStor/local-storage/pkg/exechelper"
-	"github.com/HwameiStor/local-storage/pkg/exechelper/nsexecutor"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"github.com/hwameiStor/local-storage/pkg/exechelper"
+	"github.com/hwameiStor/local-storage/pkg/exechelper/nsexecutor"
 
 	log "github.com/sirupsen/logrus"
 )

@@ -1,9 +1,9 @@
-module github.com/HwameiStor/local-storage
+module github.com/hwameiStor/local-storage
 
 go 1.13
 
 require (
-	github.com/cherry-io/local-disk-manager v0.0.0-00010101000000-000000000000
+	github.com/hwameistor/local-disk-manager v0.0.0-00010101000000-000000000000
 	github.com/caddyserver/caddy v1.0.3 // indirect
 	github.com/container-storage-interface/spec v1.3.0
 	github.com/golang/mock v1.6.0
@@ -32,8 +32,8 @@ require (
 
 replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.2+incompatible // Required by OLM
-	github.com/cherry-io/local-disk-manager => ../local-disk-manager
-	github.com/HwameiStor/local-storage => ../local-storage
+	github.com/hwameistor/local-disk-manager => ../local-disk-manager
+	github.com/hwameiStor/local-storage => ../local-storage
 	google.golang.org/grpc => google.golang.org/grpc v1.23.1
 	k8s.io/api => k8s.io/api v0.18.6
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.6

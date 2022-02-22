@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	ldmv1alpha1 "github.com/cherry-io/local-disk-manager/pkg/apis/cherry/v1alpha1"
-	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
+	ldmv1alpha1 "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/api/errors"

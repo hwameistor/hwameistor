@@ -1,7 +1,7 @@
 package node
 
 import (
-	"github.com/HwameiStor/local-storage/pkg/member/node/diskmonitor"
+	"github.com/hwameiStor/local-storage/pkg/member/node/diskmonitor"
 
 	log "github.com/sirupsen/logrus"
 )

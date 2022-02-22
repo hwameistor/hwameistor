@@ -20,15 +20,8 @@ member_image:
 	docker build -t ${MEMBER_IMAGE_NAME}:${IMAGE_TAG} -f ${MEMBER_IMAGE_DIR}/Dockerfile ${PROJECT_SOURCE_CODE_DIR}
 	docker push ${MEMBER_IMAGE_NAME}:${IMAGE_TAG}
 
-.PHONY: linkcodes
-linkcodes:
-	mkdir -p /Users/lijie$(CURDIR)
-	rsync -rupE $(CURDIR)/* /Users/lijie$(CURDIR)
-	#ln -s ..$(CURDIR)/ /Users/lijie$(CURDIR)
-
 .PHONY: member_release
 member_release:
-	#make linkcodes
 	# build for amd64 version
 	${DOCKER_MAKE_CMD} make member
 	${DOCKER_BUILDX_CMD_AMD64} -t ${RELEASE_MEMBER_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${MEMBER_IMAGE_DIR}/Dockerfile ${PROJECT_SOURCE_CODE_DIR}

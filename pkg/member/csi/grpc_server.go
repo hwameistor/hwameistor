@@ -5,7 +5,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/HwameiStor/local-storage/pkg/utils"
+	"github.com/hwameiStor/local-storage/pkg/utils"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	ldmv1alpha1 "github.com/cherry-io/local-disk-manager/pkg/apis/cherry/v1alpha1"
-	diskmonitor "github.com/HwameiStor/local-storage/pkg/member/node/diskmonitor"
+	ldmv1alpha1 "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
+	diskmonitor "github.com/hwameiStor/local-storage/pkg/member/node/diskmonitor"
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/api/errors"
