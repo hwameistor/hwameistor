@@ -1,4 +1,4 @@
-DOCKER_REGISTRY ?= 10.6.170.180/uds
+DOCKER_REGISTRY ?= 10.6.170.180/localstorage
 RELEASE_DOCKER_REGISTRY ?= hwameistor.io/hwameistor
 
 GO_VERSION = $(shell go version)
@@ -72,7 +72,7 @@ gen-code:
 
 .PHONY: gen-client
 gen-client:
-	${DOCKER_MAKE_CMD} /code-generator/generate-groups.sh all github.com/HwameiStor/local-storage/pkg/apis/client github.com/HwameiStor/local-storage/pkg/apis "uds:v1alpha1" --go-header-file /code-generator/boilerplate.go.txt
+	${DOCKER_MAKE_CMD} /code-generator/generate-groups.sh all github.com/HwameiStor/local-storage/pkg/apis/client github.com/HwameiStor/local-storage/pkg/apis "localstorage:v1alpha1" --go-header-file /code-generator/boilerplate.go.txt
 
 .PHONY: vendor
 vendor:

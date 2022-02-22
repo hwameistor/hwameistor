@@ -4,8 +4,8 @@ package fake
 
 import (
 	clientset "github.com/HwameiStor/local-storage/pkg/apis/client/clientset/versioned"
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/client/clientset/versioned/typed/uds/v1alpha1"
-	fakeudsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/client/clientset/versioned/typed/uds/v1alpha1/fake"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/client/clientset/versioned/typed/localstorage/v1alpha1"
+	fakelocalstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/client/clientset/versioned/typed/localstorage/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -60,7 +60,7 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 
 var _ clientset.Interface = &Clientset{}
 
-// UdsV1alpha1 retrieves the UdsV1alpha1Client
-func (c *Clientset) UdsV1alpha1() udsv1alpha1.UdsV1alpha1Interface {
-	return &fakeudsv1alpha1.FakeUdsV1alpha1{Fake: &c.Fake}
+// LocalStorageV1alpha1 retrieves the LocalStorageV1alpha1Client
+func (c *Clientset) LocalStorageV1alpha1() localstoragev1alpha1.LocalStorageV1alpha1Interface {
+	return &fakelocalstoragev1alpha1.FakeLocalStorageV1alpha1{Fake: &c.Fake}
 }

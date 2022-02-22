@@ -15,7 +15,7 @@ spec:
         app: nginx-local-storage-ram
       name: nginx-local-storage-ram
     spec:
-      schedulerName: dce-uds-local-storage-scheduler
+      schedulerName: localstorage-local-storage-scheduler
       restartPolicy: Always
       terminationGracePeriodSeconds: 0
       containers:

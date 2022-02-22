@@ -2,18 +2,18 @@ package storage
 
 import (
 	"fmt"
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	"github.com/golang/mock/gomock"
 	"testing"
 )
 
 func Test_localPoolManager_ExtendPoolsInfo(t *testing.T) {
-	var localDiskM = map[string]*udsv1alpha1.LocalDisk{}
-	localDiskM["/dev/sdb"] = &udsv1alpha1.LocalDisk{
+	var localDiskM = map[string]*localstoragev1alpha1.LocalDisk{}
+	localDiskM["/dev/sdb"] = &localstoragev1alpha1.LocalDisk{
 		DevPath:       "/dev/sdb",
-		Class:         udsv1alpha1.DiskClassNameHDD,
+		Class:         localstoragev1alpha1.DiskClassNameHDD,
 		CapacityBytes: 10240,
-		State:         udsv1alpha1.DiskStateAvailable,
+		State:         localstoragev1alpha1.DiskStateAvailable,
 	}
 	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
@@ -46,9 +46,9 @@ func Test_getPoolClassTypeByName(t *testing.T) {
 		wantPoolType  string
 	}{
 		{
-			args:          args{poolName: udsv1alpha1.PoolNameForHDD},
-			wantPoolClass: udsv1alpha1.DiskClassNameHDD,
-			wantPoolType:  udsv1alpha1.PoolTypeRegular,
+			args:          args{poolName: localstoragev1alpha1.PoolNameForHDD},
+			wantPoolClass: localstoragev1alpha1.DiskClassNameHDD,
+			wantPoolType:  localstoragev1alpha1.PoolTypeRegular,
 		},
 	}
 	for _, tt := range tests {
@@ -66,13 +66,13 @@ func Test_getPoolClassTypeByName(t *testing.T) {
 
 func Test_getPoolNameAccordingDisk(t *testing.T) {
 	type args struct {
-		disk *udsv1alpha1.LocalDisk
+		disk *localstoragev1alpha1.LocalDisk
 	}
-	var disk = &udsv1alpha1.LocalDisk{
+	var disk = &localstoragev1alpha1.LocalDisk{
 		DevPath:       "/dev/sdb",
-		Class:         udsv1alpha1.DiskClassNameHDD,
+		Class:         localstoragev1alpha1.DiskClassNameHDD,
 		CapacityBytes: 10240,
-		State:         udsv1alpha1.DiskStateAvailable,
+		State:         localstoragev1alpha1.DiskStateAvailable,
 	}
 	tests := []struct {
 		name    string
@@ -82,7 +82,7 @@ func Test_getPoolNameAccordingDisk(t *testing.T) {
 	}{
 		{
 			args:    args{disk: disk},
-			want:    udsv1alpha1.PoolNameForHDD,
+			want:    localstoragev1alpha1.PoolNameForHDD,
 			wantErr: false,
 		},
 	}

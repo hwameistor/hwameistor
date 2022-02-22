@@ -1,23 +1,23 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: dce-uds-local-storage-alerter
+  name: localstorage-local-storage-alerter
   namespace: local-storage-system
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: dce-uds-local-storage-alerter
+      app: localstorage-local-storage-alerter
   template:
     metadata:
       labels:
-        app: dce-uds-local-storage-alerter
+        app: localstorage-local-storage-alerter
     spec:
       serviceAccount: storage-admin
       priorityClassName: system-cluster-critical
       containers:
         - name: main
-          image: 10.6.170.180/uds/dce-uds-local-storage-alerter:1.0-integrate_ldm_v1
+          image: 10.6.170.180/localstorage/localstorage-local-storage-alerter:1.0-integrate_ldm_v1
           imagePullPolicy: Always
           args:
             - --debug=true

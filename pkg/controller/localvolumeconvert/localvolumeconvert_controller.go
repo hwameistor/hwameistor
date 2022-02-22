@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/HwameiStor/local-storage/pkg/apis"
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	"github.com/HwameiStor/local-storage/pkg/member"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -47,7 +47,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource LocalVolumeConvert
-	err = c.Watch(&source.Kind{Type: &udsv1alpha1.LocalVolumeConvert{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &localstoragev1alpha1.LocalVolumeConvert{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ type ReconcileLocalVolumeConvert struct {
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileLocalVolumeConvert) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	// Fetch the LocalVolumeConvert instance
-	instance := &udsv1alpha1.LocalVolumeConvert{}
+	instance := &localstoragev1alpha1.LocalVolumeConvert{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {

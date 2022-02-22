@@ -1,7 +1,7 @@
 package apis
 
 import (
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	nodestorage "github.com/HwameiStor/local-storage/pkg/member/node/storage"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -12,9 +12,9 @@ import (
 const (
 	Version = "1.0.0"
 
-	NodeLeaseNamePrefix = "dce-uds-local-storage-worker"
+	NodeLeaseNamePrefix = "localstorage-local-storage-worker"
 
-	ControllerLeaseName = "dce-uds-local-storage-master"
+	ControllerLeaseName = "localstorage-local-storage-master"
 
 	TopologyNodeKey = "localstorage.hwameistor.io/local-storage-topology-node"
 )
@@ -24,7 +24,7 @@ type LocalStorageMember interface {
 	Run(stopCh <-chan struct{})
 
 	// ******  configuration ******* //
-	ConfigureBase(name string, namespace string, haSystemConfig udsv1alpha1.SystemConfig, cli client.Client, informersCache cache.Cache) LocalStorageMember
+	ConfigureBase(name string, namespace string, haSystemConfig localstoragev1alpha1.SystemConfig, cli client.Client, informersCache cache.Cache) LocalStorageMember
 
 	ConfigureNode() LocalStorageMember
 
@@ -50,15 +50,15 @@ type LocalStorageMember interface {
 type ControllerManager interface {
 	Run(stopCh <-chan struct{})
 
-	ReconcileNode(node *udsv1alpha1.LocalStorageNode)
+	ReconcileNode(node *localstoragev1alpha1.LocalStorageNode)
 
-	ReconcileVolume(vol *udsv1alpha1.LocalVolume)
+	ReconcileVolume(vol *localstoragev1alpha1.LocalVolume)
 
-	ReconcileVolumeExpand(vol *udsv1alpha1.LocalVolumeExpand)
+	ReconcileVolumeExpand(vol *localstoragev1alpha1.LocalVolumeExpand)
 
-	ReconcileVolumeMigrate(vol *udsv1alpha1.LocalVolumeMigrate)
+	ReconcileVolumeMigrate(vol *localstoragev1alpha1.LocalVolumeMigrate)
 
-	ReconcileVolumeConvert(vol *udsv1alpha1.LocalVolumeConvert)
+	ReconcileVolumeConvert(vol *localstoragev1alpha1.LocalVolumeConvert)
 }
 
 // NodeManager interface
@@ -67,7 +67,7 @@ type NodeManager interface {
 
 	Storage() *nodestorage.LocalManager
 
-	TakeVolumeReplicaTaskAssignment(vol *udsv1alpha1.LocalVolume)
+	TakeVolumeReplicaTaskAssignment(vol *localstoragev1alpha1.LocalVolume)
 
-	ReconcileVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica)
+	ReconcileVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica)
 }

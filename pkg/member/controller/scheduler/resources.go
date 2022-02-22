@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/cache"
 	runtimecache "sigs.k8s.io/controller-runtime/pkg/cache"
@@ -26,7 +26,7 @@ type resources struct {
 	allocatedStorages *storageCollection
 	totalStorages     *storageCollection
 
-	storageNodes map[string]*udsv1alpha1.LocalStorageNode
+	storageNodes map[string]*localstoragev1alpha1.LocalStorageNode
 
 	lock sync.Mutex
 
@@ -41,7 +41,7 @@ func newResources(maxHAVolumeCount int) *resources {
 		maxHAVolumeCount:     maxHAVolumeCount,
 		allocatedStorages:    newStorageCollection(),
 		totalStorages:        newStorageCollection(),
-		storageNodes:         map[string]*udsv1alpha1.LocalStorageNode{},
+		storageNodes:         map[string]*localstoragev1alpha1.LocalStorageNode{},
 	}
 }
 
@@ -51,7 +51,7 @@ func (r *resources) init(apiClient client.Client, informerCache runtimecache.Cac
 	// initialize the resources, e.g. resource IDs
 	r.initilizeResources()
 
-	nodeInformer, err := informerCache.GetInformer(context.TODO(), &udsv1alpha1.LocalStorageNode{})
+	nodeInformer, err := informerCache.GetInformer(context.TODO(), &localstoragev1alpha1.LocalStorageNode{})
 	if err != nil {
 		r.logger.WithError(err).Fatal("Failed to initiate informer for LocalStorageNode")
 	}
@@ -61,7 +61,7 @@ func (r *resources) init(apiClient client.Client, informerCache runtimecache.Cac
 		DeleteFunc: r.handleNodeDelete,
 	})
 
-	volumeInformer, err := informerCache.GetInformer(context.TODO(), &udsv1alpha1.LocalVolume{})
+	volumeInformer, err := informerCache.GetInformer(context.TODO(), &localstoragev1alpha1.LocalVolume{})
 	if err != nil {
 		r.logger.WithError(err).Fatal("Failed to initiate informer for LocalVolume")
 	}
@@ -72,11 +72,11 @@ func (r *resources) init(apiClient client.Client, informerCache runtimecache.Cac
 
 func (r *resources) initilizeResources() {
 	r.logger.Debug("Initializing resources ...")
-	volList := &udsv1alpha1.LocalVolumeList{}
+	volList := &localstoragev1alpha1.LocalVolumeList{}
 	if err := r.apiClient.List(context.TODO(), volList); err != nil {
 		r.logger.WithError(err).Fatal("Failed to list LocalVolumes")
 	}
-	nodeList := &udsv1alpha1.LocalStorageNodeList{}
+	nodeList := &localstoragev1alpha1.LocalStorageNodeList{}
 	if err := r.apiClient.List(context.TODO(), nodeList); err != nil {
 		r.logger.WithError(err).Fatal("Failed to list LocalStorageNodes")
 	}
@@ -84,7 +84,7 @@ func (r *resources) initilizeResources() {
 	// initialize resource IDs
 	usedResourceIDMap := make(map[int]bool)
 	for _, vol := range volList.Items {
-		if vol.Spec.Config == nil || vol.Spec.Config.ResourceID == -1 || vol.Status.State == udsv1alpha1.VolumeStateDeleted {
+		if vol.Spec.Config == nil || vol.Spec.Config.ResourceID == -1 || vol.Status.State == localstoragev1alpha1.VolumeStateDeleted {
 			continue
 		}
 		if !vol.Spec.Config.Convertible && len(vol.Spec.Config.Replicas) < 2 {
@@ -109,7 +109,7 @@ func (r *resources) initilizeResources() {
 	}
 }
 
-func (r *resources) predicate(vol *udsv1alpha1.LocalVolume, nodeName string) error {
+func (r *resources) predicate(vol *localstoragev1alpha1.LocalVolume, nodeName string) error {
 	node, ok := r.storageNodes[nodeName]
 	if !ok {
 		return fmt.Errorf("storage node %s not exists", nodeName)
@@ -161,14 +161,14 @@ func (r *resources) predicate(vol *udsv1alpha1.LocalVolume, nodeName string) err
 }
 
 // Score calculate node socre for this volume
-func (r *resources) Score(vol *udsv1alpha1.LocalVolume, nodeName string) (score int64, err error) {
+func (r *resources) Score(vol *localstoragev1alpha1.LocalVolume, nodeName string) (score int64, err error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
 	return r.score(vol, nodeName)
 }
 
-func (r *resources) score(vol *udsv1alpha1.LocalVolume, nodeName string) (score int64, err error) {
+func (r *resources) score(vol *localstoragev1alpha1.LocalVolume, nodeName string) (score int64, err error) {
 	if _, ok := r.storageNodes[nodeName]; !ok {
 		return 0, fmt.Errorf("storage node %s not exists", nodeName)
 	}
@@ -180,7 +180,7 @@ func (r *resources) score(vol *udsv1alpha1.LocalVolume, nodeName string) (score 
 	return score, nil
 }
 
-func (r *resources) getNodeCandidates(vol *udsv1alpha1.LocalVolume) ([]*udsv1alpha1.LocalStorageNode, error) {
+func (r *resources) getNodeCandidates(vol *localstoragev1alpha1.LocalVolume) ([]*localstoragev1alpha1.LocalStorageNode, error) {
 	logCtx := r.logger.WithFields(log.Fields{"volume": vol.Name, "spec": vol.Spec})
 	logCtx.Debug("getting available nodes for LocalVolume")
 
@@ -194,7 +194,7 @@ func (r *resources) getNodeCandidates(vol *udsv1alpha1.LocalVolume) ([]*udsv1alp
 		}
 	}
 
-	candidates := []*udsv1alpha1.LocalStorageNode{}
+	candidates := []*localstoragev1alpha1.LocalStorageNode{}
 	if len(vol.Spec.Accessibility.Node) > 0 && !excludedNodes[vol.Spec.Accessibility.Node] {
 		if err := r.predicate(vol, vol.Spec.Accessibility.Node); err != nil {
 			return nil, err
@@ -239,7 +239,7 @@ func (r *resources) getNodeCandidates(vol *udsv1alpha1.LocalVolume) ([]*udsv1alp
 	return candidates, nil
 }
 
-func (r *resources) getResourceIDForVolume(vol *udsv1alpha1.LocalVolume) (int, error) {
+func (r *resources) getResourceIDForVolume(vol *localstoragev1alpha1.LocalVolume) (int, error) {
 	if vol.Spec.ReplicaNumber < 2 && !vol.Spec.Convertible {
 		// try to recycle the resource ID in case of this volume is HA before
 		r.recycleResourceID(vol)
@@ -273,7 +273,7 @@ func (r *resources) allocateResourceID(volName string) (int, error) {
 	return -1, fmt.Errorf("can't allocate resource ID")
 }
 
-func (r *resources) recycleResourceID(vol *udsv1alpha1.LocalVolume) {
+func (r *resources) recycleResourceID(vol *localstoragev1alpha1.LocalVolume) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -283,7 +283,7 @@ func (r *resources) recycleResourceID(vol *udsv1alpha1.LocalVolume) {
 	}
 }
 
-func (r *resources) addAllocatedStorage(vol *udsv1alpha1.LocalVolume) {
+func (r *resources) addAllocatedStorage(vol *localstoragev1alpha1.LocalVolume) {
 	if vol.Spec.Config == nil || len(vol.Spec.Config.Replicas) == 0 {
 		return
 	}
@@ -309,7 +309,7 @@ func (r *resources) addAllocatedStorage(vol *udsv1alpha1.LocalVolume) {
 	}
 }
 
-func (r *resources) recycleAllocatedStorage(vol *udsv1alpha1.LocalVolume) {
+func (r *resources) recycleAllocatedStorage(vol *localstoragev1alpha1.LocalVolume) {
 	if vol.Spec.Config == nil || len(vol.Spec.Config.Replicas) == 0 {
 		return
 	}
@@ -333,7 +333,7 @@ func (r *resources) recycleAllocatedStorage(vol *udsv1alpha1.LocalVolume) {
 
 }
 
-func (r *resources) addTotalStorage(node *udsv1alpha1.LocalStorageNode) {
+func (r *resources) addTotalStorage(node *localstoragev1alpha1.LocalStorageNode) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -344,7 +344,7 @@ func (r *resources) addTotalStorage(node *udsv1alpha1.LocalStorageNode) {
 	r.storageNodes[node.Name] = node
 }
 
-func (r *resources) delTotalStorage(node *udsv1alpha1.LocalStorageNode) {
+func (r *resources) delTotalStorage(node *localstoragev1alpha1.LocalStorageNode) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -356,24 +356,24 @@ func (r *resources) delTotalStorage(node *udsv1alpha1.LocalStorageNode) {
 }
 
 func (r *resources) handleNodeAdd(obj interface{}) {
-	node := obj.(*udsv1alpha1.LocalStorageNode)
+	node := obj.(*localstoragev1alpha1.LocalStorageNode)
 	r.addTotalStorage(node)
 }
 
 func (r *resources) handleNodeUpdate(oldObj, newObj interface{}) {
-	node := newObj.(*udsv1alpha1.LocalStorageNode)
+	node := newObj.(*localstoragev1alpha1.LocalStorageNode)
 	r.addTotalStorage(node)
 }
 
 func (r *resources) handleNodeDelete(obj interface{}) {
-	node := obj.(*udsv1alpha1.LocalStorageNode)
+	node := obj.(*localstoragev1alpha1.LocalStorageNode)
 	r.delTotalStorage(node)
 
 }
 
 func (r *resources) handleVolumeUpdate(oldObj, newObj interface{}) {
-	oVol := oldObj.(*udsv1alpha1.LocalVolume)
-	nVol := newObj.(*udsv1alpha1.LocalVolume)
+	oVol := oldObj.(*localstoragev1alpha1.LocalVolume)
+	nVol := newObj.(*localstoragev1alpha1.LocalVolume)
 
 	// 1. calculate allocated capacity according to LocalVolume.Spec.Config
 	// recycle old volume
@@ -382,7 +382,7 @@ func (r *resources) handleVolumeUpdate(oldObj, newObj interface{}) {
 	r.addAllocatedStorage(nVol)
 
 	// 2. recycle resource ID when LocalVolume is deleted
-	if nVol.Status.State == udsv1alpha1.VolumeStateDeleted {
+	if nVol.Status.State == localstoragev1alpha1.VolumeStateDeleted {
 		r.recycleResourceID(nVol)
 	}
 	if nVol.Spec.Config == nil {

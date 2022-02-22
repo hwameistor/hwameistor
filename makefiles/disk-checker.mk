@@ -1,4 +1,4 @@
-DISK_CHECKER_NAME = dce-uds-disk-checker
+DISK_CHECKER_NAME = localstorage-disk-checker
 DISK_CHECKER_IMAGE_DIR = ${PROJECT_SOURCE_CODE_DIR}/images/disk-checker
 DISK_CHECKER_BUILD_BIN = ${BINS_DIR}/${DISK_CHECKER_NAME}-run
 DISK_CHECKER_BUILD_MAIN = ${CMDS_DIR}/disk-checker/main.go

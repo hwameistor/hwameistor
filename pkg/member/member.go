@@ -2,7 +2,7 @@ package member
 
 import (
 	localapis "github.com/HwameiStor/local-storage/pkg/apis"
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	localctrl "github.com/HwameiStor/local-storage/pkg/member/controller"
 	localcsi "github.com/HwameiStor/local-storage/pkg/member/csi"
 	localnode "github.com/HwameiStor/local-storage/pkg/member/node"
@@ -53,10 +53,10 @@ type localStorageMember struct {
 
 	nodeManager localapis.NodeManager
 
-	systemConfig udsv1alpha1.SystemConfig
+	systemConfig localstoragev1alpha1.SystemConfig
 }
 
-func (m *localStorageMember) ConfigureBase(name string, namespace string, systemConfig udsv1alpha1.SystemConfig, cli client.Client, informersCache cache.Cache) localapis.LocalStorageMember {
+func (m *localStorageMember) ConfigureBase(name string, namespace string, systemConfig localstoragev1alpha1.SystemConfig, cli client.Client, informersCache cache.Cache) localapis.LocalStorageMember {
 	m.name = name
 	m.version = localapis.Version
 	m.namespace = namespace

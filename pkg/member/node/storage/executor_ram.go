@@ -8,7 +8,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	"github.com/HwameiStor/local-storage/pkg/exechelper"
 	"github.com/HwameiStor/local-storage/pkg/exechelper/nsexecutor"
 	"github.com/HwameiStor/local-storage/pkg/utils"
@@ -26,22 +26,22 @@ type ramdiskExecutor struct {
 	poolPath string
 }
 
-func (rd *ramdiskExecutor) ExtendPoolsInfo(localDisks map[string]*udsv1alpha1.LocalDisk) (map[string]*udsv1alpha1.LocalPool, error) {
+func (rd *ramdiskExecutor) ExtendPoolsInfo(localDisks map[string]*localstoragev1alpha1.LocalDisk) (map[string]*localstoragev1alpha1.LocalPool, error) {
 	rd.logger.Debug("ConstructPools ...")
-	pool := &udsv1alpha1.LocalPool{
+	pool := &localstoragev1alpha1.LocalPool{
 		Name:                     rd.poolName,
-		Class:                    udsv1alpha1.DiskClassNameRAM,
-		Type:                     udsv1alpha1.PoolTypeRegular,
-		VolumeKind:               udsv1alpha1.VolumeKindRAM,
+		Class:                    localstoragev1alpha1.DiskClassNameRAM,
+		Type:                     localstoragev1alpha1.PoolTypeRegular,
+		VolumeKind:               localstoragev1alpha1.VolumeKindRAM,
 		Path:                     rd.poolPath,
-		TotalVolumeCount:         udsv1alpha1.RAMVolumeMaxCount,
-		FreeVolumeCount:          udsv1alpha1.RAMVolumeMaxCount,
+		TotalVolumeCount:         localstoragev1alpha1.RAMVolumeMaxCount,
+		FreeVolumeCount:          localstoragev1alpha1.RAMVolumeMaxCount,
 		UsedVolumeCount:          0,
 		TotalCapacityBytes:       0, // should be changed according to the configuration
 		FreeCapacityBytes:        0, // should be changed according to the configuration
 		UsedCapacityBytes:        0,
 		VolumeCapacityBytesLimit: 0, // should be changed according to the configuration
-		Disks:                    []udsv1alpha1.LocalDisk{},
+		Disks:                    []localstoragev1alpha1.LocalDisk{},
 		Volumes:                  []string{},
 	}
 
@@ -57,21 +57,21 @@ func (rd *ramdiskExecutor) ExtendPoolsInfo(localDisks map[string]*udsv1alpha1.Lo
 		pool.FreeVolumeCount--
 	}
 
-	return map[string]*udsv1alpha1.LocalPool{udsv1alpha1.PoolNameForRAM: pool}, nil
+	return map[string]*localstoragev1alpha1.LocalPool{localstoragev1alpha1.PoolNameForRAM: pool}, nil
 }
 
-func (rd *ramdiskExecutor) GetReplicas() (map[string]*udsv1alpha1.LocalVolumeReplica, error) {
+func (rd *ramdiskExecutor) GetReplicas() (map[string]*localstoragev1alpha1.LocalVolumeReplica, error) {
 	rd.logger.Debug("ConstructReplicas Probing RAM disk volume replica on Host ...")
 	if err := rd.mkdir(rd.poolPath); err != nil {
 		rd.logger.WithField("pool", rd.poolPath).WithError(err).Error("Can't determine the pool directory")
 		return nil, err
 	}
-	replicas := make(map[string]*udsv1alpha1.LocalVolumeReplica)
+	replicas := make(map[string]*localstoragev1alpha1.LocalVolumeReplica)
 	for volName := range rd.getAllDevPaths() {
-		replicaToTest := &udsv1alpha1.LocalVolumeReplica{}
-		replicaToTest.Spec.PoolName = udsv1alpha1.PoolNameForRAM
+		replicaToTest := &localstoragev1alpha1.LocalVolumeReplica{}
+		replicaToTest.Spec.PoolName = localstoragev1alpha1.PoolNameForRAM
 		replicaToTest.Spec.VolumeName = volName
-		replicaToTest.Spec.Kind = udsv1alpha1.VolumeKindRAM
+		replicaToTest.Spec.Kind = localstoragev1alpha1.VolumeKindRAM
 		replicaToTest.Spec.NodeName = rd.lm.nodeConf.Name
 		replica, err := rd.TestVolumeReplica(replicaToTest)
 		if err != nil {
@@ -89,8 +89,8 @@ func newRAMDiskExecutor(lm *LocalManager) *ramdiskExecutor {
 	if ramdiskExecutorInstance == nil {
 		ramdiskExecutorInstance = &ramdiskExecutor{
 			lm:       lm,
-			poolName: udsv1alpha1.PoolNameForRAM,
-			poolPath: fmt.Sprintf("/dev/%s", udsv1alpha1.PoolNameForRAM),
+			poolName: localstoragev1alpha1.PoolNameForRAM,
+			poolPath: fmt.Sprintf("/dev/%s", localstoragev1alpha1.PoolNameForRAM),
 			cmdExec:  nsexecutor.New(),
 			logger:   log.WithField("Module", "NodeManager/RamDiskExecuter"),
 		}
@@ -98,7 +98,7 @@ func newRAMDiskExecutor(lm *LocalManager) *ramdiskExecutor {
 	return ramdiskExecutorInstance
 }
 
-func (rd *ramdiskExecutor) CreateVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica) (*udsv1alpha1.LocalVolumeReplica, error) {
+func (rd *ramdiskExecutor) CreateVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) (*localstoragev1alpha1.LocalVolumeReplica, error) {
 
 	devPath := rd.getDevPath(replica.Spec.VolumeName)
 	if err := rd.mkdir(devPath); err != nil {
@@ -110,7 +110,7 @@ func (rd *ramdiskExecutor) CreateVolumeReplica(replica *udsv1alpha1.LocalVolumeR
 	return rd.TestVolumeReplica(replica)
 }
 
-func (rd *ramdiskExecutor) DeleteVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica) error {
+func (rd *ramdiskExecutor) DeleteVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) error {
 	devPath := rd.getDevPath(replica.Spec.VolumeName)
 
 	if err := rd.umount(devPath); err != nil {
@@ -122,11 +122,11 @@ func (rd *ramdiskExecutor) DeleteVolumeReplica(replica *udsv1alpha1.LocalVolumeR
 	return nil
 }
 
-func (rd *ramdiskExecutor) ExpandVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*udsv1alpha1.LocalVolumeReplica, error) {
+func (rd *ramdiskExecutor) ExpandVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*localstoragev1alpha1.LocalVolumeReplica, error) {
 	return nil, fmt.Errorf("not supported")
 }
 
-func (rd *ramdiskExecutor) TestVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica) (*udsv1alpha1.LocalVolumeReplica, error) {
+func (rd *ramdiskExecutor) TestVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) (*localstoragev1alpha1.LocalVolumeReplica, error) {
 	devPath := rd.getDevPath(replica.Spec.VolumeName)
 	result := rd.cmdExec.RunCommand(exechelper.ExecParams{
 		CmdName: "findmnt",
@@ -150,7 +150,7 @@ func (rd *ramdiskExecutor) TestVolumeReplica(replica *udsv1alpha1.LocalVolumeRep
 	}
 
 	newReplica := replica.DeepCopy()
-	newReplica.Status.State = udsv1alpha1.VolumeReplicaStateReady
+	newReplica.Status.State = localstoragev1alpha1.VolumeReplicaStateReady
 	newReplica.Status.AllocatedCapacityBytes = allocatedCapacityBytes
 	newReplica.Status.DevicePath = devPath
 	newReplica.Status.StoragePath = ramdiskPrefix
@@ -158,11 +158,11 @@ func (rd *ramdiskExecutor) TestVolumeReplica(replica *udsv1alpha1.LocalVolumeRep
 	return newReplica, nil
 }
 
-func (rd *ramdiskExecutor) ExtendPools(availableLocalDisks []*udsv1alpha1.LocalDisk) error {
+func (rd *ramdiskExecutor) ExtendPools(availableLocalDisks []*localstoragev1alpha1.LocalDisk) error {
 	return nil
 }
 
-func (rd *ramdiskExecutor) ConsistencyCheck(crdReplicas map[string]*udsv1alpha1.LocalVolumeReplica) {
+func (rd *ramdiskExecutor) ConsistencyCheck(crdReplicas map[string]*localstoragev1alpha1.LocalVolumeReplica) {
 
 	rd.logger.Debug("Consistency Checking for RAM disk volume ...")
 
@@ -176,7 +176,7 @@ func (rd *ramdiskExecutor) ConsistencyCheck(crdReplicas map[string]*udsv1alpha1.
 		rd.logger.WithField("volume", volName).Debug("Checking VolumeReplica CRD")
 		replica, exists := replicas[volName]
 		if !exists {
-			if crd.Status.State != udsv1alpha1.VolumeReplicaStateReady {
+			if crd.Status.State != localstoragev1alpha1.VolumeReplicaStateReady {
 				continue
 			}
 			rd.logger.WithField("volume", volName).WithError(fmt.Errorf("not found on Host")).Warning("Volume replica consistency check failed")

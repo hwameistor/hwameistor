@@ -1,17 +1,17 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: dce-uds-local-storage-csi-controller
+  name: localstorage-local-storage-csi-controller
   namespace: local-storage-system
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: dce-uds-local-storage-csi-controller
+      app: localstorage-local-storage-csi-controller
   template:
     metadata:
       labels:
-        app: dce-uds-local-storage-csi-controller
+        app: localstorage-local-storage-csi-controller
     spec:
       priorityClassName: system-cluster-critical
       affinity:
@@ -22,7 +22,7 @@ spec:
               - key: app
                 operator: In
                 values:
-                - dce-uds-local-storage
+                - localstorage-local-storage
             topologyKey: localstorage.hwameistor.io/local-storage-topology-node
       serviceAccount: storage-admin
       containers:

@@ -84,7 +84,7 @@ func (rs *restServer) serveGPRC(listener net.Listener) {
 	}
 	grpcServer := grpc.NewServer(opts...)
 
-	udsv1.RegisterStorageDriverServer(grpcServer, rs)
+	localstoragev1.RegisterStorageDriverServer(grpcServer, rs)
 	log.Debug("Registered MetricsCollector server.")
 	reflection.Register(grpcServer)
 

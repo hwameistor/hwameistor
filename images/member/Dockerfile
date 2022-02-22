@@ -4,6 +4,6 @@ RUN yum install -y xfsprogs udev smartmontools lsscsi
 
 COPY tools/drbdsetup /usr/local/bin/
 
-COPY ./_build/dce-uds-local-storage-run /
+COPY ./_build/localstorage-local-storage-run /
 
-ENTRYPOINT [ "/dce-uds-local-storage-run" ]
+ENTRYPOINT [ "/localstorage-local-storage-run" ]

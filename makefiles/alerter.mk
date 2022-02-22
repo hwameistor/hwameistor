@@ -1,4 +1,4 @@
-ALERTER_NAME = dce-uds-local-storage-alerter
+ALERTER_NAME = localstorage-local-storage-alerter
 ALERTER_IMAGE_DIR = ${PROJECT_SOURCE_CODE_DIR}/images/alerter
 ALERTER_BUILD_BIN = ${BINS_DIR}/${ALERTER_NAME}-run
 ALERTER_BUILD_MAIN = ${CMDS_DIR}/alerter/main.go

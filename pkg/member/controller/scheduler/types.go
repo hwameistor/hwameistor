@@ -1,7 +1,7 @@
 package scheduler
 
 import (
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 )
 
 type storageCollection struct {
@@ -24,8 +24,8 @@ type storagePoolCollection struct {
 
 func newStorageCollection() *storageCollection {
 	collection := &storageCollection{kinds: map[string]storageKindCollection{}}
-	kinds := []string{udsv1alpha1.VolumeKindLVM, udsv1alpha1.VolumeKindDisk, udsv1alpha1.VolumeKindRAM}
-	poolNames := []string{udsv1alpha1.PoolNameForHDD, udsv1alpha1.PoolNameForSSD, udsv1alpha1.PoolNameForNVMe, udsv1alpha1.PoolNameForRAM}
+	kinds := []string{localstoragev1alpha1.VolumeKindLVM, localstoragev1alpha1.VolumeKindDisk, localstoragev1alpha1.VolumeKindRAM}
+	poolNames := []string{localstoragev1alpha1.PoolNameForHDD, localstoragev1alpha1.PoolNameForSSD, localstoragev1alpha1.PoolNameForNVMe, localstoragev1alpha1.PoolNameForRAM}
 	for _, kind := range kinds {
 		collection.kinds[kind] = storageKindCollection{pools: map[string]storagePoolCollection{}}
 		for _, poolName := range poolNames {

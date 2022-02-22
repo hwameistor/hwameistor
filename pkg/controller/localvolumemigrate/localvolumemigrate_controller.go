@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/HwameiStor/local-storage/pkg/apis"
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	"github.com/HwameiStor/local-storage/pkg/member"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -46,7 +46,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource LocalVolumeMigrate
-	err = c.Watch(&source.Kind{Type: &udsv1alpha1.LocalVolumeMigrate{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &localstoragev1alpha1.LocalVolumeMigrate{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ type ReconcileLocalVolumeMigrate struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileLocalVolumeMigrate) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	instance := &udsv1alpha1.LocalVolumeMigrate{}
+	instance := &localstoragev1alpha1.LocalVolumeMigrate{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {

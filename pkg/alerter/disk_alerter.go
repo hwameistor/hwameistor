@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	localstorageinformers "github.com/HwameiStor/local-storage/pkg/apis/client/informers/externalversions"
-	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"

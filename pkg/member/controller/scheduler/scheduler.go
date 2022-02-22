@@ -8,7 +8,7 @@ import (
 	runtimecache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 )
 
 // todo:
@@ -19,9 +19,9 @@ import (
 type Scheduler interface {
 	Init()
 	// schedule will schedule all replicas, and generate a valid VolumeConfig
-	Allocate(vol *udsv1alpha1.LocalVolume) (*udsv1alpha1.VolumeConfig, error)
+	Allocate(vol *localstoragev1alpha1.LocalVolume) (*localstoragev1alpha1.VolumeConfig, error)
 
-	GetNodeCandidates(vol *udsv1alpha1.LocalVolume) ([]*udsv1alpha1.LocalStorageNode, error)
+	GetNodeCandidates(vol *localstoragev1alpha1.LocalVolume) ([]*localstoragev1alpha1.LocalStorageNode, error)
 }
 
 // todo: design a better plugin register/enable
@@ -55,12 +55,12 @@ func (s *scheduler) Init() {
 }
 
 // GetNodeCandidates gets available nodes for the volume, used by K8s scheduler
-func (s *scheduler) GetNodeCandidates(vol *udsv1alpha1.LocalVolume) ([]*udsv1alpha1.LocalStorageNode, error) {
+func (s *scheduler) GetNodeCandidates(vol *localstoragev1alpha1.LocalVolume) ([]*localstoragev1alpha1.LocalStorageNode, error) {
 	return s.resourceCollections.getNodeCandidates(vol)
 }
 
 // Allocate schedule right nodes and generate volume config
-func (s *scheduler) Allocate(vol *udsv1alpha1.LocalVolume) (*udsv1alpha1.VolumeConfig, error) {
+func (s *scheduler) Allocate(vol *localstoragev1alpha1.LocalVolume) (*localstoragev1alpha1.VolumeConfig, error) {
 	logCtx := s.logger.WithFields(log.Fields{"volume": vol.Name, "spec": vol.Spec})
 	logCtx.Debug("Allocating resources for LocalVolume")
 
@@ -73,7 +73,7 @@ func (s *scheduler) Allocate(vol *udsv1alpha1.LocalVolume) (*udsv1alpha1.VolumeC
 		neededNodeNumber -= len(vol.Spec.Config.Replicas)
 	}
 
-	var selectedNodes []*udsv1alpha1.LocalStorageNode
+	var selectedNodes []*localstoragev1alpha1.LocalStorageNode
 	if neededNodeNumber > 0 {
 		nodes, err := s.resourceCollections.getNodeCandidates(vol)
 		if err != nil {
@@ -100,12 +100,12 @@ func (s *scheduler) Allocate(vol *udsv1alpha1.LocalVolume) (*udsv1alpha1.VolumeC
 	return s.generateConfig(vol, selectedNodes, resID), nil
 }
 
-func (s *scheduler) generateConfig(vol *udsv1alpha1.LocalVolume, nodes []*udsv1alpha1.LocalStorageNode, resID int) *udsv1alpha1.VolumeConfig {
-	conf := &udsv1alpha1.VolumeConfig{
+func (s *scheduler) generateConfig(vol *localstoragev1alpha1.LocalVolume, nodes []*localstoragev1alpha1.LocalStorageNode, resID int) *localstoragev1alpha1.VolumeConfig {
+	conf := &localstoragev1alpha1.VolumeConfig{
 		Version:     1,
 		VolumeName:  vol.Name,
 		Initialized: false,
-		Replicas:    []udsv1alpha1.VolumeReplica{},
+		Replicas:    []localstoragev1alpha1.VolumeReplica{},
 	}
 	if vol.Spec.Config != nil {
 		conf = vol.Spec.Config.DeepCopy()
@@ -130,7 +130,7 @@ func (s *scheduler) generateConfig(vol *udsv1alpha1.LocalVolume, nodes []*udsv1a
 	nodeIDIndex := 0
 	nodeIndex := 0
 	for i := len(conf.Replicas); i < int(vol.Spec.ReplicaNumber); i++ {
-		replica := udsv1alpha1.VolumeReplica{
+		replica := localstoragev1alpha1.VolumeReplica{
 			ID:       freeIDs[nodeIDIndex],
 			Hostname: nodes[nodeIndex].Spec.HostName,
 			IP:       nodes[nodeIndex].Spec.StorageIP,

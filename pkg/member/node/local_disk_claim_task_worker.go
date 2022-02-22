@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	ldmv1alpha1 "github.com/cherry-io/local-disk-manager/pkg/apis/cherry/v1alpha1"
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -111,13 +111,13 @@ func (m *manager) processLocalDiskClaimBound(claim *ldmv1alpha1.LocalDiskClaim) 
 }
 
 // getLocalDisksByLocalDiskClaim get disks, including HDD, SSD, NVMe triggered by ldc callback
-func (m *manager) getLocalDisksByLocalDiskClaim(ldc *ldmv1alpha1.LocalDiskClaim) ([]*udsv1alpha1.LocalDisk, error) {
+func (m *manager) getLocalDisksByLocalDiskClaim(ldc *ldmv1alpha1.LocalDiskClaim) ([]*localstoragev1alpha1.LocalDisk, error) {
 	localDisksMap, err := m.getLocalDisksMapByLocalDiskClaim(ldc)
 	if err != nil {
 		return nil, err
 	}
 
-	localDisks := []*udsv1alpha1.LocalDisk{}
+	localDisks := []*localstoragev1alpha1.LocalDisk{}
 	for _, disk := range localDisksMap {
 		localDisks = append(localDisks, disk)
 	}
@@ -125,9 +125,9 @@ func (m *manager) getLocalDisksByLocalDiskClaim(ldc *ldmv1alpha1.LocalDiskClaim)
 	return localDisks, nil
 }
 
-func (m *manager) getLocalDisksMapByLocalDiskClaim(ldc *ldmv1alpha1.LocalDiskClaim) (map[string]*udsv1alpha1.LocalDisk, error) {
+func (m *manager) getLocalDisksMapByLocalDiskClaim(ldc *ldmv1alpha1.LocalDiskClaim) (map[string]*localstoragev1alpha1.LocalDisk, error) {
 	m.logger.Debug("getLocalDisksMapByLocalDiskClaim ...")
-	disks := make(map[string]*udsv1alpha1.LocalDisk)
+	disks := make(map[string]*localstoragev1alpha1.LocalDisk)
 	disksAvailable, err := m.listAllAvailableLocalDisksByLocalClaimDisk(ldc)
 	if err != nil {
 		m.logger.WithError(err).Error("Failed to listAllAvailableLocalDisks")
@@ -141,8 +141,8 @@ func (m *manager) getLocalDisksMapByLocalDiskClaim(ldc *ldmv1alpha1.LocalDiskCla
 		if devicePath == "" || !strings.HasPrefix(devicePath, "/dev") || strings.Contains(devicePath, "mapper") {
 			continue
 		}
-		disk := &udsv1alpha1.LocalDisk{}
-		disk.State = udsv1alpha1.DiskStateAvailable
+		disk := &localstoragev1alpha1.LocalDisk{}
+		disk.State = localstoragev1alpha1.DiskStateAvailable
 		disk.CapacityBytes = diskAvailable.Spec.Capacity
 		disk.DevPath = devicePath
 		disk.Class = diskAvailable.Spec.DiskAttributes.Type
@@ -162,8 +162,8 @@ func (m *manager) getLocalDisksMapByLocalDiskClaim(ldc *ldmv1alpha1.LocalDiskCla
 		if devicePath == "" || !strings.HasPrefix(devicePath, "/dev") || strings.Contains(devicePath, "mapper") {
 			continue
 		}
-		disk := &udsv1alpha1.LocalDisk{}
-		disk.State = udsv1alpha1.DiskStateInUse
+		disk := &localstoragev1alpha1.LocalDisk{}
+		disk.State = localstoragev1alpha1.DiskStateInUse
 		disk.CapacityBytes = diskInUse.Spec.Capacity
 		disk.DevPath = devicePath
 		disk.Class = diskInUse.Spec.DiskAttributes.Type

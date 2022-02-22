@@ -34,7 +34,6 @@ replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.2+incompatible // Required by OLM
 	github.com/cherry-io/local-disk-manager => ../local-disk-manager
 	github.com/HwameiStor/local-storage => ../local-storage
-	github.com/DaoCloud/uds => ../uds
 	google.golang.org/grpc => google.golang.org/grpc v1.23.1
 	k8s.io/api => k8s.io/api v0.18.6
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.6

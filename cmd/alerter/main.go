@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	lockName = "dce-uds-local-storage-alerter"
+	lockName = "localstorage-local-storage-alerter"
 )
 
 var (

@@ -1,16 +1,16 @@
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
-  name: dce-uds-disk-checker
+  name: localstorage-disk-checker
   namespace: local-storage-system
 spec:
   selector:
     matchLabels:
-      app: dce-uds-disk-checker
+      app: localstorage-disk-checker
   template:
     metadata:
       labels:
-        app: dce-uds-disk-checker
+        app: localstorage-disk-checker
     spec:
       serviceAccount: storage-admin
       priorityClassName: system-node-critical
@@ -19,7 +19,7 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: checker
-          image: 10.6.170.180/uds/dce-uds-disk-checker:1.0-integrate_ldm_v1
+          image: 10.6.170.180/localstorage/localstorage-disk-checker:1.0-integrate_ldm_v1
           imagePullPolicy: Always
           securityContext:
             privileged: true

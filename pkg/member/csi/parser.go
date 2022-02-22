@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	"github.com/HwameiStor/local-storage/pkg/utils"
 )
 
@@ -22,15 +22,15 @@ type volumeParameters struct {
 func parseParameters(req RequestParameterHandler) (*volumeParameters, error) {
 	params := req.GetParameters()
 
-	poolClass, ok := params[udsv1alpha1.VolumeParameterPoolClassKey]
+	poolClass, ok := params[localstoragev1alpha1.VolumeParameterPoolClassKey]
 	if !ok {
 		return nil, fmt.Errorf("not found pool class")
 	}
-	poolType, ok := params[udsv1alpha1.VolumeParameterPoolTypeKey]
+	poolType, ok := params[localstoragev1alpha1.VolumeParameterPoolTypeKey]
 	if !ok {
 		return nil, fmt.Errorf("not found pool type")
 	}
-	volumeKind, ok := params[udsv1alpha1.VolumeParameterVolumeKindKey]
+	volumeKind, ok := params[localstoragev1alpha1.VolumeParameterVolumeKindKey]
 	if !ok {
 		return nil, fmt.Errorf("not found pool kind")
 	}
@@ -39,10 +39,10 @@ func parseParameters(req RequestParameterHandler) (*volumeParameters, error) {
 		return nil, err
 	}
 	striped := false
-	if stripedValue, ok := params[udsv1alpha1.VolumeParameterStriped]; ok && strings.ToLower(stripedValue) == "true" {
+	if stripedValue, ok := params[localstoragev1alpha1.VolumeParameterStriped]; ok && strings.ToLower(stripedValue) == "true" {
 		striped = true
 	}
-	replicaNumberStr, ok := params[udsv1alpha1.VolumeParameterReplicaNumberKey]
+	replicaNumberStr, ok := params[localstoragev1alpha1.VolumeParameterReplicaNumberKey]
 	if !ok {
 		return nil, fmt.Errorf("not found volume replica count")
 	}
@@ -53,7 +53,7 @@ func parseParameters(req RequestParameterHandler) (*volumeParameters, error) {
 	convertible := true
 	// for HA volume, already be convertible
 	if replicaNumber < 2 {
-		convertibleValue, ok := params[udsv1alpha1.VolumeParameterConvertible]
+		convertibleValue, ok := params[localstoragev1alpha1.VolumeParameterConvertible]
 		if !ok {
 			// for non-HA volume, default to false
 			convertible = false

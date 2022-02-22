@@ -15,5 +15,5 @@ subjects:
     namespace: local-storage-system
 roleRef:
   kind: ClusterRole
-  name: dce-admin
+  name: local-storage-admin
   apiGroup: rbac.authorization.k8s.io

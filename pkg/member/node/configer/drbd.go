@@ -16,7 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	"github.com/HwameiStor/local-storage/pkg/exechelper"
 	"github.com/HwameiStor/local-storage/pkg/exechelper/nsexecutor"
 )
@@ -81,7 +81,7 @@ type drbdConfig struct {
 	Port         int
 	Minor        int
 	DevicePath   string
-	Peers        []udsv1alpha1.VolumeReplica
+	Peers        []localstoragev1alpha1.VolumeReplica
 }
 
 type Resource struct {
@@ -106,13 +106,13 @@ type PeerDevice struct {
 type drbdConfigure struct {
 	hostname       string
 	apiClient      client.Client
-	systemConfig   udsv1alpha1.SystemConfig
+	systemConfig   localstoragev1alpha1.SystemConfig
 	statusSyncFunc SyncReplicaStatus
 	cmdExec        exechelper.Executor
 	lock           sync.Mutex
 	once           sync.Once
 	// record already applied configs on current node, key=replica.Name
-	localConfigs map[string]udsv1alpha1.VolumeConfig
+	localConfigs map[string]localstoragev1alpha1.VolumeConfig
 	// key=resource.Name
 	resourceCache map[string]*Resource
 	// resource.Name: replica.Name
@@ -124,7 +124,7 @@ type drbdConfigure struct {
 
 var _ Configer = &drbdConfigure{}
 
-func NewDRBDConfiger(hostname string, systemConfig udsv1alpha1.SystemConfig, apiClient client.Client, syncFunc SyncReplicaStatus) (*drbdConfigure, error) {
+func NewDRBDConfiger(hostname string, systemConfig localstoragev1alpha1.SystemConfig, apiClient client.Client, syncFunc SyncReplicaStatus) (*drbdConfigure, error) {
 	t, err := template.New("drbdConfigure").Parse(configTmpl)
 	if err != nil {
 		return nil, fmt.Errorf("parse drbd config template err: %s", err)
@@ -134,7 +134,7 @@ func NewDRBDConfiger(hostname string, systemConfig udsv1alpha1.SystemConfig, api
 		apiClient:              apiClient,
 		systemConfig:           systemConfig,
 		cmdExec:                nsexecutor.New(),
-		localConfigs:           make(map[string]udsv1alpha1.VolumeConfig),
+		localConfigs:           make(map[string]localstoragev1alpha1.VolumeConfig),
 		resourceCache:          make(map[string]*Resource),
 		resourceReplicaNameMap: make(map[string]string),
 		statusSyncFunc:         syncFunc,
@@ -157,12 +157,12 @@ func (m *drbdConfigure) initConfigDirectory() {
 	}
 }
 
-func (m *drbdConfigure) HasConfig(replica *udsv1alpha1.LocalVolumeReplica) bool {
+func (m *drbdConfigure) HasConfig(replica *localstoragev1alpha1.LocalVolumeReplica) bool {
 	_, exists := m.resourceCache[m.genResourceName(replica)]
 	return exists
 }
 
-func (m *drbdConfigure) IsConfigUpdated(replica *udsv1alpha1.LocalVolumeReplica, config udsv1alpha1.VolumeConfig) bool {
+func (m *drbdConfigure) IsConfigUpdated(replica *localstoragev1alpha1.LocalVolumeReplica, config localstoragev1alpha1.VolumeConfig) bool {
 	oldConfig, exists := m.localConfigs[replica.Name]
 	if !exists {
 		return true
@@ -171,7 +171,7 @@ func (m *drbdConfigure) IsConfigUpdated(replica *udsv1alpha1.LocalVolumeReplica,
 	return oldConfig.DeepEqual(&config)
 }
 
-func (m *drbdConfigure) ApplyConfig(replica *udsv1alpha1.LocalVolumeReplica, config udsv1alpha1.VolumeConfig) error {
+func (m *drbdConfigure) ApplyConfig(replica *localstoragev1alpha1.LocalVolumeReplica, config localstoragev1alpha1.VolumeConfig) error {
 	m.logger.WithField("Replica", replica.Name).Infof("apply replica config")
 
 	// start monitor when needed
@@ -227,7 +227,7 @@ func (m *drbdConfigure) ApplyConfig(replica *udsv1alpha1.LocalVolumeReplica, con
 }
 
 // Initialize do the initalization for volume
-func (m *drbdConfigure) Initialize(replica *udsv1alpha1.LocalVolumeReplica, config udsv1alpha1.VolumeConfig) error {
+func (m *drbdConfigure) Initialize(replica *localstoragev1alpha1.LocalVolumeReplica, config localstoragev1alpha1.VolumeConfig) error {
 	m.logger.WithField("Replica", replica.Name).Info("initialize volume")
 	resourceName := m.genResourceName(replica)
 	if yes, err := m.isDeviceUpToDate(resourceName); err != nil {
@@ -247,7 +247,7 @@ func (m *drbdConfigure) Initialize(replica *udsv1alpha1.LocalVolumeReplica, conf
 }
 
 // ConsistencyCheck clean non-dlocal managed configs
-func (m *drbdConfigure) ConsistencyCheck(replicas []udsv1alpha1.LocalVolumeReplica) {
+func (m *drbdConfigure) ConsistencyCheck(replicas []localstoragev1alpha1.LocalVolumeReplica) {
 	m.logger.Debug("do replica config ConsistencyCheck")
 	knownResources := make(map[string]bool)
 	for _, replica := range replicas {
@@ -391,7 +391,7 @@ func (m *drbdConfigure) getResourceDevicePath(conf drbdConfig) string {
 	return fmt.Sprintf("%s%d", drbdDevicePrefix, conf.Minor)
 }
 
-func (m *drbdConfigure) DeleteConfig(replica *udsv1alpha1.LocalVolumeReplica) error {
+func (m *drbdConfigure) DeleteConfig(replica *localstoragev1alpha1.LocalVolumeReplica) error {
 	m.logger.WithField("Replica", replica.Name).Info("Delete Config")
 
 	// down resource
@@ -619,31 +619,31 @@ func (m *drbdConfigure) handleDRBDEvent(event string) {
 	m.statusSyncFunc(replicaName)
 }
 
-func (m *drbdConfigure) getReplicaHAState(resource *Resource) udsv1alpha1.HAState {
-	state := udsv1alpha1.HAState{State: udsv1alpha1.HAVolumeReplicaStateDown}
+func (m *drbdConfigure) getReplicaHAState(resource *Resource) localstoragev1alpha1.HAState {
+	state := localstoragev1alpha1.HAState{State: localstoragev1alpha1.HAVolumeReplicaStateDown}
 	switch resource.Device.State {
 	case DiskStateUpToDate:
-		state.State = udsv1alpha1.HAVolumeReplicaStateConsistent
+		state.State = localstoragev1alpha1.HAVolumeReplicaStateConsistent
 	case DiskStateInconsistent, DiskStateConsistent, DiskStateOutdated:
-		state.State = udsv1alpha1.HAVolumeReplicaStateInconsistent
+		state.State = localstoragev1alpha1.HAVolumeReplicaStateInconsistent
 	case DiskStateNegotiating:
-		state.State = udsv1alpha1.HAVolumeReplicaStateUp
+		state.State = localstoragev1alpha1.HAVolumeReplicaStateUp
 	case DiskStateDiskless, DiskStateDetaching, DiskStateAttaching:
-		state.State = udsv1alpha1.HAVolumeReplicaStateDown
+		state.State = localstoragev1alpha1.HAVolumeReplicaStateDown
 	}
 
 	state.Reason = fmt.Sprintf("device is %s", resource.Device.State)
 	return state
 }
 
-func (m *drbdConfigure) GetReplicaHAState(replica *udsv1alpha1.LocalVolumeReplica) (udsv1alpha1.HAState, error) {
+func (m *drbdConfigure) GetReplicaHAState(replica *localstoragev1alpha1.LocalVolumeReplica) (localstoragev1alpha1.HAState, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
 	resourceName := m.genResourceName(replica)
 	resource, ok := m.resourceCache[resourceName]
 	if !ok {
-		return udsv1alpha1.HAState{}, fmt.Errorf("replica %s not found in local cache", replica.Name)
+		return localstoragev1alpha1.HAState{}, fmt.Errorf("replica %s not found in local cache", replica.Name)
 	}
 	haState := m.getReplicaHAState(resource)
 	return haState, nil
@@ -662,7 +662,7 @@ func (m *drbdConfigure) hasMetadata(minor int, devicePath string) bool {
 	return result.ExitCode == 0
 }
 
-func (m *drbdConfigure) config2DRBDConfig(replica *udsv1alpha1.LocalVolumeReplica, config udsv1alpha1.VolumeConfig) drbdConfig {
+func (m *drbdConfigure) config2DRBDConfig(replica *localstoragev1alpha1.LocalVolumeReplica, config localstoragev1alpha1.VolumeConfig) drbdConfig {
 	port := config.ResourceID + m.systemConfig.DRBD.StartPort
 	return drbdConfig{
 		ResourceName: m.genResourceName(replica),
@@ -780,7 +780,7 @@ func (m *drbdConfigure) secondaryResource(resourceName string) error {
 	return nil
 }
 
-func (m *drbdConfigure) genResourceName(replica *udsv1alpha1.LocalVolumeReplica) string {
+func (m *drbdConfigure) genResourceName(replica *localstoragev1alpha1.LocalVolumeReplica) string {
 	return replica.Spec.VolumeName
 }
 
@@ -788,7 +788,7 @@ func (m *drbdConfigure) getReplicaName(resourceName string) string {
 	return m.resourceReplicaNameMap[resourceName]
 }
 
-func (m *drbdConfigure) isPrimary(config udsv1alpha1.VolumeConfig) bool {
+func (m *drbdConfigure) isPrimary(config localstoragev1alpha1.VolumeConfig) bool {
 	for _, peer := range config.Replicas {
 		if peer.Hostname == m.hostname && peer.Primary {
 			return true

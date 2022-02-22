@@ -2,7 +2,7 @@ package alerter
 
 import (
 	localstorageclient "github.com/HwameiStor/local-storage/pkg/apis/client/clientset/versioned"
-	localstoragealertclient "github.com/HwameiStor/local-storage/pkg/apis/client/clientset/versioned/typed/uds/v1alpha1"
+	localstoragealertclient "github.com/HwameiStor/local-storage/pkg/apis/client/clientset/versioned/typed/localstorage/v1alpha1"
 	localstorageinformers "github.com/HwameiStor/local-storage/pkg/apis/client/informers/externalversions"
 
 	"k8s.io/client-go/rest"
@@ -30,7 +30,7 @@ func (m *AlertManager) Run(stopCh <-chan struct{}) error {
 	factory := localstorageinformers.NewSharedInformerFactory(apiClient, 0)
 	factory.Start(stopCh)
 
-	gAlertClient = apiClient.UdsV1alpha1().LocalStorageAlerts()
+	gAlertClient = apiClient.LocalStorageV1alpha1().LocalStorageAlerts()
 
 	if !m.isVirtualNode {
 		// not run disk alerter in virtual machine

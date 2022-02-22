@@ -6,7 +6,7 @@ metadata:
 spec:
   containers:
   - name: kafka
-    image: 10.6.170.180/uds/confluentinc-cp-kafka:5.0.1
+    image: 10.6.170.180/localstorage/confluentinc-cp-kafka:5.0.1
     command:
       - sh
       - -c

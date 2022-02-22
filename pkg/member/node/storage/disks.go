@@ -20,8 +20,8 @@ package storage
 //	}
 //}
 
-//func (mgr *localDiskManager) GetLocalDisks() (map[string]*udsv1alpha1.LocalDisk, error) {
-//	disks := make(map[string]*udsv1alpha1.LocalDisk)
+//func (mgr *localDiskManager) GetLocalDisks() (map[string]*localstoragev1alpha1.LocalDisk, error) {
+//	disks := make(map[string]*localstoragev1alpha1.LocalDisk)
 //
 //	disksInUse, err := mgr.discoverDisksInUse()
 //	if err != nil {
@@ -56,19 +56,19 @@ package storage
 //
 //			var diskClass string
 //			if pciDisks[items[0]].IsNVMe() {
-//				diskClass = udsv1alpha1.DiskClassNameNVMe
+//				diskClass = localstoragev1alpha1.DiskClassNameNVMe
 //			} else {
 //				switch items[2] {
 //				case diskRotational:
-//					diskClass = udsv1alpha1.DiskClassNameHDD
+//					diskClass = localstoragev1alpha1.DiskClassNameHDD
 //				case diskNonRotational:
-//					diskClass = udsv1alpha1.DiskClassNameSSD
+//					diskClass = localstoragev1alpha1.DiskClassNameSSD
 //				}
 //			}
-//			disk := &udsv1alpha1.LocalDisk{
+//			disk := &localstoragev1alpha1.LocalDisk{
 //				DevPath: devpath,
 //				Class:   diskClass,
-//				State:   udsv1alpha1.DiskStateAvailable,
+//				State:   localstoragev1alpha1.DiskStateAvailable,
 //			}
 //			if capacity, ok := diskCapacities[devpath]; ok {
 //				disk.CapacityBytes = capacity
@@ -76,10 +76,10 @@ package storage
 //				mgr.logger.WithFields(log.Fields{"disk": devpath}).Error("Disk capacity not found.")
 //			}
 //			if _, ok := disksInUse[devpath]; !ok {
-//				disk.State = udsv1alpha1.DiskStateAvailable
+//				disk.State = localstoragev1alpha1.DiskStateAvailable
 //				disks[devpath] = disk
 //			} else {
-//				disk.State = udsv1alpha1.DiskStateInUse
+//				disk.State = localstoragev1alpha1.DiskStateInUse
 //				disks[devpath] = disk
 //			}
 //		}
@@ -90,7 +90,7 @@ package storage
 //func (mgr *localDiskManager) discoverDisksInUse() (map[string]bool, error) {
 //	disks := map[string]bool{}
 //	/* e.g.
-//	[root@dce-10-6-161-17 ~]# blkid
+//	[root@local-storage-10-6-161-17 ~]# blkid
 //	/dev/mapper/centos-root: UUID="6b9703de-7c73-42ee-a412-4c4d03de3501" TYPE="xfs"
 //	/dev/sda2: UUID="gGiQzu-zdr7-cW4d-D2FA-VQAd-SfeT-9h3IW0" TYPE="LVM2_member"
 //	/dev/sdb: UUID="c9ae4157-57e6-4041-acd8-b5161becf5f6" TYPE="xfs"
@@ -128,8 +128,8 @@ package storage
 //}
 
 //// DiscoverAvailableDisks Discover all free disks, including HDD, SSD, NVMe
-//func (mgr *localDiskManager) DiscoverAvailableDisks() ([]*udsv1alpha1.LocalDisk, error) {
-//	availableDisks := []*udsv1alpha1.LocalDisk{}
+//func (mgr *localDiskManager) DiscoverAvailableDisks() ([]*localstoragev1alpha1.LocalDisk, error) {
+//	availableDisks := []*localstoragev1alpha1.LocalDisk{}
 //
 //	localDisks, err := mgr.GetLocalDisks()
 //	if err != nil {
@@ -137,7 +137,7 @@ package storage
 //	}
 //
 //	for _, disk := range localDisks {
-//		if disk.State == udsv1alpha1.DiskStateAvailable {
+//		if disk.State == localstoragev1alpha1.DiskStateAvailable {
 //			availableDisks = append(availableDisks, disk)
 //		}
 //	}
@@ -149,7 +149,7 @@ package storage
 //	capacities := map[string]int64{}
 //
 //	/* e.g.
-//	[root@dce-10-6-161-17 ~]# fdisk -l | grep Disk | grep dev | grep -v "mapper"
+//	[root@local-storage-10-6-161-17 ~]# fdisk -l | grep Disk | grep dev | grep -v "mapper"
 //	Disk /dev/sda: 137.4 GB, 137438953472 bytes, 268435456 sectors
 //	Disk /dev/sdb: 128.8 GB, 128849018880 bytes, 251658240 sectors
 //	Disk /dev/sdc: 107.4 GB, 107374182400 bytes, 209715200 sectors

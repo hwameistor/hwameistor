@@ -1,4 +1,4 @@
-MEMBER_NAME = dce-uds-local-storage
+MEMBER_NAME = localstorage-local-storage
 MEMBER_IMAGE_DIR = ${PROJECT_SOURCE_CODE_DIR}/images/member
 MEMBER_BUILD_BIN = ${BINS_DIR}/${MEMBER_NAME}-run
 MEMBER_BUILD_MAIN = ${CMDS_DIR}/manager/main.go

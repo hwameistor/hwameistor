@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	localapis "github.com/HwameiStor/local-storage/pkg/apis"
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -53,7 +53,7 @@ func Test_newMember(t *testing.T) {
 func Test_localStorageMember_ConfigureBase(t *testing.T) {
 	var name string = "test2"
 	var namespace string = "test"
-	var systemConfig udsv1alpha1.SystemConfig
+	var systemConfig localstoragev1alpha1.SystemConfig
 	var cli client.Client
 	var informersCache cache.Cache
 

@@ -23,8 +23,8 @@ import (
 	runtimeconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	uds "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstorage "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	"github.com/HwameiStor/local-storage/pkg/member/controller/scheduler"
 	"github.com/HwameiStor/local-storage/pkg/utils"
 )
@@ -80,16 +80,16 @@ func (p *Plugin) isLocalStorageVolume(pv *core.PersistentVolume) bool {
 	return pv.Spec.CSI != nil && pv.Spec.CSI.Driver == p.args.CSIDriverName
 }
 
-func (p *Plugin) getPVLocalVolume(pv *core.PersistentVolume) (*uds.LocalVolume, error) {
+func (p *Plugin) getPVLocalVolume(pv *core.PersistentVolume) (*localstorage.LocalVolume, error) {
 	volumeName := getVolumeNameFromPV(pv)
-	vol := uds.LocalVolume{}
+	vol := localstorage.LocalVolume{}
 	if err := p.apiClient.Get(context.TODO(), client.ObjectKey{Name: volumeName}, &vol); err != nil {
 		return nil, err
 	}
 	return &vol, nil
 }
 
-func (p *Plugin) isLocalVolumeAvailableOnNode(localVolume *uds.LocalVolume, node *nodeinfo.NodeInfo) (ok bool, err error) {
+func (p *Plugin) isLocalVolumeAvailableOnNode(localVolume *localstorage.LocalVolume, node *nodeinfo.NodeInfo) (ok bool, err error) {
 	replicas, err := p.getVolumeReadyReplicas(localVolume.Name)
 	if err != nil {
 		return false, err
@@ -136,7 +136,7 @@ func (p *Plugin) Filter(ctx context.Context, state *framework.CycleState, pod *c
 
 		/* we should schedule pod if the replica is ready, ignore volume state */
 
-		//if localVolume.Status.State != uds.VolumeStateReady {
+		//if localVolume.Status.State != localstorage.VolumeStateReady {
 		//	return framework.NewStatus(
 		//		framework.Unschedulable,
 		//		fmt.Sprintf("pvc %s's backend volume is not ready", pv.Spec.ClaimRef.Name),
@@ -197,7 +197,7 @@ func (p *Plugin) Filter(ctx context.Context, state *framework.CycleState, pod *c
 	var toProvisionDiskPVCs []*core.PersistentVolumeClaim
 	for _, pvc := range toProvisionLocalPVCs {
 		sc := scMap[*pvc.Spec.StorageClassName]
-		if sc.Parameters[uds.VolumeParameterVolumeKindKey] == uds.VolumeKindDisk {
+		if sc.Parameters[localstorage.VolumeParameterVolumeKindKey] == localstorage.VolumeKindDisk {
 			toProvisionDiskPVCs = append(toProvisionDiskPVCs, pvc)
 			continue
 		}
@@ -229,7 +229,7 @@ func (p *Plugin) Filter(ctx context.Context, state *framework.CycleState, pod *c
 		return nil
 	}
 
-	var volumes []*uds.LocalVolume
+	var volumes []*localstorage.LocalVolume
 	for _, pvc := range toProvisionDiskPVCs {
 		vol, err := generateLocalVolumeForPVC(pvc, scMap[*pvc.Spec.StorageClassName])
 		if err != nil {
@@ -238,7 +238,7 @@ func (p *Plugin) Filter(ctx context.Context, state *framework.CycleState, pod *c
 		volumes = append(volumes, vol)
 	}
 
-	var storageNode udsv1alpha1.LocalStorageNode
+	var storageNode localstoragev1alpha1.LocalStorageNode
 	if err := p.apiClient.Get(context.TODO(), client.ObjectKey{Name: node.Node().Name}, &storageNode); err != nil {
 		if errors.IsNotFound(err) {
 			return framework.NewStatus(framework.Unschedulable, "no such storage node %s", node.Node().Name)
@@ -253,9 +253,9 @@ func (p *Plugin) Filter(ctx context.Context, state *framework.CycleState, pod *c
 	return nil
 }
 
-func predicateForDiskVolume(volumes []*uds.LocalVolume, storageNode *udsv1alpha1.LocalStorageNode) (ok bool, reasons []string) {
-	if storageNode.Spec.AllowedVolumeKind != uds.VolumeKindDisk {
-		return false, []string{fmt.Sprintf("node %s does not support volume kind: %s", storageNode.Name, uds.VolumeKindDisk)}
+func predicateForDiskVolume(volumes []*localstorage.LocalVolume, storageNode *localstoragev1alpha1.LocalStorageNode) (ok bool, reasons []string) {
+	if storageNode.Spec.AllowedVolumeKind != localstorage.VolumeKindDisk {
+		return false, []string{fmt.Sprintf("node %s does not support volume kind: %s", storageNode.Name, localstorage.VolumeKindDisk)}
 	}
 
 	poolRequestedMap := map[string]struct {
@@ -303,13 +303,13 @@ func predicateForDiskVolume(volumes []*uds.LocalVolume, storageNode *udsv1alpha1
 	return true, nil
 }
 
-func (p *Plugin) getVolumeReadyReplicas(volumeName string) ([]uds.LocalVolumeReplica, error) {
-	replicaList := uds.LocalVolumeReplicaList{}
+func (p *Plugin) getVolumeReadyReplicas(volumeName string) ([]localstorage.LocalVolumeReplica, error) {
+	replicaList := localstorage.LocalVolumeReplicaList{}
 	if err := p.apiClient.List(context.TODO(), &replicaList); err != nil {
 		return nil, err
 	}
 
-	var replicas []uds.LocalVolumeReplica
+	var replicas []localstorage.LocalVolumeReplica
 	for i := range replicaList.Items {
 		if replicaList.Items[i].Spec.VolumeName == volumeName {
 			replicas = append(replicas, replicaList.Items[i])
@@ -327,11 +327,11 @@ func getVolumeNameFromPV(pv *core.PersistentVolume) string {
 	return pv.Spec.CSI.VolumeHandle
 }
 
-func generateLocalVolumeForPVC(pvc *core.PersistentVolumeClaim, sc *storage.StorageClass) (*uds.LocalVolume, error) {
-	localVolume := uds.LocalVolume{}
+func generateLocalVolumeForPVC(pvc *core.PersistentVolumeClaim, sc *storage.StorageClass) (*localstorage.LocalVolume, error) {
+	localVolume := localstorage.LocalVolume{}
 	poolName, err := utils.BuildStoragePoolName(
-		sc.Parameters[uds.VolumeParameterPoolClassKey],
-		sc.Parameters[uds.VolumeParameterPoolTypeKey])
+		sc.Parameters[localstorage.VolumeParameterPoolClassKey],
+		sc.Parameters[localstorage.VolumeParameterPoolTypeKey])
 	if err != nil {
 		return nil, err
 	}
@@ -339,8 +339,8 @@ func generateLocalVolumeForPVC(pvc *core.PersistentVolumeClaim, sc *storage.Stor
 	localVolume.Spec.PoolName = poolName
 	storage := pvc.Spec.Resources.Requests[core.ResourceStorage]
 	localVolume.Spec.RequiredCapacityBytes = storage.Value()
-	localVolume.Spec.Kind = sc.Parameters[uds.VolumeParameterVolumeKindKey]
-	replica, _ := strconv.Atoi(sc.Parameters[uds.VolumeParameterReplicaNumberKey])
+	localVolume.Spec.Kind = sc.Parameters[localstorage.VolumeParameterVolumeKindKey]
+	replica, _ := strconv.Atoi(sc.Parameters[localstorage.VolumeParameterReplicaNumberKey])
 	localVolume.Spec.ReplicaNumber = int64(replica)
 	return &localVolume, nil
 }
@@ -411,13 +411,13 @@ func New(config *runtime.Unknown, f framework.FrameworkHandle) (framework.Plugin
 	}
 
 	if len(args.CSIDriverName) == 0 {
-		args.CSIDriverName = udsv1alpha1.CSIDriverName
+		args.CSIDriverName = localstoragev1alpha1.CSIDriverName
 	}
 	if args.MaxVolumeCount == 0 {
 		args.MaxVolumeCount = defaultMaxVolumeCount
 	}
 
-	// for DCE scheduler, read --kubeconfig from cmd flag first,
+	// for LocalStorage scheduler, read --kubeconfig from cmd flag first,
 	// then try In-cluster config / $HOME/.kube/config
 	var cfg *rest.Config
 	kubeconfig, err := GetKubeconfigPath()
@@ -444,7 +444,7 @@ func New(config *runtime.Unknown, f framework.FrameworkHandle) (framework.Plugin
 	}
 
 	// Setup Scheme for all resources of Local Storage
-	if err := uds.AddToScheme(mgr.GetScheme()); err != nil {
+	if err := localstorage.AddToScheme(mgr.GetScheme()); err != nil {
 		klog.V(1).Infof("Failed to setup scheme for all resources, %s", err)
 		os.Exit(1)
 	}

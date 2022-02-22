@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,19 +19,19 @@ type localVolumeReplicaManager struct {
 
 func newLocalVolumeReplicaManager(lm *LocalManager) LocalVolumeReplicaManager {
 	mgr := &localVolumeReplicaManager{
-		ramDiskCmdExec:  newLocalVolumeExecutor(lm, udsv1alpha1.VolumeKindRAM),
+		ramDiskCmdExec:  newLocalVolumeExecutor(lm, localstoragev1alpha1.VolumeKindRAM),
 		volumeValidator: newValidator(),
 		registry:        lm.Registry(),
 		lm:              lm,
 		logger:          log.WithField("Module", "NodeManager/LocalVolumeReplicaManager"),
 	}
-	if lm.nodeConf.LocalStorageConfig.VolumeKind == udsv1alpha1.VolumeKindDisk || lm.nodeConf.LocalStorageConfig.VolumeKind == udsv1alpha1.VolumeKindLVM {
+	if lm.nodeConf.LocalStorageConfig.VolumeKind == localstoragev1alpha1.VolumeKindDisk || lm.nodeConf.LocalStorageConfig.VolumeKind == localstoragev1alpha1.VolumeKindLVM {
 		mgr.cmdExec = newLocalVolumeExecutor(lm, lm.nodeConf.LocalStorageConfig.VolumeKind)
 	}
 	return mgr
 }
 
-func (mgr *localVolumeReplicaManager) CreateVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica) (*udsv1alpha1.LocalVolumeReplica, error) {
+func (mgr *localVolumeReplicaManager) CreateVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) (*localstoragev1alpha1.LocalVolumeReplica, error) {
 	mgr.logger.Debugf("Creating VolumeReplica. name:%s, pool:%s, size:%d", replica.Spec.VolumeName, replica.Spec.PoolName, replica.Spec.RequiredCapacityBytes)
 	if err := mgr.volumeValidator.canCreateVolumeReplica(replica, mgr.registry); err != nil {
 		if err == ErrorReplicaExists {
@@ -48,12 +48,12 @@ func (mgr *localVolumeReplicaManager) CreateVolumeReplica(replica *udsv1alpha1.L
 		return nil, err
 	}
 
-	var newReplica *udsv1alpha1.LocalVolumeReplica
+	var newReplica *localstoragev1alpha1.LocalVolumeReplica
 	var err error
 
 	// FIXME: DISK also needs to be determined (in other words: else if Kind == Disk)
 	// cause the DISK is currectly not supported.
-	if replica.Spec.Kind == udsv1alpha1.VolumeKindRAM {
+	if replica.Spec.Kind == localstoragev1alpha1.VolumeKindRAM {
 		newReplica, err = mgr.ramDiskCmdExec.CreateVolumeReplica(replica)
 	} else {
 		newReplica, err = mgr.cmdExec.CreateVolumeReplica(replica)
@@ -66,7 +66,7 @@ func (mgr *localVolumeReplicaManager) CreateVolumeReplica(replica *udsv1alpha1.L
 	return newReplica, nil
 }
 
-func (mgr *localVolumeReplicaManager) DeleteVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica) error {
+func (mgr *localVolumeReplicaManager) DeleteVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) error {
 	mgr.logger.Debugf("Deleting volume replica %s.", replica.Spec.VolumeName)
 
 	if err := mgr.volumeValidator.canDeleteVolumeReplica(replica, mgr.registry); err != nil {
@@ -79,7 +79,7 @@ func (mgr *localVolumeReplicaManager) DeleteVolumeReplica(replica *udsv1alpha1.L
 	}
 
 	var err error
-	if replica.Spec.Kind == udsv1alpha1.VolumeKindRAM {
+	if replica.Spec.Kind == localstoragev1alpha1.VolumeKindRAM {
 		err = mgr.ramDiskCmdExec.DeleteVolumeReplica(replica)
 	} else {
 		err = mgr.cmdExec.DeleteVolumeReplica(replica)
@@ -92,7 +92,7 @@ func (mgr *localVolumeReplicaManager) DeleteVolumeReplica(replica *udsv1alpha1.L
 	return nil
 }
 
-func (mgr *localVolumeReplicaManager) ExpandVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*udsv1alpha1.LocalVolumeReplica, error) {
+func (mgr *localVolumeReplicaManager) ExpandVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*localstoragev1alpha1.LocalVolumeReplica, error) {
 	mgr.logger.Debugf("Extending volume replica %s.", replica.Spec.VolumeName)
 
 	if err := mgr.volumeValidator.canExpandVolumeReplica(replica, newCapacityBytes, mgr.registry); err != nil {
@@ -100,9 +100,9 @@ func (mgr *localVolumeReplicaManager) ExpandVolumeReplica(replica *udsv1alpha1.L
 		return nil, err
 	}
 
-	var newReplica *udsv1alpha1.LocalVolumeReplica
+	var newReplica *localstoragev1alpha1.LocalVolumeReplica
 	var err error
-	if replica.Spec.Kind == udsv1alpha1.VolumeKindRAM {
+	if replica.Spec.Kind == localstoragev1alpha1.VolumeKindRAM {
 		newReplica, err = mgr.ramDiskCmdExec.ExpandVolumeReplica(replica, newCapacityBytes)
 	} else {
 		newReplica, err = mgr.cmdExec.ExpandVolumeReplica(replica, newCapacityBytes)
@@ -115,7 +115,7 @@ func (mgr *localVolumeReplicaManager) ExpandVolumeReplica(replica *udsv1alpha1.L
 	return newReplica, nil
 }
 
-func (mgr *localVolumeReplicaManager) GetVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica) (*udsv1alpha1.LocalVolumeReplica, error) {
+func (mgr *localVolumeReplicaManager) GetVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) (*localstoragev1alpha1.LocalVolumeReplica, error) {
 
 	currentReplica, exists := mgr.registry.VolumeReplicas()[replica.Spec.VolumeName]
 	if !exists {
@@ -124,8 +124,8 @@ func (mgr *localVolumeReplicaManager) GetVolumeReplica(replica *udsv1alpha1.Loca
 	return currentReplica, nil
 }
 
-func (mgr *localVolumeReplicaManager) TestVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica) (*udsv1alpha1.LocalVolumeReplica, error) {
-	if replica.Spec.Kind == udsv1alpha1.VolumeKindRAM {
+func (mgr *localVolumeReplicaManager) TestVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) (*localstoragev1alpha1.LocalVolumeReplica, error) {
+	if replica.Spec.Kind == localstoragev1alpha1.VolumeKindRAM {
 		return mgr.ramDiskCmdExec.TestVolumeReplica(replica)
 	}
 	return mgr.cmdExec.TestVolumeReplica(replica)
@@ -135,18 +135,18 @@ func (mgr *localVolumeReplicaManager) ConsistencyCheck() {
 
 	mgr.logger.Debug("Consistency Checking ...")
 
-	replicaList := &udsv1alpha1.LocalVolumeReplicaList{}
+	replicaList := &localstoragev1alpha1.LocalVolumeReplicaList{}
 	if err := mgr.lm.apiClient.List(context.TODO(), replicaList); err != nil {
 		mgr.logger.Error("Failed to list volume replicas info from CRDs")
 		return
 	}
-	crdReplicas := map[string]*udsv1alpha1.LocalVolumeReplica{}
-	ramCRDReplicas := map[string]*udsv1alpha1.LocalVolumeReplica{}
+	crdReplicas := map[string]*localstoragev1alpha1.LocalVolumeReplica{}
+	ramCRDReplicas := map[string]*localstoragev1alpha1.LocalVolumeReplica{}
 	for i, item := range replicaList.Items {
 		if item.Spec.NodeName != mgr.lm.nodeConf.Name {
 			continue
 		}
-		if item.Spec.Kind == udsv1alpha1.VolumeKindRAM {
+		if item.Spec.Kind == localstoragev1alpha1.VolumeKindRAM {
 			ramCRDReplicas[item.Spec.VolumeName] = &replicaList.Items[i]
 		} else {
 			crdReplicas[item.Spec.VolumeName] = &replicaList.Items[i]

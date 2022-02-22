@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	localapis "github.com/HwameiStor/local-storage/pkg/apis"
-	v1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	v1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	storage "github.com/HwameiStor/local-storage/pkg/member/node/storage"
 	gomock "github.com/golang/mock/gomock"
 	runtime "k8s.io/apimachinery/pkg/runtime"

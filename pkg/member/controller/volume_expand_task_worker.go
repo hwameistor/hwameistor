@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 )
 
 func (m *manager) startVolumeExpandTaskWorker(stopCh <-chan struct{}) {
@@ -38,7 +38,7 @@ func (m *manager) startVolumeExpandTaskWorker(stopCh <-chan struct{}) {
 func (m *manager) processVolumeExpand(name string) error {
 	logCtx := m.logger.WithFields(log.Fields{"VolumeExpand": name})
 	logCtx.Debug("Working on a VolumeExpand task")
-	expand := &udsv1alpha1.LocalVolumeExpand{}
+	expand := &localstoragev1alpha1.LocalVolumeExpand{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: name}, expand); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get VolumeExpand from cache")
@@ -49,12 +49,12 @@ func (m *manager) processVolumeExpand(name string) error {
 	}
 
 	if expand.Spec.Abort &&
-		expand.Status.State != udsv1alpha1.OperationStateToBeAborted &&
-		expand.Status.State != udsv1alpha1.OperationStateAborting &&
-		expand.Status.State != udsv1alpha1.OperationStateAborted &&
-		expand.Status.State != udsv1alpha1.OperationStateCompleted {
+		expand.Status.State != localstoragev1alpha1.OperationStateToBeAborted &&
+		expand.Status.State != localstoragev1alpha1.OperationStateAborting &&
+		expand.Status.State != localstoragev1alpha1.OperationStateAborted &&
+		expand.Status.State != localstoragev1alpha1.OperationStateCompleted {
 
-		expand.Status.State = udsv1alpha1.OperationStateToBeAborted
+		expand.Status.State = localstoragev1alpha1.OperationStateToBeAborted
 		return m.apiClient.Status().Update(context.TODO(), expand)
 	}
 
@@ -64,15 +64,15 @@ func (m *manager) processVolumeExpand(name string) error {
 	switch expand.Status.State {
 	case "":
 		return m.volumeExpandSubmit(expand)
-	case udsv1alpha1.OperationStateSubmitted:
+	case localstoragev1alpha1.OperationStateSubmitted:
 		return m.volumeExpandStart(expand)
-	case udsv1alpha1.OperationStateInProgress:
+	case localstoragev1alpha1.OperationStateInProgress:
 		return m.volumeExpandInProgress(expand)
-	case udsv1alpha1.OperationStateCompleted:
+	case localstoragev1alpha1.OperationStateCompleted:
 		return m.volumeExpandCleanup(expand)
-	case udsv1alpha1.OperationStateToBeAborted:
+	case localstoragev1alpha1.OperationStateToBeAborted:
 		return m.volumeExpandAbort(expand)
-	case udsv1alpha1.OperationStateAborted:
+	case localstoragev1alpha1.OperationStateAborted:
 		return m.volumeExpandCleanup(expand)
 	default:
 		logCtx.Error("Invalid state")
@@ -80,21 +80,21 @@ func (m *manager) processVolumeExpand(name string) error {
 	return fmt.Errorf("invalid state")
 }
 
-func (m *manager) volumeExpandSubmit(expand *udsv1alpha1.LocalVolumeExpand) error {
+func (m *manager) volumeExpandSubmit(expand *localstoragev1alpha1.LocalVolumeExpand) error {
 	logCtx := m.logger.WithFields(log.Fields{"expansion": expand.Name, "spec": expand.Spec})
 	logCtx.Debug("Submit a VolumeExpand")
 
-	expand.Status.State = udsv1alpha1.OperationStateSubmitted
+	expand.Status.State = localstoragev1alpha1.OperationStateSubmitted
 	return m.apiClient.Status().Update(context.TODO(), expand)
 }
 
-func (m *manager) volumeExpandStart(expand *udsv1alpha1.LocalVolumeExpand) error {
+func (m *manager) volumeExpandStart(expand *localstoragev1alpha1.LocalVolumeExpand) error {
 	logCtx := m.logger.WithFields(log.Fields{"expansion": expand.Name, "spec": expand.Spec, "status": expand.Status})
 	logCtx.Debug("Start a VolumeExpand")
 
 	ctx := context.TODO()
 
-	vol := &udsv1alpha1.LocalVolume{}
+	vol := &localstoragev1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: expand.Spec.VolumeName}, vol); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to query volume")
@@ -114,13 +114,13 @@ func (m *manager) volumeExpandStart(expand *udsv1alpha1.LocalVolumeExpand) error
 		}
 	}
 
-	expand.Status.State = udsv1alpha1.OperationStateInProgress
+	expand.Status.State = localstoragev1alpha1.OperationStateInProgress
 	logCtx.WithField("status", expand.Status).Debug("Started volume expansion")
 
 	return m.apiClient.Status().Update(ctx, expand)
 }
 
-func (m *manager) volumeExpandInProgress(expand *udsv1alpha1.LocalVolumeExpand) error {
+func (m *manager) volumeExpandInProgress(expand *localstoragev1alpha1.LocalVolumeExpand) error {
 	logCtx := m.logger.WithFields(log.Fields{"expansion": expand.Name, "spec": expand.Spec, "status": expand.Status})
 	logCtx.Debug("Check the status of a VolumeExpand in progress")
 
@@ -132,26 +132,26 @@ func (m *manager) volumeExpandInProgress(expand *udsv1alpha1.LocalVolumeExpand) 
 		return err
 	}
 	for _, replica := range replicas {
-		if replica.Status.State != udsv1alpha1.VolumeReplicaStateReady || replica.Status.AllocatedCapacityBytes != expand.Spec.RequiredCapacityBytes {
+		if replica.Status.State != localstoragev1alpha1.VolumeReplicaStateReady || replica.Status.AllocatedCapacityBytes != expand.Spec.RequiredCapacityBytes {
 			logCtx.WithField("replica", replica.Name).Debug("The replica is not ready")
 			return fmt.Errorf("replica not ready")
 		}
 	}
 
 	// update volume's capacity
-	vol := &udsv1alpha1.LocalVolume{}
+	vol := &localstoragev1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: expand.Spec.VolumeName}, vol); err != nil {
 		logCtx.WithError(err).Error("Failed to query volume")
 		return err
 	}
 
-	if vol.Status.State != udsv1alpha1.VolumeStateReady || vol.Status.AllocatedCapacityBytes != expand.Spec.RequiredCapacityBytes {
+	if vol.Status.State != localstoragev1alpha1.VolumeStateReady || vol.Status.AllocatedCapacityBytes != expand.Spec.RequiredCapacityBytes {
 		logCtx.Debug("Volume is not ready")
 		expand.Status.Message = "In Progress"
 		return fmt.Errorf("not ready")
 	}
 
-	expand.Status.State = udsv1alpha1.OperationStateCompleted
+	expand.Status.State = localstoragev1alpha1.OperationStateCompleted
 	expand.Status.AllocatedCapacityBytes = vol.Status.AllocatedCapacityBytes
 	expand.Status.Message = ""
 	logCtx.WithField("status", expand.Status).Debug("Volume expansion completed")
@@ -159,15 +159,15 @@ func (m *manager) volumeExpandInProgress(expand *udsv1alpha1.LocalVolumeExpand) 
 	return m.apiClient.Status().Update(ctx, expand)
 }
 
-func (m *manager) volumeExpandAbort(expand *udsv1alpha1.LocalVolumeExpand) error {
+func (m *manager) volumeExpandAbort(expand *localstoragev1alpha1.LocalVolumeExpand) error {
 	logCtx := m.logger.WithFields(log.Fields{"expansion": expand.Name, "spec": expand.Spec, "status": expand.Status})
 	logCtx.Debug("Abort a VolumeExpand")
 
-	expand.Status.State = udsv1alpha1.OperationStateAborted
+	expand.Status.State = localstoragev1alpha1.OperationStateAborted
 	return m.apiClient.Status().Update(context.TODO(), expand)
 }
 
-func (m *manager) volumeExpandCleanup(expand *udsv1alpha1.LocalVolumeExpand) error {
+func (m *manager) volumeExpandCleanup(expand *localstoragev1alpha1.LocalVolumeExpand) error {
 	logCtx := m.logger.WithFields(log.Fields{"expansion": expand.Name, "spec": expand.Spec, "status": expand.Status})
 	logCtx.Debug("Cleanup a VolumeExpand")
 

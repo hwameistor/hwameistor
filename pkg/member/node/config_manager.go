@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	"github.com/HwameiStor/local-storage/pkg/common"
 	"github.com/HwameiStor/local-storage/pkg/member/node/configer"
 )
@@ -19,14 +19,14 @@ import (
 type configManager struct {
 	// this node hostname
 	hostname               string
-	systemConfig           udsv1alpha1.SystemConfig
+	systemConfig           localstoragev1alpha1.SystemConfig
 	apiClient              client.Client
 	configer               configer.Configer
 	logger                 *log.Entry
 	syncReplicaStatusQueue *common.TaskQueue
 }
 
-func NewConfigManager(hostname string, config udsv1alpha1.SystemConfig, apiClient client.Client) (*configManager, error) {
+func NewConfigManager(hostname string, config localstoragev1alpha1.SystemConfig, apiClient client.Client) (*configManager, error) {
 
 	m := &configManager{
 		hostname:               hostname,
@@ -54,8 +54,8 @@ func (m *configManager) Run(stopCh <-chan struct{}) error {
 	return nil
 }
 
-func (m *configManager) getCurrentNodeReplicas() (replicas []udsv1alpha1.LocalVolumeReplica, err error) {
-	var replicaList udsv1alpha1.LocalVolumeReplicaList
+func (m *configManager) getCurrentNodeReplicas() (replicas []localstoragev1alpha1.LocalVolumeReplica, err error) {
+	var replicaList localstoragev1alpha1.LocalVolumeReplicaList
 	if err = m.apiClient.List(context.TODO(), &replicaList); err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (m *configManager) ConsistencyCheck() {
 	m.logger.Info("ConsistencyCheck completed")
 }
 
-func (m *configManager) TestVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica) error {
+func (m *configManager) TestVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) error {
 	_, isHA, err := m.getConfig(replica)
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func (m *configManager) TestVolumeReplica(replica *udsv1alpha1.LocalVolumeReplic
 }
 
 // EnsureConfig should make sure the device is available at replica.Status.DevicePath, may be symbolic
-func (m *configManager) EnsureConfig(replica *udsv1alpha1.LocalVolumeReplica) error {
+func (m *configManager) EnsureConfig(replica *localstoragev1alpha1.LocalVolumeReplica) error {
 
 	config, isHA, err := m.getConfig(replica)
 	if err != nil {
@@ -115,7 +115,7 @@ func (m *configManager) EnsureConfig(replica *udsv1alpha1.LocalVolumeReplica) er
 	return m.ensureConfigForHA(replica, config)
 }
 
-func (m *configManager) ensureConfigForNonHA(replica *udsv1alpha1.LocalVolumeReplica, config *udsv1alpha1.VolumeConfig) error {
+func (m *configManager) ensureConfigForNonHA(replica *localstoragev1alpha1.LocalVolumeReplica, config *localstoragev1alpha1.VolumeConfig) error {
 	logCtx := m.logger.WithFields(log.Fields{"replica": replica.Name})
 	logCtx.Debug("Ensuring config for non-HA volume replica")
 
@@ -123,7 +123,7 @@ func (m *configManager) ensureConfigForNonHA(replica *udsv1alpha1.LocalVolumeRep
 	return nil
 }
 
-func (m *configManager) ensureConfigForHA(replica *udsv1alpha1.LocalVolumeReplica, config *udsv1alpha1.VolumeConfig) error {
+func (m *configManager) ensureConfigForHA(replica *localstoragev1alpha1.LocalVolumeReplica, config *localstoragev1alpha1.VolumeConfig) error {
 	logCtx := m.logger.WithFields(log.Fields{"replica": replica.Name})
 	logCtx.Debug("Ensuring config for HA volume replica")
 
@@ -155,7 +155,7 @@ func (m *configManager) ensureConfigForHA(replica *udsv1alpha1.LocalVolumeReplic
 }
 
 // DeleteConfig configer should make sure the device is deleted.
-func (m *configManager) DeleteConfig(replica *udsv1alpha1.LocalVolumeReplica) error {
+func (m *configManager) DeleteConfig(replica *localstoragev1alpha1.LocalVolumeReplica) error {
 	return m.configer.DeleteConfig(replica)
 }
 
@@ -169,13 +169,13 @@ func (m *configManager) ensureDirectory(filepath string) error {
 	return os.MkdirAll(dir, 0755)
 }
 
-func (m *configManager) genDevicePath(replica *udsv1alpha1.LocalVolumeReplica) string {
+func (m *configManager) genDevicePath(replica *localstoragev1alpha1.LocalVolumeReplica) string {
 	return fmt.Sprintf("/dev/%s-HA/%s", replica.Spec.PoolName, replica.Spec.VolumeName)
 }
 
 // return: config, isHA, error
-func (m *configManager) getConfig(replica *udsv1alpha1.LocalVolumeReplica) (*udsv1alpha1.VolumeConfig, bool, error) {
-	vol := &udsv1alpha1.LocalVolume{}
+func (m *configManager) getConfig(replica *localstoragev1alpha1.LocalVolumeReplica) (*localstoragev1alpha1.VolumeConfig, bool, error) {
+	vol := &localstoragev1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: replica.Spec.VolumeName}, vol); err != nil {
 		return nil, false, err
 	}
@@ -186,9 +186,9 @@ func (m *configManager) getConfig(replica *udsv1alpha1.LocalVolumeReplica) (*uds
 
 }
 
-func (m *configManager) updateConfig(replica *udsv1alpha1.LocalVolumeReplica, config *udsv1alpha1.VolumeConfig) error {
+func (m *configManager) updateConfig(replica *localstoragev1alpha1.LocalVolumeReplica, config *localstoragev1alpha1.VolumeConfig) error {
 	m.logger.WithField("Replica", replica.Name).Debug("update replica volume, set Initialized=true")
-	vol := &udsv1alpha1.LocalVolume{}
+	vol := &localstoragev1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: replica.Spec.VolumeName}, vol); err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func (m *configManager) updateConfig(replica *udsv1alpha1.LocalVolumeReplica, co
 	return m.apiClient.Patch(context.TODO(), vol, patch)
 }
 
-func (m *configManager) isThisNodePrimary(config udsv1alpha1.VolumeConfig) bool {
+func (m *configManager) isThisNodePrimary(config localstoragev1alpha1.VolumeConfig) bool {
 	for _, peer := range config.Replicas {
 		if peer.Hostname == m.hostname && peer.Primary {
 			return true
@@ -207,11 +207,11 @@ func (m *configManager) isThisNodePrimary(config udsv1alpha1.VolumeConfig) bool 
 	return false
 }
 
-func (m *configManager) genReplicaStateFromHAState(haState udsv1alpha1.HAState) udsv1alpha1.State {
-	if haState.State == udsv1alpha1.HAVolumeReplicaStateConsistent {
-		return udsv1alpha1.VolumeReplicaStateReady
+func (m *configManager) genReplicaStateFromHAState(haState localstoragev1alpha1.HAState) localstoragev1alpha1.State {
+	if haState.State == localstoragev1alpha1.HAVolumeReplicaStateConsistent {
+		return localstoragev1alpha1.VolumeReplicaStateReady
 	}
-	return udsv1alpha1.VolumeReplicaStateNotReady
+	return localstoragev1alpha1.VolumeReplicaStateNotReady
 }
 
 // configer will sync replica status by this func
@@ -245,7 +245,7 @@ func (m *configManager) startReplicaStatusSyncWorker(stopCh <-chan struct{}) {
 }
 
 func (m *configManager) processReplicaStatusUpdate(replicaName string) error {
-	var replica udsv1alpha1.LocalVolumeReplica
+	var replica localstoragev1alpha1.LocalVolumeReplica
 	if err := m.apiClient.Get(context.TODO(), client.ObjectKey{Name: replicaName}, &replica); err != nil {
 		if errors.IsNotFound(err) {
 			m.logger.Debugf("ignore replica status update, replica %s not found", replicaName)
