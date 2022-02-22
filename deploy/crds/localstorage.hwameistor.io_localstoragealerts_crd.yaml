@@ -1,0 +1,81 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localstoragealerts.localstorage.hwameistor.io
+spec:
+  group: localstorage.hwameistor.io
+  names:
+    kind: LocalStorageAlert
+    listKind: LocalStorageAlertList
+    plural: localstoragealerts
+    shortNames:
+    - lsalert
+    singular: localstoragealert
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: Alert severity
+      jsonPath: .spec.severity
+      name: severity
+      type: integer
+    - description: Module of the alert
+      jsonPath: .spec.module
+      name: module
+      type: string
+    - description: Resource name of the alert
+      jsonPath: .spec.resource
+      name: resource
+      type: string
+    - description: Alert event
+      jsonPath: .spec.event
+      name: event
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalStorageAlert is the Schema for the localstoragealerts API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalStorageAlertSpec defines the desired state of LocalStorageAlert
+            properties:
+              details:
+                type: string
+              event:
+                type: string
+              module:
+                type: string
+              resource:
+                type: string
+              severity:
+                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                  Important: Run "operator-sdk generate k8s" to regenerate code after
+                  modifying this file Add custom validation using kubebuilder tags:
+                  https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+                type: integer
+            required:
+            - details
+            - event
+            - module
+            - resource
+            - severity
+            type: object
+          status:
+            description: LocalStorageAlertStatus defines the observed state of LocalStorageAlert
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

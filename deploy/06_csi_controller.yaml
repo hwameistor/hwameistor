@@ -1,0 +1,75 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: dce-uds-local-storage-csi-controller
+  namespace: local-storage-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dce-uds-local-storage-csi-controller
+  template:
+    metadata:
+      labels:
+        app: dce-uds-local-storage-csi-controller
+    spec:
+      priorityClassName: system-cluster-critical
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - dce-uds-local-storage
+            topologyKey: localstorage.hwameistor.io/local-storage-topology-node
+      serviceAccount: storage-admin
+      containers:
+        - name: provisioner
+          image: 10.6.170.180/k8scsi/csi-provisioner:v2.0.3
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - "--v=5"
+            - "--csi-address=$(CSI_ADDRESS)"
+            - "--leader-election=true"
+            - "--feature-gates=Topology=true"
+            - "--strict-topology"
+          env:
+            - name: CSI_ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+        - name: attacher
+          image: 10.6.170.180/k8scsi/csi-attacher:v3.0.1
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--v=5"
+            - "--csi-address=$(CSI_ADDRESS)"
+            - "--leader-election=true"
+            - "--timeout=120s"
+          env:
+            - name: CSI_ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+        - name: resizer
+          image: 10.6.170.180/k8scsi/csi-resizer:v1.0.1
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - "--v=5"
+            - "--csi-address=$(CSI_ADDRESS)"
+            - "--leader-election=true"
+          env:
+            - name: CSI_ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/local.storage.hwameistor.io
+            type: DirectoryOrCreate
