@@ -230,4 +230,4 @@ dce-10-6-161-27-sdf   dce-10-6-161-27   dce-10-6-161-27-sdf   VMware Virtual dis
 
 ## 反馈
 
-如果有任何问题、意见、建议，请反馈至：[Issues](https://gitlab.daocloud.cn/ndx/engineering/storage/local-storage/-/issues)
+如果有任何问题、意见、建议，请反馈至：[Issues](https://github.com/Angel0507/local-storage/-/issues)

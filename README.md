@@ -1,10 +1,10 @@
-# DaoCloud Local Storage System (DLocal)
+# Local Storage System (DLocal)
 
-English | [Simplified_Chinese](https://gitlab.daocloud.cn/ndx/engineering/storage/local-storage/-/blob/master/README_zh.md)
+English | [Simplified_Chinese](https://github.com/Angel0507/local-storage/blob/main/README_zh.md)
 
 ## Introduction
 
-DaoCloud Local Storage System is a cloud native storage system. It manages the free disks of each node and provision high performance persistent volume with local access to application.
+Local Storage System is a cloud native storage system. It manages the free disks of each node and provision high performance persistent volume with local access to application.
 
 Support local volume kind: `LVM`, `Disk`, `RAMDisk`.
 
@@ -228,4 +228,4 @@ dce-10-6-161-27-sdf   dce-10-6-161-27   dce-10-6-161-27-sdf   VMware Virtual dis
 
 ## Feedbacks
 
-Please submit any feedback and issue at: [Issues](https://gitlab.daocloud.cn/ndx/engineering/storage/local-storage/-/issues)
+Please submit any feedback and issue at: [Issues](https://github.com/Angel0507/local-storage/-/issues)
