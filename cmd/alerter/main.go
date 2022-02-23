@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
-	"github.com/hwameiStor/local-storage/pkg/alerter"
+	"github.com/hwameistor/local-storage/pkg/alerter"
 )
 
 const (

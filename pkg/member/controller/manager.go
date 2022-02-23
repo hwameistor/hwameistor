@@ -3,11 +3,11 @@ package controller
 import (
 	"context"
 
-	"github.com/hwameiStor/local-storage/pkg/apis"
-	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
-	"github.com/hwameiStor/local-storage/pkg/common"
-	"github.com/hwameiStor/local-storage/pkg/member/controller/scheduler"
-	"github.com/hwameiStor/local-storage/pkg/utils"
+	"github.com/hwameistor/local-storage/pkg/apis"
+	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"github.com/hwameistor/local-storage/pkg/common"
+	"github.com/hwameistor/local-storage/pkg/member/controller/scheduler"
+	"github.com/hwameistor/local-storage/pkg/utils"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"

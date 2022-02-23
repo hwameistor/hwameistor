@@ -1,12 +1,12 @@
 package member
 
 import (
-	localapis "github.com/hwameiStor/local-storage/pkg/apis"
-	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
-	localctrl "github.com/hwameiStor/local-storage/pkg/member/controller"
-	localcsi "github.com/hwameiStor/local-storage/pkg/member/csi"
-	localnode "github.com/hwameiStor/local-storage/pkg/member/node"
-	localrest "github.com/hwameiStor/local-storage/pkg/member/rest"
+	localapis "github.com/hwameistor/local-storage/pkg/apis"
+	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	localctrl "github.com/hwameistor/local-storage/pkg/member/controller"
+	localcsi "github.com/hwameistor/local-storage/pkg/member/csi"
+	localnode "github.com/hwameistor/local-storage/pkg/member/node"
+	localrest "github.com/hwameistor/local-storage/pkg/member/rest"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"

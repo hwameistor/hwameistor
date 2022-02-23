@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"github.com/hwameiStor/local-storage/pkg/controller/physicaldisk"
+	"github.com/hwameistor/local-storage/pkg/controller/physicaldisk"
 )
 
 func init() {

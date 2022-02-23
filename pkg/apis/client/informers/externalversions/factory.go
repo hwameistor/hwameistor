@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hwameiStor/local-storage/pkg/apis/client/clientset/versioned"
-	"github.com/hwameiStor/local-storage/pkg/apis/client/informers/externalversions/internalinterfaces"
-	localstorage "github.com/hwameiStor/local-storage/pkg/apis/client/informers/externalversions/localstorage"
+	"github.com/hwameistor/local-storage/pkg/apis/client/clientset/versioned"
+	"github.com/hwameistor/local-storage/pkg/apis/client/informers/externalversions/internalinterfaces"
+	localstorage "github.com/hwameistor/local-storage/pkg/apis/client/informers/externalversions/localstorage"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"

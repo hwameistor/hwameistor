@@ -1,9 +1,9 @@
 package csi
 
 import (
-	"github.com/hwameiStor/local-storage/pkg/apis"
-	"github.com/hwameiStor/local-storage/pkg/exechelper"
-	"github.com/hwameiStor/local-storage/pkg/exechelper/nsexecutor"
+	"github.com/hwameistor/local-storage/pkg/apis"
+	"github.com/hwameistor/local-storage/pkg/exechelper"
+	"github.com/hwameistor/local-storage/pkg/exechelper/nsexecutor"
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"

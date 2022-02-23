@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
-	"github.com/hwameiStor/local-storage/pkg/utils"
+	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"github.com/hwameistor/local-storage/pkg/utils"
 	log "github.com/sirupsen/logrus"
 )
 

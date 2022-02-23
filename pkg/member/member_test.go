@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"testing"
 
-	localapis "github.com/hwameiStor/local-storage/pkg/apis"
-	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
+	localapis "github.com/hwameistor/local-storage/pkg/apis"
+	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	ldmv1alpha1 "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
-	diskmonitor "github.com/hwameiStor/local-storage/pkg/member/node/diskmonitor"
+	diskmonitor "github.com/hwameistor/local-storage/pkg/member/node/diskmonitor"
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/api/errors"

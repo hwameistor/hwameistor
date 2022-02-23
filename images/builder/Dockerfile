@@ -10,5 +10,5 @@ RUN chmod +x /usr/bin/operator-sdk
 ENV GO111MODULE=on GOPROXY=https://goproxy.io
 
 RUN git clone -b v0.18.6 --single-branch https://github.com/kubernetes/code-generator && mv code-generator /code-generator
-RUN echo "replace github.com/hwameiStor/local-storage => /go/src/github.com/hwameiStor/local-storage" >> /code-generator/go.mod
+RUN echo "replace github.com/hwameistor/local-storage => /go/src/github.com/hwameistor/local-storage" >> /code-generator/go.mod
 COPY boilerplate.go.txt /code-generator/boilerplate.go.txt

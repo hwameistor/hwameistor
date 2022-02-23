@@ -5,7 +5,7 @@ package versioned
 import (
 	"fmt"
 
-	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/client/clientset/versioned/typed/localstorage/v1alpha1"
+	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/client/clientset/versioned/typed/localstorage/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

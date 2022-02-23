@@ -3,8 +3,8 @@
 package localstorage
 
 import (
-	internalinterfaces "github.com/hwameiStor/local-storage/pkg/apis/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/client/informers/externalversions/localstorage/v1alpha1"
+	internalinterfaces "github.com/hwameistor/local-storage/pkg/apis/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/hwameistor/local-storage/pkg/apis/client/informers/externalversions/localstorage/v1alpha1"
 )
 
 // Interface provides access to each of this group's versions.

@@ -24,7 +24,7 @@ BUILDER_TAG = v0.1
 #BUILDER_MOUNT_SRC_DIR = ${PROJECT_SOURCE_MOUNT_DIR}/../
 BUILDER_MOUNT_SRC_DIR = ${PROJECT_SOURCE_CODE_DIR}/../
 BUILDER_MOUNT_DST_DIR = /go/src/github.com/DaoCloud
-BUILDER_WORKDIR = /go/src/github.com/hwameiStor/local-storage
+BUILDER_WORKDIR = /go/src/github.com/hwameistor/local-storage
 
 DOCKER_SOCK_PATH=/var/run/docker.sock
 DOCKER_MAKE_CMD = docker run --rm -v ${BUILDER_MOUNT_SRC_DIR}:${BUILDER_MOUNT_DST_DIR} -v ${DOCKER_SOCK_PATH}:${DOCKER_SOCK_PATH} -w ${BUILDER_WORKDIR} -i ${BUILDER_NAME}:${BUILDER_TAG}
@@ -72,7 +72,7 @@ gen-code:
 
 .PHONY: gen-client
 gen-client:
-	${DOCKER_MAKE_CMD} /code-generator/generate-groups.sh all github.com/hwameiStor/local-storage/pkg/apis/client github.com/hwameiStor/local-storage/pkg/apis "localstorage:v1alpha1" --go-header-file /code-generator/boilerplate.go.txt
+	${DOCKER_MAKE_CMD} /code-generator/generate-groups.sh all github.com/hwameistor/local-storage/pkg/apis/client github.com/hwameistor/local-storage/pkg/apis "localstorage:v1alpha1" --go-header-file /code-generator/boilerplate.go.txt
 
 .PHONY: vendor
 vendor:

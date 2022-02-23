@@ -7,8 +7,8 @@ package node
 import (
 	reflect "reflect"
 
-	v1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
-	storage "github.com/hwameiStor/local-storage/pkg/member/node/storage"
+	v1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	storage "github.com/hwameistor/local-storage/pkg/member/node/storage"
 	gomock "github.com/golang/mock/gomock"
 )
 

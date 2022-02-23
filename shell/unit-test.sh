@@ -10,7 +10,7 @@ set -o pipefail
 set -x
 
 #dir="("
-#for i in `ls ./pkg/ | grep -v podschedulerplugin`;
+#for i in `ls ./pkg/ | grep -v scheduler`;
 #do
 #  dir="$dir /pkg/$i/"
 #  #echo "$dir"

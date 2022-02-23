@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hwameiStor/local-storage/pkg/apis"
-	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
-	"github.com/hwameiStor/local-storage/pkg/utils"
+	"github.com/hwameistor/local-storage/pkg/apis"
+	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"github.com/hwameistor/local-storage/pkg/utils"
 	log "github.com/sirupsen/logrus"
 	coorv1 "k8s.io/api/coordination/v1"
 	"k8s.io/apimachinery/pkg/api/errors"

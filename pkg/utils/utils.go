@@ -12,8 +12,8 @@ import (
 	"time"
 	"unicode"
 
-	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
-	"github.com/hwameiStor/local-storage/pkg/exechelper"
+	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"github.com/hwameistor/local-storage/pkg/exechelper"
 
 	"github.com/kubernetes-csi/csi-lib-utils/leaderelection"
 	log "github.com/sirupsen/logrus"

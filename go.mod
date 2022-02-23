@@ -1,4 +1,4 @@
-module github.com/hwameiStor/local-storage
+module github.com/hwameistor/local-storage
 
 go 1.13
 
@@ -30,8 +30,8 @@ require (
 
 replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.2+incompatible // Required by OLM
-	github.com/hwameiStor/local-storage => ../local-storage
 	github.com/hwameistor/local-disk-manager => ../local-disk-manager
+	github.com/hwameistor/local-storage => ../local-storage
 	google.golang.org/grpc => google.golang.org/grpc v1.23.1
 	k8s.io/api => k8s.io/api v0.18.6
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.6

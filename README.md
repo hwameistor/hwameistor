@@ -84,7 +84,7 @@ node/localstorage-10-6-161-27 labeled
 
 ``` bash
 # 0. checkout the code
-$ git clone https://github.com/hwameiStor/local-storage.git
+$ git clone https://github.com/hwameistor/local-storage.git
 $ cd local-storage
 
 # 1. create a separate namespace for local-storage, e.g. local-storage-system

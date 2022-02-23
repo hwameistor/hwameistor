@@ -11,10 +11,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
-	"github.com/hwameiStor/local-storage/pkg/exechelper"
-	"github.com/hwameiStor/local-storage/pkg/exechelper/nsexecutor"
-	"github.com/hwameiStor/local-storage/pkg/member/node/healths"
+	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"github.com/hwameistor/local-storage/pkg/exechelper"
+	"github.com/hwameistor/local-storage/pkg/exechelper/nsexecutor"
+	"github.com/hwameistor/local-storage/pkg/member/node/healths"
 )
 
 const (

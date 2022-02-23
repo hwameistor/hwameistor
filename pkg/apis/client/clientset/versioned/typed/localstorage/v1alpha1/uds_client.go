@@ -3,8 +3,8 @@
 package v1alpha1
 
 import (
-	"github.com/hwameiStor/local-storage/pkg/apis/client/clientset/versioned/scheme"
-	v1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"github.com/hwameistor/local-storage/pkg/apis/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
 	rest "k8s.io/client-go/rest"
 )
 

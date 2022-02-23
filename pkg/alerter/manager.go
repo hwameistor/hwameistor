@@ -1,9 +1,9 @@
 package alerter
 
 import (
-	localstorageclient "github.com/hwameiStor/local-storage/pkg/apis/client/clientset/versioned"
-	localstoragealertclient "github.com/hwameiStor/local-storage/pkg/apis/client/clientset/versioned/typed/localstorage/v1alpha1"
-	localstorageinformers "github.com/hwameiStor/local-storage/pkg/apis/client/informers/externalversions"
+	localstorageclient "github.com/hwameistor/local-storage/pkg/apis/client/clientset/versioned"
+	localstoragealertclient "github.com/hwameistor/local-storage/pkg/apis/client/clientset/versioned/typed/localstorage/v1alpha1"
+	localstorageinformers "github.com/hwameistor/local-storage/pkg/apis/client/informers/externalversions"
 
 	"k8s.io/client-go/rest"
 )

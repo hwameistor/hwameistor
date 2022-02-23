@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/hwameiStor/local-storage/pkg/exechelper"
-	"github.com/hwameiStor/local-storage/pkg/exechelper/nsexecutor"
+	"github.com/hwameistor/local-storage/pkg/exechelper"
+	"github.com/hwameistor/local-storage/pkg/exechelper/nsexecutor"
 	log "github.com/sirupsen/logrus"
 	utilexec "k8s.io/utils/exec"
 	"k8s.io/utils/mount"

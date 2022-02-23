@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hwameiStor/local-storage/pkg/exechelper"
+	"github.com/hwameistor/local-storage/pkg/exechelper"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -3,7 +3,7 @@
 package v1alpha1
 
 import (
-	internalinterfaces "github.com/hwameiStor/local-storage/pkg/apis/client/informers/externalversions/internalinterfaces"
+	internalinterfaces "github.com/hwameistor/local-storage/pkg/apis/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.

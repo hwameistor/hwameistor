@@ -3,9 +3,9 @@
 package fake
 
 import (
-	clientset "github.com/hwameiStor/local-storage/pkg/apis/client/clientset/versioned"
-	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/client/clientset/versioned/typed/localstorage/v1alpha1"
-	fakelocalstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/client/clientset/versioned/typed/localstorage/v1alpha1/fake"
+	clientset "github.com/hwameistor/local-storage/pkg/apis/client/clientset/versioned"
+	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/client/clientset/versioned/typed/localstorage/v1alpha1"
+	fakelocalstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/client/clientset/versioned/typed/localstorage/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

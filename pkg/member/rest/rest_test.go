@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/hwameiStor/local-storage/pkg/apis"
+	"github.com/hwameistor/local-storage/pkg/apis"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

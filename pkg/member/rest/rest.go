@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/hwameiStor/local-storage/pkg/apis"
+	"github.com/hwameistor/local-storage/pkg/apis"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"

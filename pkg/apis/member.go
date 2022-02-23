@@ -1,8 +1,8 @@
 package apis
 
 import (
-	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
-	nodestorage "github.com/hwameiStor/local-storage/pkg/member/node/storage"
+	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	nodestorage "github.com/hwameistor/local-storage/pkg/member/node/storage"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"

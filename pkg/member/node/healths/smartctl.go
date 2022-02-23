@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hwameiStor/local-storage/pkg/exechelper"
-	"github.com/hwameiStor/local-storage/pkg/exechelper/basicexecutor"
-	"github.com/hwameiStor/local-storage/pkg/utils"
+	"github.com/hwameistor/local-storage/pkg/exechelper"
+	"github.com/hwameistor/local-storage/pkg/exechelper/basicexecutor"
+	"github.com/hwameistor/local-storage/pkg/utils"
 )
 
 // DiskChecker interface
