@@ -11,12 +11,21 @@ func Test_newControllerServiceCapability(t *testing.T) {
 	type args struct {
 		cap csi.ControllerServiceCapability_RPC_Type
 	}
+	var wantCap = &csi.ControllerServiceCapability{}
+	wantCap.Type = &csi.ControllerServiceCapability_Rpc{
+		Rpc: &csi.ControllerServiceCapability_RPC{
+			Type: csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
+		},
+	}
 	tests := []struct {
 		name string
 		args args
 		want *csi.ControllerServiceCapability
 	}{
-		// TODO: Add test cases.
+		{
+			args:  args{cap: csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT},
+			want:  wantCap,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -31,12 +40,21 @@ func Test_newNodeServiceCapability(t *testing.T) {
 	type args struct {
 		cap csi.NodeServiceCapability_RPC_Type
 	}
+	var wantCap = &csi.NodeServiceCapability{}
+	wantCap.Type = &csi.NodeServiceCapability_Rpc{
+		Rpc: &csi.NodeServiceCapability_RPC{
+			Type: csi.NodeServiceCapability_RPC_STAGE_UNSTAGE_VOLUME,
+		},
+	}
 	tests := []struct {
 		name string
 		args args
 		want *csi.NodeServiceCapability
 	}{
-		// TODO: Add test cases.
+		{
+			args:  args{cap: csi.NodeServiceCapability_RPC_STAGE_UNSTAGE_VOLUME},
+			want:  wantCap,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -51,12 +69,21 @@ func Test_newPluginCapability(t *testing.T) {
 	type args struct {
 		cap csi.PluginCapability_Service_Type
 	}
+	var wantCap = &csi.PluginCapability{}
+	wantCap.Type = &csi.PluginCapability_Service_{
+		Service: &csi.PluginCapability_Service{
+			Type: csi.PluginCapability_Service_CONTROLLER_SERVICE,
+		},
+	}
 	tests := []struct {
 		name string
 		args args
 		want *csi.PluginCapability
 	}{
-		// TODO: Add test cases.
+		{
+			args:  args{cap: csi.PluginCapability_Service_CONTROLLER_SERVICE},
+			want:  wantCap,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -78,7 +105,12 @@ func Test_parseEndpoint(t *testing.T) {
 		want1   string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			args:  args{ep: "unix://127.0.0.1:8080"},
+			want:  "unix",
+			want1: "127.0.0.1:8080",
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -107,7 +139,11 @@ func Test_pathExists(t *testing.T) {
 		want    bool
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+		    args:  args{path: "/data/test"},
+			want:  false,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -133,7 +169,11 @@ func Test_getVolumeMetrics(t *testing.T) {
 		want    *VolumeMetrics
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		//{
+		//	args:  args{mntPoint: "/data/test"},
+		//	want:  nil,
+		//	wantErr: false,
+		//},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

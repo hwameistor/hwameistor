@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/hwameiStor/local-storage/pkg/apis"
+	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -16,12 +17,21 @@ func TestNew(t *testing.T) {
 		member    apis.LocalStorageMember
 		cli       client.Client
 	}
+	var wantServer = &restServer{}
+	wantServer.name = "test_server"
+	wantServer.namespace = "test"
+	wantServer.httpPort = 8080
+	wantServer.logger = log.WithField("Module", "RESTServer")
+
 	tests := []struct {
 		name string
 		args args
 		want Server
 	}{
-		// TODO: Add test cases.
+		{
+			args:  args{name: "test_server", namespace:"test", httpPort:8080},
+			want:  wantServer,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

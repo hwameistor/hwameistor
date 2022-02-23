@@ -1,6 +1,9 @@
 package localstorage
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestGetKubeconfigPath(t *testing.T) {
 	tests := []struct {
@@ -8,7 +11,10 @@ func TestGetKubeconfigPath(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			want:  "",
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -20,6 +26,7 @@ func TestGetKubeconfigPath(t *testing.T) {
 			if got != tt.want {
 				t.Errorf("GetKubeconfigPath() = %v, want %v", got, tt.want)
 			}
+			fmt.Printf("got = %s\n, err = %v\n", got, err)
 		})
 	}
 }
