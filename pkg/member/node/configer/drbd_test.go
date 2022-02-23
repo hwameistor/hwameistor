@@ -8,8 +8,8 @@ import (
 	"testing"
 	"text/template"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
-	"github.com/HwameiStor/local-storage/pkg/exechelper"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"github.com/hwameiStor/local-storage/pkg/exechelper"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -35,12 +35,12 @@ func Test_drbdConfigure_Run(t *testing.T) {
 }
 
 func Test_drbdConfigure_HasConfig(t *testing.T) {
-	var localVolumeReplica = &udsv1alpha1.LocalVolumeReplica{}
+	var localVolumeReplica = &localstoragev1alpha1.LocalVolumeReplica{}
 	localVolumeReplica.Spec.VolumeName = "volume1"
 	localVolumeReplica.Spec.PoolName = "pool1"
 	localVolumeReplica.Spec.NodeName = "node1"
 	localVolumeReplica.Spec.RequiredCapacityBytes = 1240
-	localVolumeReplica.Spec.Kind = udsv1alpha1.VolumeKindLVM
+	localVolumeReplica.Spec.Kind = localstoragev1alpha1.VolumeKindLVM
 	localVolumeReplica.Name = "test1"
 
 	// 创建gomock控制器，用来记录后续的操作信息
@@ -62,15 +62,15 @@ func Test_drbdConfigure_HasConfig(t *testing.T) {
 }
 
 func Test_drbdConfigure_IsConfigUpdated(t *testing.T) {
-	var localVolumeReplica = &udsv1alpha1.LocalVolumeReplica{}
+	var localVolumeReplica = &localstoragev1alpha1.LocalVolumeReplica{}
 	localVolumeReplica.Spec.VolumeName = "volume1"
 	localVolumeReplica.Spec.PoolName = "pool1"
 	localVolumeReplica.Spec.NodeName = "node1"
 	localVolumeReplica.Spec.RequiredCapacityBytes = 1240
-	localVolumeReplica.Spec.Kind = udsv1alpha1.VolumeKindLVM
+	localVolumeReplica.Spec.Kind = localstoragev1alpha1.VolumeKindLVM
 	localVolumeReplica.Name = "test1"
 
-	var config udsv1alpha1.VolumeConfig
+	var config localstoragev1alpha1.VolumeConfig
 	config.RequiredCapacityBytes = 1240
 	config.VolumeName = "volume1"
 
@@ -93,15 +93,15 @@ func Test_drbdConfigure_IsConfigUpdated(t *testing.T) {
 }
 
 func Test_drbdConfigure_ApplyConfig(t *testing.T) {
-	var localVolumeReplica = &udsv1alpha1.LocalVolumeReplica{}
+	var localVolumeReplica = &localstoragev1alpha1.LocalVolumeReplica{}
 	localVolumeReplica.Spec.VolumeName = "volume1"
 	localVolumeReplica.Spec.PoolName = "pool1"
 	localVolumeReplica.Spec.NodeName = "node1"
 	localVolumeReplica.Spec.RequiredCapacityBytes = 1240
-	localVolumeReplica.Spec.Kind = udsv1alpha1.VolumeKindLVM
+	localVolumeReplica.Spec.Kind = localstoragev1alpha1.VolumeKindLVM
 	localVolumeReplica.Name = "test1"
 
-	var config udsv1alpha1.VolumeConfig
+	var config localstoragev1alpha1.VolumeConfig
 	config.RequiredCapacityBytes = 1240
 	config.VolumeName = "volume1"
 
@@ -127,12 +127,12 @@ func Test_drbdConfigure_Initialize(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -140,8 +140,8 @@ func Test_drbdConfigure_Initialize(t *testing.T) {
 		stopCh                 <-chan struct{}
 	}
 	type args struct {
-		replica *udsv1alpha1.LocalVolumeReplica
-		config  udsv1alpha1.VolumeConfig
+		replica *localstoragev1alpha1.LocalVolumeReplica
+		config  localstoragev1alpha1.VolumeConfig
 	}
 	tests := []struct {
 		name    string
@@ -179,12 +179,12 @@ func Test_drbdConfigure_ConsistencyCheck(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -192,7 +192,7 @@ func Test_drbdConfigure_ConsistencyCheck(t *testing.T) {
 		stopCh                 <-chan struct{}
 	}
 	type args struct {
-		replicas []udsv1alpha1.LocalVolumeReplica
+		replicas []localstoragev1alpha1.LocalVolumeReplica
 	}
 	tests := []struct {
 		name   string
@@ -227,12 +227,12 @@ func Test_drbdConfigure_writeConfigFile(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -361,12 +361,12 @@ func Test_drbdConfigure_createMetadata(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -413,12 +413,12 @@ func Test_drbdConfigure_adjustResource(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -464,12 +464,12 @@ func Test_drbdConfigure_getResourceDiskState(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -521,12 +521,12 @@ func Test_drbdConfigure_resizeResource(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -572,12 +572,12 @@ func Test_drbdConfigure_getResourceDevicePath(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -623,12 +623,12 @@ func Test_drbdConfigure_DeleteConfig(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -636,7 +636,7 @@ func Test_drbdConfigure_DeleteConfig(t *testing.T) {
 		stopCh                 <-chan struct{}
 	}
 	type args struct {
-		replica *udsv1alpha1.LocalVolumeReplica
+		replica *localstoragev1alpha1.LocalVolumeReplica
 	}
 	tests := []struct {
 		name    string
@@ -674,12 +674,12 @@ func Test_drbdConfigure_downResource(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -725,12 +725,12 @@ func Test_drbdConfigure_wipeMetadata(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -776,12 +776,12 @@ func Test_drbdConfigure_EnsureDRBDResourceStateMonitorStated(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -820,12 +820,12 @@ func Test_drbdConfigure_MonitorDRBDResourceState(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -871,12 +871,12 @@ func Test_drbdConfigure_monitorDRBDResourceState(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -922,12 +922,12 @@ func Test_drbdConfigure_handleDRBDEvent(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -970,12 +970,12 @@ func Test_drbdConfigure_getReplicaHAState(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -989,7 +989,7 @@ func Test_drbdConfigure_getReplicaHAState(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   udsv1alpha1.HAState
+		want   localstoragev1alpha1.HAState
 	}{
 		// TODO: Add test cases.
 	}
@@ -1021,12 +1021,12 @@ func Test_drbdConfigure_GetReplicaHAState(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -1034,13 +1034,13 @@ func Test_drbdConfigure_GetReplicaHAState(t *testing.T) {
 		stopCh                 <-chan struct{}
 	}
 	type args struct {
-		replica *udsv1alpha1.LocalVolumeReplica
+		replica *localstoragev1alpha1.LocalVolumeReplica
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    udsv1alpha1.HAState
+		want    localstoragev1alpha1.HAState
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -1078,12 +1078,12 @@ func Test_drbdConfigure_hasMetadata(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -1130,12 +1130,12 @@ func Test_drbdConfigure_config2DRBDConfig(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -1143,8 +1143,8 @@ func Test_drbdConfigure_config2DRBDConfig(t *testing.T) {
 		stopCh                 <-chan struct{}
 	}
 	type args struct {
-		replica *udsv1alpha1.LocalVolumeReplica
-		config  udsv1alpha1.VolumeConfig
+		replica *localstoragev1alpha1.LocalVolumeReplica
+		config  localstoragev1alpha1.VolumeConfig
 	}
 	tests := []struct {
 		name   string
@@ -1182,12 +1182,12 @@ func Test_drbdConfigure_isDeviceUpToDate(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -1239,12 +1239,12 @@ func Test_drbdConfigure_getDeviceState(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -1296,12 +1296,12 @@ func Test_drbdConfigure_setResourceUpToDate(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -1347,12 +1347,12 @@ func Test_drbdConfigure_isAllResourcePeersConnected(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -1404,12 +1404,12 @@ func Test_drbdConfigure_getResourceConnectionState(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -1461,12 +1461,12 @@ func Test_drbdConfigure_newCurrentUUID(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -1513,12 +1513,12 @@ func Test_drbdConfigure_primaryResource(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -1565,12 +1565,12 @@ func Test_drbdConfigure_secondaryResource(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -1616,12 +1616,12 @@ func Test_drbdConfigure_genResourceName(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -1629,7 +1629,7 @@ func Test_drbdConfigure_genResourceName(t *testing.T) {
 		stopCh                 <-chan struct{}
 	}
 	type args struct {
-		replica *udsv1alpha1.LocalVolumeReplica
+		replica *localstoragev1alpha1.LocalVolumeReplica
 	}
 	tests := []struct {
 		name   string
@@ -1667,12 +1667,12 @@ func Test_drbdConfigure_getReplicaName(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -1718,12 +1718,12 @@ func Test_drbdConfigure_isPrimary(t *testing.T) {
 	type fields struct {
 		hostname               string
 		apiClient              client.Client
-		systemConfig           udsv1alpha1.SystemConfig
+		systemConfig           localstoragev1alpha1.SystemConfig
 		statusSyncFunc         SyncReplicaStatus
 		cmdExec                exechelper.Executor
 		lock                   sync.Mutex
 		once                   sync.Once
-		localConfigs           map[string]udsv1alpha1.VolumeConfig
+		localConfigs           map[string]localstoragev1alpha1.VolumeConfig
 		resourceCache          map[string]*Resource
 		resourceReplicaNameMap map[string]string
 		template               *template.Template
@@ -1731,7 +1731,7 @@ func Test_drbdConfigure_isPrimary(t *testing.T) {
 		stopCh                 <-chan struct{}
 	}
 	type args struct {
-		config udsv1alpha1.VolumeConfig
+		config localstoragev1alpha1.VolumeConfig
 	}
 	tests := []struct {
 		name   string

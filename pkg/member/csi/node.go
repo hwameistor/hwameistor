@@ -3,8 +3,8 @@ package csi
 import (
 	"fmt"
 
-	localapis "github.com/HwameiStor/local-storage/pkg/apis"
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localapis "github.com/hwameiStor/local-storage/pkg/apis"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
@@ -102,7 +102,7 @@ func (p *plugin) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 		return resp, fmt.Errorf("not found volume kind")
 	}
 
-	if volKind == udsv1alpha1.VolumeKindRAM {
+	if volKind == localstoragev1alpha1.VolumeKindRAM {
 		return resp, p.mounter.BindMount(devicePath, req.TargetPath)
 	}
 
@@ -152,7 +152,7 @@ func (p *plugin) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeS
 	logCtx.Debug("NodeGetVolumeStats")
 
 	resp := &csi.NodeGetVolumeStatsResponse{}
-	vol := &udsv1alpha1.LocalVolume{}
+	vol := &localstoragev1alpha1.LocalVolume{}
 	if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.VolumeId}, vol); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to query volume")
@@ -164,7 +164,7 @@ func (p *plugin) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeS
 		return resp, err
 	}
 
-	if vol.Status.State != udsv1alpha1.VolumeStateReady {
+	if vol.Status.State != localstoragev1alpha1.VolumeStateReady {
 		resp.VolumeCondition = &csi.VolumeCondition{
 			Abnormal: true,
 			Message:  "The volume is not ready",

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	localstorageinformers "github.com/HwameiStor/local-storage/pkg/apis/client/informers/externalversions"
-	localstoragev1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstorageinformers "github.com/hwameiStor/local-storage/pkg/apis/client/informers/externalversions"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -30,7 +30,7 @@ func newStorageNodeAlerter() Alerter {
 }
 
 func (alt *storageNodeAlerter) Run(informerFactory localstorageinformers.SharedInformerFactory, stopCh <-chan struct{}) {
-	informer := informerFactory.Uds().V1alpha1().LocalStorageNodes().Informer()
+	informer := informerFactory.Localstorage().V1alpha1().LocalStorageNodes().Informer()
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    alt.onAdd,
 		UpdateFunc: alt.onUpdate,

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -42,7 +42,7 @@ func (m *manager) processVolumeReplicaTaskAssignment(volName string) error {
 	logCtx := m.logger.WithFields(log.Fields{"Volume": volName})
 	logCtx.Debug("Working on a task assignment")
 
-	vol := &udsv1alpha1.LocalVolume{}
+	vol := &localstoragev1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: volName}, vol); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get Volume from cache, retry it later ...")
@@ -90,16 +90,16 @@ func (m *manager) processVolumeReplicaTaskAssignment(volName string) error {
 	return m.cleanupVolumeReplica(volName)
 }
 
-func (m *manager) createVolumeReplica(vol *udsv1alpha1.LocalVolume) error {
+func (m *manager) createVolumeReplica(vol *localstoragev1alpha1.LocalVolume) error {
 	if replicaName, exists := m.replicaRecords[vol.Name]; exists {
 		m.logger.WithField("replica", replicaName).Debug("LocalVolumeReplica exists, ignore the creation")
 		return nil
 	}
-	replica := &udsv1alpha1.LocalVolumeReplica{
+	replica := &localstoragev1alpha1.LocalVolumeReplica{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("%s-%s", vol.Name, utilrand.String(6)),
 		},
-		Spec: udsv1alpha1.LocalVolumeReplicaSpec{
+		Spec: localstoragev1alpha1.LocalVolumeReplicaSpec{
 			VolumeName:            vol.Name,
 			PoolName:              vol.Spec.PoolName,
 			Kind:                  vol.Spec.Kind,
@@ -118,17 +118,17 @@ func (m *manager) createVolumeReplica(vol *udsv1alpha1.LocalVolume) error {
 	return nil
 }
 
-func (m *manager) deleteVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica) error {
-	if replica.Status.State == udsv1alpha1.VolumeReplicaStateToBeDeleted || replica.Status.State == udsv1alpha1.VolumeReplicaStateDeleted {
+func (m *manager) deleteVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) error {
+	if replica.Status.State == localstoragev1alpha1.VolumeReplicaStateToBeDeleted || replica.Status.State == localstoragev1alpha1.VolumeReplicaStateDeleted {
 		m.logger.WithField("replica", replica.Name).Debug("The LocalVolumeReplica is already in process of deleting")
 		return nil
 	}
 	m.logger.WithField("replica", replica.Name).Debug("Deleting the LocalVolumeReplica")
-	replica.Status.State = udsv1alpha1.VolumeReplicaStateToBeDeleted
+	replica.Status.State = localstoragev1alpha1.VolumeReplicaStateToBeDeleted
 	return m.apiClient.Status().Update(context.TODO(), replica)
 }
 
-func (m *manager) updateVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica, vol *udsv1alpha1.LocalVolume) error {
+func (m *manager) updateVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica, vol *localstoragev1alpha1.LocalVolume) error {
 	logCtx := m.logger.WithFields(log.Fields{"replica": replica.Name})
 	logCtx.Debug("Updating the LocalVolumeReplica")
 	if vol.Spec.RequiredCapacityBytes > replica.Spec.RequiredCapacityBytes {
@@ -153,12 +153,12 @@ func (m *manager) cleanupVolumeReplica(volName string) error {
 	return m.deleteVolumeReplica(replica)
 }
 
-func (m *manager) getMyVolumeReplica(volName string) (*udsv1alpha1.LocalVolumeReplica, error) {
+func (m *manager) getMyVolumeReplica(volName string) (*localstoragev1alpha1.LocalVolumeReplica, error) {
 	replicaName, exists := m.replicaRecords[volName]
 	if !exists {
-		return nil, errors.NewNotFound(udsv1alpha1.Resource("LocalVolumeReplica"), "LocalVolumeReplica")
+		return nil, errors.NewNotFound(localstoragev1alpha1.Resource("LocalVolumeReplica"), "LocalVolumeReplica")
 	}
-	replica := &udsv1alpha1.LocalVolumeReplica{}
+	replica := &localstoragev1alpha1.LocalVolumeReplica{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: replicaName}, replica); err != nil {
 		return nil, err
 	}

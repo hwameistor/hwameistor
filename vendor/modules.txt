@@ -13,9 +13,6 @@ github.com/beorn7/perks/quantile
 github.com/blang/semver
 # github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
-# github.com/cherry-io/local-disk-manager v0.0.0-00010101000000-000000000000 => ../local-disk-manager
-github.com/cherry-io/local-disk-manager/pkg/apis
-github.com/cherry-io/local-disk-manager/pkg/apis/cherry/v1alpha1
 # github.com/container-storage-interface/spec v1.3.0
 github.com/container-storage-interface/spec/lib/go/csi
 # github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e
@@ -86,6 +83,9 @@ github.com/grpc-ecosystem/go-grpc-prometheus
 # github.com/hashicorp/golang-lru v0.5.4
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
+# github.com/hwameistor/local-disk-manager v0.0.0-00010101000000-000000000000 => ../local-disk-manager
+github.com/hwameistor/local-disk-manager/pkg/apis
+github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1
 # github.com/imdario/mergo v0.3.9
 github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.0.0

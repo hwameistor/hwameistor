@@ -1,5 +1,5 @@
 # k8s scheduler plugin
 
-this plugin will be integrated in DCE(4.0.4+) default kube-scheduler 
+this plugin will be integrated in LocalStorage(4.0.4+) default kube-scheduler 
 
-update dce-scheduler vendor and rebuild if plugin updated
+update local-storage-scheduler vendor and rebuild if plugin updated

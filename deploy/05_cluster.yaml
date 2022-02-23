@@ -1,16 +1,16 @@
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
-  name: dce-uds-local-storage
+  name: localstorage-local-storage
   namespace: local-storage-system
 spec:
   selector:
     matchLabels:
-      app: dce-uds-local-storage
+      app: localstorage-local-storage
   template:
     metadata:
       labels:
-        app: dce-uds-local-storage
+        app: localstorage-local-storage
     spec:
       affinity:
         nodeAffinity:
@@ -49,7 +49,7 @@ spec:
             - name: registration-dir
               mountPath: /registration
         - name: member
-          image: 10.6.170.180/uds/dce-uds-local-storage:1.0-integrate_ldm_v1
+          image: 10.6.170.180/localstorage/localstorage-local-storage:1.0-integrate_ldm_v1
           imagePullPolicy: Always
           args:
             - --nodename=$(MY_NODENAME)

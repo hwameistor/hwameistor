@@ -7,9 +7,9 @@ package member
 import (
 	reflect "reflect"
 
-	localapis "github.com/HwameiStor/local-storage/pkg/apis"
-	v1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
-	storage "github.com/HwameiStor/local-storage/pkg/member/node/storage"
+	localapis "github.com/hwameiStor/local-storage/pkg/apis"
+	v1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
+	storage "github.com/hwameiStor/local-storage/pkg/member/node/storage"
 	gomock "github.com/golang/mock/gomock"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	cache "sigs.k8s.io/controller-runtime/pkg/cache"

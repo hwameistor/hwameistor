@@ -2,6 +2,6 @@ FROM centos:7
 
 RUN yum install -y smartmontools lsscsi
 
-COPY ./_build/dce-uds-disk-checker-run /
+COPY ./_build/localstorage-disk-checker-run /
 
-ENTRYPOINT [ "/dce-uds-disk-checker-run" ]
+ENTRYPOINT [ "/localstorage-disk-checker-run" ]

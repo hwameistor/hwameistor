@@ -4,48 +4,48 @@ import (
 	"reflect"
 	"testing"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 )
 
 func Test_mergeRegistryDiskMap(t *testing.T) {
 	type args struct {
-		localDiskMap []map[string]*udsv1alpha1.LocalDisk
+		localDiskMap []map[string]*localstoragev1alpha1.LocalDisk
 	}
-	var localDiskM []map[string]*udsv1alpha1.LocalDisk
-	var localDiskM1 = map[string]*udsv1alpha1.LocalDisk{}
-	localDiskM1["/dev/sdb"] = &udsv1alpha1.LocalDisk{
+	var localDiskM []map[string]*localstoragev1alpha1.LocalDisk
+	var localDiskM1 = map[string]*localstoragev1alpha1.LocalDisk{}
+	localDiskM1["/dev/sdb"] = &localstoragev1alpha1.LocalDisk{
 		DevPath:       "/dev/sdb",
-		Class:         udsv1alpha1.DiskClassNameHDD,
+		Class:         localstoragev1alpha1.DiskClassNameHDD,
 		CapacityBytes: 10240,
-		State:         udsv1alpha1.DiskStateAvailable,
+		State:         localstoragev1alpha1.DiskStateAvailable,
 	}
-	var localDiskM2 = map[string]*udsv1alpha1.LocalDisk{}
-	localDiskM2["/dev/sdc"] = &udsv1alpha1.LocalDisk{
+	var localDiskM2 = map[string]*localstoragev1alpha1.LocalDisk{}
+	localDiskM2["/dev/sdc"] = &localstoragev1alpha1.LocalDisk{
 		DevPath:       "/dev/sdc",
-		Class:         udsv1alpha1.DiskClassNameHDD,
+		Class:         localstoragev1alpha1.DiskClassNameHDD,
 		CapacityBytes: 102400,
-		State:         udsv1alpha1.DiskStateInUse,
+		State:         localstoragev1alpha1.DiskStateInUse,
 	}
 	localDiskM = append(localDiskM, localDiskM1)
 	localDiskM = append(localDiskM, localDiskM2)
-	var wantLocalDiskM = map[string]*udsv1alpha1.LocalDisk{}
-	wantLocalDiskM["/dev/sdb"] = &udsv1alpha1.LocalDisk{
+	var wantLocalDiskM = map[string]*localstoragev1alpha1.LocalDisk{}
+	wantLocalDiskM["/dev/sdb"] = &localstoragev1alpha1.LocalDisk{
 		DevPath:       "/dev/sdb",
-		Class:         udsv1alpha1.DiskClassNameHDD,
+		Class:         localstoragev1alpha1.DiskClassNameHDD,
 		CapacityBytes: 10240,
-		State:         udsv1alpha1.DiskStateAvailable,
+		State:         localstoragev1alpha1.DiskStateAvailable,
 	}
-	wantLocalDiskM["/dev/sdc"] = &udsv1alpha1.LocalDisk{
+	wantLocalDiskM["/dev/sdc"] = &localstoragev1alpha1.LocalDisk{
 		DevPath:       "/dev/sdc",
-		Class:         udsv1alpha1.DiskClassNameHDD,
+		Class:         localstoragev1alpha1.DiskClassNameHDD,
 		CapacityBytes: 102400,
-		State:         udsv1alpha1.DiskStateInUse,
+		State:         localstoragev1alpha1.DiskStateInUse,
 	}
 
 	tests := []struct {
 		name string
 		args args
-		want map[string]*udsv1alpha1.LocalDisk
+		want map[string]*localstoragev1alpha1.LocalDisk
 	}{
 		// TODO: Add test cases.
 		{

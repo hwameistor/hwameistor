@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
-	"github.com/HwameiStor/local-storage/pkg/member/node/healths"
-	"github.com/HwameiStor/local-storage/pkg/utils"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"github.com/hwameiStor/local-storage/pkg/member/node/healths"
+	"github.com/hwameiStor/local-storage/pkg/utils"
 
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -85,8 +85,8 @@ func main() {
 
 	log.Info("Registering Components...")
 
-	schemeBuilder := &scheme.Builder{GroupVersion: udsv1alpha1.SchemeGroupVersion}
-	schemeBuilder.Register(&udsv1alpha1.PhysicalDisk{}, &udsv1alpha1.PhysicalDiskList{})
+	schemeBuilder := &scheme.Builder{GroupVersion: localstoragev1alpha1.SchemeGroupVersion}
+	schemeBuilder.Register(&localstoragev1alpha1.PhysicalDisk{}, &localstoragev1alpha1.PhysicalDiskList{})
 	if err := schemeBuilder.AddToScheme(mgr.GetScheme()); err != nil {
 		// Setup Scheme for physical disk
 		log.WithError(err).Error("Failed to setup scheme for all resources")
@@ -114,7 +114,7 @@ func main() {
 		log.Debug("Stopped checking")
 	}
 
-	if err := utils.RunWithLease(namespace, nodeName, fmt.Sprintf("dce-uds-disk-checker-%s", nodeName), runFunc); err != nil {
+	if err := utils.RunWithLease(namespace, nodeName, fmt.Sprintf("localstorage-disk-checker-%s", nodeName), runFunc); err != nil {
 		log.WithError(err).Error("failed to initialize node heartbeat lease")
 		os.Exit(1)
 	}

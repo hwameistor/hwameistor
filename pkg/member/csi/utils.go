@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/HwameiStor/local-storage/pkg/exechelper"
-	"github.com/HwameiStor/local-storage/pkg/exechelper/nsexecutor"
+	"github.com/hwameiStor/local-storage/pkg/exechelper"
+	"github.com/hwameiStor/local-storage/pkg/exechelper/nsexecutor"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 )

@@ -1,7 +1,7 @@
 package alerter
 
 import (
-	localstorageinformers "github.com/HwameiStor/local-storage/pkg/apis/client/informers/externalversions"
+	localstorageinformers "github.com/hwameiStor/local-storage/pkg/apis/client/informers/externalversions"
 )
 
 // misc

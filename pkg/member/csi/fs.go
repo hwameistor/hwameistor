@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/HwameiStor/local-storage/pkg/exechelper"
+	"github.com/hwameiStor/local-storage/pkg/exechelper"
 )
 
 func (p *plugin) getFSTypeByMountPoint(mntPath string) (string, error) {

@@ -12,11 +12,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
-	"github.com/HwameiStor/local-storage/pkg/alerter"
+	"github.com/hwameiStor/local-storage/pkg/alerter"
 )
 
 const (
-	lockName = "dce-uds-local-storage-alerter"
+	lockName = "localstorage-local-storage-alerter"
 )
 
 var (

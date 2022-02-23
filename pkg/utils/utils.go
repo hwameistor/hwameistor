@@ -12,8 +12,8 @@ import (
 	"time"
 	"unicode"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
-	"github.com/HwameiStor/local-storage/pkg/exechelper"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"github.com/hwameiStor/local-storage/pkg/exechelper"
 
 	"github.com/kubernetes-csi/csi-lib-utils/leaderelection"
 	log "github.com/sirupsen/logrus"
@@ -180,17 +180,17 @@ func ConvertBytesToStr(size int64) string {
 // BuildStoragePoolName constructs storage pool name
 func BuildStoragePoolName(poolClass string, poolType string) (string, error) {
 
-	if poolClass == udsv1alpha1.DiskClassNameHDD && poolType == udsv1alpha1.PoolTypeRegular {
-		return udsv1alpha1.PoolNameForHDD, nil
+	if poolClass == localstoragev1alpha1.DiskClassNameHDD && poolType == localstoragev1alpha1.PoolTypeRegular {
+		return localstoragev1alpha1.PoolNameForHDD, nil
 	}
-	if poolClass == udsv1alpha1.DiskClassNameSSD && poolType == udsv1alpha1.PoolTypeRegular {
-		return udsv1alpha1.PoolNameForSSD, nil
+	if poolClass == localstoragev1alpha1.DiskClassNameSSD && poolType == localstoragev1alpha1.PoolTypeRegular {
+		return localstoragev1alpha1.PoolNameForSSD, nil
 	}
-	if poolClass == udsv1alpha1.DiskClassNameNVMe && poolType == udsv1alpha1.PoolTypeRegular {
-		return udsv1alpha1.PoolNameForNVMe, nil
+	if poolClass == localstoragev1alpha1.DiskClassNameNVMe && poolType == localstoragev1alpha1.PoolTypeRegular {
+		return localstoragev1alpha1.PoolNameForNVMe, nil
 	}
-	if poolClass == udsv1alpha1.DiskClassNameRAM && poolType == udsv1alpha1.PoolTypeRegular {
-		return udsv1alpha1.PoolNameForRAM, nil
+	if poolClass == localstoragev1alpha1.DiskClassNameRAM && poolType == localstoragev1alpha1.PoolTypeRegular {
+		return localstoragev1alpha1.PoolNameForRAM, nil
 	}
 
 	return "", fmt.Errorf("invalid pool info")

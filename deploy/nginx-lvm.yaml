@@ -15,7 +15,7 @@ spec:
         app: nginx-local-storage-lvm
       name: nginx-local-storage-lvm
     spec:
-      #schedulerName: dce-uds-local-storage-scheduler
+      #schedulerName: localstorage-local-storage-scheduler
       restartPolicy: Always
       terminationGracePeriodSeconds: 0
       containers:

@@ -3,7 +3,7 @@ package healths
 import (
 	"fmt"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 )
 
 // SmartCtlScanResult is result of "smartctl --scan -j"
@@ -113,10 +113,10 @@ type DiskCheckResult struct {
 	SATAVersion    *SATAVersionInfo    `json:"sata_version,omitempty"`
 	InterfaceSpeed *InterfaceSpeedInfo `json:"interface_speed,omitempty"`
 
-	udsv1alpha1.SmartCheck
+	localstoragev1alpha1.SmartCheck
 }
 
 // IsVirtualDisk check if it's a virtual disk
 func (d DiskCheckResult) IsVirtualDisk() bool {
-	return d.Product == udsv1alpha1.SmartCtlDeviceProductVirtualDisk
+	return d.Product == localstoragev1alpha1.SmartCtlDeviceProductVirtualDisk
 }

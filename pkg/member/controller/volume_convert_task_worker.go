@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 )
 
 func (m *manager) startVolumeConvertTaskWorker(stopCh <-chan struct{}) {
@@ -38,7 +38,7 @@ func (m *manager) startVolumeConvertTaskWorker(stopCh <-chan struct{}) {
 func (m *manager) processVolumeConvert(name string) error {
 	logCtx := m.logger.WithFields(log.Fields{"VolumeConvert": name})
 	logCtx.Debug("Working on a VolumeConvert task")
-	convert := &udsv1alpha1.LocalVolumeConvert{}
+	convert := &localstoragev1alpha1.LocalVolumeConvert{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: name}, convert); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get VolumeConvert from cache")
@@ -49,12 +49,12 @@ func (m *manager) processVolumeConvert(name string) error {
 	}
 
 	if convert.Spec.Abort &&
-		convert.Status.State != udsv1alpha1.OperationStateToBeAborted &&
-		convert.Status.State != udsv1alpha1.OperationStateAborting &&
-		convert.Status.State != udsv1alpha1.OperationStateAborted &&
-		convert.Status.State != udsv1alpha1.OperationStateCompleted {
+		convert.Status.State != localstoragev1alpha1.OperationStateToBeAborted &&
+		convert.Status.State != localstoragev1alpha1.OperationStateAborting &&
+		convert.Status.State != localstoragev1alpha1.OperationStateAborted &&
+		convert.Status.State != localstoragev1alpha1.OperationStateCompleted {
 
-		convert.Status.State = udsv1alpha1.OperationStateToBeAborted
+		convert.Status.State = localstoragev1alpha1.OperationStateToBeAborted
 		return m.apiClient.Status().Update(context.TODO(), convert)
 	}
 
@@ -64,15 +64,15 @@ func (m *manager) processVolumeConvert(name string) error {
 	switch convert.Status.State {
 	case "":
 		return m.volumeConvertSubmit(convert)
-	case udsv1alpha1.OperationStateSubmitted:
+	case localstoragev1alpha1.OperationStateSubmitted:
 		return m.volumeConvertStart(convert)
-	case udsv1alpha1.OperationStateInProgress:
+	case localstoragev1alpha1.OperationStateInProgress:
 		return m.volumeConvertInProgress(convert)
-	case udsv1alpha1.OperationStateCompleted:
+	case localstoragev1alpha1.OperationStateCompleted:
 		return m.volumeConvertCleanup(convert)
-	case udsv1alpha1.OperationStateToBeAborted:
+	case localstoragev1alpha1.OperationStateToBeAborted:
 		return m.volumeConvertAbort(convert)
-	case udsv1alpha1.OperationStateAborted:
+	case localstoragev1alpha1.OperationStateAborted:
 		return m.volumeConvertCleanup(convert)
 	default:
 		logCtx.Error("Invalid state")
@@ -80,7 +80,7 @@ func (m *manager) processVolumeConvert(name string) error {
 	return fmt.Errorf("invalid state")
 }
 
-func (m *manager) volumeConvertSubmit(convert *udsv1alpha1.LocalVolumeConvert) error {
+func (m *manager) volumeConvertSubmit(convert *localstoragev1alpha1.LocalVolumeConvert) error {
 	logCtx := m.logger.WithFields(log.Fields{"convert": convert.Name, "spec": convert.Spec})
 	logCtx.Debug("Submit a VolumeConvert")
 
@@ -90,7 +90,7 @@ func (m *manager) volumeConvertSubmit(convert *udsv1alpha1.LocalVolumeConvert) e
 		return m.apiClient.Status().Update(ctx, convert)
 	}
 
-	vol := &udsv1alpha1.LocalVolume{}
+	vol := &localstoragev1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: convert.Spec.VolumeName}, vol); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to query volume")
@@ -103,13 +103,13 @@ func (m *manager) volumeConvertSubmit(convert *udsv1alpha1.LocalVolumeConvert) e
 	}
 
 	if vol.Spec.ReplicaNumber == convert.Spec.ReplicaNumber {
-		convert.Status.State = udsv1alpha1.OperationStateSubmitted
+		convert.Status.State = localstoragev1alpha1.OperationStateSubmitted
 	} else if vol.Spec.ReplicaNumber == 1 && !vol.Spec.Convertible {
 		logCtx.WithField("volume", vol.Spec).Error("Can't convert the incovertible volume")
 		convert.Status.Message = "Inconvertible volume"
 	} else if vol.Spec.ReplicaNumber == 1 && convert.Spec.ReplicaNumber == 2 {
 		// currently, only support convertible non-HA volume to HA convertion
-		convert.Status.State = udsv1alpha1.OperationStateSubmitted
+		convert.Status.State = localstoragev1alpha1.OperationStateSubmitted
 	} else {
 		logCtx.WithField("volume", vol.Spec).Error("Too big convert")
 		convert.Status.Message = "Not supported"
@@ -118,13 +118,13 @@ func (m *manager) volumeConvertSubmit(convert *udsv1alpha1.LocalVolumeConvert) e
 	return m.apiClient.Status().Update(ctx, convert)
 }
 
-func (m *manager) volumeConvertStart(convert *udsv1alpha1.LocalVolumeConvert) error {
+func (m *manager) volumeConvertStart(convert *localstoragev1alpha1.LocalVolumeConvert) error {
 	logCtx := m.logger.WithFields(log.Fields{"convert": convert.Name, "spec": convert.Spec, "status": convert.Status})
 	logCtx.Debug("Start a VolumeConvert")
 
 	ctx := context.TODO()
 
-	vol := &udsv1alpha1.LocalVolume{}
+	vol := &localstoragev1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: convert.Spec.VolumeName}, vol); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to query volume")
@@ -137,7 +137,7 @@ func (m *manager) volumeConvertStart(convert *udsv1alpha1.LocalVolumeConvert) er
 	}
 
 	if vol.Spec.ReplicaNumber == convert.Spec.ReplicaNumber {
-		convert.Status.State = udsv1alpha1.OperationStateInProgress
+		convert.Status.State = localstoragev1alpha1.OperationStateInProgress
 		m.apiClient.Status().Update(ctx, convert)
 	}
 
@@ -148,12 +148,12 @@ func (m *manager) volumeConvertStart(convert *udsv1alpha1.LocalVolumeConvert) er
 		return m.apiClient.Status().Update(ctx, convert)
 	}
 
-	convert.Status.State = udsv1alpha1.OperationStateInProgress
+	convert.Status.State = localstoragev1alpha1.OperationStateInProgress
 	logCtx.WithField("status", convert.Status).Debug("Started volume convert")
 	return m.apiClient.Status().Update(ctx, convert)
 }
 
-func (m *manager) volumeConvertInProgress(convert *udsv1alpha1.LocalVolumeConvert) error {
+func (m *manager) volumeConvertInProgress(convert *localstoragev1alpha1.LocalVolumeConvert) error {
 	logCtx := m.logger.WithFields(log.Fields{"convert": convert.Name, "spec": convert.Spec, "status": convert.Status})
 	logCtx.Debug("Check the status of a VolumeConvert in progress")
 
@@ -169,40 +169,40 @@ func (m *manager) volumeConvertInProgress(convert *udsv1alpha1.LocalVolumeConver
 		return fmt.Errorf("not enough replicas")
 	}
 	for _, replica := range replicas {
-		if replica.Status.State != udsv1alpha1.VolumeReplicaStateReady {
+		if replica.Status.State != localstoragev1alpha1.VolumeReplicaStateReady {
 			logCtx.WithField("replica", replica.Name).Debug("The replica is not ready")
 			return fmt.Errorf("replica not ready")
 		}
 	}
 	// update volume's capacity
-	vol := &udsv1alpha1.LocalVolume{}
+	vol := &localstoragev1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: convert.Spec.VolumeName}, vol); err != nil {
 		logCtx.WithError(err).Error("Failed to query volume")
 		return err
 	}
 
-	if vol.Status.State != udsv1alpha1.VolumeStateReady {
+	if vol.Status.State != localstoragev1alpha1.VolumeStateReady {
 		logCtx.Debug("Volume is not ready")
 		convert.Status.Message = "In Progress"
 		return fmt.Errorf("volume not ready")
 	}
 
-	convert.Status.State = udsv1alpha1.OperationStateCompleted
+	convert.Status.State = localstoragev1alpha1.OperationStateCompleted
 	convert.Status.Message = ""
 	logCtx.WithField("status", convert.Status).Debug("Volume convert completed")
 
 	return m.apiClient.Status().Update(ctx, convert)
 }
 
-func (m *manager) volumeConvertAbort(convert *udsv1alpha1.LocalVolumeConvert) error {
+func (m *manager) volumeConvertAbort(convert *localstoragev1alpha1.LocalVolumeConvert) error {
 	logCtx := m.logger.WithFields(log.Fields{"convert": convert.Name, "spec": convert.Spec, "status": convert.Status})
 	logCtx.Debug("Abort a VolumeConvert")
 
-	convert.Status.State = udsv1alpha1.OperationStateAborted
+	convert.Status.State = localstoragev1alpha1.OperationStateAborted
 	return m.apiClient.Status().Update(context.TODO(), convert)
 }
 
-func (m *manager) volumeConvertCleanup(convert *udsv1alpha1.LocalVolumeConvert) error {
+func (m *manager) volumeConvertCleanup(convert *localstoragev1alpha1.LocalVolumeConvert) error {
 	logCtx := m.logger.WithFields(log.Fields{"convert": convert.Name, "spec": convert.Spec, "status": convert.Status})
 	logCtx.Debug("Cleanup a VolumeConvert")
 

@@ -11,10 +11,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
-	"github.com/HwameiStor/local-storage/pkg/exechelper"
-	"github.com/HwameiStor/local-storage/pkg/exechelper/nsexecutor"
-	"github.com/HwameiStor/local-storage/pkg/member/node/healths"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"github.com/hwameiStor/local-storage/pkg/exechelper"
+	"github.com/hwameiStor/local-storage/pkg/exechelper/nsexecutor"
+	"github.com/hwameiStor/local-storage/pkg/member/node/healths"
 )
 
 const (
@@ -41,10 +41,10 @@ func newDiskExecutor(lm *LocalManager) *diskExecutor {
 	return diskExecutorInstance
 }
 
-func (rb *diskExecutor) CreateVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica) (*udsv1alpha1.LocalVolumeReplica, error) {
+func (rb *diskExecutor) CreateVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) (*localstoragev1alpha1.LocalVolumeReplica, error) {
 	pool := rb.lm.registry.Pools()[replica.Spec.PoolName]
 	for _, disk := range pool.Disks {
-		if disk.State == udsv1alpha1.DiskStateAvailable {
+		if disk.State == localstoragev1alpha1.DiskStateAvailable {
 			linkPath := rb.genLinkPath(replica.Spec.PoolName, replica.Spec.VolumeName)
 			if len(linkPath) == 0 {
 				return nil, fmt.Errorf("invalid link path. Pool name: %s, replica name: %s", replica.Spec.PoolName, replica.Spec.VolumeName)
@@ -67,7 +67,7 @@ func (rb *diskExecutor) CreateVolumeReplica(replica *udsv1alpha1.LocalVolumeRepl
 	return nil, fmt.Errorf("not found disk")
 }
 
-func (rb *diskExecutor) DeleteVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica) error {
+func (rb *diskExecutor) DeleteVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) error {
 	if err := rb.eraseThenRemoveDisk(replica.Status.DevicePath); err != nil {
 		rb.logger.WithError(err).Error("Failed to erase or remove disk.")
 		return err
@@ -75,11 +75,11 @@ func (rb *diskExecutor) DeleteVolumeReplica(replica *udsv1alpha1.LocalVolumeRepl
 	return nil
 }
 
-func (rb *diskExecutor) ExpandVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*udsv1alpha1.LocalVolumeReplica, error) {
+func (rb *diskExecutor) ExpandVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*localstoragev1alpha1.LocalVolumeReplica, error) {
 	return nil, fmt.Errorf("not supported")
 }
 
-func (rb *diskExecutor) TestVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica) (*udsv1alpha1.LocalVolumeReplica, error) {
+func (rb *diskExecutor) TestVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) (*localstoragev1alpha1.LocalVolumeReplica, error) {
 	newReplica := replica.DeepCopy()
 	isHealthy, err := healths.NewSmartCtl().IsDiskHealthy(replica.Status.StoragePath)
 	if err != nil {
@@ -87,17 +87,17 @@ func (rb *diskExecutor) TestVolumeReplica(replica *udsv1alpha1.LocalVolumeReplic
 	}
 
 	if isHealthy {
-		newReplica.Status.State = udsv1alpha1.VolumeReplicaStateReady
+		newReplica.Status.State = localstoragev1alpha1.VolumeReplicaStateReady
 		newReplica.Status.Synced = true
 	} else {
-		newReplica.Status.State = udsv1alpha1.VolumeReplicaStateNotReady
+		newReplica.Status.State = localstoragev1alpha1.VolumeReplicaStateNotReady
 		newReplica.Status.Synced = false
 	}
 
 	return newReplica, nil
 }
 
-func (rb *diskExecutor) ConsistencyCheck(crdReplicas map[string]*udsv1alpha1.LocalVolumeReplica) {
+func (rb *diskExecutor) ConsistencyCheck(crdReplicas map[string]*localstoragev1alpha1.LocalVolumeReplica) {
 
 	rb.logger.Debug("Consistency Checking for disk volume ...")
 
@@ -172,18 +172,18 @@ func (rb *diskExecutor) ConsistencyCheck(crdReplicas map[string]*udsv1alpha1.Loc
 
 func (rb *diskExecutor) genLinkPath(poolName, volumeName string) string {
 	switch poolName {
-	case udsv1alpha1.PoolNameForHDD:
-		return filepath.Join(udsv1alpha1.AssigedDiskPoolHDD, volumeName)
-	case udsv1alpha1.PoolNameForSSD:
-		return filepath.Join(udsv1alpha1.AssigedDiskPoolSSD, volumeName)
-	case udsv1alpha1.PoolNameForNVMe:
-		return filepath.Join(udsv1alpha1.AssigedDiskPoolNVMe, volumeName)
+	case localstoragev1alpha1.PoolNameForHDD:
+		return filepath.Join(localstoragev1alpha1.AssigedDiskPoolHDD, volumeName)
+	case localstoragev1alpha1.PoolNameForSSD:
+		return filepath.Join(localstoragev1alpha1.AssigedDiskPoolSSD, volumeName)
+	case localstoragev1alpha1.PoolNameForNVMe:
+		return filepath.Join(localstoragev1alpha1.AssigedDiskPoolNVMe, volumeName)
 	}
 	return ""
 }
 
 type localDiskWithLinkPath struct {
-	LocalDisk *udsv1alpha1.LocalDisk
+	LocalDisk *localstoragev1alpha1.LocalDisk
 	LinkPath  string
 }
 
@@ -193,31 +193,31 @@ type poolInfo struct {
 	TotalVolumeCount         int64
 	UsedVolumeCount          int64
 	VolumeCapacityBytesLimit int64
-	Disks                    []udsv1alpha1.LocalDisk
+	Disks                    []localstoragev1alpha1.LocalDisk
 	Volumes                  []string
 	NotEmpty                 bool
-	DisksMap                 map[string]*udsv1alpha1.LocalDisk
-	replicaMap               map[string]*udsv1alpha1.LocalVolumeReplica
+	DisksMap                 map[string]*localstoragev1alpha1.LocalDisk
+	replicaMap               map[string]*localstoragev1alpha1.LocalVolumeReplica
 }
 
-func (rb *diskExecutor) ExtendPools(availableLocalDisks []*udsv1alpha1.LocalDisk) error {
+func (rb *diskExecutor) ExtendPools(availableLocalDisks []*localstoragev1alpha1.LocalDisk) error {
 	return nil
 }
 
 func (rb *diskExecutor) getPoolInfo(disks []*localDiskWithLinkPath) *poolInfo {
 	poolInfoToReturn := &poolInfo{
-		Disks:      make([]udsv1alpha1.LocalDisk, 0, len(disks)),
+		Disks:      make([]localstoragev1alpha1.LocalDisk, 0, len(disks)),
 		Volumes:    make([]string, 0),
-		DisksMap:   make(map[string]*udsv1alpha1.LocalDisk),
-		replicaMap: make(map[string]*udsv1alpha1.LocalVolumeReplica),
+		DisksMap:   make(map[string]*localstoragev1alpha1.LocalDisk),
+		replicaMap: make(map[string]*localstoragev1alpha1.LocalVolumeReplica),
 	}
 	if len(disks) == 0 {
 		poolInfoToReturn.NotEmpty = false
 		return poolInfoToReturn
 
 	}
-	poolInfoToReturn.DisksMap = make(map[string]*udsv1alpha1.LocalDisk)
-	poolInfoToReturn.replicaMap = make(map[string]*udsv1alpha1.LocalVolumeReplica)
+	poolInfoToReturn.DisksMap = make(map[string]*localstoragev1alpha1.LocalDisk)
+	poolInfoToReturn.replicaMap = make(map[string]*localstoragev1alpha1.LocalVolumeReplica)
 	poolInfoToReturn.NotEmpty = true
 	poolInfoToReturn.TotalVolumeCount = int64(len(disks))
 
@@ -225,7 +225,7 @@ func (rb *diskExecutor) getPoolInfo(disks []*localDiskWithLinkPath) *poolInfo {
 		poolInfoToReturn.TotalCapacityBytes += disk.LocalDisk.CapacityBytes
 		poolInfoToReturn.Disks = append(poolInfoToReturn.Disks, *disk.LocalDisk)
 		poolInfoToReturn.DisksMap[disk.LocalDisk.DevPath] = disk.LocalDisk
-		if disk.LocalDisk.State == udsv1alpha1.DiskStateInUse {
+		if disk.LocalDisk.State == localstoragev1alpha1.DiskStateInUse {
 			poolInfoToReturn.UsedCapacityBytes += disk.LocalDisk.CapacityBytes
 			poolInfoToReturn.UsedVolumeCount++
 			poolInfoToReturn.Volumes = append(poolInfoToReturn.Volumes, filepath.Base(disk.LinkPath))
@@ -244,10 +244,10 @@ func (rb *diskExecutor) getClassifiedPoolList() (map[string][]*localDiskWithLink
 
 	localDisks := rb.lm.registry.Disks()
 
-	allBlockDevices := rb.getDevicesInfo(udsv1alpha1.DiskDevRootPath)
-	assigedHDDDevices := rb.getDevicesInfo(udsv1alpha1.AssigedDiskPoolHDD)
-	assigedSSDDevices := rb.getDevicesInfo(udsv1alpha1.AssigedDiskPoolSSD)
-	assigedNVMeDevices := rb.getDevicesInfo(udsv1alpha1.AssigedDiskPoolNVMe)
+	allBlockDevices := rb.getDevicesInfo(localstoragev1alpha1.DiskDevRootPath)
+	assigedHDDDevices := rb.getDevicesInfo(localstoragev1alpha1.AssigedDiskPoolHDD)
+	assigedSSDDevices := rb.getDevicesInfo(localstoragev1alpha1.AssigedDiskPoolSSD)
+	assigedNVMeDevices := rb.getDevicesInfo(localstoragev1alpha1.AssigedDiskPoolNVMe)
 
 	classifiedLocalDisk := make(map[string][]*localDiskWithLinkPath)
 
@@ -263,27 +263,27 @@ func (rb *diskExecutor) getClassifiedPoolList() (map[string][]*localDiskWithLink
 
 		if diskInfo, has := assigedHDDDevices[majMin]; has {
 			localDiskLn.LinkPath = diskInfo.Path
-			localDiskLn.LocalDisk.State = udsv1alpha1.DiskStateInUse
-			classifiedLocalDisk[udsv1alpha1.PoolNameForHDD] = append(classifiedLocalDisk[udsv1alpha1.PoolNameForHDD], localDiskLn)
+			localDiskLn.LocalDisk.State = localstoragev1alpha1.DiskStateInUse
+			classifiedLocalDisk[localstoragev1alpha1.PoolNameForHDD] = append(classifiedLocalDisk[localstoragev1alpha1.PoolNameForHDD], localDiskLn)
 			continue
 		} else if diskInfo, has := assigedSSDDevices[majMin]; has {
 			localDiskLn.LinkPath = diskInfo.Path
-			localDiskLn.LocalDisk.State = udsv1alpha1.DiskStateInUse
-			classifiedLocalDisk[udsv1alpha1.PoolNameForSSD] = append(classifiedLocalDisk[udsv1alpha1.PoolNameForSSD], localDiskLn)
+			localDiskLn.LocalDisk.State = localstoragev1alpha1.DiskStateInUse
+			classifiedLocalDisk[localstoragev1alpha1.PoolNameForSSD] = append(classifiedLocalDisk[localstoragev1alpha1.PoolNameForSSD], localDiskLn)
 			continue
 		} else if diskInfo, has := assigedNVMeDevices[majMin]; has {
 			localDiskLn.LinkPath = diskInfo.Path
-			localDiskLn.LocalDisk.State = udsv1alpha1.DiskStateInUse
-			classifiedLocalDisk[udsv1alpha1.PoolNameForNVMe] = append(classifiedLocalDisk[udsv1alpha1.PoolNameForNVMe], localDiskLn)
-		} else if localDisks[blockDeviceInfo.Path].State == udsv1alpha1.DiskStateAvailable {
+			localDiskLn.LocalDisk.State = localstoragev1alpha1.DiskStateInUse
+			classifiedLocalDisk[localstoragev1alpha1.PoolNameForNVMe] = append(classifiedLocalDisk[localstoragev1alpha1.PoolNameForNVMe], localDiskLn)
+		} else if localDisks[blockDeviceInfo.Path].State == localstoragev1alpha1.DiskStateAvailable {
 			// Available disks
 			switch localDisk.Class {
-			case udsv1alpha1.DiskClassNameHDD:
-				classifiedLocalDisk[udsv1alpha1.PoolNameForHDD] = append(classifiedLocalDisk[udsv1alpha1.PoolNameForHDD], localDiskLn)
-			case udsv1alpha1.DiskClassNameSSD:
-				classifiedLocalDisk[udsv1alpha1.PoolNameForSSD] = append(classifiedLocalDisk[udsv1alpha1.PoolNameForSSD], localDiskLn)
-			case udsv1alpha1.DiskClassNameNVMe:
-				classifiedLocalDisk[udsv1alpha1.PoolNameForNVMe] = append(classifiedLocalDisk[udsv1alpha1.PoolNameForNVMe], localDiskLn)
+			case localstoragev1alpha1.DiskClassNameHDD:
+				classifiedLocalDisk[localstoragev1alpha1.PoolNameForHDD] = append(classifiedLocalDisk[localstoragev1alpha1.PoolNameForHDD], localDiskLn)
+			case localstoragev1alpha1.DiskClassNameSSD:
+				classifiedLocalDisk[localstoragev1alpha1.PoolNameForSSD] = append(classifiedLocalDisk[localstoragev1alpha1.PoolNameForSSD], localDiskLn)
+			case localstoragev1alpha1.DiskClassNameNVMe:
+				classifiedLocalDisk[localstoragev1alpha1.PoolNameForNVMe] = append(classifiedLocalDisk[localstoragev1alpha1.PoolNameForNVMe], localDiskLn)
 			}
 		}
 	}
@@ -291,8 +291,8 @@ func (rb *diskExecutor) getClassifiedPoolList() (map[string][]*localDiskWithLink
 	return classifiedLocalDisk, nil
 }
 
-func (rb *diskExecutor) mergeRegistryDiskMap(localDiskMap ...map[string]*udsv1alpha1.LocalDisk) map[string]*udsv1alpha1.LocalDisk {
-	newLocalDiskMap := map[string]*udsv1alpha1.LocalDisk{}
+func (rb *diskExecutor) mergeRegistryDiskMap(localDiskMap ...map[string]*localstoragev1alpha1.LocalDisk) map[string]*localstoragev1alpha1.LocalDisk {
+	newLocalDiskMap := map[string]*localstoragev1alpha1.LocalDisk{}
 	for _, m := range localDiskMap {
 		for k, v := range m {
 			newLocalDiskMap[k] = v
@@ -301,15 +301,15 @@ func (rb *diskExecutor) mergeRegistryDiskMap(localDiskMap ...map[string]*udsv1al
 	return newLocalDiskMap
 }
 
-func (rb *diskExecutor) extendClassifiedPoolList(disks map[string]*udsv1alpha1.LocalDisk) (map[string][]*localDiskWithLinkPath, error) {
+func (rb *diskExecutor) extendClassifiedPoolList(disks map[string]*localstoragev1alpha1.LocalDisk) (map[string][]*localDiskWithLinkPath, error) {
 
 	oldRegistryDisks := rb.lm.registry.Disks()
 	localDisks := mergeRegistryDiskMap(oldRegistryDisks, disks)
 
-	allBlockDevices := rb.getDevicesInfo(udsv1alpha1.DiskDevRootPath)
-	assigedHDDDevices := rb.getDevicesInfo(udsv1alpha1.AssigedDiskPoolHDD)
-	assigedSSDDevices := rb.getDevicesInfo(udsv1alpha1.AssigedDiskPoolSSD)
-	assigedNVMeDevices := rb.getDevicesInfo(udsv1alpha1.AssigedDiskPoolNVMe)
+	allBlockDevices := rb.getDevicesInfo(localstoragev1alpha1.DiskDevRootPath)
+	assigedHDDDevices := rb.getDevicesInfo(localstoragev1alpha1.AssigedDiskPoolHDD)
+	assigedSSDDevices := rb.getDevicesInfo(localstoragev1alpha1.AssigedDiskPoolSSD)
+	assigedNVMeDevices := rb.getDevicesInfo(localstoragev1alpha1.AssigedDiskPoolNVMe)
 
 	classifiedLocalDisk := make(map[string][]*localDiskWithLinkPath)
 
@@ -325,27 +325,27 @@ func (rb *diskExecutor) extendClassifiedPoolList(disks map[string]*udsv1alpha1.L
 
 		if diskInfo, has := assigedHDDDevices[majMin]; has {
 			localDiskLn.LinkPath = diskInfo.Path
-			localDiskLn.LocalDisk.State = udsv1alpha1.DiskStateInUse
-			classifiedLocalDisk[udsv1alpha1.PoolNameForHDD] = append(classifiedLocalDisk[udsv1alpha1.PoolNameForHDD], localDiskLn)
+			localDiskLn.LocalDisk.State = localstoragev1alpha1.DiskStateInUse
+			classifiedLocalDisk[localstoragev1alpha1.PoolNameForHDD] = append(classifiedLocalDisk[localstoragev1alpha1.PoolNameForHDD], localDiskLn)
 			continue
 		} else if diskInfo, has := assigedSSDDevices[majMin]; has {
 			localDiskLn.LinkPath = diskInfo.Path
-			localDiskLn.LocalDisk.State = udsv1alpha1.DiskStateInUse
-			classifiedLocalDisk[udsv1alpha1.PoolNameForSSD] = append(classifiedLocalDisk[udsv1alpha1.PoolNameForSSD], localDiskLn)
+			localDiskLn.LocalDisk.State = localstoragev1alpha1.DiskStateInUse
+			classifiedLocalDisk[localstoragev1alpha1.PoolNameForSSD] = append(classifiedLocalDisk[localstoragev1alpha1.PoolNameForSSD], localDiskLn)
 			continue
 		} else if diskInfo, has := assigedNVMeDevices[majMin]; has {
 			localDiskLn.LinkPath = diskInfo.Path
-			localDiskLn.LocalDisk.State = udsv1alpha1.DiskStateInUse
-			classifiedLocalDisk[udsv1alpha1.PoolNameForNVMe] = append(classifiedLocalDisk[udsv1alpha1.PoolNameForNVMe], localDiskLn)
-		} else if localDisks[blockDeviceInfo.Path].State == udsv1alpha1.DiskStateAvailable {
+			localDiskLn.LocalDisk.State = localstoragev1alpha1.DiskStateInUse
+			classifiedLocalDisk[localstoragev1alpha1.PoolNameForNVMe] = append(classifiedLocalDisk[localstoragev1alpha1.PoolNameForNVMe], localDiskLn)
+		} else if localDisks[blockDeviceInfo.Path].State == localstoragev1alpha1.DiskStateAvailable {
 			// Available disks
 			switch localDisk.Class {
-			case udsv1alpha1.DiskClassNameHDD:
-				classifiedLocalDisk[udsv1alpha1.PoolNameForHDD] = append(classifiedLocalDisk[udsv1alpha1.PoolNameForHDD], localDiskLn)
-			case udsv1alpha1.DiskClassNameSSD:
-				classifiedLocalDisk[udsv1alpha1.PoolNameForSSD] = append(classifiedLocalDisk[udsv1alpha1.PoolNameForSSD], localDiskLn)
-			case udsv1alpha1.DiskClassNameNVMe:
-				classifiedLocalDisk[udsv1alpha1.PoolNameForNVMe] = append(classifiedLocalDisk[udsv1alpha1.PoolNameForNVMe], localDiskLn)
+			case localstoragev1alpha1.DiskClassNameHDD:
+				classifiedLocalDisk[localstoragev1alpha1.PoolNameForHDD] = append(classifiedLocalDisk[localstoragev1alpha1.PoolNameForHDD], localDiskLn)
+			case localstoragev1alpha1.DiskClassNameSSD:
+				classifiedLocalDisk[localstoragev1alpha1.PoolNameForSSD] = append(classifiedLocalDisk[localstoragev1alpha1.PoolNameForSSD], localDiskLn)
+			case localstoragev1alpha1.DiskClassNameNVMe:
+				classifiedLocalDisk[localstoragev1alpha1.PoolNameForNVMe] = append(classifiedLocalDisk[localstoragev1alpha1.PoolNameForNVMe], localDiskLn)
 			}
 		}
 	}
@@ -353,23 +353,23 @@ func (rb *diskExecutor) extendClassifiedPoolList(disks map[string]*udsv1alpha1.L
 	return classifiedLocalDisk, nil
 }
 
-func (rb *diskExecutor) ExtendPoolsInfo(localDisks map[string]*udsv1alpha1.LocalDisk) (map[string]*udsv1alpha1.LocalPool, error) {
+func (rb *diskExecutor) ExtendPoolsInfo(localDisks map[string]*localstoragev1alpha1.LocalDisk) (map[string]*localstoragev1alpha1.LocalPool, error) {
 	classifiedDisks, err := rb.extendClassifiedPoolList(localDisks)
 	if err != nil {
 		return nil, err
 	}
 
-	pools := make(map[string]*udsv1alpha1.LocalPool)
+	pools := make(map[string]*localstoragev1alpha1.LocalPool)
 
 	// HDD pool rebuild
-	poolInfo := rb.getPoolInfo(classifiedDisks[udsv1alpha1.PoolNameForHDD])
+	poolInfo := rb.getPoolInfo(classifiedDisks[localstoragev1alpha1.PoolNameForHDD])
 	if poolInfo.NotEmpty {
-		poolHDD := &udsv1alpha1.LocalPool{
-			Name:                     udsv1alpha1.PoolNameForHDD,
-			Class:                    udsv1alpha1.DiskClassNameHDD,
-			Type:                     udsv1alpha1.PoolTypeRegular,
-			VolumeKind:               udsv1alpha1.VolumeKindDisk,
-			Path:                     udsv1alpha1.AssigedDiskPoolHDD,
+		poolHDD := &localstoragev1alpha1.LocalPool{
+			Name:                     localstoragev1alpha1.PoolNameForHDD,
+			Class:                    localstoragev1alpha1.DiskClassNameHDD,
+			Type:                     localstoragev1alpha1.PoolTypeRegular,
+			VolumeKind:               localstoragev1alpha1.VolumeKindDisk,
+			Path:                     localstoragev1alpha1.AssigedDiskPoolHDD,
 			TotalCapacityBytes:       poolInfo.TotalCapacityBytes,
 			UsedCapacityBytes:        poolInfo.UsedCapacityBytes,
 			FreeCapacityBytes:        poolInfo.TotalCapacityBytes - poolInfo.UsedCapacityBytes,
@@ -380,18 +380,18 @@ func (rb *diskExecutor) ExtendPoolsInfo(localDisks map[string]*udsv1alpha1.Local
 			Disks:                    poolInfo.Disks,
 			Volumes:                  poolInfo.Volumes,
 		}
-		pools[udsv1alpha1.PoolNameForHDD] = poolHDD
+		pools[localstoragev1alpha1.PoolNameForHDD] = poolHDD
 	}
 
 	// SSD pool rebuild
-	poolInfo = rb.getPoolInfo(classifiedDisks[udsv1alpha1.PoolNameForSSD])
+	poolInfo = rb.getPoolInfo(classifiedDisks[localstoragev1alpha1.PoolNameForSSD])
 	if poolInfo.NotEmpty {
-		poolSSD := &udsv1alpha1.LocalPool{
-			Name:                     udsv1alpha1.PoolNameForSSD,
-			Class:                    udsv1alpha1.DiskClassNameSSD,
-			Type:                     udsv1alpha1.PoolTypeRegular,
-			VolumeKind:               udsv1alpha1.VolumeKindDisk,
-			Path:                     udsv1alpha1.AssigedDiskPoolSSD,
+		poolSSD := &localstoragev1alpha1.LocalPool{
+			Name:                     localstoragev1alpha1.PoolNameForSSD,
+			Class:                    localstoragev1alpha1.DiskClassNameSSD,
+			Type:                     localstoragev1alpha1.PoolTypeRegular,
+			VolumeKind:               localstoragev1alpha1.VolumeKindDisk,
+			Path:                     localstoragev1alpha1.AssigedDiskPoolSSD,
 			TotalCapacityBytes:       poolInfo.TotalCapacityBytes,
 			UsedCapacityBytes:        poolInfo.UsedCapacityBytes,
 			FreeCapacityBytes:        poolInfo.TotalCapacityBytes - poolInfo.UsedCapacityBytes,
@@ -402,18 +402,18 @@ func (rb *diskExecutor) ExtendPoolsInfo(localDisks map[string]*udsv1alpha1.Local
 			Disks:                    poolInfo.Disks,
 			Volumes:                  poolInfo.Volumes,
 		}
-		pools[udsv1alpha1.PoolNameForSSD] = poolSSD
+		pools[localstoragev1alpha1.PoolNameForSSD] = poolSSD
 	}
 
 	// NVMe pool rebuild
-	poolInfo = rb.getPoolInfo(classifiedDisks[udsv1alpha1.PoolNameForNVMe])
+	poolInfo = rb.getPoolInfo(classifiedDisks[localstoragev1alpha1.PoolNameForNVMe])
 	if poolInfo.NotEmpty {
-		poolNVMe := &udsv1alpha1.LocalPool{
-			Name:                     udsv1alpha1.PoolNameForNVMe,
-			Class:                    udsv1alpha1.DiskClassNameNVMe,
-			Type:                     udsv1alpha1.PoolTypeRegular,
-			VolumeKind:               udsv1alpha1.VolumeKindDisk,
-			Path:                     udsv1alpha1.AssigedDiskPoolNVMe,
+		poolNVMe := &localstoragev1alpha1.LocalPool{
+			Name:                     localstoragev1alpha1.PoolNameForNVMe,
+			Class:                    localstoragev1alpha1.DiskClassNameNVMe,
+			Type:                     localstoragev1alpha1.PoolTypeRegular,
+			VolumeKind:               localstoragev1alpha1.VolumeKindDisk,
+			Path:                     localstoragev1alpha1.AssigedDiskPoolNVMe,
 			TotalCapacityBytes:       poolInfo.TotalCapacityBytes,
 			UsedCapacityBytes:        poolInfo.UsedCapacityBytes,
 			FreeCapacityBytes:        poolInfo.TotalCapacityBytes - poolInfo.UsedCapacityBytes,
@@ -424,31 +424,31 @@ func (rb *diskExecutor) ExtendPoolsInfo(localDisks map[string]*udsv1alpha1.Local
 			Disks:                    poolInfo.Disks,
 			Volumes:                  poolInfo.Volumes,
 		}
-		pools[udsv1alpha1.PoolNameForNVMe] = poolNVMe
+		pools[localstoragev1alpha1.PoolNameForNVMe] = poolNVMe
 	}
 
 	return pools, nil
 }
 
-func (rb *diskExecutor) GetReplicas() (map[string]*udsv1alpha1.LocalVolumeReplica, error) {
+func (rb *diskExecutor) GetReplicas() (map[string]*localstoragev1alpha1.LocalVolumeReplica, error) {
 	classifiedDisks, err := rb.getClassifiedPoolList()
 	if err != nil {
 		return nil, err
 	}
 
-	replicas := make(map[string]*udsv1alpha1.LocalVolumeReplica)
+	replicas := make(map[string]*localstoragev1alpha1.LocalVolumeReplica)
 
-	for _, diskWithLinkPath := range classifiedDisks[udsv1alpha1.PoolNameForHDD] {
+	for _, diskWithLinkPath := range classifiedDisks[localstoragev1alpha1.PoolNameForHDD] {
 		if diskWithLinkPath.LinkPath == "" {
 			continue
 		}
 		volumeName := filepath.Base(diskWithLinkPath.LinkPath)
-		replicaToTest := &udsv1alpha1.LocalVolumeReplica{
-			Spec: udsv1alpha1.LocalVolumeReplicaSpec{
+		replicaToTest := &localstoragev1alpha1.LocalVolumeReplica{
+			Spec: localstoragev1alpha1.LocalVolumeReplicaSpec{
 				VolumeName: volumeName,
-				PoolName:   udsv1alpha1.PoolNameForHDD,
+				PoolName:   localstoragev1alpha1.PoolNameForHDD,
 			},
-			Status: udsv1alpha1.LocalVolumeReplicaStatus{
+			Status: localstoragev1alpha1.LocalVolumeReplicaStatus{
 				StoragePath:            diskWithLinkPath.LocalDisk.DevPath,
 				DevicePath:             diskWithLinkPath.LinkPath,
 				AllocatedCapacityBytes: diskWithLinkPath.LocalDisk.CapacityBytes,
@@ -458,17 +458,17 @@ func (rb *diskExecutor) GetReplicas() (map[string]*udsv1alpha1.LocalVolumeReplic
 		replica, _ := rb.TestVolumeReplica(replicaToTest)
 		replicas[volumeName] = replica
 	}
-	for _, diskWithLinkPath := range classifiedDisks[udsv1alpha1.PoolNameForSSD] {
+	for _, diskWithLinkPath := range classifiedDisks[localstoragev1alpha1.PoolNameForSSD] {
 		if diskWithLinkPath.LinkPath == "" {
 			continue
 		}
 		volumeName := filepath.Base(diskWithLinkPath.LinkPath)
-		replicaToTest := &udsv1alpha1.LocalVolumeReplica{
-			Spec: udsv1alpha1.LocalVolumeReplicaSpec{
+		replicaToTest := &localstoragev1alpha1.LocalVolumeReplica{
+			Spec: localstoragev1alpha1.LocalVolumeReplicaSpec{
 				VolumeName: volumeName,
-				PoolName:   udsv1alpha1.PoolNameForSSD,
+				PoolName:   localstoragev1alpha1.PoolNameForSSD,
 			},
-			Status: udsv1alpha1.LocalVolumeReplicaStatus{
+			Status: localstoragev1alpha1.LocalVolumeReplicaStatus{
 				StoragePath:            diskWithLinkPath.LocalDisk.DevPath,
 				DevicePath:             diskWithLinkPath.LinkPath,
 				AllocatedCapacityBytes: diskWithLinkPath.LocalDisk.CapacityBytes,
@@ -478,17 +478,17 @@ func (rb *diskExecutor) GetReplicas() (map[string]*udsv1alpha1.LocalVolumeReplic
 		replica, _ := rb.TestVolumeReplica(replicaToTest)
 		replicas[volumeName] = replica
 	}
-	for _, diskWithLinkPath := range classifiedDisks[udsv1alpha1.PoolNameForNVMe] {
+	for _, diskWithLinkPath := range classifiedDisks[localstoragev1alpha1.PoolNameForNVMe] {
 		if diskWithLinkPath.LinkPath == "" {
 			continue
 		}
 		volumeName := filepath.Base(diskWithLinkPath.LinkPath)
-		replicaToTest := &udsv1alpha1.LocalVolumeReplica{
-			Spec: udsv1alpha1.LocalVolumeReplicaSpec{
+		replicaToTest := &localstoragev1alpha1.LocalVolumeReplica{
+			Spec: localstoragev1alpha1.LocalVolumeReplicaSpec{
 				VolumeName: volumeName,
-				PoolName:   udsv1alpha1.PoolNameForNVMe,
+				PoolName:   localstoragev1alpha1.PoolNameForNVMe,
 			},
-			Status: udsv1alpha1.LocalVolumeReplicaStatus{
+			Status: localstoragev1alpha1.LocalVolumeReplicaStatus{
 				StoragePath:            diskWithLinkPath.LocalDisk.DevPath,
 				DevicePath:             diskWithLinkPath.LinkPath,
 				AllocatedCapacityBytes: diskWithLinkPath.LocalDisk.CapacityBytes,

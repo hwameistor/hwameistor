@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"github.com/HwameiStor/local-storage/pkg/controller/localvolumemigrate"
+	"github.com/hwameiStor/local-storage/pkg/controller/localvolumemigrate"
 )
 
 func init() {

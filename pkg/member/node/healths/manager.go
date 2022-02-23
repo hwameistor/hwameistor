@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -78,12 +78,12 @@ func (dm *diskHealthManager) checkDiskHealths() {
 		return
 	}
 
-	diskCrdList := &udsv1alpha1.PhysicalDiskList{}
+	diskCrdList := &localstoragev1alpha1.PhysicalDiskList{}
 	if err := dm.apiClient.List(context.TODO(), diskCrdList); err != nil {
 		dm.logger.WithError(err).Error("Failed to list PhysicalDisks")
 		return
 	}
-	diskCrds := map[string]*udsv1alpha1.PhysicalDisk{}
+	diskCrds := map[string]*localstoragev1alpha1.PhysicalDisk{}
 	for i := range diskCrdList.Items {
 		if diskCrdList.Items[i].Spec.NodeName == dm.nodeName {
 			diskCrds[diskCrdList.Items[i].Name] = &diskCrdList.Items[i]
@@ -112,9 +112,9 @@ func (dm *diskHealthManager) checkDiskHealths() {
 			crd.Status.SmartCheck.LastTime = &metav1.Time{Time: time.Now()}
 			delete(diskCrds, result.SerailNumber)
 		} else {
-			crd = &udsv1alpha1.PhysicalDisk{
+			crd = &localstoragev1alpha1.PhysicalDisk{
 				ObjectMeta: metav1.ObjectMeta{Name: result.SerailNumber},
-				Spec: udsv1alpha1.PhysicalDiskSpec{
+				Spec: localstoragev1alpha1.PhysicalDiskSpec{
 					NodeName:     dm.nodeName,
 					Vendor:       result.Vendor,
 					Product:      result.Product,
@@ -125,7 +125,7 @@ func (dm *diskHealthManager) checkDiskHealths() {
 					DevicePath:   result.Device.Name,
 					Protocol:     result.Device.Protocol,
 				},
-				Status: udsv1alpha1.PhysicalDiskStatus{
+				Status: localstoragev1alpha1.PhysicalDiskStatus{
 					Online:     true,
 					SmartCheck: &result.SmartCheck,
 				},

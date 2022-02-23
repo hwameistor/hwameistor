@@ -7,13 +7,13 @@ import (
 	"net"
 	"os"
 
-	"github.com/HwameiStor/local-storage/pkg/apis"
-	ldmv1alpha1 "github.com/cherry-io/local-disk-manager/pkg/apis/cherry/v1alpha1"
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
-	"github.com/HwameiStor/local-storage/pkg/common"
-	"github.com/HwameiStor/local-storage/pkg/member/node/diskmonitor"
-	"github.com/HwameiStor/local-storage/pkg/member/node/storage"
-	"github.com/HwameiStor/local-storage/pkg/utils"
+	"github.com/hwameiStor/local-storage/pkg/apis"
+	ldmv1alpha1 "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"github.com/hwameiStor/local-storage/pkg/common"
+	"github.com/hwameiStor/local-storage/pkg/member/node/diskmonitor"
+	"github.com/hwameiStor/local-storage/pkg/member/node/storage"
+	"github.com/hwameiStor/local-storage/pkg/utils"
 	log "github.com/sirupsen/logrus"
 
 	k8scorev1 "k8s.io/api/core/v1"
@@ -65,7 +65,7 @@ type manager struct {
 }
 
 // New node manager
-func New(name string, namespace string, cli client.Client, informersCache runtimecache.Cache, config udsv1alpha1.SystemConfig) (apis.NodeManager, error) {
+func New(name string, namespace string, cli client.Client, informersCache runtimecache.Cache, config localstoragev1alpha1.SystemConfig) (apis.NodeManager, error) {
 	configManager, err := NewConfigManager(name, config, cli)
 	if err != nil {
 		return nil, err
@@ -143,7 +143,7 @@ func (m *manager) isPhysicalNode() bool {
 func (m *manager) initCache() {
 	// initialize replica records
 	m.logger.Debug("Initializing replica records in cache")
-	replicaList := &udsv1alpha1.LocalVolumeReplicaList{}
+	replicaList := &localstoragev1alpha1.LocalVolumeReplicaList{}
 	if err := m.apiClient.List(context.TODO(), replicaList); err != nil {
 		m.logger.WithError(err).Fatal("Failed to list replicas")
 	}
@@ -155,7 +155,7 @@ func (m *manager) initCache() {
 }
 
 func (m *manager) setupInformers() {
-	nodeInformer, err := m.informersCache.GetInformer(context.TODO(), &udsv1alpha1.LocalStorageNode{})
+	nodeInformer, err := m.informersCache.GetInformer(context.TODO(), &localstoragev1alpha1.LocalStorageNode{})
 	if err != nil {
 		// error happens, crash the node
 		m.logger.WithError(err).Fatal("Failed to get informer for Node")
@@ -165,7 +165,7 @@ func (m *manager) setupInformers() {
 		DeleteFunc: m.handleNodeDelete,
 	})
 
-	volumeReplicaInformer, err := m.informersCache.GetInformer(context.TODO(), &udsv1alpha1.LocalVolumeReplica{})
+	volumeReplicaInformer, err := m.informersCache.GetInformer(context.TODO(), &localstoragev1alpha1.LocalVolumeReplica{})
 	if err != nil {
 		// error happens, crash the node
 		m.logger.WithError(err).Fatal("Failed to get informer for VolumeReplica")
@@ -203,20 +203,20 @@ func (m *manager) Storage() *storage.LocalManager {
 	return m.storageMgr
 }
 
-func (m *manager) TakeVolumeReplicaTaskAssignment(vol *udsv1alpha1.LocalVolume) {
+func (m *manager) TakeVolumeReplicaTaskAssignment(vol *localstoragev1alpha1.LocalVolume) {
 	// have to add all volumes into the assignment queue, even this node is not in volume.config
 	// in case of removing replica, it is not in the volume.config but should be recycled
 	m.volumeTaskQueue.Add(vol.Name)
 }
 
-func (m *manager) ReconcileVolumeReplica(replica *udsv1alpha1.LocalVolumeReplica) {
+func (m *manager) ReconcileVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) {
 	if replica.Spec.NodeName == m.name {
 		m.volumeReplicaTaskQueue.Add(replica.Name)
 	}
 }
 
 func (m *manager) register() {
-	var nodeConfig *udsv1alpha1.NodeConfig
+	var nodeConfig *localstoragev1alpha1.NodeConfig
 	logCtx := m.logger.WithFields(log.Fields{"node": m.name})
 	logCtx.Debug("Registering node into cluster")
 	k8sNode := &k8scorev1.Node{}
@@ -224,7 +224,7 @@ func (m *manager) register() {
 		logCtx.WithError(err).Fatal("Can't find K8S node")
 	}
 
-	myNode := &udsv1alpha1.LocalStorageNode{}
+	myNode := &localstoragev1alpha1.LocalStorageNode{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: m.name}, myNode); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Fatal("Failed to get Node info")
@@ -263,18 +263,18 @@ func (m *manager) register() {
 	}
 }
 
-func (m *manager) getNodeConf(node *udsv1alpha1.LocalStorageNode) *udsv1alpha1.NodeConfig {
-	return &udsv1alpha1.NodeConfig{
+func (m *manager) getNodeConf(node *localstoragev1alpha1.LocalStorageNode) *localstoragev1alpha1.NodeConfig {
+	return &localstoragev1alpha1.NodeConfig{
 		StorageIP: node.Spec.StorageIP,
 		Topology:  node.Spec.Topo.DeepCopy(),
-		LocalStorageConfig: &udsv1alpha1.LocalStorageConfig{
+		LocalStorageConfig: &localstoragev1alpha1.LocalStorageConfig{
 			VolumeKind:           node.Spec.AllowedVolumeKind,
 			RAMDiskTotalCapacity: utils.ConvertBytesToStr(node.Spec.AllowdRAMDiskTotalCapacityBytes),
 		},
 	}
 }
 
-func (m *manager) configNode(config *udsv1alpha1.NodeConfig, node *udsv1alpha1.LocalStorageNode) error {
+func (m *manager) configNode(config *localstoragev1alpha1.NodeConfig, node *localstoragev1alpha1.LocalStorageNode) error {
 	if config.Topology != nil {
 		node.Spec.Topo = *config.Topology
 	}
@@ -290,27 +290,27 @@ func (m *manager) configNode(config *udsv1alpha1.NodeConfig, node *udsv1alpha1.L
 	return nil
 }
 
-func (m *manager) getConfByK8SNodeOrDefault(k8sNode *k8scorev1.Node) (*udsv1alpha1.NodeConfig, error) {
+func (m *manager) getConfByK8SNodeOrDefault(k8sNode *k8scorev1.Node) (*localstoragev1alpha1.NodeConfig, error) {
 	logCtx := m.logger.WithField("node", m.name)
 	supportedVolumeKind := map[string]struct{}{
-		udsv1alpha1.VolumeKindLVM:  struct{}{},
-		udsv1alpha1.VolumeKindDisk: struct{}{},
-		udsv1alpha1.VolumeKindRAM:  struct{}{},
+		localstoragev1alpha1.VolumeKindLVM:  struct{}{},
+		localstoragev1alpha1.VolumeKindDisk: struct{}{},
+		localstoragev1alpha1.VolumeKindRAM:  struct{}{},
 	}
 	ipAddr, err := m.getStorageIPv4Address(k8sNode)
 	if err != nil {
 		return nil, err
 	}
-	defaultConf := &udsv1alpha1.NodeConfig{
+	defaultConf := &localstoragev1alpha1.NodeConfig{
 		StorageIP: ipAddr,
-		LocalStorageConfig: &udsv1alpha1.LocalStorageConfig{
-			VolumeKind:           udsv1alpha1.VolumeKindLVM,
+		LocalStorageConfig: &localstoragev1alpha1.LocalStorageConfig{
+			VolumeKind:           localstoragev1alpha1.VolumeKindLVM,
 			RAMDiskTotalCapacity: "0",
 		},
 	}
 
-	structedConf := &udsv1alpha1.NodeConfig{StorageIP: ipAddr}
-	conf, has := k8sNode.Annotations[udsv1alpha1.LocalStorageConfigAnnotationName]
+	structedConf := &localstoragev1alpha1.NodeConfig{StorageIP: ipAddr}
+	conf, has := k8sNode.Annotations[localstoragev1alpha1.LocalStorageConfigAnnotationName]
 	if !has {
 		logCtx.Info("No config annotation found in node resources. Use default node configuration.")
 		return defaultConf, nil
@@ -337,7 +337,7 @@ func (m *manager) getConfByK8SNodeOrDefault(k8sNode *k8scorev1.Node) (*udsv1alph
 func (m *manager) getStorageIPv4Address(k8sNode *k8scorev1.Node) (string, error) {
 	logCtx := m.logger.WithField("node", k8sNode.Name)
 	// lookup from k8s node's annotation firstly
-	annotationKey := os.Getenv(udsv1alpha1.StorageIPv4AddressAnnotationKeyEnv)
+	annotationKey := os.Getenv(localstoragev1alpha1.StorageIPv4AddressAnnotationKeyEnv)
 	if len(annotationKey) > 0 {
 		ipAddr, has := k8sNode.Annotations[annotationKey]
 		if has {
@@ -361,7 +361,7 @@ func (m *manager) getStorageIPv4Address(k8sNode *k8scorev1.Node) (string, error)
 }
 
 func (m *manager) handleVolumeReplicaUpdate(oldObj, newObj interface{}) {
-	replica, _ := newObj.(*udsv1alpha1.LocalVolumeReplica)
+	replica, _ := newObj.(*localstoragev1alpha1.LocalVolumeReplica)
 	if replica.Spec.NodeName != m.name {
 		return
 	}
@@ -393,17 +393,17 @@ func (m *manager) handleLocalDiskUpdate(oldObj, newObj interface{}) {
 }
 
 func (m *manager) handleVolumeReplicaDelete(obj interface{}) {
-	replica, _ := obj.(*udsv1alpha1.LocalVolumeReplica)
+	replica, _ := obj.(*localstoragev1alpha1.LocalVolumeReplica)
 	if replica.Spec.NodeName != m.name {
 		return
 	}
 
 	m.logger.WithFields(log.Fields{"replica": replica.Name}).Info("Observed a VolumeReplica CRD deletion...")
-	if replica.Status.State != udsv1alpha1.VolumeReplicaStateDeleted {
+	if replica.Status.State != localstoragev1alpha1.VolumeReplicaStateDeleted {
 		// must be deleted by a mistake, rebuild it
 		m.logger.WithFields(log.Fields{"replica": replica.Name, "spec": replica.Spec, "status": replica.Status}).Warning("Rebuilding VolumeReplica CRD ...")
 		// TODO: need retry considering the case of creating failure??
-		newReplica := &udsv1alpha1.LocalVolumeReplica{}
+		newReplica := &localstoragev1alpha1.LocalVolumeReplica{}
 		newReplica.Name = replica.Name
 		newReplica.Spec = replica.Spec
 
@@ -416,7 +416,7 @@ func (m *manager) handleVolumeReplicaDelete(obj interface{}) {
 }
 
 func (m *manager) handleNodeDelete(obj interface{}) {
-	node, _ := obj.(*udsv1alpha1.LocalStorageNode)
+	node, _ := obj.(*localstoragev1alpha1.LocalStorageNode)
 	if node.Name != m.name {
 		return
 	}
@@ -425,7 +425,7 @@ func (m *manager) handleNodeDelete(obj interface{}) {
 	// must be deleted by a mistake, rebuild it
 	m.logger.Warning("Rebuilding Node CRD ...")
 	// TODO: need retry considering the case of creating failure??
-	nodeToRecovery := &udsv1alpha1.LocalStorageNode{}
+	nodeToRecovery := &localstoragev1alpha1.LocalStorageNode{}
 	nodeToRecovery.SetName(node.GetName())
 	nodeToRecovery.Spec = node.Spec
 	nodeToRecovery.Status = node.Status

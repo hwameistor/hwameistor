@@ -3,17 +3,17 @@
 package externalversions
 
 import (
-	reflect "reflect"
-	sync "sync"
-	time "time"
+	"reflect"
+	"sync"
+	"time"
 
-	versioned "github.com/HwameiStor/local-storage/pkg/apis/client/clientset/versioned"
-	internalinterfaces "github.com/HwameiStor/local-storage/pkg/apis/client/informers/externalversions/internalinterfaces"
-	uds "github.com/HwameiStor/local-storage/pkg/apis/client/informers/externalversions/uds"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	runtime "k8s.io/apimachinery/pkg/runtime"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	cache "k8s.io/client-go/tools/cache"
+	"github.com/hwameiStor/local-storage/pkg/apis/client/clientset/versioned"
+	"github.com/hwameiStor/local-storage/pkg/apis/client/informers/externalversions/internalinterfaces"
+	localstorage "github.com/hwameiStor/local-storage/pkg/apis/client/informers/externalversions/localstorage"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/cache"
 )
 
 // SharedInformerOption defines the functional option type for SharedInformerFactory.
@@ -156,9 +156,9 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Uds() uds.Interface
+	Localstorage() localstorage.Interface
 }
 
-func (f *sharedInformerFactory) Uds() uds.Interface {
-	return uds.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Localstorage() localstorage.Interface {
+	return localstorage.New(f, f.namespace, f.tweakListOptions)
 }

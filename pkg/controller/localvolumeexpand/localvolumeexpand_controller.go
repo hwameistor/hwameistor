@@ -3,9 +3,9 @@ package localvolumeexpand
 import (
 	"context"
 
-	"github.com/HwameiStor/local-storage/pkg/apis"
-	udsv1alpha1 "github.com/HwameiStor/local-storage/pkg/apis/uds/v1alpha1"
-	"github.com/HwameiStor/local-storage/pkg/member"
+	"github.com/hwameiStor/local-storage/pkg/apis"
+	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"github.com/hwameiStor/local-storage/pkg/member"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -47,7 +47,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource LocalVolumeExpand
-	err = c.Watch(&source.Kind{Type: &udsv1alpha1.LocalVolumeExpand{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &localstoragev1alpha1.LocalVolumeExpand{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ type ReconcileLocalVolumeExpand struct {
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileLocalVolumeExpand) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	// Fetch the LocalVolumeExpand instance
-	instance := &udsv1alpha1.LocalVolumeExpand{}
+	instance := &localstoragev1alpha1.LocalVolumeExpand{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {

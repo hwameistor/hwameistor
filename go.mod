@@ -1,20 +1,18 @@
-module github.com/HwameiStor/local-storage
+module github.com/hwameiStor/local-storage
 
 go 1.13
 
 require (
-	github.com/cherry-io/local-disk-manager v0.0.0-00010101000000-000000000000
-	github.com/caddyserver/caddy v1.0.3 // indirect
 	github.com/container-storage-interface/spec v1.3.0
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/mux v1.7.3
+	github.com/hwameistor/local-disk-manager v0.0.0-00010101000000-000000000000
 	github.com/kubernetes-csi/csi-lib-utils v0.7.1
 	github.com/prometheus/client_golang v1.7.1 // indirect
 	github.com/sirupsen/logrus v1.6.0
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
-	go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738 // indirect
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f
 	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
@@ -32,9 +30,8 @@ require (
 
 replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.2+incompatible // Required by OLM
-	github.com/cherry-io/local-disk-manager => ../local-disk-manager
-	github.com/HwameiStor/local-storage => ../local-storage
-	github.com/DaoCloud/uds => ../uds
+	github.com/hwameiStor/local-storage => ../local-storage
+	github.com/hwameistor/local-disk-manager => ../local-disk-manager
 	google.golang.org/grpc => google.golang.org/grpc v1.23.1
 	k8s.io/api => k8s.io/api v0.18.6
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.6
