@@ -38,17 +38,17 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	switch resource {
 	// Group=localstorage.hwameistor.io, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("localstoragealerts"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Uds().V1alpha1().LocalStorageAlerts().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Localstorage().V1alpha1().LocalStorageAlerts().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("localstoragenodes"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Uds().V1alpha1().LocalStorageNodes().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Localstorage().V1alpha1().LocalStorageNodes().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("localvolumes"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Uds().V1alpha1().LocalVolumes().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Localstorage().V1alpha1().LocalVolumes().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("localvolumeexpands"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Uds().V1alpha1().LocalVolumeExpands().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Localstorage().V1alpha1().LocalVolumeExpands().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("localvolumereplicas"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Uds().V1alpha1().LocalVolumeReplicas().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Localstorage().V1alpha1().LocalVolumeReplicas().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("physicaldisks"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Uds().V1alpha1().PhysicalDisks().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Localstorage().V1alpha1().PhysicalDisks().Informer()}, nil
 
 	}
 

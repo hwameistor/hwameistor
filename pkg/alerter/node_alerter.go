@@ -30,7 +30,7 @@ func newStorageNodeAlerter() Alerter {
 }
 
 func (alt *storageNodeAlerter) Run(informerFactory localstorageinformers.SharedInformerFactory, stopCh <-chan struct{}) {
-	informer := informerFactory.Uds().V1alpha1().LocalStorageNodes().Informer()
+	informer := informerFactory.Localstorage().V1alpha1().LocalStorageNodes().Informer()
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    alt.onAdd,
 		UpdateFunc: alt.onUpdate,

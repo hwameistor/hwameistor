@@ -9,6 +9,7 @@ import (
 
 	"github.com/hwameiStor/local-storage/pkg/apis/client/clientset/versioned"
 	"github.com/hwameiStor/local-storage/pkg/apis/client/informers/externalversions/internalinterfaces"
+	localstorage "github.com/hwameiStor/local-storage/pkg/apis/client/informers/externalversions/localstorage"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -158,6 +159,6 @@ type SharedInformerFactory interface {
 	Localstorage() localstorage.Interface
 }
 
-func (f *sharedInformerFactory) Uds() localstorage.Interface {
+func (f *sharedInformerFactory) Localstorage() localstorage.Interface {
 	return localstorage.New(f, f.namespace, f.tweakListOptions)
 }

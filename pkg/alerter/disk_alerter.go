@@ -31,7 +31,7 @@ func newDiskAlerter() Alerter {
 
 // Run disk alerter
 func (alt *diskAlerter) Run(informerFactory localstorageinformers.SharedInformerFactory, stopCh <-chan struct{}) {
-	informer := informerFactory.Uds().V1alpha1().PhysicalDisks().Informer()
+	informer := informerFactory.Localstorage().V1alpha1().PhysicalDisks().Informer()
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    alt.onAdd,
 		UpdateFunc: alt.onUpdate,
