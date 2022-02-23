@@ -1,25 +1,25 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: localstorage-local-storage-scheduler-config
+  name: local-storage-scheduler-config
 data:
   scheduler-config.yaml: |
     apiVersion: kubescheduler.config.k8s.io/v1alpha1
     kind: KubeSchedulerConfiguration
-    schedulerName: localstorage-local-storage-scheduler
+    schedulerName: local-storage-scheduler
     leaderElection:
       leaderElect: true
-      lockObjectName: localstorage-local-storage-scheduler
+      lockObjectName: local-storage-scheduler
       resourceLock: leases
     plugins:
       filter:
         enabled:
-        - name: "dlocal-scheduler-plugin"
+        - name: "local-storage-scheduler-plugin"
       score:
         enabled:
-        - name: "dlocal-scheduler-plugin"
+        - name: "local-storage-scheduler-plugin"
     pluginConfig:
-    - name: "dlocal-scheduler-plugin"
+    - name: "local-storage-scheduler-plugin"
       args:
         csiDriverName: "local.storage.hwameistor.io"
 
@@ -28,24 +28,24 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: localstorage-local-storage-scheduler
+  name: local-storage-scheduler
   labels:
-    app: localstorage-local-storage-scheduler
+    app: local-storage-scheduler
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: localstorage-local-storage-scheduler
+      app: local-storage-scheduler
   template:
     metadata:
       labels:
-        app: localstorage-local-storage-scheduler
+        app: local-storage-scheduler
     spec:
       serviceAccount: localstorage-admin
       priorityClassName: system-cluster-critical
       containers:
         - name: scheduler
-          image: 10.6.170.180/localstorage/localstorage-local-storage-scheduler:1.0-integrate_ldm_v1
+          image: 10.6.170.180/localstorage/local-storage-scheduler:1.0-integrate_ldm_v1
           imagePullPolicy: Always
           args:
             - --config=/etc/kubernetes/scheduler-config.yaml
@@ -65,4 +65,4 @@ spec:
       volumes:
         - name: scheduler-config
           configMap:
-            name: localstorage-local-storage-scheduler-config
+            name: local-storage-scheduler-config
