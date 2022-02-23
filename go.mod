@@ -1,6 +1,6 @@
 module github.com/hwameistor/local-storage
 
-go 1.13
+go 1.17
 
 require (
 	github.com/container-storage-interface/spec v1.3.0

@@ -1,0 +1,19 @@
+name: Period check
+on:
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  period-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.17
+      - name: Unit test
+        run: make test

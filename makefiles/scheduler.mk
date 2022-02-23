@@ -1,4 +1,4 @@
-SCHEDULER_NAME = local-storage-scheduler
+SCHEDULER_NAME = localstorage-local-storage-scheduler
 SCHEDULER_IMAGE_DIR = ${PROJECT_SOURCE_CODE_DIR}/images/scheduler
 SCHEDULER_BUILD_BIN = ${BINS_DIR}/${SCHEDULER_NAME}-run
 SCHEDULER_BUILD_MAIN = ${CMDS_DIR}/scheduler/main.go
