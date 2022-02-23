@@ -1,4 +1,4 @@
-package localstorage
+package scheduler
 
 import (
 	"context"
@@ -23,14 +23,13 @@ import (
 	runtimeconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	localstorage "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
-	localstoragev1alpha1 "github.com/hwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
+	localstorage "github.com/HwameiStor/local-storage/pkg/apis/localstorage/v1alpha1"
 	"github.com/hwameiStor/local-storage/pkg/member/controller/scheduler"
 	"github.com/hwameiStor/local-storage/pkg/utils"
 )
 
 const (
-	Name = "dlocal-scheduler-plugin"
+	Name = "local-storage-scheduler-plugin"
 
 	defaultMaxVolumeCount = 1000
 )
@@ -238,7 +237,7 @@ func (p *Plugin) Filter(ctx context.Context, state *framework.CycleState, pod *c
 		volumes = append(volumes, vol)
 	}
 
-	var storageNode localstoragev1alpha1.LocalStorageNode
+	var storageNode localstorage.LocalStorageNode
 	if err := p.apiClient.Get(context.TODO(), client.ObjectKey{Name: node.Node().Name}, &storageNode); err != nil {
 		if errors.IsNotFound(err) {
 			return framework.NewStatus(framework.Unschedulable, "no such storage node %s", node.Node().Name)
@@ -253,7 +252,7 @@ func (p *Plugin) Filter(ctx context.Context, state *framework.CycleState, pod *c
 	return nil
 }
 
-func predicateForDiskVolume(volumes []*localstorage.LocalVolume, storageNode *localstoragev1alpha1.LocalStorageNode) (ok bool, reasons []string) {
+func predicateForDiskVolume(volumes []*localstorage.LocalVolume, storageNode *localstorage.LocalStorageNode) (ok bool, reasons []string) {
 	if storageNode.Spec.AllowedVolumeKind != localstorage.VolumeKindDisk {
 		return false, []string{fmt.Sprintf("node %s does not support volume kind: %s", storageNode.Name, localstorage.VolumeKindDisk)}
 	}
@@ -411,7 +410,7 @@ func New(config *runtime.Unknown, f framework.FrameworkHandle) (framework.Plugin
 	}
 
 	if len(args.CSIDriverName) == 0 {
-		args.CSIDriverName = localstoragev1alpha1.CSIDriverName
+		args.CSIDriverName = localstorage.CSIDriverName
 	}
 	if args.MaxVolumeCount == 0 {
 		args.MaxVolumeCount = defaultMaxVolumeCount

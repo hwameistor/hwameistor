@@ -1,4 +1,4 @@
-package localstorage
+package scheduler
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ func TestGetKubeconfigPath(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			want:  "",
+			want:    "",
 			wantErr: true,
 		},
 	}
