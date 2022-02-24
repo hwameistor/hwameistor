@@ -21,7 +21,7 @@ K8S_CMD = kubectl
 BUILDER_NAME = hwameistor/builder
 BUILDER_TAG = latest
 BUILDER_MOUNT_SRC_DIR = ${PROJECT_SOURCE_CODE_DIR}/../
-BUILDER_MOUNT_DST_DIR = /go/src/github.com/DaoCloud
+BUILDER_MOUNT_DST_DIR = /go/src/github.com/hwameistor
 BUILDER_WORKDIR = /go/src/github.com/hwameistor/local-storage
 
 DOCKER_SOCK_PATH=/var/run/docker.sock
