@@ -12,7 +12,7 @@ import (
 	"k8s.io/klog"
 	"k8s.io/kubernetes/cmd/kube-scheduler/app"
 
-	"github.com/hwameiStor/local-storage/pkg/scheduler"
+	"github.com/hwameistor/local-storage/pkg/scheduler"
 )
 
 var BUILDVERSION, BUILDTIME, GOVERSION string
