@@ -16,4 +16,4 @@ jobs:
         with:
           go-version: 1.17
       - name: Unit test
-        run: make test
+        run: make unit-test
