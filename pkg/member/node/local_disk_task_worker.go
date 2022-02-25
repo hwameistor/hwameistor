@@ -43,9 +43,9 @@ func (m *manager) processLocalDisk(localDiskNameSpacedName string) error {
 	logCtx := m.logger.WithFields(log.Fields{"LocalDisk": localDiskNameSpacedName})
 	logCtx.Debug("Working on a LocalDisk task")
 	splitRes := strings.Split(localDiskNameSpacedName, "/")
-	var nameSpace, diskName string
+	var diskName string
 	if len(splitRes) >= 2 {
-		nameSpace = splitRes[0]
+		// nameSpace = splitRes[0]
 		diskName = splitRes[1]
 	}
 

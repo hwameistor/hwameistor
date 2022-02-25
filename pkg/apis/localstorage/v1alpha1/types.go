@@ -93,7 +93,7 @@ const (
 const (
 	CSIDriverName = "local.storage.hwameistor.io"
 
-	VendorName = "DaoCloud.io"
+	VendorName = "hwameistor.io"
 )
 
 // k8snode
