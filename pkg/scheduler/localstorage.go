@@ -24,7 +24,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	localstorage "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
 	"github.com/hwameistor/local-storage/pkg/member/controller/scheduler"
 	"github.com/hwameistor/local-storage/pkg/utils"
 )
