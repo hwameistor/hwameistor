@@ -267,7 +267,7 @@ func (m *manager) getLocalDiskByName(localDiskName, nameSpace string) (*ldmv1alp
 	logCtx := m.logger.WithFields(log.Fields{"LocalDisk": localDiskName})
 	logCtx.Debug("getLocalDiskByName ...")
 	localDisk := &ldmv1alpha1.LocalDisk{}
-	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: nameSpace, Name: localDiskName}, localDisk); err != nil {
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: localDiskName}, localDisk); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get LocalDisk from cache, retry it later ...")
 			return nil, err

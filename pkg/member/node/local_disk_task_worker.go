@@ -50,7 +50,7 @@ func (m *manager) processLocalDisk(localDiskNameSpacedName string) error {
 	}
 
 	localDisk := &ldmv1alpha1.LocalDisk{}
-	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: nameSpace, Name: diskName}, localDisk); err != nil {
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: diskName}, localDisk); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get LocalDisk from cache, retry it later ...")
 			return err
