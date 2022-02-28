@@ -12,7 +12,7 @@ local-storage是云原生本地存储系统。它统一管理节点上的空闲�
 
 ## 软件架构图
 
-![image](https://github.com/hwameistor/local-storage/HwameiStor-arch.png)
+![image](https://github.com/hwameistor/local-storage/blob/main/HwameiStor-arch.png)
 
 ## 功能与路线图
 
