@@ -91,7 +91,7 @@ const (
 
 // misc
 const (
-	CSIDriverName = "local.storage.hwameistor.io"
+	CSIDriverName = "localstorage.hwameistor.io"
 
 	VendorName = "hwameistor.io"
 )

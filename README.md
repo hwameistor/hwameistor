@@ -1,8 +1,6 @@
 # Local Storage System (local-storage)
 
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5685/badge)](https://bestpractices.coreinfrastructure.org/projects/5685)
-
-English | [Simplified_Chinese](https://github.com/Angel0507/local-storage/blob/main/README_zh.md)
+English | [Simplified_Chinese](https://github.com/hwameistor/local-storage/blob/main/README_zh.md)
 
 ## Introduction
 
@@ -11,6 +9,11 @@ Local Storage System is a cloud native storage system. It manages the free disks
 Support local volume kind: `LVM`, `Disk`, `RAMDisk`.
 
 Support disk type: `HDD`, `SSD`, `NVMe`, `RAMDisk`.
+
+## 软件架构图
+
+![image](https://github.com/hwameistor/local-storage/HwameiStor-arch.png)
+
 
 ## Features and Roadmap
 
@@ -139,9 +142,9 @@ $ kubectl apply -f deploy/storageclass-ram.yaml
 # check for storageclass
 $ kubectl get sc
 NAME                     PROVISIONER                 RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
-local-storage-hdd-disk   local.storage.hwameistor.io   Delete          WaitForFirstConsumer   false                  21d
-local-storage-hdd-lvm    local.storage.hwameistor.io   Delete          WaitForFirstConsumer   true                   21d
-local-storage-hdd-ram    local.storage.hwameistor.io   Delete          WaitForFirstConsumer   false                  15d
+local-storage-hdd-disk   localstorage.hwameistor.io   Delete          WaitForFirstConsumer   false                  21d
+local-storage-hdd-lvm    localstorage.hwameistor.io   Delete          WaitForFirstConsumer   true                   21d
+local-storage-hdd-ram    localstorage.hwameistor.io   Delete          WaitForFirstConsumer   false                  15d
 ```
 
 ### Step 4: Create PVC
@@ -212,28 +215,22 @@ pvc-fbf3ffc3-66db-4dae-9032-bda3c61b8f85-h6qrq   LVM    8589934592   localstorag
 ### Step 7: Check detail info including health of each physical disk
 
 ``` bash
-$ k get pd # physicaldisk
-NAME                  NODE              SERIALNUMBER          MODELNAME             DEVICE     TYPE   PROTOCOL   HEALTH   CHECKTIME   ONLINE   AGE
-localstorage-10-6-161-25-sda   localstorage-10-6-161-25   localstorage-10-6-161-25-sda   VMware Virtual disk   /dev/sda   scsi   SCSI                6s          true     31m
-localstorage-10-6-161-25-sdb   localstorage-10-6-161-25   localstorage-10-6-161-25-sdb   VMware Virtual disk   /dev/sdb   scsi   SCSI                6s          true     31m
-localstorage-10-6-161-25-sdc   localstorage-10-6-161-25   localstorage-10-6-161-25-sdc   VMware Virtual disk   /dev/sdc   scsi   SCSI                6s          true     31m
-localstorage-10-6-161-25-sdd   localstorage-10-6-161-25   localstorage-10-6-161-25-sdd   VMware Virtual disk   /dev/sdd   scsi   SCSI                6s          true     31m
-localstorage-10-6-161-25-sde   localstorage-10-6-161-25   localstorage-10-6-161-25-sde   VMware Virtual disk   /dev/sde   scsi   SCSI                5s          true     31m
-localstorage-10-6-161-25-sdf   localstorage-10-6-161-25   localstorage-10-6-161-25-sdf   VMware Virtual disk   /dev/sdf   scsi   SCSI                5s          true     31m
-localstorage-10-6-161-26-sda   localstorage-10-6-161-26   localstorage-10-6-161-26-sda   VMware Virtual disk   /dev/sda   scsi   SCSI                6s          true     31m
-localstorage-10-6-161-26-sdb   localstorage-10-6-161-26   localstorage-10-6-161-26-sdb   VMware Virtual disk   /dev/sdb   scsi   SCSI                6s          true     31m
-localstorage-10-6-161-26-sdc   localstorage-10-6-161-26   localstorage-10-6-161-26-sdc   VMware Virtual disk   /dev/sdc   scsi   SCSI                6s          true     31m
-localstorage-10-6-161-26-sdd   localstorage-10-6-161-26   localstorage-10-6-161-26-sdd   VMware Virtual disk   /dev/sdd   scsi   SCSI                5s          true     31m
-localstorage-10-6-161-26-sde   localstorage-10-6-161-26   localstorage-10-6-161-26-sde   VMware Virtual disk   /dev/sde   scsi   SCSI                5s          true     31m
-localstorage-10-6-161-26-sdf   localstorage-10-6-161-26   localstorage-10-6-161-26-sdf   VMware Virtual disk   /dev/sdf   scsi   SCSI                5s          true     31m
-localstorage-10-6-161-27-sda   localstorage-10-6-161-27   localstorage-10-6-161-27-sda   VMware Virtual disk   /dev/sda   scsi   SCSI                8s          true     31m
-localstorage-10-6-161-27-sdb   localstorage-10-6-161-27   localstorage-10-6-161-27-sdb   VMware Virtual disk   /dev/sdb   scsi   SCSI                8s          true     31m
-localstorage-10-6-161-27-sdc   localstorage-10-6-161-27   localstorage-10-6-161-27-sdc   VMware Virtual disk   /dev/sdc   scsi   SCSI                7s          true     31m
-localstorage-10-6-161-27-sdd   localstorage-10-6-161-27   localstorage-10-6-161-27-sdd   VMware Virtual disk   /dev/sdd   scsi   SCSI                7s          true     31m
-localstorage-10-6-161-27-sde   localstorage-10-6-161-27   localstorage-10-6-161-27-sde   VMware Virtual disk   /dev/sde   scsi   SCSI                7s          true     31m
-localstorage-10-6-161-27-sdf   localstorage-10-6-161-27   localstorage-10-6-161-27-sdf   VMware Virtual disk   /dev/sdf   scsi   SCSI                7s          true     31m
+$ k get ld # localdisk
+NAME              NODEMATCH    CLAIM   PHASE
+k8s-master-dm-0   k8s-master           Unclaimed
+k8s-master-dm-1   k8s-master           Unclaimed
+k8s-master-sda    k8s-master           Unclaimed
+k8s-master-sdb    k8s-master           Unclaimed
+k8s-master-sr0    k8s-master           Unclaimed
+k8s-node1-dm-0    k8s-node1            Unclaimed
+k8s-node1-dm-1    k8s-node1            Unclaimed
+k8s-node1-sda     k8s-node1            Unclaimed
+k8s-node1-sdb     k8s-node1            Unclaimed
+k8s-node1-sdc     k8s-node1            Unclaimed
+k8s-node1-sdd     k8s-node1            Unclaimed
+k8s-node1-sr0     k8s-node1            Unclaimed
 ```
 
 ## Feedbacks
 
-Please submit any feedback and issue at: [Issues](https://github.com/Angel0507/local-storage/-/issues)
+Please submit any feedback and issue at: [Issues](https://github.com/hwameistor/local-storage/issues)
