@@ -214,7 +214,7 @@ pvc-fbf3ffc3-66db-4dae-9032-bda3c61b8f85-h6qrq   LVM    8589934592   localstorag
 ### Step 7: Check detail info including health of each physical disk
 
 ``` bash
-$ k get ld # localdisk
+$ kubectl get ld # localdisk
 NAME              NODEMATCH    CLAIM   PHASE
 k8s-master-dm-0   k8s-master           Unclaimed
 k8s-master-dm-1   k8s-master           Unclaimed
