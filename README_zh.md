@@ -1,5 +1,7 @@
 # Local Storage System (local-storage)
 
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5685/badge)](https://bestpractices.coreinfrastructure.org/projects/5685)
+
 简体中文 | [英文](https://github.com/Angel0507/local-storage/blob/main/README.md)
 
 ## 介绍
