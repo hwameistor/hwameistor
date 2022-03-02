@@ -29,7 +29,7 @@ DOCKER_MAKE_CMD = docker run --rm -v ${BUILDER_MOUNT_SRC_DIR}:${BUILDER_MOUNT_DS
 DOCKER_DEBUG_CMD = docker run --rm -v ${BUILDER_MOUNT_SRC_DIR}:${BUILDER_MOUNT_DST_DIR} -v ${DOCKER_SOCK_PATH}:${DOCKER_SOCK_PATH} -w ${BUILDER_WORKDIR} -it ${BUILDER_NAME}:${BUILDER_TAG}
 DOCKER_BUILDX_CMD_AMD64 = DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --platform=linux/amd64 -o type=docker
 DOCKER_BUILDX_CMD_ARM64 = DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --platform=linux/arm64 -o type=docker
-MUILT_ARCH_PUSH_CMD = ${PROJECT_SOURCE_CODE_DIR}/docker-push-with-multi-arch.sh
+MUILT_ARCH_PUSH_CMD = ${PROJECT_SOURCE_CODE_DIR}/build/utils/docker-push-with-multi-arch.sh
 
 CLUSTER_CRD_DIR = ${PROJECT_SOURCE_CODE_DIR}/deploy/crds
 
