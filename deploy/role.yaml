@@ -82,7 +82,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - local.storage.hwameistor.io
+  - localstorage.hwameistor.io
   resources:
   - '*'
   - controllers

@@ -34,7 +34,7 @@ spec:
       terminationGracePeriodSeconds: 0
       schedulerName: localstorage-local-storage-scheduler
       containers:
-      - image: 10.6.170.180/library/nginx:latest
+      - image: nginx:latest
         imagePullPolicy: IfNotPresent
         name: nginx
         ports:

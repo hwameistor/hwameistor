@@ -19,7 +19,7 @@ spec:
       restartPolicy: Always
       terminationGracePeriodSeconds: 0
       containers:
-      - image: 10.6.170.180/library/nginx:latest
+      - image: nginx:latest
         imagePullPolicy: IfNotPresent
         name: nginx
         ports:

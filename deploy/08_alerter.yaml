@@ -17,7 +17,7 @@ spec:
       priorityClassName: system-cluster-critical
       containers:
         - name: main
-          image: 10.6.170.180/localstorage/localstorage-local-storage-alerter:1.0-integrate_ldm_v1
+          image: ghcr.io/hwameistor/localstorage-local-storage-alerter:v0.0.1
           imagePullPolicy: Always
           args:
             - --debug=true

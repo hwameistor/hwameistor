@@ -27,7 +27,7 @@ spec:
       serviceAccount: storage-admin
       containers:
         - name: provisioner
-          image: 10.6.170.180/k8scsi/csi-provisioner:v2.0.3
+          image: k8s.gcr.io/sig-storage/csi-provisioner:v1.1.0
           imagePullPolicy: "IfNotPresent"
           args:
             - "--v=5"
@@ -42,7 +42,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: attacher
-          image: 10.6.170.180/k8scsi/csi-attacher:v3.0.1
+          image: k8s.gcr.io/sig-storage/csi-attacher:v3.0.1
           imagePullPolicy: IfNotPresent
           args:
             - "--v=5"
@@ -56,7 +56,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: resizer
-          image: 10.6.170.180/k8scsi/csi-resizer:v1.0.1
+          image: k8s.gcr.io/sig-storage/csi-resizer:v1.0.1
           imagePullPolicy: "IfNotPresent"
           args:
             - "--v=5"
@@ -71,5 +71,5 @@ spec:
       volumes:
         - name: socket-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/local.storage.hwameistor.io
+            path: /var/lib/kubelet/plugins/localstorage.hwameistor.io
             type: DirectoryOrCreate

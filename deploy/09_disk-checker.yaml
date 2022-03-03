@@ -19,7 +19,7 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: checker
-          image: 10.6.170.180/localstorage/localstorage-disk-checker:1.0-integrate_ldm_v1
+          image: ghcr.io/hwameistor/localstorage-disk-checker:v0.0.1
           imagePullPolicy: Always
           securityContext:
             privileged: true
