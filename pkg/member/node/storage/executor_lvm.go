@@ -10,6 +10,7 @@ import (
 	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
 	"github.com/hwameistor/local-storage/pkg/exechelper"
 	"github.com/hwameistor/local-storage/pkg/exechelper/nsexecutor"
+	"github.com/hwameistor/local-storage/pkg/utils"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -114,12 +115,12 @@ func (lvm *lvmExecutor) ExtendPoolsInfo(disks map[string]*localstoragev1alpha1.L
 		if !strings.HasPrefix(vg.Name, localstoragev1alpha1.PoolNamePrefix) {
 			continue
 		}
-		totalCapacityBytes, err := convertLVMBytesToNumeric(vg.VgCapacityByte)
+		totalCapacityBytes, err := utils.ConvertLVMBytesToNumeric(vg.VgCapacityByte)
 		if err != nil {
 			lvm.logger.WithError(err).Errorf("Failed to convert LVM bytes into int64: %s\n.", vg.VgCapacityByte)
 			return nil, err
 		}
-		freeCapacityBytes, err := convertLVMBytesToNumeric(vg.VgFreeByte)
+		freeCapacityBytes, err := utils.ConvertLVMBytesToNumeric(vg.VgFreeByte)
 		if err != nil {
 			lvm.logger.WithError(err).Errorf("Failed to convert LVM bytes into int64: %s\n", vg.VgFreeByte)
 			return nil, err
@@ -138,7 +139,7 @@ func (lvm *lvmExecutor) ExtendPoolsInfo(disks map[string]*localstoragev1alpha1.L
 			if _, exists := localDisks[pv.Name]; !exists {
 				continue
 			}
-			pvcap, err := convertLVMBytesToNumeric(pv.PvSize)
+			pvcap, err := utils.ConvertLVMBytesToNumeric(pv.PvSize)
 			if err != nil {
 				lvm.logger.WithError(err).Errorf("Failed to convert LVM byte numbers int64: %s\n.", pv.PvSize)
 				return nil, err
@@ -194,7 +195,7 @@ func (lvm *lvmExecutor) GetReplicas() (map[string]*localstoragev1alpha1.LocalVol
 			continue
 		}
 
-		capacity, err := convertLVMBytesToNumeric(lv.LvCapacity)
+		capacity, err := utils.ConvertLVMBytesToNumeric(lv.LvCapacity)
 		if err != nil {
 			lvm.logger.WithError(err).Errorf("Failed to get replica capacity, unrecognizied params %s.", lv.LvCapacity)
 			return nil, err
@@ -248,7 +249,7 @@ func (lvm *lvmExecutor) CreateVolumeReplica(replica *localstoragev1alpha1.LocalV
 		stripNum = vgStatus.actPVCount
 	}
 	options := []string{
-		"--size", convertNumericToLVMBytes(replica.Spec.RequiredCapacityBytes),
+		"--size", utils.ConvertNumericToLVMBytes(replica.Spec.RequiredCapacityBytes),
 		"--stripes", fmt.Sprintf("%d", stripNum),
 	}
 	if err := lvm.lvcreate(replica.Spec.VolumeName, replica.Spec.PoolName, options); err != nil {
@@ -260,7 +261,7 @@ func (lvm *lvmExecutor) CreateVolumeReplica(replica *localstoragev1alpha1.LocalV
 	if err != nil {
 		return nil, err
 	}
-	allocatedCapacityBytes, err := convertLVMBytesToNumeric(record.LvCapacity)
+	allocatedCapacityBytes, err := utils.ConvertLVMBytesToNumeric(record.LvCapacity)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +280,7 @@ func (lvm *lvmExecutor) CreateVolumeReplica(replica *localstoragev1alpha1.LocalV
 
 func (lvm *lvmExecutor) ExpandVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*localstoragev1alpha1.LocalVolumeReplica, error) {
 
-	newLVMCapacityBytes := numericToLVMBytes(newCapacityBytes)
+	newLVMCapacityBytes := utils.NumericToLVMBytes(newCapacityBytes)
 
 	// for compatibility
 	storagePath := replica.Status.StoragePath
@@ -295,7 +296,7 @@ func (lvm *lvmExecutor) ExpandVolumeReplica(replica *localstoragev1alpha1.LocalV
 	if err != nil {
 		return nil, err
 	}
-	allocatedCapacityBytes, err := convertLVMBytesToNumeric(record.LvCapacity)
+	allocatedCapacityBytes, err := utils.ConvertLVMBytesToNumeric(record.LvCapacity)
 	if err != nil {
 		return nil, err
 	}
@@ -785,35 +786,4 @@ func (lvm *lvmExecutor) getLVMStatus(masks int) (*lvmStatus, error) {
 	}
 
 	return status, nil
-}
-
-func convertLVMBytesToNumeric(lvmbyte string) (int64, error) {
-	if len(lvmbyte) == 0 || lvmbyte[len(lvmbyte)-1] != 'B' {
-		return 0, ErrNotLVMByteNum
-	}
-	num, err := strconv.Atoi(lvmbyte[:len(lvmbyte)-1])
-	if err != nil {
-		return 0, err
-	}
-
-	return int64(num), nil
-}
-
-func convertNumericToLVMBytes(num int64) string {
-	lvmSizeInBytes := numericToLVMBytes(num)
-	if lvmSizeInBytes != num {
-		log.Infof("Given capacity %d will become %d.", num, lvmSizeInBytes)
-	}
-	return strconv.Itoa(int(lvmSizeInBytes)) + "B"
-}
-
-func numericToLVMBytes(bytes int64) int64 {
-	peSize := int64(4 * 1024 * 1024)
-	if bytes <= peSize {
-		return peSize
-	}
-	if bytes%peSize == 0 {
-		return bytes
-	}
-	return (bytes/peSize + 1) * peSize
 }

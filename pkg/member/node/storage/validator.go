@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"github.com/hwameistor/local-storage/pkg/utils"
 )
 
 type validator struct{}
@@ -93,7 +94,7 @@ func (cr *validator) checkPoolVolumeCount(vr *localstoragev1alpha1.LocalVolumeRe
 func (cr *validator) checkPoolCapacity(vr *localstoragev1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
 	pools := reg.Pools()
 	if pool, has := pools[vr.Spec.PoolName]; has {
-		if pool.FreeCapacityBytes < numericToLVMBytes(vr.Spec.RequiredCapacityBytes) {
+		if pool.FreeCapacityBytes < utils.NumericToLVMBytes(vr.Spec.RequiredCapacityBytes) {
 			return ErrorInsufficientRequestResources
 		}
 	} else {
@@ -105,7 +106,7 @@ func (cr *validator) checkPoolCapacity(vr *localstoragev1alpha1.LocalVolumeRepli
 func (cr *validator) checkPerVolumeCapacityLimit(vr *localstoragev1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
 	pools := reg.Pools()
 	if pool, has := pools[vr.Spec.PoolName]; has {
-		if pool.VolumeCapacityBytesLimit < numericToLVMBytes(vr.Spec.RequiredCapacityBytes) {
+		if pool.VolumeCapacityBytesLimit < utils.NumericToLVMBytes(vr.Spec.RequiredCapacityBytes) {
 			return ErrorOverLimitedRequestResource
 		}
 	} else {

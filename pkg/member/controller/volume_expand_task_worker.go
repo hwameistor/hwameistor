@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hwameistor/local-storage/pkg/utils"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -106,8 +107,8 @@ func (m *manager) volumeExpandStart(expand *localstoragev1alpha1.LocalVolumeExpa
 		return err
 	}
 
-	if expand.Spec.RequiredCapacityBytes > vol.Spec.RequiredCapacityBytes {
-		vol.Spec.RequiredCapacityBytes = expand.Spec.RequiredCapacityBytes
+	if utils.NumericToLVMBytes(expand.Spec.RequiredCapacityBytes) > utils.NumericToLVMBytes(vol.Spec.RequiredCapacityBytes) {
+		vol.Spec.RequiredCapacityBytes = utils.NumericToLVMBytes(expand.Spec.RequiredCapacityBytes)
 		if err := m.apiClient.Update(ctx, vol); err != nil {
 			logCtx.WithError(err).Error("Failed to update Volume with new capacity")
 			return err
@@ -132,7 +133,7 @@ func (m *manager) volumeExpandInProgress(expand *localstoragev1alpha1.LocalVolum
 		return err
 	}
 	for _, replica := range replicas {
-		if replica.Status.State != localstoragev1alpha1.VolumeReplicaStateReady || replica.Status.AllocatedCapacityBytes != expand.Spec.RequiredCapacityBytes {
+		if replica.Status.State != localstoragev1alpha1.VolumeReplicaStateReady || replica.Status.AllocatedCapacityBytes != utils.NumericToLVMBytes(expand.Spec.RequiredCapacityBytes) {
 			logCtx.WithField("replica", replica.Name).Debug("The replica is not ready")
 			return fmt.Errorf("replica not ready")
 		}
@@ -145,7 +146,7 @@ func (m *manager) volumeExpandInProgress(expand *localstoragev1alpha1.LocalVolum
 		return err
 	}
 
-	if vol.Status.State != localstoragev1alpha1.VolumeStateReady || vol.Status.AllocatedCapacityBytes != expand.Spec.RequiredCapacityBytes {
+	if vol.Status.State != localstoragev1alpha1.VolumeStateReady || vol.Status.AllocatedCapacityBytes != utils.NumericToLVMBytes(expand.Spec.RequiredCapacityBytes) {
 		logCtx.Debug("Volume is not ready")
 		expand.Status.Message = "In Progress"
 		return fmt.Errorf("not ready")
