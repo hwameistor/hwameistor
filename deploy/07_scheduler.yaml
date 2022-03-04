@@ -58,7 +58,7 @@ spec:
         - --leader-elect-resource-name=local-storage-scheduler
         - --config=/etc/localstorage/scheduler-config.yaml
         - --leader-elect-resource-namespace=local-storage-system  
-        image: hwameistor/scheduler:v0.0.1
+        image: hwameistor/scheduler:v0.0.3
         imagePullPolicy: IfNotPresent
         name: local-storage-scheduler
         resources:
