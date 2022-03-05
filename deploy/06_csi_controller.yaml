@@ -27,7 +27,7 @@ spec:
       serviceAccount: storage-admin
       containers:
         - name: provisioner
-          image: k8s.gcr.io/sig-storage/csi-provisioner:v1.1.0
+          image: k8s.gcr.io/sig-storage/csi-provisioner:v2.0.3
           imagePullPolicy: "IfNotPresent"
           args:
             - "--v=5"
