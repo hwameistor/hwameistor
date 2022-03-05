@@ -1,38 +1,23 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: nginx-local-storage-disk
-  labels:
-    app: nginx-local-storage-disk
-spec:
-  ports:
-    - targetPort: 80
-      port: 80
-  selector:
-    app: nginx-local-storage-disk
-
----
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-local-storage-disk
+  name: nginx-local-storage-lvm-ha
   labels:
-    app: nginx-local-storage-disk
+    app: nginx-local-storage-lvm-ha
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nginx-local-storage-disk
+      app: nginx-local-storage-lvm-ha
   template:
     metadata:
       labels:
-        app: nginx-local-storage-disk
-      name: nginx-local-storage-disk
+        app: nginx-local-storage-lvm-ha
+      name: nginx-local-storage-lvm-ha
     spec:
+      schedulerName: local-storage-scheduler
       restartPolicy: Always
       terminationGracePeriodSeconds: 0
-      schedulerName: hwameistor-scheduler
       containers:
       - image: nginx:latest
         imagePullPolicy: IfNotPresent
@@ -56,4 +41,4 @@ spec:
       volumes:
       - name: html-root
         persistentVolumeClaim:
-          claimName: local-storage-pvc-disk
+          claimName: local-storage-pvc-lvm-ha

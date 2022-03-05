@@ -1,16 +1,16 @@
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
-  name: localstorage-local-storage
+  name: hwameistor
   namespace: local-storage-system
 spec:
   selector:
     matchLabels:
-      app: localstorage-local-storage
+      app: hwameistor
   template:
     metadata:
       labels:
-        app: localstorage-local-storage
+        app: hwameistor
     spec:
       affinity:
         nodeAffinity:
@@ -33,11 +33,11 @@ spec:
           args:
             - "--v=5"
             - "--csi-address=/csi/csi.sock"
-            - "--kubelet-registration-path=/var/lib/kubelet/plugins/localstorage.hwameistor.io/csi.sock"
+            - "--kubelet-registration-path=/var/lib/kubelet/plugins/lvm.hwameistor.io/csi.sock"
           lifecycle:
             preStop:
               exec:
-                command: ["/bin/sh", "-c", "rm -rf /registration/localstorage.hwameistor.io /registration/localstorage.hwameistor.io-reg.sock"]
+                command: ["/bin/sh", "-c", "rm -rf /registration/lvm.hwameistor.io /registration/lvm.hwameistor.io-reg.sock"]
           env:
             - name: KUBE_NODE_NAME
               valueFrom:
@@ -49,7 +49,7 @@ spec:
             - name: registration-dir
               mountPath: /registration
         - name: member
-          image: ghcr.io/hwameistor/local-storage:v0.0.3
+          image: ghcr.io/hwameistor/local-storage:v0.0.2
           imagePullPolicy: IfNotPresent
           args:
             - --nodename=$(MY_NODENAME)
@@ -88,7 +88,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: CSI_ENDPOINT
-              value: unix://var/lib/kubelet/plugins/localstorage.hwameistor.io/csi.sock
+              value: unix://var/lib/kubelet/plugins/lvm.hwameistor.io/csi.sock
             - name: NODE_ANNOTATION_KEY_STORAGE_IPV4
               value: localstorage.hwameistor.io/storage-ipv4
           volumeMounts:
@@ -108,7 +108,7 @@ spec:
       volumes:
         - name: socket-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/localstorage.hwameistor.io
+            path: /var/lib/kubelet/plugins/lvm.hwameistor.io
             type: DirectoryOrCreate
         - name: plugin-dir
           hostPath:

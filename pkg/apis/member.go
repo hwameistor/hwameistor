@@ -12,11 +12,11 @@ import (
 const (
 	Version = "1.0.0"
 
-	NodeLeaseNamePrefix = "localstorage-local-storage-worker"
+	NodeLeaseNamePrefix = "hwameistor-local-storage-worker"
 
-	ControllerLeaseName = "localstorage-local-storage-master"
+	ControllerLeaseName = "hwameistor-local-storage-master"
 
-	TopologyNodeKey = "localstorage.hwameistor.io/local-storage-topology-node"
+	TopologyNodeKey = "topology.lvm.hwameistor.io/node"
 )
 
 // LocalStorageMember interface

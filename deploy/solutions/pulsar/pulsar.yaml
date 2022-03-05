@@ -4279,7 +4279,7 @@ spec:
         prometheus.io/port: "8000"
         checksum/config: 053d9fc604f6126cd2082ae8a6de7998487ae63873a53e7c5c53339f0e86284e
     spec:
-      schedulerName: localstorage-local-storage-scheduler
+      schedulerName: hwameistor-scheduler
       securityContext:
       serviceAccountName: pulsar-bookie-acct
       affinity:
@@ -5073,7 +5073,7 @@ spec:
         prometheus.io/port: "8000"
         prometheus.io/scrape: "true"
     spec:
-      schedulerName: localstorage-local-storage-scheduler
+      schedulerName: hwameistor-scheduler
       securityContext:
       affinity:
       terminationGracePeriodSeconds: 30
