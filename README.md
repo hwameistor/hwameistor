@@ -12,7 +12,7 @@ Support disk type: `HDD`, `SSD`, `NVMe`, `RAMDisk`.
 
 ## Software Structure
 
-![image](https://github.com/hwameistor/local-storage/blob/main/HwameiStor-arch.png)
+![image](https://github.com/hwameistor/local-storage/blob/main/doc/design/HwameiStor-arch.png)
 
 ## Features and Roadmap
 
@@ -21,6 +21,12 @@ This [Roadmap](https://github.com/hwameistor/local-storage/blob/main/doc/roadmap
 ## Use Cases
 
 Currently, local-storage offers high performance local volume without HA. It's one of best data persistent solution for the following use cases:
+
+* ***Database*** with HA capability, such as MySQL, OceanBase, MongoDB, etc..
+* ***Messaging system*** with HA capability, such as Kafka, RabbitMQ, etc..
+* ***Key-value store*** with HA capability, such as Redis, etc..
+* ***Distributed storage system***, such as MinIO, Ozone, etc..
+* Others with HA capability
 
 ## Usage With Helm Chart
 

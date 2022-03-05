@@ -12,7 +12,7 @@ local-storage是云原生本地存储系统。它统一管理节点上的空闲�
 
 ## 软件架构图
 
-![image](https://github.com/hwameistor/local-storage/blob/main/HwameiStor-arch.png)
+![image](https://github.com/hwameistor/local-storage/blob/main/doc/design/HwameiStor-arch.png)
 
 ## 功能与路线图
 该[功能路线图](https://github.com/hwameistor/local-storage/blob/main/doc/roadmap_zh.md) 提供了本地存储系统版本发布及特性追踪功能
@@ -33,7 +33,7 @@ local-storage提供高性能的、非高可用本地持久化数据卷，非常�
 
 ## 独立安装部署使用方式
 
-使用者可以通过 [independent-installation](https://github.com/hwameistor/local-storage/blob/main/doc/installation.md)独立安装部署local-storage，这里介绍从源代码进行安装、使用。主要用于开发、测试。
+使用者可以通过 [独立安装]](https://github.com/hwameistor/local-storage/blob/main/doc/installation_zh.md)独立安装部署local-storage，这里介绍从源代码进行安装、使用。主要用于开发、测试。
 
 ## 名词解释
 * ***LocalDisk*** LDM 抽象的磁盘资源（缩写：LD），一个 LD 代表了节点上面的一块物理磁盘。

@@ -1,18 +1,15 @@
 |        Feature       |   Status      |  Release  |   TP Date  |    GA Date   |                Description               |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-|    non-HA LVM volume      |   Completed   |   v1.0    |  2020.Q3   |   2020.Q4    |  volume by LVM |
-|    non-HA Disk volume   |   Completed   |   v1.0    |  2020.Q3   |   2020.Q4    |  volume by a physical disk |
-|    non-HA RAM Disk volume   |   Completed   |   v1.0    |  2020.Q3   |   2020.Q4    |  volume by a ram disk |
-|      CSI Driver      |   Completed   |   v1.0    |  2020.Q3   |   2020.Q4    |  basic CSI driver for dynamic provision |
-| pod/volume schedule  |   Completed   |   v1.0    |  2020.Q3   |   2020.Q4    |  schedule pod to the node where the volume locates |
-| disk health monitor  |   Completed   |   v1.0    |  2020.Q3   |   2020.Q4    |  monitor disk and predict failure |
-| non-HA LVM Volume expansion |   Completed   |   v1.0    |  2020.Q3   |   2020.Q4    |  expand LVM volume capacity online |
+|    non-HA LVM volume      |   Completed   |       |  2020.Q3   |   2020.Q4    |  volume by LVM |
+|    non-HA Disk volume   |   Completed   |       |  2020.Q3   |   2020.Q4    |  volume by a physical disk |
+|    non-HA RAM Disk volume   |   Completed   |       |  2020.Q3   |   2020.Q4    |  volume by a ram disk |
+|      CSI Driver      |   Completed   |       |  2020.Q3   |   2020.Q4    |  basic CSI driver for dynamic provision |
+| pod/volume schedule  |   Completed   |       |  2020.Q3   |   2020.Q4    |  schedule pod to the node where the volume locates |
+| disk health monitor  |   Completed   |       |  2020.Q3   |   2020.Q4    |  monitor disk and predict failure |
+| non-HA LVM Volume expansion |   Completed   |       |  2020.Q3   |   2020.Q4    |  expand LVM volume capacity online |
 | non-HA Disk volume expansion  |   NotSupport   |   |    |    |  expand Disk volume capacity |
-| non-HA Disk volume snapshot   |   NotSupoort   |   |    |    |  snapshot of Disk volume |
-| non-HA Disk volume snapshot restore |   NotSupport   |    |    |    |  restore Disk volume from snapshot |
-| non-HA Disk volume clone     |   NotPlaned   |      |    |      |  clone Disk volume |
 | HA Volume     |  Completed  |      |  2020.Q4  |   2021.Q1   |  Volume with HA |
-| DataRecovery    |   Planed   |      |  2022.Q1  |   2022.Q1   |  Replace Disk |
+| DataRecovery    |   Planed   |      |  2022.Q1  |   2022.Q1   |  DataRecovery |
 | Observability    |   Planed   |      |  2022.Q2  |   2022.Q2   |  Observability |
 | non-HA LVM volume stripe writing support    |   Planed   |      |  2022.Q2  |   2022.Q2   |  non-HA LVM volume stripe writing support |
 | non-HA LVM volume thin provision support    |   Planed   |      |  2022.Q2  |   2022.Q2   |  non-HA LVM volume thin provision support |
