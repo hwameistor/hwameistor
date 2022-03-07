@@ -74,8 +74,8 @@ gen-client:
 
 .PHONY: vendor
 vendor:
-	go mod tidy
-	go mod vendor
+	go mod tidy -compat=1.17
+	go mod vendor 
 
 .PHONY: clean
 clean:
