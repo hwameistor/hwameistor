@@ -17,7 +17,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: localstorage.hwameistor.io/local-storage
+              - key: csi.driver.hwameistor.io/local-storage
                 operator: In
                 values:
                 - "true"
@@ -50,7 +50,7 @@ spec:
               mountPath: /registration
         - name: member
           image: ghcr.io/hwameistor/local-storage:v0.0.3
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           args:
             - --nodename=$(MY_NODENAME)
             - --namespace=$(POD_NAMESPACE)
