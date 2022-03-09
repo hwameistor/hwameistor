@@ -1,13 +1,13 @@
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: local-storage-hdd-lvm
+  name: local-storage-hdd-lvm-ha
 provisioner: lvm.hwameistor.io
 volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: true
 reclaimPolicy: Delete
 parameters:
-  replicaNumber: "1"
+  replicaNumber: "2"
   poolClass: "HDD"
   poolType: "REGULAR"
   volumeKind: "LVM"

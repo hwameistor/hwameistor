@@ -1,16 +1,16 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: local-storage-scheduler-config
+  name: hwameistor-scheduler-config
   namespace: local-storage-system
 data:
   scheduler-config.yaml: |
     apiVersion: kubescheduler.config.k8s.io/v1alpha1
     kind: KubeSchedulerConfiguration
-    schedulerName: local-storage-scheduler
+    schedulerName: hwameistor-scheduler
     leaderElection:
       leaderElect: true
-      lockObjectName: local-storage-scheduler
+      lockObjectName: hwameistor-scheduler
     clientConnection:
       kubeconfig: /etc/kubernetes/scheduler.conf 
     plugins:
@@ -26,19 +26,19 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: local-storage-scheduler
+  name: hwameistor-scheduler
   namespace: local-storage-system
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: local-storage-scheduler
+      app: hwameistor-scheduler
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: local-storage-scheduler
+        app: hwameistor-scheduler
     spec:
       affinity:
         nodeAffinity:
@@ -53,14 +53,14 @@ spec:
         - -v=2
         - --bind-address=0.0.0.0
         - --kubeconfig=/etc/kubernetes/scheduler.conf
-        - --scheduler-name=local-storage-scheduler
+        - --scheduler-name=hwameistor-scheduler
         - --leader-elect=false
-        - --leader-elect-resource-name=local-storage-scheduler
-        - --config=/etc/localstorage/scheduler-config.yaml
+        - --leader-elect-resource-name=hwameistor-scheduler
+        - --config=/etc/hwameistor/scheduler-config.yaml
         - --leader-elect-resource-namespace=local-storage-system  
         image: hwameistor/scheduler:v0.0.3
         imagePullPolicy: IfNotPresent
-        name: local-storage-scheduler
+        name: hwameistor-scheduler
         resources:
           limits:
             cpu: 200m
@@ -74,8 +74,8 @@ spec:
         - mountPath: /etc/kubernetes/scheduler.conf
           name: kubeconfig
           readOnly: true
-        - mountPath: /etc/localstorage/
-          name: local-storage-scheduler-config
+        - mountPath: /etc/hwameistor/
+          name: hwameistor-scheduler-config
           readOnly: true
       volumes:
       - hostPath:
@@ -83,11 +83,11 @@ spec:
           type: FileOrCreate
         name: kubeconfig
       - configMap:
-          name: local-storage-scheduler-config
+          name: hwameistor-scheduler-config
           items:
           - key: scheduler-config.yaml
             path: scheduler-config.yaml
-        name: local-storage-scheduler-config
+        name: hwameistor-scheduler-config
       serviceAccountName: storage-admin
       serviceAccount: storage-admin
       tolerations:

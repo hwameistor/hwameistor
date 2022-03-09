@@ -15,7 +15,7 @@ spec:
         app: nginx-local-storage-ram
       name: nginx-local-storage-ram
     spec:
-      schedulerName: localstorage-local-storage-scheduler
+      schedulerName: hwameistor-scheduler
       restartPolicy: Always
       terminationGracePeriodSeconds: 0
       containers:

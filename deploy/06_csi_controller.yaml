@@ -1,17 +1,17 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: localstorage-local-storage-csi-controller
+  name: hwameistor-local-storage-csi-controller
   namespace: local-storage-system
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: localstorage-local-storage-csi-controller
+      app: hwameistor-local-storage-csi-controller
   template:
     metadata:
       labels:
-        app: localstorage-local-storage-csi-controller
+        app: hwameistor-local-storage-csi-controller
     spec:
       priorityClassName: system-cluster-critical
       affinity:
@@ -22,8 +22,8 @@ spec:
               - key: app
                 operator: In
                 values:
-                - localstorage-local-storage
-            topologyKey: localstorage.hwameistor.io/local-storage-topology-node
+                - hwameistor-local-storage
+            topologyKey: topology.lvm.hwameistor.io/node
       serviceAccount: storage-admin
       containers:
         - name: provisioner
@@ -71,5 +71,5 @@ spec:
       volumes:
         - name: socket-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/localstorage.hwameistor.io
+            path: /var/lib/kubelet/plugins/lvm.hwameistor.io
             type: DirectoryOrCreate

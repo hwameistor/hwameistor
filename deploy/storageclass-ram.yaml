@@ -2,7 +2,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: local-storage-hdd-ram
-provisioner: localstorage.hwameistor.io
+provisioner: lvm.hwameistor.io
 volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: false
 reclaimPolicy: Delete

@@ -62,11 +62,11 @@ $ kubectl apply -f deploy/07_scheduler.yaml
 # 7. check status of the deployment
 $ kubectl -n local-storage-system get pod -o wide
 NAME                                               READY   STATUS    RESTARTS   AGE   IP               NODE              NOMINATED NODE   READINESS GATES
-localstorage-local-storage-csi-controller-0             3/3     Running   15         13h   172.29.54.20     localstorage-10-6-161-27   <none>           <none>
-localstorage-local-storage-4b6n8                        3/3     Running   0          18m   10.6.161.27      localstorage-10-6-161-27   <none>           <none>
-localstorage-local-storage-dv7nd                        3/3     Running   0          18m   10.6.161.26      localstorage-10-6-161-26   <none>           <none>
-localstorage-local-storage-vzdqh                        3/3     Running   0          18m   10.6.161.25      localstorage-10-6-161-25   <none>           <none>
-localstorage-local-storage-scheduler-6585bb5897-9xj85   1/1     Running   0          15h   172.29.164.160   localstorage-10-6-161-25   <none>           <none>
+hwameistor-csi-controller-0             3/3     Running   15         13h   172.29.54.20     localstorage-10-6-161-27   <none>           <none>
+hwameistor-local-storage-4b6n8                        3/3     Running   0          18m   10.6.161.27      localstorage-10-6-161-27   <none>           <none>
+hwameistor-local-storage-dv7nd                        3/3     Running   0          18m   10.6.161.26      localstorage-10-6-161-26   <none>           <none>
+hwameistor-local-storage-vzdqh                        3/3     Running   0          18m   10.6.161.25      localstorage-10-6-161-25   <none>           <none>
+hwameistor-scheduler-6585bb5897-9xj85   1/1     Running   0          15h   172.29.164.160   localstorage-10-6-161-25   <none>           <none>
 
 
 ```
@@ -76,11 +76,13 @@ localstorage-local-storage-scheduler-6585bb5897-9xj85   1/1     Running   0     
 ``` bash
 # You should create a storageclass for each volume kind, i.e. LVM, DISK, RAM
 
-# LVM volume storageclass (waitforfistconsumer mode) with expansion capability
+# LVM volume storageclass (waitforfirstconsumer mode) with expansion capability
 $ kubectl apply -f deploy/storageclass-lvm.yaml
-# Disk volume storageclass (waitforfistconsumer mode) without expansion capability
+# LVM volume support HA storageclass (waitforfirstconsumer mode) with expansion capability
+$ kubectl apply -f deploy/storageclass-lvm-ha.yaml
+# Disk volume storageclass (waitforfirstconsumer mode) without expansion capability
 $ kubectl apply -f deploy/storageclass-disk.yaml
-# RAMdisk volume storageclass (waitforfistconsumer mode) without expansion capability
+# RAMdisk volume storageclass (waitforfirstconsumer mode) without expansion capability
 $ kubectl apply -f deploy/storageclass-ram.yaml
 
 # check for storageclass
@@ -88,10 +90,11 @@ $ kubectl get sc
 NAME                     PROVISIONER                 RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 local-storage-hdd-disk   localstorage.hwameistor.io   Delete          WaitForFirstConsumer   false                  21d
 local-storage-hdd-lvm    localstorage.hwameistor.io   Delete          WaitForFirstConsumer   true                   21d
+local-storage-hdd-lvm-ha localstorage.hwameistor.io   Delete          WaitForFirstConsumer   true                   21d
 local-storage-hdd-ram    localstorage.hwameistor.io   Delete          WaitForFirstConsumer   false                  15d
 ```
 
-### 步骤 4: 创建 PVC
+### 步骤 4: 创建 non HA PVC
 
 ``` bash
 # create a test PVC with LVM local volume
