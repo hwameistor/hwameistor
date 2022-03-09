@@ -1,39 +1,46 @@
-# Local Storage System (local-storage)
+# Local Storage Module
 
 English | [Simplified_Chinese](https://github.com/hwameistor/local-storage/blob/main/README_zh.md)
 
 ## Introduction
 
-local-storage is one component of cloud native storage system named hwameistor. it aims to provision high performance persistent lvm volume with local access to application.
-Support local volume kind: `LVM`.
+Local Storage is one of modules of HwameiStor which is a cloud native local storage system. it aims to provision high performance persistent LVM volume with local access to applications.
 
-Support disk type: `HDD`, `SSD`, `NVMe`.
+Support local volume kinds: `LVM`.
 
-## Architecture
+Support disk types: `HDD`, `SSD`, `NVMe`.
+
+## Architecture of HwameiStor
 
 ![image](https://github.com/hwameistor/local-storage/blob/main/doc/design/HwameiStor-arch.png)
 
 ## Features and Roadmap
 
-This [Roadmap](https://github.com/hwameistor/local-storage/blob/main/doc/roadmap.md) provides information about local-storage releases, as well as feature tracking 
+This [Roadmap](https://github.com/hwameistor/local-storage/blob/main/doc/roadmap.md) provides information about local-storage releases, as well as feature tracking.
 
 ## Use Cases
 
-Currently, local-storage offers high performance local volume without HA. It's one of best data persistent solution for the following use cases:
+HwameiStor provisions two kind of local volumes, LVM and Disk. As a component of HwameiStor, Local Storage provisions two types of local LVM volumes, HA and non-HA.
 
-* ***Database*** with HA capability, such as MySQL, OceanBase, MongoDB, etc..
+For the non-HA local LVM volume, it's the best data persistent solution for the following use cases:
+
+* ***Database*** with HA capability, such as MongoDB, etc..
 * ***Messaging system*** with HA capability, such as Kafka, RabbitMQ, etc..
 * ***Key-value store*** with HA capability, such as Redis, etc..
-* ***Distributed storage system***, such as MinIO, Ozone, etc..
 * Others with HA capability
+
+For the HA local LVM volume, it's the best data persistent solution for the following use cases:
+
+* ***Database***, such as MySQL, PostgreSQL etc..
+* Other applications which requires the data HA feature.
 
 ## Usage With Helm Chart
 
-Users can start using local-storage With [helm-charts](https://github.com/hwameistor/helm-charts/blob/main/README.md)
+Local Storage must work with Local Disk Manager module. It's suggested to install by [helm-charts](https://github.com/hwameistor/helm-charts/blob/main/README.md)
 
 ## Usage With Independent Installation
 
-Users can start using local-storage With [independent-installation](https://github.com/hwameistor/local-storage/blob/main/doc/installation.md)， This is for developing or test, and will deploy local-storage from github repo.
+Developer can start using local-storage With [independent-installation](https://github.com/hwameistor/local-storage/blob/main/doc/installation.md)， This is for developing or test, and will deploy local-storage from github repo. Please install the Local Disk Manager firstly.
 
 ## Glossary
 
