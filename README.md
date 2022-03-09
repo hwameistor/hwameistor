@@ -4,13 +4,12 @@ English | [Simplified_Chinese](https://github.com/hwameistor/local-storage/blob/
 
 ## Introduction
 
-Local Storage System is a cloud native storage system. It manages the free disks of each node and provision high performance persistent volume with local access to application.
+local-storage is one component of cloud native storage system named hwameistor. it aims to provision high performance persistent lvm volume with local access to application.
+Support local volume kind: `LVM`.
 
-Support local volume kind: `LVM`, `Disk`, `RAMDisk`.
+Support disk type: `HDD`, `SSD`, `NVMe`.
 
-Support disk type: `HDD`, `SSD`, `NVMe`, `RAMDisk`.
-
-## Software Structure
+## Architecture
 
 ![image](https://github.com/hwameistor/local-storage/blob/main/doc/design/HwameiStor-arch.png)
 
