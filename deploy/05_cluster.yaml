@@ -37,7 +37,7 @@ spec:
           lifecycle:
             preStop:
               exec:
-                command: ["/bin/sh", "-c", "rm -rf /registration/lvm.hwameistor.io /registration/lvm.hwameistor.io-reg.sock"]
+                command: ["/bin/sh", "-c", "rm -rf /registration/lvm.hwameistor.io  /registration/lvm.hwameistor.io-reg.sock"]
           env:
             - name: KUBE_NODE_NAME
               valueFrom:
