@@ -1,23 +1,23 @@
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
-  name: hwameistor
+  name: hwameistor-local-storage
   namespace: local-storage-system
 spec:
   selector:
     matchLabels:
-      app: hwameistor
+      app: hwameistor-local-storage
   template:
     metadata:
       labels:
-        app: hwameistor
+        app: hwameistor-local-storage
     spec:
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: csi.driver.hwameistor.io/local-storage
+              - key: lvm.hwameistor.io/enable
                 operator: In
                 values:
                 - "true"

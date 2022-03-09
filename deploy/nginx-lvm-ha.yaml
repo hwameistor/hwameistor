@@ -15,7 +15,7 @@ spec:
         app: nginx-local-storage-lvm-ha
       name: nginx-local-storage-lvm-ha
     spec:
-      schedulerName: local-storage-scheduler
+      schedulerName: hwameistor-scheduler
       restartPolicy: Always
       terminationGracePeriodSeconds: 0
       containers:
