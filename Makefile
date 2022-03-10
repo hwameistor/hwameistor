@@ -58,10 +58,10 @@ image:
 release:
 	# build for amd64 version
 	${DOCKER_MAKE_CMD} make compile
-	${DOCKER_BUILDX_CMD_AMD64} -t ${IMAGE_NAME}:${RELEASE_TAG}-amd64 -f Dockerfile ${PROJECT_SOURCE_CODE_DIR}
+	${DOCKER_BUILDX_CMD_AMD64} -t ${IMAGE_NAME}:${RELEASE_TAG}-amd64 -f build/Dockerfile ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
 	${DOCKER_MAKE_CMD} make compile_arm64
-	${DOCKER_BUILDX_CMD_ARM64} -t ${IMAGE_NAME}:${RELEASE_TAG}-arm64 -f Dockerfile ${PROJECT_SOURCE_CODE_DIR}
+	${DOCKER_BUILDX_CMD_ARM64} -t ${IMAGE_NAME}:${RELEASE_TAG}-arm64 -f build/Dockerfile ${PROJECT_SOURCE_CODE_DIR}
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} ${IMAGE_NAME}:${RELEASE_TAG}
 
