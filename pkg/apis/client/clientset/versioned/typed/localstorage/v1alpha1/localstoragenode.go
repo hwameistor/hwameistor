@@ -40,7 +40,7 @@ type localStorageNodes struct {
 }
 
 // newLocalStorageNodes returns a LocalStorageNodes
-func newLocalStorageNodes(c *LocalStorageV1alpha1Client) *localStorageNodes {
+func newLocalStorageNodes(c *LocalstorageV1alpha1Client) *localStorageNodes {
 	return &localStorageNodes{
 		client: c.RESTClient(),
 	}

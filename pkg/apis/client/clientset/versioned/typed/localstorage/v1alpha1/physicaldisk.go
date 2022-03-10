@@ -40,7 +40,7 @@ type physicalDisks struct {
 }
 
 // newPhysicalDisks returns a PhysicalDisks
-func newPhysicalDisks(c *LocalStorageV1alpha1Client) *physicalDisks {
+func newPhysicalDisks(c *LocalstorageV1alpha1Client) *physicalDisks {
 	return &physicalDisks{
 		client: c.RESTClient(),
 	}

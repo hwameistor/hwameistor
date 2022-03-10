@@ -30,7 +30,7 @@ func (m *AlertManager) Run(stopCh <-chan struct{}) error {
 	factory := localstorageinformers.NewSharedInformerFactory(apiClient, 0)
 	factory.Start(stopCh)
 
-	gAlertClient = apiClient.LocalStorageV1alpha1().LocalStorageAlerts()
+	gAlertClient = apiClient.LocalstorageV1alpha1().LocalStorageAlerts()
 
 	if !m.isVirtualNode {
 		// not run disk alerter in virtual machine

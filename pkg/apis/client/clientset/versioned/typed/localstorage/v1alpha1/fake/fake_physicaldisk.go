@@ -16,7 +16,7 @@ import (
 
 // FakePhysicalDisks implements PhysicalDiskInterface
 type FakePhysicalDisks struct {
-	Fake *FakeLocalStorageV1alpha1
+	Fake *FakeLocalstorageV1alpha1
 }
 
 var physicaldisksResource = schema.GroupVersionResource{Group: "localstorage.hwameistor.io", Version: "v1alpha1", Resource: "physicaldisks"}

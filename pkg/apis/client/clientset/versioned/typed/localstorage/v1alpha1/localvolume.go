@@ -40,7 +40,7 @@ type localVolumes struct {
 }
 
 // newLocalVolumes returns a LocalVolumes
-func newLocalVolumes(c *LocalStorageV1alpha1Client) *localVolumes {
+func newLocalVolumes(c *LocalstorageV1alpha1Client) *localVolumes {
 	return &localVolumes{
 		client: c.RESTClient(),
 	}

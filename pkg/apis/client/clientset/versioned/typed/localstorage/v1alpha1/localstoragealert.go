@@ -40,7 +40,7 @@ type localStorageAlerts struct {
 }
 
 // newLocalStorageAlerts returns a LocalStorageAlerts
-func newLocalStorageAlerts(c *LocalStorageV1alpha1Client) *localStorageAlerts {
+func newLocalStorageAlerts(c *LocalstorageV1alpha1Client) *localStorageAlerts {
 	return &localStorageAlerts{
 		client: c.RESTClient(),
 	}

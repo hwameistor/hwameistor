@@ -13,18 +13,18 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	LocalStorageV1alpha1() localstoragev1alpha1.LocalStorageV1alpha1Interface
+	LocalstorageV1alpha1() localstoragev1alpha1.LocalstorageV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	localstorageV1alpha1 *localstoragev1alpha1.LocalStorageV1alpha1Client
+	localstorageV1alpha1 *localstoragev1alpha1.LocalstorageV1alpha1Client
 }
 
-// LocalStorageV1alpha1 retrieves the LocalStorageV1alpha1Client
-func (c *Clientset) LocalStorageV1alpha1() localstoragev1alpha1.LocalStorageV1alpha1Interface {
+// LocalstorageV1alpha1 retrieves the LocalstorageV1alpha1Client
+func (c *Clientset) LocalstorageV1alpha1() localstoragev1alpha1.LocalstorageV1alpha1Interface {
 	return c.localstorageV1alpha1
 }
 

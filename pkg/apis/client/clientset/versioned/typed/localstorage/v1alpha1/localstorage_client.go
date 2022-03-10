@@ -8,7 +8,7 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
-type LocalStorageV1alpha1Interface interface {
+type LocalstorageV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	LocalStorageAlertsGetter
 	LocalStorageNodesGetter
@@ -18,37 +18,37 @@ type LocalStorageV1alpha1Interface interface {
 	PhysicalDisksGetter
 }
 
-// LocalStorageV1alpha1Client is used to interact with features provided by the localstorage.hwameistor.io group.
-type LocalStorageV1alpha1Client struct {
+// LocalstorageV1alpha1Client is used to interact with features provided by the localstorage.hwameistor.io group.
+type LocalstorageV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *LocalStorageV1alpha1Client) LocalStorageAlerts() LocalStorageAlertInterface {
+func (c *LocalstorageV1alpha1Client) LocalStorageAlerts() LocalStorageAlertInterface {
 	return newLocalStorageAlerts(c)
 }
 
-func (c *LocalStorageV1alpha1Client) LocalStorageNodes() LocalStorageNodeInterface {
+func (c *LocalstorageV1alpha1Client) LocalStorageNodes() LocalStorageNodeInterface {
 	return newLocalStorageNodes(c)
 }
 
-func (c *LocalStorageV1alpha1Client) LocalVolumes() LocalVolumeInterface {
+func (c *LocalstorageV1alpha1Client) LocalVolumes() LocalVolumeInterface {
 	return newLocalVolumes(c)
 }
 
-func (c *LocalStorageV1alpha1Client) LocalVolumeExpands() LocalVolumeExpandInterface {
+func (c *LocalstorageV1alpha1Client) LocalVolumeExpands() LocalVolumeExpandInterface {
 	return newLocalVolumeExpands(c)
 }
 
-func (c *LocalStorageV1alpha1Client) LocalVolumeReplicas() LocalVolumeReplicaInterface {
+func (c *LocalstorageV1alpha1Client) LocalVolumeReplicas() LocalVolumeReplicaInterface {
 	return newLocalVolumeReplicas(c)
 }
 
-func (c *LocalStorageV1alpha1Client) PhysicalDisks() PhysicalDiskInterface {
+func (c *LocalstorageV1alpha1Client) PhysicalDisks() PhysicalDiskInterface {
 	return newPhysicalDisks(c)
 }
 
-// NewForConfig creates a new LocalStorageV1alpha1Client for the given config.
-func NewForConfig(c *rest.Config) (*LocalStorageV1alpha1Client, error) {
+// NewForConfig creates a new LocalstorageV1alpha1Client for the given config.
+func NewForConfig(c *rest.Config) (*LocalstorageV1alpha1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -57,12 +57,12 @@ func NewForConfig(c *rest.Config) (*LocalStorageV1alpha1Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &LocalStorageV1alpha1Client{client}, nil
+	return &LocalstorageV1alpha1Client{client}, nil
 }
 
-// NewForConfigOrDie creates a new LocalStorageV1alpha1Client for the given config and
+// NewForConfigOrDie creates a new LocalstorageV1alpha1Client for the given config and
 // panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config) *LocalStorageV1alpha1Client {
+func NewForConfigOrDie(c *rest.Config) *LocalstorageV1alpha1Client {
 	client, err := NewForConfig(c)
 	if err != nil {
 		panic(err)
@@ -70,9 +70,9 @@ func NewForConfigOrDie(c *rest.Config) *LocalStorageV1alpha1Client {
 	return client
 }
 
-// New creates a new LocalStorageV1alpha1Client for the given RESTClient.
-func New(c rest.Interface) *LocalStorageV1alpha1Client {
-	return &LocalStorageV1alpha1Client{c}
+// New creates a new LocalstorageV1alpha1Client for the given RESTClient.
+func New(c rest.Interface) *LocalstorageV1alpha1Client {
+	return &LocalstorageV1alpha1Client{c}
 }
 
 func setConfigDefaults(config *rest.Config) error {
@@ -90,7 +90,7 @@ func setConfigDefaults(config *rest.Config) error {
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *LocalStorageV1alpha1Client) RESTClient() rest.Interface {
+func (c *LocalstorageV1alpha1Client) RESTClient() rest.Interface {
 	if c == nil {
 		return nil
 	}
