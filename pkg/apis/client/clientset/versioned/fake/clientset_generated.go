@@ -60,7 +60,7 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 
 var _ clientset.Interface = &Clientset{}
 
-// LocalStorageV1alpha1 retrieves the LocalStorageV1alpha1Client
-func (c *Clientset) LocalStorageV1alpha1() localstoragev1alpha1.LocalStorageV1alpha1Interface {
-	return &fakelocalstoragev1alpha1.FakeLocalStorageV1alpha1{Fake: &c.Fake}
+// LocalstorageV1alpha1 retrieves the LocalstorageV1alpha1Client
+func (c *Clientset) LocalstorageV1alpha1() localstoragev1alpha1.LocalstorageV1alpha1Interface {
+	return &fakelocalstoragev1alpha1.FakeLocalstorageV1alpha1{Fake: &c.Fake}
 }

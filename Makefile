@@ -20,9 +20,9 @@ K8S_CMD = kubectl
 
 BUILDER_NAME = hwameistor/local-storage-builder
 BUILDER_TAG = latest
-BUILDER_MOUNT_SRC_DIR = ${PROJECT_SOURCE_CODE_DIR}/../
-BUILDER_MOUNT_DST_DIR = /go/src/github.com/hwameistor
-BUILDER_WORKDIR = /go/src/github.com/hwameistor/local-storage
+BUILDER_MOUNT_SRC_DIR = ${PROJECT_SOURCE_CODE_DIR}
+BUILDER_MOUNT_DST_DIR = /go/src/github.com/hwameistor/local-storage
+BUILDER_WORKDIR = ${BUILDER_MOUNT_DST_DIR}
 
 DOCKER_SOCK_PATH=/var/run/docker.sock
 DOCKER_MAKE_CMD = docker run --rm -v ${BUILDER_MOUNT_SRC_DIR}:${BUILDER_MOUNT_DST_DIR} -v ${DOCKER_SOCK_PATH}:${DOCKER_SOCK_PATH} -w ${BUILDER_WORKDIR} -i ${BUILDER_NAME}:${BUILDER_TAG}
@@ -45,7 +45,6 @@ include ./makefiles/disk-checker.mk
 .PHONY: builder
 builder:
 	docker build -t ${BUILDER_NAME}:${BUILDER_TAG} -f images/builder/Dockerfile .
-	docker push ${BUILDER_NAME}:${BUILDER_TAG}
 
 .PHONY: debug
 debug:

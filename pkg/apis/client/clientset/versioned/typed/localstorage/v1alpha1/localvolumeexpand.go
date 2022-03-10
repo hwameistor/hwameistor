@@ -40,7 +40,7 @@ type localVolumeExpands struct {
 }
 
 // newLocalVolumeExpands returns a LocalVolumeExpands
-func newLocalVolumeExpands(c *LocalStorageV1alpha1Client) *localVolumeExpands {
+func newLocalVolumeExpands(c *LocalstorageV1alpha1Client) *localVolumeExpands {
 	return &localVolumeExpands{
 		client: c.RESTClient(),
 	}

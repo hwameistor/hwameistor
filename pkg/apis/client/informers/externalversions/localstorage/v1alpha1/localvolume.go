@@ -45,13 +45,13 @@ func NewFilteredLocalVolumeInformer(client versioned.Interface, resyncPeriod tim
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.LocalStorageV1alpha1().LocalVolumes().List(context.TODO(), options)
+				return client.LocalstorageV1alpha1().LocalVolumes().List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.LocalStorageV1alpha1().LocalVolumes().Watch(context.TODO(), options)
+				return client.LocalstorageV1alpha1().LocalVolumes().Watch(context.TODO(), options)
 			},
 		},
 		&localstoragev1alpha1.LocalVolume{},

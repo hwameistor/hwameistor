@@ -3,17 +3,17 @@
 package externalversions
 
 import (
-	"reflect"
-	"sync"
-	"time"
+	reflect "reflect"
+	sync "sync"
+	time "time"
 
-	"github.com/hwameistor/local-storage/pkg/apis/client/clientset/versioned"
-	"github.com/hwameistor/local-storage/pkg/apis/client/informers/externalversions/internalinterfaces"
+	versioned "github.com/hwameistor/local-storage/pkg/apis/client/clientset/versioned"
+	internalinterfaces "github.com/hwameistor/local-storage/pkg/apis/client/informers/externalversions/internalinterfaces"
 	localstorage "github.com/hwameistor/local-storage/pkg/apis/client/informers/externalversions/localstorage"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/tools/cache"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtime "k8s.io/apimachinery/pkg/runtime"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // SharedInformerOption defines the functional option type for SharedInformerFactory.

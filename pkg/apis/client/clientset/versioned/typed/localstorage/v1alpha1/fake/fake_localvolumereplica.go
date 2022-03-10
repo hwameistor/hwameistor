@@ -16,7 +16,7 @@ import (
 
 // FakeLocalVolumeReplicas implements LocalVolumeReplicaInterface
 type FakeLocalVolumeReplicas struct {
-	Fake *FakeLocalStorageV1alpha1
+	Fake *FakeLocalstorageV1alpha1
 }
 
 var localvolumereplicasResource = schema.GroupVersionResource{Group: "localstorage.hwameistor.io", Version: "v1alpha1", Resource: "localvolumereplicas"}

@@ -45,13 +45,13 @@ func NewFilteredPhysicalDiskInformer(client versioned.Interface, resyncPeriod ti
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.LocalStorageV1alpha1().PhysicalDisks().List(context.TODO(), options)
+				return client.LocalstorageV1alpha1().PhysicalDisks().List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.LocalStorageV1alpha1().PhysicalDisks().Watch(context.TODO(), options)
+				return client.LocalstorageV1alpha1().PhysicalDisks().Watch(context.TODO(), options)
 			},
 		},
 		&localstoragev1alpha1.PhysicalDisk{},
