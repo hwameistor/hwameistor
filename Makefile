@@ -26,12 +26,14 @@ RELEASE_TAG ?= $(shell tagged="$$(git describe --tags --match='v*' --abbrev=0 2>
 
 MODULE_NAME = local-storage
 
-IMAGE_NAME = ${IMAGE_REGISTRY}/${MODULE_NAME}
 BUILDER_NAME = ${IMAGE_REGISTRY}/${MODULE_NAME}-builder
 BUILDER_TAG = latest
+BUILDER_DOCKERFILE = ${PROJECT_SOURCE_CODE_DIR}/build/builder/Dockerfile
 BUILDER_MOUNT_DST_DIR = /go/src/github.com/hwameistor/${MODULE_NAME}
 BUILD_BIN = ${BINS_DIR}/${MODULE_NAME}
 BUILD_MAIN = ${CMDS_DIR}/manager/main.go
+IMAGE_NAME = ${IMAGE_REGISTRY}/${MODULE_NAME}
+IMAGE_DOCKERFILE = ${PROJECT_SOURCE_CODE_DIR}/build/Dockerfile
 
 .PHONY: debug
 debug:
@@ -39,7 +41,7 @@ debug:
 
 .PHONY: builder
 builder:
-	docker build -t ${BUILDER_NAME}:${BUILDER_TAG} -f build/builder/Dockerfile ${PROJECT_SOURCE_CODE_DIR}
+	docker build -t ${BUILDER_NAME}:${BUILDER_TAG} -f ${BUILDER_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
 .PHONY: compile
 compile:
@@ -52,16 +54,16 @@ compile_arm64:
 .PHONY: image
 image:
 	${DOCKER_MAKE_CMD} make compile
-	docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -f build/Dockerfile ${PROJECT_SOURCE_CODE_DIR}
+	docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -f ${IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
 .PHONY: release
 release:
 	# build for amd64 version
 	${DOCKER_MAKE_CMD} make compile
-	${DOCKER_BUILDX_CMD_AMD64} -t ${IMAGE_NAME}:${RELEASE_TAG}-amd64 -f build/Dockerfile ${PROJECT_SOURCE_CODE_DIR}
+	${DOCKER_BUILDX_CMD_AMD64} -t ${IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
 	${DOCKER_MAKE_CMD} make compile_arm64
-	${DOCKER_BUILDX_CMD_ARM64} -t ${IMAGE_NAME}:${RELEASE_TAG}-arm64 -f build/Dockerfile ${PROJECT_SOURCE_CODE_DIR}
+	${DOCKER_BUILDX_CMD_ARM64} -t ${IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} ${IMAGE_NAME}:${RELEASE_TAG}
 
