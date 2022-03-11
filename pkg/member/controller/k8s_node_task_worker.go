@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 )
 
 func (m *manager) startK8sNodeTaskWorker(stopCh <-chan struct{}) {
@@ -59,7 +59,7 @@ func (m *manager) processK8sNode(nodeName string) error {
 
 func (m *manager) degradeVolumeReplicasForNode(nodeName string) error {
 	m.logger.WithField("node", nodeName).Debug("Start to degrade volume replicas")
-	replicaList := &localstoragev1alpha1.LocalVolumeReplicaList{}
+	replicaList := &apisv1alpha1.LocalVolumeReplicaList{}
 	if err := m.apiClient.List(context.TODO(), replicaList); err != nil {
 		if errors.IsNotFound(err) {
 			return nil
@@ -67,11 +67,11 @@ func (m *manager) degradeVolumeReplicasForNode(nodeName string) error {
 		return err
 	}
 	for _, replica := range replicaList.Items {
-		if replica.Spec.NodeName != nodeName || replica.Status.State != localstoragev1alpha1.VolumeReplicaStateReady {
+		if replica.Spec.NodeName != nodeName || replica.Status.State != apisv1alpha1.VolumeReplicaStateReady {
 			continue
 		}
 		m.logger.WithFields(log.Fields{"replica": replica.Name, "node": nodeName}).Debug("Degrade VolumeReplica because of unknown K8s node status")
-		replica.Status.State = localstoragev1alpha1.VolumeReplicaStateNotReady
+		replica.Status.State = apisv1alpha1.VolumeReplicaStateNotReady
 		if err := m.apiClient.Status().Update(context.TODO(), &replica); err != nil {
 			m.logger.WithFields(log.Fields{"replica": replica.Name, "node": nodeName}).WithError(err).Error("Failed to degrade VolumeReplica")
 			return err

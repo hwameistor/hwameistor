@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/hwameistor/local-storage/pkg/apis"
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/local-storage/pkg/common"
 	"github.com/hwameistor/local-storage/pkg/member/controller/scheduler"
 	"github.com/hwameistor/local-storage/pkg/utils"
@@ -49,13 +49,13 @@ type manager struct {
 
 	volumeConvertTaskQueue *common.TaskQueue
 
-	localNodes map[string]localstoragev1alpha1.State // nodeName -> status
+	localNodes map[string]apisv1alpha1.State // nodeName -> status
 
 	logger *log.Entry
 }
 
 // New cluster manager
-func New(name string, namespace string, cli client.Client, scheme *runtime.Scheme, informersCache runtimecache.Cache, systemConfig localstoragev1alpha1.SystemConfig) (apis.ControllerManager, error) {
+func New(name string, namespace string, cli client.Client, scheme *runtime.Scheme, informersCache runtimecache.Cache, systemConfig apisv1alpha1.SystemConfig) (apis.ControllerManager, error) {
 
 	return &manager{
 		name:                   name,
@@ -70,7 +70,7 @@ func New(name string, namespace string, cli client.Client, scheme *runtime.Schem
 		volumeExpandTaskQueue:  common.NewTaskQueue("VolumeExpandTask", maxRetries),
 		volumeMigrateTaskQueue: common.NewTaskQueue("VolumeMigrateTask", maxRetries),
 		volumeConvertTaskQueue: common.NewTaskQueue("VolumeConvertTask", maxRetries),
-		localNodes:             map[string]localstoragev1alpha1.State{},
+		localNodes:             map[string]apisv1alpha1.State{},
 		logger:                 log.WithField("Module", "ControllerManager"),
 	}, nil
 }
@@ -111,7 +111,7 @@ func (m *manager) start(stopCh <-chan struct{}) {
 }
 
 func (m *manager) setupInformers() {
-	volumeInformer, err := m.informersCache.GetInformer(context.TODO(), &localstoragev1alpha1.LocalVolume{})
+	volumeInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolume{})
 	if err != nil {
 		// error happens, crash the node
 		m.logger.WithError(err).Fatal("Failed to get informer for Volume")
@@ -120,7 +120,7 @@ func (m *manager) setupInformers() {
 		DeleteFunc: m.handleVolumeCRDDeletedEvent,
 	})
 
-	expansionInformer, err := m.informersCache.GetInformer(context.TODO(), &localstoragev1alpha1.LocalVolumeExpand{})
+	expansionInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolumeExpand{})
 	if err != nil {
 		// error happens, crash the node
 		m.logger.WithError(err).Fatal("Failed to get informer for VolumeExpand")
@@ -129,7 +129,7 @@ func (m *manager) setupInformers() {
 		DeleteFunc: m.handleVolumeExpandCRDDeletedEvent,
 	})
 
-	migrateInformer, err := m.informersCache.GetInformer(context.TODO(), &localstoragev1alpha1.LocalVolumeMigrate{})
+	migrateInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolumeMigrate{})
 	if err != nil {
 		// error happens, crash the node
 		m.logger.WithError(err).Fatal("Failed to get informer for VolumeMigrate")
@@ -149,28 +149,32 @@ func (m *manager) setupInformers() {
 }
 
 // ReconcileNode reconciles Node CRD for any node resource change
-func (m *manager) ReconcileNode(node *localstoragev1alpha1.LocalStorageNode) {
+func (m *manager) ReconcileNode(node *apisv1alpha1.LocalStorageNode) {
 	m.nodeTaskQueue.Add(node.Name)
 }
 
 // ReconcileVolume reconciles Volume CRD for any volume resource change
-func (m *manager) ReconcileVolume(vol *localstoragev1alpha1.LocalVolume) {
+func (m *manager) ReconcileVolume(vol *apisv1alpha1.LocalVolume) {
 	m.volumeTaskQueue.Add(vol.Name)
 }
 
 // ReconcileVolumeExpand reconciles VolumeExpand CRD for any volume resource change
-func (m *manager) ReconcileVolumeExpand(expand *localstoragev1alpha1.LocalVolumeExpand) {
+func (m *manager) ReconcileVolumeExpand(expand *apisv1alpha1.LocalVolumeExpand) {
 	m.volumeExpandTaskQueue.Add(expand.Name)
 }
 
 // ReconcileVolumeMigrate reconciles VolumeMigrate CRD for any volume resource change
-func (m *manager) ReconcileVolumeMigrate(expand *localstoragev1alpha1.LocalVolumeMigrate) {
+func (m *manager) ReconcileVolumeMigrate(expand *apisv1alpha1.LocalVolumeMigrate) {
 	m.volumeMigrateTaskQueue.Add(expand.Name)
 }
 
 // ReconcileVolumeConvert reconciles VolumeConvert CRD for any volume resource change
-func (m *manager) ReconcileVolumeConvert(convert *localstoragev1alpha1.LocalVolumeConvert) {
+func (m *manager) ReconcileVolumeConvert(convert *apisv1alpha1.LocalVolumeConvert) {
 	m.volumeConvertTaskQueue.Add(convert.Name)
+}
+
+// ReconcileVolumeGroup reconciles VolumeGroup CRD for any volume resource change
+func (m *manager) ReconcileVolumeGroup(convert *apisv1alpha1.LocalVolumeGroup) {
 }
 
 func (m *manager) handleK8sNodeUpdatedEvent(oldObj, newObj interface{}) {
@@ -189,12 +193,12 @@ func (m *manager) handleK8sNodeUpdatedEvent(oldObj, newObj interface{}) {
 }
 
 func (m *manager) handleVolumeCRDDeletedEvent(obj interface{}) {
-	instance, _ := obj.(*localstoragev1alpha1.LocalVolume)
+	instance, _ := obj.(*apisv1alpha1.LocalVolume)
 	m.logger.WithFields(log.Fields{"volume": instance.Name, "spec": instance.Spec, "status": instance.Status}).Info("Observed a Volume CRD deletion...")
-	if instance.Status.State != localstoragev1alpha1.VolumeStateDeleted {
+	if instance.Status.State != apisv1alpha1.VolumeStateDeleted {
 		// must be deleted by a mistake, rebuild it
 		// TODO: need retry considering the case of creating failure
-		newInstance := &localstoragev1alpha1.LocalVolume{}
+		newInstance := &apisv1alpha1.LocalVolume{}
 		newInstance.Name = instance.Name
 		newInstance.Spec = instance.Spec
 
@@ -207,12 +211,12 @@ func (m *manager) handleVolumeCRDDeletedEvent(obj interface{}) {
 
 // ReconcileVolume reconciles Volume CRD for any volume resource change
 func (m *manager) handleVolumeExpandCRDDeletedEvent(obj interface{}) {
-	instance, _ := obj.(*localstoragev1alpha1.LocalVolumeExpand)
+	instance, _ := obj.(*apisv1alpha1.LocalVolumeExpand)
 	m.logger.WithFields(log.Fields{"expand": instance.Name, "spec": instance.Spec, "status": instance.Status}).Info("Observed a VolumeExpand CRD deletion...")
-	if instance.Status.State != localstoragev1alpha1.OperationStateCompleted && instance.Status.State != localstoragev1alpha1.OperationStateAborted {
+	if instance.Status.State != apisv1alpha1.OperationStateCompleted && instance.Status.State != apisv1alpha1.OperationStateAborted {
 		// must be deleted by a mistake, rebuild it
 		// TODO: need retry considering the case of creating failure
-		newInstance := &localstoragev1alpha1.LocalVolumeExpand{}
+		newInstance := &apisv1alpha1.LocalVolumeExpand{}
 		newInstance.Name = instance.Name
 		newInstance.Spec = instance.Spec
 
@@ -225,12 +229,12 @@ func (m *manager) handleVolumeExpandCRDDeletedEvent(obj interface{}) {
 
 // ReconcileVolume reconciles Volume CRD for any volume resource change
 func (m *manager) handleVolumeMigrateCRDDeletedEvent(obj interface{}) {
-	instance, _ := obj.(*localstoragev1alpha1.LocalVolumeMigrate)
+	instance, _ := obj.(*apisv1alpha1.LocalVolumeMigrate)
 	m.logger.WithFields(log.Fields{"migrate": instance.Name, "spec": instance.Spec, "status": instance.Status}).Info("Observed a VolumeMigrate CRD deletion...")
-	if instance.Status.State != localstoragev1alpha1.OperationStateCompleted && instance.Status.State != localstoragev1alpha1.OperationStateAborted {
+	if instance.Status.State != apisv1alpha1.OperationStateCompleted && instance.Status.State != apisv1alpha1.OperationStateAborted {
 		// must be deleted by a mistake, rebuild it
 		// TODO: need retry considering the case of creating failure
-		newInstance := &localstoragev1alpha1.LocalVolumeMigrate{}
+		newInstance := &apisv1alpha1.LocalVolumeMigrate{}
 		newInstance.Name = instance.Name
 		newInstance.Spec = instance.Spec
 

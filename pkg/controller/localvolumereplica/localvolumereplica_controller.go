@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/hwameistor/local-storage/pkg/apis"
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/local-storage/pkg/member"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -47,7 +47,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource LocalVolumeReplica
-	err = c.Watch(&source.Kind{Type: &localstoragev1alpha1.LocalVolumeReplica{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &apisv1alpha1.LocalVolumeReplica{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ type ReconcileLocalVolumeReplica struct {
 func (r *ReconcileLocalVolumeReplica) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 
 	// Fetch the LocalVolumeReplica instance
-	instance := &localstoragev1alpha1.LocalVolumeReplica{}
+	instance := &apisv1alpha1.LocalVolumeReplica{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {

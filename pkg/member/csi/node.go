@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	localapis "github.com/hwameistor/local-storage/pkg/apis"
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
@@ -96,16 +96,6 @@ func (p *plugin) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 	in order to support Pod rolling upgrade
 	*/
 
-	volKind, ok := req.PublishContext[VolumeReplicaKindKey]
-	if !ok {
-		p.logger.Error("not found volume kind")
-		return resp, fmt.Errorf("not found volume kind")
-	}
-
-	if volKind == localstoragev1alpha1.VolumeKindRAM {
-		return resp, p.mounter.BindMount(devicePath, req.TargetPath)
-	}
-
 	if req.GetVolumeCapability().GetBlock() != nil {
 		// raw block
 		return resp, p.mounter.MountRawBlock(devicePath, req.TargetPath)
@@ -152,7 +142,7 @@ func (p *plugin) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeS
 	logCtx.Debug("NodeGetVolumeStats")
 
 	resp := &csi.NodeGetVolumeStatsResponse{}
-	vol := &localstoragev1alpha1.LocalVolume{}
+	vol := &apisv1alpha1.LocalVolume{}
 	if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.VolumeId}, vol); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to query volume")
@@ -164,7 +154,7 @@ func (p *plugin) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeS
 		return resp, err
 	}
 
-	if vol.Status.State != localstoragev1alpha1.VolumeStateReady {
+	if vol.Status.State != apisv1alpha1.VolumeStateReady {
 		resp.VolumeCondition = &csi.VolumeCondition{
 			Abnormal: true,
 			Message:  "The volume is not ready",

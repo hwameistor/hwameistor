@@ -1,13 +1,13 @@
 package storage
 
 import (
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // LocalManager struct
 type LocalManager struct {
-	nodeConf    *localstoragev1alpha1.NodeConfig
+	nodeConf    *apisv1alpha1.NodeConfig
 	apiClient   client.Client
 	poolManager LocalPoolManager
 	//diskManager                LocalDiskManager
@@ -17,7 +17,7 @@ type LocalManager struct {
 }
 
 // NewLocalManager creates a local manager
-func NewLocalManager(nodeConf *localstoragev1alpha1.NodeConfig, cli client.Client) *LocalManager {
+func NewLocalManager(nodeConf *apisv1alpha1.NodeConfig, cli client.Client) *LocalManager {
 	lm := &LocalManager{
 		nodeConf:                   nodeConf,
 		apiClient:                  cli,
@@ -40,7 +40,7 @@ func (lm *LocalManager) Register() error {
 }
 
 // UpdateNodeForVolumeReplica updates LocalStorageNode for volume replica
-func (lm *LocalManager) UpdateNodeForVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) {
+func (lm *LocalManager) UpdateNodeForVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) {
 	lm.registry.UpdateNodeForVolumeReplica(replica)
 }
 
@@ -65,6 +65,6 @@ func (lm *LocalManager) VolumeReplicaManager() LocalVolumeReplicaManager {
 }
 
 // NodeConfig gets node configuration
-func (lm *LocalManager) NodeConfig() *localstoragev1alpha1.NodeConfig {
+func (lm *LocalManager) NodeConfig() *apisv1alpha1.NodeConfig {
 	return lm.nodeConf
 }

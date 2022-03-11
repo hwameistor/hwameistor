@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/hwameistor/local-storage/pkg/apis"
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/local-storage/pkg/member"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -43,7 +43,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	replicaToVolumeRequestFunc := handler.ToRequestsFunc(
 		func(a handler.MapObject) []reconcile.Request {
-			replica, ok := a.Object.(*localstoragev1alpha1.LocalVolumeReplica)
+			replica, ok := a.Object.(*apisv1alpha1.LocalVolumeReplica)
 			if !ok {
 				return []reconcile.Request{}
 			}
@@ -62,12 +62,12 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource LocalVolume
-	err = c.Watch(&source.Kind{Type: &localstoragev1alpha1.LocalVolume{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &apisv1alpha1.LocalVolume{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &localstoragev1alpha1.LocalVolumeReplica{}}, &handler.EnqueueRequestsFromMapFunc{ToRequests: replicaToVolumeRequestFunc})
+	err = c.Watch(&source.Kind{Type: &apisv1alpha1.LocalVolumeReplica{}}, &handler.EnqueueRequestsFromMapFunc{ToRequests: replicaToVolumeRequestFunc})
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ type ReconcileLocalVolume struct {
 func (r *ReconcileLocalVolume) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 
 	// Fetch the LocalVolume instance
-	instance := &localstoragev1alpha1.LocalVolume{}
+	instance := &apisv1alpha1.LocalVolume{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {

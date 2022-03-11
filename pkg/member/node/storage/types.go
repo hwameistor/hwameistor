@@ -2,7 +2,10 @@ package storage
 
 import (
 	"errors"
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"os"
+	"syscall"
+
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 )
 
 // variables
@@ -16,20 +19,20 @@ var (
 
 // LocalPoolManager is an interface to manage local storage pools
 type LocalPoolManager interface {
-	ExtendPools(localDisks []*localstoragev1alpha1.LocalDisk) error
+	ExtendPools(localDisks []*apisv1alpha1.LocalDisk) error
 
-	ExtendPoolsInfo(localDisks map[string]*localstoragev1alpha1.LocalDisk) (map[string]*localstoragev1alpha1.LocalPool, error)
+	ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDisk) (map[string]*apisv1alpha1.LocalPool, error)
 
-	GetReplicas() (map[string]*localstoragev1alpha1.LocalVolumeReplica, error)
+	GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error)
 }
 
 // LocalVolumeReplicaManager interface
 type LocalVolumeReplicaManager interface {
-	CreateVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) (*localstoragev1alpha1.LocalVolumeReplica, error)
-	DeleteVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) error
-	ExpandVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*localstoragev1alpha1.LocalVolumeReplica, error)
-	GetVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) (*localstoragev1alpha1.LocalVolumeReplica, error)
-	TestVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) (*localstoragev1alpha1.LocalVolumeReplica, error)
+	CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error)
+	DeleteVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) error
+	ExpandVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*apisv1alpha1.LocalVolumeReplica, error)
+	GetVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error)
+	TestVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error)
 
 	// consistencyCheck on all volume replicas by comparing VolumeReplica and underlying volumes
 	// will log all the check results for alerting or other purpose, but not block anything
@@ -39,20 +42,31 @@ type LocalVolumeReplicaManager interface {
 // LocalDiskManager is an interface to manage local disks
 type LocalDiskManager interface {
 	// Discover all disks including HDD, SSD, NVMe, etc..
-	DiscoverAvailableDisks() ([]*localstoragev1alpha1.LocalDisk, error)
-	GetLocalDisks() (map[string]*localstoragev1alpha1.LocalDisk, error)
+	DiscoverAvailableDisks() ([]*apisv1alpha1.LocalDisk, error)
+	GetLocalDisks() (map[string]*apisv1alpha1.LocalDisk, error)
 }
 
 // LocalRegistry interface
 type LocalRegistry interface {
 	Init()
 
-	Disks() map[string]*localstoragev1alpha1.LocalDisk
-	Pools() map[string]*localstoragev1alpha1.LocalPool
-	VolumeReplicas() map[string]*localstoragev1alpha1.LocalVolumeReplica
-	HasVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) bool
-	UpdateNodeForVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica)
-	SyncResourcesToNodeCRD(localDisks map[string]*localstoragev1alpha1.LocalDisk) error
+	Disks() map[string]*apisv1alpha1.LocalDisk
+	Pools() map[string]*apisv1alpha1.LocalPool
+	VolumeReplicas() map[string]*apisv1alpha1.LocalVolumeReplica
+	HasVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) bool
+	UpdateNodeForVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica)
+	SyncResourcesToNodeCRD(localDisks map[string]*apisv1alpha1.LocalDisk) error
+}
+
+// DeviceInfo struct
+type DeviceInfo struct {
+	OSFileInfo   os.FileInfo
+	SysTStat     *syscall.Stat_t
+	Path         string
+	Name         string
+	Major        uint32
+	Minor        uint32
+	MajMinString string
 }
 
 // LocalDeviceListInterface interface
@@ -62,21 +76,21 @@ type LocalDeviceListInterface interface {
 
 // LocalVolumeExecutor interface
 type LocalVolumeExecutor interface {
-	CreateVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) (*localstoragev1alpha1.LocalVolumeReplica, error)
-	DeleteVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) error
-	ExpandVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*localstoragev1alpha1.LocalVolumeReplica, error)
-	TestVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) (*localstoragev1alpha1.LocalVolumeReplica, error)
+	CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error)
+	DeleteVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) error
+	ExpandVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*apisv1alpha1.LocalVolumeReplica, error)
+	TestVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error)
 	// GetReplicas return all replicas
-	GetReplicas() (map[string]*localstoragev1alpha1.LocalVolumeReplica, error)
+	GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error)
 
 	// consistencyCheck on all volume replicas by comparing VolumeReplica and underlying volumes
 	// will log all the check results for alerting or other purpose, but not block anything
-	ConsistencyCheck(crdReplicas map[string]*localstoragev1alpha1.LocalVolumeReplica)
+	ConsistencyCheck(crdReplicas map[string]*apisv1alpha1.LocalVolumeReplica)
 }
 
 // LocalPoolExecutor interface
 type LocalPoolExecutor interface {
-	ExtendPools(localDisks []*localstoragev1alpha1.LocalDisk) error
-	ExtendPoolsInfo(localDisks map[string]*localstoragev1alpha1.LocalDisk) (map[string]*localstoragev1alpha1.LocalPool, error)
-	GetReplicas() (map[string]*localstoragev1alpha1.LocalVolumeReplica, error)
+	ExtendPools(localDisks []*apisv1alpha1.LocalDisk) error
+	ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDisk) (map[string]*apisv1alpha1.LocalPool, error)
+	GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error)
 }

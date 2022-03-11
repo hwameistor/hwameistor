@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	ldmv1alpha1 "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -111,13 +111,13 @@ func (m *manager) processLocalDiskClaimBound(claim *ldmv1alpha1.LocalDiskClaim) 
 }
 
 // getLocalDisksByLocalDiskClaim get disks, including HDD, SSD, NVMe triggered by ldc callback
-func (m *manager) getLocalDisksByLocalDiskClaim(ldc *ldmv1alpha1.LocalDiskClaim) ([]*localstoragev1alpha1.LocalDisk, error) {
+func (m *manager) getLocalDisksByLocalDiskClaim(ldc *ldmv1alpha1.LocalDiskClaim) ([]*apisv1alpha1.LocalDisk, error) {
 	localDisksMap, err := m.getLocalDisksMapByLocalDiskClaim(ldc)
 	if err != nil {
 		return nil, err
 	}
 
-	localDisks := []*localstoragev1alpha1.LocalDisk{}
+	localDisks := []*apisv1alpha1.LocalDisk{}
 	for _, disk := range localDisksMap {
 		localDisks = append(localDisks, disk)
 	}
@@ -125,9 +125,9 @@ func (m *manager) getLocalDisksByLocalDiskClaim(ldc *ldmv1alpha1.LocalDiskClaim)
 	return localDisks, nil
 }
 
-func (m *manager) getLocalDisksMapByLocalDiskClaim(ldc *ldmv1alpha1.LocalDiskClaim) (map[string]*localstoragev1alpha1.LocalDisk, error) {
+func (m *manager) getLocalDisksMapByLocalDiskClaim(ldc *ldmv1alpha1.LocalDiskClaim) (map[string]*apisv1alpha1.LocalDisk, error) {
 	m.logger.Debug("getLocalDisksMapByLocalDiskClaim ...")
-	disks := make(map[string]*localstoragev1alpha1.LocalDisk)
+	disks := make(map[string]*apisv1alpha1.LocalDisk)
 	disksAvailable, err := m.listAllAvailableLocalDisksByLocalClaimDisk(ldc)
 	if err != nil {
 		m.logger.WithError(err).Error("Failed to listAllAvailableLocalDisks")
@@ -141,8 +141,8 @@ func (m *manager) getLocalDisksMapByLocalDiskClaim(ldc *ldmv1alpha1.LocalDiskCla
 		if devicePath == "" || !strings.HasPrefix(devicePath, "/dev") || strings.Contains(devicePath, "mapper") {
 			continue
 		}
-		disk := &localstoragev1alpha1.LocalDisk{}
-		disk.State = localstoragev1alpha1.DiskStateAvailable
+		disk := &apisv1alpha1.LocalDisk{}
+		disk.State = apisv1alpha1.DiskStateAvailable
 		disk.CapacityBytes = diskAvailable.Spec.Capacity
 		disk.DevPath = devicePath
 		disk.Class = diskAvailable.Spec.DiskAttributes.Type
@@ -162,8 +162,8 @@ func (m *manager) getLocalDisksMapByLocalDiskClaim(ldc *ldmv1alpha1.LocalDiskCla
 		if devicePath == "" || !strings.HasPrefix(devicePath, "/dev") || strings.Contains(devicePath, "mapper") {
 			continue
 		}
-		disk := &localstoragev1alpha1.LocalDisk{}
-		disk.State = localstoragev1alpha1.DiskStateInUse
+		disk := &apisv1alpha1.LocalDisk{}
+		disk.State = apisv1alpha1.DiskStateInUse
 		disk.CapacityBytes = diskInUse.Spec.Capacity
 		disk.DevPath = devicePath
 		disk.Class = diskInUse.Spec.DiskAttributes.Type
@@ -181,12 +181,12 @@ func (m *manager) listAllAvailableLocalDisksByLocalClaimDisk(ldc *ldmv1alpha1.Lo
 	}
 	availableLocalDisks := []*ldmv1alpha1.LocalDisk{}
 	for _, ld := range localDisks {
-		if ld.Spec.HasPartition == true {
+		if ld.Spec.HasPartition {
 			continue
 		}
 
 		for _, partition := range ld.Spec.PartitionInfo {
-			if partition.HasFileSystem == true {
+			if partition.HasFileSystem {
 				continue
 			}
 		}
@@ -207,9 +207,9 @@ func (m *manager) listAllInUseLocalDisksByLocalClaimDisk(ldc *ldmv1alpha1.LocalD
 	}
 	inUseLocalDisks := []*ldmv1alpha1.LocalDisk{}
 	for _, ld := range localDisks {
-		if ld.Spec.HasPartition == false {
+		if ld.Spec.HasPartition {
 			for _, partition := range ld.Spec.PartitionInfo {
-				if partition.HasFileSystem == false {
+				if partition.HasFileSystem {
 					continue
 				}
 			}
@@ -251,7 +251,7 @@ func (m *manager) getLocalDisksByDiskRefs(localDiskNames []string, nameSpace str
 			localDisk, err := m.getLocalDiskByName(name, nameSpace)
 			if err != nil {
 				//m.logger.Error("Failed to getLocalDiskByName name = %v, err = %", name, err)
-				fmt.Errorf("Failed to getLocalDiskByName name = %v, err = %v", name, err)
+				//fmt.Errorf("failed to getLocalDiskByName name = %v, err = %v", name, err)
 				return
 			}
 			if localDisk != nil && localDisk.Status.State == ldmv1alpha1.LocalDiskClaimed {

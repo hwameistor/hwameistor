@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	ldmv1alpha1 "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeClientset "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )

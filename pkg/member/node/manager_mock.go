@@ -7,7 +7,7 @@ package node
 import (
 	reflect "reflect"
 
-	v1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	storage "github.com/hwameistor/local-storage/pkg/member/node/storage"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -36,7 +36,7 @@ func (m *MockNodeManager) EXPECT() *MockNodeManagerMockRecorder {
 }
 
 // ReconcileVolumeReplica mocks base method.
-func (m *MockNodeManager) ReconcileVolumeReplica(replica *v1alpha1.LocalVolumeReplica) {
+func (m *MockNodeManager) ReconcileVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ReconcileVolumeReplica", replica)
 }
@@ -74,7 +74,7 @@ func (mr *MockNodeManagerMockRecorder) Storage() *gomock.Call {
 }
 
 // TakeVolumeReplicaTaskAssignment mocks base method.
-func (m *MockNodeManager) TakeVolumeReplicaTaskAssignment(vol *v1alpha1.LocalVolume) {
+func (m *MockNodeManager) TakeVolumeReplicaTaskAssignment(vol *apisv1alpha1.LocalVolume) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "TakeVolumeReplicaTaskAssignment", vol)
 }

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/hwameistor/local-storage/pkg/apis"
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	log "github.com/sirupsen/logrus"
@@ -38,7 +38,7 @@ func (m *manager) syncNodesStatus() {
 	m.logger.Debug("Checking for nodes status")
 	ctx := context.TODO()
 
-	nodeList := &localstoragev1alpha1.LocalStorageNodeList{}
+	nodeList := &apisv1alpha1.LocalStorageNodeList{}
 	if err := m.apiClient.List(ctx, nodeList); err != nil {
 		m.logger.WithError(err).Error("Failed to get NodeList")
 		return
@@ -67,23 +67,23 @@ func (m *manager) syncNodesStatus() {
 		lease, ok := nodeLeases[node.Name]
 		if !ok {
 			// no lease, should set node offline
-			m.setNodeState(ctx, &node, localstoragev1alpha1.NodeStateOffline)
+			m.setNodeState(ctx, &node, apisv1alpha1.NodeStateOffline)
 		} else if lease.Spec.LeaseDurationSeconds != nil {
 			if int32(currTime.Sub(lease.Spec.RenewTime.Time).Seconds()) > *lease.Spec.LeaseDurationSeconds {
-				m.setNodeState(ctx, &node, localstoragev1alpha1.NodeStateOffline)
+				m.setNodeState(ctx, &node, apisv1alpha1.NodeStateOffline)
 			} else {
-				m.setNodeState(ctx, &node, localstoragev1alpha1.NodeStateReady)
+				m.setNodeState(ctx, &node, apisv1alpha1.NodeStateReady)
 			}
 		}
 	}
 }
 
-func (m *manager) setNodeState(ctx context.Context, node *localstoragev1alpha1.LocalStorageNode, newState localstoragev1alpha1.State) error {
+func (m *manager) setNodeState(ctx context.Context, node *apisv1alpha1.LocalStorageNode, newState apisv1alpha1.State) error {
 	logCtx := m.logger.WithFields(log.Fields{"node": node.Name, "oldState": node.Status.State, "newState": newState})
 	if node.Status.State == newState {
 		return nil
 	}
-	if node.Status.State == localstoragev1alpha1.NodeStateMaintain && newState == localstoragev1alpha1.NodeStateReady {
+	if node.Status.State == apisv1alpha1.NodeStateMaintain && newState == apisv1alpha1.NodeStateReady {
 		return nil
 	}
 

@@ -7,7 +7,7 @@ package storage
 import (
 	reflect "reflect"
 
-	v1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -47,10 +47,10 @@ func (mr *MockLocalVolumeReplicaManagerMockRecorder) ConsistencyCheck() *gomock.
 }
 
 // CreateVolumeReplica mocks base method.
-func (m *MockLocalVolumeReplicaManager) CreateVolumeReplica(replica *v1alpha1.LocalVolumeReplica) (*v1alpha1.LocalVolumeReplica, error) {
+func (m *MockLocalVolumeReplicaManager) CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateVolumeReplica", replica)
-	ret0, _ := ret[0].(*v1alpha1.LocalVolumeReplica)
+	ret0, _ := ret[0].(*apisv1alpha1.LocalVolumeReplica)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -62,7 +62,7 @@ func (mr *MockLocalVolumeReplicaManagerMockRecorder) CreateVolumeReplica(replica
 }
 
 // DeleteVolumeReplica mocks base method.
-func (m *MockLocalVolumeReplicaManager) DeleteVolumeReplica(replica *v1alpha1.LocalVolumeReplica) error {
+func (m *MockLocalVolumeReplicaManager) DeleteVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteVolumeReplica", replica)
 	ret0, _ := ret[0].(error)
@@ -76,10 +76,10 @@ func (mr *MockLocalVolumeReplicaManagerMockRecorder) DeleteVolumeReplica(replica
 }
 
 // ExpandVolumeReplica mocks base method.
-func (m *MockLocalVolumeReplicaManager) ExpandVolumeReplica(replica *v1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*v1alpha1.LocalVolumeReplica, error) {
+func (m *MockLocalVolumeReplicaManager) ExpandVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*apisv1alpha1.LocalVolumeReplica, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExpandVolumeReplica", replica, newCapacityBytes)
-	ret0, _ := ret[0].(*v1alpha1.LocalVolumeReplica)
+	ret0, _ := ret[0].(*apisv1alpha1.LocalVolumeReplica)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -91,10 +91,10 @@ func (mr *MockLocalVolumeReplicaManagerMockRecorder) ExpandVolumeReplica(replica
 }
 
 // GetVolumeReplica mocks base method.
-func (m *MockLocalVolumeReplicaManager) GetVolumeReplica(replica *v1alpha1.LocalVolumeReplica) (*v1alpha1.LocalVolumeReplica, error) {
+func (m *MockLocalVolumeReplicaManager) GetVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVolumeReplica", replica)
-	ret0, _ := ret[0].(*v1alpha1.LocalVolumeReplica)
+	ret0, _ := ret[0].(*apisv1alpha1.LocalVolumeReplica)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -106,10 +106,10 @@ func (mr *MockLocalVolumeReplicaManagerMockRecorder) GetVolumeReplica(replica in
 }
 
 // TestVolumeReplica mocks base method.
-func (m *MockLocalVolumeReplicaManager) TestVolumeReplica(replica *v1alpha1.LocalVolumeReplica) (*v1alpha1.LocalVolumeReplica, error) {
+func (m *MockLocalVolumeReplicaManager) TestVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TestVolumeReplica", replica)
-	ret0, _ := ret[0].(*v1alpha1.LocalVolumeReplica)
+	ret0, _ := ret[0].(*apisv1alpha1.LocalVolumeReplica)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -144,7 +144,7 @@ func (m *MockLocalVolumeExecutor) EXPECT() *MockLocalVolumeExecutorMockRecorder 
 }
 
 // ConsistencyCheck mocks base method.
-func (m *MockLocalVolumeExecutor) ConsistencyCheck(crdReplicas map[string]*v1alpha1.LocalVolumeReplica) {
+func (m *MockLocalVolumeExecutor) ConsistencyCheck(crdReplicas map[string]*apisv1alpha1.LocalVolumeReplica) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ConsistencyCheck", crdReplicas)
 }
@@ -156,10 +156,10 @@ func (mr *MockLocalVolumeExecutorMockRecorder) ConsistencyCheck(crdReplicas inte
 }
 
 // CreateVolumeReplica mocks base method.
-func (m *MockLocalVolumeExecutor) CreateVolumeReplica(replica *v1alpha1.LocalVolumeReplica) (*v1alpha1.LocalVolumeReplica, error) {
+func (m *MockLocalVolumeExecutor) CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateVolumeReplica", replica)
-	ret0, _ := ret[0].(*v1alpha1.LocalVolumeReplica)
+	ret0, _ := ret[0].(*apisv1alpha1.LocalVolumeReplica)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -171,7 +171,7 @@ func (mr *MockLocalVolumeExecutorMockRecorder) CreateVolumeReplica(replica inter
 }
 
 // DeleteVolumeReplica mocks base method.
-func (m *MockLocalVolumeExecutor) DeleteVolumeReplica(replica *v1alpha1.LocalVolumeReplica) error {
+func (m *MockLocalVolumeExecutor) DeleteVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteVolumeReplica", replica)
 	ret0, _ := ret[0].(error)
@@ -185,10 +185,10 @@ func (mr *MockLocalVolumeExecutorMockRecorder) DeleteVolumeReplica(replica inter
 }
 
 // ExpandVolumeReplica mocks base method.
-func (m *MockLocalVolumeExecutor) ExpandVolumeReplica(replica *v1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*v1alpha1.LocalVolumeReplica, error) {
+func (m *MockLocalVolumeExecutor) ExpandVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*apisv1alpha1.LocalVolumeReplica, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExpandVolumeReplica", replica, newCapacityBytes)
-	ret0, _ := ret[0].(*v1alpha1.LocalVolumeReplica)
+	ret0, _ := ret[0].(*apisv1alpha1.LocalVolumeReplica)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -200,10 +200,10 @@ func (mr *MockLocalVolumeExecutorMockRecorder) ExpandVolumeReplica(replica, newC
 }
 
 // GetReplicas mocks base method.
-func (m *MockLocalVolumeExecutor) GetReplicas() (map[string]*v1alpha1.LocalVolumeReplica, error) {
+func (m *MockLocalVolumeExecutor) GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetReplicas")
-	ret0, _ := ret[0].(map[string]*v1alpha1.LocalVolumeReplica)
+	ret0, _ := ret[0].(map[string]*apisv1alpha1.LocalVolumeReplica)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -215,10 +215,10 @@ func (mr *MockLocalVolumeExecutorMockRecorder) GetReplicas() *gomock.Call {
 }
 
 // TestVolumeReplica mocks base method.
-func (m *MockLocalVolumeExecutor) TestVolumeReplica(replica *v1alpha1.LocalVolumeReplica) (*v1alpha1.LocalVolumeReplica, error) {
+func (m *MockLocalVolumeExecutor) TestVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TestVolumeReplica", replica)
-	ret0, _ := ret[0].(*v1alpha1.LocalVolumeReplica)
+	ret0, _ := ret[0].(*apisv1alpha1.LocalVolumeReplica)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -3,7 +3,7 @@ package storage
 import (
 	"fmt"
 
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/local-storage/pkg/utils"
 )
 
@@ -13,11 +13,11 @@ func newValidator() *validator {
 	return &validator{}
 }
 
-func (cr *validator) checkReplicaExists(vr *localstoragev1alpha1.LocalVolumeReplica, reg LocalRegistry) bool {
+func (cr *validator) checkReplicaExists(vr *apisv1alpha1.LocalVolumeReplica, reg LocalRegistry) bool {
 	return reg.HasVolumeReplica(vr)
 }
 
-func (cr *validator) checkVolumeReplicaStruct(vr *localstoragev1alpha1.LocalVolumeReplica) error {
+func (cr *validator) checkVolumeReplicaStruct(vr *apisv1alpha1.LocalVolumeReplica) error {
 	if vr == nil {
 		return fmt.Errorf("failed to exec create replica. Invalid VolumeReplica given")
 	}
@@ -29,7 +29,7 @@ func (cr *validator) checkVolumeReplicaStruct(vr *localstoragev1alpha1.LocalVolu
 	return nil
 }
 
-func (cr *validator) canCreateVolumeReplica(vr *localstoragev1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
+func (cr *validator) canCreateVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
 	if err := cr.checkVolumeReplicaStruct(vr); err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (cr *validator) canCreateVolumeReplica(vr *localstoragev1alpha1.LocalVolume
 	return nil
 }
 
-func (cr *validator) canDeleteVolumeReplica(vr *localstoragev1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
+func (cr *validator) canDeleteVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
 	if err := cr.checkVolumeReplicaStruct(vr); err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func (cr *validator) canDeleteVolumeReplica(vr *localstoragev1alpha1.LocalVolume
 	return nil
 }
 
-func (cr *validator) canExpandVolumeReplica(vr *localstoragev1alpha1.LocalVolumeReplica, newCapacityBytes int64, reg LocalRegistry) error {
+func (cr *validator) canExpandVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica, newCapacityBytes int64, reg LocalRegistry) error {
 	if err := cr.checkVolumeReplicaStruct(vr); err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (cr *validator) canExpandVolumeReplica(vr *localstoragev1alpha1.LocalVolume
 	return nil
 }
 
-func (cr *validator) checkPoolVolumeCount(vr *localstoragev1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
+func (cr *validator) checkPoolVolumeCount(vr *apisv1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
 	pools := reg.Pools()
 	if pool, has := pools[vr.Spec.PoolName]; has {
 		if pool.FreeVolumeCount <= 0 {
@@ -91,7 +91,7 @@ func (cr *validator) checkPoolVolumeCount(vr *localstoragev1alpha1.LocalVolumeRe
 	return nil
 }
 
-func (cr *validator) checkPoolCapacity(vr *localstoragev1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
+func (cr *validator) checkPoolCapacity(vr *apisv1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
 	pools := reg.Pools()
 	if pool, has := pools[vr.Spec.PoolName]; has {
 		if pool.FreeCapacityBytes < utils.NumericToLVMBytes(vr.Spec.RequiredCapacityBytes) {
@@ -103,7 +103,7 @@ func (cr *validator) checkPoolCapacity(vr *localstoragev1alpha1.LocalVolumeRepli
 	return nil
 }
 
-func (cr *validator) checkPerVolumeCapacityLimit(vr *localstoragev1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
+func (cr *validator) checkPerVolumeCapacityLimit(vr *apisv1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
 	pools := reg.Pools()
 	if pool, has := pools[vr.Spec.PoolName]; has {
 		if pool.VolumeCapacityBytesLimit < utils.NumericToLVMBytes(vr.Spec.RequiredCapacityBytes) {

@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 )
 
 func (m *manager) startVolumeTaskWorker(stopCh <-chan struct{}) {
@@ -39,7 +39,7 @@ func (m *manager) startVolumeTaskWorker(stopCh <-chan struct{}) {
 func (m *manager) processVolume(volName string) error {
 	logCtx := m.logger.WithFields(log.Fields{"Volume": volName})
 	logCtx.Debug("Working on a Volume task")
-	vol := &localstoragev1alpha1.LocalVolume{}
+	vol := &apisv1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: volName}, vol); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get Volume from cache")
@@ -49,8 +49,8 @@ func (m *manager) processVolume(volName string) error {
 		return nil
 	}
 
-	if vol.Spec.Delete && vol.Status.State != localstoragev1alpha1.VolumeStateToBeDeleted && vol.Status.State != localstoragev1alpha1.VolumeStateDeleted {
-		vol.Status.State = localstoragev1alpha1.VolumeStateToBeDeleted
+	if vol.Spec.Delete && vol.Status.State != apisv1alpha1.VolumeStateToBeDeleted && vol.Status.State != apisv1alpha1.VolumeStateDeleted {
+		vol.Status.State = apisv1alpha1.VolumeStateToBeDeleted
 		return m.apiClient.Status().Update(context.TODO(), vol)
 	}
 
@@ -60,13 +60,13 @@ func (m *manager) processVolume(volName string) error {
 	switch vol.Status.State {
 	case "":
 		return m.processVolumeSubmit(vol)
-	case localstoragev1alpha1.VolumeStateCreating:
+	case apisv1alpha1.VolumeStateCreating:
 		return m.processVolumeCreate(vol)
-	case localstoragev1alpha1.VolumeStateReady, localstoragev1alpha1.VolumeStateNotReady:
+	case apisv1alpha1.VolumeStateReady, apisv1alpha1.VolumeStateNotReady:
 		return m.processVolumeReadyAndNotReady(vol)
-	case localstoragev1alpha1.VolumeStateToBeDeleted:
+	case apisv1alpha1.VolumeStateToBeDeleted:
 		return m.processVolumeDelete(vol)
-	case localstoragev1alpha1.VolumeStateDeleted:
+	case apisv1alpha1.VolumeStateDeleted:
 		return m.processVolumeCleanup(vol)
 	default:
 		logCtx.Error("Invalid state")
@@ -74,22 +74,22 @@ func (m *manager) processVolume(volName string) error {
 	return fmt.Errorf("invalid state")
 }
 
-func (m *manager) processVolumeSubmit(vol *localstoragev1alpha1.LocalVolume) error {
+func (m *manager) processVolumeSubmit(vol *apisv1alpha1.LocalVolume) error {
 	logCtx := m.logger.WithFields(log.Fields{"volume": vol.Name, "spec": vol.Spec})
 	logCtx.Debug("Submit a Volume")
 
-	vol.Status.State = localstoragev1alpha1.VolumeStateCreating
+	vol.Status.State = apisv1alpha1.VolumeStateCreating
 	return m.apiClient.Status().Update(context.TODO(), vol)
 }
 
-func (m *manager) getReplicasForVolume(volName string) ([]*localstoragev1alpha1.LocalVolumeReplica, error) {
+func (m *manager) getReplicasForVolume(volName string) ([]*apisv1alpha1.LocalVolumeReplica, error) {
 	// todo
-	replicaList := &localstoragev1alpha1.LocalVolumeReplicaList{}
+	replicaList := &apisv1alpha1.LocalVolumeReplicaList{}
 	if err := m.apiClient.List(context.TODO(), replicaList); err != nil {
 		return nil, err
 	}
 
-	var replicas []*localstoragev1alpha1.LocalVolumeReplica
+	var replicas []*apisv1alpha1.LocalVolumeReplica
 	for i := range replicaList.Items {
 		if replicaList.Items[i].Spec.VolumeName == volName {
 			replicas = append(replicas, &replicaList.Items[i])
@@ -98,16 +98,9 @@ func (m *manager) getReplicasForVolume(volName string) ([]*localstoragev1alpha1.
 	return replicas, nil
 }
 
-func (m *manager) processVolumeCreate(vol *localstoragev1alpha1.LocalVolume) error {
+func (m *manager) processVolumeCreate(vol *apisv1alpha1.LocalVolume) error {
 	logCtx := m.logger.WithFields(log.Fields{"volume": vol.Name})
 	logCtx.Debug("Configuring a LocalVolume")
-
-	// ignore invalid kind volume
-	if len(vol.Spec.Kind) == 0 {
-		logCtx.Errorf("invalid volume kind: %s, must be one of [%s, %s]",
-			vol.Spec.Kind, localstoragev1alpha1.VolumeKindLVM, localstoragev1alpha1.VolumeKindDisk)
-		return nil
-	}
 
 	// scheduler will consider all the cases as following:
 	/* 1. fresh new volume: 1) no config, 2) no replica
@@ -130,37 +123,37 @@ func (m *manager) processVolumeCreate(vol *localstoragev1alpha1.LocalVolume) err
 		return m.apiClient.Update(context.TODO(), vol)
 	}
 
-	vol.Status.State = localstoragev1alpha1.VolumeStateNotReady
+	vol.Status.State = apisv1alpha1.VolumeStateNotReady
 	return m.apiClient.Status().Update(context.TODO(), vol)
 }
 
-func (m *manager) processVolumeReadyAndNotReady(vol *localstoragev1alpha1.LocalVolume) error {
+func (m *manager) processVolumeReadyAndNotReady(vol *apisv1alpha1.LocalVolume) error {
 	logCtx := m.logger.WithFields(log.Fields{"volume": vol.Name, "state": vol.Status.State})
 	logCtx.Debug("Checking a LocalVolume")
 
 	if vol.Spec.Config == nil {
 		logCtx.Debug("No config generated, create it firstly")
-		vol.Status.State = localstoragev1alpha1.VolumeStateCreating
+		vol.Status.State = apisv1alpha1.VolumeStateCreating
 		return m.apiClient.Status().Update(context.TODO(), vol)
 	}
 
 	// check for case of adding replica, especially for replica migration
 	if len(vol.Spec.Config.Replicas) < int(vol.Spec.ReplicaNumber) {
 		logCtx.Debug("Allocated replicas can't meet requirement, try it once more")
-		vol.Status.State = localstoragev1alpha1.VolumeStateCreating
+		vol.Status.State = apisv1alpha1.VolumeStateCreating
 		return m.apiClient.Status().Update(context.TODO(), vol)
 	}
 
 	if vol.Spec.ReplicaNumber == 1 && !vol.Spec.Config.Convertible && vol.Spec.Config.ResourceID > -1 {
 		logCtx.Debug("Incorrected resource ID for non-HA volume, try to correct it")
-		vol.Status.State = localstoragev1alpha1.VolumeStateCreating
+		vol.Status.State = apisv1alpha1.VolumeStateCreating
 		return m.apiClient.Status().Update(context.TODO(), vol)
 	}
 
 	// check for case of capacity expansion
 	if vol.Spec.RequiredCapacityBytes > vol.Spec.Config.RequiredCapacityBytes {
 		logCtx.WithFields(log.Fields{"current": vol.Spec.Config.RequiredCapacityBytes, "require": vol.Spec.RequiredCapacityBytes}).Debug("Requiring more capacity, create it")
-		vol.Status.State = localstoragev1alpha1.VolumeStateCreating
+		vol.Status.State = apisv1alpha1.VolumeStateCreating
 		return m.apiClient.Status().Update(context.TODO(), vol)
 	}
 
@@ -175,7 +168,7 @@ func (m *manager) processVolumeReadyAndNotReady(vol *localstoragev1alpha1.LocalV
 	// check if there is any LocalVolumeReplica not created yet
 	if len(replicas) < int(vol.Spec.ReplicaNumber) {
 		logCtx.Debug("Not all replicas are generated, waiting for")
-		vol.Status.State = localstoragev1alpha1.VolumeStateNotReady
+		vol.Status.State = apisv1alpha1.VolumeStateNotReady
 		return m.apiClient.Status().Update(context.TODO(), vol)
 	}
 
@@ -183,7 +176,7 @@ func (m *manager) processVolumeReadyAndNotReady(vol *localstoragev1alpha1.LocalV
 	upReplicaCount := 0
 	allocatedCapacityBytes := int64(0)
 	for _, replica := range replicas {
-		if replica.Status.State == localstoragev1alpha1.VolumeReplicaStateReady {
+		if replica.Status.State == apisv1alpha1.VolumeReplicaStateReady {
 			healthyReplicaCount++
 			allocatedCapacityBytes = replica.Status.AllocatedCapacityBytes
 		}
@@ -195,10 +188,10 @@ func (m *manager) processVolumeReadyAndNotReady(vol *localstoragev1alpha1.LocalV
 	// check if there are enough VolumeReplicas in ready.
 	// The new added replica should not impact the Volume health, e.g. replica migration
 	if healthyReplicaCount >= int(vol.Spec.ReplicaNumber) {
-		vol.Status.State = localstoragev1alpha1.VolumeStateReady
+		vol.Status.State = apisv1alpha1.VolumeStateReady
 		vol.Status.AllocatedCapacityBytes = allocatedCapacityBytes
 	} else {
-		vol.Status.State = localstoragev1alpha1.VolumeStateNotReady
+		vol.Status.State = apisv1alpha1.VolumeStateNotReady
 	}
 
 	if !vol.Spec.Config.ReadyToInitialize && upReplicaCount >= int(vol.Spec.ReplicaNumber) {
@@ -214,20 +207,20 @@ func (m *manager) processVolumeReadyAndNotReady(vol *localstoragev1alpha1.LocalV
 }
 
 // isVolumeReplicaUp check if HA volume replica already up
-func isVolumeReplicaUp(replica *localstoragev1alpha1.LocalVolumeReplica) bool {
+func isVolumeReplicaUp(replica *apisv1alpha1.LocalVolumeReplica) bool {
 	if replica.Status.HAState == nil {
 		return false
 	}
 
 	switch replica.Status.HAState.State {
-	case localstoragev1alpha1.HAVolumeReplicaStateUp, localstoragev1alpha1.HAVolumeReplicaStateConsistent, localstoragev1alpha1.HAVolumeReplicaStateInconsistent:
+	case apisv1alpha1.HAVolumeReplicaStateUp, apisv1alpha1.HAVolumeReplicaStateConsistent, apisv1alpha1.HAVolumeReplicaStateInconsistent:
 		return true
 	}
 
 	return false
 }
 
-func (m *manager) processVolumeDelete(vol *localstoragev1alpha1.LocalVolume) error {
+func (m *manager) processVolumeDelete(vol *apisv1alpha1.LocalVolume) error {
 	logCtx := m.logger.WithFields(log.Fields{"volume": vol.Name, "spec": vol.Spec, "state": vol.Status.State})
 	logCtx.Debug("Deleting a Volume")
 
@@ -237,7 +230,7 @@ func (m *manager) processVolumeDelete(vol *localstoragev1alpha1.LocalVolume) err
 	// check if all the replicas are deleted
 	isDeleted := true
 	for _, replicaName := range vol.Status.Replicas {
-		replica := &localstoragev1alpha1.LocalVolumeReplica{}
+		replica := &apisv1alpha1.LocalVolumeReplica{}
 		if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: replicaName}, replica); err != nil {
 			if !errors.IsNotFound(err) {
 				m.logger.WithFields(log.Fields{"replica": replicaName, "error": err.Error()}).Error("Failed to query volume replica")
@@ -247,20 +240,20 @@ func (m *manager) processVolumeDelete(vol *localstoragev1alpha1.LocalVolume) err
 			m.logger.WithFields(log.Fields{"replica": replicaName, "error": err.Error()}).Warning("Not found volume replica")
 			continue
 		}
-		if replica.Status.State == localstoragev1alpha1.VolumeReplicaStateDeleted {
+		if replica.Status.State == apisv1alpha1.VolumeReplicaStateDeleted {
 			continue
 		}
 		isDeleted = false
 	}
 
 	if isDeleted {
-		vol.Status.State = localstoragev1alpha1.VolumeStateDeleted
+		vol.Status.State = apisv1alpha1.VolumeStateDeleted
 		return m.apiClient.Status().Update(context.TODO(), vol)
 	}
 	return fmt.Errorf("volume deletion not completed")
 }
 
-func (m *manager) processVolumeCleanup(vol *localstoragev1alpha1.LocalVolume) error {
+func (m *manager) processVolumeCleanup(vol *apisv1alpha1.LocalVolume) error {
 	logCtx := m.logger.WithFields(log.Fields{"volume": vol.Name, "spec": vol.Spec, "state": vol.Status.State})
 	logCtx.Debug("Cleanup a Volume")
 

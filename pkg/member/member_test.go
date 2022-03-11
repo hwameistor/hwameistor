@@ -2,13 +2,14 @@ package member
 
 import (
 	"fmt"
-	"github.com/golang/mock/gomock"
-	"k8s.io/apimachinery/pkg/runtime"
 	"reflect"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"k8s.io/apimachinery/pkg/runtime"
+
 	localapis "github.com/hwameistor/local-storage/pkg/apis"
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -19,7 +20,7 @@ func TestMember(t *testing.T) {
 		want localapis.LocalStorageMember
 	}{
 		{
-			want:  &localStorageMember{},
+			want: &localStorageMember{},
 		},
 	}
 	for _, tt := range tests {
@@ -38,7 +39,7 @@ func Test_newMember(t *testing.T) {
 		want localapis.LocalStorageMember
 	}{
 		{
-			want:  &localStorageMember{},
+			want: &localStorageMember{},
 		},
 	}
 	for _, tt := range tests {
@@ -53,10 +54,9 @@ func Test_newMember(t *testing.T) {
 func Test_localStorageMember_ConfigureBase(t *testing.T) {
 	var name string = "test2"
 	var namespace string = "test"
-	var systemConfig localstoragev1alpha1.SystemConfig
+	var systemConfig apisv1alpha1.SystemConfig
 	var cli client.Client
 	var informersCache cache.Cache
-
 
 	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)

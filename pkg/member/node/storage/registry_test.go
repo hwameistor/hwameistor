@@ -2,9 +2,10 @@ package storage
 
 import (
 	"fmt"
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
-	"github.com/golang/mock/gomock"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 )
 
 func Test_localRegistry_Disks(t *testing.T) {
@@ -25,12 +26,12 @@ func Test_localRegistry_Disks(t *testing.T) {
 }
 
 func Test_localRegistry_HasVolumeReplica(t *testing.T) {
-	var localVolumeReplica = &localstoragev1alpha1.LocalVolumeReplica{}
+	var localVolumeReplica = &apisv1alpha1.LocalVolumeReplica{}
 	localVolumeReplica.Spec.VolumeName = "volume1"
 	localVolumeReplica.Spec.PoolName = "pool1"
 	localVolumeReplica.Spec.NodeName = "node1"
 	localVolumeReplica.Spec.RequiredCapacityBytes = 1240
-	localVolumeReplica.Spec.Kind = localstoragev1alpha1.VolumeKindLVM
+	localVolumeReplica.Spec.Kind = apisv1alpha1.VolumeKindLVM
 	localVolumeReplica.Name = "test1"
 
 	// 创建gomock控制器，用来记录后续的操作信息
@@ -72,12 +73,12 @@ func Test_localRegistry_Pools(t *testing.T) {
 }
 
 func Test_localRegistry_SyncResourcesToNodeCRD(t *testing.T) {
-	var localDiskM = map[string]*localstoragev1alpha1.LocalDisk{}
-	localDiskM["/dev/sdb"] = &localstoragev1alpha1.LocalDisk{
+	var localDiskM = map[string]*apisv1alpha1.LocalDisk{}
+	localDiskM["/dev/sdb"] = &apisv1alpha1.LocalDisk{
 		DevPath:       "/dev/sdb",
-		Class:         localstoragev1alpha1.DiskClassNameHDD,
+		Class:         apisv1alpha1.DiskClassNameHDD,
 		CapacityBytes: 10240,
-		State:         localstoragev1alpha1.DiskStateAvailable,
+		State:         apisv1alpha1.DiskStateAvailable,
 	}
 
 	// 创建gomock控制器，用来记录后续的操作信息
@@ -98,12 +99,12 @@ func Test_localRegistry_SyncResourcesToNodeCRD(t *testing.T) {
 }
 
 func Test_localRegistry_UpdateNodeForVolumeReplica(t *testing.T) {
-	var localVolumeReplica = &localstoragev1alpha1.LocalVolumeReplica{}
+	var localVolumeReplica = &apisv1alpha1.LocalVolumeReplica{}
 	localVolumeReplica.Spec.VolumeName = "volume1"
 	localVolumeReplica.Spec.PoolName = "pool1"
 	localVolumeReplica.Spec.NodeName = "node1"
 	localVolumeReplica.Spec.RequiredCapacityBytes = 1240
-	localVolumeReplica.Spec.Kind = localstoragev1alpha1.VolumeKindLVM
+	localVolumeReplica.Spec.Kind = apisv1alpha1.VolumeKindLVM
 	localVolumeReplica.Name = "test1"
 
 	// 创建gomock控制器，用来记录后续的操作信息

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	localapis "github.com/hwameistor/local-storage/pkg/apis"
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
@@ -53,7 +53,7 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		return resp, err
 	}
 	for i := 0; i < 3; i++ {
-		vol := &localstoragev1alpha1.LocalVolume{}
+		vol := &apisv1alpha1.LocalVolume{}
 		if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.Name}, vol); err != nil {
 			if !errors.IsNotFound(err) {
 				p.logger.WithFields(log.Fields{"volName": req.Name, "error": err.Error()}).Error("Failed to query volume")
@@ -61,10 +61,8 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 			}
 			vol.Name = req.Name
 			vol.Spec.PoolName = params.poolName
-			vol.Spec.Kind = params.volumeKind
 			vol.Spec.ReplicaNumber = int64(params.replicaNumber)
 			vol.Spec.RequiredCapacityBytes = req.CapacityRange.RequiredBytes
-			vol.Spec.Striped = params.striped
 			vol.Spec.Convertible = params.convertible
 			if req.AccessibilityRequirements != nil && len(req.AccessibilityRequirements.Requisite) == 1 {
 				if nodeName, ok := req.AccessibilityRequirements.Requisite[0].Segments[localapis.TopologyNodeKey]; ok {
@@ -77,7 +75,7 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 				p.logger.WithFields(log.Fields{"volume": vol, "error": err.Error()}).Error("Failed to create a volume")
 				return resp, err
 			}
-		} else if vol.Status.State == localstoragev1alpha1.VolumeStateReady {
+		} else if vol.Status.State == apisv1alpha1.VolumeStateReady {
 			resp.Volume = &csi.Volume{
 				VolumeId:      vol.Name,
 				CapacityBytes: vol.Status.AllocatedCapacityBytes,
@@ -126,7 +124,7 @@ func (p *plugin) ControllerGetVolume(ctx context.Context, req *csi.ControllerGet
 
 	// get volume from apiClient
 	resp := &csi.ControllerGetVolumeResponse{}
-	vol := &localstoragev1alpha1.LocalVolume{}
+	vol := &apisv1alpha1.LocalVolume{}
 	if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.VolumeId}, vol); err != nil {
 		if !errors.IsNotFound(err) {
 			p.logger.WithFields(log.Fields{"volName": req.VolumeId, "error": err.Error()}).Error("Failed to query volume")
@@ -148,7 +146,7 @@ func (p *plugin) ControllerGetVolume(ctx context.Context, req *csi.ControllerGet
 	if vol.Status.PublishedNodeName != "" {
 		resp.Status.PublishedNodeIds = append(resp.Status.PublishedNodeIds, vol.Status.PublishedNodeName)
 	}
-	volReplica := &localstoragev1alpha1.LocalVolumeReplica{}
+	volReplica := &apisv1alpha1.LocalVolumeReplica{}
 	for _, replicaID := range vol.Status.Replicas {
 		if err := p.apiClient.Get(ctx, types.NamespacedName{Name: replicaID}, volReplica); err != nil {
 			p.logger.WithFields(log.Fields{"replica": replicaID, "error": err.Error()}).Error("Failed to query volume replica")
@@ -166,7 +164,7 @@ func (p *plugin) ControllerGetVolume(ctx context.Context, req *csi.ControllerGet
 		)
 	}
 
-	if vol.Status.State != localstoragev1alpha1.VolumeStateReady {
+	if vol.Status.State != apisv1alpha1.VolumeStateReady {
 		resp.Status.VolumeCondition.Abnormal = true
 		resp.Status.VolumeCondition.Message = "The volume is not ready"
 	} else {
@@ -185,7 +183,7 @@ func (p *plugin) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 	}).Debug("DeleteVolume")
 
 	resp := &csi.DeleteVolumeResponse{}
-	vol := &localstoragev1alpha1.LocalVolume{}
+	vol := &apisv1alpha1.LocalVolume{}
 	if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.VolumeId}, vol); err != nil {
 		if !errors.IsNotFound(err) {
 			p.logger.WithFields(log.Fields{"volName": req.VolumeId, "error": err.Error()}).Error("Failed to query volume")
@@ -195,10 +193,10 @@ func (p *plugin) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 		return resp, nil
 	}
 
-	if vol.Status.State == localstoragev1alpha1.VolumeStateDeleted {
+	if vol.Status.State == apisv1alpha1.VolumeStateDeleted {
 		return resp, nil
 	}
-	if vol.Status.State == localstoragev1alpha1.VolumeStateToBeDeleted {
+	if vol.Status.State == apisv1alpha1.VolumeStateToBeDeleted {
 		return resp, fmt.Errorf("volume in deleting")
 	}
 	vol.Spec.Delete = true
@@ -223,12 +221,12 @@ func (p *plugin) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 
 	resp := &csi.ControllerPublishVolumeResponse{PublishContext: map[string]string{}}
 
-	vol := &localstoragev1alpha1.LocalVolume{}
+	vol := &apisv1alpha1.LocalVolume{}
 	if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.VolumeId}, vol); err != nil {
 		p.logger.WithFields(log.Fields{"volName": req.VolumeId, "error": err.Error()}).Error("Failed to query volume")
 		return resp, err
 	}
-	volReplica := &localstoragev1alpha1.LocalVolumeReplica{}
+	volReplica := &apisv1alpha1.LocalVolumeReplica{}
 	for _, replicaName := range vol.Status.Replicas {
 		if err := p.apiClient.Get(ctx, types.NamespacedName{Name: replicaName}, volReplica); err != nil {
 			p.logger.WithFields(log.Fields{"replica": replicaName, "error": err.Error()}).Error("Failed to query volume replica")
@@ -237,7 +235,7 @@ func (p *plugin) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 		if volReplica.Spec.NodeName != req.NodeId {
 			continue
 		}
-		if volReplica.Status.State != localstoragev1alpha1.VolumeReplicaStateReady {
+		if volReplica.Status.State != apisv1alpha1.VolumeReplicaStateReady {
 			p.logger.WithFields(log.Fields{"replica": replicaName, "state": volReplica.Status.State}).Error("volume replica is not ready")
 			return resp, fmt.Errorf("replica not ready")
 		}
@@ -258,7 +256,6 @@ func (p *plugin) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 		p.logger.WithFields(log.Fields{"volume": req.VolumeId, "node": req.NodeId, "devicePath": volReplica.Status.DevicePath}).Debug("Found valid volume replica")
 		resp.PublishContext[VolumeReplicaDevicePathKey] = volReplica.Status.DevicePath
 		resp.PublishContext[VolumeReplicaNameKey] = volReplica.Name
-		resp.PublishContext[VolumeReplicaKindKey] = volReplica.Spec.Kind
 		return resp, nil
 	}
 
@@ -276,7 +273,7 @@ func (p *plugin) ControllerUnpublishVolume(ctx context.Context, req *csi.Control
 
 	resp := &csi.ControllerUnpublishVolumeResponse{}
 
-	vol := &localstoragev1alpha1.LocalVolume{}
+	vol := &apisv1alpha1.LocalVolume{}
 	if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.VolumeId}, vol); err != nil {
 		p.logger.WithFields(log.Fields{"volume": req.VolumeId, "error": err.Error()}).Error("Failed to query volume")
 		return resp, err
@@ -306,7 +303,7 @@ func (p *plugin) ValidateVolumeCapabilities(ctx context.Context, req *csi.Valida
 
 	resp := &csi.ValidateVolumeCapabilitiesResponse{}
 
-	vol := &localstoragev1alpha1.LocalVolume{}
+	vol := &apisv1alpha1.LocalVolume{}
 	if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.VolumeId}, vol); err != nil {
 		if errors.IsNotFound(err) {
 			p.logger.WithFields(log.Fields{"volName": req.VolumeId, "error": err.Error()}).Error("not found volume")
@@ -339,18 +336,18 @@ func (p *plugin) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (
 	resp := &csi.ListVolumesResponse{
 		Entries: []*csi.ListVolumesResponse_Entry{},
 	}
-	volumeList := &localstoragev1alpha1.LocalVolumeList{}
+	volumeList := &apisv1alpha1.LocalVolumeList{}
 	if err := p.apiClient.List(ctx, volumeList); err != nil {
 		p.logger.WithFields(log.Fields{"error": err}).Error("Failed to list volumes")
 		return resp, err
 	}
 
-	replicaList := &localstoragev1alpha1.LocalVolumeReplicaList{}
+	replicaList := &apisv1alpha1.LocalVolumeReplicaList{}
 	if err := p.apiClient.List(ctx, replicaList); err != nil {
 		p.logger.WithFields(log.Fields{"error": err}).Error("Failed to list volume replicas")
 		return resp, err
 	}
-	replicas := map[string]*localstoragev1alpha1.LocalVolumeReplica{}
+	replicas := map[string]*apisv1alpha1.LocalVolumeReplica{}
 	for i, replica := range replicaList.Items {
 		replicas[replica.Name] = &replicaList.Items[i]
 	}
@@ -374,7 +371,7 @@ func (p *plugin) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (
 		if vol.Status.PublishedNodeName != "" {
 			entry.Status.PublishedNodeIds = append(entry.Status.PublishedNodeIds, vol.Status.PublishedNodeName)
 		}
-		if vol.Status.State != localstoragev1alpha1.VolumeStateReady {
+		if vol.Status.State != apisv1alpha1.VolumeStateReady {
 			entry.Status.VolumeCondition.Abnormal = true
 			entry.Status.VolumeCondition.Message = "The volume is not ready"
 		} else {
@@ -461,15 +458,10 @@ func (p *plugin) ControllerExpandVolume(ctx context.Context, req *csi.Controller
 
 	resp := &csi.ControllerExpandVolumeResponse{}
 
-	vol := &localstoragev1alpha1.LocalVolume{}
+	vol := &apisv1alpha1.LocalVolume{}
 	if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.VolumeId}, vol); err != nil {
 		logCtx.WithError(err).Error("Failed to query volume")
 		return resp, err
-	}
-
-	if vol.Spec.Kind == localstoragev1alpha1.VolumeKindDisk || vol.Spec.Kind == localstoragev1alpha1.VolumeKindRAM {
-		logCtx.Error("Can't expand disk/ramdisk volume")
-		return resp, fmt.Errorf("not support disk/ramdisk volume expansion")
 	}
 
 	if req.CapacityRange == nil {
@@ -478,13 +470,13 @@ func (p *plugin) ControllerExpandVolume(ctx context.Context, req *csi.Controller
 	}
 
 	// new capacity is less than the current, disallow it
-	if (req.CapacityRange.RequiredBytes + localstoragev1alpha1.VolumeExpansionCapacityBytesMin) < vol.Status.AllocatedCapacityBytes {
+	if (req.CapacityRange.RequiredBytes + apisv1alpha1.VolumeExpansionCapacityBytesMin) < vol.Status.AllocatedCapacityBytes {
 		logCtx.WithFields(log.Fields{"currentCapacity": vol.Status.AllocatedCapacityBytes, "newCapacity": req.CapacityRange.RequiredBytes}).Error("Can't reduce volume capacity")
 		return resp, fmt.Errorf("can't reduce capacity")
 	}
 
 	// new capacity is close to the current (diff < 10MB), treat it as a successful expansion
-	if math.Abs(float64(req.CapacityRange.RequiredBytes-vol.Status.AllocatedCapacityBytes)) <= float64(localstoragev1alpha1.VolumeExpansionCapacityBytesMin) {
+	if math.Abs(float64(req.CapacityRange.RequiredBytes-vol.Status.AllocatedCapacityBytes)) <= float64(apisv1alpha1.VolumeExpansionCapacityBytesMin) {
 		logCtx.WithFields(log.Fields{"currentCapacity": vol.Status.AllocatedCapacityBytes, "newCapacity": req.CapacityRange.RequiredBytes}).Info("Volume capacity expand completed")
 		resp.CapacityBytes = vol.Status.AllocatedCapacityBytes
 		resp.NodeExpansionRequired = true
@@ -492,7 +484,7 @@ func (p *plugin) ControllerExpandVolume(ctx context.Context, req *csi.Controller
 	}
 
 	// new capacity is bigger than the current (diff > 10MB), expand it
-	expand := &localstoragev1alpha1.LocalVolumeExpand{}
+	expand := &apisv1alpha1.LocalVolumeExpand{}
 	if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.VolumeId}, expand); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to query volume expansion action")

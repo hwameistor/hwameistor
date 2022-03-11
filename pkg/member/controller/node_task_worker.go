@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hwameistor/local-storage/pkg/apis"
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/local-storage/pkg/utils"
 	log "github.com/sirupsen/logrus"
 	coorv1 "k8s.io/api/coordination/v1"
@@ -40,7 +40,7 @@ func (m *manager) startNodeTaskWorker(stopCh <-chan struct{}) {
 func (m *manager) processNode(nodeName string) error {
 	logCtx := m.logger.WithFields(log.Fields{"Node": nodeName})
 	logCtx.Debug("Working on a node task")
-	node := &localstoragev1alpha1.LocalStorageNode{}
+	node := &apisv1alpha1.LocalStorageNode{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: nodeName}, node); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get node from cache")
