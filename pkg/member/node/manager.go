@@ -2,18 +2,16 @@ package node
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net"
 	"os"
 
-	"github.com/hwameistor/local-storage/pkg/apis"
 	ldmv1alpha1 "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	"github.com/hwameistor/local-storage/pkg/apis"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/local-storage/pkg/common"
 	"github.com/hwameistor/local-storage/pkg/member/node/diskmonitor"
 	"github.com/hwameistor/local-storage/pkg/member/node/storage"
-	"github.com/hwameistor/local-storage/pkg/utils"
 	log "github.com/sirupsen/logrus"
 
 	k8scorev1 "k8s.io/api/core/v1"
@@ -47,7 +45,7 @@ type manager struct {
 
 	// if there is any suspicious volume replica, put it in this queue to check health
 	// for example, when a disk runs into problem, the associated volume replicas should be added into this queue
-	healthCheckQueue *common.TaskQueue
+	//	healthCheckQueue *common.TaskQueue
 
 	diskEventQueue *diskmonitor.EventQueue
 
@@ -65,7 +63,7 @@ type manager struct {
 }
 
 // New node manager
-func New(name string, namespace string, cli client.Client, informersCache runtimecache.Cache, config localstoragev1alpha1.SystemConfig) (apis.NodeManager, error) {
+func New(name string, namespace string, cli client.Client, informersCache runtimecache.Cache, config apisv1alpha1.SystemConfig) (apis.NodeManager, error) {
 	configManager, err := NewConfigManager(name, config, cli)
 	if err != nil {
 		return nil, err
@@ -80,10 +78,10 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 		volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 		localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
 		localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
-		healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
-		diskEventQueue:          diskmonitor.NewEventQueue("DiskEvents"),
-		configManager:           configManager,
-		logger:                  log.WithField("Module", "NodeManager"),
+		// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
+		diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
+		configManager:  configManager,
+		logger:         log.WithField("Module", "NodeManager"),
 	}, nil
 }
 
@@ -93,8 +91,6 @@ func (m *manager) Run(stopCh <-chan struct{}) {
 	m.register()
 
 	m.setupInformers()
-
-	go m.startVolumeReplicaHealthChecker(stopCh)
 
 	go m.startVolumeTaskWorker(stopCh)
 
@@ -143,7 +139,7 @@ func (m *manager) isPhysicalNode() bool {
 func (m *manager) initCache() {
 	// initialize replica records
 	m.logger.Debug("Initializing replica records in cache")
-	replicaList := &localstoragev1alpha1.LocalVolumeReplicaList{}
+	replicaList := &apisv1alpha1.LocalVolumeReplicaList{}
 	if err := m.apiClient.List(context.TODO(), replicaList); err != nil {
 		m.logger.WithError(err).Fatal("Failed to list replicas")
 	}
@@ -155,7 +151,7 @@ func (m *manager) initCache() {
 }
 
 func (m *manager) setupInformers() {
-	nodeInformer, err := m.informersCache.GetInformer(context.TODO(), &localstoragev1alpha1.LocalStorageNode{})
+	nodeInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalStorageNode{})
 	if err != nil {
 		// error happens, crash the node
 		m.logger.WithError(err).Fatal("Failed to get informer for Node")
@@ -165,7 +161,7 @@ func (m *manager) setupInformers() {
 		DeleteFunc: m.handleNodeDelete,
 	})
 
-	volumeReplicaInformer, err := m.informersCache.GetInformer(context.TODO(), &localstoragev1alpha1.LocalVolumeReplica{})
+	volumeReplicaInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolumeReplica{})
 	if err != nil {
 		// error happens, crash the node
 		m.logger.WithError(err).Fatal("Failed to get informer for VolumeReplica")
@@ -203,20 +199,20 @@ func (m *manager) Storage() *storage.LocalManager {
 	return m.storageMgr
 }
 
-func (m *manager) TakeVolumeReplicaTaskAssignment(vol *localstoragev1alpha1.LocalVolume) {
+func (m *manager) TakeVolumeReplicaTaskAssignment(vol *apisv1alpha1.LocalVolume) {
 	// have to add all volumes into the assignment queue, even this node is not in volume.config
 	// in case of removing replica, it is not in the volume.config but should be recycled
 	m.volumeTaskQueue.Add(vol.Name)
 }
 
-func (m *manager) ReconcileVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) {
+func (m *manager) ReconcileVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) {
 	if replica.Spec.NodeName == m.name {
 		m.volumeReplicaTaskQueue.Add(replica.Name)
 	}
 }
 
 func (m *manager) register() {
-	var nodeConfig *localstoragev1alpha1.NodeConfig
+	var nodeConfig *apisv1alpha1.NodeConfig
 	logCtx := m.logger.WithFields(log.Fields{"node": m.name})
 	logCtx.Debug("Registering node into cluster")
 	k8sNode := &k8scorev1.Node{}
@@ -224,7 +220,7 @@ func (m *manager) register() {
 		logCtx.WithError(err).Fatal("Can't find K8S node")
 	}
 
-	myNode := &localstoragev1alpha1.LocalStorageNode{}
+	myNode := &apisv1alpha1.LocalStorageNode{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: m.name}, myNode); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Fatal("Failed to get Node info")
@@ -263,81 +259,34 @@ func (m *manager) register() {
 	}
 }
 
-func (m *manager) getNodeConf(node *localstoragev1alpha1.LocalStorageNode) *localstoragev1alpha1.NodeConfig {
-	return &localstoragev1alpha1.NodeConfig{
+func (m *manager) getNodeConf(node *apisv1alpha1.LocalStorageNode) *apisv1alpha1.NodeConfig {
+	return &apisv1alpha1.NodeConfig{
 		StorageIP: node.Spec.StorageIP,
 		Topology:  node.Spec.Topo.DeepCopy(),
-		LocalStorageConfig: &localstoragev1alpha1.LocalStorageConfig{
-			VolumeKind:           node.Spec.AllowedVolumeKind,
-			RAMDiskTotalCapacity: utils.ConvertBytesToStr(node.Spec.AllowdRAMDiskTotalCapacityBytes),
-		},
 	}
 }
 
-func (m *manager) configNode(config *localstoragev1alpha1.NodeConfig, node *localstoragev1alpha1.LocalStorageNode) error {
+func (m *manager) configNode(config *apisv1alpha1.NodeConfig, node *apisv1alpha1.LocalStorageNode) error {
 	if config.Topology != nil {
 		node.Spec.Topo = *config.Topology
 	}
 	node.Spec.StorageIP = config.StorageIP
-	node.Spec.AllowedVolumeKind = config.LocalStorageConfig.VolumeKind
-	capacityBytes, err := utils.ParseBytes(config.LocalStorageConfig.RAMDiskTotalCapacity)
-	if err != nil {
-		m.logger.WithField("ramdisk", config.LocalStorageConfig.RAMDiskTotalCapacity).WithError(err).Error("Wrong capacity string")
-		return err
-	}
-	node.Spec.AllowdRAMDiskTotalCapacityBytes = capacityBytes
-
 	return nil
 }
 
-func (m *manager) getConfByK8SNodeOrDefault(k8sNode *k8scorev1.Node) (*localstoragev1alpha1.NodeConfig, error) {
-	logCtx := m.logger.WithField("node", m.name)
-	supportedVolumeKind := map[string]struct{}{
-		localstoragev1alpha1.VolumeKindLVM:  struct{}{},
-		localstoragev1alpha1.VolumeKindDisk: struct{}{},
-		localstoragev1alpha1.VolumeKindRAM:  struct{}{},
-	}
+func (m *manager) getConfByK8SNodeOrDefault(k8sNode *k8scorev1.Node) (*apisv1alpha1.NodeConfig, error) {
 	ipAddr, err := m.getStorageIPv4Address(k8sNode)
 	if err != nil {
 		return nil, err
 	}
-	defaultConf := &localstoragev1alpha1.NodeConfig{
-		StorageIP: ipAddr,
-		LocalStorageConfig: &localstoragev1alpha1.LocalStorageConfig{
-			VolumeKind:           localstoragev1alpha1.VolumeKindLVM,
-			RAMDiskTotalCapacity: "0",
-		},
-	}
+	return &apisv1alpha1.NodeConfig{StorageIP: ipAddr}, nil
 
-	structedConf := &localstoragev1alpha1.NodeConfig{StorageIP: ipAddr}
-	conf, has := k8sNode.Annotations[localstoragev1alpha1.LocalStorageConfigAnnotationName]
-	if !has {
-		logCtx.Info("No config annotation found in node resources. Use default node configuration.")
-		return defaultConf, nil
-	}
-
-	if err := json.Unmarshal([]byte(conf), structedConf); err != nil {
-		logCtx.WithField("conf", conf).WithError(err).Errorf("Failed to parse node config")
-		return nil, err
-	}
-
-	if _, supported := supportedVolumeKind[structedConf.LocalStorageConfig.VolumeKind]; !supported {
-		err := fmt.Errorf("unrecognized volume kind")
-		logCtx.WithField("volumekind", structedConf.LocalStorageConfig.VolumeKind).WithError(err).Error("Failed to parse node config")
-		return nil, err
-	}
-
-	if structedConf.LocalStorageConfig != nil && structedConf.LocalStorageConfig.RAMDiskTotalCapacity == "" {
-		structedConf.LocalStorageConfig.RAMDiskTotalCapacity = "0"
-	}
-
-	return structedConf, nil
 }
 
 func (m *manager) getStorageIPv4Address(k8sNode *k8scorev1.Node) (string, error) {
 	logCtx := m.logger.WithField("node", k8sNode.Name)
 	// lookup from k8s node's annotation firstly
-	annotationKey := os.Getenv(localstoragev1alpha1.StorageIPv4AddressAnnotationKeyEnv)
+	annotationKey := os.Getenv(apisv1alpha1.StorageIPv4AddressAnnotationKeyEnv)
 	if len(annotationKey) > 0 {
 		ipAddr, has := k8sNode.Annotations[annotationKey]
 		if has {
@@ -361,7 +310,7 @@ func (m *manager) getStorageIPv4Address(k8sNode *k8scorev1.Node) (string, error)
 }
 
 func (m *manager) handleVolumeReplicaUpdate(oldObj, newObj interface{}) {
-	replica, _ := newObj.(*localstoragev1alpha1.LocalVolumeReplica)
+	replica, _ := newObj.(*apisv1alpha1.LocalVolumeReplica)
 	if replica.Spec.NodeName != m.name {
 		return
 	}
@@ -393,17 +342,17 @@ func (m *manager) handleLocalDiskUpdate(oldObj, newObj interface{}) {
 }
 
 func (m *manager) handleVolumeReplicaDelete(obj interface{}) {
-	replica, _ := obj.(*localstoragev1alpha1.LocalVolumeReplica)
+	replica, _ := obj.(*apisv1alpha1.LocalVolumeReplica)
 	if replica.Spec.NodeName != m.name {
 		return
 	}
 
 	m.logger.WithFields(log.Fields{"replica": replica.Name}).Info("Observed a VolumeReplica CRD deletion...")
-	if replica.Status.State != localstoragev1alpha1.VolumeReplicaStateDeleted {
+	if replica.Status.State != apisv1alpha1.VolumeReplicaStateDeleted {
 		// must be deleted by a mistake, rebuild it
 		m.logger.WithFields(log.Fields{"replica": replica.Name, "spec": replica.Spec, "status": replica.Status}).Warning("Rebuilding VolumeReplica CRD ...")
 		// TODO: need retry considering the case of creating failure??
-		newReplica := &localstoragev1alpha1.LocalVolumeReplica{}
+		newReplica := &apisv1alpha1.LocalVolumeReplica{}
 		newReplica.Name = replica.Name
 		newReplica.Spec = replica.Spec
 
@@ -416,7 +365,7 @@ func (m *manager) handleVolumeReplicaDelete(obj interface{}) {
 }
 
 func (m *manager) handleNodeDelete(obj interface{}) {
-	node, _ := obj.(*localstoragev1alpha1.LocalStorageNode)
+	node, _ := obj.(*apisv1alpha1.LocalStorageNode)
 	if node.Name != m.name {
 		return
 	}
@@ -425,7 +374,7 @@ func (m *manager) handleNodeDelete(obj interface{}) {
 	// must be deleted by a mistake, rebuild it
 	m.logger.Warning("Rebuilding Node CRD ...")
 	// TODO: need retry considering the case of creating failure??
-	nodeToRecovery := &localstoragev1alpha1.LocalStorageNode{}
+	nodeToRecovery := &apisv1alpha1.LocalStorageNode{}
 	nodeToRecovery.SetName(node.GetName())
 	nodeToRecovery.Spec = node.Spec
 	nodeToRecovery.Status = node.Status

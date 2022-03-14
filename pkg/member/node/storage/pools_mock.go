@@ -7,7 +7,7 @@ package storage
 import (
 	reflect "reflect"
 
-	v1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -35,7 +35,7 @@ func (m *MockLocalPoolManager) EXPECT() *MockLocalPoolManagerMockRecorder {
 }
 
 // ExtendPools mocks base method.
-func (m *MockLocalPoolManager) ExtendPools(localDisks []*v1alpha1.LocalDisk) error {
+func (m *MockLocalPoolManager) ExtendPools(localDisks []*apisv1alpha1.LocalDisk) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendPools", localDisks)
 	ret0, _ := ret[0].(error)
@@ -49,10 +49,10 @@ func (mr *MockLocalPoolManagerMockRecorder) ExtendPools(localDisks interface{}) 
 }
 
 // ExtendPoolsInfo mocks base method.
-func (m *MockLocalPoolManager) ExtendPoolsInfo(localDisks map[string]*v1alpha1.LocalDisk) (map[string]*v1alpha1.LocalPool, error) {
+func (m *MockLocalPoolManager) ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDisk) (map[string]*apisv1alpha1.LocalPool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendPoolsInfo", localDisks)
-	ret0, _ := ret[0].(map[string]*v1alpha1.LocalPool)
+	ret0, _ := ret[0].(map[string]*apisv1alpha1.LocalPool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -64,10 +64,10 @@ func (mr *MockLocalPoolManagerMockRecorder) ExtendPoolsInfo(localDisks interface
 }
 
 // GetReplicas mocks base method.
-func (m *MockLocalPoolManager) GetReplicas() (map[string]*v1alpha1.LocalVolumeReplica, error) {
+func (m *MockLocalPoolManager) GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetReplicas")
-	ret0, _ := ret[0].(map[string]*v1alpha1.LocalVolumeReplica)
+	ret0, _ := ret[0].(map[string]*apisv1alpha1.LocalVolumeReplica)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -102,7 +102,7 @@ func (m *MockLocalPoolExecutor) EXPECT() *MockLocalPoolExecutorMockRecorder {
 }
 
 // ExtendPools mocks base method.
-func (m *MockLocalPoolExecutor) ExtendPools(localDisks []*v1alpha1.LocalDisk) error {
+func (m *MockLocalPoolExecutor) ExtendPools(localDisks []*apisv1alpha1.LocalDisk) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendPools", localDisks)
 	ret0, _ := ret[0].(error)
@@ -116,10 +116,10 @@ func (mr *MockLocalPoolExecutorMockRecorder) ExtendPools(localDisks interface{})
 }
 
 // ExtendPoolsInfo mocks base method.
-func (m *MockLocalPoolExecutor) ExtendPoolsInfo(localDisks map[string]*v1alpha1.LocalDisk) (map[string]*v1alpha1.LocalPool, error) {
+func (m *MockLocalPoolExecutor) ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDisk) (map[string]*apisv1alpha1.LocalPool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendPoolsInfo", localDisks)
-	ret0, _ := ret[0].(map[string]*v1alpha1.LocalPool)
+	ret0, _ := ret[0].(map[string]*apisv1alpha1.LocalPool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -131,10 +131,10 @@ func (mr *MockLocalPoolExecutorMockRecorder) ExtendPoolsInfo(localDisks interfac
 }
 
 // GetReplicas mocks base method.
-func (m *MockLocalPoolExecutor) GetReplicas() (map[string]*v1alpha1.LocalVolumeReplica, error) {
+func (m *MockLocalPoolExecutor) GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetReplicas")
-	ret0, _ := ret[0].(map[string]*v1alpha1.LocalVolumeReplica)
+	ret0, _ := ret[0].(map[string]*apisv1alpha1.LocalVolumeReplica)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

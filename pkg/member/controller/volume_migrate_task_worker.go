@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 )
 
 func (m *manager) startVolumeMigrateTaskWorker(stopCh <-chan struct{}) {
@@ -38,7 +38,7 @@ func (m *manager) startVolumeMigrateTaskWorker(stopCh <-chan struct{}) {
 func (m *manager) processVolumeMigrate(name string) error {
 	logCtx := m.logger.WithFields(log.Fields{"VolumeMigrate": name})
 	logCtx.Debug("Working on a VolumeMigrate task")
-	migrate := &localstoragev1alpha1.LocalVolumeMigrate{}
+	migrate := &apisv1alpha1.LocalVolumeMigrate{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: name}, migrate); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get VolumeMigrate from cache")
@@ -49,12 +49,12 @@ func (m *manager) processVolumeMigrate(name string) error {
 	}
 
 	if migrate.Spec.Abort &&
-		migrate.Status.State != localstoragev1alpha1.OperationStateToBeAborted &&
-		migrate.Status.State != localstoragev1alpha1.OperationStateAborting &&
-		migrate.Status.State != localstoragev1alpha1.OperationStateAborted &&
-		migrate.Status.State != localstoragev1alpha1.OperationStateCompleted {
+		migrate.Status.State != apisv1alpha1.OperationStateToBeAborted &&
+		migrate.Status.State != apisv1alpha1.OperationStateAborting &&
+		migrate.Status.State != apisv1alpha1.OperationStateAborted &&
+		migrate.Status.State != apisv1alpha1.OperationStateCompleted {
 
-		migrate.Status.State = localstoragev1alpha1.OperationStateToBeAborted
+		migrate.Status.State = apisv1alpha1.OperationStateToBeAborted
 		return m.apiClient.Status().Update(context.TODO(), migrate)
 	}
 
@@ -66,15 +66,15 @@ func (m *manager) processVolumeMigrate(name string) error {
 	switch migrate.Status.State {
 	case "":
 		return m.volumeMigrateSubmit(migrate)
-	case localstoragev1alpha1.OperationStateSubmitted:
+	case apisv1alpha1.OperationStateSubmitted:
 		return m.volumeMigrateStart(migrate)
-	case localstoragev1alpha1.OperationStateInProgress:
+	case apisv1alpha1.OperationStateInProgress:
 		return m.volumeMigrateInProgress(migrate)
-	case localstoragev1alpha1.OperationStateCompleted:
+	case apisv1alpha1.OperationStateCompleted:
 		return m.volumeMigrateCleanup(migrate)
-	case localstoragev1alpha1.OperationStateToBeAborted:
+	case apisv1alpha1.OperationStateToBeAborted:
 		return m.volumeMigrateAbort(migrate)
-	case localstoragev1alpha1.OperationStateAborted:
+	case apisv1alpha1.OperationStateAborted:
 		return m.volumeMigrateCleanup(migrate)
 	default:
 		logCtx.Error("Invalid state/phase")
@@ -82,13 +82,13 @@ func (m *manager) processVolumeMigrate(name string) error {
 	return fmt.Errorf("invalid state/phase")
 }
 
-func (m *manager) volumeMigrateSubmit(migrate *localstoragev1alpha1.LocalVolumeMigrate) error {
+func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate) error {
 	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "spec": migrate.Spec})
 	logCtx.Debug("Submit a VolumeMigrate")
 
 	ctx := context.TODO()
 
-	vol := &localstoragev1alpha1.LocalVolume{}
+	vol := &apisv1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: migrate.Spec.VolumeName}, vol); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to query volume")
@@ -106,24 +106,24 @@ func (m *manager) volumeMigrateSubmit(migrate *localstoragev1alpha1.LocalVolumeM
 		return m.apiClient.Status().Update(context.TODO(), migrate)
 	}
 
-	if vol.Status.State != localstoragev1alpha1.VolumeStateReady {
+	if vol.Status.State != apisv1alpha1.VolumeStateReady {
 		logCtx.WithFields(log.Fields{"volume": vol.Name, "state": vol.Status.State}).Error("Volume is not ready")
 		migrate.Status.Message = "Volume is not ready"
 		return m.apiClient.Status().Update(context.TODO(), migrate)
 	}
 
 	migrate.Status.ReplicaNumber = vol.Spec.ReplicaNumber
-	migrate.Status.State = localstoragev1alpha1.OperationStateSubmitted
+	migrate.Status.State = apisv1alpha1.OperationStateSubmitted
 	return m.apiClient.Status().Update(context.TODO(), migrate)
 }
 
-func (m *manager) volumeMigrateStart(migrate *localstoragev1alpha1.LocalVolumeMigrate) error {
+func (m *manager) volumeMigrateStart(migrate *apisv1alpha1.LocalVolumeMigrate) error {
 	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "spec": migrate.Spec, "status": migrate.Status})
 	logCtx.Debug("Start a VolumeMigrate")
 
 	ctx := context.TODO()
 
-	vol := &localstoragev1alpha1.LocalVolume{}
+	vol := &apisv1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: migrate.Spec.VolumeName}, vol); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to query volume")
@@ -142,11 +142,11 @@ func (m *manager) volumeMigrateStart(migrate *localstoragev1alpha1.LocalVolumeMi
 	}
 
 	if vol.Spec.ReplicaNumber > migrate.Status.ReplicaNumber {
-		migrate.Status.State = localstoragev1alpha1.OperationStateInProgress
+		migrate.Status.State = apisv1alpha1.OperationStateInProgress
 		return m.apiClient.Status().Update(ctx, migrate)
 	}
 
-	if vol.Status.State != localstoragev1alpha1.VolumeStateReady {
+	if vol.Status.State != apisv1alpha1.VolumeStateReady {
 		logCtx.WithFields(log.Fields{"volume": vol.Name, "state": vol.Status.State}).Error("The volume is not ready")
 		migrate.Status.Message = "The volume is not ready"
 		return m.apiClient.Status().Update(context.TODO(), migrate)
@@ -159,18 +159,18 @@ func (m *manager) volumeMigrateStart(migrate *localstoragev1alpha1.LocalVolumeMi
 		logCtx.WithFields(log.Fields{"volume": vol.Name}).WithError(err).Error("Failed to add a new replica")
 		migrate.Status.Message = err.Error()
 	} else {
-		migrate.Status.State = localstoragev1alpha1.OperationStateInProgress
+		migrate.Status.State = apisv1alpha1.OperationStateInProgress
 	}
 	return m.apiClient.Status().Update(ctx, migrate)
 }
 
-func (m *manager) volumeMigrateInProgress(migrate *localstoragev1alpha1.LocalVolumeMigrate) error {
+func (m *manager) volumeMigrateInProgress(migrate *apisv1alpha1.LocalVolumeMigrate) error {
 	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "spec": migrate.Spec, "status": migrate.Status})
 	logCtx.Debug("Start a VolumeMigrate")
 
 	ctx := context.TODO()
 
-	vol := &localstoragev1alpha1.LocalVolume{}
+	vol := &apisv1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: migrate.Spec.VolumeName}, vol); err != nil {
 		logCtx.WithError(err).Error("Failed to query volume")
 		migrate.Status.Message = err.Error()
@@ -195,7 +195,7 @@ func (m *manager) volumeMigrateInProgress(migrate *localstoragev1alpha1.LocalVol
 	}
 	hasOldReplica := false
 	for _, replica := range replicas {
-		if replica.Status.State != localstoragev1alpha1.VolumeReplicaStateReady {
+		if replica.Status.State != apisv1alpha1.VolumeReplicaStateReady {
 			logCtx.Info("Not all VolumeReplicas are ready")
 			return fmt.Errorf("volume not ready")
 		}
@@ -208,7 +208,7 @@ func (m *manager) volumeMigrateInProgress(migrate *localstoragev1alpha1.LocalVol
 	if vol.Spec.ReplicaNumber > migrate.Status.ReplicaNumber {
 		// prune the to-be-migrated replica
 		vol.Spec.ReplicaNumber = migrate.Status.ReplicaNumber
-		replicas := []localstoragev1alpha1.VolumeReplica{}
+		replicas := []apisv1alpha1.VolumeReplica{}
 		for i := range vol.Spec.Config.Replicas {
 			if vol.Spec.Config.Replicas[i].Hostname != migrate.Spec.NodeName {
 				replicas = append(replicas, vol.Spec.Config.Replicas[i])
@@ -230,19 +230,19 @@ func (m *manager) volumeMigrateInProgress(migrate *localstoragev1alpha1.LocalVol
 		return fmt.Errorf("not cleanup")
 	}
 
-	migrate.Status.State = localstoragev1alpha1.OperationStateCompleted
+	migrate.Status.State = apisv1alpha1.OperationStateCompleted
 	return m.apiClient.Status().Update(ctx, migrate)
 }
 
-func (m *manager) volumeMigrateAbort(migrate *localstoragev1alpha1.LocalVolumeMigrate) error {
+func (m *manager) volumeMigrateAbort(migrate *apisv1alpha1.LocalVolumeMigrate) error {
 	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "spec": migrate.Spec, "status": migrate.Status})
 	logCtx.Debug("Abort a VolumeMigrate")
 
-	migrate.Status.State = localstoragev1alpha1.OperationStateAborted
+	migrate.Status.State = apisv1alpha1.OperationStateAborted
 	return m.apiClient.Status().Update(context.TODO(), migrate)
 }
 
-func (m *manager) volumeMigrateCleanup(migrate *localstoragev1alpha1.LocalVolumeMigrate) error {
+func (m *manager) volumeMigrateCleanup(migrate *apisv1alpha1.LocalVolumeMigrate) error {
 	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "spec": migrate.Spec, "status": migrate.Status})
 	logCtx.Debug("Cleanup a VolumeMigrate")
 

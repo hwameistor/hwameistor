@@ -7,7 +7,7 @@ package scheduler
 import (
 	reflect "reflect"
 
-	v1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -35,10 +35,10 @@ func (m *MockScheduler) EXPECT() *MockSchedulerMockRecorder {
 }
 
 // Allocate mocks base method.
-func (m *MockScheduler) Allocate(vol *v1alpha1.LocalVolume) (*v1alpha1.VolumeConfig, error) {
+func (m *MockScheduler) Allocate(vol *apisv1alpha1.LocalVolume) (*apisv1alpha1.VolumeConfig, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Allocate", vol)
-	ret0, _ := ret[0].(*v1alpha1.VolumeConfig)
+	ret0, _ := ret[0].(*apisv1alpha1.VolumeConfig)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -50,10 +50,10 @@ func (mr *MockSchedulerMockRecorder) Allocate(vol interface{}) *gomock.Call {
 }
 
 // GetNodeCandidates mocks base method.
-func (m *MockScheduler) GetNodeCandidates(vol *v1alpha1.LocalVolume) ([]*v1alpha1.LocalStorageNode, error) {
+func (m *MockScheduler) GetNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1alpha1.LocalStorageNode, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNodeCandidates", vol)
-	ret0, _ := ret[0].([]*v1alpha1.LocalStorageNode)
+	ret0, _ := ret[0].([]*apisv1alpha1.LocalStorageNode)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

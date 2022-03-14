@@ -7,7 +7,7 @@ package storage
 import (
 	reflect "reflect"
 
-	v1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -35,10 +35,10 @@ func (m *MockLocalRegistry) EXPECT() *MockLocalRegistryMockRecorder {
 }
 
 // Disks mocks base method.
-func (m *MockLocalRegistry) Disks() map[string]*v1alpha1.LocalDisk {
+func (m *MockLocalRegistry) Disks() map[string]*apisv1alpha1.LocalDisk {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Disks")
-	ret0, _ := ret[0].(map[string]*v1alpha1.LocalDisk)
+	ret0, _ := ret[0].(map[string]*apisv1alpha1.LocalDisk)
 	return ret0
 }
 
@@ -49,7 +49,7 @@ func (mr *MockLocalRegistryMockRecorder) Disks() *gomock.Call {
 }
 
 // HasVolumeReplica mocks base method.
-func (m *MockLocalRegistry) HasVolumeReplica(replica *v1alpha1.LocalVolumeReplica) bool {
+func (m *MockLocalRegistry) HasVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "HasVolumeReplica", replica)
 	ret0, _ := ret[0].(bool)
@@ -75,10 +75,10 @@ func (mr *MockLocalRegistryMockRecorder) Init() *gomock.Call {
 }
 
 // Pools mocks base method.
-func (m *MockLocalRegistry) Pools() map[string]*v1alpha1.LocalPool {
+func (m *MockLocalRegistry) Pools() map[string]*apisv1alpha1.LocalPool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Pools")
-	ret0, _ := ret[0].(map[string]*v1alpha1.LocalPool)
+	ret0, _ := ret[0].(map[string]*apisv1alpha1.LocalPool)
 	return ret0
 }
 
@@ -89,7 +89,7 @@ func (mr *MockLocalRegistryMockRecorder) Pools() *gomock.Call {
 }
 
 // SyncResourcesToNodeCRD mocks base method.
-func (m *MockLocalRegistry) SyncResourcesToNodeCRD(localDisks map[string]*v1alpha1.LocalDisk) error {
+func (m *MockLocalRegistry) SyncResourcesToNodeCRD(localDisks map[string]*apisv1alpha1.LocalDisk) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SyncResourcesToNodeCRD", localDisks)
 	ret0, _ := ret[0].(error)
@@ -103,7 +103,7 @@ func (mr *MockLocalRegistryMockRecorder) SyncResourcesToNodeCRD(localDisks inter
 }
 
 // UpdateNodeForVolumeReplica mocks base method.
-func (m *MockLocalRegistry) UpdateNodeForVolumeReplica(replica *v1alpha1.LocalVolumeReplica) {
+func (m *MockLocalRegistry) UpdateNodeForVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateNodeForVolumeReplica", replica)
 }
@@ -115,10 +115,10 @@ func (mr *MockLocalRegistryMockRecorder) UpdateNodeForVolumeReplica(replica inte
 }
 
 // VolumeReplicas mocks base method.
-func (m *MockLocalRegistry) VolumeReplicas() map[string]*v1alpha1.LocalVolumeReplica {
+func (m *MockLocalRegistry) VolumeReplicas() map[string]*apisv1alpha1.LocalVolumeReplica {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "VolumeReplicas")
-	ret0, _ := ret[0].(map[string]*v1alpha1.LocalVolumeReplica)
+	ret0, _ := ret[0].(map[string]*apisv1alpha1.LocalVolumeReplica)
 	return ret0
 }
 

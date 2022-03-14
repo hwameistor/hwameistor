@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	localapis "github.com/hwameistor/local-storage/pkg/apis"
-	v1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	storage "github.com/hwameistor/local-storage/pkg/member/node/storage"
 	gomock "github.com/golang/mock/gomock"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -40,7 +40,7 @@ func (m *MockLocalStorageMember) EXPECT() *MockLocalStorageMemberMockRecorder {
 }
 
 // ConfigureBase mocks base method.
-func (m *MockLocalStorageMember) ConfigureBase(name, namespace string, haSystemConfig v1alpha1.SystemConfig, cli client.Client, informersCache cache.Cache) localapis.LocalStorageMember {
+func (m *MockLocalStorageMember) ConfigureBase(name, namespace string, haSystemConfig apisv1alpha1.SystemConfig, cli client.Client, informersCache cache.Cache) localapis.LocalStorageMember {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ConfigureBase", name, namespace, haSystemConfig, cli, informersCache)
 	ret0, _ := ret[0].(localapis.LocalStorageMember)
@@ -215,7 +215,7 @@ func (m *MockControllerManager) EXPECT() *MockControllerManagerMockRecorder {
 }
 
 // ReconcileNode mocks base method.
-func (m *MockControllerManager) ReconcileNode(node *v1alpha1.LocalStorageNode) {
+func (m *MockControllerManager) ReconcileNode(node *apisv1alpha1.LocalStorageNode) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ReconcileNode", node)
 }
@@ -227,7 +227,7 @@ func (mr *MockControllerManagerMockRecorder) ReconcileNode(node interface{}) *go
 }
 
 // ReconcileVolume mocks base method.
-func (m *MockControllerManager) ReconcileVolume(vol *v1alpha1.LocalVolume) {
+func (m *MockControllerManager) ReconcileVolume(vol *apisv1alpha1.LocalVolume) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ReconcileVolume", vol)
 }
@@ -239,7 +239,7 @@ func (mr *MockControllerManagerMockRecorder) ReconcileVolume(vol interface{}) *g
 }
 
 // ReconcileVolumeConvert mocks base method.
-func (m *MockControllerManager) ReconcileVolumeConvert(vol *v1alpha1.LocalVolumeConvert) {
+func (m *MockControllerManager) ReconcileVolumeConvert(vol *apisv1alpha1.LocalVolumeConvert) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ReconcileVolumeConvert", vol)
 }
@@ -251,7 +251,7 @@ func (mr *MockControllerManagerMockRecorder) ReconcileVolumeConvert(vol interfac
 }
 
 // ReconcileVolumeExpand mocks base method.
-func (m *MockControllerManager) ReconcileVolumeExpand(vol *v1alpha1.LocalVolumeExpand) {
+func (m *MockControllerManager) ReconcileVolumeExpand(vol *apisv1alpha1.LocalVolumeExpand) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ReconcileVolumeExpand", vol)
 }
@@ -263,7 +263,7 @@ func (mr *MockControllerManagerMockRecorder) ReconcileVolumeExpand(vol interface
 }
 
 // ReconcileVolumeMigrate mocks base method.
-func (m *MockControllerManager) ReconcileVolumeMigrate(vol *v1alpha1.LocalVolumeMigrate) {
+func (m *MockControllerManager) ReconcileVolumeMigrate(vol *apisv1alpha1.LocalVolumeMigrate) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ReconcileVolumeMigrate", vol)
 }
@@ -310,7 +310,7 @@ func (m *MockNodeManager) EXPECT() *MockNodeManagerMockRecorder {
 }
 
 // ReconcileVolumeReplica mocks base method.
-func (m *MockNodeManager) ReconcileVolumeReplica(replica *v1alpha1.LocalVolumeReplica) {
+func (m *MockNodeManager) ReconcileVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ReconcileVolumeReplica", replica)
 }
@@ -348,7 +348,7 @@ func (mr *MockNodeManagerMockRecorder) Storage() *gomock.Call {
 }
 
 // TakeVolumeReplicaTaskAssignment mocks base method.
-func (m *MockNodeManager) TakeVolumeReplicaTaskAssignment(vol *v1alpha1.LocalVolume) {
+func (m *MockNodeManager) TakeVolumeReplicaTaskAssignment(vol *apisv1alpha1.LocalVolume) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "TakeVolumeReplicaTaskAssignment", vol)
 }

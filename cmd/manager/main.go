@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hwameistor/local-storage/pkg/apis"
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
 	ldmv1alpha1 "github.com/hwameistor/local-disk-manager/pkg/apis"
+	"github.com/hwameistor/local-storage/pkg/apis"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/local-storage/pkg/controller"
 	"github.com/hwameistor/local-storage/pkg/member"
 	"github.com/hwameistor/local-storage/pkg/utils"
@@ -41,7 +41,7 @@ var (
 	nodeName           = flag.String("nodename", "", "Node name")
 	namespace          = flag.String("namespace", "", "Namespace of the Pod")
 	csiSockAddr        = flag.String("csi-address", "", "CSI endpoint")
-	systemMode         = flag.String("system-mode", string(localstoragev1alpha1.SystemModeDRBD), "dlocal system mode")
+	systemMode         = flag.String("system-mode", string(apisv1alpha1.SystemModeDRBD), "dlocal system mode")
 	drbdStartPort      = flag.Int("drbd-start-port", defaultDRBDStartPort, "drbd start port, end port=start-port+volume-count-1")
 	haVolumeTotalCount = flag.Int("max-ha-volume-count", defaultHAVolumeTotalCount, "max HA volume count")
 	httpPort           = flag.Int("http-port", restServerDefaultPort, "HTTP port for REST server")
@@ -129,7 +129,7 @@ func main() {
 	log.Info("Registering Components...")
 
 	// Setup Scheme for all resources of Local Storage Member
-	if err := localstoragev1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
+	if err := apisv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		log.WithError(err).Error("Failed to setup scheme for all resources")
 		os.Exit(1)
 	}
@@ -150,7 +150,7 @@ func main() {
 	storageMember := member.Member().ConfigureBase(*nodeName, *namespace, systemConfig, mgr.GetClient(), mgr.GetCache()).
 		ConfigureNode().
 		ConfigureController(mgr.GetScheme()).
-		ConfigureCSIDriver(localstoragev1alpha1.CSIDriverName, *csiSockAddr).
+		ConfigureCSIDriver(apisv1alpha1.CSIDriverName, *csiSockAddr).
 		ConfigureRESTServer(*httpPort)
 
 	runFunc := func(ctx context.Context) {
@@ -185,8 +185,8 @@ func main() {
 
 func validateSystemConfig() error {
 	var errMsgs []string
-	switch localstoragev1alpha1.SystemMode(*systemMode) {
-	case localstoragev1alpha1.SystemModeDRBD:
+	switch apisv1alpha1.SystemMode(*systemMode) {
+	case apisv1alpha1.SystemModeDRBD:
 	default:
 		errMsgs = append(errMsgs, fmt.Sprintf("system mode %s not supported", *systemMode))
 	}
@@ -197,20 +197,20 @@ func validateSystemConfig() error {
 	return nil
 }
 
-func getSystemConfig() (localstoragev1alpha1.SystemConfig, error) {
+func getSystemConfig() (apisv1alpha1.SystemConfig, error) {
 	if err := validateSystemConfig(); err != nil {
-		return localstoragev1alpha1.SystemConfig{}, err
+		return apisv1alpha1.SystemConfig{}, err
 	}
 
-	config := localstoragev1alpha1.SystemConfig{
-		Mode:             localstoragev1alpha1.SystemMode(*systemMode),
+	config := apisv1alpha1.SystemConfig{
+		Mode:             apisv1alpha1.SystemMode(*systemMode),
 		MaxHAVolumeCount: *haVolumeTotalCount,
 	}
 
 	switch config.Mode {
-	case localstoragev1alpha1.SystemModeDRBD:
+	case apisv1alpha1.SystemModeDRBD:
 		{
-			config.DRBD = &localstoragev1alpha1.DRBDSystemConfig{
+			config.DRBD = &apisv1alpha1.DRBDSystemConfig{
 				StartPort: *drbdStartPort,
 			}
 		}

@@ -8,7 +8,7 @@ import (
 	runtimecache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 )
 
 // todo:
@@ -19,9 +19,9 @@ import (
 type Scheduler interface {
 	Init()
 	// schedule will schedule all replicas, and generate a valid VolumeConfig
-	Allocate(vol *localstoragev1alpha1.LocalVolume) (*localstoragev1alpha1.VolumeConfig, error)
+	Allocate(vol *apisv1alpha1.LocalVolume) (*apisv1alpha1.VolumeConfig, error)
 
-	GetNodeCandidates(vol *localstoragev1alpha1.LocalVolume) ([]*localstoragev1alpha1.LocalStorageNode, error)
+	GetNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1alpha1.LocalStorageNode, error)
 }
 
 // todo: design a better plugin register/enable
@@ -55,12 +55,12 @@ func (s *scheduler) Init() {
 }
 
 // GetNodeCandidates gets available nodes for the volume, used by K8s scheduler
-func (s *scheduler) GetNodeCandidates(vol *localstoragev1alpha1.LocalVolume) ([]*localstoragev1alpha1.LocalStorageNode, error) {
+func (s *scheduler) GetNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1alpha1.LocalStorageNode, error) {
 	return s.resourceCollections.getNodeCandidates(vol)
 }
 
 // Allocate schedule right nodes and generate volume config
-func (s *scheduler) Allocate(vol *localstoragev1alpha1.LocalVolume) (*localstoragev1alpha1.VolumeConfig, error) {
+func (s *scheduler) Allocate(vol *apisv1alpha1.LocalVolume) (*apisv1alpha1.VolumeConfig, error) {
 	logCtx := s.logger.WithFields(log.Fields{"volume": vol.Name, "spec": vol.Spec})
 	logCtx.Debug("Allocating resources for LocalVolume")
 
@@ -73,7 +73,7 @@ func (s *scheduler) Allocate(vol *localstoragev1alpha1.LocalVolume) (*localstora
 		neededNodeNumber -= len(vol.Spec.Config.Replicas)
 	}
 
-	var selectedNodes []*localstoragev1alpha1.LocalStorageNode
+	var selectedNodes []*apisv1alpha1.LocalStorageNode
 	if neededNodeNumber > 0 {
 		nodes, err := s.resourceCollections.getNodeCandidates(vol)
 		if err != nil {
@@ -100,12 +100,12 @@ func (s *scheduler) Allocate(vol *localstoragev1alpha1.LocalVolume) (*localstora
 	return s.generateConfig(vol, selectedNodes, resID), nil
 }
 
-func (s *scheduler) generateConfig(vol *localstoragev1alpha1.LocalVolume, nodes []*localstoragev1alpha1.LocalStorageNode, resID int) *localstoragev1alpha1.VolumeConfig {
-	conf := &localstoragev1alpha1.VolumeConfig{
+func (s *scheduler) generateConfig(vol *apisv1alpha1.LocalVolume, nodes []*apisv1alpha1.LocalStorageNode, resID int) *apisv1alpha1.VolumeConfig {
+	conf := &apisv1alpha1.VolumeConfig{
 		Version:     1,
 		VolumeName:  vol.Name,
 		Initialized: false,
-		Replicas:    []localstoragev1alpha1.VolumeReplica{},
+		Replicas:    []apisv1alpha1.VolumeReplica{},
 	}
 	if vol.Spec.Config != nil {
 		conf = vol.Spec.Config.DeepCopy()
@@ -130,7 +130,7 @@ func (s *scheduler) generateConfig(vol *localstoragev1alpha1.LocalVolume, nodes 
 	nodeIDIndex := 0
 	nodeIndex := 0
 	for i := len(conf.Replicas); i < int(vol.Spec.ReplicaNumber); i++ {
-		replica := localstoragev1alpha1.VolumeReplica{
+		replica := apisv1alpha1.VolumeReplica{
 			ID:       freeIDs[nodeIDIndex],
 			Hostname: nodes[nodeIndex].Spec.HostName,
 			IP:       nodes[nodeIndex].Spec.StorageIP,

@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/local-storage/pkg/exechelper"
 	"github.com/hwameistor/local-storage/pkg/exechelper/nsexecutor"
 	"github.com/hwameistor/local-storage/pkg/utils"
@@ -80,16 +79,16 @@ type lvRecord struct {
 	LvCapacity   string `json:"lv_size"`
 }
 
-type vgStatus struct {
-	// number of active PVs
-	actPVCount int
-}
+// type vgStatus struct {
+// 	// number of active PVs
+// 	actPVCount int
+// }
 
 type lvStatus struct {
 	// disks where a LV is spread cross
 	disks []string
 	// state of a LV, e.g. Ready, NotReady
-	state localstoragev1alpha1.State
+	state apisv1alpha1.State
 }
 
 type lvmExecutor struct {
@@ -98,7 +97,7 @@ type lvmExecutor struct {
 	logger  *log.Entry
 }
 
-func (lvm *lvmExecutor) ExtendPoolsInfo(disks map[string]*localstoragev1alpha1.LocalDisk) (map[string]*localstoragev1alpha1.LocalPool, error) {
+func (lvm *lvmExecutor) ExtendPoolsInfo(disks map[string]*apisv1alpha1.LocalDisk) (map[string]*apisv1alpha1.LocalPool, error) {
 	oldRegistryDisks := lvm.lm.registry.Disks()
 	localDisks := mergeRegistryDiskMap(oldRegistryDisks, disks)
 
@@ -109,10 +108,10 @@ func (lvm *lvmExecutor) ExtendPoolsInfo(disks map[string]*localstoragev1alpha1.L
 		return nil, err
 	}
 
-	pools := make(map[string]*localstoragev1alpha1.LocalPool)
+	pools := make(map[string]*apisv1alpha1.LocalPool)
 
 	for vgName, vg := range lvmStatus.vgs {
-		if !strings.HasPrefix(vg.Name, localstoragev1alpha1.PoolNamePrefix) {
+		if !strings.HasPrefix(vg.Name, apisv1alpha1.PoolNamePrefix) {
 			continue
 		}
 		totalCapacityBytes, err := utils.ConvertLVMBytesToNumeric(vg.VgCapacityByte)
@@ -133,7 +132,7 @@ func (lvm *lvmExecutor) ExtendPoolsInfo(disks map[string]*localstoragev1alpha1.L
 
 		// Prepare PV status
 		pvRecords := lvmStatus.getPVsByVGName(vgName)
-		disks := make([]localstoragev1alpha1.LocalDisk, 0, len(pvRecords))
+		disks := make([]apisv1alpha1.LocalDisk, 0, len(pvRecords))
 
 		for _, pv := range pvRecords {
 			if _, exists := localDisks[pv.Name]; !exists {
@@ -144,7 +143,7 @@ func (lvm *lvmExecutor) ExtendPoolsInfo(disks map[string]*localstoragev1alpha1.L
 				lvm.logger.WithError(err).Errorf("Failed to convert LVM byte numbers int64: %s\n.", pv.PvSize)
 				return nil, err
 			}
-			typedPv := &localstoragev1alpha1.LocalDisk{
+			typedPv := &apisv1alpha1.LocalDisk{
 				DevPath:       pv.Name,
 				Class:         localDisks[pv.Name].Class,
 				CapacityBytes: pvcap,
@@ -160,18 +159,17 @@ func (lvm *lvmExecutor) ExtendPoolsInfo(disks map[string]*localstoragev1alpha1.L
 			volumes = append(volumes, lv.Name)
 		}
 
-		pools[vgName] = &localstoragev1alpha1.LocalPool{
+		pools[vgName] = &apisv1alpha1.LocalPool{
 			Name:                     vg.Name,
 			Class:                    poolClass,
 			Type:                     poolType,
-			VolumeKind:               localstoragev1alpha1.VolumeKindLVM,
 			TotalCapacityBytes:       int64(totalCapacityBytes),
 			UsedCapacityBytes:        int64(totalCapacityBytes) - int64(freeCapacityBytes),
 			FreeCapacityBytes:        int64(freeCapacityBytes),
 			VolumeCapacityBytesLimit: int64(totalCapacityBytes),
-			TotalVolumeCount:         localstoragev1alpha1.LVMVolumeMaxCount,
+			TotalVolumeCount:         apisv1alpha1.LVMVolumeMaxCount,
 			UsedVolumeCount:          int64(len(volumes)),
-			FreeVolumeCount:          localstoragev1alpha1.LVMVolumeMaxCount - int64(len(volumes)),
+			FreeVolumeCount:          apisv1alpha1.LVMVolumeMaxCount - int64(len(volumes)),
 			Disks:                    disks,
 			Volumes:                  volumes,
 		}
@@ -180,7 +178,7 @@ func (lvm *lvmExecutor) ExtendPoolsInfo(disks map[string]*localstoragev1alpha1.L
 	return pools, nil
 }
 
-func (lvm *lvmExecutor) GetReplicas() (map[string]*localstoragev1alpha1.LocalVolumeReplica, error) {
+func (lvm *lvmExecutor) GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error) {
 	// TODO
 	lvmStatus, err := lvm.getLVMStatus(LVMask)
 	if err != nil {
@@ -188,10 +186,10 @@ func (lvm *lvmExecutor) GetReplicas() (map[string]*localstoragev1alpha1.LocalVol
 		return nil, err
 	}
 
-	replicas := make(map[string]*localstoragev1alpha1.LocalVolumeReplica)
+	replicas := make(map[string]*apisv1alpha1.LocalVolumeReplica)
 
 	for lvName, lv := range lvmStatus.lvs {
-		if !strings.HasPrefix(lv.PoolName, localstoragev1alpha1.PoolNamePrefix) {
+		if !strings.HasPrefix(lv.PoolName, apisv1alpha1.PoolNamePrefix) {
 			continue
 		}
 
@@ -201,12 +199,12 @@ func (lvm *lvmExecutor) GetReplicas() (map[string]*localstoragev1alpha1.LocalVol
 			return nil, err
 		}
 
-		replicaToTest := &localstoragev1alpha1.LocalVolumeReplica{
-			Spec: localstoragev1alpha1.LocalVolumeReplicaSpec{
+		replicaToTest := &apisv1alpha1.LocalVolumeReplica{
+			Spec: apisv1alpha1.LocalVolumeReplicaSpec{
 				VolumeName: lvName,
 				PoolName:   lv.PoolName,
 			},
-			Status: localstoragev1alpha1.LocalVolumeReplicaStatus{
+			Status: apisv1alpha1.LocalVolumeReplicaStatus{
 				StoragePath:            lv.LvPath,
 				DevicePath:             lv.LvPath,
 				AllocatedCapacityBytes: capacity,
@@ -235,22 +233,23 @@ func newLVMExecutor(lm *LocalManager) *lvmExecutor {
 	return lvmExecutorInstance
 }
 
-func (lvm *lvmExecutor) CreateVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) (*localstoragev1alpha1.LocalVolumeReplica, error) {
+func (lvm *lvmExecutor) CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error) {
 
-	// if strip is enabled, the number of stripes should be equal to the one of active PVs in the VG.
-	// in another word, the striped volume replica should be spread across all the active PVs in the VG
-	vgStatus, err := lvm.vgdisplay(replica.Spec.PoolName)
-	if err != nil {
-		return nil, err
-	}
-	// if strip is disabled, the strip number should be 1
-	stripNum := 1
-	if replica.Spec.Striped {
-		stripNum = vgStatus.actPVCount
-	}
+	// // if strip is enabled, the number of stripes should be equal to the one of active PVs in the VG.
+	// // in another word, the striped volume replica should be spread across all the active PVs in the VG
+	// vgStatus, err := lvm.vgdisplay(replica.Spec.PoolName)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// // if strip is disabled, the strip number should be 1
+	// stripNum := 1
+	// if replica.Spec.Striped {
+	// 	stripNum = vgStatus.actPVCount
+	// }
+
 	options := []string{
 		"--size", utils.ConvertNumericToLVMBytes(replica.Spec.RequiredCapacityBytes),
-		"--stripes", fmt.Sprintf("%d", stripNum),
+		"--stripes", fmt.Sprintf("%d", 1),
 	}
 	if err := lvm.lvcreate(replica.Spec.VolumeName, replica.Spec.PoolName, options); err != nil {
 		return nil, err
@@ -278,7 +277,7 @@ func (lvm *lvmExecutor) CreateVolumeReplica(replica *localstoragev1alpha1.LocalV
 	return newReplica, nil
 }
 
-func (lvm *lvmExecutor) ExpandVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*localstoragev1alpha1.LocalVolumeReplica, error) {
+func (lvm *lvmExecutor) ExpandVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*apisv1alpha1.LocalVolumeReplica, error) {
 
 	newLVMCapacityBytes := utils.NumericToLVMBytes(newCapacityBytes)
 
@@ -306,7 +305,7 @@ func (lvm *lvmExecutor) ExpandVolumeReplica(replica *localstoragev1alpha1.LocalV
 	return newReplica, nil
 }
 
-func (lvm *lvmExecutor) DeleteVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) error {
+func (lvm *lvmExecutor) DeleteVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) error {
 	// for compatibility
 	storagePath := replica.Status.StoragePath
 	if len(storagePath) == 0 {
@@ -316,7 +315,7 @@ func (lvm *lvmExecutor) DeleteVolumeReplica(replica *localstoragev1alpha1.LocalV
 	return lvm.lvremove(storagePath, []string{})
 }
 
-func (lvm *lvmExecutor) TestVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica) (*localstoragev1alpha1.LocalVolumeReplica, error) {
+func (lvm *lvmExecutor) TestVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error) {
 	// for compatibility
 	storagePath := replica.Status.StoragePath
 	if len(storagePath) == 0 {
@@ -334,7 +333,7 @@ func (lvm *lvmExecutor) TestVolumeReplica(replica *localstoragev1alpha1.LocalVol
 	return newReplica, nil
 }
 
-func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*localstoragev1alpha1.LocalDisk) error {
+func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*apisv1alpha1.LocalDisk) error {
 	lvm.logger.Debugf("Adding available disk %+v, count: %d\n.", availableLocalDisks, len(availableLocalDisks))
 
 	existingPVMap, err := lvm.getExistingPVs()
@@ -343,7 +342,7 @@ func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*localstoragev1alpha1.
 		return err
 	}
 
-	disksToBeExtends := make(map[string][]*localstoragev1alpha1.LocalDisk)
+	disksToBeExtends := make(map[string][]*apisv1alpha1.LocalDisk)
 	for _, disk := range availableLocalDisks {
 		poolName, err := getPoolNameAccordingDisk(disk)
 		if err != nil {
@@ -351,7 +350,7 @@ func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*localstoragev1alpha1.
 			continue
 		}
 		if disksToBeExtends[poolName] == nil {
-			disksToBeExtends[poolName] = make([]*localstoragev1alpha1.LocalDisk, 0, len(availableLocalDisks))
+			disksToBeExtends[poolName] = make([]*apisv1alpha1.LocalDisk, 0, len(availableLocalDisks))
 		}
 		if _, ok := existingPVMap[disk.DevPath]; ok {
 			continue
@@ -369,7 +368,7 @@ func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*localstoragev1alpha1.
 	return nil
 }
 
-func (lvm *lvmExecutor) ConsistencyCheck(crdReplicas map[string]*localstoragev1alpha1.LocalVolumeReplica) {
+func (lvm *lvmExecutor) ConsistencyCheck(crdReplicas map[string]*apisv1alpha1.LocalVolumeReplica) {
 
 	lvm.logger.Debug("Consistency Checking for LVM volume ...")
 
@@ -463,7 +462,7 @@ func (lvm *lvmExecutor) getExistingPVs() (map[string]struct{}, error) {
 	return existingPVsMap, nil
 }
 
-func (lvm *lvmExecutor) extendPool(poolName string, disks []*localstoragev1alpha1.LocalDisk) error {
+func (lvm *lvmExecutor) extendPool(poolName string, disks []*apisv1alpha1.LocalDisk) error {
 	if len(disks) == 0 {
 		lvm.logger.Info("Empty disk list given.")
 		return nil
@@ -533,31 +532,31 @@ func (lvm *lvmExecutor) vgextend(vgName string, pvs []string) error {
 
 }
 
-func (lvm *lvmExecutor) vgdisplay(vgName string) (*vgStatus, error) {
-	params := exechelper.ExecParams{
-		CmdName: "vgdisplay",
-		CmdArgs: []string{vgName},
-	}
-	res := lvm.cmdExec.RunCommand(params)
-	if res.ExitCode != 0 {
-		return nil, res.Error
-	}
-	status := vgStatus{actPVCount: -1}
-	for _, line := range strings.Split(res.OutBuf.String(), "\n") {
-		str := strings.Trim(line, " ")
-		if len(str) == 0 {
-			continue
-		}
-		if strings.Contains(str, "Act PV") {
-			cnt, err := strconv.Atoi(strings.TrimSpace(strings.ReplaceAll(str, "Act PV", "")))
-			if err != nil {
-				return nil, err
-			}
-			status.actPVCount = cnt
-		}
-	}
-	return &status, nil
-}
+// func (lvm *lvmExecutor) vgdisplay(vgName string) (*vgStatus, error) {
+// 	params := exechelper.ExecParams{
+// 		CmdName: "vgdisplay",
+// 		CmdArgs: []string{vgName},
+// 	}
+// 	res := lvm.cmdExec.RunCommand(params)
+// 	if res.ExitCode != 0 {
+// 		return nil, res.Error
+// 	}
+// 	status := vgStatus{actPVCount: -1}
+// 	for _, line := range strings.Split(res.OutBuf.String(), "\n") {
+// 		str := strings.Trim(line, " ")
+// 		if len(str) == 0 {
+// 			continue
+// 		}
+// 		if strings.Contains(str, "Act PV") {
+// 			cnt, err := strconv.Atoi(strings.TrimSpace(strings.ReplaceAll(str, "Act PV", "")))
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			status.actPVCount = cnt
+// 		}
+// 	}
+// 	return &status, nil
+// }
 
 func (lvm *lvmExecutor) lvcreate(lvName string, vgName string, options []string) error {
 	params := exechelper.ExecParams{
@@ -598,7 +597,7 @@ func (lvm *lvmExecutor) lvdisplay(lvPath string) (*lvStatus, error) {
 
 	status := lvStatus{
 		disks: []string{},
-		state: localstoragev1alpha1.VolumeStateNotReady,
+		state: apisv1alpha1.VolumeStateNotReady,
 	}
 
 	for _, line := range strings.Split(res.OutBuf.String(), "\n") {
@@ -618,7 +617,7 @@ func (lvm *lvmExecutor) lvdisplay(lvPath string) (*lvStatus, error) {
 				continue
 			}
 			if stateStr == "available" {
-				status.state = localstoragev1alpha1.VolumeStateReady
+				status.state = apisv1alpha1.VolumeStateReady
 			}
 		}
 	}

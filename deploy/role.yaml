@@ -82,30 +82,11 @@ rules:
   - update
   - watch
 - apiGroups:
-  - localstorage.hwameistor.io
+  - hwameistor.io
   resources:
   - '*'
   - controllers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - localstorage.hwameistor.io
-  resources:
-  - '*'
-  - localvolumereplicas
-  - localstoragenodes
-  - localdisks
-  - physicaldisks
-  - localstoragealerts
-  - localvolumemigrates
-  - localvolumeconverts
-  - localvolumeexpands
+  - localvolumegroups
   verbs:
   - create
   - delete

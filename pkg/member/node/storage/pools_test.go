@@ -2,18 +2,19 @@ package storage
 
 import (
 	"fmt"
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
-	"github.com/golang/mock/gomock"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	apisv1alpha "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 )
 
 func Test_localPoolManager_ExtendPoolsInfo(t *testing.T) {
-	var localDiskM = map[string]*localstoragev1alpha1.LocalDisk{}
-	localDiskM["/dev/sdb"] = &localstoragev1alpha1.LocalDisk{
+	var localDiskM = map[string]*apisv1alpha.LocalDisk{}
+	localDiskM["/dev/sdb"] = &apisv1alpha.LocalDisk{
 		DevPath:       "/dev/sdb",
-		Class:         localstoragev1alpha1.DiskClassNameHDD,
+		Class:         apisv1alpha.DiskClassNameHDD,
 		CapacityBytes: 10240,
-		State:         localstoragev1alpha1.DiskStateAvailable,
+		State:         apisv1alpha.DiskStateAvailable,
 	}
 	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
@@ -46,9 +47,9 @@ func Test_getPoolClassTypeByName(t *testing.T) {
 		wantPoolType  string
 	}{
 		{
-			args:          args{poolName: localstoragev1alpha1.PoolNameForHDD},
-			wantPoolClass: localstoragev1alpha1.DiskClassNameHDD,
-			wantPoolType:  localstoragev1alpha1.PoolTypeRegular,
+			args:          args{poolName: apisv1alpha.PoolNameForHDD},
+			wantPoolClass: apisv1alpha.DiskClassNameHDD,
+			wantPoolType:  apisv1alpha.PoolTypeRegular,
 		},
 	}
 	for _, tt := range tests {
@@ -66,13 +67,13 @@ func Test_getPoolClassTypeByName(t *testing.T) {
 
 func Test_getPoolNameAccordingDisk(t *testing.T) {
 	type args struct {
-		disk *localstoragev1alpha1.LocalDisk
+		disk *apisv1alpha.LocalDisk
 	}
-	var disk = &localstoragev1alpha1.LocalDisk{
+	var disk = &apisv1alpha.LocalDisk{
 		DevPath:       "/dev/sdb",
-		Class:         localstoragev1alpha1.DiskClassNameHDD,
+		Class:         apisv1alpha.DiskClassNameHDD,
 		CapacityBytes: 10240,
-		State:         localstoragev1alpha1.DiskStateAvailable,
+		State:         apisv1alpha.DiskStateAvailable,
 	}
 	tests := []struct {
 		name    string
@@ -82,7 +83,7 @@ func Test_getPoolNameAccordingDisk(t *testing.T) {
 	}{
 		{
 			args:    args{disk: disk},
-			want:    localstoragev1alpha1.PoolNameForHDD,
+			want:    apisv1alpha.PoolNameForHDD,
 			wantErr: false,
 		},
 	}

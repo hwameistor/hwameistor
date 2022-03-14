@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 )
 
 func Test_parseParameters(t *testing.T) {
@@ -14,9 +14,8 @@ func Test_parseParameters(t *testing.T) {
 		req RequestParameterHandler
 	}
 	var param = make(map[string]string)
-	param[localstoragev1alpha1.VolumeParameterPoolClassKey] = "DISK"
-	param[localstoragev1alpha1.VolumeParameterPoolTypeKey] = "DISK"
-	param[localstoragev1alpha1.VolumeParameterVolumeKindKey] = "DISK"
+	param[apisv1alpha1.VolumeParameterPoolClassKey] = "HDD"
+	param[apisv1alpha1.VolumeParameterPoolTypeKey] = "Regular"
 
 	var req = &csi.CreateVolumeRequest{}
 	req.Parameters = param
@@ -28,8 +27,8 @@ func Test_parseParameters(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			args:  args{req: req},
-			want:  nil,
+			args:    args{req: req},
+			want:    nil,
 			wantErr: true,
 		},
 	}

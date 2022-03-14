@@ -67,15 +67,15 @@ release:
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} ${IMAGE_NAME}:${RELEASE_TAG}
 
-.PHONY: _gen-crds
-_gen-crds:
+.PHONY: _gen-apis
+_gen-apis:
 	${OPERATOR_CMD} generate k8s
 	${OPERATOR_CMD} generate crds
-	/code-generator/generate-groups.sh all github.com/hwameistor/local-storage/pkg/apis/client github.com/hwameistor/local-storage/pkg/apis "localstorage:v1alpha1" --go-header-file /code-generator/boilerplate.go.txt
+	/code-generator/generate-groups.sh all github.com/hwameistor/local-storage/pkg/apis/client github.com/hwameistor/local-storage/pkg/apis "v1alpha1" --go-header-file /code-generator/boilerplate.go.txt
 
-.PHONY: crds
-crds:
-	${DOCKER_MAKE_CMD} make _gen-code
+.PHONY: apis
+apis:
+	${DOCKER_MAKE_CMD} make _gen-apis
 
 .PHONY: vendor
 vendor:

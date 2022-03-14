@@ -1,7 +1,7 @@
 package apis
 
 import (
-	localstoragev1alpha1 "github.com/hwameistor/local-storage/pkg/apis/localstorage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	nodestorage "github.com/hwameistor/local-storage/pkg/member/node/storage"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -24,7 +24,7 @@ type LocalStorageMember interface {
 	Run(stopCh <-chan struct{})
 
 	// ******  configuration ******* //
-	ConfigureBase(name string, namespace string, haSystemConfig localstoragev1alpha1.SystemConfig, cli client.Client, informersCache cache.Cache) LocalStorageMember
+	ConfigureBase(name string, namespace string, haSystemConfig apisv1alpha1.SystemConfig, cli client.Client, informersCache cache.Cache) LocalStorageMember
 
 	ConfigureNode() LocalStorageMember
 
@@ -50,15 +50,17 @@ type LocalStorageMember interface {
 type ControllerManager interface {
 	Run(stopCh <-chan struct{})
 
-	ReconcileNode(node *localstoragev1alpha1.LocalStorageNode)
+	ReconcileNode(node *apisv1alpha1.LocalStorageNode)
 
-	ReconcileVolume(vol *localstoragev1alpha1.LocalVolume)
+	ReconcileVolume(vol *apisv1alpha1.LocalVolume)
 
-	ReconcileVolumeExpand(vol *localstoragev1alpha1.LocalVolumeExpand)
+	ReconcileVolumeGroup(vol *apisv1alpha1.LocalVolumeGroup)
 
-	ReconcileVolumeMigrate(vol *localstoragev1alpha1.LocalVolumeMigrate)
+	ReconcileVolumeExpand(vol *apisv1alpha1.LocalVolumeExpand)
 
-	ReconcileVolumeConvert(vol *localstoragev1alpha1.LocalVolumeConvert)
+	ReconcileVolumeMigrate(vol *apisv1alpha1.LocalVolumeMigrate)
+
+	ReconcileVolumeConvert(vol *apisv1alpha1.LocalVolumeConvert)
 }
 
 // NodeManager interface
@@ -67,7 +69,7 @@ type NodeManager interface {
 
 	Storage() *nodestorage.LocalManager
 
-	TakeVolumeReplicaTaskAssignment(vol *localstoragev1alpha1.LocalVolume)
+	TakeVolumeReplicaTaskAssignment(vol *apisv1alpha1.LocalVolume)
 
-	ReconcileVolumeReplica(replica *localstoragev1alpha1.LocalVolumeReplica)
+	ReconcileVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica)
 }

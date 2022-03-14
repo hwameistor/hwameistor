@@ -103,7 +103,7 @@ func (m *manager) processLocalDisk(localDiskNameSpacedName string) error {
 	return fmt.Errorf("invalid LocalDisk state")
 }
 
-func (m *manager) processLocalDiskBound(claim *ldmv1alpha1.LocalDisk) error {
-	m.logger.Debug("processLocalDiskBound start ...")
-	return nil
-}
+// func (m *manager) processLocalDiskBound(claim *ldmv1alpha1.LocalDisk) error {
+// 	m.logger.Debug("processLocalDiskBound start ...")
+// 	return nil
+// }
