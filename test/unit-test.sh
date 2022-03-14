@@ -20,7 +20,7 @@ set -x
 
 # ./pkg/...
 
-PATH2TEST=( ./pkg/member/... ./pkg/controller/... ./pkg/common/... ./pkg/apis/... ./pkg/alerter/... ./pkg/exechelper/... ./pkg/utils/... )
+PATH2TEST=( ./pkg/member/... ./pkg/controller/... ./pkg/common/... ./pkg/apis/... ./pkg/exechelper/... ./pkg/utils/... )
 
 tmpDir=$(mktemp -d)
 mergeF="${tmpDir}/merge.out"

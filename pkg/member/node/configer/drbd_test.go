@@ -41,7 +41,6 @@ func Test_drbdConfigure_HasConfig(t *testing.T) {
 	localVolumeReplica.Spec.PoolName = "pool1"
 	localVolumeReplica.Spec.NodeName = "node1"
 	localVolumeReplica.Spec.RequiredCapacityBytes = 1240
-	localVolumeReplica.Spec.Kind = apisv1alpha1.VolumeKindLVM
 	localVolumeReplica.Name = "test1"
 
 	// 创建gomock控制器，用来记录后续的操作信息
@@ -68,7 +67,6 @@ func Test_drbdConfigure_IsConfigUpdated(t *testing.T) {
 	localVolumeReplica.Spec.PoolName = "pool1"
 	localVolumeReplica.Spec.NodeName = "node1"
 	localVolumeReplica.Spec.RequiredCapacityBytes = 1240
-	localVolumeReplica.Spec.Kind = apisv1alpha1.VolumeKindLVM
 	localVolumeReplica.Name = "test1"
 
 	var config apisv1alpha1.VolumeConfig
@@ -99,7 +97,6 @@ func Test_drbdConfigure_ApplyConfig(t *testing.T) {
 	localVolumeReplica.Spec.PoolName = "pool1"
 	localVolumeReplica.Spec.NodeName = "node1"
 	localVolumeReplica.Spec.RequiredCapacityBytes = 1240
-	localVolumeReplica.Spec.Kind = apisv1alpha1.VolumeKindLVM
 	localVolumeReplica.Name = "test1"
 
 	var config apisv1alpha1.VolumeConfig

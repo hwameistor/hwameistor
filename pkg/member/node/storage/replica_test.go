@@ -14,7 +14,6 @@ func Test_localVolumeReplicaManager_CreateVolumeReplica(t *testing.T) {
 	localVolumeReplica.Spec.PoolName = "pool1"
 	localVolumeReplica.Spec.NodeName = "node1"
 	localVolumeReplica.Spec.RequiredCapacityBytes = 1240
-	localVolumeReplica.Spec.Kind = apisv1alpha1.VolumeKindLVM
 	localVolumeReplica.Name = "test1"
 
 	// 创建gomock控制器，用来记录后续的操作信息
@@ -43,7 +42,6 @@ func Test_localVolumeReplicaManager_DeleteVolumeReplica(t *testing.T) {
 	localVolumeReplica.Spec.PoolName = "pool1"
 	localVolumeReplica.Spec.NodeName = "node1"
 	localVolumeReplica.Spec.RequiredCapacityBytes = 1240
-	localVolumeReplica.Spec.Kind = apisv1alpha1.VolumeKindLVM
 	localVolumeReplica.Name = "test1"
 
 	// 创建gomock控制器，用来记录后续的操作信息
@@ -68,7 +66,6 @@ func Test_localVolumeReplicaManager_ExpandVolumeReplica(t *testing.T) {
 	localVolumeReplica.Spec.PoolName = "pool1"
 	localVolumeReplica.Spec.NodeName = "node1"
 	localVolumeReplica.Spec.RequiredCapacityBytes = 1240
-	localVolumeReplica.Spec.Kind = apisv1alpha1.VolumeKindLVM
 	localVolumeReplica.Name = "test1"
 	newCapacityBytes := 10240
 
@@ -98,7 +95,6 @@ func Test_localVolumeReplicaManager_GetVolumeReplica(t *testing.T) {
 	localVolumeReplica.Spec.PoolName = "pool1"
 	localVolumeReplica.Spec.NodeName = "node1"
 	localVolumeReplica.Spec.RequiredCapacityBytes = 1240
-	localVolumeReplica.Spec.Kind = apisv1alpha1.VolumeKindLVM
 	localVolumeReplica.Name = "test1"
 
 	// 创建gomock控制器，用来记录后续的操作信息

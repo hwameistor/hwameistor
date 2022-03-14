@@ -31,7 +31,6 @@ func Test_localRegistry_HasVolumeReplica(t *testing.T) {
 	localVolumeReplica.Spec.PoolName = "pool1"
 	localVolumeReplica.Spec.NodeName = "node1"
 	localVolumeReplica.Spec.RequiredCapacityBytes = 1240
-	localVolumeReplica.Spec.Kind = apisv1alpha1.VolumeKindLVM
 	localVolumeReplica.Name = "test1"
 
 	// 创建gomock控制器，用来记录后续的操作信息
@@ -104,7 +103,6 @@ func Test_localRegistry_UpdateNodeForVolumeReplica(t *testing.T) {
 	localVolumeReplica.Spec.PoolName = "pool1"
 	localVolumeReplica.Spec.NodeName = "node1"
 	localVolumeReplica.Spec.RequiredCapacityBytes = 1240
-	localVolumeReplica.Spec.Kind = apisv1alpha1.VolumeKindLVM
 	localVolumeReplica.Name = "test1"
 
 	// 创建gomock控制器，用来记录后续的操作信息
