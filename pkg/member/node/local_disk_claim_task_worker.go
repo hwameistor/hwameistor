@@ -185,12 +185,6 @@ func (m *manager) listAllAvailableLocalDisksByLocalClaimDisk(ldc *ldmv1alpha1.Lo
 			continue
 		}
 
-		for _, partition := range ld.Spec.PartitionInfo {
-			if partition.HasFileSystem {
-				continue
-			}
-		}
-
 		if ld.Spec.State == ldmv1alpha1.LocalDiskActive {
 			availableLocalDisks = append(availableLocalDisks, ld)
 		}
@@ -207,12 +201,8 @@ func (m *manager) listAllInUseLocalDisksByLocalClaimDisk(ldc *ldmv1alpha1.LocalD
 	}
 	inUseLocalDisks := []*ldmv1alpha1.LocalDisk{}
 	for _, ld := range localDisks {
-		if ld.Spec.HasPartition {
-			for _, partition := range ld.Spec.PartitionInfo {
-				if partition.HasFileSystem {
-					continue
-				}
-			}
+		if !ld.Spec.HasPartition {
+			continue
 		}
 		if ld.Spec.State == ldmv1alpha1.LocalDiskActive {
 			inUseLocalDisks = append(inUseLocalDisks, ld)
