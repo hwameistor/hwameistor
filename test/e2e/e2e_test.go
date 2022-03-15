@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	_ "github.com/hwameistor/local-storage/test/e2e/SmokeTest"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"math/rand"
