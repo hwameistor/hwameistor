@@ -23,7 +23,7 @@ var _ = ginkgo.Describe("volume", func() {
 		ginkgo.It("check status", func() {
 			daemonset := &appsv1.DaemonSet{}
 			daemonsetKey := k8sclient.ObjectKey{
-				Name:      "hwameistor",
+				Name:      "hwameistor-local-storage",
 				Namespace: "hwameistor",
 			}
 
