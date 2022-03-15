@@ -17,7 +17,7 @@ type storagePoolCollection struct {
 }
 
 func newStorageCollection() *storageCollection {
-	collection := &storageCollection{}
+	collection := &storageCollection{pools: map[string]storagePoolCollection{}}
 	poolNames := []string{apisv1alpha1.PoolNameForHDD, apisv1alpha1.PoolNameForSSD, apisv1alpha1.PoolNameForNVMe}
 	for _, poolName := range poolNames {
 		collection.pools[poolName] = storagePoolCollection{
