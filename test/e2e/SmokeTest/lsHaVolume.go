@@ -26,7 +26,7 @@ var _ = ginkgo.Describe("test localstorage Ha volume", func() {
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
-		installHelm()
+		installHwameiStorByHelm()
 		addLabels()
 		createLdc()
 

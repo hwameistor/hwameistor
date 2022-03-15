@@ -69,9 +69,9 @@ func addLabels() {
 			logrus.Printf("%+v ", err)
 			f.ExpectNoError(err)
 		}
-		_, boolLabel := node.Labels["localstorage.hwameistor.io/local-storage"]
-		if !boolLabel {
-			node.Labels["localstorage.hwameistor.io/local-storage"] = "true"
+
+		if _, exists := node.Labels["csi.driver.hwameistor.io/local-storage"]; !exists {
+			node.Labels["lvm.hwameistor.io/enable"] = "true"
 			logrus.Printf("adding labels ")
 			err := client.Update(context.TODO(), node)
 			if err != nil {
@@ -80,35 +80,14 @@ func addLabels() {
 			}
 			time.Sleep(20 * time.Second)
 		}
-		_, boolLabel = node.Labels["csi.driver.hwameistor.io/local-storage"]
-		if !boolLabel {
-			node.Labels["csi.driver.hwameistor.io/local-storage"] = "true"
-			logrus.Printf("adding labels ")
-			err := client.Update(context.TODO(), node)
-			if err != nil {
-				logrus.Printf("%+v ", err)
-				f.ExpectNoError(err)
-			}
-			time.Sleep(20 * time.Second)
-		}
-		_, boolLabel = node.Labels["csi.driver.hwameistor.io/local-storage"]
-		if !boolLabel {
-			node.Labels["localstorage.hwameistor.io/local-storage-topology-node"] = nodes.Name
-			logrus.Printf("adding labels ")
-			err := client.Update(context.TODO(), node)
-			if err != nil {
-				logrus.Printf("%+v ", err)
-				f.ExpectNoError(err)
-			}
-			time.Sleep(20 * time.Second)
-		}
+
 	}
 }
 
-func installHelm() {
-	logrus.Printf("helm install hwameistor")
-	_ = runInLinux("cd /root/helm-charts-main/charts && helm install hwameistor -n hwameistor --create-namespace --generate-name")
-	logrus.Printf("waiting for intall hwameistor")
+func installHwameiStorByHelm() {
+	logrus.Infof("helm install hwameistor")
+	_ = runInLinux("cd ../helm-charts/charts && helm install hwameistor -n hwameistor --create-namespace --generate-name")
+	logrus.Infof("waiting for intall hwameistor")
 	time.Sleep(1 * time.Minute)
 }
 func uninstallHelm() {

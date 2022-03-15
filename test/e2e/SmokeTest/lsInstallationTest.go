@@ -16,7 +16,7 @@ var _ = ginkgo.Describe("volume", func() {
 	client := f.GetClient()
 
 	ginkgo.It("Configure the base environment", func() {
-		installHelm()
+		installHwameiStorByHelm()
 		addLabels()
 	})
 	ginkgo.Context("test localstorage", func() {
