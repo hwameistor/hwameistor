@@ -28,7 +28,7 @@ jobs:
         run: |
           echo "RELEASE_TAG=`echo $(git describe --tags --abbrev=0)`" >> $GITHUB_ENV
           echo "PROJECT_SOURCE_CODE_DIR=`echo ${GITHUB_WORKSPACE}`" >> $GITHUB_ENV
-          echo "RELEASE_DOCKER_REGISTRY=`echo ghcr.io/$(echo ${{ github.repository }} | tr 'A-Z' 'a-z')`" >> $GITHUB_ENV
+          echo "IMAGE_REGISTRY=`echo ghcr.io/$(echo ${{ github.repository_owner }} | tr 'A-Z' 'a-z')`" >> $GITHUB_ENV
       - name: release
         run: |
-          PROJECT_SOURCE_CODE_DIR=${PROJECT_SOURCE_CODE_DIR} RELEASE_DOCKER_REGISTRY=${RELEASE_DOCKER_REGISTRY} RELEASE_TAG=${RELEASE_TAG} make release
+          PROJECT_SOURCE_CODE_DIR=${PROJECT_SOURCE_CODE_DIR} IMAGE_REGISTRY=${IMAGE_REGISTRY} RELEASE_TAG=${RELEASE_TAG} make release
