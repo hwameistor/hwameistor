@@ -5,21 +5,20 @@ metadata:
   namespace: local-storage-system
 data:
   scheduler-config.yaml: |
-    apiVersion: kubescheduler.config.k8s.io/v1alpha1
+    apiVersion: kubescheduler.config.k8s.io/v1beta2
     kind: KubeSchedulerConfiguration
-    schedulerName: hwameistor-scheduler
+    profiles:
+      - schedulerName: hwameistor-scheduler
+        plugins:
+          filter:
+            enabled:
+            - name: hwameistor-scheduler-plugin
     leaderElection:
       leaderElect: true
-      lockObjectName: hwameistor-scheduler
+      resourceName: hwameistor-scheduler
+      resourceNamespace: local-storage-system
     clientConnection:
-      kubeconfig: /etc/kubernetes/scheduler.conf 
-    plugins:
-      filter:
-        enabled:
-        - name: dlocal-scheduler-plugin
-      score:
-        enabled:
-        - name: dlocal-scheduler-plugin
+      kubeconfig: /etc/kubernetes/scheduler.conf
 
 ---
 
@@ -48,8 +47,7 @@ spec:
               - key: node-role.kubernetes.io/master
                 operator: Exists
       containers:
-      - command:
-        - kube-scheduler
+      - args:
         - -v=2
         - --bind-address=0.0.0.0
         - --kubeconfig=/etc/kubernetes/scheduler.conf
@@ -58,7 +56,7 @@ spec:
         - --leader-elect-resource-name=hwameistor-scheduler
         - --config=/etc/hwameistor/scheduler-config.yaml
         - --leader-elect-resource-namespace=local-storage-system  
-        image: hwameistor/scheduler:v0.0.3
+        image: ghcr.io/hwameistor/scheduler:v0.1.2
         imagePullPolicy: IfNotPresent
         name: hwameistor-scheduler
         resources:
