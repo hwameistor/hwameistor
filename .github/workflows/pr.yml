@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  pull_request:
+  pull_request-unit-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -19,3 +19,12 @@ jobs:
           go-version: 1.17
       - name: unit-test
         run: make unit-test
+  pull_request-e2e-test:
+    runs-on: ["self-hosted"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: e2e-test
+        run: make e2e-test

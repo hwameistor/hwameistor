@@ -91,3 +91,6 @@ clean:
 
 unit-test:
 	bash test/unit-test.sh
+
+e2e-test:
+	bash test/e2e-test.sh
