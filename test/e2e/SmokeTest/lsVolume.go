@@ -40,7 +40,7 @@ var _ = ginkgo.Describe("test  localstorage volume ", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "local-storage-hdd-lvm",
 				},
-				Provisioner: "localstorage.hwameistor.io",
+				Provisioner: "lvm.hwameistor.io",
 				Parameters: map[string]string{
 					"replicaNumber":             "1",
 					"poolClass":                 "HDD",
