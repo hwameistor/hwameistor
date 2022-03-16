@@ -51,7 +51,6 @@ spec:
         - -v=2
         - --bind-address=0.0.0.0
         - --kubeconfig=/etc/kubernetes/scheduler.conf
-        - --scheduler-name=hwameistor-scheduler
         - --leader-elect=false
         - --leader-elect-resource-name=hwameistor-scheduler
         - --config=/etc/hwameistor/scheduler-config.yaml
