@@ -26,8 +26,8 @@ var _ = ginkgo.Describe("test  localstorage volume ", ginkgo.Label("smokeTest"),
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
-		installHwameiStorByHelm()
-		addLabels()
+		result := configureEnvironment(ctx)
+		gomega.Expect(result)
 		createLdc()
 
 	})
