@@ -11,7 +11,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = ginkgo.Describe("volume", func() {
+var _ = ginkgo.Describe("[smokeTest]test  localstorage volume", func() {
 	f := framework.NewDefaultFramework(lsv1.AddToScheme)
 	client := f.GetClient()
 

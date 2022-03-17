@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("test  localstorage volume ", func() {
+var _ = ginkgo.Describe("[smokeTest]test  localstorage volume ", func() {
 
 	f := framework.NewDefaultFramework(apis.AddToScheme)
 	client := f.GetClient()
