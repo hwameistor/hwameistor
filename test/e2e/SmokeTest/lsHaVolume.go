@@ -187,6 +187,7 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("e2e"), func
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
+
 			time.Sleep(1 * time.Minute)
 			pvc := &apiv1.PersistentVolumeClaim{}
 			pvcKey := k8sclient.ObjectKey{
@@ -198,6 +199,7 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("e2e"), func
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
+
 			gomega.Expect(pvc.Status.Phase).To(gomega.Equal(apiv1.ClaimBound))
 		})
 		ginkgo.It("deploy STATUS should be AVAILABLE", func() {

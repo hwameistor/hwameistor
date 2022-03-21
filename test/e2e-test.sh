@@ -18,7 +18,7 @@ export snapshot="e2etest"
 # govc find . -type m -runtime.powerState poweredOn | xargs govc vm.info
 # govc vm.info $hosts
 
-
+set -e
 for h in $hosts; do
   if [[ `govc vm.info $h | grep poweredOn | wc -l` -eq 1 ]]; then
     govc vm.power -off -force $h
