@@ -8,6 +8,7 @@ import (
 	lsv1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/hwameistor/local-storage/test/e2e/framework"
 	apiv1 "k8s.io/api/core/v1"
@@ -211,12 +212,12 @@ func uninstallHelm() {
 
 }
 
-func createLdc() {
+func createLdc(ctx context.Context) {
 	logrus.Printf("create ldc for each node")
 	nodelist := nodeList()
+	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	client := f.GetClient()
 	for _, nodes := range nodelist.Items {
-		f := framework.NewDefaultFramework(ldapis.AddToScheme)
-		client := f.GetClient()
 		exmlocalDiskClaim := &ldv1.LocalDiskClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "localdiskclaim-" + nodes.Name,
@@ -229,14 +230,35 @@ func createLdc() {
 				},
 			},
 		}
-		err := client.Create(context.TODO(), exmlocalDiskClaim)
+		err := client.Create(ctx, exmlocalDiskClaim)
 		if err != nil {
 			logrus.Printf("Create LDC failed ：%+v ", err)
 			f.ExpectNoError(err)
 		}
 	}
-	logrus.Printf("wait 1 minutes for create ldc")
-	time.Sleep(1 * time.Minute)
+	stop := make(chan struct{})
+	err := wait.PollImmediateUntil(3*time.Minute, func() (done bool, err error) {
+		for _, nodes := range nodelist.Items {
+			time.Sleep(3 * time.Second)
+			localDiskClaim := &ldv1.LocalDiskClaim{}
+			localDiskClaimKey := k8sclient.ObjectKey{
+				Name:      "localdiskclaim-" + nodes.Name,
+				Namespace: "kube-system",
+			}
+			err := client.Get(ctx, localDiskClaimKey, localDiskClaim)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+			if localDiskClaim.Status.Status != ldv1.LocalDiskClaimStatusBound {
+				return false, nil
+			}
+		}
+		return true, nil
+	}, stop)
+	if err != nil {
+		logrus.Error(err)
+	}
 
 }
 

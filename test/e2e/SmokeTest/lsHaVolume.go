@@ -28,7 +28,7 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("e2e"), func
 	ginkgo.It("Configure the base environment", func() {
 		installHwameiStorByHelm()
 		addLabels()
-		createLdc()
+		createLdc(ctx)
 
 	})
 	ginkgo.Context("create a HA-StorageClass", func() {
