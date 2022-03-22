@@ -45,8 +45,8 @@ func nodeList() *apiv1.NodeList {
 	nodelist := &apiv1.NodeList{}
 	err := client.List(context.TODO(), nodelist)
 	if err != nil {
-		f.ExpectNoError(err)
 		logrus.Printf("%+v ", err)
+		f.ExpectNoError(err)
 	}
 	return nodelist
 }
@@ -88,7 +88,6 @@ func addLabels() {
 func installHwameiStorByHelm() {
 	logrus.Infof("helm install hwameistor")
 	_ = runInLinux("cd ../helm-charts/charts && helm install hwameistor -n hwameistor --create-namespace --generate-name")
-	time.Sleep(10 * time.Second)
 }
 
 func configureEnvironment(ctx context.Context) bool {
@@ -97,12 +96,12 @@ func configureEnvironment(ctx context.Context) bool {
 	f := framework.NewDefaultFramework(lsv1.AddToScheme)
 	client := f.GetClient()
 
-	daemonset := &appsv1.DaemonSet{}
-	daemonsetKey := k8sclient.ObjectKey{
+	localStorage := &appsv1.DaemonSet{}
+	localStorageKey := k8sclient.ObjectKey{
 		Name:      "hwameistor-local-storage",
 		Namespace: "hwameistor",
 	}
-	err := client.Get(ctx, daemonsetKey, daemonset)
+	err := client.Get(ctx, localStorageKey, localStorage)
 	if err != nil {
 		logrus.Error("%+v ", err)
 		f.ExpectNoError(err)
@@ -130,27 +129,45 @@ func configureEnvironment(ctx context.Context) bool {
 		logrus.Error("%+v ", err)
 		f.ExpectNoError(err)
 	}
+	localDiskManager := &appsv1.DaemonSet{}
+	localDiskManagerKey := k8sclient.ObjectKey{
+		Name:      "hwameistor-local-disk-manager",
+		Namespace: "hwameistor",
+	}
+
+	err = client.Get(ctx, localDiskManagerKey, localDiskManager)
+	if err != nil {
+		logrus.Error(err)
+		f.ExpectNoError(err)
+
+	}
 
 	logrus.Infof("waiting for ready")
 	ch := make(chan struct{}, 1)
 	go func() {
-		for daemonset.Status.DesiredNumberScheduled != daemonset.Status.NumberAvailable || controller.Status.AvailableReplicas != int32(1) || scheduler.Status.AvailableReplicas != int32(1) {
+		for localStorage.Status.DesiredNumberScheduled != localStorage.Status.NumberAvailable || controller.Status.AvailableReplicas != int32(1) || scheduler.Status.AvailableReplicas != int32(1) || localDiskManager.Status.DesiredNumberScheduled != localDiskManager.Status.NumberAvailable {
 			time.Sleep(10 * time.Second)
-			err := client.Get(ctx, daemonsetKey, daemonset)
+			err := client.Get(ctx, localStorageKey, localStorage)
 			if err != nil {
 				logrus.Error("%+v ", err)
 				f.ExpectNoError(err)
 			}
-			err = client.Get(context.TODO(), controllerKey, controller)
+			err = client.Get(ctx, controllerKey, controller)
 			if err != nil {
 				logrus.Error("%+v ", err)
 				f.ExpectNoError(err)
 			}
-			err = client.Get(context.TODO(), schedulerKey, scheduler)
+			err = client.Get(ctx, schedulerKey, scheduler)
 			if err != nil {
 				logrus.Error("%+v ", err)
 				f.ExpectNoError(err)
 			}
+			err = client.Get(ctx, localDiskManagerKey, localDiskManager)
+			if err != nil {
+				logrus.Error(err)
+				f.ExpectNoError(err)
+			}
+
 		}
 		ch <- struct{}{}
 	}()
@@ -191,7 +208,6 @@ func uninstallHelm() {
 
 	}
 	logrus.Printf("waiting for uninstall hwameistor")
-	time.Sleep(1 * time.Minute)
 
 }
 
