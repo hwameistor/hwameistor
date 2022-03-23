@@ -512,7 +512,7 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("e2e"), func
 
 		})
 		ginkgo.It("delete all pvc", func() {
-			deleteAllPVC()
+			deleteAllPVC(ctx)
 		})
 		ginkgo.It("delete all sc", func() {
 			deleteAllSC()

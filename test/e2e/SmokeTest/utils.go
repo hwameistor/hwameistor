@@ -236,8 +236,8 @@ func createLdc(ctx context.Context) {
 			f.ExpectNoError(err)
 		}
 	}
-	stop := make(chan struct{})
-	err := wait.PollImmediateUntil(3*time.Minute, func() (done bool, err error) {
+
+	err := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
 		for _, nodes := range nodelist.Items {
 			time.Sleep(3 * time.Second)
 			localDiskClaim := &ldv1.LocalDiskClaim{}
@@ -255,35 +255,50 @@ func createLdc(ctx context.Context) {
 			}
 		}
 		return true, nil
-	}, stop)
+	})
 	if err != nil {
 		logrus.Error(err)
 	}
 
 }
 
-func deleteAllPVC() {
+func deleteAllPVC(ctx context.Context) {
 	logrus.Printf("delete All PVC")
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	pvcList := &apiv1.PersistentVolumeClaimList{}
-	err := client.List(context.TODO(), pvcList)
+	err := client.List(ctx, pvcList)
 	if err != nil {
-		logrus.Printf("get pvc list error:%+v ", err)
+		logrus.Error("get pvc list error ", err)
 		f.ExpectNoError(err)
 	}
 
 	for _, pvc := range pvcList.Items {
 		logrus.Printf("delete pvc:%+v ", pvc.Name)
-		ctx, _ := context.WithTimeout(context.TODO(), time.Minute)
+		ctx, _ := context.WithTimeout(ctx, time.Minute)
 		err := client.Delete(ctx, &pvc)
 		if err != nil {
-			logrus.Printf("delete pvc error:%+v ", err)
+			logrus.Error("delete pvc error: ", err)
 			f.ExpectNoError(err)
 		}
-		time.Sleep(30 * time.Second)
 	}
 
+	err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+		err = client.List(ctx, pvcList)
+		if err != nil {
+			logrus.Error("delete pvc error: ", err)
+			f.ExpectNoError(err)
+		}
+		if len(pvcList.Items) != 0 {
+			time.Sleep(3 * time.Second)
+			return false, nil
+		} else {
+			return true, nil
+		}
+	})
+	if err != nil {
+		logrus.Error(err)
+	}
 }
 
 func deleteAllSC() {

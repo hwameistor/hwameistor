@@ -180,7 +180,7 @@ var _ = ginkgo.Describe("test  localstorage volume ", ginkgo.Label("smokeTest"),
 			var result bool
 			go func() {
 				for pvc.Status.Phase != apiv1.ClaimBound {
-					time.Sleep(10 * time.Second)
+					time.Sleep(4 * time.Second)
 					err = client.Get(ctx, pvcKey, pvc)
 					if err != nil {
 						logrus.Printf("%+v ", err)
@@ -217,7 +217,7 @@ var _ = ginkgo.Describe("test  localstorage volume ", ginkgo.Label("smokeTest"),
 			var result bool
 			go func() {
 				for deployment.Status.AvailableReplicas != int32(1) {
-					time.Sleep(10 * time.Second)
+					time.Sleep(4 * time.Second)
 					err := client.Get(ctx, deployKey, deployment)
 					if err != nil {
 						logrus.Printf("%+v ", err)
@@ -359,14 +359,12 @@ var _ = ginkgo.Describe("test  localstorage volume ", ginkgo.Label("smokeTest"),
 				logrus.Error(err)
 				f.ExpectNoError(err)
 			}
-			stop := make(chan struct{})
-			err = wait.PollImmediateUntil(3*time.Minute, func() (done bool, err error) {
+			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
 				if err := client.Get(ctx, deployKey, deployment); !k8serror.IsNotFound(err) {
-					time.Sleep(3 * time.Second)
 					return false, nil
 				}
 				return true, nil
-			}, stop)
+			})
 			if err != nil {
 				logrus.Error(err)
 			}
@@ -374,7 +372,7 @@ var _ = ginkgo.Describe("test  localstorage volume ", ginkgo.Label("smokeTest"),
 
 		})
 		ginkgo.It("delete all pvc ", func() {
-			deleteAllPVC()
+			deleteAllPVC(ctx)
 		})
 		ginkgo.It("delete all sc", func() {
 			deleteAllSC()
