@@ -180,7 +180,7 @@ var _ = ginkgo.Describe("test  localstorage volume ", ginkgo.Label("smokeTest"),
 			var result bool
 			go func() {
 				for pvc.Status.Phase != apiv1.ClaimBound {
-					time.Sleep(4 * time.Second)
+					time.Sleep(3 * time.Second)
 					err = client.Get(ctx, pvcKey, pvc)
 					if err != nil {
 						logrus.Printf("%+v ", err)
@@ -217,7 +217,7 @@ var _ = ginkgo.Describe("test  localstorage volume ", ginkgo.Label("smokeTest"),
 			var result bool
 			go func() {
 				for deployment.Status.AvailableReplicas != int32(1) {
-					time.Sleep(4 * time.Second)
+					time.Sleep(3 * time.Second)
 					err := client.Get(ctx, deployKey, deployment)
 					if err != nil {
 						logrus.Printf("%+v ", err)
@@ -372,14 +372,15 @@ var _ = ginkgo.Describe("test  localstorage volume ", ginkgo.Label("smokeTest"),
 
 		})
 		ginkgo.It("delete all pvc ", func() {
-			deleteAllPVC(ctx)
+			err := deleteAllPVC(ctx)
+			gomega.Expect(err).To(gomega.BeNil())
 		})
 		ginkgo.It("delete all sc", func() {
-			deleteAllSC()
+			err := deleteAllSC(ctx)
+			gomega.Expect(err).To(gomega.BeNil())
 		})
 		ginkgo.It("delete helm", func() {
 			uninstallHelm()
-
 		})
 	})
 

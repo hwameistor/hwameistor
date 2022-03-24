@@ -212,7 +212,7 @@ func uninstallHelm() {
 
 }
 
-func createLdc(ctx context.Context) {
+func createLdc(ctx context.Context) error {
 	logrus.Printf("create ldc for each node")
 	nodelist := nodeList()
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
@@ -258,11 +258,14 @@ func createLdc(ctx context.Context) {
 	})
 	if err != nil {
 		logrus.Error(err)
+		return err
+	} else {
+		return nil
 	}
 
 }
 
-func deleteAllPVC(ctx context.Context) {
+func deleteAllPVC(ctx context.Context) error {
 	logrus.Printf("delete All PVC")
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
@@ -286,11 +289,10 @@ func deleteAllPVC(ctx context.Context) {
 	err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
 		err = client.List(ctx, pvcList)
 		if err != nil {
-			logrus.Error("delete pvc error: ", err)
+			logrus.Error("get pvc list error: ", err)
 			f.ExpectNoError(err)
 		}
 		if len(pvcList.Items) != 0 {
-			time.Sleep(3 * time.Second)
 			return false, nil
 		} else {
 			return true, nil
@@ -298,29 +300,49 @@ func deleteAllPVC(ctx context.Context) {
 	})
 	if err != nil {
 		logrus.Error(err)
+		return err
+	} else {
+		return nil
 	}
+
 }
 
-func deleteAllSC() {
+func deleteAllSC(ctx context.Context) error {
 	logrus.Printf("delete All SC")
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	scList := &storagev1.StorageClassList{}
-	err := client.List(context.TODO(), scList)
+	err := client.List(ctx, scList)
 	if err != nil {
-		logrus.Printf("get sc list error:%+v ", err)
+		logrus.Error("get sc list error:", err)
 		f.ExpectNoError(err)
 	}
 
 	for _, sc := range scList.Items {
 		logrus.Printf("delete sc:%+v ", sc.Name)
-		ctx, _ := context.WithTimeout(context.TODO(), time.Minute)
 		err := client.Delete(ctx, &sc)
 		if err != nil {
-			logrus.Printf("delete sc error:%+v ", err)
+			logrus.Error("delete sc error", err)
 			f.ExpectNoError(err)
 		}
-		time.Sleep(30 * time.Second)
+	}
+	err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+		err = client.List(ctx, scList)
+		if err != nil {
+			logrus.Error("get sc list error", err)
+			f.ExpectNoError(err)
+		}
+		if len(scList.Items) != 0 {
+			return false, nil
+		} else {
+			return true, nil
+		}
+	})
+	if err != nil {
+		logrus.Error(err)
+		return err
+	} else {
+		return nil
 	}
 
 }
