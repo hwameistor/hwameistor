@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/util/wait"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"time"
@@ -26,10 +27,9 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("e2e"), func
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
-		installHwameiStorByHelm()
-		addLabels()
+		result := configureEnvironment(ctx)
+		gomega.Expect(result).To(gomega.Equal(true))
 		createLdc(ctx)
-
 	})
 	ginkgo.Context("create a HA-StorageClass", func() {
 		ginkgo.It("create a sc", func() {
@@ -85,17 +85,7 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("e2e"), func
 				f.ExpectNoError(err)
 			}
 
-			pvc := &apiv1.PersistentVolumeClaim{}
-			pvcKey := k8sclient.ObjectKey{
-				Name:      "pvc-lvm-ha",
-				Namespace: "default",
-			}
-			err = client.Get(ctx, pvcKey, pvc)
-			if err != nil {
-				logrus.Printf("Failed to find pvc ：%+v ", err)
-				f.ExpectNoError(err)
-			}
-			gomega.Expect(pvc.Status.Phase).To(gomega.Equal(apiv1.ClaimPending))
+			gomega.Expect(err).To(gomega.BeNil())
 		})
 
 	})
@@ -188,7 +178,6 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("e2e"), func
 				f.ExpectNoError(err)
 			}
 
-			time.Sleep(1 * time.Minute)
 			pvc := &apiv1.PersistentVolumeClaim{}
 			pvcKey := k8sclient.ObjectKey{
 				Name:      "pvc-lvm-ha",
@@ -199,8 +188,18 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("e2e"), func
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
-
-			gomega.Expect(pvc.Status.Phase).To(gomega.Equal(apiv1.ClaimBound))
+			logrus.Infof("Waiting for the PVC to be bound")
+			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+				if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Phase != apiv1.ClaimBound {
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				logrus.Infof("PVC binding timeout")
+				logrus.Error(err)
+			}
+			gomega.Expect(err).To(gomega.BeNil())
 		})
 		ginkgo.It("deploy STATUS should be AVAILABLE", func() {
 			deployment := &appsv1.Deployment{}
@@ -213,7 +212,18 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("e2e"), func
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
-			gomega.Expect(deployment.Status.AvailableReplicas).To(gomega.Equal(int32(1)))
+			logrus.Infof("waiting for the deployment to be ready ")
+			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+				if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(1) {
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				logrus.Infof("deployment ready timeout")
+				logrus.Error(err)
+			}
+			gomega.Expect(err).To(gomega.BeNil())
 		})
 
 	})
@@ -322,7 +332,6 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("e2e"), func
 			lvrList := &lsv1.LocalVolumeReplicaList{}
 			err := client.List(ctx, lvrList)
 			for _, lvr := range lvrList.Items {
-				logrus.Printf("%+v ", lvr.Spec.NodeName)
 				if lvr.Spec.NodeName == "k8s-master" {
 					pvc := &apiv1.PersistentVolumeClaim{}
 					pvcKey := k8sclient.ObjectKey{
@@ -435,14 +444,22 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("e2e"), func
 			deployment.Spec.Template.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms = newAffinity
 
 			err = client.Update(ctx, deployment)
-			logrus.Printf("wait 1 minute")
-			time.Sleep(1 * time.Minute)
 			err = client.Get(ctx, deployKey, deployment)
 			if err != nil {
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
-			gomega.Expect(deployment.Status.AvailableReplicas).To(gomega.Equal(int32(1)))
+			logrus.Infof("waiting for the deployment to be ready ")
+			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+				if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(1) {
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				logrus.Infof("deployment ready timeout")
+				logrus.Error(err)
+			}
 		})
 		ginkgo.It("check test file", func() {
 			//delete deploy

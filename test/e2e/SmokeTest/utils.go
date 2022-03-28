@@ -110,7 +110,7 @@ func configureEnvironment(ctx context.Context) bool {
 
 	controller := &appsv1.Deployment{}
 	controllerKey := k8sclient.ObjectKey{
-		Name:      "hwameistor-csi-controller",
+		Name:      "hwameistor-local-storage-csi-controller",
 		Namespace: "hwameistor",
 	}
 	err = client.Get(context.TODO(), controllerKey, controller)
