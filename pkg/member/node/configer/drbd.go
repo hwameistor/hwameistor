@@ -504,7 +504,7 @@ func (m *drbdConfigure) MonitorDRBDResourceState(stopCh <-chan struct{}) error {
 func (m *drbdConfigure) monitorDRBDResourceState(stopCh <-chan struct{}) error {
 	m.logger.Info("start to monitor drbd resources")
 
-	cmd := exec.Command("nsenter", "-t", "1", "-n", "--",
+	cmd := exec.Command("nsenter", "-t", "1", "-n", "-u", "-i", "-m", "--",
 		drbdsetupCmd, "events2", "all")
 
 	stdout, err := cmd.StdoutPipe()
