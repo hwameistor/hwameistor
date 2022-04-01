@@ -115,7 +115,7 @@ func configureEnvironment(ctx context.Context) bool {
 	}
 	err = client.Get(context.TODO(), controllerKey, controller)
 	if err != nil {
-		logrus.Error("%+v ", err)
+		logrus.Error(err)
 		f.ExpectNoError(err)
 	}
 
@@ -127,7 +127,7 @@ func configureEnvironment(ctx context.Context) bool {
 
 	err = client.Get(context.TODO(), schedulerKey, scheduler)
 	if err != nil {
-		logrus.Error("%+v ", err)
+		logrus.Error(err)
 		f.ExpectNoError(err)
 	}
 	localDiskManager := &appsv1.DaemonSet{}

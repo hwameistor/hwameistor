@@ -462,7 +462,6 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("e2e"), func
 			}
 		})
 		ginkgo.It("check test file", func() {
-			//delete deploy
 			config, err := config.GetConfig()
 			if err != nil {
 				return

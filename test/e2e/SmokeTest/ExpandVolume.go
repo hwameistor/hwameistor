@@ -11,6 +11,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -21,7 +22,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("test localstorage expand volume", ginkgo.Label("e2e"), func() {
+var _ = ginkgo.Describe("test localstorage expand volume", ginkgo.Label("expand"), func() {
 	f := framework.NewDefaultFramework(lsv1.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
@@ -182,7 +183,7 @@ var _ = ginkgo.Describe("test localstorage expand volume", ginkgo.Label("e2e"), 
 			}
 			err := client.Get(ctx, deployKey, deployment)
 			if err != nil {
-				logrus.Printf("%+v ", err)
+				logrus.Error(err)
 				f.ExpectNoError(err)
 			}
 			logrus.Infof("waiting for the deployment to be ready ")
@@ -294,5 +295,93 @@ var _ = ginkgo.Describe("test localstorage expand volume", ginkgo.Label("e2e"), 
 			gomega.Expect(err).To(gomega.BeNil())
 
 		})
+		ginkgo.It("check test file", func() {
+			config, err := config.GetConfig()
+			if err != nil {
+				return
+			}
+
+			deployment := &appsv1.Deployment{}
+			deployKey := k8sclient.ObjectKey{
+				Name:      DeploymentName,
+				Namespace: "default",
+			}
+			err = client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
+			selector := labels.NewSelector()
+			selector = selector.Add(*apps)
+			listOption := k8sclient.ListOptions{
+				LabelSelector: selector,
+			}
+			podlist := &v1.PodList{}
+			err = client.List(ctx, podlist, &listOption)
+
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			containers := deployment.Spec.Template.Spec.Containers
+			for _, pod := range podlist.Items {
+				for _, container := range containers {
+					output, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
+					if err != nil {
+						logrus.Printf("%+v ", err)
+						f.ExpectNoError(err)
+					}
+					gomega.Expect(output).To(gomega.Equal("it-is-a-test"))
+				}
+			}
+		})
 	})
+	ginkgo.Context("Clean up the environment", func() {
+		ginkgo.It("Delete test Deployment", func() {
+			//delete deploy
+			deployment := &appsv1.Deployment{}
+			deployKey := k8sclient.ObjectKey{
+				Name:      DeploymentName,
+				Namespace: "default",
+			}
+			err := client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Error(err)
+				f.ExpectNoError(err)
+			}
+			logrus.Infof("deleting test Deployment ")
+
+			err = client.Delete(ctx, deployment)
+			if err != nil {
+				logrus.Error(err)
+				f.ExpectNoError(err)
+			}
+			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+				if err := client.Get(ctx, deployKey, deployment); !k8serror.IsNotFound(err) {
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				logrus.Error(err)
+			}
+			gomega.Expect(err).To(gomega.BeNil())
+
+		})
+		ginkgo.It("delete all pvc ", func() {
+			err := deleteAllPVC(ctx)
+			gomega.Expect(err).To(gomega.BeNil())
+		})
+		ginkgo.It("delete all sc", func() {
+			err := deleteAllSC(ctx)
+			gomega.Expect(err).To(gomega.BeNil())
+		})
+		ginkgo.It("delete helm", func() {
+			uninstallHelm()
+		})
+	})
+
 })
