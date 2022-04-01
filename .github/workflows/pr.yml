@@ -27,9 +27,10 @@ jobs:
         with:
           fetch-depth: 0
       - name: Set secret envs
-        env: GOVC_USERNAME: ${{ secrets.GOVC_USERNAME }}
-        env: GOVC_PASSWORD: ${{ secrets.GOVC_PASSWORD }}
-        env: GOVC_URL: ${{ secrets.GOVC_URL }}
-        env: GOVC_DATACENTER: ${{ secrets.GOVC_DATACENTER }}
+        env:
+          GOVC_USERNAME: ${{ secrets.GOVC_USERNAME }}
+          GOVC_PASSWORD: ${{ secrets.GOVC_PASSWORD }}
+          GOVC_URL: ${{ secrets.GOVC_URL }}
+          GOVC_DATACENTER: ${{ secrets.GOVC_DATACENTER }}
       - name: e2e-test
         run: make e2e-test
