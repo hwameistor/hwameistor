@@ -2,10 +2,6 @@
 # simple scripts mng machine
 # link hosts
 export GOVC_INSECURE=1
-export GOVC_USERNAME="panyintian.fu@daocloud.io"
-export GOVC_PASSWORD="rcZa9FY6EiwnYk8!"
-export GOVC_URL="https://192.168.1.136:443"
-export GOVC_DATACENTER="DaoCloud-NDX-Fusion"
 export GOVC_RESOURCE_POOL="e2e"
 export hosts="fupan-e2e-k8s-master fupan-e2e-k8s-node1 fupan-e2e-k8s-node2"
 export snapshot="e2etest"
@@ -17,7 +13,6 @@ export snapshot="e2etest"
 # govc find . -type m -runtime.powerState poweredOn
 # govc find . -type m -runtime.powerState poweredOn | xargs govc vm.info
 # govc vm.info $hosts
-
 set -e
 for h in $hosts; do
   if [[ `govc vm.info $h | grep poweredOn | wc -l` -eq 1 ]]; then
