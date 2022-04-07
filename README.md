@@ -1,5 +1,7 @@
 # Local Storage Module
 
+[![codecov](https://codecov.io/gh/hwameistor/local-storage/branch/main/graph/badge.svg?token=AWRUI46FEX)](https://codecov.io/gh/hwameistor/local-storage)
+
 English | [Simplified_Chinese](https://github.com/hwameistor/local-storage/blob/main/README_zh.md)
 
 ## Introduction

@@ -1,5 +1,7 @@
 # Local Storage
 
+[![codecov](https://codecov.io/gh/hwameistor/local-storage/branch/main/graph/badge.svg?token=AWRUI46FEX)](https://codecov.io/gh/hwameistor/local-storage)
+
 简体中文 | [英文](https://github.com/hwameistor/local-storage/blob/main/README.md)
 
 ## 介绍
