@@ -22,7 +22,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("test localstorage expand volume", ginkgo.Label("expand"), func() {
+var _ = ginkgo.Describe("test localstorage expand volume", ginkgo.Label("periodCheck"), func() {
 	f := framework.NewDefaultFramework(lsv1.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()

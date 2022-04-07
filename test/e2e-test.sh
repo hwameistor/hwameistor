@@ -33,4 +33,4 @@ for i in `seq 1 15`; do
   sleep 6s
 done
 git clone https://github.com/hwameistor/helm-charts.git test/helm-charts
-ginkgo --fail-fast --label-filter="smokeTest" test/e2e
+ginkgo --fail-fast --label-filter=${E2E_TESTING_LEVEL} test/e2e
