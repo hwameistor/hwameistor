@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("test"), func() {
+var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("test"), func() {
 
 	f := framework.NewDefaultFramework(lsv1.AddToScheme)
 	client := f.GetClient()
@@ -59,14 +59,14 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("test"), func() {
 			}
 		})
 	})
-	ginkgo.Context("create 30 HA-PersistentVolumeClaims", func() {
-		ginkgo.It("create PVCs", func() {
-			//create PVC
-			for pvcNumbers := 1; pvcNumbers <= NumberOfBulDeleteTests; pvcNumbers++ {
+	ginkgo.Context("Deduplication test", func() {
+		for testNumbers := 1; testNumbers <= NumberOfDeduplicationTests; testNumbers++ {
+			ginkgo.It(strconv.Itoa(testNumbers)+"th create PVC", func() {
+				//create PVC
 				storageClassName := "local-storage-hdd-lvm-ha"
 				examplePvc := &apiv1.PersistentVolumeClaim{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pvc-lvm-ha-" + strconv.Itoa(pvcNumbers),
+						Name:      "pvc-lvm-ha",
 						Namespace: "default",
 					},
 					Spec: apiv1.PersistentVolumeClaimSpec{
@@ -84,20 +84,14 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("test"), func() {
 					logrus.Printf("Create PVC failed ：%+v ", err)
 					f.ExpectNoError(err)
 				}
+
 				gomega.Expect(err).To(gomega.BeNil())
-			}
-
-		})
-
-	})
-	ginkgo.Context("create 30 deployment", func() {
-
-		ginkgo.It("create deployments", func() {
-			//create deployment
-			for DeploymentNumbers := 1; DeploymentNumbers <= NumberOfBulDeleteTests; DeploymentNumbers++ {
+			})
+			ginkgo.It(strconv.Itoa(testNumbers)+"th create a deployment", func() {
+				//create deployment
 				exampleDeployment := &appsv1.Deployment{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      HaDeploymentName + strconv.Itoa(DeploymentNumbers),
+						Name:      HaDeploymentName,
 						Namespace: "default",
 					},
 					Spec: appsv1.DeploymentSpec{
@@ -154,7 +148,7 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("test"), func() {
 										},
 										VolumeMounts: []apiv1.VolumeMount{
 											{
-												Name:      "2048-volume-lvm-ha-" + strconv.Itoa(DeploymentNumbers),
+												Name:      "2048-volume-lvm-ha",
 												MountPath: "/data",
 											},
 										},
@@ -162,10 +156,10 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("test"), func() {
 								},
 								Volumes: []apiv1.Volume{
 									{
-										Name: "2048-volume-lvm-ha-" + strconv.Itoa(DeploymentNumbers),
+										Name: "2048-volume-lvm-ha",
 										VolumeSource: apiv1.VolumeSource{
 											PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
-												ClaimName: "pvc-lvm-ha-" + strconv.Itoa(DeploymentNumbers),
+												ClaimName: "pvc-lvm-ha",
 											},
 										},
 									},
@@ -181,14 +175,12 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("test"), func() {
 				}
 
 				gomega.Expect(err).To(gomega.BeNil())
-			}
-		})
-		ginkgo.It("PVC STATUS should be Bound", func() {
-			logrus.Infof("Waiting for the PVC to be bound")
-			for pvcNumbers := 1; pvcNumbers <= NumberOfBulDeleteTests; pvcNumbers++ {
+			})
+			ginkgo.It(strconv.Itoa(testNumbers)+"th PVC STATUS should be Bound", func() {
+
 				pvc := &apiv1.PersistentVolumeClaim{}
 				pvcKey := k8sclient.ObjectKey{
-					Name:      "pvc-lvm-ha-" + strconv.Itoa(pvcNumbers),
+					Name:      "pvc-lvm-ha",
 					Namespace: "default",
 				}
 				err := client.Get(ctx, pvcKey, pvc)
@@ -196,6 +188,7 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("test"), func() {
 					logrus.Printf("%+v ", err)
 					f.ExpectNoError(err)
 				}
+				logrus.Infof("Waiting for the PVC to be bound")
 				err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
 					if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Phase != apiv1.ClaimBound {
 						return false, nil
@@ -207,14 +200,11 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("test"), func() {
 					logrus.Error(err)
 				}
 				gomega.Expect(err).To(gomega.BeNil())
-			}
-		})
-		ginkgo.It("deploy STATUS should be AVAILABLE", func() {
-			logrus.Infof("waiting for the deployment to be ready ")
-			for DeploymentNumbers := 1; DeploymentNumbers <= NumberOfBulDeleteTests; DeploymentNumbers++ {
+			})
+			ginkgo.It(strconv.Itoa(testNumbers)+"th deploy STATUS should be AVAILABLE", func() {
 				deployment := &appsv1.Deployment{}
 				deployKey := k8sclient.ObjectKey{
-					Name:      HaDeploymentName + strconv.Itoa(DeploymentNumbers),
+					Name:      HaDeploymentName,
 					Namespace: "default",
 				}
 				err := client.Get(ctx, deployKey, deployment)
@@ -222,7 +212,7 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("test"), func() {
 					logrus.Printf("%+v ", err)
 					f.ExpectNoError(err)
 				}
-
+				logrus.Infof("waiting for the deployment to be ready ")
 				err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
 					if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(1) {
 						return false, nil
@@ -234,18 +224,12 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("test"), func() {
 					logrus.Error(err)
 				}
 				gomega.Expect(err).To(gomega.BeNil())
-			}
-		})
-
-	})
-	ginkgo.Context("Clean up the environment", func() {
-		ginkgo.It("Delete test Deployment", func() {
-			//delete deploy
-			logrus.Printf("deleting test Deployment")
-			for DeploymentNumbers := 1; DeploymentNumbers <= NumberOfBulDeleteTests; DeploymentNumbers++ {
+			})
+			ginkgo.It(strconv.Itoa(testNumbers)+"th Delete test Deployment", func() {
+				//delete deploy
 				deployment := &appsv1.Deployment{}
 				deployKey := k8sclient.ObjectKey{
-					Name:      HaDeploymentName + strconv.Itoa(DeploymentNumbers),
+					Name:      HaDeploymentName,
 					Namespace: "default",
 				}
 				err := client.Get(ctx, deployKey, deployment)
@@ -268,36 +252,39 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("test"), func() {
 					logrus.Error(err)
 				}
 				gomega.Expect(err).To(gomega.BeNil())
-			}
 
-		})
-		ginkgo.It("delete all pvc", func() {
-			err := deleteAllPVC(ctx)
-			gomega.Expect(err).To(gomega.BeNil())
-		})
-		ginkgo.It("check pv", func() {
-			logrus.Printf("check pv")
-			f := framework.NewDefaultFramework(ldapis.AddToScheme)
-			client := f.GetClient()
-			pvList := &apiv1.PersistentVolumeList{}
-
-			err := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
-				err = client.List(ctx, pvList)
-				if err != nil {
-					logrus.Error("get pv list error", err)
-					f.ExpectNoError(err)
-				}
-				if len(pvList.Items) != 0 {
-					return false, nil
-				} else {
-					return true, nil
-				}
 			})
-			if err != nil {
-				logrus.Error(err)
-			}
-			gomega.Expect(err).To(gomega.BeNil())
-		})
+			ginkgo.It(strconv.Itoa(testNumbers)+"th delete all pvc", func() {
+				err := deleteAllPVC(ctx)
+				gomega.Expect(err).To(gomega.BeNil())
+			})
+			ginkgo.It(strconv.Itoa(testNumbers)+"th check pv", func() {
+				logrus.Printf("check pv")
+				f := framework.NewDefaultFramework(ldapis.AddToScheme)
+				client := f.GetClient()
+				pvList := &apiv1.PersistentVolumeList{}
+
+				err := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+					err = client.List(ctx, pvList)
+					if err != nil {
+						logrus.Error("get pv list error", err)
+						f.ExpectNoError(err)
+					}
+					if len(pvList.Items) != 0 {
+						return false, nil
+					} else {
+						return true, nil
+					}
+				})
+				if err != nil {
+					logrus.Error(err)
+				}
+				gomega.Expect(err).To(gomega.BeNil())
+			})
+		}
+	})
+
+	ginkgo.Context("Clean up the environment", func() {
 		ginkgo.It("delete all sc", func() {
 			err := deleteAllSC(ctx)
 			gomega.Expect(err).To(gomega.BeNil())
