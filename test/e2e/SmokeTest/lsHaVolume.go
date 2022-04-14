@@ -11,6 +11,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -522,13 +523,21 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
-			logrus.Printf("deleting test Deployment ")
-			time.Sleep(1 * time.Minute)
 			err = client.Delete(ctx, deployment)
 			if err != nil {
-				logrus.Printf("%+v ", err)
+				logrus.Error(err)
 				f.ExpectNoError(err)
 			}
+			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+				if err := client.Get(ctx, deployKey, deployment); !k8serror.IsNotFound(err) {
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				logrus.Error(err)
+			}
+			gomega.Expect(err).To(gomega.BeNil())
 
 		})
 		ginkgo.It("delete all pvc", func() {
