@@ -28,7 +28,7 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: registrar
-          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v1.1.0
+          image: quay.io/k8scsi/csi-node-driver-registrar:v1.1.0
           imagePullPolicy: IfNotPresent
           args:
             - "--v=5"
@@ -49,7 +49,7 @@ spec:
             - name: registration-dir
               mountPath: /registration
         - name: member
-          image: ghcr.io/hwameistor/local-storage:v0.1.6
+          image: ghcr.io/hwameistor/local-storage:v0.1.7
           imagePullPolicy: IfNotPresent
           args:
             - --nodename=$(MY_NODENAME)
