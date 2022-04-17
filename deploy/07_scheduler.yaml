@@ -55,7 +55,7 @@ spec:
         - --leader-elect-resource-name=hwameistor-scheduler
         - --config=/etc/hwameistor/scheduler-config.yaml
         - --leader-elect-resource-namespace=local-storage-system  
-        image: ghcr.io/hwameistor/scheduler:v0.1.2
+        image: ghcr.io/hwameistor/scheduler:v0.1.3
         imagePullPolicy: IfNotPresent
         name: hwameistor-scheduler
         resources:
