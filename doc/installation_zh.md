@@ -1,16 +1,16 @@
 ### 前提条件
 
-local-storage需要部署在Kuberntes系统中，需要集群满足下列条件：
+local-storage需要部署在Kubernetes系统中，需要集群满足下列条件：
 
 * LocalStorage Version: `4.0+`
-* Kubernetes Version: `1.18+`
+* Kubernetes Version: `1.22+`
 * Node
   * 空闲磁盘
   * LVM (`可选`)
 
 ### 步骤 1: 选择和配置节点
 
-部署local-storage之前，需要选择Kubernetes节点并且进行配置。这些节点会被加入local-storage系统。因此，这些节点要有空闲的磁盘。此外，还需要确定每个节点上的持久化数据卷类型，LVM, DISK 或者 RAM。配置为LVM/DISK的节点，还可以额外的配置RAM。这样，在该节点上，既可以创建LVM/DISK数据卷，也可以创建RAM数据卷。
+部署local-storage之前，需要选择Kubernetes节点并且进行配置。这些节点会被加入local-storage系统。因此，这些节点要有空闲的磁盘。此外，还需要确定每个节点上的持久化数据卷类型，LVM 或者 RAM。配置为LVM的节点，还可以额外的配置RAM。这样，在该节点上，既可以创建LVM数据卷，也可以创建RAM数据卷。
 
 ``` bash
 # 1. List all the kubernetes nodes
@@ -70,24 +70,18 @@ hwameistor-scheduler-6585bb5897-9xj85   1/1     Running   0          15h   172.2
 ### 步骤 3: 创建 StorageClass
 
 ``` bash
-# You should create a storageclass for each volume kind, i.e. LVM, DISK, RAM
+# You should create a storageclass for each volume kind, i.e. LVM, RAM
 
 # LVM volume storageclass (waitforfirstconsumer mode) with expansion capability
 $ kubectl apply -f deploy/storageclass-lvm.yaml
 # LVM volume support HA storageclass (waitforfirstconsumer mode) with expansion capability
 $ kubectl apply -f deploy/storageclass-lvm-ha.yaml
-# Disk volume storageclass (waitforfirstconsumer mode) without expansion capability
-$ kubectl apply -f deploy/storageclass-disk.yaml
-# RAMdisk volume storageclass (waitforfirstconsumer mode) without expansion capability
-$ kubectl apply -f deploy/storageclass-ram.yaml
 
 # check for storageclass
 $ kubectl get sc
 NAME                     PROVISIONER                 RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
-local-storage-hdd-disk   localstorage.hwameistor.io   Delete          WaitForFirstConsumer   false                  21d
 local-storage-hdd-lvm    localstorage.hwameistor.io   Delete          WaitForFirstConsumer   true                   21d
 local-storage-hdd-lvm-ha localstorage.hwameistor.io   Delete          WaitForFirstConsumer   true                   21d
-local-storage-hdd-ram    localstorage.hwameistor.io   Delete          WaitForFirstConsumer   false                  15d
 ```
 
 ### 步骤 4: 创建 non HA PVC

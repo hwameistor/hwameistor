@@ -3,14 +3,14 @@
 local-storage is a cloud native local storage system, which should be deployed in a Kubernetes cluster with the following requirements:
 
 * LocalStorage Version: `4.0+`
-* Kubernetes Version: `1.18+`
+* Kubernetes Version: `1.22+`
 * Node
   * Free disks
   * LVM (`Optional`)
 
 ### Step 1: Select and Configure Nodes
 
-Before deploying local-storage, you must decide which Kubernetes nodes for it. The node must have the free disks and also be able to host the applications using the local volume. In addition, you must decide which kind of volume (`LVM`, `DISK` or `RAM`) should be able to provision on each node. Besides, For the node which is already configured with `LVM` or `DISK`, you can still configure `RAM` volume for it by adding "ramdiskTotalCapacity" into the configuration as below.
+Before deploying local-storage, you must decide which Kubernetes nodes for it. The node must have the free disks and also be able to host the applications using the local volume. In addition, you must decide which kind of volume (`LVM`, or `RAM`) should be able to provision on each node. Besides, For the node which is already configured with `LVM`, you can still configure `RAM` volume for it by adding "ramdiskTotalCapacity" into the configuration as below.
 
 ``` bash
 # 1. List all the kubernetes nodes
@@ -68,21 +68,15 @@ localstorage-local-storage-scheduler-6585bb5897-9xj85   1/1     Running   0     
 ### Step 3: Create StorageClass
 
 ``` bash
-# You should create a storageclass for each volume kind, i.e. LVM, DISK, RAM
+# You should create a storageclass for each volume kind, i.e. LVM, RAM
 
 # LVM volume storageclass (waitforfistconsumer mode) with expansion capability
 $ kubectl apply -f deploy/storageclass-lvm.yaml
-# Disk volume storageclass (waitforfistconsumer mode) without expansion capability
-$ kubectl apply -f deploy/storageclass-disk.yaml
-# RAMdisk volume storageclass (waitforfistconsumer mode) without expansion capability
-$ kubectl apply -f deploy/storageclass-ram.yaml
 
 # check for storageclass
 $ kubectl get sc
 NAME                     PROVISIONER                 RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
-local-storage-hdd-disk   localstorage.hwameistor.io   Delete          WaitForFirstConsumer   false                  21d
 local-storage-hdd-lvm    localstorage.hwameistor.io   Delete          WaitForFirstConsumer   true                   21d
-local-storage-hdd-ram    localstorage.hwameistor.io   Delete          WaitForFirstConsumer   false                  15d
 ```
 
 ### Step 4: Create PVC
