@@ -94,4 +94,6 @@ unit-test:
 	curl -s https://codecov.io/bash | bash
 
 e2e-test:
+	make image
+	docker push ${IMAGE_NAME}:${IMAGE_TAG}
 	bash test/e2e-test.sh
