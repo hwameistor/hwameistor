@@ -247,7 +247,7 @@ func createLdc(ctx context.Context) error {
 			}
 			err := client.Get(ctx, localDiskClaimKey, localDiskClaim)
 			if err != nil {
-				logrus.Printf("%+v ", err)
+				logrus.Error(err)
 				f.ExpectNoError(err)
 			}
 			if localDiskClaim.Status.Status != ldv1.LocalDiskClaimStatusBound {
