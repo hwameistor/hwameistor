@@ -7,6 +7,7 @@ import (
 
 	"github.com/hwameistor/local-storage/pkg/apis"
 	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/local-storage/pkg/utils"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	log "github.com/sirupsen/logrus"
@@ -64,7 +65,8 @@ func (m *manager) syncNodesStatus() {
 
 	currTime := time.Now()
 	for _, node := range nodeList.Items {
-		lease, ok := nodeLeases[node.Name]
+		sanitizedNodeName := utils.SanitizeName(node.Name)
+		lease, ok := nodeLeases[sanitizedNodeName]
 		if !ok {
 			// no lease, should set node offline
 			m.setNodeState(ctx, &node, apisv1alpha1.NodeStateOffline)
