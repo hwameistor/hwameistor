@@ -150,22 +150,22 @@ func configureEnvironment(ctx context.Context) bool {
 			time.Sleep(10 * time.Second)
 			err := client.Get(ctx, localStorageKey, localStorage)
 			if err != nil {
-				logrus.Error("%+v ", err)
+				logrus.Error(" localStorage error ", err)
 				f.ExpectNoError(err)
 			}
 			err = client.Get(ctx, controllerKey, controller)
 			if err != nil {
-				logrus.Error("%+v ", err)
+				logrus.Error("controller error ", err)
 				f.ExpectNoError(err)
 			}
 			err = client.Get(ctx, schedulerKey, scheduler)
 			if err != nil {
-				logrus.Error("%+v ", err)
+				logrus.Error("scheduler error ", err)
 				f.ExpectNoError(err)
 			}
 			err = client.Get(ctx, localDiskManagerKey, localDiskManager)
 			if err != nil {
-				logrus.Error(err)
+				logrus.Error("localDiskManager error ", err)
 				f.ExpectNoError(err)
 			}
 
@@ -177,7 +177,7 @@ func configureEnvironment(ctx context.Context) bool {
 	case <-ch:
 		logrus.Infof("Components are ready ")
 		return true
-	case <-time.After(5 * time.Minute):
+	case <-time.After(8 * time.Minute):
 		logrus.Error("timeout")
 		return false
 
