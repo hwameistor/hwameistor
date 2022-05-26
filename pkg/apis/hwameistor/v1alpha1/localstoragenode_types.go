@@ -53,11 +53,11 @@ type Topology struct {
 
 // LocalPool is storage pool struct
 type LocalPool struct {
-	// Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL, RAM_POOL
+	// Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL
 	Name string `json:"name,omitempty"`
 
-	// Supported class: HDD, SSD, NVMe, RAM
-	// +kubebuilder:validation:Enum:=HDD;SSD;NVMe;RAM
+	// Supported class: HDD, SSD, NVMe
+	// +kubebuilder:validation:Enum:=HDD;SSD;NVMe
 	Class string `json:"class"`
 
 	// Supported type: REGULAR

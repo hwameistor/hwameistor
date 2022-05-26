@@ -52,8 +52,8 @@ type LocalVolumeSpec struct {
 
 // AccessibilityTopology of the volume
 type AccessibilityTopology struct {
-	// One of the volume replica must be located at this node
-	Node string `json:"node,omitempty"`
+	// Nodes is the collection of storage nodes the volume replicas must locate at
+	Nodes []string `json:"nodes,omitempty"`
 
 	// zones where the volume replicas should be distributed across, it's Optional
 	// +kubebuilder:default:={default}

@@ -52,7 +52,17 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		p.logger.WithError(err).Error("Failed to parse parameters")
 		return resp, err
 	}
-	for i := 0; i < 3; i++ {
+	// fetch the local volume group by PVC
+	lvg, err := p.storageMember.Controller().VolumeGroupManager().GetLocalVolumeGroupByPVC(params.pvcName, params.pvcNamespace)
+	if err != nil {
+		p.logger.WithFields(log.Fields{"pvc": params.pvcName, "namespace": params.pvcNamespace}).WithError(err).Error("Not found the LocalVolumeGroup")
+		return resp, err
+	}
+	if len(lvg.Spec.Accessibility.Nodes) == 0 {
+		p.logger.WithFields(log.Fields{"volumegroup": lvg.Spec}).Error("Not found valid accessibility in volume group")
+		return resp, fmt.Errorf("not found valid accessibility in volume group")
+	}
+	for i := 0; i < 2; i++ {
 		vol := &apisv1alpha1.LocalVolume{}
 		if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.Name}, vol); err != nil {
 			if !errors.IsNotFound(err) {
@@ -64,11 +74,45 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 			vol.Spec.ReplicaNumber = int64(params.replicaNumber)
 			vol.Spec.RequiredCapacityBytes = req.CapacityRange.RequiredBytes
 			vol.Spec.Convertible = params.convertible
+			vol.Spec.PersistentVolumeClaimName = params.pvcName
+			vol.Spec.PersistentVolumeClaimNamespace = params.pvcNamespace
+			vol.Spec.VolumeGroup = lvg.Name
+
 			if req.AccessibilityRequirements != nil && len(req.AccessibilityRequirements.Requisite) == 1 {
 				if nodeName, ok := req.AccessibilityRequirements.Requisite[0].Segments[localapis.TopologyNodeKey]; ok {
-					vol.Spec.Accessibility.Node = nodeName
+					foundNode := false
+					for _, nn := range lvg.Spec.Accessibility.Nodes {
+						if nodeName == nn {
+							foundNode = true
+							break
+						}
+					}
+					if !foundNode {
+						// check if this volume is the first one to create or not, if yes, update volumegroup's accessibility, otherwise fail
+						isFirst := true
+						for _, v := range lvg.Spec.Volumes {
+							if len(v.LocalVolumeName) > 0 {
+								isFirst = false
+								break
+							}
+						}
+						if isFirst {
+							lvg.Spec.Accessibility.Nodes[0] = nodeName
+							if err := p.apiClient.Update(ctx, lvg); err != nil {
+								p.logger.WithFields(log.Fields{"volumegroup": lvg.Spec, "volume": vol.Spec}).WithError(err).Error("Failed to update volume group for accessibility")
+								return resp, err
+							}
+						} else {
+							p.logger.WithFields(log.Fields{"volumegroup": lvg.Spec, "accessibility": req.AccessibilityRequirements}).Error("Accessibility requirement is not match the one in volumegroup")
+							return resp, fmt.Errorf("not matched accessibility")
+						}
+					}
+				} else {
+					p.logger.WithFields(log.Fields{"volume": vol, "accessibility": req.AccessibilityRequirements}).Error("Not found accessibility requirements")
+					return resp, fmt.Errorf("not found accessibility requirements")
 				}
 			}
+			vol.Spec.Accessibility.Nodes = lvg.Spec.Accessibility.Nodes
 
 			p.logger.WithFields(log.Fields{"volume": vol}).Debug("Creating a volume")
 			if err := p.apiClient.Create(ctx, vol); err != nil {

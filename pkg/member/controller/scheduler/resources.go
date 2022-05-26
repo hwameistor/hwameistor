@@ -4,6 +4,7 @@ import (
 	"container/heap"
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
@@ -114,38 +115,27 @@ func (r *resources) predicate(vol *apisv1alpha1.LocalVolume, nodeName string) er
 	if !ok {
 		return fmt.Errorf("storage node %s not exists", nodeName)
 	}
-
 	logCtx := r.logger.WithField("volume", vol.Name)
-
-	excludedNodes := map[string]bool{}
-	if vol.Spec.Config != nil {
-		for _, rep := range vol.Spec.Config.Replicas {
-			excludedNodes[rep.Hostname] = true
-		}
-	}
 
 	totalPool := r.totalStorages.pools[vol.Spec.PoolName]
 	allocatedPool := r.allocatedStorages.pools[vol.Spec.PoolName]
 	//logCtx.Debug("predicate totalPool = %v, allocatedPool = %v", totalPool, allocatedPool)
 	fmt.Printf("predicate totalPool = %+v, allocatedPool = %+v", totalPool, allocatedPool)
 
-	if nodeName == vol.Spec.Accessibility.Node && len(vol.Spec.Accessibility.Node) != 0 && !excludedNodes[vol.Spec.Accessibility.Node] {
-		logCtx.Debug("predicate vol.Spec.RequiredCapacityBytes = %v, totalPool.capacities[vol.Spec.Accessibility.Node] = %v"+
-			", allocatedPool.capacities[vol.Spec.Accessibility.Node] = %v", vol.Spec.RequiredCapacityBytes, totalPool.capacities[vol.Spec.Accessibility.Node], allocatedPool.capacities[vol.Spec.Accessibility.Node])
-		if vol.Spec.RequiredCapacityBytes > totalPool.capacities[vol.Spec.Accessibility.Node]-allocatedPool.capacities[vol.Spec.Accessibility.Node] {
+	if strings.Contains(strings.Join(vol.Spec.Accessibility.Nodes, ","), nodeName) {
+		logCtx.Debug("predicate vol.Spec.RequiredCapacityBytes = %v, totalPool.capacities[nodeName] = %v"+
+			", allocatedPool.capacities[vol.Spec.Accessibility.Node] = %v", vol.Spec.RequiredCapacityBytes, totalPool.capacities[nodeName], allocatedPool.capacities[nodeName])
+		if vol.Spec.RequiredCapacityBytes > totalPool.capacities[nodeName]-allocatedPool.capacities[nodeName] {
 			logCtx.Error("No enough storage capacity on accessibility node")
 			return fmt.Errorf("no enough storage capacity on accessibility node")
 		}
-		if totalPool.volumeCount[vol.Spec.Accessibility.Node] <= allocatedPool.volumeCount[vol.Spec.Accessibility.Node] {
+		if totalPool.volumeCount[nodeName] <= allocatedPool.volumeCount[nodeName] {
 			logCtx.Error("No enough volume count on accessibility node")
 			return fmt.Errorf("no enough volume count on accessibility node")
 		}
 		return nil
 	}
 
-	if excludedNodes[nodeName] {
-		return fmt.Errorf("there's a replica of same volume already on node %s", nodeName)
-	}
 	if vol.Spec.RequiredCapacityBytes > totalPool.capacities[nodeName]-allocatedPool.capacities[nodeName] {
 		return fmt.Errorf("not enough capacity")
 	}
@@ -187,6 +177,7 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
+	// step 1. filter out the nodes which have already been allocated
 	excludedNodes := map[string]bool{}
 	if vol.Spec.Config != nil {
 		for _, rep := range vol.Spec.Config.Replicas {
@@ -194,20 +185,21 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 		}
 	}
 
+	// step 2. check the required nodes firstly, if not satisfied, return error immediately
 	candidates := []*apisv1alpha1.LocalStorageNode{}
-	if len(vol.Spec.Accessibility.Node) > 0 && !excludedNodes[vol.Spec.Accessibility.Node] {
-		if err := r.predicate(vol, vol.Spec.Accessibility.Node); err != nil {
-			return nil, err
+	for _, nn := range vol.Spec.Accessibility.Nodes {
+		if len(nn) > 0 && !excludedNodes[nn] {
+			if err := r.predicate(vol, nn); err != nil {
+				return nil, err
+			}
+			candidates = append(candidates, r.storageNodes[nn])
+			excludedNodes[nn] = true
 		}
-		candidates = append(candidates, r.storageNodes[vol.Spec.Accessibility.Node])
 	}
 
+	// step 3. check the rest of all nodes for the volume replica, and queue the qualified by the avaliable storage space
 	pq := make(PriorityQueue, 0)
 	for _, node := range r.storageNodes {
-		if len(vol.Spec.Accessibility.Node) > 0 && node.Name == vol.Spec.Accessibility.Node {
-			continue
-		}
-
 		if excludedNodes[node.Name] {
 			continue
 		}

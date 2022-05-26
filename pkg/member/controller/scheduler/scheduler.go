@@ -136,14 +136,14 @@ func (s *scheduler) generateConfig(vol *apisv1alpha1.LocalVolume, nodes []*apisv
 			IP:       nodes[nodeIndex].Spec.StorageIP,
 			Primary:  false,
 		}
-		if replica.Hostname == vol.Spec.Accessibility.Node {
+		if len(vol.Spec.Accessibility.Nodes) > 0 && replica.Hostname == vol.Spec.Accessibility.Nodes[0] {
 			replica.Primary = true
 		}
 		conf.Replicas = append(conf.Replicas, replica)
 		nodeIDIndex++
 		nodeIndex++
 	}
-	if len(vol.Spec.Accessibility.Node) == 0 && len(conf.Replicas) > 0 {
+	if len(vol.Spec.Accessibility.Nodes) == 0 && len(conf.Replicas) > 0 {
 		conf.Replicas[0].Primary = true
 	}
 	if len(conf.Replicas) < 2 {

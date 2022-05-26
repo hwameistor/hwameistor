@@ -7,6 +7,7 @@ import (
 	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/local-storage/pkg/common"
 	"github.com/hwameistor/local-storage/pkg/member/controller/scheduler"
+	"github.com/hwameistor/local-storage/pkg/member/controller/volumegroup"
 	"github.com/hwameistor/local-storage/pkg/utils"
 
 	log "github.com/sirupsen/logrus"
@@ -37,6 +38,8 @@ type manager struct {
 
 	volumeScheduler scheduler.Scheduler
 
+	volumeGroupManager apisv1alpha1.VolumeGroupManager
+
 	nodeTaskQueue *common.TaskQueue
 
 	k8sNodeTaskQueue *common.TaskQueue
@@ -64,6 +67,7 @@ func New(name string, namespace string, cli client.Client, scheme *runtime.Schem
 		informersCache:         informersCache,
 		scheme:                 scheme,
 		volumeScheduler:        scheduler.New(cli, informersCache, systemConfig.MaxHAVolumeCount),
+		volumeGroupManager:     volumegroup.NewManager(cli, informersCache),
 		nodeTaskQueue:          common.NewTaskQueue("NodeTask", maxRetries),
 		k8sNodeTaskQueue:       common.NewTaskQueue("K8sNodeTask", maxRetries),
 		volumeTaskQueue:        common.NewTaskQueue("VolumeTask", maxRetries),
@@ -76,6 +80,8 @@ func New(name string, namespace string, cli client.Client, scheme *runtime.Schem
 }
 
 func (m *manager) Run(stopCh <-chan struct{}) {
+
+	m.volumeGroupManager.Init(stopCh)
 
 	go m.start(stopCh)
 }
@@ -149,6 +155,11 @@ func (m *manager) setupInformers() {
 }
 
 // ReconcileNode reconciles Node CRD for any node resource change
+func (m *manager) VolumeGroupManager() apisv1alpha1.VolumeGroupManager {
+	return m.volumeGroupManager
+}
+
+// ReconcileNode reconciles Node CRD for any node resource change
 func (m *manager) ReconcileNode(node *apisv1alpha1.LocalStorageNode) {
 	m.nodeTaskQueue.Add(node.Name)
 }
@@ -156,6 +167,11 @@ func (m *manager) ReconcileNode(node *apisv1alpha1.LocalStorageNode) {
 // ReconcileVolume reconciles Volume CRD for any volume resource change
 func (m *manager) ReconcileVolume(vol *apisv1alpha1.LocalVolume) {
 	m.volumeTaskQueue.Add(vol.Name)
+}
+
+// ReconcileVolumeGroup reconciles VolumeGroup CRD for any volume resource change
+func (m *manager) ReconcileVolumeGroup(volGroup *apisv1alpha1.LocalVolumeGroup) {
+	m.volumeGroupManager.ReconcileVolumeGroup(volGroup)
 }
 
 // ReconcileVolumeExpand reconciles VolumeExpand CRD for any volume resource change
@@ -171,10 +187,6 @@ func (m *manager) ReconcileVolumeMigrate(expand *apisv1alpha1.LocalVolumeMigrate
 // ReconcileVolumeConvert reconciles VolumeConvert CRD for any volume resource change
 func (m *manager) ReconcileVolumeConvert(convert *apisv1alpha1.LocalVolumeConvert) {
 	m.volumeConvertTaskQueue.Add(convert.Name)
-}
-
-// ReconcileVolumeGroup reconciles VolumeGroup CRD for any volume resource change
-func (m *manager) ReconcileVolumeGroup(convert *apisv1alpha1.LocalVolumeGroup) {
 }
 
 func (m *manager) handleK8sNodeUpdatedEvent(oldObj, newObj interface{}) {

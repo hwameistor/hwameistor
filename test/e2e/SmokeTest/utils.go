@@ -3,12 +3,18 @@ package SmokeTest
 import (
 	"bytes"
 	"context"
+
 	ldapis "github.com/hwameistor/local-disk-manager/pkg/apis"
 	ldv1 "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
 	lsv1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+
+	"os/exec"
+	"regexp"
+	"strings"
+	"time"
 
 	"github.com/hwameistor/local-storage/test/e2e/framework"
 	apiv1 "k8s.io/api/core/v1"
@@ -20,11 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
-	"os/exec"
-	"regexp"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
 )
 
 func int32Ptr(i int32) *int32 { return &i }

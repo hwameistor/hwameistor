@@ -35,6 +35,7 @@ spec:
             - "--leader-election=true"
             - "--feature-gates=Topology=true"
             - "--strict-topology"
+            - "--extra-create-metadata=true"
           env:
             - name: CSI_ADDRESS
               value: /csi/csi.sock
