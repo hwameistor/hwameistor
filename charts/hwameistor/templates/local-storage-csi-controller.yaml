@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hwameistor-local-storage-csi-controller 
+  namespace: {{ .Release.Namespace}}
+spec:
+  replicas: {{ .Values.localStorageCSIController.replicas}}
+  selector:
+    matchLabels:
+      app: hwameistor-local-storage-csi-controller
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: hwameistor-local-storage-csi-controller
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - hwameistor-local-storage
+            topologyKey: topology.lvm.hwameistor.io/node
+      containers:
+      - args:
+        - --v=5
+        - --csi-address=$(CSI_ADDRESS)
+        - --leader-election=true
+        - --feature-gates=Topology=true
+        - --strict-topology
+        - --extra-create-metadata=true
+        env:
+        - name: CSI_ADDRESS
+          value: /csi/csi.sock
+        image: {{ .Values.k8sImageRegistry}}/{{ .Values.localStorageCSIController.provisioner.imageRepository}}:{{ .Values.localStorageCSIController.provisioner.tag}}
+        imagePullPolicy: IfNotPresent
+        name: provisioner
+        resources:
+          limits:
+            cpu: {{ .Values.localStorageCSIController.provisioner.resources.limits.cpu}}
+            memory: {{ .Values.localStorageCSIController.provisioner.resources.limits.memory}}
+          requests:
+            cpu: {{ .Values.localStorageCSIController.provisioner.resources.requests.cpu}}
+            memory: {{ .Values.localStorageCSIController.provisioner.resources.requests.memory}}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /csi
+          name: socket-dir
+      - args:
+        - --v=5
+        - --csi-address=$(CSI_ADDRESS)
+        - --leader-election=true
+        - --timeout=120s
+        env:
+        - name: CSI_ADDRESS
+          value: /csi/csi.sock
+        image: {{ .Values.k8sImageRegistry}}/{{ .Values.localStorageCSIController.attacher.imageRepository}}:{{ .Values.localStorageCSIController.attacher.tag}}
+        imagePullPolicy: IfNotPresent
+        name: attacher
+        resources:
+          limits:
+            cpu: {{ .Values.localStorageCSIController.attacher.resources.limits.cpu}}
+            memory: {{ .Values.localStorageCSIController.attacher.resources.limits.memory}}
+          requests:
+            cpu: {{ .Values.localStorageCSIController.attacher.resources.requests.cpu}}
+            memory: {{ .Values.localStorageCSIController.attacher.resources.requests.memory}}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /csi
+          name: socket-dir
+      - args:
+        - --v=5
+        - --csi-address=$(CSI_ADDRESS)
+        - --leader-election=true
+        env:
+        - name: CSI_ADDRESS
+          value: /csi/csi.sock
+        image: {{ .Values.k8sImageRegistry}}/{{ .Values.localStorageCSIController.resizer.imageRepository}}:{{ .Values.localStorageCSIController.resizer.tag}}
+        imagePullPolicy: IfNotPresent
+        name: resizer
+        resources:
+          limits:
+            cpu: {{ .Values.localStorageCSIController.resizer.resources.limits.cpu}}
+            memory: {{ .Values.localStorageCSIController.resizer.resources.limits.memory}}
+          requests:
+            cpu: {{ .Values.localStorageCSIController.resizer.resources.requests.cpu}}
+            memory: {{ .Values.localStorageCSIController.resizer.resources.requests.memory}}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /csi
+          name: socket-dir
+      dnsPolicy: ClusterFirst
+      priorityClassName: system-cluster-critical
+      restartPolicy: Always
+      serviceAccountName: hwameistor-admin 
+      serviceAccount: hwameistor-admin
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoSchedule
+        key: node.kubernetes.io/not-ready
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      - effect: NoSchedule
+        key: node.cloudprovider.kubernetes.io/uninitialized
+        operator: Exists
+      volumes:
+      - hostPath:
+          path: /var/lib/kubelet/plugins/lvm.hwameistor.io
+          type: DirectoryOrCreate
+        name: socket-dir

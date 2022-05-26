@@ -1,0 +1,91 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localvolumeexpands.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalVolumeExpand
+    listKind: LocalVolumeExpandList
+    plural: localvolumeexpands
+    shortNames:
+    - lvexpand
+    singular: localvolumeexpand
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: New capacity of the volume
+      jsonPath: .spec.requiredCapacityBytes
+      name: newCapacity
+      type: integer
+    - description: Abort the operation
+      jsonPath: .spec.abort
+      name: abort
+      type: boolean
+    - description: State of the expansion
+      jsonPath: .status.state
+      name: state
+      type: string
+    - description: Sub-operations on each volume replica expansion
+      jsonPath: .status.subs
+      name: subs
+      type: string
+    - description: Event message of the expansion
+      jsonPath: .status.message
+      name: message
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalVolumeExpand is the Schema for the localvolumeexpands API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalVolumeExpandSpec defines the desired state of LocalVolumeExpand
+            properties:
+              abort:
+                default: false
+                type: boolean
+              requiredCapacityBytes:
+                format: int64
+                minimum: 4194304
+                type: integer
+              volumeName:
+                type: string
+            type: object
+          status:
+            description: LocalVolumeExpandStatus defines the observed state of LocalVolumeExpand
+            properties:
+              allocatedCapacityBytes:
+                format: int64
+                type: integer
+              message:
+                type: string
+              state:
+                description: State is state type of resources
+                type: string
+              subs:
+                description: sub resources at different node.
+                items:
+                  type: string
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
