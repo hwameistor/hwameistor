@@ -207,3 +207,11 @@ type SystemConfig struct {
 	DRBD             *DRBDSystemConfig `json:"drbd"`
 	MaxHAVolumeCount int               `json:"maxVolumeCount"`
 }
+
+type VolumeGroupManager interface {
+	Init(stopCh <-chan struct{})
+	ReconcileVolumeGroup(volGroup *LocalVolumeGroup)
+	GetLocalVolumeGroupByName(lvgName string) (*LocalVolumeGroup, error)
+	GetLocalVolumeGroupByLocalVolume(lvName string) (*LocalVolumeGroup, error)
+	GetLocalVolumeGroupByPVC(pvcName string, pvcNamespace string) (*LocalVolumeGroup, error)
+}

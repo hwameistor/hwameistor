@@ -1,7 +1,0 @@
-apiVersion: hwameistor.io/v1alpha1
-kind: LocalVolumeGroup
-metadata:
-  name: example-localvolumegroup
-spec:
-  # Add fields here
-  size: 3

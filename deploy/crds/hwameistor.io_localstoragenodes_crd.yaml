@@ -87,12 +87,11 @@ spec:
                   description: LocalPool is storage pool struct
                   properties:
                     class:
-                      description: 'Supported class: HDD, SSD, NVMe, RAM'
+                      description: 'Supported class: HDD, SSD, NVMe'
                       enum:
                       - HDD
                       - SSD
                       - NVMe
-                      - RAM
                       type: string
                     disks:
                       items:
@@ -120,8 +119,7 @@ spec:
                       format: int64
                       type: integer
                     name:
-                      description: 'Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL,
-                        RAM_POOL'
+                      description: 'Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL'
                       type: string
                     path:
                       description: VG path

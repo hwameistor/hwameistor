@@ -49,7 +49,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 			}
 
 			return []reconcile.Request{
-				reconcile.Request{
+				{
 					NamespacedName: types.NamespacedName{Name: replica.Spec.VolumeName},
 				},
 			}

@@ -9,12 +9,19 @@ import (
 	"github.com/hwameistor/local-storage/pkg/utils"
 )
 
+const (
+	pvcNameKey      = "csi.storage.k8s.io/pvc/name"
+	pvcNamespaceKey = "csi.storage.k8s.io/pvc/namespace"
+)
+
 type volumeParameters struct {
 	poolClass     string
 	poolType      string
 	poolName      string
 	replicaNumber int64
 	convertible   bool
+	pvcName       string
+	pvcNamespace  string
 }
 
 func parseParameters(req RequestParameterHandler) (*volumeParameters, error) {
@@ -54,11 +61,22 @@ func parseParameters(req RequestParameterHandler) (*volumeParameters, error) {
 		}
 	}
 
+	pvcNamespace, ok := params[pvcNamespaceKey]
+	if !ok {
+		return nil, fmt.Errorf("not found pvc namespace")
+	}
+	pvcName, ok := params[pvcNameKey]
+	if !ok {
+		return nil, fmt.Errorf("not found pvc name")
+	}
+
 	return &volumeParameters{
 		poolClass:     poolClass,
 		poolType:      poolType,
 		poolName:      poolName,
 		replicaNumber: int64(replicaNumber),
 		convertible:   convertible,
+		pvcNamespace:  pvcNamespace,
+		pvcName:       pvcName,
 	}, nil
 }

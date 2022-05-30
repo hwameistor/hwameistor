@@ -45,7 +45,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for changes to primary resource LocalVolumeMigrate
+	// Watch for changes to primary resource LocalVolumeGroup
 	err = c.Watch(&source.Kind{Type: &apisv1alpha1.LocalVolumeGroup{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
@@ -88,7 +88,7 @@ func (r *ReconcileLocalVolumeGroup) Reconcile(request reconcile.Request) (reconc
 		return reconcile.Result{}, err
 	}
 
-	//r.storageMember.Controller().ReconcileVolumeMigrate(instance)
+	r.storageMember.Controller().ReconcileVolumeGroup(instance)
 
 	return reconcile.Result{}, nil
 }
