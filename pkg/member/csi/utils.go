@@ -145,3 +145,12 @@ func getVolumeMetrics(mntPoint string) (*VolumeMetrics, error) {
 
 	return nil, fmt.Errorf("not found")
 }
+
+func isStringInArray(str string, strs []string) bool {
+	for _, s := range strs {
+		if str == s {
+			return true
+		}
+	}
+	return false
+}

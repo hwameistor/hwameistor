@@ -11,19 +11,6 @@ import (
 	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 )
 
-// todo:
-// 1. structure/architecture optimize, plugin register, default plugins.
-// 		need so much more thinking!!!
-
-// Scheduler interface
-type Scheduler interface {
-	Init()
-	// schedule will schedule all replicas, and generate a valid VolumeConfig
-	Allocate(vol *apisv1alpha1.LocalVolume) (*apisv1alpha1.VolumeConfig, error)
-
-	GetNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1alpha1.LocalStorageNode, error)
-}
-
 // todo: design a better plugin register/enable
 type scheduler struct {
 	apiClient client.Client
@@ -38,14 +25,13 @@ type scheduler struct {
 }
 
 // New a scheduler instance
-func New(apiClient client.Client, informerCache runtimecache.Cache, maxHAVolumeCount int) Scheduler {
+func New(apiClient client.Client, informerCache runtimecache.Cache, maxHAVolumeCount int) apisv1alpha1.VolumeScheduler {
 	return &scheduler{
 		apiClient:           apiClient,
 		informerCache:       informerCache,
 		resourceCollections: newResources(maxHAVolumeCount),
 		logger:              log.WithField("Module", "Scheduler"),
 	}
-
 }
 
 func (s *scheduler) Init() {

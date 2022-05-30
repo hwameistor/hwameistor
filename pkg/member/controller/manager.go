@@ -36,7 +36,7 @@ type manager struct {
 
 	scheme *runtime.Scheme
 
-	volumeScheduler scheduler.Scheduler
+	volumeScheduler apisv1alpha1.VolumeScheduler
 
 	volumeGroupManager apisv1alpha1.VolumeGroupManager
 
@@ -154,7 +154,12 @@ func (m *manager) setupInformers() {
 	})
 }
 
-// ReconcileNode reconciles Node CRD for any node resource change
+// VolumeScheduler retrieve the volume scheduler instance
+func (m *manager) VolumeScheduler() apisv1alpha1.VolumeScheduler {
+	return m.volumeScheduler
+}
+
+// VolumeGroupManager retrieves the volume group manager instance
 func (m *manager) VolumeGroupManager() apisv1alpha1.VolumeGroupManager {
 	return m.volumeGroupManager
 }

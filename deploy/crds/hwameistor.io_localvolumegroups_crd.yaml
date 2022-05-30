@@ -78,6 +78,32 @@ spec:
                 items:
                   type: string
                 type: array
+              suggestedAccessibility:
+                description: AccessibilityTopology of the volume
+                properties:
+                  nodes:
+                    description: Nodes is the collection of storage nodes the volume
+                      replicas must locate at
+                    items:
+                      type: string
+                    type: array
+                  regions:
+                    default:
+                    - default
+                    description: regions where the volume replicas should be distributed
+                      across, it's Optional
+                    items:
+                      type: string
+                    type: array
+                  zones:
+                    default:
+                    - default
+                    description: zones where the volume replicas should be distributed
+                      across, it's Optional
+                    items:
+                      type: string
+                    type: array
+                type: object
               volumes:
                 description: Volumes is the collection of the volumes in the group
                 items:
