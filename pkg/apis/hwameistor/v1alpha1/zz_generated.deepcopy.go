@@ -520,7 +520,6 @@ func (in *LocalVolumeGroupSpec) DeepCopyInto(out *LocalVolumeGroupSpec) {
 		copy(*out, *in)
 	}
 	in.Accessibility.DeepCopyInto(&out.Accessibility)
-	in.SuggestedAccessibility.DeepCopyInto(&out.SuggestedAccessibility)
 	if in.Pods != nil {
 		in, out := &in.Pods, &out.Pods
 		*out = make([]string, len(*in))

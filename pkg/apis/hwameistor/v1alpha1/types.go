@@ -226,5 +226,5 @@ type VolumeScheduler interface {
 	// schedule will schedule all replicas, and generate a valid VolumeConfig
 	Allocate(vol *LocalVolume) (*VolumeConfig, error)
 
-	GetNodeCandidates(vol *LocalVolume) ([]*LocalStorageNode, error)
+	GetNodeCandidates(vols []*LocalVolume) []*LocalStorageNode
 }

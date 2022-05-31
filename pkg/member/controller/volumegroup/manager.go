@@ -138,13 +138,13 @@ func (m *manager) GetLocalVolumeGroupByLocalVolume(lvName string) (*apisv1alpha1
 	return lvg, err
 }
 
-func (m *manager) GetLocalVolumeGroupByPVC(pvcName string, pvcNamespace string) (*apisv1alpha1.LocalVolumeGroup, error) {
-	lvg := &apisv1alpha1.LocalVolumeGroup{}
-	err := m.apiClient.Get(
-		context.TODO(),
-		types.NamespacedName{Name: m.pvcToVolumeGroups[namespacedName(pvcNamespace, pvcName)]},
-		lvg)
-	return lvg, err
+func (m *manager) GetLocalVolumeGroupByPVC(pvcNamespace string, pvcName string) (*apisv1alpha1.LocalVolumeGroup, error) {
+	lvg := apisv1alpha1.LocalVolumeGroup{}
+	lvgName := m.pvcToVolumeGroups[namespacedName(pvcNamespace, pvcName)]
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: lvgName}, &lvg); err != nil {
+		return nil, err
+	}
+	return &lvg, nil
 }
 
 func (m *manager) handleLocalVolumeEventAdd(obj interface{}) {
@@ -229,9 +229,9 @@ func (m *manager) isHwameiStorPod(pod *corev1.Pod) bool {
 			continue
 		}
 		pvc := &corev1.PersistentVolumeClaim{}
-		err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: vol.PersistentVolumeClaim.ClaimName}, pvc)
+		err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: pod.Namespace, Name: vol.PersistentVolumeClaim.ClaimName}, pvc)
 		if err != nil {
-			m.logger.WithFields(log.Fields{"namespace": pvc.Namespace, "pvc": pvc.Name}).WithError(err).Error("Failed to fetch PVC")
+			m.logger.WithFields(log.Fields{"namespace": pod.Namespace, "pvc": vol.PersistentVolumeClaim.ClaimName}).WithError(err).Error("Failed to fetch PVC")
 			continue
 		}
 		if m.isHwameiStorPVC(pvc) {
