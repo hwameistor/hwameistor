@@ -11,19 +11,6 @@ import (
 	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 )
 
-// todo:
-// 1. structure/architecture optimize, plugin register, default plugins.
-// 		need so much more thinking!!!
-
-// Scheduler interface
-type Scheduler interface {
-	Init()
-	// schedule will schedule all replicas, and generate a valid VolumeConfig
-	Allocate(vol *apisv1alpha1.LocalVolume) (*apisv1alpha1.VolumeConfig, error)
-
-	GetNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1alpha1.LocalStorageNode, error)
-}
-
 // todo: design a better plugin register/enable
 type scheduler struct {
 	apiClient client.Client
@@ -38,14 +25,13 @@ type scheduler struct {
 }
 
 // New a scheduler instance
-func New(apiClient client.Client, informerCache runtimecache.Cache, maxHAVolumeCount int) Scheduler {
+func New(apiClient client.Client, informerCache runtimecache.Cache, maxHAVolumeCount int) apisv1alpha1.VolumeScheduler {
 	return &scheduler{
 		apiClient:           apiClient,
 		informerCache:       informerCache,
 		resourceCollections: newResources(maxHAVolumeCount),
 		logger:              log.WithField("Module", "Scheduler"),
 	}
-
 }
 
 func (s *scheduler) Init() {
@@ -55,8 +41,70 @@ func (s *scheduler) Init() {
 }
 
 // GetNodeCandidates gets available nodes for the volume, used by K8s scheduler
-func (s *scheduler) GetNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1alpha1.LocalStorageNode, error) {
-	return s.resourceCollections.getNodeCandidates(vol)
+func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) []*apisv1alpha1.LocalStorageNode {
+
+	qualifiedNodes := []*apisv1alpha1.LocalStorageNode{}
+
+	bigLVs := map[string]*apisv1alpha1.LocalVolume{}
+	for _, lv := range vols {
+		if !isLocalVolumeSameClass(bigLVs[lv.Spec.PoolName], lv) {
+			return qualifiedNodes
+		}
+		bigLVs[lv.Spec.PoolName] = appendLocalVolume(bigLVs[lv.Spec.PoolName], lv)
+	}
+
+	for _, lv := range bigLVs {
+		if nodes, err := s.resourceCollections.getNodeCandidates(lv); err != nil {
+			return qualifiedNodes
+		} else {
+			if len(qualifiedNodes) == 0 {
+				qualifiedNodes = nodes
+			} else {
+				qualifiedNodes = unionSet(qualifiedNodes, nodes)
+			}
+		}
+	}
+
+	return qualifiedNodes
+}
+
+func isLocalVolumeSameClass(lv1 *apisv1alpha1.LocalVolume, lv2 *apisv1alpha1.LocalVolume) bool {
+	if lv1 == nil || lv2 == nil {
+		return true
+	}
+	if lv1.Spec.PoolName != lv2.Spec.PoolName {
+		return false
+	}
+	if lv1.Spec.ReplicaNumber != lv2.Spec.ReplicaNumber {
+		return false
+	}
+	if lv1.Spec.Convertible != lv2.Spec.Convertible {
+		return false
+	}
+	return true
+}
+
+func appendLocalVolume(bigLv *apisv1alpha1.LocalVolume, lv *apisv1alpha1.LocalVolume) *apisv1alpha1.LocalVolume {
+	if bigLv == nil {
+		return lv
+	}
+	if lv == nil {
+		return bigLv
+	}
+	bigLv.Spec.RequiredCapacityBytes += lv.Spec.RequiredCapacityBytes
+	return bigLv
+}
+
+func unionSet(strs1 []*apisv1alpha1.LocalStorageNode, strs2 []*apisv1alpha1.LocalStorageNode) []*apisv1alpha1.LocalStorageNode {
+	strs := []*apisv1alpha1.LocalStorageNode{}
+	for _, s1 := range strs1 {
+		for _, s2 := range strs2 {
+			if s1.Name == s2.Name {
+				strs = append(strs, s1)
+			}
+		}
+	}
+	return strs
 }
 
 // Allocate schedule right nodes and generate volume config

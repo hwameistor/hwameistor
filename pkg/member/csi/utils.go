@@ -10,6 +10,7 @@ import (
 	"github.com/hwameistor/local-storage/pkg/exechelper/nsexecutor"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/gofrs/uuid"
 )
 
 func newControllerServiceCapability(cap csi.ControllerServiceCapability_RPC_Type) *csi.ControllerServiceCapability {
@@ -144,4 +145,17 @@ func getVolumeMetrics(mntPoint string) (*VolumeMetrics, error) {
 	}
 
 	return nil, fmt.Errorf("not found")
+}
+
+func isStringInArray(str string, strs []string) bool {
+	for _, s := range strs {
+		if str == s {
+			return true
+		}
+	}
+	return false
+}
+
+func genUUID() string {
+	return fmt.Sprint(uuid.Must(uuid.NewV4()))
 }

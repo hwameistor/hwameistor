@@ -215,3 +215,16 @@ type VolumeGroupManager interface {
 	GetLocalVolumeGroupByLocalVolume(lvName string) (*LocalVolumeGroup, error)
 	GetLocalVolumeGroupByPVC(pvcName string, pvcNamespace string) (*LocalVolumeGroup, error)
 }
+
+// todo:
+// 1. structure/architecture optimize, plugin register, default plugins.
+// 		need so much more thinking!!!
+
+// VolumeScheduler interface
+type VolumeScheduler interface {
+	Init()
+	// schedule will schedule all replicas, and generate a valid VolumeConfig
+	Allocate(vol *LocalVolume) (*VolumeConfig, error)
+
+	GetNodeCandidates(vols []*LocalVolume) []*LocalStorageNode
+}

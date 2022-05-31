@@ -19,6 +19,8 @@ type LocalVolumeGroupSpec struct {
 	// Accessibility is the topology requirement of the volume. It describes how to locate and distribute the volume replicas
 	Accessibility AccessibilityTopology `json:"accessibility,omitempty"`
 
+	// SuggestedAccessibility AccessibilityTopology `json:"suggestedAccessibility,omitempty"`
+
 	Pods []string `json:"pods,omitempty"`
 
 	Namespace string `json:"namespace,omitempty"`

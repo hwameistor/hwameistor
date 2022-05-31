@@ -3,15 +3,20 @@ package csi
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"time"
 
 	localapis "github.com/hwameistor/local-storage/pkg/apis"
 	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	corev1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -52,16 +57,13 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		p.logger.WithError(err).Error("Failed to parse parameters")
 		return resp, err
 	}
-	// fetch the local volume group by PVC
-	lvg, err := p.storageMember.Controller().VolumeGroupManager().GetLocalVolumeGroupByPVC(params.pvcName, params.pvcNamespace)
+
+	lvg, err := p.getLocalVolumeGroupOrCreate(req, params)
 	if err != nil {
-		p.logger.WithFields(log.Fields{"pvc": params.pvcName, "namespace": params.pvcNamespace}).WithError(err).Error("Not found the LocalVolumeGroup")
+		p.logger.WithError(err).Error("Failed to get or create LocalVolumeGroup")
 		return resp, err
 	}
-	if len(lvg.Spec.Accessibility.Nodes) == 0 {
-		p.logger.WithFields(log.Fields{"volumegroup": lvg.Spec}).Error("Not found valid accessibility in volume group")
-		return resp, fmt.Errorf("not found valid accessibility in volume group")
-	}
+
 	for i := 0; i < 2; i++ {
 		vol := &apisv1alpha1.LocalVolume{}
 		if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.Name}, vol); err != nil {
@@ -71,47 +73,12 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 			}
 			vol.Name = req.Name
 			vol.Spec.PoolName = params.poolName
-			vol.Spec.ReplicaNumber = int64(params.replicaNumber)
+			vol.Spec.ReplicaNumber = params.replicaNumber
 			vol.Spec.RequiredCapacityBytes = req.CapacityRange.RequiredBytes
 			vol.Spec.Convertible = params.convertible
 			vol.Spec.PersistentVolumeClaimName = params.pvcName
 			vol.Spec.PersistentVolumeClaimNamespace = params.pvcNamespace
 			vol.Spec.VolumeGroup = lvg.Name
-
-			if req.AccessibilityRequirements != nil && len(req.AccessibilityRequirements.Requisite) == 1 {
-				if nodeName, ok := req.AccessibilityRequirements.Requisite[0].Segments[localapis.TopologyNodeKey]; ok {
-					foundNode := false
-					for _, nn := range lvg.Spec.Accessibility.Nodes {
-						if nodeName == nn {
-							foundNode = true
-							break
-						}
-					}
-					if !foundNode {
-						// check if this volume is the first one to create or not, if yes, update volumegroup's accessibility, otherwise fail
-						isFirst := true
-						for _, v := range lvg.Spec.Volumes {
-							if len(v.LocalVolumeName) > 0 {
-								isFirst = false
-								break
-							}
-						}
-						if isFirst {
-							lvg.Spec.Accessibility.Nodes[0] = nodeName
-							if err := p.apiClient.Update(ctx, lvg); err != nil {
-								p.logger.WithFields(log.Fields{"volumegroup": lvg.Spec, "volume": vol.Spec}).WithError(err).Error("Failed to update volume group for accessibility")
-								return resp, err
-							}
-						} else {
-							p.logger.WithFields(log.Fields{"volumegroup": lvg.Spec, "accessibility": req.AccessibilityRequirements}).Error("Accessibility requirement is not match the one in volumegroup")
-							return resp, fmt.Errorf("not matched accessibility")
-						}
-					}
-				} else {
-					p.logger.WithFields(log.Fields{"volume": vol, "accessibility": req.AccessibilityRequirements}).Error("Not found accessibility requirements")
-					return resp, fmt.Errorf("not found accessibility requirements")
-				}
-			}
 			vol.Spec.Accessibility.Nodes = lvg.Spec.Accessibility.Nodes
 
 			p.logger.WithFields(log.Fields{"volume": vol}).Debug("Creating a volume")
@@ -130,6 +97,187 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		time.Sleep(5 * time.Second)
 	}
 	return resp, fmt.Errorf("volume is still in creating")
+}
+
+func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, params *volumeParameters) (*apisv1alpha1.LocalVolumeGroup, error) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	if req.AccessibilityRequirements == nil || len(req.AccessibilityRequirements.Requisite) != 1 {
+		p.logger.WithFields(log.Fields{"volume": req.Name, "accessibility": req.AccessibilityRequirements}).Error("Not found accessibility requirements")
+		return nil, fmt.Errorf("not found accessibility requirements")
+	}
+	requiredNodeName := req.AccessibilityRequirements.Requisite[0].Segments[localapis.TopologyNodeKey]
+
+	// fetch the local volume group by PVC
+	lvg, err := p.getLocalVolumeGroupByPVC(params.pvcNamespace, params.pvcName)
+	if err != nil {
+		return nil, err
+	}
+	if lvg != nil && len(lvg.Name) > 0 {
+		return lvg, nil
+	}
+	// not found the local volume group, create it
+	p.logger.WithFields(log.Fields{"pvc": params.pvcName, "namespace": params.pvcNamespace}).Debug("Not found the LocalVolumeGroup")
+	// get the pod with the volume firstly, and then get all the hwameistor volumes associated with the pod
+	lvs, err := p.getAssociatedVolumes(params.pvcNamespace, params.pvcName)
+	if err != nil {
+		p.logger.WithFields(log.Fields{"pvc": params.pvcName, "namespace": params.pvcNamespace}).WithError(err).Error("Not found associated volumes")
+		return nil, fmt.Errorf("not found associated volumes")
+	}
+	candidateNodes := p.storageMember.Controller().VolumeScheduler().GetNodeCandidates(lvs)
+	selectedNodes := []string{}
+	foundThisNode := false
+	for _, nn := range candidateNodes {
+		if len(selectedNodes) == int(params.replicaNumber) {
+			break
+		}
+		if nn.Name == requiredNodeName {
+			foundThisNode = true
+			selectedNodes = append(selectedNodes, nn.Name)
+		} else {
+			if len(selectedNodes) == int(params.replicaNumber-1) {
+				if foundThisNode {
+					selectedNodes = append(selectedNodes, nn.Name)
+				}
+			} else {
+				selectedNodes = append(selectedNodes, nn.Name)
+			}
+		}
+	}
+	if !foundThisNode || len(selectedNodes) < int(params.replicaNumber) {
+		p.logger.WithFields(log.Fields{"nodes": selectedNodes, "replica": params.replicaNumber}).Error("No enough nodes")
+		return nil, fmt.Errorf("no enough nodes")
+	}
+	lvg = &apisv1alpha1.LocalVolumeGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: genUUID(),
+		},
+		Spec: apisv1alpha1.LocalVolumeGroupSpec{
+			Namespace: params.pvcNamespace,
+			Volumes:   []apisv1alpha1.VolumeInfo{},
+			Accessibility: apisv1alpha1.AccessibilityTopology{
+				Nodes: selectedNodes,
+			},
+		},
+	}
+	for _, lv := range lvs {
+		lvg.Spec.Volumes = append(lvg.Spec.Volumes, apisv1alpha1.VolumeInfo{PersistentVolumeClaimName: lv.Spec.PersistentVolumeClaimName})
+	}
+	log.WithFields(log.Fields{"lvg": lvg.Name}).Debug("Creating a new LVG ...")
+	if err := p.apiClient.Create(context.Background(), lvg, &client.CreateOptions{}); err != nil {
+		log.WithField("lvg", lvg.Name).WithError(err).Error("Failed to create LVG")
+		return nil, err
+	}
+
+	return lvg, nil
+}
+
+func (p *plugin) getLocalVolumeGroupByPVC(pvcNamespace string, pvcName string) (*apisv1alpha1.LocalVolumeGroup, error) {
+	lvgList := apisv1alpha1.LocalVolumeGroupList{}
+	if err := p.apiClient.List(context.Background(), &lvgList, &client.ListOptions{}); err != nil {
+		return nil, err
+	}
+	for i, lvg := range lvgList.Items {
+		if lvg.Spec.Namespace != pvcNamespace {
+			continue
+		}
+		for _, vol := range lvg.Spec.Volumes {
+			if vol.PersistentVolumeClaimName == pvcName {
+				return &lvgList.Items[i], nil
+			}
+		}
+	}
+	return &apisv1alpha1.LocalVolumeGroup{}, nil
+}
+
+func (p *plugin) getAssociatedVolumes(namespace string, pvcName string) ([]*apisv1alpha1.LocalVolume, error) {
+	podList := corev1.PodList{}
+	if err := p.apiClient.List(context.Background(), &podList, &client.ListOptions{Namespace: namespace}); err != nil {
+		p.logger.WithError(err).Error("Failed to list Pods")
+		return []*apisv1alpha1.LocalVolume{}, err
+	}
+	for i, pod := range podList.Items {
+		for _, vol := range pod.Spec.Volumes {
+			if vol.PersistentVolumeClaim == nil {
+				continue
+			}
+			if vol.PersistentVolumeClaim.ClaimName == pvcName {
+				return p.getHwameiStorPVCs(&podList.Items[i])
+			}
+		}
+	}
+	return []*apisv1alpha1.LocalVolume{}, nil
+
+}
+
+func (p *plugin) getHwameiStorPVCs(pod *corev1.Pod) ([]*apisv1alpha1.LocalVolume, error) {
+	lvs := []*apisv1alpha1.LocalVolume{}
+	p.logger.WithField("pog", pod.Name).Debug("Query hwameistor PVCs")
+
+	ctx := context.Background()
+	for _, vol := range pod.Spec.Volumes {
+		if vol.PersistentVolumeClaim == nil {
+			continue
+		}
+		pvc := &corev1.PersistentVolumeClaim{}
+		if err := p.apiClient.Get(ctx, types.NamespacedName{Namespace: pod.Namespace, Name: vol.PersistentVolumeClaim.ClaimName}, pvc); err != nil {
+			// if pvc can't be found in the cluster, the pod should not be able to be scheduled
+			p.logger.WithField("pvc", vol.PersistentVolumeClaim.ClaimName).WithError(err).Error("Failed to get PVC")
+			return lvs, err
+		}
+		if pvc.Spec.StorageClassName == nil {
+			// should not be the CSI pvc, ignore
+			continue
+		}
+		sc := &storagev1.StorageClass{}
+		if err := p.apiClient.Get(ctx, types.NamespacedName{Name: *pvc.Spec.StorageClassName}, sc); err != nil {
+			// can't found storageclass in the cluster, the pod should not be able to be scheduled
+			p.logger.WithField("storageclass", *pvc.Spec.StorageClassName).WithError(err).Error("Failed to get StorageClass")
+			return lvs, err
+		}
+		if sc.Provisioner == apisv1alpha1.CSIDriverName {
+			if lv, err := constructLocalVolumeForPVC(pvc, sc); err == nil {
+				lvs = append(lvs, lv)
+			}
+		}
+	}
+	return lvs, nil
+}
+
+func constructLocalVolumeForPVC(pvc *corev1.PersistentVolumeClaim, sc *storagev1.StorageClass) (*apisv1alpha1.LocalVolume, error) {
+
+	lv := apisv1alpha1.LocalVolume{}
+	poolName, err := buildStoragePoolName(
+		sc.Parameters[apisv1alpha1.VolumeParameterPoolClassKey],
+		sc.Parameters[apisv1alpha1.VolumeParameterPoolTypeKey])
+	if err != nil {
+		return nil, err
+	}
+
+	lv.Spec.PersistentVolumeClaimNamespace = pvc.Namespace
+	lv.Spec.PersistentVolumeClaimName = pvc.Name
+	lv.Spec.PoolName = poolName
+	storage := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
+	lv.Spec.RequiredCapacityBytes = storage.Value()
+	replica, _ := strconv.Atoi(sc.Parameters[apisv1alpha1.VolumeParameterReplicaNumberKey])
+	lv.Spec.ReplicaNumber = int64(replica)
+	return &lv, nil
+}
+
+func buildStoragePoolName(poolClass string, poolType string) (string, error) {
+
+	if poolClass == apisv1alpha1.DiskClassNameHDD && poolType == apisv1alpha1.PoolTypeRegular {
+		return apisv1alpha1.PoolNameForHDD, nil
+	}
+	if poolClass == apisv1alpha1.DiskClassNameSSD && poolType == apisv1alpha1.PoolTypeRegular {
+		return apisv1alpha1.PoolNameForSSD, nil
+	}
+	if poolClass == apisv1alpha1.DiskClassNameNVMe && poolType == apisv1alpha1.PoolTypeRegular {
+		return apisv1alpha1.PoolNameForNVMe, nil
+	}
+
+	return "", fmt.Errorf("invalid pool info")
 }
 
 func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
