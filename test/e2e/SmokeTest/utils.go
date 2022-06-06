@@ -96,7 +96,7 @@ func installHwameiStorByHelm() {
 func configureEnvironment(ctx context.Context) bool {
 	logrus.Info("start rollback")
 	output := runInLinux("sh rollback.sh")
-	time.Sleep(2 * time.Minute)
+	time.Sleep(8 * time.Minute)
 	logrus.Info(output)
 	installHwameiStorByHelm()
 	addLabels()
