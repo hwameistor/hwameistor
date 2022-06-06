@@ -97,6 +97,9 @@ func configureEnvironment(ctx context.Context) bool {
 	_ = runInLinux("sh rollback.sh")
 	time.Sleep(8 * time.Minute)
 	output := runInLinux("kubectl get pod -A  |grep -v Running |wc -l")
+	if output == "1\n" {
+		logrus.Info("output==1")
+	}
 	logrus.Info(output)
 	installHwameiStorByHelm()
 	addLabels()
