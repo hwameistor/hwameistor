@@ -95,12 +95,13 @@ func installHwameiStorByHelm() {
 func configureEnvironment(ctx context.Context) bool {
 	logrus.Info("start rollback")
 	_ = runInLinux("sh rollback.sh")
-	time.Sleep(8 * time.Minute)
-	output := runInLinux("kubectl get pod -A  |grep -v Running |wc -l")
-	if output == "1\n" {
-		logrus.Info("output==1")
-	}
-	logrus.Info(output)
+	err := wait.PollImmediate(10*time.Second, 8*time.Minute, func() (done bool, err error) {
+		output := runInLinux("kubectl get pod -A  |grep -v Running |wc -l")
+		if output != "1\n" {
+			return false, nil
+		}
+		return true, nil
+	})
 	installHwameiStorByHelm()
 	addLabels()
 	f := framework.NewDefaultFramework(lsv1.AddToScheme)
@@ -111,7 +112,7 @@ func configureEnvironment(ctx context.Context) bool {
 		Name:      "hwameistor-local-storage",
 		Namespace: "hwameistor",
 	}
-	err := client.Get(ctx, localStorageKey, localStorage)
+	err = client.Get(ctx, localStorageKey, localStorage)
 	if err != nil {
 		logrus.Error("%+v ", err)
 		f.ExpectNoError(err)
