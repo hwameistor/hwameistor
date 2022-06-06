@@ -3,7 +3,6 @@ package SmokeTest
 import (
 	"bytes"
 	"context"
-
 	ldapis "github.com/hwameistor/local-disk-manager/pkg/apis"
 	ldv1 "github.com/hwameistor/local-disk-manager/pkg/apis/hwameistor/v1alpha1"
 	lsv1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
@@ -95,8 +94,9 @@ func installHwameiStorByHelm() {
 
 func configureEnvironment(ctx context.Context) bool {
 	logrus.Info("start rollback")
-	output := runInLinux("sh rollback.sh")
+	_ = runInLinux("sh rollback.sh")
 	time.Sleep(8 * time.Minute)
+	output := runInLinux("kubectl get pod -A  |grep -v Running |wc -l")
 	logrus.Info(output)
 	installHwameiStorByHelm()
 	addLabels()
