@@ -95,13 +95,14 @@ func installHwameiStorByHelm() {
 func configureEnvironment(ctx context.Context) bool {
 	logrus.Info("start rollback")
 	_ = runInLinux("sh rollback.sh")
-	err := wait.PollImmediate(10*time.Second, 8*time.Minute, func() (done bool, err error) {
+	err := wait.PollImmediate(10*time.Second, 10*time.Minute, func() (done bool, err error) {
 		output := runInLinux("kubectl get pod -A  |grep -v Running |wc -l")
 		if output != "1\n" {
 			return false, nil
 		}
 		return true, nil
 	})
+	logrus.Info("k8s ready")
 	installHwameiStorByHelm()
 	addLabels()
 	f := framework.NewDefaultFramework(lsv1.AddToScheme)
