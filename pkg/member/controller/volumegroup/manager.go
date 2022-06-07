@@ -386,7 +386,7 @@ func (m *manager) addLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) error 
 			m.lock.Lock()
 			for _, vol := range lvg.Spec.Volumes {
 				if len(vol.PersistentVolumeClaimName) > 0 {
-					m.pvcToVolumeGroups[namespacedName(lvg.Spec.Namespace, vol.PersistentVolumeClaimName)] = lvg.Name
+					m.pvcToVolumeGroups[namespacedName(lvg.Namespace, vol.PersistentVolumeClaimName)] = lvg.Name
 				}
 				if len(vol.LocalVolumeName) > 0 {
 					m.localVolumeToVolumeGroups[vol.LocalVolumeName] = lvg.Name
@@ -394,7 +394,7 @@ func (m *manager) addLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) error 
 			}
 			if len(lvg.Spec.Pods) > 0 {
 				for _, podName := range lvg.Spec.Pods {
-					m.podToVolumeGroups[namespacedName(lvg.Spec.Namespace, podName)] = lvg.Name
+					m.podToVolumeGroups[namespacedName(lvg.Namespace, podName)] = lvg.Name
 				}
 			}
 			m.lock.Unlock()
@@ -521,7 +521,7 @@ func (m *manager) addLocalVolume(lv *apisv1alpha1.LocalVolume) error {
 			}
 			return nil
 		}
-		if vol.PersistentVolumeClaimName == lv.Spec.PersistentVolumeClaimName && lvg.Spec.Namespace == lv.Spec.PersistentVolumeClaimNamespace {
+		if vol.PersistentVolumeClaimName == lv.Spec.PersistentVolumeClaimName && lvg.Namespace == lv.Spec.PersistentVolumeClaimNamespace {
 			// localvolume is just created to serve PVC
 			lvg.Spec.Volumes[i].LocalVolumeName = lv.Name
 			m.localVolumeToVolumeGroups[lv.Name] = lv.Spec.VolumeGroup
@@ -618,7 +618,7 @@ func (m *manager) deletePVC(namespace string, name string) error {
 	modified := false
 	associatedVolumes := []apisv1alpha1.VolumeInfo{}
 	for i := range lvg.Spec.Volumes {
-		if lvg.Spec.Volumes[i].PersistentVolumeClaimName != name || lvg.Spec.Namespace != namespace {
+		if lvg.Spec.Volumes[i].PersistentVolumeClaimName != name || lvg.Namespace != namespace {
 			associatedVolumes = append(associatedVolumes, lvg.Spec.Volumes[i])
 			continue
 		}
@@ -683,7 +683,7 @@ func (m *manager) deletePod(namespace string, name string) error {
 		}
 		return err
 	}
-	if lvg.Spec.Namespace != namespace {
+	if lvg.Namespace != namespace {
 		delete(m.podToVolumeGroups, podKey)
 		return nil
 	}
