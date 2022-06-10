@@ -72,8 +72,6 @@ spec:
                       type: string
                     type: array
                 type: object
-              namespace:
-                type: string
               pods:
                 items:
                   type: string

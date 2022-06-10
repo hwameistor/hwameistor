@@ -151,11 +151,11 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 	}
 	lvg = &apisv1alpha1.LocalVolumeGroup{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: genUUID(),
+			Name:      genUUID(),
+			Namespace: params.pvcNamespace,
 		},
 		Spec: apisv1alpha1.LocalVolumeGroupSpec{
-			Namespace: params.pvcNamespace,
-			Volumes:   []apisv1alpha1.VolumeInfo{},
+			Volumes: []apisv1alpha1.VolumeInfo{},
 			Accessibility: apisv1alpha1.AccessibilityTopology{
 				Nodes: selectedNodes,
 			},
@@ -179,7 +179,7 @@ func (p *plugin) getLocalVolumeGroupByPVC(pvcNamespace string, pvcName string) (
 		return nil, err
 	}
 	for i, lvg := range lvgList.Items {
-		if lvg.Spec.Namespace != pvcNamespace {
+		if lvg.Namespace != pvcNamespace {
 			continue
 		}
 		for _, vol := range lvg.Spec.Volumes {
