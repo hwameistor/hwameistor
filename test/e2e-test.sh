@@ -28,7 +28,7 @@ do
     fi
 done
 ##
-sed -i '/.*ghcr.io*/c\hwameistorImageRegistry: "$ImageRegistry"' test/helm-charts/charts/hwameistor/values.yaml
+sed -i '/.*ghcr.io*/c\hwameistorImageRegistry: '$ImageRegistry'' test/helm-charts/charts/hwameistor/values.yaml
 sed -i '/local-storage/{n;d}' test/helm-charts/charts/hwameistor/values.yaml
 sed -i '/local-storage/a \ \ \ \ tag: 99.9-dev' test/helm-charts/charts/hwameistor/values.yaml
 
