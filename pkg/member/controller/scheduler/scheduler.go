@@ -43,6 +43,9 @@ func (s *scheduler) Init() {
 // GetNodeCandidates gets available nodes for the volume, used by K8s scheduler
 func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) []*apisv1alpha1.LocalStorageNode {
 
+	s.resourceCollections.apiClient = s.apiClient
+	s.resourceCollections.initilizeResources()
+
 	qualifiedNodes := []*apisv1alpha1.LocalStorageNode{}
 
 	bigLVs := map[string]*apisv1alpha1.LocalVolume{}
