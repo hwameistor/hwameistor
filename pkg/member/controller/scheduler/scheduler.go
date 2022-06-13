@@ -22,6 +22,8 @@ type scheduler struct {
 	lock sync.Mutex
 
 	informerCache runtimecache.Cache
+
+	once sync.Once
 }
 
 // New a scheduler instance
@@ -40,11 +42,19 @@ func (s *scheduler) Init() {
 
 }
 
+func (s *scheduler) initResources() {
+
+	s.once.Do(func() {
+		s.resourceCollections.apiClient = s.apiClient
+		s.resourceCollections.initilizeResources()
+	})
+
+}
+
 // GetNodeCandidates gets available nodes for the volume, used by K8s scheduler
 func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) []*apisv1alpha1.LocalStorageNode {
 
-	s.resourceCollections.apiClient = s.apiClient
-	s.resourceCollections.initilizeResources()
+	s.initResources()
 
 	qualifiedNodes := []*apisv1alpha1.LocalStorageNode{}
 
