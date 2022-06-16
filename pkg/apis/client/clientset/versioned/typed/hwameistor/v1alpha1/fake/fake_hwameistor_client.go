@@ -48,6 +48,10 @@ func (c *FakeHwameistorV1alpha1) LocalVolumeGroups() v1alpha1.LocalVolumeGroupIn
 	return &FakeLocalVolumeGroups{c}
 }
 
+func (c *FakeHwameistorV1alpha1) LocalVolumeGroupMigrates() v1alpha1.LocalVolumeGroupMigrateInterface {
+	return &FakeLocalVolumeGroupMigrates{c}
+}
+
 func (c *FakeHwameistorV1alpha1) LocalVolumeMigrates() v1alpha1.LocalVolumeMigrateInterface {
 	return &FakeLocalVolumeMigrates{c}
 }

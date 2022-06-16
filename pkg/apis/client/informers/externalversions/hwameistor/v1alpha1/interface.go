@@ -34,6 +34,8 @@ type Interface interface {
 	LocalVolumeExpands() LocalVolumeExpandInformer
 	// LocalVolumeGroups returns a LocalVolumeGroupInformer.
 	LocalVolumeGroups() LocalVolumeGroupInformer
+	// LocalVolumeGroupMigrates returns a LocalVolumeGroupMigrateInformer.
+	LocalVolumeGroupMigrates() LocalVolumeGroupMigrateInformer
 	// LocalVolumeMigrates returns a LocalVolumeMigrateInformer.
 	LocalVolumeMigrates() LocalVolumeMigrateInformer
 	// LocalVolumeReplicas returns a LocalVolumeReplicaInformer.
@@ -74,6 +76,11 @@ func (v *version) LocalVolumeExpands() LocalVolumeExpandInformer {
 // LocalVolumeGroups returns a LocalVolumeGroupInformer.
 func (v *version) LocalVolumeGroups() LocalVolumeGroupInformer {
 	return &localVolumeGroupInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// LocalVolumeGroupMigrates returns a LocalVolumeGroupMigrateInformer.
+func (v *version) LocalVolumeGroupMigrates() LocalVolumeGroupMigrateInformer {
+	return &localVolumeGroupMigrateInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // LocalVolumeMigrates returns a LocalVolumeMigrateInformer.

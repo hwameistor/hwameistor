@@ -128,6 +128,7 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 	candidateNodes := p.storageMember.Controller().VolumeScheduler().GetNodeCandidates(lvs)
 	selectedNodes := []string{}
 	foundThisNode := false
+	log.Debugf("getLocalVolumeGroupOrCreate candidateNodes = %v, requiredNodeName = %v", candidateNodes, requiredNodeName)
 	for _, nn := range candidateNodes {
 		if len(selectedNodes) == int(params.replicaNumber) {
 			break
@@ -199,14 +200,17 @@ func (p *plugin) getAssociatedVolumes(namespace string, pvcName string) ([]*apis
 	}
 	for i, pod := range podList.Items {
 		for _, vol := range pod.Spec.Volumes {
+			log.Debug("getAssociatedVolumes vol.PersistentVolumeClaim = %v", vol.PersistentVolumeClaim)
 			if vol.PersistentVolumeClaim == nil {
 				continue
 			}
+			log.Debug("getAssociatedVolumes vol.PersistentVolumeClaim.ClaimName = %v, pvcName = %v", vol.PersistentVolumeClaim.ClaimName, pvcName)
 			if vol.PersistentVolumeClaim.ClaimName == pvcName {
 				return p.getHwameiStorPVCs(&podList.Items[i])
 			}
 		}
 	}
+	log.Debug("getAssociatedVolumes return empty")
 	return []*apisv1alpha1.LocalVolume{}, nil
 
 }

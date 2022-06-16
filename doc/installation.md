@@ -2,7 +2,6 @@
 
 local-storage is a cloud native local storage system, which should be deployed in a Kubernetes cluster with the following requirements:
 
-* LocalStorage Version: `4.0+`
 * Kubernetes Version: `1.22+`
 * Node
   * Free disks
@@ -16,10 +15,10 @@ Before deploying local-storage, you must decide which Kubernetes nodes for it. T
 # 1. List all the kubernetes nodes
 $ kubectl get nodes
 NAME              STATUS   ROLES             AGE   VERSION
-localstorage-10-6-161-21   Ready    master,registry   10d   v1.18.6
-localstorage-10-6-161-25   Ready    <none>            10d   v1.18.6
-localstorage-10-6-161-26   Ready    <none>            10d   v1.18.6
-localstorage-10-6-161-27   Ready    <none>            10d   v1.18.6
+localstorage-10-6-161-21   Ready    master,registry   10d   v1.23.7
+localstorage-10-6-161-25   Ready    <none>            10d   v1.23.7
+localstorage-10-6-161-26   Ready    <none>            10d   v1.23.7
+localstorage-10-6-161-27   Ready    <none>            10d   v1.23.7
 
 # 2. Add local-storage label for each selected node, key is "lvm.hwameistor.io/enable"
 $ kubectl label node localstorage-10-6-161-27 lvm.hwameistor.io/enable=true
