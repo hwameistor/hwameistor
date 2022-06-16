@@ -2,7 +2,6 @@
 
 local-storage需要部署在Kubernetes系统中，需要集群满足下列条件：
 
-* LocalStorage Version: `4.0+`
 * Kubernetes Version: `1.22+`
 * Node
   * 空闲磁盘
@@ -16,10 +15,10 @@ local-storage需要部署在Kubernetes系统中，需要集群满足下列条件
 # 1. List all the kubernetes nodes
 $ kubectl get nodes
 NAME              STATUS   ROLES             AGE   VERSION
-localstorage-10-6-161-21   Ready    master,registry   10d   v1.18.6
-localstorage-10-6-161-25   Ready    <none>            10d   v1.18.6
-localstorage-10-6-161-26   Ready    <none>            10d   v1.18.6
-localstorage-10-6-161-27   Ready    <none>            10d   v1.18.6
+localstorage-10-6-161-21   Ready    master,registry   10d   v1.23.7
+localstorage-10-6-161-25   Ready    <none>            10d   v1.23.7
+localstorage-10-6-161-26   Ready    <none>            10d   v1.23.7
+localstorage-10-6-161-27   Ready    <none>            10d   v1.23.7
 
 # 2. Add local-storage label for each selected node, key is "lvm.hwameistor.io/enable"
 $ kubectl label node localstorage-10-6-161-27 lvm.hwameistor.io/enable=true
