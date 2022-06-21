@@ -2,7 +2,7 @@
 
 git clone https://github.com/hwameistor/helm-charts.git test/helm-charts
 git clone https://github.com/hwameistor/local-storage.git test/local-storage
-cp -r -f test/local-storage/deploy/crds/* test/helm-charts/charts/hwameistor/crds/
+cp -r -f test/local-storage/deploy/crds/hwameistor.io_l* test/helm-charts/charts/hwameistor/crds/
 cat test/helm-charts/charts/hwameistor/values.yaml | while read line
 ##
 do
@@ -28,6 +28,10 @@ do
     fi
 done
 ##
+date=$(date +%Y%m%d%H%M)
+docker tag $ImageRegistry/hwameistor/local-storage:99.9-dev $ImageRegistry/hwameistor/local-storage:$date
+docker push $ImageRegistry/hwameistor/local-storage:$date
+echo "docker push $ImageRegistry/hwameistor/local-storage:$date"
 sed -i '/.*ghcr.io*/c\hwameistorImageRegistry: '$ImageRegistry'' test/helm-charts/charts/hwameistor/values.yaml
 sed -i '/local-storage/{n;d}' test/helm-charts/charts/hwameistor/values.yaml
 sed -i '/local-storage/a \ \ \ \ tag: 99.9-dev' test/helm-charts/charts/hwameistor/values.yaml
