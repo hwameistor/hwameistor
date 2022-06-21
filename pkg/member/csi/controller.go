@@ -207,6 +207,7 @@ func (p *plugin) getAssociatedVolumes(namespace string, pvcName string) ([]*apis
 			}
 		}
 	}
+	log.Debug("getAssociatedVolumes return empty")
 	return []*apisv1alpha1.LocalVolume{}, nil
 
 }

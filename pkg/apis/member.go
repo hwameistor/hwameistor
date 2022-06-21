@@ -64,6 +64,8 @@ type ControllerManager interface {
 
 	ReconcileVolumeMigrate(migrate *apisv1alpha1.LocalVolumeMigrate)
 
+	ReconcileVolumeGroupMigrate(lvgmigrate *apisv1alpha1.LocalVolumeGroupMigrate)
+
 	ReconcileVolumeConvert(convert *apisv1alpha1.LocalVolumeConvert)
 }
 

@@ -211,8 +211,8 @@ type SystemConfig struct {
 type VolumeGroupManager interface {
 	Init(stopCh <-chan struct{})
 	ReconcileVolumeGroup(volGroup *LocalVolumeGroup)
-	GetLocalVolumeGroupByName(lvgName string) (*LocalVolumeGroup, error)
-	GetLocalVolumeGroupByLocalVolume(lvName string) (*LocalVolumeGroup, error)
+	GetLocalVolumeGroupByName(nameSpace, lvgName string) (*LocalVolumeGroup, error)
+	GetLocalVolumeGroupByLocalVolume(nameSpace, lvName string) (*LocalVolumeGroup, error)
 	GetLocalVolumeGroupByPVC(pvcName string, pvcNamespace string) (*LocalVolumeGroup, error)
 }
 
