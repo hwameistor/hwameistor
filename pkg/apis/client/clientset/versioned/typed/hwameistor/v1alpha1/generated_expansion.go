@@ -28,6 +28,8 @@ type LocalVolumeExpandExpansion interface{}
 
 type LocalVolumeGroupExpansion interface{}
 
+type LocalVolumeGroupConvertExpansion interface{}
+
 type LocalVolumeGroupMigrateExpansion interface{}
 
 type LocalVolumeMigrateExpansion interface{}

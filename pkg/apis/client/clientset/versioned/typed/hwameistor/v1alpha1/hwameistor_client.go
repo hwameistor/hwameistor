@@ -31,6 +31,7 @@ type HwameistorV1alpha1Interface interface {
 	LocalVolumeConvertsGetter
 	LocalVolumeExpandsGetter
 	LocalVolumeGroupsGetter
+	LocalVolumeGroupConvertsGetter
 	LocalVolumeGroupMigratesGetter
 	LocalVolumeMigratesGetter
 	LocalVolumeReplicasGetter
@@ -59,6 +60,10 @@ func (c *HwameistorV1alpha1Client) LocalVolumeExpands() LocalVolumeExpandInterfa
 
 func (c *HwameistorV1alpha1Client) LocalVolumeGroups() LocalVolumeGroupInterface {
 	return newLocalVolumeGroups(c)
+}
+
+func (c *HwameistorV1alpha1Client) LocalVolumeGroupConverts() LocalVolumeGroupConvertInterface {
+	return newLocalVolumeGroupConverts(c)
 }
 
 func (c *HwameistorV1alpha1Client) LocalVolumeGroupMigrates() LocalVolumeGroupMigrateInterface {

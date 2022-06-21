@@ -55,6 +55,8 @@ type manager struct {
 
 	volumeConvertTaskQueue *common.TaskQueue
 
+	volumeGroupConvertTaskQueue *common.TaskQueue
+
 	localNodes map[string]apisv1alpha1.State // nodeName -> status
 
 	logger *log.Entry
@@ -80,6 +82,7 @@ func New(name string, namespace string, cli client.Client, scheme *runtime.Schem
 		volumeMigrateTaskQueue:      common.NewTaskQueue("VolumeMigrateTask", maxRetries),
 		volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 		volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
+		volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
 		localNodes:                  map[string]apisv1alpha1.State{},
 		logger:                      log.WithField("Module", "ControllerManager"),
 	}, nil
@@ -108,6 +111,7 @@ func (m *manager) start(stopCh <-chan struct{}) {
 		go m.startVolumeMigrateTaskWorker(stopCh)
 		go m.startVolumeGroupMigrateTaskWorker(stopCh)
 		go m.startVolumeConvertTaskWorker(stopCh)
+		go m.startVolumeGroupConvertTaskWorker(stopCh)
 
 		go m.startK8sNodeTaskWorker(stopCh)
 

@@ -63,6 +63,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Hwameistor().V1alpha1().LocalVolumeExpands().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("localvolumegroups"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Hwameistor().V1alpha1().LocalVolumeGroups().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("localvolumegroupconverts"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Hwameistor().V1alpha1().LocalVolumeGroupConverts().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("localvolumegroupmigrates"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Hwameistor().V1alpha1().LocalVolumeGroupMigrates().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("localvolumemigrates"):
