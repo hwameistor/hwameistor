@@ -9,9 +9,9 @@ spec:
     listKind: LocalVolumeGroupConvertList
     plural: localvolumegroupconverts
     shortNames:
-    - lvconvert
+    - lvgconvert
     singular: localvolumegroupconvert
-  scope: Cluster
+  scope: Namespaced
   versions:
   - additionalPrinterColumns:
     - description: Name of the volume to convert

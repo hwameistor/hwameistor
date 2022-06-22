@@ -67,6 +67,8 @@ type ControllerManager interface {
 	ReconcileVolumeGroupMigrate(lvgmigrate *apisv1alpha1.LocalVolumeGroupMigrate)
 
 	ReconcileVolumeConvert(convert *apisv1alpha1.LocalVolumeConvert)
+
+	ReconcileVolumeGroupConvert(lvgconvert *apisv1alpha1.LocalVolumeGroupConvert)
 }
 
 // NodeManager interface

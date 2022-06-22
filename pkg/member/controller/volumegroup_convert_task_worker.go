@@ -39,7 +39,7 @@ func (m *manager) processVolumeGroupConvert(name string) error {
 	logCtx := m.logger.WithFields(log.Fields{"VolumeGroupConvert": name})
 	logCtx.Debug("Working on a VolumeGroupConvert task")
 	convert := &apisv1alpha1.LocalVolumeGroupConvert{}
-	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: name}, convert); err != nil {
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: m.namespace, Name: name}, convert); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get VolumeGroupConvert from cache")
 			return err
@@ -116,8 +116,9 @@ func (m *manager) VolumeGroupConvertSubmit(convert *apisv1alpha1.LocalVolumeGrou
 					if vol.Spec.ReplicaNumber == convert.Spec.ReplicaNumber {
 						convert.Status.State = apisv1alpha1.OperationStateSubmitted
 					} else if vol.Spec.ReplicaNumber == 1 && !vol.Spec.Convertible {
-						logCtx.WithField("volume", vol.Spec).Error("Can't convert the incovertible volume")
-						convert.Status.Message = "Inconvertible volume"
+						logCtx.WithField("volume", vol.Spec).Error("Can't convert the inconvertible volume")
+						msg := fmt.Sprintf("Inconvertible volume: %s", vol.Name)
+						convert.Status.Message = msg
 					} else if vol.Spec.ReplicaNumber == 1 && convert.Spec.ReplicaNumber == 2 {
 						// currently, only support convertible non-HA volume to HA convertion
 						convert.Status.State = apisv1alpha1.OperationStateSubmitted
@@ -168,11 +169,15 @@ func (m *manager) VolumeGroupConvertStart(convert *apisv1alpha1.LocalVolumeGroup
 						m.apiClient.Status().Update(ctx, convert)
 					}
 
+					if vol.Spec.ReplicaNumber == 1 && !vol.Spec.Convertible {
+						continue
+					}
+
 					vol.Spec.ReplicaNumber = convert.Spec.ReplicaNumber
 					if err := m.apiClient.Update(ctx, &vol); err != nil {
-						logCtx.WithError(err).Error("Failed to start the volume convert")
+						logCtx.WithField("volName", vol.Name).WithError(err).Error("Volume failed to start the volume convert")
 						convert.Status.Message = err.Error()
-						return m.apiClient.Status().Update(ctx, convert)
+						m.apiClient.Status().Update(ctx, convert)
 					}
 				}
 			}

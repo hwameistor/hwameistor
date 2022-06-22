@@ -42,7 +42,6 @@ func (m *manager) processVolumeGroupMigrate(name string) error {
 	logCtx := m.logger.WithFields(log.Fields{"VolumeGroupMigrate": name})
 	logCtx.Debug("Working on a VolumeGroupMigrate task")
 
-	logCtx.Debug("Working on a VolumeGroupMigrate task, namespace = %+v", m.namespace)
 	migrate := &apisv1alpha1.LocalVolumeGroupMigrate{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: m.namespace, Name: name}, migrate); err != nil {
 		if !errors.IsNotFound(err) {
@@ -205,7 +204,6 @@ func (m *manager) VolumeGroupMigrateStart(migrate *apisv1alpha1.LocalVolumeGroup
 							logCtx.Error("VolumeGroupMigrateStart: Failed to list VolumeReplica")
 							return err
 						}
-						logCtx.Debug("VolumeGroupMigrateStart: len(replicas)  = %+v, int(vol.Spec.ReplicaNumber)=%+v", len(replicas), int(vol.Spec.ReplicaNumber))
 						if len(replicas) != int(vol.Spec.ReplicaNumber) {
 							logCtx.Info("VolumeGroupMigrateStart: Not all VolumeReplicas are created")
 							return fmt.Errorf("VolumeGroupMigrateStart: volume not ready")
@@ -270,12 +268,10 @@ func (m *manager) VolumeGroupMigrateInProgress(migrate *apisv1alpha1.LocalVolume
 			if err := m.apiClient.List(context.TODO(), volList); err != nil {
 				m.logger.WithError(err).Fatal("VolumeGroupMigrateInProgress: Failed to list LocalVolumes")
 			}
-			logCtx.Debug("VolumeGroupMigrateInProgress: volList = %+v", volList)
 
 			for _, vol := range volList.Items {
 				if vol.Spec.VolumeGroup == lvg.Name {
 					// firstly, make sure all the replicas are ready
-					logCtx.Debug("VolumeGroupMigrateInProgress: int(vol.Spec.ReplicaNumber) = %+v, len(vol.Spec.Config.Replicas)=%+v, vol.Spec.Config.Replicas = %+v", int(vol.Spec.ReplicaNumber), len(vol.Spec.Config.Replicas), vol.Spec.Config.Replicas)
 					if int(vol.Spec.ReplicaNumber) != len(vol.Spec.Config.Replicas) {
 						logCtx.Debug("VolumeGroupMigrateInProgress: Volume is still not configured")
 						return fmt.Errorf("VolumeGroupMigrateInProgress: volume not ready")
@@ -286,7 +282,6 @@ func (m *manager) VolumeGroupMigrateInProgress(migrate *apisv1alpha1.LocalVolume
 						logCtx.Error("VolumeGroupMigrateInProgress: Failed to list VolumeReplica")
 						return err
 					}
-					logCtx.Debug("VolumeGroupMigrateInProgress: len(replicas) = %+v, int(vol.Spec.ReplicaNumber)=%+v", len(replicas), int(vol.Spec.ReplicaNumber))
 					if len(replicas) != int(vol.Spec.ReplicaNumber) {
 						logCtx.Info("VolumeGroupMigrateInProgress: Not all VolumeReplicas are created")
 						return fmt.Errorf("VolumeGroupMigrateInProgress: volume not ready")
@@ -308,7 +303,6 @@ func (m *manager) VolumeGroupMigrateInProgress(migrate *apisv1alpha1.LocalVolume
 					// New replica is added and synced successfully, will remove the to-be-migrated replica from Volume's config
 					if vol.Spec.ReplicaNumber > migrate.Status.ReplicaNumber {
 						// prune the to-be-migrated replica
-						logCtx.Debug("VolumeGroupMigrateInProgress: vol.Spec.ReplicaNumber = %+v , migrate.Status.ReplicaNumber = %+v", vol.Spec.ReplicaNumber, migrate.Status.ReplicaNumber)
 
 						vol.Spec.ReplicaNumber = migrate.Status.ReplicaNumber
 						replicas := []apisv1alpha1.VolumeReplica{}
@@ -320,7 +314,6 @@ func (m *manager) VolumeGroupMigrateInProgress(migrate *apisv1alpha1.LocalVolume
 							}
 						}
 						vol.Spec.Config.Replicas = replicas
-						logCtx.Debug("VolumeGroupMigrateInProgress: vol.Spec = %+v", vol.Spec)
 
 						if err := m.apiClient.Update(ctx, &vol); err != nil {
 							logCtx.WithError(err).Error("VolumeGroupMigrateInProgress: Failed to re-configure Volume")

@@ -210,6 +210,11 @@ func (m *manager) ReconcileVolumeConvert(convert *apisv1alpha1.LocalVolumeConver
 	m.volumeConvertTaskQueue.Add(convert.Name)
 }
 
+// ReconcileVolumeGroupConvert reconciles VolumeGroupConvert CRD for any volumegroup resource change
+func (m *manager) ReconcileVolumeGroupConvert(lvgconvert *apisv1alpha1.LocalVolumeGroupConvert) {
+	m.volumeGroupConvertTaskQueue.Add(lvgconvert.Name)
+}
+
 func (m *manager) handleK8sNodeUpdatedEvent(oldObj, newObj interface{}) {
 	newNode, _ := newObj.(*corev1.Node)
 	if _, ok := m.localNodes[newNode.Name]; !ok {

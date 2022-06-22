@@ -1,12 +1,10 @@
-package localvolumeconvert
+package localvolumegroupconvert
 
 import (
 	"context"
-
 	"github.com/hwameistor/local-storage/pkg/apis"
 	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/local-storage/pkg/member"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,7 +28,7 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileLocalVolumeConvert{
+	return &ReconcileLocalVolumeGroupConvert{
 		client: mgr.GetClient(),
 		scheme: mgr.GetScheme(),
 		// storageMember is a global variable
@@ -41,13 +39,13 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
-	c, err := controller.New("localvolumeconvert-controller", mgr, controller.Options{Reconciler: r})
+	c, err := controller.New("LocalVolumeGroupConvert-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
 
-	// Watch for changes to primary resource LocalVolumeConvert
-	err = c.Watch(&source.Kind{Type: &apisv1alpha1.LocalVolumeConvert{}}, &handler.EnqueueRequestForObject{})
+	// Watch for changes to primary resource LocalVolumeGroupConvert
+	err = c.Watch(&source.Kind{Type: &apisv1alpha1.LocalVolumeGroupConvert{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -55,11 +53,11 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-// blank assignment to verify that ReconcileLocalVolumeConvert implements reconcile.Reconciler
-var _ reconcile.Reconciler = &ReconcileLocalVolumeConvert{}
+// blank assignment to verify that ReconcileLocalVolumeGroupConvert implements reconcile.Reconciler
+var _ reconcile.Reconciler = &ReconcileLocalVolumeGroupConvert{}
 
-// ReconcileLocalVolumeConvert reconciles a LocalVolumeConvert object
-type ReconcileLocalVolumeConvert struct {
+// ReconcileLocalVolumeGroupConvert reconciles a LocalVolumeGroupConvert object
+type ReconcileLocalVolumeGroupConvert struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
@@ -68,14 +66,14 @@ type ReconcileLocalVolumeConvert struct {
 	storageMember apis.LocalStorageMember
 }
 
-// Reconcile reads that state of the cluster for a LocalVolumeConvert object and makes changes based on the state read
-// and what is in the LocalVolumeConvert.Spec
+// Reconcile reads that state of the cluster for a LocalVolumeGroupConvert object and makes changes based on the state read
+// and what is in the LocalVolumeGroupConvert.Spec
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileLocalVolumeConvert) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	// Fetch the LocalVolumeConvert instance
-	instance := &apisv1alpha1.LocalVolumeConvert{}
+func (r *ReconcileLocalVolumeGroupConvert) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	// Fetch the LocalVolumeGroupConvert instance
+	instance := &apisv1alpha1.LocalVolumeGroupConvert{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -88,7 +86,7 @@ func (r *ReconcileLocalVolumeConvert) Reconcile(request reconcile.Request) (reco
 		return reconcile.Result{}, err
 	}
 
-	r.storageMember.Controller().ReconcileVolumeConvert(instance)
+	r.storageMember.Controller().ReconcileVolumeGroupConvert(instance)
 
 	return reconcile.Result{}, nil
 }
