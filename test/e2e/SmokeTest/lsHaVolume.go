@@ -348,20 +348,21 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("pr"), func(
 						logrus.Printf("Failed to find pvc ：%+v ", err)
 						f.ExpectNoError(err)
 					}
-					exlvmi := &lsv1.LocalVolumeMigrate{
-						TypeMeta: metav1.TypeMeta{},
+					exlvgm := &lsv1.LocalVolumeGroupMigrate{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: "localvolumemigrate-1",
+							Name:      "localvolumegroupmigrate-1",
+							Namespace: "hwameistor",
 						},
-						Spec: lsv1.LocalVolumeMigrateSpec{
-							NodeName:   "k8s-master",
-							VolumeName: pvc.Spec.VolumeName,
+						Spec: lsv1.LocalVolumeGroupMigrateSpec{
+							TargetNodesNames:     []string{"k8s-node1"},
+							SourceNodesNames:     []string{"k8s-master"},
+							LocalVolumeGroupName: "",
 						},
-						Status: lsv1.LocalVolumeMigrateStatus{},
 					}
-					err = client.Create(ctx, exlvmi)
+
+					err = client.Create(ctx, exlvgm)
 					if err != nil {
-						logrus.Printf("Create lvmi failed ：%+v ", err)
+						logrus.Printf("Create lvgm failed ：%+v ", err)
 						f.ExpectNoError(err)
 					}
 					logrus.Printf("wait 3 minutes for lvr")
