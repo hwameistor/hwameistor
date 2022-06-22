@@ -99,10 +99,15 @@ func configureEnvironment(ctx context.Context) bool {
 		output := runInLinux("kubectl get pod -A  |grep -v Running |wc -l")
 		if output != "1\n" {
 			return false, nil
+		} else {
+			logrus.Info("k8s ready")
+			return true, nil
 		}
-		return true, nil
+
 	})
-	logrus.Info("k8s ready")
+	if err != nil {
+		logrus.Error(err)
+	}
 	installHwameiStorByHelm()
 	addLabels()
 	f := framework.NewDefaultFramework(lsv1.AddToScheme)
