@@ -336,37 +336,37 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 
 			lvrList := &lsv1.LocalVolumeReplicaList{}
 			err := client.List(ctx, lvrList)
+			lvgList := &lsv1.LocalVolumeGroupList{}
+			err = client.List(ctx, lvgList)
 			for _, lvr := range lvrList.Items {
 				if lvr.Spec.NodeName == "k8s-master" {
-					pvc := &apiv1.PersistentVolumeClaim{}
-					pvcKey := k8sclient.ObjectKey{
-						Name:      "pvc-lvm-ha",
-						Namespace: "default",
+					for _, lvg := range lvgList.Items {
+						if lvg.Spec.Accessibility.Nodes[0] == "k8s-master" {
+
+							exlvgm := &lsv1.LocalVolumeGroupMigrate{
+								ObjectMeta: metav1.ObjectMeta{
+									Name:      "localvolumegroupmigrate-1",
+									Namespace: "hwameistor",
+								},
+								Spec: lsv1.LocalVolumeGroupMigrateSpec{
+									TargetNodesNames:     []string{"k8s-node1"},
+									SourceNodesNames:     []string{"k8s-master"},
+									LocalVolumeGroupName: lvg.Name,
+								},
+							}
+
+							err = client.Create(ctx, exlvgm)
+							if err != nil {
+								logrus.Printf("Create lvgm failed ：%+v ", err)
+								f.ExpectNoError(err)
+							}
+							logrus.Printf("wait 3 minutes for lvr")
+							time.Sleep(3 * time.Minute)
+							break
+
+						}
 					}
-					err = client.Get(ctx, pvcKey, pvc)
-					if err != nil {
-						logrus.Printf("Failed to find pvc ：%+v ", err)
-						f.ExpectNoError(err)
-					}
-					exlvmi := &lsv1.LocalVolumeMigrate{
-						TypeMeta: metav1.TypeMeta{},
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "localvolumemigrate-1",
-						},
-						Spec: lsv1.LocalVolumeMigrateSpec{
-							NodeName:   "k8s-master",
-							VolumeName: pvc.Spec.VolumeName,
-						},
-						Status: lsv1.LocalVolumeMigrateStatus{},
-					}
-					err = client.Create(ctx, exlvmi)
-					if err != nil {
-						logrus.Printf("Create lvmi failed ：%+v ", err)
-						f.ExpectNoError(err)
-					}
-					logrus.Printf("wait 3 minutes for lvr")
-					time.Sleep(2 * time.Minute)
-					break
+
 				}
 			}
 
