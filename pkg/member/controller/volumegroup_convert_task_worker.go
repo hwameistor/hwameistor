@@ -74,6 +74,8 @@ func (m *manager) processVolumeGroupConvert(name string) error {
 		return m.VolumeGroupConvertAbort(convert)
 	case apisv1alpha1.OperationStateAborted:
 		return m.VolumeGroupConvertCleanup(convert)
+	case apisv1alpha1.OperationStateFailed:
+		return m.VolumeGroupConvertFailed(convert)
 	default:
 		logCtx.Error("Invalid state")
 	}
@@ -119,6 +121,8 @@ func (m *manager) VolumeGroupConvertSubmit(convert *apisv1alpha1.LocalVolumeGrou
 						logCtx.WithField("volume", vol.Spec).Error("Can't convert the inconvertible volume")
 						msg := fmt.Sprintf("Inconvertible volume: %s", vol.Name)
 						convert.Status.Message = msg
+						convert.Status.State = apisv1alpha1.OperationStateFailed
+						break
 					} else if vol.Spec.ReplicaNumber == 1 && convert.Spec.ReplicaNumber == 2 {
 						// currently, only support convertible non-HA volume to HA convertion
 						convert.Status.State = apisv1alpha1.OperationStateSubmitted
@@ -169,9 +173,9 @@ func (m *manager) VolumeGroupConvertStart(convert *apisv1alpha1.LocalVolumeGroup
 						m.apiClient.Status().Update(ctx, convert)
 					}
 
-					if vol.Spec.ReplicaNumber == 1 && !vol.Spec.Convertible {
-						continue
-					}
+					//if vol.Spec.ReplicaNumber == 1 && !vol.Spec.Convertible {
+					//	continue
+					//}
 
 					vol.Spec.ReplicaNumber = convert.Spec.ReplicaNumber
 					if err := m.apiClient.Update(ctx, &vol); err != nil {
@@ -264,4 +268,12 @@ func (m *manager) VolumeGroupConvertCleanup(convert *apisv1alpha1.LocalVolumeGro
 	logCtx.Debug("Cleanup a VolumeGroupConvert")
 
 	return m.apiClient.Delete(context.TODO(), convert)
+}
+
+func (m *manager) VolumeGroupConvertFailed(convert *apisv1alpha1.LocalVolumeGroupConvert) error {
+	logCtx := m.logger.WithFields(log.Fields{"convert": convert.Name, "spec": convert.Spec, "status": convert.Status})
+	logCtx.Debug("Failed a VolumeGroupConvert")
+
+	convert.Status.State = apisv1alpha1.OperationStateFailed
+	return m.apiClient.Status().Update(context.TODO(), convert)
 }

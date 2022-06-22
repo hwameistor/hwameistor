@@ -39,6 +39,7 @@ const (
 	OperationStateToBeAborted State = "ToBeAborted"
 	OperationStateAborting    State = "Cancelled"
 	OperationStateAborted     State = "Aborted"
+	OperationStateFailed      State = "Failed"
 
 	DiskStateAvailable State = "Available"
 	DiskStateInUse     State = "InUse"
