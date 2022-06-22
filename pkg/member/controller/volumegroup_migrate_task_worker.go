@@ -8,6 +8,7 @@ import (
 	"github.com/wxnacy/wgo/arrays"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"strings"
 )
 
 const (
@@ -38,12 +39,19 @@ func (m *manager) startVolumeGroupMigrateTaskWorker(stopCh <-chan struct{}) {
 	m.volumeGroupMigrateTaskQueue.Shutdown()
 }
 
-func (m *manager) processVolumeGroupMigrate(name string) error {
-	logCtx := m.logger.WithFields(log.Fields{"VolumeGroupMigrate": name})
+func (m *manager) processVolumeGroupMigrate(vgmNamespacedName string) error {
+	logCtx := m.logger.WithFields(log.Fields{"VolumeGroupMigrate": vgmNamespacedName})
 	logCtx.Debug("Working on a VolumeGroupMigrate task")
 
+	splitRes := strings.Split(vgmNamespacedName, "/")
+	var ns, vgmName string
+	if len(splitRes) >= 2 {
+		ns = splitRes[0]
+		vgmName = splitRes[1]
+	}
+
 	migrate := &apisv1alpha1.LocalVolumeGroupMigrate{}
-	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: m.namespace, Name: name}, migrate); err != nil {
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: ns, Name: vgmName}, migrate); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get VolumeGroupMigrate from cache")
 			return err
@@ -330,22 +338,22 @@ func (m *manager) VolumeGroupMigrateInProgress(migrate *apisv1alpha1.LocalVolume
 						return fmt.Errorf("VolumeGroupMigrateInProgress: not cleanup")
 					}
 
-					for _, nodeName := range migrate.Spec.TargetNodesNames {
-						if arrays.ContainsString(lvg.Spec.Accessibility.Nodes, nodeName) == -1 {
-							lvg.Spec.Accessibility.Nodes = migrate.Spec.TargetNodesNames
-							break
-						}
-					}
-					if err := m.apiClient.Update(context.TODO(), lvg); err != nil {
-						log.WithError(err).Error("VolumeGroupMigrateInProgress Reconcile : Failed to re-configure Volume")
-						return err
-					}
-
 					migrate.Status.State = apisv1alpha1.OperationStateCompleted
 					m.apiClient.Status().Update(ctx, migrate)
 				}
 			}
 		}
+	}
+
+	for _, nodeName := range migrate.Spec.TargetNodesNames {
+		if arrays.ContainsString(lvg.Spec.Accessibility.Nodes, nodeName) == -1 {
+			lvg.Spec.Accessibility.Nodes = append(lvg.Spec.Accessibility.Nodes, nodeName)
+		}
+	}
+
+	if err := m.apiClient.Update(context.TODO(), lvg); err != nil {
+		log.WithError(err).Error("VolumeGroupMigrateInProgress Reconcile : Failed to re-configure Volume")
+		return err
 	}
 
 	return nil

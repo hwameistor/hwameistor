@@ -105,6 +105,9 @@ func (r *ReconcileLocalVolumeGroupMigrate) Reconcile(request reconcile.Request) 
 	}
 
 	for _, tmpvol := range lvg.Spec.Volumes {
+		if tmpvol.LocalVolumeName == "" {
+			continue
+		}
 		vol := &apisv1alpha1.LocalVolume{}
 		if err := r.client.Get(context.TODO(), types.NamespacedName{Name: tmpvol.LocalVolumeName}, vol); err != nil {
 			if !errors.IsNotFound(err) {
@@ -117,6 +120,7 @@ func (r *ReconcileLocalVolumeGroupMigrate) Reconcile(request reconcile.Request) 
 				vol.Spec.Accessibility.Nodes = append(vol.Spec.Accessibility.Nodes, nodeName)
 			}
 		}
+		log.Debugf("ReconcileLocalVolumeGroupMigrate Reconcile vol = %v", vol)
 		if err := r.client.Update(context.TODO(), vol); err != nil {
 			log.WithError(err).Error("ReconcileLocalVolumeGroupMigrate Reconcile : Failed to re-configure Volume")
 			return reconcile.Result{}, err

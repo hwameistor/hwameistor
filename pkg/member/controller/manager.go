@@ -55,6 +55,8 @@ type manager struct {
 
 	volumeConvertTaskQueue *common.TaskQueue
 
+	volumeGroupConvertTaskQueue *common.TaskQueue
+
 	localNodes map[string]apisv1alpha1.State // nodeName -> status
 
 	logger *log.Entry
@@ -80,6 +82,7 @@ func New(name string, namespace string, cli client.Client, scheme *runtime.Schem
 		volumeMigrateTaskQueue:      common.NewTaskQueue("VolumeMigrateTask", maxRetries),
 		volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 		volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
+		volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
 		localNodes:                  map[string]apisv1alpha1.State{},
 		logger:                      log.WithField("Module", "ControllerManager"),
 	}, nil
@@ -108,6 +111,7 @@ func (m *manager) start(stopCh <-chan struct{}) {
 		go m.startVolumeMigrateTaskWorker(stopCh)
 		go m.startVolumeGroupMigrateTaskWorker(stopCh)
 		go m.startVolumeConvertTaskWorker(stopCh)
+		go m.startVolumeGroupConvertTaskWorker(stopCh)
 
 		go m.startK8sNodeTaskWorker(stopCh)
 
@@ -198,12 +202,17 @@ func (m *manager) ReconcileVolumeMigrate(migrate *apisv1alpha1.LocalVolumeMigrat
 
 // ReconcileVolumeGroupMigrate reconciles VolumeGroupMigrate CRD for any localvolumegroup resource change
 func (m *manager) ReconcileVolumeGroupMigrate(lvgmigrate *apisv1alpha1.LocalVolumeGroupMigrate) {
-	m.volumeGroupMigrateTaskQueue.Add(lvgmigrate.Name)
+	m.volumeGroupMigrateTaskQueue.Add(lvgmigrate.Namespace + "/" + lvgmigrate.Name)
 }
 
 // ReconcileVolumeConvert reconciles VolumeConvert CRD for any volume resource change
 func (m *manager) ReconcileVolumeConvert(convert *apisv1alpha1.LocalVolumeConvert) {
 	m.volumeConvertTaskQueue.Add(convert.Name)
+}
+
+// ReconcileVolumeGroupConvert reconciles VolumeGroupConvert CRD for any volumegroup resource change
+func (m *manager) ReconcileVolumeGroupConvert(lvgconvert *apisv1alpha1.LocalVolumeGroupConvert) {
+	m.volumeGroupConvertTaskQueue.Add(lvgconvert.Name)
 }
 
 func (m *manager) handleK8sNodeUpdatedEvent(oldObj, newObj interface{}) {

@@ -518,9 +518,9 @@ func (m *manager) addLocalVolume(lv *apisv1alpha1.LocalVolume) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	lvg, err := m.GetLocalVolumeGroupByName(m.nameSpace, lv.Spec.VolumeGroup)
+	lvg, err := m.GetLocalVolumeGroupByName(lv.Spec.PersistentVolumeClaimNamespace, lv.Spec.VolumeGroup)
 	if err != nil {
-		m.logger.WithFields(log.Fields{"namespace": m.nameSpace}).WithError(err).Error("addLocalVolume GetLocalVolumeGroupByName err")
+		m.logger.WithFields(log.Fields{"namespace": lv.Spec.PersistentVolumeClaimNamespace}).WithError(err).Error("addLocalVolume GetLocalVolumeGroupByName err")
 		return err
 	}
 
@@ -546,12 +546,19 @@ func (m *manager) addLocalVolume(lv *apisv1alpha1.LocalVolume) error {
 
 func (m *manager) deleteLocalVolume(lvName string) error {
 	defer m.debug()
-
+	vol := &apisv1alpha1.LocalVolume{}
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: lvName}, vol); err != nil {
+		if !errors.IsNotFound(err) {
+			m.logger.WithFields(log.Fields{"volName": lvName, "error": err.Error()}).Error("Failed to query volume")
+			return err
+		}
+	}
 	lvgName, exists := m.localVolumeToVolumeGroups[lvName]
 	if !exists {
 		return nil
 	}
-	lvg, err := m.GetLocalVolumeGroupByName(m.nameSpace, lvgName)
+
+	lvg, err := m.GetLocalVolumeGroupByName(vol.Spec.PersistentVolumeClaimName, lvgName)
 	if err != nil {
 		return err
 	}
