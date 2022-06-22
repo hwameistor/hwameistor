@@ -123,8 +123,6 @@ func (r *resources) predicate(vol *apisv1alpha1.LocalVolume, nodeName string) er
 	fmt.Printf("predicate totalPool = %+v, allocatedPool = %+v", totalPool, allocatedPool)
 
 	if strings.Contains(strings.Join(vol.Spec.Accessibility.Nodes, ","), nodeName) {
-		logCtx.Debug("predicate vol.Spec.RequiredCapacityBytes = %v, totalPool.capacities[nodeName] = %v"+
-			", allocatedPool.capacities[vol.Spec.Accessibility.Node] = %v", vol.Spec.RequiredCapacityBytes, totalPool.capacities[nodeName], allocatedPool.capacities[nodeName])
 		if vol.Spec.RequiredCapacityBytes > totalPool.capacities[nodeName]-allocatedPool.capacities[nodeName] {
 			logCtx.Error("No enough storage capacity on accessibility node")
 			return fmt.Errorf("no enough storage capacity on accessibility node")
