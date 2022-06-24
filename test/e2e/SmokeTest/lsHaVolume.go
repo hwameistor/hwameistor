@@ -336,17 +336,22 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 
 			lvrList := &lsv1.LocalVolumeReplicaList{}
 			err := client.List(ctx, lvrList)
+			if err != nil {
+				logrus.Printf("list lvr failed ：%+v ", err)
+			}
 			lvgList := &lsv1.LocalVolumeGroupList{}
 			err = client.List(ctx, lvgList)
+			if err != nil {
+				logrus.Printf("list lvg failed ：%+v ", err)
+			}
 			for _, lvr := range lvrList.Items {
 				if lvr.Spec.NodeName == "k8s-master" {
 					for _, lvg := range lvgList.Items {
 						if lvg.Spec.Accessibility.Nodes[0] == "k8s-master" {
-
 							exlvgm := &lsv1.LocalVolumeGroupMigrate{
 								ObjectMeta: metav1.ObjectMeta{
 									Name:      "localvolumegroupmigrate-1",
-									Namespace: "hwameistor",
+									Namespace: "default",
 								},
 								Spec: lsv1.LocalVolumeGroupMigrateSpec{
 									TargetNodesNames:     []string{"k8s-node1"},
@@ -356,11 +361,12 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 							}
 
 							err = client.Create(ctx, exlvgm)
+							logrus.Infof("create lvgm")
 							if err != nil {
 								logrus.Printf("Create lvgm failed ：%+v ", err)
 								f.ExpectNoError(err)
 							}
-							logrus.Printf("wait 3 minutes for lvr")
+							logrus.Infof("wait 3 minutes for migrate lvr")
 							time.Sleep(3 * time.Minute)
 							break
 
