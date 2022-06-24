@@ -3,6 +3,7 @@ package SmokeTest
 import (
 	"context"
 	"github.com/hwameistor/local-disk-manager/pkg/apis"
+	lsv1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/local-storage/test/e2e/framework"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -208,6 +209,24 @@ var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("pr"), ginkgo.
 
 	})
 	ginkgo.Context("Test the volume", func() {
+		ginkgo.It("check lvg", func() {
+			lvrList := &lsv1.LocalVolumeReplicaList{}
+			err := client.List(ctx, lvrList)
+			if err != nil {
+				logrus.Printf("list lvr failed ：%+v ", err)
+			}
+			lvgList := &lsv1.LocalVolumeGroupList{}
+			err = client.List(ctx, lvgList)
+			if err != nil {
+				logrus.Printf("list lvg failed ：%+v ", err)
+			}
+			for _, lvr := range lvrList.Items {
+				for _, lvg := range lvgList.Items {
+					gomega.Expect(lvr.Spec.NodeName).To(gomega.Equal(lvg.Spec.Accessibility.Nodes[0]))
+				}
+			}
+
+		})
 		ginkgo.It("write test data", func() {
 
 			config, err := config.GetConfig()
