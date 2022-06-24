@@ -202,7 +202,7 @@ func (m *manager) ReconcileVolumeMigrate(migrate *apisv1alpha1.LocalVolumeMigrat
 
 // ReconcileVolumeGroupMigrate reconciles VolumeGroupMigrate CRD for any localvolumegroup resource change
 func (m *manager) ReconcileVolumeGroupMigrate(lvgmigrate *apisv1alpha1.LocalVolumeGroupMigrate) {
-	m.volumeGroupMigrateTaskQueue.Add(lvgmigrate.Name)
+	m.volumeGroupMigrateTaskQueue.Add(lvgmigrate.Namespace + "/" + lvgmigrate.Name)
 }
 
 // ReconcileVolumeConvert reconciles VolumeConvert CRD for any volume resource change

@@ -36,6 +36,8 @@ func (lm *LocalManager) Register() error {
 
 	lm.volumeReplicaManager.ConsistencyCheck()
 
+	lm.registry.Init()
+
 	return nil
 }
 

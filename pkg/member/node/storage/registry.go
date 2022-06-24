@@ -51,13 +51,13 @@ func (lr *localRegistry) resetPools() {
 	lr.pools = make(map[string]*apisv1alpha1.LocalPool)
 }
 
-// func (lr *localRegistry) resetReplicas() {
-// 	lr.replicas = make(map[string]*apisv1alpha1.LocalVolumeReplica)
-// }
+func (lr *localRegistry) resetReplicas() {
+	lr.replicas = make(map[string]*apisv1alpha1.LocalVolumeReplica)
+}
 
 func (lr *localRegistry) Init() {
 
-	//lr.discoverResources()
+	lr.rebuildRegistryReplicas()
 }
 
 func (lr *localRegistry) SyncResourcesToNodeCRD(localDisks map[string]*apisv1alpha1.LocalDisk) error {
@@ -204,23 +204,23 @@ func (lr *localRegistry) rebuildRegistryDisks() error {
 	return nil
 }
 
-// func (lr *localRegistry) rebuildRegistryReplicas() error {
-// 	lr.logger.Debug("rebuildRegistryReplicas start")
+func (lr *localRegistry) rebuildRegistryReplicas() error {
+	lr.logger.Debug("rebuildRegistryReplicas start")
 
-// 	replicas, err := lr.lm.PoolManager().GetReplicas()
-// 	if err != nil {
-// 		lr.logger.WithError(err).Fatal("Failed to ConstructReplicas")
-// 		return err
-// 	}
-// 	if len(lr.replicas) == 0 {
-// 		lr.resetReplicas()
-// 	}
-// 	if len(lr.replicas) > 0 {
-// 		lr.replicas = replicas
-// 	}
+	replicas, err := lr.lm.PoolManager().GetReplicas()
+	if err != nil {
+		lr.logger.WithError(err).Fatal("Failed to ConstructReplicas")
+		return err
+	}
+	if len(lr.replicas) == 0 {
+		lr.resetReplicas()
+	}
+	if len(lr.replicas) > 0 {
+		lr.replicas = replicas
+	}
 
-// 	return nil
-// }
+	return nil
+}
 
 func (lr *localRegistry) Disks() map[string]*apisv1alpha1.LocalDisk {
 	return lr.disks
