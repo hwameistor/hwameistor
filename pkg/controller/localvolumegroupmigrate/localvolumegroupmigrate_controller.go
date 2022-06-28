@@ -122,7 +122,7 @@ func (r *ReconcileLocalVolumeGroupMigrate) Reconcile(request reconcile.Request) 
 		}
 		log.Debugf("ReconcileLocalVolumeGroupMigrate Reconcile vol = %v", vol)
 		if err := r.client.Update(context.TODO(), vol); err != nil {
-			log.WithError(err).Error("ReconcileLocalVolumeGroupMigrate Reconcile : Failed to re-configure Volume")
+			log.WithError(err).Errorf("ReconcileLocalVolumeGroupMigrate Reconcile : Failed to re-configure Volume, vol.Name = %v, tmpvol.LocalVolumeName = %v", vol.Name, tmpvol.LocalVolumeName)
 			return reconcile.Result{}, err
 		}
 	}

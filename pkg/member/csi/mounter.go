@@ -12,6 +12,7 @@ import (
 	"k8s.io/utils/mount"
 )
 
+//go:generate mockgen -source=mounter.go -destination=../../member/csi/mounter_mock.go  -package=csi
 // Mounter interface
 type Mounter interface {
 	MountRawBlock(devPath string, mountpoint string) error

@@ -2,19 +2,14 @@ package utils
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 	"unicode"
 
 	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
-	"github.com/hwameistor/local-storage/pkg/exechelper"
-
 	"github.com/kubernetes-csi/csi-lib-utils/leaderelection"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -59,31 +54,6 @@ func LogGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, h
 		return resp, err
 	*/
 	return handler(ctx, req)
-}
-
-// LogREST log rest api call info
-func LogREST(inner http.Handler, name string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		inner.ServeHTTP(w, r)
-
-		log.Infof(
-			"%s  %s  %s  %s",
-			r.Method,
-			r.RequestURI,
-			name,
-			time.Since(start),
-		)
-	})
-}
-
-// PrettyPrintJSON for debug
-func PrettyPrintJSON(v interface{}) {
-	prettyJSON, err := json.MarshalIndent(v, "", "    ")
-	if err != nil {
-		fmt.Printf("Failed to generate json: %s\n", err.Error())
-	}
-	fmt.Printf("%s\n", string(prettyJSON))
 }
 
 // BuildInClusterClientset builds a kubernetes in-cluster clientset
@@ -209,50 +179,6 @@ type PCIDiskInfo struct {
 // IsNVMe check if it's a nvme or not
 func (d *PCIDiskInfo) IsNVMe() bool {
 	return d.isNVMe
-}
-
-// GetPCIDisks gets pci disks info on the local node
-func GetPCIDisks(cmdExec exechelper.Executor) (map[string]*PCIDiskInfo, error) {
-	pciDisks := make(map[string]*PCIDiskInfo)
-
-	params := exechelper.ExecParams{
-		CmdName: "ls",
-		CmdArgs: []string{"-Al", devDiskByPathDir},
-	}
-	res := cmdExec.RunCommand(params)
-	if res.ExitCode != 0 {
-		return pciDisks, res.Error
-	}
-
-	for _, line := range strings.Split(res.OutBuf.String(), "\n") {
-		items := regexp.MustCompile(" +").Split(strings.TrimPrefix(line, " "), -1)
-		if len(items) < 9 {
-			continue
-		}
-		pciName := strings.TrimSpace(items[8])
-		if strings.HasPrefix(pciName, prefixPCIDevice) {
-			var isNVMe bool
-			if strings.Index(pciName, pciNVMePlaceholder) > 0 {
-				isNVMe = true
-			}
-			devicePath := strings.Trim(items[len(items)-1], " ")
-			diskNamePos := strings.LastIndex(devicePath, string(os.PathSeparator))
-			if diskNamePos >= 0 {
-				devicePath = devicePath[diskNamePos+1:]
-			}
-			rightIndex := len(devicePath)
-			diskName := strings.TrimSpace(devicePath[:rightIndex])
-			if len(diskName) > 0 {
-				pciDisks[diskName] = &PCIDiskInfo{
-					pciName:  pciName,
-					diskName: diskName,
-					isNVMe:   isNVMe,
-				}
-			}
-		}
-	}
-
-	return pciDisks, nil
 }
 
 // SanitizeName sanitizes the provided string so it can be consumed by leader election library

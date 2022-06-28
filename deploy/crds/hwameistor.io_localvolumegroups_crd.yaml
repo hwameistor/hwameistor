@@ -18,10 +18,6 @@ spec:
       jsonPath: .spec.pods
       name: pod
       type: string
-    - description: Namespace of associated pod
-      jsonPath: .spec.namespace
-      name: namespace
-      type: string
     - jsonPath: .metadata.creationTimestamp
       name: age
       type: date

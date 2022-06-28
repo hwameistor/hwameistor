@@ -10,6 +10,7 @@ import (
 
 	localapis "github.com/hwameistor/local-storage/pkg/apis"
 	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
+	memmock "github.com/hwameistor/local-storage/pkg/member/controller"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -64,7 +65,7 @@ func Test_localStorageMember_ConfigureBase(t *testing.T) {
 	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
-	m := NewMockLocalStorageMember(ctrl)
+	m := memmock.NewMockLocalStorageMember(ctrl)
 	m.
 		EXPECT().
 		ConfigureBase(name, namespace, systemConfig, cli, informersCache).
@@ -83,7 +84,7 @@ func Test_localStorageMember_ConfigureNode(t *testing.T) {
 	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
-	m := NewMockLocalStorageMember(ctrl)
+	m := memmock.NewMockLocalStorageMember(ctrl)
 	m.
 		EXPECT().
 		ConfigureNode().
@@ -103,7 +104,7 @@ func Test_localStorageMember_ConfigureController(t *testing.T) {
 	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
-	m := NewMockLocalStorageMember(ctrl)
+	m := memmock.NewMockLocalStorageMember(ctrl)
 	m.
 		EXPECT().
 		ConfigureController(scheme).
@@ -124,7 +125,7 @@ func Test_localStorageMember_ConfigureCSIDriver(t *testing.T) {
 	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
-	m := NewMockLocalStorageMember(ctrl)
+	m := memmock.NewMockLocalStorageMember(ctrl)
 	m.
 		EXPECT().
 		ConfigureCSIDriver(driverName, sockAddr).
@@ -145,7 +146,7 @@ func Test_localStorageMember_ConfigureRESTServer(t *testing.T) {
 	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
-	m := NewMockLocalStorageMember(ctrl)
+	m := memmock.NewMockLocalStorageMember(ctrl)
 	m.
 		EXPECT().
 		ConfigureRESTServer(httpPort).
@@ -165,7 +166,7 @@ func Test_localStorageMember_Run(t *testing.T) {
 	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
-	m := NewMockLocalStorageMember(ctrl)
+	m := memmock.NewMockLocalStorageMember(ctrl)
 	m.
 		EXPECT().
 		Run(stopCh).
@@ -175,4 +176,104 @@ func Test_localStorageMember_Run(t *testing.T) {
 	m.Run(stopCh)
 
 	fmt.Printf("Test_localStorageMember_Run ends")
+}
+
+func Test_localStorageMember_Controller(t *testing.T) {
+	var cm localapis.ControllerManager
+	// 创建gomock控制器，用来记录后续的操作信息
+	ctrl := gomock.NewController(t)
+	// 断言期望的方法都被执行
+	// Go1.14+的单测中不再需要手动调用该方法
+	defer ctrl.Finish()
+
+	m := memmock.NewMockLocalStorageMember(ctrl)
+	m.
+		EXPECT().
+		Controller().
+		Return(cm).
+		Times(1)
+
+	cm = m.Controller()
+
+	fmt.Printf("Test_localStorageMember_Controller cm = %v", cm)
+}
+
+func Test_localStorageMember_Node(t *testing.T) {
+	var nm localapis.NodeManager
+	// 创建gomock控制器，用来记录后续的操作信息
+	ctrl := gomock.NewController(t)
+	// 断言期望的方法都被执行
+	// Go1.14+的单测中不再需要手动调用该方法
+	defer ctrl.Finish()
+
+	m := memmock.NewMockLocalStorageMember(ctrl)
+	m.
+		EXPECT().
+		Node().
+		Return(nm).
+		Times(1)
+
+	nm = m.Node()
+
+	fmt.Printf("Test_localStorageMember_Node cm = %v", nm)
+}
+
+func Test_localStorageMember_Name(t *testing.T) {
+	var str string
+	// 创建gomock控制器，用来记录后续的操作信息
+	ctrl := gomock.NewController(t)
+	// 断言期望的方法都被执行
+	// Go1.14+的单测中不再需要手动调用该方法
+	defer ctrl.Finish()
+
+	m := memmock.NewMockLocalStorageMember(ctrl)
+	m.
+		EXPECT().
+		Name().
+		Return(str).
+		Times(1)
+
+	str = m.Name()
+
+	fmt.Printf("Test_localStorageMember_Name str = %v", str)
+}
+
+func Test_localStorageMember_Version(t *testing.T) {
+	var version string
+	// 创建gomock控制器，用来记录后续的操作信息
+	ctrl := gomock.NewController(t)
+	// 断言期望的方法都被执行
+	// Go1.14+的单测中不再需要手动调用该方法
+	defer ctrl.Finish()
+
+	m := memmock.NewMockLocalStorageMember(ctrl)
+	m.
+		EXPECT().
+		Version().
+		Return(version).
+		Times(1)
+
+	version = m.Version()
+
+	fmt.Printf("Test_localStorageMember_Version version = %v", version)
+}
+
+func Test_localStorageMember_DriverName(t *testing.T) {
+	var driverName string
+	// 创建gomock控制器，用来记录后续的操作信息
+	ctrl := gomock.NewController(t)
+	// 断言期望的方法都被执行
+	// Go1.14+的单测中不再需要手动调用该方法
+	defer ctrl.Finish()
+
+	m := memmock.NewMockLocalStorageMember(ctrl)
+	m.
+		EXPECT().
+		DriverName().
+		Return(driverName).
+		Times(1)
+
+	driverName = m.DriverName()
+
+	fmt.Printf("Test_localStorageMember_DriverName driverName = %v", driverName)
 }
