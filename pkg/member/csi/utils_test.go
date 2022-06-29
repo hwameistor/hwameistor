@@ -23,8 +23,8 @@ func Test_newControllerServiceCapability(t *testing.T) {
 		want *csi.ControllerServiceCapability
 	}{
 		{
-			args:  args{cap: csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT},
-			want:  wantCap,
+			args: args{cap: csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT},
+			want: wantCap,
 		},
 	}
 	for _, tt := range tests {
@@ -52,8 +52,8 @@ func Test_newNodeServiceCapability(t *testing.T) {
 		want *csi.NodeServiceCapability
 	}{
 		{
-			args:  args{cap: csi.NodeServiceCapability_RPC_STAGE_UNSTAGE_VOLUME},
-			want:  wantCap,
+			args: args{cap: csi.NodeServiceCapability_RPC_STAGE_UNSTAGE_VOLUME},
+			want: wantCap,
 		},
 	}
 	for _, tt := range tests {
@@ -81,8 +81,8 @@ func Test_newPluginCapability(t *testing.T) {
 		want *csi.PluginCapability
 	}{
 		{
-			args:  args{cap: csi.PluginCapability_Service_CONTROLLER_SERVICE},
-			want:  wantCap,
+			args: args{cap: csi.PluginCapability_Service_CONTROLLER_SERVICE},
+			want: wantCap,
 		},
 	}
 	for _, tt := range tests {
@@ -106,9 +106,9 @@ func Test_parseEndpoint(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			args:  args{ep: "unix://127.0.0.1:8080"},
-			want:  "unix",
-			want1: "127.0.0.1:8080",
+			args:    args{ep: "unix://127.0.0.1:8080"},
+			want:    "unix",
+			want1:   "127.0.0.1:8080",
 			wantErr: false,
 		},
 	}
@@ -140,8 +140,8 @@ func Test_pathExists(t *testing.T) {
 		wantErr bool
 	}{
 		{
-		    args:  args{path: "/data/test"},
-			want:  false,
+			args:    args{path: "/data/test"},
+			want:    false,
 			wantErr: false,
 		},
 	}
@@ -184,6 +184,35 @@ func Test_getVolumeMetrics(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getVolumeMetrics() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isStringInArray(t *testing.T) {
+	type args struct {
+		str  string
+		strs []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{str: "test1", strs: []string{"test1", "test2"}},
+			want: true,
+		},
+		{
+			args: args{str: "test3", strs: []string{"test1", "test2"}},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isStringInArray(tt.args.str, tt.args.strs); got != tt.want {
+				t.Errorf("isStringInArray() = %v, want %v", got, tt.want)
 			}
 		})
 	}

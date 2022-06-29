@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
+//go:generate mockgen -source=grpc_server.go -destination=../../member/csi/grpc_server_mock.go  -package=csi
 //Server - interface of grpc server which is for k8s communication
 type Server interface {
 	Init(endpoint string)

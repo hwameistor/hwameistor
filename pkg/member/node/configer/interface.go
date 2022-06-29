@@ -2,6 +2,7 @@ package configer
 
 import apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 
+//go:generate mockgen -source=interface.go -destination=../../../member/node/configer/drbd_mock.go  -package=configer
 type Configer interface {
 	Run(stopCh <-chan struct{})
 	// check if the config is updated with the new content

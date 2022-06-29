@@ -89,11 +89,18 @@ clean:
 	docker container prune -f
 	docker rmi -f $(shell docker images -f dangling=true -qa)
 
+#unit-test:
+#	go test -race -coverprofile=coverage.txt -covermode=atomic ./pkg/...
+#	curl -s https://codecov.io/bash | bash
+
 unit-test:
-	go test -race -coverprofile=coverage.txt -covermode=atomic ./pkg/...
-	curl -s https://codecov.io/bash | bash
+	bash test/unit-test.sh
 
 e2e-test:
 	make image
 	docker push ${IMAGE_NAME}:${IMAGE_TAG}
 	bash test/e2e-test.sh
+
+.PHONY: generate
+generate:
+	bash test/mock-generate.sh pkg

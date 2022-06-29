@@ -7,8 +7,8 @@ package configer
 import (
 	reflect "reflect"
 
-	apisv1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 	gomock "github.com/golang/mock/gomock"
+	v1alpha1 "github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1"
 )
 
 // MockConfiger is a mock of Configer interface.
@@ -35,7 +35,7 @@ func (m *MockConfiger) EXPECT() *MockConfigerMockRecorder {
 }
 
 // ApplyConfig mocks base method.
-func (m *MockConfiger) ApplyConfig(replica *apisv1alpha1.LocalVolumeReplica, config apisv1alpha1.VolumeConfig) error {
+func (m *MockConfiger) ApplyConfig(replica *v1alpha1.LocalVolumeReplica, config v1alpha1.VolumeConfig) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ApplyConfig", replica, config)
 	ret0, _ := ret[0].(error)
@@ -49,7 +49,7 @@ func (mr *MockConfigerMockRecorder) ApplyConfig(replica, config interface{}) *go
 }
 
 // ConsistencyCheck mocks base method.
-func (m *MockConfiger) ConsistencyCheck(replicas []apisv1alpha1.LocalVolumeReplica) {
+func (m *MockConfiger) ConsistencyCheck(replicas []v1alpha1.LocalVolumeReplica) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ConsistencyCheck", replicas)
 }
@@ -61,7 +61,7 @@ func (mr *MockConfigerMockRecorder) ConsistencyCheck(replicas interface{}) *gomo
 }
 
 // DeleteConfig mocks base method.
-func (m *MockConfiger) DeleteConfig(replica *apisv1alpha1.LocalVolumeReplica) error {
+func (m *MockConfiger) DeleteConfig(replica *v1alpha1.LocalVolumeReplica) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteConfig", replica)
 	ret0, _ := ret[0].(error)
@@ -75,10 +75,10 @@ func (mr *MockConfigerMockRecorder) DeleteConfig(replica interface{}) *gomock.Ca
 }
 
 // GetReplicaHAState mocks base method.
-func (m *MockConfiger) GetReplicaHAState(replica *apisv1alpha1.LocalVolumeReplica) (apisv1alpha1.HAState, error) {
+func (m *MockConfiger) GetReplicaHAState(replica *v1alpha1.LocalVolumeReplica) (v1alpha1.HAState, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetReplicaHAState", replica)
-	ret0, _ := ret[0].(apisv1alpha1.HAState)
+	ret0, _ := ret[0].(v1alpha1.HAState)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -90,7 +90,7 @@ func (mr *MockConfigerMockRecorder) GetReplicaHAState(replica interface{}) *gomo
 }
 
 // HasConfig mocks base method.
-func (m *MockConfiger) HasConfig(replica *apisv1alpha1.LocalVolumeReplica) bool {
+func (m *MockConfiger) HasConfig(replica *v1alpha1.LocalVolumeReplica) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "HasConfig", replica)
 	ret0, _ := ret[0].(bool)
@@ -104,7 +104,7 @@ func (mr *MockConfigerMockRecorder) HasConfig(replica interface{}) *gomock.Call 
 }
 
 // Initialize mocks base method.
-func (m *MockConfiger) Initialize(replica *apisv1alpha1.LocalVolumeReplica, config apisv1alpha1.VolumeConfig) error {
+func (m *MockConfiger) Initialize(replica *v1alpha1.LocalVolumeReplica, config v1alpha1.VolumeConfig) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Initialize", replica, config)
 	ret0, _ := ret[0].(error)
@@ -118,7 +118,7 @@ func (mr *MockConfigerMockRecorder) Initialize(replica, config interface{}) *gom
 }
 
 // IsConfigUpdated mocks base method.
-func (m *MockConfiger) IsConfigUpdated(replica *apisv1alpha1.LocalVolumeReplica, config apisv1alpha1.VolumeConfig) bool {
+func (m *MockConfiger) IsConfigUpdated(replica *v1alpha1.LocalVolumeReplica, config v1alpha1.VolumeConfig) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsConfigUpdated", replica, config)
 	ret0, _ := ret[0].(bool)

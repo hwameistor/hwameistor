@@ -1,53 +1,30 @@
-#!/usr/bin/env bash
-
-set -o errexit
-set -o nounset
-set -o pipefail
-
-#
-
-#https://www.dazhuanlan.com/erlv/topics/1058820
+#! /usr/bin/env bash
+# https://www.dazhuanlan.com/erlv/topics/1058820
 set -x
 
-#dir="("
-#for i in `ls ./pkg/ | grep -v scheduler`;
-#do
-#  dir="$dir /pkg/$i/"
-#  #echo "$dir"
-#done
-#
-#dir="$dir )"
+# prepare output directory
+COVERPKGS=( ./pkg/member/... ./pkg/controller/... ./pkg/utils/... )
+tmp=$(mktemp -d)
+merge="${tmp}/merge.out"
+[ -f ${merge} ] && rm -f ${merge}
 
-# ./pkg/...
+# go test for each package
+for (( i=0; i<${#COVERPKGS[@]}; i++)) do
+    ls $tmp
+    cov_file="${tmp}/$i.cover"
+    go test --race \
+		--v \
+		-covermode=atomic \
+		-coverpkg=${COVERPKGS[i]} \
+		-coverprofile=$cov_file \
+		${COVERPKGS[i]}
 
-PATH2TEST=( ./pkg/member/... ./pkg/controller/... ./pkg/common/... ./pkg/apis/... ./pkg/exechelper/... ./pkg/utils/... )
-
-tmpDir=$(mktemp -d)
-mergeF="${tmpDir}/merge.out"
-#rm -f ${mergeF}
-for (( i=0; i<${#PATH2TEST[@]}; i++)) do
-    ls $tmpDir
-    echo ${#PATH2TEST[@]}
-    cov_file="${tmpDir}/$i.cover"
-    echo ${PATH2TEST[i]}
-    go test --race --v  -covermode=atomic -coverpkg=${PATH2TEST[i]} -coverprofile=${cov_file}    ${PATH2TEST[i]}
-
-    if [[ `cat $cov_file | grep -v mode: | grep -v zz_generated` = "" ]]
-    then
-      continue
-    fi
-
-    cat $cov_file | grep -v mode: | grep -v zz_generated  >> ${mergeF}
-
-    #merge them
-    header=$(head -n1 "${tmpDir}/$i.cover")
-    echo "${header}" > coverage.out
-    cat ${mergeF} >> coverage.out
+	cat $cov_file | grep -v mode: | grep -v zz_generated  >> ${merge}
 done
 
-#merge them
-#header=$(head -n1 "${tmpDir}/0.cover")
-#echo "${header}" > coverage.out
-#cat ${mergeF} >> coverage.out
+# merge all *.cover
+header=$(head -n1 "${tmp}/0.cover")
+echo "${header}" > coverage.out
+cat ${merge} >> coverage.out
 go tool cover -func=coverage.out
-rm -rf coverage.out ${tmpDir}  ${mergeF}
+rm -rf coverage.out ${tmp}  ${merge}

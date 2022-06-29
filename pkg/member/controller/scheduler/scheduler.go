@@ -122,6 +122,7 @@ func unionSet(strs1 []*apisv1alpha1.LocalStorageNode, strs2 []*apisv1alpha1.Loca
 
 // Allocate schedule right nodes and generate volume config
 func (s *scheduler) Allocate(vol *apisv1alpha1.LocalVolume) (*apisv1alpha1.VolumeConfig, error) {
+	//logCtx := s.logger.WithFields(log.Fields{"volume": vol.Name, "spec": vol.Spec})
 	logCtx := s.logger.WithFields(log.Fields{"volume": vol.Name, "spec": vol.Spec})
 	logCtx.Debug("Allocating resources for LocalVolume")
 

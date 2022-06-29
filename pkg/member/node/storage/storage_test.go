@@ -121,7 +121,7 @@ func Test_localVolumeReplicaManager_ConsistencyCheck(t *testing.T) {
 	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
 	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
+	// Go1.14+的单测中不再需要手动调用该方法åå
 	defer ctrl.Finish()
 	m := NewMockLocalVolumeReplicaManager(ctrl)
 	m.

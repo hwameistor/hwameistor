@@ -49,10 +49,6 @@ func Test_localRegistry_HasVolumeReplica(t *testing.T) {
 	fmt.Printf("Test_localRegistry_HasVolumeReplica result v= %+v", v)
 }
 
-func Test_localRegistry_Init(t *testing.T) {
-
-}
-
 func Test_localRegistry_Pools(t *testing.T) {
 	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
@@ -157,4 +153,20 @@ func Test_newLocalRegistry(t *testing.T) {
 	//		}
 	//	})
 	//}
+}
+
+func Test_localRegistry_Init(t *testing.T) {
+	// 创建gomock控制器，用来记录后续的操作信息
+	ctrl := gomock.NewController(t)
+	// 断言期望的方法都被执行
+	// Go1.14+的单测中不再需要手动调用该方法
+	defer ctrl.Finish()
+	m := NewMockLocalRegistry(ctrl)
+	m.
+		EXPECT().
+		Init().
+		Return().
+		Times(1)
+
+	m.Init()
 }

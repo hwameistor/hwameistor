@@ -16,6 +16,7 @@ const (
 	driverVersion = "1.0"
 )
 
+//go:generate mockgen -source=plugin.go -destination=../../member/csi/plugin_mock.go  -package=csi
 // Driver interface
 type Driver interface {
 	Run(stopCh <-chan struct{})
