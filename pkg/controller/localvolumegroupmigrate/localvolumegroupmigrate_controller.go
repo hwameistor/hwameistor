@@ -111,7 +111,7 @@ func (r *ReconcileLocalVolumeGroupMigrate) Reconcile(request reconcile.Request) 
 		vol := &apisv1alpha1.LocalVolume{}
 		if err := r.client.Get(context.TODO(), types.NamespacedName{Name: tmpvol.LocalVolumeName}, vol); err != nil {
 			if !errors.IsNotFound(err) {
-				//log.WithFields(log.Fields{"volName": tmpvol.LocalVolumeName, "error": err.Error()}).Error("Failed to query volume")
+				log.WithFields(log.Fields{"volName": tmpvol.LocalVolumeName, "error": err.Error()}).Error("Failed to query volume")
 				return reconcile.Result{}, err
 			}
 		}
@@ -122,7 +122,7 @@ func (r *ReconcileLocalVolumeGroupMigrate) Reconcile(request reconcile.Request) 
 		}
 		log.Debugf("ReconcileLocalVolumeGroupMigrate Reconcile vol = %v", vol)
 		if err := r.client.Update(context.TODO(), vol); err != nil {
-			//log.WithError(err).Errorf("ReconcileLocalVolumeGroupMigrate Reconcile : Failed to re-configure Volume, vol.Name = %v, tmpvol.LocalVolumeName = %v", vol.Name, tmpvol.LocalVolumeName)
+			log.WithError(err).Errorf("ReconcileLocalVolumeGroupMigrate Reconcile : Failed to re-configure Volume, vol.Name = %v, tmpvol.LocalVolumeName = %v", vol.Name, tmpvol.LocalVolumeName)
 			return reconcile.Result{}, err
 		}
 	}

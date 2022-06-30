@@ -30,6 +30,7 @@ var (
 	fakeRegion                     = "region-test"
 	fakeVgType                     = "LocalStorage_PoolHDD"
 	fakeVgName                     = "vg-test"
+	fakeVolName                    = "vol-test"
 	fakePoolClass                  = "HDD"
 	fakePoolType                   = "REGULAR"
 	LocalStorageNodeKind           = "LocalStorageNode"
@@ -94,6 +95,10 @@ func Test_resources_Score(t *testing.T) {
 		vol      *apisv1alpha1.LocalVolume
 		nodeName string
 	}
+
+	var vol = &apisv1alpha1.LocalVolume{}
+	vol.Name = fakeVolName
+
 	tests := []struct {
 		name      string
 		fields    fields
@@ -102,6 +107,10 @@ func Test_resources_Score(t *testing.T) {
 		wantErr   bool
 	}{
 		// TODO: Add test cases.
+		{
+			args:    args{vol: vol, nodeName: fakeNodename},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -143,12 +152,18 @@ func Test_resources_addAllocatedStorage(t *testing.T) {
 	type args struct {
 		vol *apisv1alpha1.LocalVolume
 	}
+	var vol = &apisv1alpha1.LocalVolume{}
+	vol.Name = fakeVolName
+
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
 	}{
 		// TODO: Add test cases.
+		{
+			args: args{vol: vol},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -231,6 +246,11 @@ func Test_resources_allocateResourceID(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		{
+			args:    args{volName: fakeVolName},
+			wantErr: true,
+			want:    -1,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -312,6 +332,10 @@ func Test_resources_getNodeCandidates(t *testing.T) {
 	type args struct {
 		vol *apisv1alpha1.LocalVolume
 	}
+
+	var vol = &apisv1alpha1.LocalVolume{}
+	vol.Name = fakeVolName
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -320,6 +344,10 @@ func Test_resources_getNodeCandidates(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		//{
+		//	args:    args{vol: vol},
+		//	wantErr: true,
+		//},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -693,7 +721,7 @@ func Test_resources_predicate(t *testing.T) {
 		logger               *log.Entry
 	}
 	var vol = &apisv1alpha1.LocalVolume{}
-	vol.Name = "test_vol1"
+	vol.Name = fakeVolName
 	nodeName := "test_node_name1"
 	nodeName2 := "test"
 
@@ -911,7 +939,7 @@ func Test_resources_score(t *testing.T) {
 		nodeName string
 	}
 	var vol = &apisv1alpha1.LocalVolume{}
-	vol.Name = "test_vol1"
+	vol.Name = fakeVolName
 	nodeName := "test_node_name1"
 	nodeName2 := "test"
 
