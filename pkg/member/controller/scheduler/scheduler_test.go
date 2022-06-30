@@ -176,13 +176,13 @@ func Test_appendLocalVolume(t *testing.T) {
 	bigLv2.Name = "bigLv2"
 	bigLv2.Spec.RequiredCapacityBytes = 1240
 
-	//var lv2 = &apisv1alpha1.LocalVolume{}
-	//lv2.Name = "lv2"
-	//lv2.Spec.RequiredCapacityBytes = 1240
-	//
-	//var bigLv22 = &apisv1alpha1.LocalVolume{}
-	//bigLv22 = bigLv2.DeepCopy()
-	//bigLv2.Spec.RequiredCapacityBytes = 2480
+	var lv2 = &apisv1alpha1.LocalVolume{}
+	lv2.Name = "lv2"
+	lv2.Spec.RequiredCapacityBytes = 1240
+
+	var bigLv22 = &apisv1alpha1.LocalVolume{}
+	bigLv22 = bigLv2.DeepCopy()
+	bigLv22.Spec.RequiredCapacityBytes = 2480
 
 	tests := []struct {
 		name string
@@ -198,10 +198,10 @@ func Test_appendLocalVolume(t *testing.T) {
 			args: args{bigLv: bigLv1, lv: lv1},
 			want: bigLv1,
 		},
-		//{
-		//	args: args{bigLv: bigLv2, lv: lv2},
-		//	want: bigLv22,
-		//},
+		{
+			args: args{bigLv: bigLv2, lv: lv2},
+			want: bigLv22,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
