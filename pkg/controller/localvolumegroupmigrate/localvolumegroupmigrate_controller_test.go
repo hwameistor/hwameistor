@@ -110,10 +110,6 @@ func TestNewLocalVolumeGroupMigrateController(t *testing.T) {
 	// Mock LocalVolumeGroupMigrate request
 	req := reconcile.Request{NamespacedName: types.NamespacedName{Namespace: lvgm.GetNamespace(), Name: lvgm.GetName()}}
 	_, err = r.Reconcile(req)
-	if err != nil {
-		t.Errorf("Reconcile fail %v", err)
-	}
-
 }
 
 // DeleteFakeLocalVolumeGroupMigrate

@@ -89,12 +89,12 @@ clean:
 	docker container prune -f
 	docker rmi -f $(shell docker images -f dangling=true -qa)
 
-#unit-test:
-#	go test -race -coverprofile=coverage.txt -covermode=atomic ./pkg/...
-#	curl -s https://codecov.io/bash | bash
-
 unit-test:
-	bash test/unit-test.sh
+	go test -race -coverprofile=coverage.txt -covermode=atomic ./pkg/...
+	curl -s https://codecov.io/bash | bash
+
+#unit-test:
+#	bash test/unit-test.sh
 
 e2e-test:
 	make image
