@@ -173,6 +173,44 @@ func TestSanitizeName(t *testing.T) {
 	}
 }
 
+func TestGetNodeName(t *testing.T) {
+	tests := []struct {
+		name string
+		want string
+	}{
+		// TODO: Add test cases.
+		{
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetNodeName(); got != tt.want {
+				t.Errorf("GetNodeName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetNamespace(t *testing.T) {
+	tests := []struct {
+		name string
+		want string
+	}{
+		// TODO: Add test cases.
+		{
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetNamespace(); got != tt.want {
+				t.Errorf("GetNamespace() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestPCIDiskInfo_IsNVMe(t *testing.T) {
 	type fields struct {
 		isNVMe   bool
