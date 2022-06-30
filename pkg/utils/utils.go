@@ -198,7 +198,7 @@ func SanitizeName(name string) string {
 func GetNodeName() string {
 	nodeName, ok := os.LookupEnv("MY_NODENAME")
 	if !ok {
-		log.Errorf("Failed to get NODENAME from ENV")
+		log.Debugf("Failed to get NODENAME from ENV")
 		return ""
 	}
 
@@ -209,7 +209,7 @@ func GetNodeName() string {
 func GetNamespace() string {
 	ns, ok := os.LookupEnv("POD_NAMESPACE")
 	if !ok {
-		log.Errorf("Failed to get NameSpace from ENV")
+		log.Debugf("Failed to get NameSpace from ENV")
 		return ""
 	}
 
