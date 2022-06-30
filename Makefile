@@ -93,9 +93,6 @@ unit-test:
 	go test -race -coverprofile=coverage.txt -covermode=atomic ./pkg/...
 	curl -s https://codecov.io/bash | bash
 
-#unit-test:
-#	bash test/unit-test.sh
-
 e2e-test:
 	make image
 	docker push ${IMAGE_NAME}:${IMAGE_TAG}
