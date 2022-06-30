@@ -19,6 +19,7 @@ MUILT_ARCH_PUSH_CMD = ${PROJECT_SOURCE_CODE_DIR}/build/utils/docker-push-with-mu
 PROJECT_SOURCE_CODE_DIR ?= $(CURDIR)
 BINS_DIR = ${PROJECT_SOURCE_CODE_DIR}/_build
 CMDS_DIR = ${PROJECT_SOURCE_CODE_DIR}/cmd
+UNIT_COVER_DIRS = ./pkg/member/controller/scheduler... ./pkg/member/controller/volumegroup... ./pkg/member/csi... ./pkg/member/rest... ./pkg/member/node/configer... ./pkg/member/node/diskmonitor... ./pkg/member/node/storage...  ./pkg/controller/... ./pkg/utils/...
 
 # image_tag/release_tag will be applied to all the images
 IMAGE_TAG ?= 99.9-dev
@@ -90,7 +91,7 @@ clean:
 	docker rmi -f $(shell docker images -f dangling=true -qa)
 
 unit-test:
-	go test -race -coverprofile=coverage.txt -covermode=atomic ./pkg/member/... ./pkg/controller/... ./pkg/utils/...
+	go test -race -coverprofile=coverage.txt -covermode=atomic ${UNIT_COVER_DIRS}
 	curl -s https://codecov.io/bash | bash
 
 e2e-test:
