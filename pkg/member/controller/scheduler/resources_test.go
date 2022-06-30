@@ -710,11 +710,11 @@ func Test_resources_predicate(t *testing.T) {
 		// TODO: Add test cases.
 		{
 			args:    args{vol: vol, nodeName: nodeName},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			args:    args{vol: vol, nodeName: nodeName2},
-			wantErr: false,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -925,11 +925,11 @@ func Test_resources_score(t *testing.T) {
 		// TODO: Add test cases.
 		{
 			args:    args{vol: vol, nodeName: nodeName},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			args:    args{vol: vol, nodeName: nodeName2},
-			wantErr: false,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {

@@ -199,9 +199,6 @@ func TestGetNamespace(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 		{
-			want: "test",
-		},
-		{
 			want: "",
 		},
 	}
@@ -257,7 +254,7 @@ func TestAddUniqueStringItem1(t *testing.T) {
 	var want = []string{"apple", "banana", "orange"}
 	var items1 = []string{"apple", "banana", "orange"}
 	var itemToAdd1 = "apple"
-	var want1 = []string{"apple", "banana", "orange", "apple"}
+	var want1 = []string{"apple", "banana", "orange"}
 	tests := []struct {
 		name string
 		args args
