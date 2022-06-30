@@ -90,7 +90,7 @@ clean:
 	docker rmi -f $(shell docker images -f dangling=true -qa)
 
 unit-test:
-	go test -race -coverprofile=coverage.txt -covermode=atomic ./pkg/...
+	go test -race -coverprofile=coverage.txt -covermode=atomic ./pkg/member/... ./pkg/controller/... ./pkg/utils/...
 	curl -s https://codecov.io/bash | bash
 
 e2e-test:
