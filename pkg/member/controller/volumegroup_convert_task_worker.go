@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -35,11 +36,19 @@ func (m *manager) startVolumeGroupConvertTaskWorker(stopCh <-chan struct{}) {
 	m.volumeGroupConvertTaskQueue.Shutdown()
 }
 
-func (m *manager) processVolumeGroupConvert(name string) error {
-	logCtx := m.logger.WithFields(log.Fields{"VolumeGroupConvert": name})
+func (m *manager) processVolumeGroupConvert(vgcNamespacedName string) error {
+	logCtx := m.logger.WithFields(log.Fields{"VolumeGroupConvert": vgcNamespacedName})
 	logCtx.Debug("Working on a VolumeGroupConvert task")
+
+	splitRes := strings.Split(vgcNamespacedName, "/")
+	var ns, vgcName string
+	if len(splitRes) >= 2 {
+		ns = splitRes[0]
+		vgcName = splitRes[1]
+	}
+
 	convert := &apisv1alpha1.LocalVolumeGroupConvert{}
-	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: m.namespace, Name: name}, convert); err != nil {
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: ns, Name: vgcName}, convert); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get VolumeGroupConvert from cache")
 			return err
