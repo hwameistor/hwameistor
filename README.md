@@ -11,7 +11,7 @@ The HwameiStor consists of three part at present,include Local-Disk-Manager,Loca
 
 ### Local-Disk-Manager
 
-Local-Disk-Manager(LDM) is designed to hold the management of disks on nodes.Other modules such as Local-Storage can take advantage of the management of disks by LDM.See more at [LDM](https://github.com/hwameistor/local-disk-manager/blob/main/README.md#local-disk-manager-ldm)
+Local-Disk-Manager(LDM) is designed to hold the management of disks on nodes.Other modules such as Local-Storage can take advantage of the management of disks by LDM.See more at [LDM](https://github.com/hwameistor/hwameistor/pkg/local-disk-manager//blob/main/README.md#local-disk-manager-ldm)
 
 ### Local-Storage
 
