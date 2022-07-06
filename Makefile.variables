@@ -1,0 +1,55 @@
+# [ COMMON ]
+#----------------
+MODULE_NAME = "hwameistor"
+PROJECT_SOURCE_CODE_DIR ?= $(CURDIR)
+BINS_DIR = ${PROJECT_SOURCE_CODE_DIR}/_build
+CMDS_DIR = ${PROJECT_SOURCE_CODE_DIR}/cmd
+
+# [ IMAGE ]
+#----------------
+# image_registry/image_tag/release_tag will be applied to all the images
+IMAGE_REGISTRY ?= ghcr.io/hwameistor
+IMAGE_TAG ?= 99.9-dev
+RELEASE_TAG ?= $(shell tagged="$$(git describe --tags --match='v*' --abbrev=0 2> /dev/null)"; if [ "$$tagged" ] && [ "$$(git rev-list -n1 HEAD)" = "$$(git rev-list -n1 $$tagged)" ]; then echo $$tagged; fi)
+
+# [ IMAGE/LDM ]
+LDM_IMAGE_NAME = ${IMAGE_REGISTRY}/${LDM_MODULE_NAME}
+LDM_IMAGE_DOCKERFILE = ${PROJECT_SOURCE_CODE_DIR}/build/${LDM_MODULE_NAME}/Dockerfile
+
+
+# [ BUILD ]
+#----------------
+# Common build tools and build flags
+GO_VERSION = $(shell go version)
+BUILD_TIME = ${shell date +%Y-%m-%dT%H:%M:%SZ}
+BUILD_VERSION = ${shell git rev-parse --short "HEAD^{commit}" 2>/dev/null}
+BUILD_ENVS = CGO_ENABLED=0 GOOS=linux
+BUILD_FLAGS = -X 'main.BUILDVERSION=${BUILD_VERSION}' -X 'main.BUILDTIME=${BUILD_TIME}' -X 'main.GOVERSION=${GO_VERSION}'
+BUILD_OPTIONS = -a -mod vendor -installsuffix cgo -ldflags "${BUILD_FLAGS}"
+BUILD_CMD = go build
+
+DOCKER_SOCK_PATH=/var/run/docker.sock
+DOCKER_MAKE_CMD = docker run --rm -v ${PROJECT_SOURCE_CODE_DIR}:${BUILDER_MOUNT_DST_DIR} -v ${DOCKER_SOCK_PATH}:${DOCKER_SOCK_PATH} -w ${BUILDER_MOUNT_DST_DIR} -i ${BUILDER_NAME}:${BUILDER_TAG}
+DOCKER_DEBUG_CMD = docker run --rm -v ${PROJECT_SOURCE_CODE_DIR}:${BUILDER_MOUNT_DST_DIR} -v ${DOCKER_SOCK_PATH}:${DOCKER_SOCK_PATH} -w ${BUILDER_MOUNT_DST_DIR} -it ${BUILDER_NAME}:${BUILDER_TAG}
+MUILT_ARCH_PUSH_CMD = ${PROJECT_SOURCE_CODE_DIR}/build/utils/docker-push-with-multi-arch.sh
+
+DOCKER_BUILDX_CMD_AMD64 = DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --platform=linux/amd64 -o type=docker
+DOCKER_BUILDX_CMD_ARM64 = DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --platform=linux/arm64 -o type=docker
+
+# [ BUILD/LDM ]
+LDM_BUILD_OUTPUT = ${BINS_DIR}/${LDM_MODULE_NAME}
+
+# [ BUILD/LS ]
+LS_BUILD_OUTPUT = ${BINS_DIR}/${LS_MODULE_NAME}
+
+# [ BUILDER ]
+#----------------
+BUILDER_NAME = ${IMAGE_REGISTRY}/${MODULE_NAME}-builder
+BUILDER_TAG = latest
+BUILDER_DOCKERFILE = ${PROJECT_SOURCE_CODE_DIR}/build/builder/Dockerfile
+BUILDER_MOUNT_DST_DIR = /go/src/github.com/hwameistor/
+
+# [OPERATOR]
+#----------------
+# Operator tools
+OPERATOR_CMD = operator-sdk
