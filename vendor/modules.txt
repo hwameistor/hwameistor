@@ -69,6 +69,9 @@ github.com/go-openapi/jsonreference
 # github.com/go-openapi/swag v0.19.14
 ## explicit; go 1.11
 github.com/go-openapi/swag
+# github.com/gofrs/uuid v4.2.0+incompatible
+## explicit
+github.com/gofrs/uuid
 # github.com/gogo/protobuf v1.3.2
 ## explicit; go 1.15
 github.com/gogo/protobuf/proto
@@ -123,14 +126,15 @@ github.com/gophercloud/gophercloud/openstack/identity/v2/tokens
 github.com/gophercloud/gophercloud/openstack/identity/v3/tokens
 github.com/gophercloud/gophercloud/openstack/utils
 github.com/gophercloud/gophercloud/pagination
+# github.com/gorilla/mux v1.8.0
+## explicit; go 1.12
+github.com/gorilla/mux
 # github.com/hwameistor/local-storage v0.1.6
 ## explicit; go 1.17
-github.com/hwameistor/local-storage/pkg/apis
 github.com/hwameistor/local-storage/pkg/apis/hwameistor/v1alpha1
 github.com/hwameistor/local-storage/pkg/exechelper
 github.com/hwameistor/local-storage/pkg/exechelper/basicexecutor
 github.com/hwameistor/local-storage/pkg/exechelper/nsexecutor
-github.com/hwameistor/local-storage/pkg/member/csi
 github.com/hwameistor/local-storage/pkg/member/node/storage
 github.com/hwameistor/local-storage/pkg/utils
 # github.com/imdario/mergo v0.3.12
@@ -174,6 +178,9 @@ github.com/pilebones/go-udev/netlink
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# github.com/pmezard/go-difflib v1.0.0
+## explicit
+github.com/pmezard/go-difflib/difflib
 # github.com/prometheus/client_golang v1.12.1
 ## explicit; go 1.13
 github.com/prometheus/client_golang/prometheus
@@ -195,9 +202,18 @@ github.com/prometheus/procfs/internal/util
 # github.com/sirupsen/logrus v1.8.1
 ## explicit; go 1.13
 github.com/sirupsen/logrus
+# github.com/soheilhy/cmux v0.1.4
+## explicit
+github.com/soheilhy/cmux
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
+# github.com/stretchr/testify v1.7.0
+## explicit; go 1.13
+github.com/stretchr/testify/assert
+# github.com/wxnacy/wgo v1.0.4
+## explicit
+github.com/wxnacy/wgo/arrays
 # go.uber.org/atomic v1.7.0
 ## explicit; go 1.13
 go.uber.org/atomic
@@ -348,6 +364,8 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
+# google.golang.org/grpc/examples v0.0.0-20220701230310-8c494a9aed3e
+## explicit; go 1.14
 # google.golang.org/protobuf v1.27.1
 ## explicit; go 1.9
 google.golang.org/protobuf/encoding/prototext

@@ -16,6 +16,9 @@ RELEASE_TAG ?= $(shell tagged="$$(git describe --tags --match='v*' --abbrev=0 2>
 LDM_IMAGE_NAME = ${IMAGE_REGISTRY}/${LDM_MODULE_NAME}
 LDM_IMAGE_DOCKERFILE = ${PROJECT_SOURCE_CODE_DIR}/build/${LDM_MODULE_NAME}/Dockerfile
 
+# [ IMAGE/LS ]
+LS_IMAGE_NAME = ${IMAGE_REGISTRY}/${LS_MODULE_NAME}
+LS_IMAGE_DOCKERFILE = ${PROJECT_SOURCE_CODE_DIR}/build/${LS_MODULE_NAME}/Dockerfile
 
 # [ BUILD ]
 #----------------
