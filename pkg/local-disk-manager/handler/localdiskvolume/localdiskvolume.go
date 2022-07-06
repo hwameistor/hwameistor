@@ -8,7 +8,7 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	ldm "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
-	lscsi "github.com/hwameistor/local-storage/pkg/member/csi"
+	lscsi "github.com/hwameistor/hwameistor/pkg/local-storage/member/csi"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
