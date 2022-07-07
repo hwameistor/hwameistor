@@ -87,7 +87,6 @@ func (g *GenScheme) GenerateType(c *generator.Context, t *types.Type, w io.Write
 	allInstallGroups := clientgentypes.ToGroupInstallPackages(g.Groups, g.GroupGoNames)
 
 	m := map[string]interface{}{
-		"publicScheme":              !g.PrivateScheme,
 		"allGroupVersions":          allGroupVersions,
 		"allInstallGroups":          allInstallGroups,
 		"customRegister":            false,
@@ -134,7 +133,7 @@ func (g *GenScheme) GenerateType(c *generator.Context, t *types.Type, w io.Write
 var globalsTemplate = `
 var $.Scheme$ = $.runtimeNewScheme|raw$()
 var $.Codecs$ = $.serializerNewCodecFactory|raw$($.Scheme$)
-$if .publicScheme$var $.ParameterCodec$ = $.runtimeNewParameterCodec|raw$($.Scheme$)$end -$`
+var $.ParameterCodec$ = $.runtimeNewParameterCodec|raw$($.Scheme$)`
 
 var registryRegistration = `
 

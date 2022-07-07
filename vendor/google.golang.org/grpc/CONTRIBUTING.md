@@ -1,8 +1,6 @@
 # How to contribute
 
-We definitely welcome your patches and contributions to gRPC! Please read the gRPC
-organization's [governance rules](https://github.com/grpc/grpc-community/blob/master/governance.md)
-and [contribution guidelines](https://github.com/grpc/grpc-community/blob/master/CONTRIBUTING.md) before proceeding.
+We definitely welcome your patches and contributions to gRPC!
 
 If you are new to github, please start by reading [Pull Request howto](https://help.github.com/articles/about-pull-requests/)
 
@@ -57,5 +55,6 @@ How to get your contributions merged smoothly and quickly.
   - `make vet` to catch vet errors
   - `make test` to run the tests
   - `make testrace` to run tests in race mode
+  - optional `make testappengine` to run tests with appengine
 
 - Exceptions to the rules can be made if there's a compelling reason for doing so.

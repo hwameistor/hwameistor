@@ -155,7 +155,7 @@ func namesMatch(goName, jsonName string) bool {
 	return true
 }
 
-// isCapital returns true if one character is capital
+// isCaptical returns true if one character is capital
 func isCapital(b byte) bool {
 	return b >= 'A' && b <= 'Z'
 }

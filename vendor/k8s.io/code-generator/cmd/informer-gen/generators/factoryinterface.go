@@ -23,7 +23,7 @@ import (
 	"k8s.io/gengo/namer"
 	"k8s.io/gengo/types"
 
-	"k8s.io/klog/v2"
+	"k8s.io/klog"
 )
 
 // factoryInterfaceGenerator produces a file of interfaces used to break a dependency cycle for
