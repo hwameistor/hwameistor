@@ -19,26 +19,30 @@
 // Package serviceconfig defines types and methods for operating on gRPC
 // service configs.
 //
-// Experimental
-//
-// Notice: This package is EXPERIMENTAL and may be changed or removed in a
-// later release.
+// This package is EXPERIMENTAL.
 package serviceconfig
+
+import (
+	"google.golang.org/grpc/internal"
+)
 
 // Config represents an opaque data structure holding a service config.
 type Config interface {
-	isServiceConfig()
+	isConfig()
 }
 
 // LoadBalancingConfig represents an opaque data structure holding a load
-// balancing config.
+// balancer config.
 type LoadBalancingConfig interface {
 	isLoadBalancingConfig()
 }
 
-// ParseResult contains a service config or an error.  Exactly one must be
-// non-nil.
-type ParseResult struct {
-	Config Config
-	Err    error
+// Parse parses the JSON service config provided into an internal form or
+// returns an error if the config is invalid.
+func Parse(ServiceConfigJSON string) (Config, error) {
+	c, err := internal.ParseServiceConfig(ServiceConfigJSON)
+	if err != nil {
+		return nil, err
+	}
+	return c.(Config), err
 }

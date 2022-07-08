@@ -21,17 +21,17 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/utils/clock"
+	utilclock "k8s.io/apimachinery/pkg/util/clock"
 )
 
 // NewExpiring returns an initialized expiring cache.
 func NewExpiring() *Expiring {
-	return NewExpiringWithClock(clock.RealClock{})
+	return NewExpiringWithClock(utilclock.RealClock{})
 }
 
 // NewExpiringWithClock is like NewExpiring but allows passing in a custom
 // clock for testing.
-func NewExpiringWithClock(clock clock.Clock) *Expiring {
+func NewExpiringWithClock(clock utilclock.Clock) *Expiring {
 	return &Expiring{
 		clock: clock,
 		cache: make(map[interface{}]entry),
@@ -40,7 +40,7 @@ func NewExpiringWithClock(clock clock.Clock) *Expiring {
 
 // Expiring is a map whose entries expire after a per-entry timeout.
 type Expiring struct {
-	clock clock.Clock
+	clock utilclock.Clock
 
 	// mu protects the below fields
 	mu sync.RWMutex
@@ -145,7 +145,7 @@ func (c *Expiring) gc(now time.Time) {
 		// expired.
 		//
 		// heap[0] is a peek at the next element in the heap, which is not obvious
-		// from looking at the (*expiringHeap).Pop() implementation below.
+		// from looking at the (*expiringHeap).Pop() implmentation below.
 		// heap.Pop() swaps the first entry with the last entry of the heap, then
 		// calls (*expiringHeap).Pop() which returns the last element.
 		if len(c.heap) == 0 || now.Before(c.heap[0].expiry) {

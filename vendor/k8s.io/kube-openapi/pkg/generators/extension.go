@@ -56,20 +56,6 @@ var tagToExtension = map[string]extensionAttributes{
 		kind:          types.Slice,
 		allowedValues: sets.NewString("atomic", "set", "map"),
 	},
-	"mapType": {
-		xName:         "x-kubernetes-map-type",
-		kind:          types.Map,
-		allowedValues: sets.NewString("atomic", "granular"),
-	},
-	"structType": {
-		xName:         "x-kubernetes-map-type",
-		kind:          types.Struct,
-		allowedValues: sets.NewString("atomic", "granular"),
-	},
-	"validations": {
-		xName: "x-kubernetes-validations",
-		kind:  types.Slice,
-	},
 }
 
 // Extension encapsulates information necessary to generate an OpenAPI extension.
