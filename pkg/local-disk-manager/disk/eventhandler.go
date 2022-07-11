@@ -1,0 +1,6 @@
+package disk
+
+//
+func Detail() {
+
+}

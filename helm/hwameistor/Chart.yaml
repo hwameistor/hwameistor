@@ -1,0 +1,6 @@
+apiVersion: v2
+name: hwameistor
+description: the HwameiStor local storage
+type: application
+version: 0.2.7
+appVersion:

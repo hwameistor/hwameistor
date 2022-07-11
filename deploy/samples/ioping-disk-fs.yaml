@@ -1,0 +1,46 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-disk-hdd-disk
+provisioner: disk.hwameistor.io
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: false
+reclaimPolicy: Delete
+parameters:
+  diskType: "HDD"
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: local-fs-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-disk-hdd-disk
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: local-fs-ioping
+spec:
+  schedulerName: hwameistor-scheduler
+  restartPolicy: Never
+  volumes:
+    - name: local-filesystem
+      persistentVolumeClaim:
+        claimName: local-fs-pvc
+  containers:
+    - name: perfrunner
+      image: hpestorage/ioping:latest
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/bash"]
+      args: ["-c", "while true ;do echo $(date) >> /data/time.log;sleep 5; done"]
+      volumeMounts:
+        - mountPath: /data
+          name: local-filesystem
+      tty: true

@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-local-storage-lvm
+  labels:
+    app: nginx-local-storage-lvm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-local-storage-lvm
+  template:
+    metadata:
+      labels:
+        app: nginx-local-storage-lvm
+      name: nginx-local-storage-lvm
+    spec:
+      schedulerName: hwameistor-scheduler
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 0
+      containers:
+        - image: nginx:latest
+          imagePullPolicy: IfNotPresent
+          name: nginx
+          ports:
+            - containerPort: 80
+          command:
+            - sh
+            - -xc
+            - |
+              VOL="$( df | grep /usr/share/nginx/html | awk '{print $1,$NF}' )"
+              echo "<center><h1>Demo volume: ${VOL}</h1></center>" > /usr/share/nginx/html/index.html
+              nginx -g "daemon off;"
+          volumeMounts:
+            - name: html-root
+              mountPath: /usr/share/nginx/html
+          resources:
+            limits:
+              cpu: '100m'
+              memory: '100Mi'
+      volumes:
+        - name: html-root
+          persistentVolumeClaim:
+            claimName: local-storage-pvc-lvm
+      tolerations:
+        - key: "key-test"
+          value: "key-value"
+          operator: "Equal"
+          effect: "NoExecute"
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: local-storage-pvc-lvm
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-storage-hdd-lvm
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage-hdd-lvm
+provisioner: lvm.hwameistor.io
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+parameters:
+  replicaNumber: "1"
+  poolClass: "HDD"
+  poolType: "REGULAR"
+  volumeKind: "LVM"
+  striped: "true"
+  csi.storage.k8s.io/fstype: "xfs"
