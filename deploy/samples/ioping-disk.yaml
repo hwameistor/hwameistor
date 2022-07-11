@@ -1,0 +1,45 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-disk-hdd-disk
+provisioner: disk.hwameistor.io
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: false
+reclaimPolicy: Delete
+parameters:
+  diskType: "HDD"
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: local-disk-pvc
+spec:
+  volumeMode: Block
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-disk-hdd-disk
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: local-disk-ioping
+spec:
+  restartPolicy: Never
+  schedulerName: hwameistor-scheduler
+  volumes:
+    - name: local-disk
+      persistentVolumeClaim:
+        claimName: local-disk-pvc
+  containers:
+    - name: ioping
+      image: hpestorage/ioping:latest
+      command: [ "ioping" ]
+      args: [ "/dev/xsda" ]
+      volumeDevices:
+        - name: local-disk
+          devicePath: /dev/xsda
