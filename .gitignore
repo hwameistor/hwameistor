@@ -20,6 +20,7 @@ bin/
 *.swp
 *.swo
 *~
+coverage.txt
 
 # Kubernetes Generated files - skip generated files, except for vendored files
 !vendor/**/zz_generated.*

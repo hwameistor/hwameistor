@@ -20,6 +20,11 @@ image: build_ldm_image build_ls_image build_scheduler_image
 .PHONY: release
 release: release_ldm release_ls
 
+.PHONY: unit-test
+unit-test:
+	go test -race -coverprofile=coverage.txt -covermode=atomic ./pkg/...
+	curl -s https://codecov.io/bash | bash
+
 .PHONY: vendor
 vendor:
 	go mod tidy -compat=1.17
