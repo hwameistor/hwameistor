@@ -2,9 +2,9 @@ package E2eTest
 
 import (
 	"context"
+	ldapis "github.com/hwameistor/hwameistor/pkg/apis/generated/local-disk-manager/clientset/versioned/scheme"
 	lsv1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
-	"github.com/hwameistor/local-disk-manager/pkg/apis"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
@@ -25,7 +25,7 @@ import (
 
 var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("pr"), ginkgo.Label("periodCheck"), func() {
 
-	f := framework.NewDefaultFramework(apis.AddToScheme)
+	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
