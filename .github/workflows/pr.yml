@@ -36,5 +36,5 @@ jobs:
         env:
           E2E_TESTING_LEVEL: "pr"
         run: |
-          # PROJECT_SOURCE_CODE_DIR=${PROJECT_SOURCE_CODE_DIR} make e2e-test
-		  echo "do nothing here"
+          PROJECT_SOURCE_CODE_DIR=${PROJECT_SOURCE_CODE_DIR} make e2e-test
+
