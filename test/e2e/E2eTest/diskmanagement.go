@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("pr"), ginkgo.Label("periodCheck"), ginkgo.Ordered, func() {
+var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("periodCheck"), ginkgo.Ordered, func() {
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
