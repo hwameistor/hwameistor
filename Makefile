@@ -18,7 +18,7 @@ compile: compile_ldm compile_ls compile_scheduler
 image: build_ldm_image build_ls_image build_scheduler_image
 
 .PHONY: release
-release: release_ldm release_ls
+release: _enable_buildx release_ldm release_ls release_scheduler
 
 .PHONY: unit-test
 unit-test:
@@ -36,7 +36,7 @@ release_ldm:
 	${DOCKER_MAKE_CMD} make compile_ldm
 	${DOCKER_BUILDX_CMD_AMD64} -t ${LDM_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${LDM_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
-	${DOCKER_MAKE_CMD} make compile_arm64
+	${DOCKER_MAKE_CMD} make compile_ldm_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${LDM_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${LDM_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} ${LDM_IMAGE_NAME}:${RELEASE_TAG}
@@ -47,7 +47,7 @@ release_ls:
 	${DOCKER_MAKE_CMD} make compile_ls
 	${DOCKER_BUILDX_CMD_AMD64} -t ${LS_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${LS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
-	${DOCKER_MAKE_CMD} make compile_arm64
+	${DOCKER_MAKE_CMD} make compile_ls_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${LS_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${LS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} ${LS_IMAGE_NAME}:${RELEASE_TAG}
@@ -58,7 +58,7 @@ release_scheduler:
 	${DOCKER_MAKE_CMD} make compile_scheduler
 	${DOCKER_BUILDX_CMD_AMD64} -t ${SCHEDULER_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${SCHEDULER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
-	${DOCKER_MAKE_CMD} make compile_arm64
+	${DOCKER_MAKE_CMD} make compile_scheduler_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${SCHEDULER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${SCHEDULER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} ${SCHEDULER_IMAGE_NAME}:${RELEASE_TAG}
@@ -99,14 +99,35 @@ _gen-apis:
 compile_ldm:
 	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${LDM_BUILD_OUTPUT} ${LDM_BUILD_INPUT}
 
+.PHONY: compile_ldm_arm64
+compile_ldm_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${LDM_BUILD_OUTPUT} ${LDM_BUILD_INPUT}
+
 .PHONY: compile_ls
 compile_ls:
 	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${LS_BUILD_OUTPUT} ${LS_BUILD_INPUT}
+
+.PHONY: compile_ls_arm64
+compile_ls_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${LS_BUILD_OUTPUT} ${LS_BUILD_INPUT}
 
 .PHONY: compile_scheduler
 compile_scheduler:
 	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${SCHEDULER_BUILD_OUTPUT} ${SCHEDULER_BUILD_INPUT}
 
-.PHONY: e2e-test
-e2e-test:
-	bash test/e2e-test.sh
+.PHONY: compile_scheduler_arm64
+compile_scheduler_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${SCHEDULER_BUILD_OUTPUT} ${SCHEDULER_BUILD_INPUT}
+
+.PHONY: _enable_buildx
+_enable_buildx:
+	@echo "Checking if buildx enabled"
+	@if [[ "$(shell docker version -f '{{.Server.Experimental}}')" == "true" ]]; \
+	then \
+		docker buildx inspect mutil-platform-builder &>/dev/null; \
+	        [ $$? == 0 ] && echo "ok" && exit 0; \
+		docker buildx create --name mutil-platform-builder &>/dev/null&& echo "ok" && exit 0; \
+	else \
+		echo "experimental config of docker is false"; \
+		exit 1; \
+	fi
