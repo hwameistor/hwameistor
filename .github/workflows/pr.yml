@@ -34,4 +34,4 @@ jobs:
           echo "PROJECT_SOURCE_CODE_DIR=`echo ${GITHUB_WORKSPACE}`" >> $GITHUB_ENV
       - name: make test image & e2e-test
         run: |
-          echo "PROJECT_SOURCE_CODE_DIR=`echo ${GITHUB_WORKSPACE}`"
+          echo "do nothing here"
