@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-local-storage-lvm
+  labels:
+    app: nginx-local-storage-lvm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-local-storage-lvm
+  template:
+    metadata:
+      labels:
+        app: nginx-local-storage-lvm
+      name: nginx-local-storage-lvm
+    spec:
+      schedulerName: hwameistor-scheduler
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 0
+      containers:
+        - image: nginx:latest
+          imagePullPolicy: IfNotPresent
+          name: nginx
+          ports:
+            - containerPort: 80
+          command:
+            - sh
+            - -xc
+            - |
+              VOL="$( df | grep /usr/share/nginx/html | awk '{print $1,$NF}' )"
+              echo "<center><h1>Demo volume: ${VOL}</h1></center>" > /usr/share/nginx/html/index.html
+              nginx -g "daemon off;"
+          volumeMounts:
+            - name: html-root
+              mountPath: /usr/share/nginx/html
+            - name: html-root-2
+              mountPath: /usr/share/nginx/html2
+          resources:
+            limits:
+              cpu: '100m'
+              memory: '100Mi'
+      volumes:
+        - name: html-root
+          persistentVolumeClaim:
+            claimName: local-storage-pvc-lvm
+        - name: html-root-2
+          persistentVolumeClaim:
+            claimName: local-storage-pvc-lvm-2

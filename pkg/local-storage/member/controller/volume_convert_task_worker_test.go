@@ -2,6 +2,9 @@ package controller
 
 import (
 	"context"
+	"sync"
+	"testing"
+
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
@@ -9,8 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sync"
-	"testing"
 )
 
 func Test_manager_processVolumeConvert(t *testing.T) {
@@ -42,11 +43,21 @@ func Test_manager_processVolumeConvert(t *testing.T) {
 
 	lvc := GenFakeLocalVolumeConvertObject()
 	lvc.Name = fakeLocalVolumeConvertName
+	lvc.Namespace = fakeNamespace
 	lvc.Spec.VolumeName = fakeLocalVolumeName
 	lvc.Spec.ReplicaNumber = 2
 	err := client.Create(context.Background(), lvc)
 	if err != nil {
 		t.Errorf("Create LocalVolumeConvert fail %v", err)
+	}
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err = client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	// Create LocalVolume
@@ -129,11 +140,21 @@ func Test_manager_volumeConvertAbort(t *testing.T) {
 
 	lvc := GenFakeLocalVolumeConvertObject()
 	lvc.Name = fakeLocalVolumeConvertName
+	lvc.Namespace = fakeNamespace
 	lvc.Spec.VolumeName = fakeLocalVolumeName
 	lvc.Spec.ReplicaNumber = 2
 	err := client.Create(context.Background(), lvc)
 	if err != nil {
 		t.Errorf("Create LocalVolumeConvert fail %v", err)
+	}
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err = client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	// Create LocalVolume
@@ -217,11 +238,21 @@ func Test_manager_volumeConvertCleanup(t *testing.T) {
 
 	lvc := GenFakeLocalVolumeConvertObject()
 	lvc.Name = fakeLocalVolumeConvertName
+	lvc.Namespace = fakeNamespace
 	lvc.Spec.VolumeName = fakeLocalVolumeName
 	lvc.Spec.ReplicaNumber = 2
 	err := client.Create(context.Background(), lvc)
 	if err != nil {
 		t.Errorf("Create LocalVolumeConvert fail %v", err)
+	}
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err = client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	// Create LocalVolume
@@ -305,11 +336,21 @@ func Test_manager_volumeConvertInProgress(t *testing.T) {
 
 	lvc := GenFakeLocalVolumeConvertObject()
 	lvc.Name = fakeLocalVolumeConvertName
+	lvc.Namespace = fakeNamespace
 	lvc.Spec.VolumeName = fakeLocalVolumeName
 	lvc.Spec.ReplicaNumber = 2
 	err := client.Create(context.Background(), lvc)
 	if err != nil {
 		t.Errorf("Create LocalVolumeConvert fail %v", err)
+	}
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err = client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	// Create LocalVolume
@@ -337,7 +378,7 @@ func Test_manager_volumeConvertInProgress(t *testing.T) {
 			args: args{
 				convert: lvc,
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -393,11 +434,21 @@ func Test_manager_volumeConvertStart(t *testing.T) {
 
 	lvc := GenFakeLocalVolumeConvertObject()
 	lvc.Name = fakeLocalVolumeConvertName
+	lvc.Namespace = fakeNamespace
 	lvc.Spec.VolumeName = fakeLocalVolumeName
 	lvc.Spec.ReplicaNumber = 2
 	err := client.Create(context.Background(), lvc)
 	if err != nil {
 		t.Errorf("Create LocalVolumeConvert fail %v", err)
+	}
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err = client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	// Create LocalVolume
@@ -481,11 +532,21 @@ func Test_manager_volumeConvertSubmit(t *testing.T) {
 
 	lvc := GenFakeLocalVolumeConvertObject()
 	lvc.Name = fakeLocalVolumeConvertName
+	lvc.Namespace = fakeNamespace
 	lvc.Spec.VolumeName = fakeLocalVolumeName
 	lvc.Spec.ReplicaNumber = 2
 	err := client.Create(context.Background(), lvc)
 	if err != nil {
 		t.Errorf("Create LocalVolumeConvert fail %v", err)
+	}
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err = client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	// Create LocalVolume

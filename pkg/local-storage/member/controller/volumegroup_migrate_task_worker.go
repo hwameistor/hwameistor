@@ -3,12 +3,14 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"github.com/wxnacy/wgo/arrays"
+	
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"strings"
 )
 
 const (
@@ -155,10 +157,10 @@ func (m *manager) VolumeGroupMigrateSubmit(migrate *apisv1alpha1.LocalVolumeGrou
 					}
 
 					migrate.Status.ReplicaNumber = vol.Spec.ReplicaNumber
-					migrate.Status.State = apisv1alpha1.OperationStateSubmitted
-					m.apiClient.Status().Update(context.TODO(), migrate)
 				}
 			}
+			migrate.Status.State = apisv1alpha1.OperationStateSubmitted
+			m.apiClient.Status().Update(context.TODO(), migrate)
 		}
 	}
 	return nil
@@ -337,11 +339,10 @@ func (m *manager) VolumeGroupMigrateInProgress(migrate *apisv1alpha1.LocalVolume
 						logCtx.Info("VolumeGroupMigrateInProgress: The old replica has not been cleanup")
 						return fmt.Errorf("VolumeGroupMigrateInProgress: not cleanup")
 					}
-
-					migrate.Status.State = apisv1alpha1.OperationStateCompleted
-					m.apiClient.Status().Update(ctx, migrate)
 				}
 			}
+			migrate.Status.State = apisv1alpha1.OperationStateCompleted
+			m.apiClient.Status().Update(ctx, migrate)
 		}
 	}
 

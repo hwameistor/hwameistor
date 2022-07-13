@@ -1,0 +1,14 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage-hdd-ram
+provisioner: lvm.hwameistor.io
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: false
+reclaimPolicy: Delete
+parameters:
+  replicaNumber: "1"
+  poolClass: "RAM"
+  poolType: "REGULAR"
+  volumeKind: "RAM"
+  csi.storage.k8s.io/fstype: "tmpfs"

@@ -1,0 +1,11 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: local-storage-pvc-ram
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-storage-hdd-ram
+  resources:
+    requests:
+      storage: 50Mi

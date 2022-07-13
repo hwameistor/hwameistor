@@ -197,7 +197,7 @@ func (m *manager) ReconcileVolumeExpand(expand *apisv1alpha1.LocalVolumeExpand) 
 
 // ReconcileVolumeMigrate reconciles VolumeMigrate CRD for any volume resource change
 func (m *manager) ReconcileVolumeMigrate(migrate *apisv1alpha1.LocalVolumeMigrate) {
-	m.volumeMigrateTaskQueue.Add(migrate.Name)
+	m.volumeMigrateTaskQueue.Add(migrate.Namespace + "/" + migrate.Name)
 }
 
 // ReconcileVolumeGroupMigrate reconciles VolumeGroupMigrate CRD for any localvolumegroup resource change
@@ -207,7 +207,7 @@ func (m *manager) ReconcileVolumeGroupMigrate(lvgmigrate *apisv1alpha1.LocalVolu
 
 // ReconcileVolumeConvert reconciles VolumeConvert CRD for any volume resource change
 func (m *manager) ReconcileVolumeConvert(convert *apisv1alpha1.LocalVolumeConvert) {
-	m.volumeConvertTaskQueue.Add(convert.Name)
+	m.volumeConvertTaskQueue.Add(convert.Namespace + "/" + convert.Name)
 }
 
 // ReconcileVolumeGroupConvert reconciles VolumeGroupConvert CRD for any volumegroup resource change
