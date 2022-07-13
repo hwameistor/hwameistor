@@ -21,8 +21,6 @@ require (
 	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/mux v1.8.0
-	github.com/hwameistor/local-disk-manager v0.1.6
-	github.com/hwameistor/local-storage v0.1.11
 	github.com/kubernetes-csi/csi-lib-utils v0.7.1
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/soheilhy/cmux v0.1.4
