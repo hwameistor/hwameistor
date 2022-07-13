@@ -33,8 +33,5 @@ jobs:
         run: |
           echo "PROJECT_SOURCE_CODE_DIR=`echo ${GITHUB_WORKSPACE}`" >> $GITHUB_ENV
       - name: make test image & e2e-test
-        env:
-          E2E_TESTING_LEVEL: "pr"
         run: |
-          # PROJECT_SOURCE_CODE_DIR=${PROJECT_SOURCE_CODE_DIR} make e2e-test
-		  echo "do nothing here"
+          echo "PROJECT_SOURCE_CODE_DIR=`echo ${GITHUB_WORKSPACE}`"
