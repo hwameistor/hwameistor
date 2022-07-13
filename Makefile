@@ -106,7 +106,3 @@ compile_ls:
 .PHONY: compile_scheduler
 compile_scheduler:
 	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${SCHEDULER_BUILD_OUTPUT} ${SCHEDULER_BUILD_INPUT}
-
-.PHONY: e2e-test
-e2e-test:
-	bash test/e2e-test.sh
