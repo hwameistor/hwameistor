@@ -1,3 +1,4 @@
+{{- if not (lookup "apps/v1" "Deployment" .Release.Namespace "hwameistor-local-storage-csi-controller") }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -118,6 +119,7 @@ spec:
         operator: Exists
       volumes:
       - hostPath:
-          path: /var/lib/kubelet/plugins/lvm.hwameistor.io
+          path: {{ template "hwameistor.kubeletRootDir" . }}/plugins/lvm.hwameistor.io
           type: DirectoryOrCreate
         name: socket-dir
+{{- end -}}		

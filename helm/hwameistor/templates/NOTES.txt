@@ -1,0 +1,21 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Hwameistor is deployed at {{ .Release.Namespace }}, release name is {{ .Release.Name }}.
+
+To learn more about the release, try:
+
+  $ helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
+  $ helm get manifest {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+You can use hwameistor to provide LVM and Disk volume:
+
+  1. Create free disks on storage-nodes where the volume will be created
+
+  2. Add label "lvm.hwameistor.io/enable=true" for the nodes where the volume will be created
+       $ kubectl label node <storage-nodes> lvm.hwameistor.io/enable=true
+
+  4. Apply a LocalDiskClaim to claim free disks 
+  
+  3. Create hwameistor storageclass and specify it in pvc.spec.storageClassName 
+  
+Read more about how to use hwameistor here: https://github.com/hwameistor/local-storage/blob/main/doc/installation.md

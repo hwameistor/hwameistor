@@ -1,3 +1,4 @@
+{{- if not (lookup "apps/v1" "DaemonSet" .Release.Namespace "hwameistor-local-disk-manager") }}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -16,13 +17,14 @@ spec:
       hostPID: true
       serviceAccountName: hwameistor-admin
       containers:
+{{- if .Values.localDiskManager.enableCSI }}  
         - name: registrar
           image: {{ .Values.k8sImageRegistry }}/{{ .Values.localDiskManager.registrar.imageRepository }}:{{ .Values.localDiskManager.registrar.tag }}
           imagePullPolicy: IfNotPresent
           args:
             - --v=5
             - --csi-address=/csi/csi.sock
-            - --kubelet-registration-path=/var/lib/kubelet/plugins/disk.hwameistor.io/csi.sock
+            - --kubelet-registration-path={{ template "hwameistor.kubeletRootDir" . }}/plugins/disk.hwameistor.io/csi.sock
           lifecycle:
             preStop:
               exec:
@@ -37,6 +39,7 @@ spec:
               mountPath: /csi
             - name: registration-dir
               mountPath: /registration
+{{- end }}
         - name: manager
           # Replace this with the built image name
           image: {{ .Values.hwameistorImageRegistry }}/{{ .Values.localDiskManager.manager.imageRepository}}:{{ .Values.localDiskManager.manager.tag}}
@@ -45,6 +48,7 @@ spec:
           args:
             - --endpoint=$(CSI_ENDPOINT)
             - --nodeid=$(NODENAME)
+            - --csi-enable={{ .Values.localDiskManager.enableCSI }}
           imagePullPolicy: IfNotPresent
           volumeMounts:
           - name: udev
@@ -55,16 +59,16 @@ spec:
           - name: devmount
             mountPath: /dev
           - name: registration-dir
-            mountPath: /var/lib/kubelet/plugins_registry
+            mountPath: {{ template "hwameistor.kubeletRootDir" . }}/plugins_registry
           - name: plugin-dir
-            mountPath: /var/lib/kubelet/plugins
+            mountPath: {{ template "hwameistor.kubeletRootDir" . }}/plugins
             mountPropagation: "Bidirectional"
           - name: pods-mount-dir
-            mountPath: /var/lib/kubelet/pods
+            mountPath: {{ template "hwameistor.kubeletRootDir" . }}/pods
             mountPropagation: "Bidirectional"
           env:
             - name: CSI_ENDPOINT
-              value: unix://var/lib/kubelet/plugins/disk.hwameistor.io/csi.sock
+              value: unix:/{{ template "hwameistor.kubeletRootDir" . }}/plugins/disk.hwameistor.io/csi.sock
             - name: NAMESPACE
               valueFrom:
                 fieldRef:
@@ -104,19 +108,19 @@ spec:
           type: Directory
       - name: socket-dir
         hostPath:
-          path: /var/lib/kubelet/plugins/disk.hwameistor.io
+          path: {{ template "hwameistor.kubeletRootDir" . }}/plugins/disk.hwameistor.io
           type: DirectoryOrCreate
       - name: registration-dir
         hostPath:
-          path: /var/lib/kubelet/plugins_registry/
+          path: {{ template "hwameistor.kubeletRootDir" . }}/plugins_registry/
           type: Directory
       - name: plugin-dir
         hostPath:
-          path: /var/lib/kubelet/plugins
+          path: {{ template "hwameistor.kubeletRootDir" . }}/plugins
           type: DirectoryOrCreate
       - name: pods-mount-dir
         hostPath:
-          path: /var/lib/kubelet/pods
+          path: {{ template "hwameistor.kubeletRootDir" . }}/pods
           type: DirectoryOrCreate
       {{- if .Values.localDiskManager.tolerationsOnMaster }}
       tolerations:
@@ -132,3 +136,4 @@ spec:
           key: node.cloudprovider.kubernetes.io/uninitialized
           operator: Exists
       {{- end }}
+{{- end }}

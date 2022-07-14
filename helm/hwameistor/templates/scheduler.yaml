@@ -1,3 +1,4 @@
+{{- if not (lookup "apps/v1" "Deployment" .Release.Namespace "hwameistor-scheduler") }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,7 +32,7 @@ spec:
         - --leader-elect-resource-name=hwameistor-scheduler
         - --leader-elect-resource-namespace={{ .Release.Namespace}}
         - --config=/etc/hwameistor/hwameistor-scheduler-config.yaml
-        image: {{ .Values.hwameistorImageRegistry}}/{{ .Values.scheduler.imageRepository}}:{{ .Values.scheduler.tag}}
+        image: {{ .Values.hwameistorImageRegistry}}/{{ .Values.scheduler.imageRepository}}:{{ .Values.scheduler.tag }}
         imagePullPolicy: IfNotPresent
         name: hwameistor-kube-scheduler
         resources:
@@ -75,3 +76,4 @@ spec:
       - effect: NoSchedule
         key: node.cloudprovider.kubernetes.io/uninitialized
         operator: Exists
+{{- end -}}		

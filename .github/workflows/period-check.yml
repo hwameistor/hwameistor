@@ -1,0 +1,21 @@
+name: Period check
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */1 * * *'
+
+jobs:
+  e2e-test:
+    runs-on: ["self-hosted"]
+    steps:
+      - name: delete
+        run: |
+          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: e2e test
+        env:
+          E2E_TESTING_LEVEL: "periodCheck"
+        run: make e2e-test

@@ -69,10 +69,12 @@ spec:
                 description: Accessibility is the topology requirement of the volume.
                   It describes how to locate and distribute the volume replicas
                 properties:
-                  node:
-                    description: One of the volume replica must be located at this
-                      node
-                    type: string
+                  nodes:
+                    description: Nodes is the collection of storage nodes the volume
+                      replicas must locate at
+                    items:
+                      type: string
+                    type: array
                   regions:
                     default:
                     - default

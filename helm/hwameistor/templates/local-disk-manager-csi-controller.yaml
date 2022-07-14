@@ -1,3 +1,4 @@
+{{- if and ( not (lookup "apps/v1" "Deployment" .Release.Namespace "hwameistor-local-disk-csi-controller") ) .Values.localDiskManager.enableCSI }}
 kind: Deployment
 apiVersion: apps/v1
 metadata:
@@ -59,5 +60,6 @@ spec:
       volumes:
         - name: socket-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/disk.hwameistor.io
+            path: {{ template "hwameistor.kubeletRootDir" . }}/plugins/disk.hwameistor.io
             type: DirectoryOrCreate
+{{- end -}}

@@ -1,37 +1,42 @@
 #! /usr/bin/env bash
-git clone https://github.com/hwameistor/helm-charts.git test/helm-charts
-## git clone https://github.com/hwameistor/local-disk-manager.git test/local-disk-manager
-## cp -r -f test/local-disk-manager/deploy/crds/hwameistor.io_l* test/helm-charts/charts/hwameistor/crds/
-#cat test/helm-charts/charts/hwameistor/values.yaml | while read line
-##
-#do
-#    result=$(echo $line | grep "imageRepository")
-#    if [[ "$result" != "" ]]
-#    then
-#        img=${line:17:50}
-#    fi
-#    result=$(echo $line | grep "tag")
-#    if [[ "$result" != "" ]]
-#    then
-#        hwamei=$(echo $img | grep "hwameistor")
-#        if [[ "$hwamei" != "" ]]
-#        then
-#            image=$img:${line:5:50}
-#            echo "docker pull ghcr.io/$image"
-#            docker pull ghcr.io/$image
-#            echo "docker tag ghcr.io/$image $ImageRegistry/$image"
-#            docker tag ghcr.io/$image 10.6.170.180/$image
-#            echo "docker push $ImageRegistry/$image"
-#            docker push 10.6.170.180/$image
-#        fi
-#    fi
-#done
-##
-date=$(date +%Y%m%d%H%M)
-## docker tag $ImageRegistry/hwameistor/local-disk-manager:99.9-dev $ImageRegistry/hwameistor/local-disk-manager:$date
-## docker push $ImageRegistry/hwameistor/local-disk-manager:$date
+set -x
+set -e
+# git clone https://github.com/hwameistor/hwameistor.git test/hwameistor
 
-#sed -i '/.*ghcr.io*/c\hwameistorImageRegistry: '$ImageRegistry'' test/helm-charts/charts/hwameistor/values.yaml
-#sed -i '/hwameistor\/local-disk-manager/{n;d}' test/helm-charts/charts/hwameistor/values.yaml
-#sed -i '/hwameistor\/local-disk-manager/a \ \ \ \ tag: 99.9-dev' test/helm-charts/charts/hwameistor/values.yaml
+# common defines
+date=$(date +%Y%m%d%H%M)
+IMAGE_TAG=v${date}
+MODULES=(local-storage local-disk-manager scheduler)
+
+function build_image(){
+	echo "Build hwameistor image"
+	export IMAGE_TAG=${IMAGE_TAG} && make image
+	
+	for module in ${MODULES[@]}
+	do
+		docker push ${IMAGE_REGISTRY}/${module}:${IMAGE_TAG}
+	done
+}
+
+function prepare_install_params() {
+	# FIXME: image tags should be passed by helm install params
+	sed -i '/.*ghcr.io*/c\hwameistorImageRegistry: '$ImageRegistry'' helm/hwameistor/values.yaml
+	
+	sed -i '/hwameistor\/local-disk-manager/{n;d}' helm/hwameistor/values.yaml
+	sed -i "/hwameistor\/local-disk-manager/a \ \ \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
+	
+	sed -i '/local-storage/{n;d}' helm/hwameistor/values.yaml
+	sed -i "/local-storage/a \ \ \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
+
+	sed -i '/hwameistor\/scheduler/{n;d}' helm/hwameistor/values.yaml
+	sed -i "/hwameistor\/scheduler/a \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
+}
+
+# Step1: build all images tagged with <image_registry>/<module>:<date>
+build_image
+
+# Step2: prepare install params included image tag or other install options
+prepare_install_params
+
+# Step3: go e2e test
 ginkgo --fail-fast --label-filter=${E2E_TESTING_LEVEL} test/e2e
