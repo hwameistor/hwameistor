@@ -18,7 +18,7 @@ compile: compile_ldm compile_ls compile_scheduler
 image: build_ldm_image build_ls_image build_scheduler_image
 
 .PHONY: release
-release: _enable_buildx release_ldm release_ls release_scheduler
+release: release_ldm release_ls release_scheduler
 
 .PHONY: unit-test
 unit-test:
