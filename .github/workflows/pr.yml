@@ -22,6 +22,9 @@ jobs:
   e2e-test:
     runs-on: ["self-hosted"]
     steps:
+      - name: delete
+        run: |
+          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
       - name: Checkout
         uses: actions/checkout@v2
         with:
