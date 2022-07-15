@@ -8,10 +8,24 @@ spec:
     kind: LocalVolumeGroup
     listKind: LocalVolumeGroupList
     plural: localvolumegroups
+    shortNames:
+    - lvg
     singular: localvolumegroup
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: Name of associated pod
+      jsonPath: .spec.pods
+      name: pod
+      type: string
+    - description: Namespace of associated pod
+      jsonPath: .spec.namespace
+      name: namespace
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: age
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: LocalVolumeGroup is the Schema for the localvolumegroups API
@@ -30,6 +44,51 @@ spec:
             type: object
           spec:
             description: LocalVolumeGroupSpec defines the desired state of LocalVolumeGroup
+            properties:
+              accessibility:
+                description: Accessibility is the topology requirement of the volume.
+                  It describes how to locate and distribute the volume replicas
+                properties:
+                  nodes:
+                    description: Nodes is the collection of storage nodes the volume
+                      replicas must locate at
+                    items:
+                      type: string
+                    type: array
+                  regions:
+                    default:
+                    - default
+                    description: regions where the volume replicas should be distributed
+                      across, it's Optional
+                    items:
+                      type: string
+                    type: array
+                  zones:
+                    default:
+                    - default
+                    description: zones where the volume replicas should be distributed
+                      across, it's Optional
+                    items:
+                      type: string
+                    type: array
+                type: object
+              pods:
+                items:
+                  type: string
+                type: array
+              volumes:
+                description: Volumes is the collection of the volumes in the group
+                items:
+                  properties:
+                    localvolume:
+                      description: LocalVolumeName is the name of the LocalVolume
+                      type: string
+                    pvc:
+                      description: PersistentVolumeClaimName is the name of the associated
+                        PVC
+                      type: string
+                  type: object
+                type: array
             type: object
           status:
             description: LocalVolumeGroupStatus defines the observed state of LocalVolumeGroup

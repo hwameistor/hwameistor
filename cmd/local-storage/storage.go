@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
+	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
 	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/controller"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"

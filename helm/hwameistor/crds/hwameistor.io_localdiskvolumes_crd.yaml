@@ -74,6 +74,10 @@ spec:
                       type: string
                     type: array
                 type: object
+              canWipe:
+                description: CanWipe represents if disk can wipe after Volume is deleted
+                  If disk has been writen data, this is will be changed to true
+                type: boolean
               diskType:
                 description: DiskType represents the type of drive like SSD, HDD etc.,
                 type: string

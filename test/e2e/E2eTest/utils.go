@@ -89,7 +89,7 @@ func addLabels() {
 
 func installHwameiStorByHelm() {
 	logrus.Infof("helm install hwameistor")
-	_ = runInLinux("cd ../helm-charts/charts && helm install hwameistor -n hwameistor --create-namespace --generate-name")
+	_ = runInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace")
 }
 
 func configureEnvironment(ctx context.Context) bool {
