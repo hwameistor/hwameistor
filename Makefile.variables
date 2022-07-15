@@ -40,8 +40,8 @@ DOCKER_MAKE_CMD = docker run --rm -v ${PROJECT_SOURCE_CODE_DIR}:${BUILDER_MOUNT_
 DOCKER_DEBUG_CMD = docker run --rm -v ${PROJECT_SOURCE_CODE_DIR}:${BUILDER_MOUNT_DST_DIR} -v ${DOCKER_SOCK_PATH}:${DOCKER_SOCK_PATH} -w ${BUILDER_MOUNT_DST_DIR} -it ${BUILDER_NAME}:${BUILDER_TAG}
 MUILT_ARCH_PUSH_CMD = ${PROJECT_SOURCE_CODE_DIR}/build/util/docker-push-with-multi-arch.sh
 
-DOCKER_BUILDX_CMD_AMD64 = DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --platform=linux/amd64 -o type=docker --builder mutil-platform-builder
-DOCKER_BUILDX_CMD_ARM64 = DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --platform=linux/arm64 -o type=docker --builder mutil-platform-builder
+DOCKER_BUILDX_CMD_AMD64 = DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --platform=linux/amd64 -o type=docker
+DOCKER_BUILDX_CMD_ARM64 = DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --platform=linux/arm64 -o type=docker
 
 # [ BUILD/LDM ]
 LDM_BUILD_OUTPUT = ${BINS_DIR}/${LDM_MODULE_NAME}
