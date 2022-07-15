@@ -88,6 +88,7 @@ apis:
 .PHONY: builder
 builder:
 	docker build -t ${BUILDER_NAME}:${BUILDER_TAG} -f ${BUILDER_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	docker push ${BUILDER_NAME}:${BUILDER_TAG}
 
 .PHONY: _gen-apis
 _gen-apis:
