@@ -8,7 +8,7 @@ scheduler:
   replicas: 1
   kubeApiServerConfigFilePath: /etc/kubernetes/admin.conf
   imageRepository: hwameistor/scheduler
-  tag: v0.1.6
+  tag: v0.3.0-rc.1
   resources:
     limits:
       cpu: 300m
@@ -32,7 +32,7 @@ localDiskManager:
         memory: 5Mi
   manager:
     imageRepository: hwameistor/local-disk-manager
-    tag: v0.1.6
+    tag: v0.3.0-rc.1
     resources:
       limits:
         cpu: 300m
@@ -68,7 +68,7 @@ localStorage:
   tolerationsOnMaster: true
   registrar:
     imageRepository: k8scsi/csi-node-driver-registrar
-    tag: v1.1.0
+    tag: v0.3.0-rc.1
     resources:
       limits:
         cpu: 500m
