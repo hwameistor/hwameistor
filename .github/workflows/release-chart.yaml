@@ -23,10 +23,14 @@ jobs:
         uses: azure/setup-helm@v1
         with:
           version: v3.7.1
+      - name: Generate CR Config
+        run: |
+          echo 'release-name-template: "{{ .Version }}"' >> ~/cr.yaml
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.3.0
         with:
           charts_dir: helm
           charts_repo_url: https://hwameistor.io/hwameistor
+          config: ~/cr.yaml
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
