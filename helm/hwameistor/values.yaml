@@ -68,7 +68,7 @@ localStorage:
   tolerationsOnMaster: true
   registrar:
     imageRepository: k8scsi/csi-node-driver-registrar
-    tag: v0.3.0-rc.1
+    tag: v1.1.0
     resources:
       limits:
         cpu: 500m
@@ -78,7 +78,7 @@ localStorage:
         memory: 5Mi
   member:
     imageRepository: hwameistor/local-storage
-    tag: v0.1.11
+    tag: v0.3.0-rc.1
     resources:
       limits:
         cpu: 500m
