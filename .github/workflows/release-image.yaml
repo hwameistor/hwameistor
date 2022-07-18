@@ -1,4 +1,4 @@
-name: Release HwameiStor
+name: Release Image
 
 on:
   create:
@@ -34,26 +34,3 @@ jobs:
       - name: Release image
         run: |
           PROJECT_SOURCE_CODE_DIR=${PROJECT_SOURCE_CODE_DIR} IMAGE_REGISTRY=${IMAGE_REGISTRY} RELEASE_TAG=${RELEASE_TAG} make release
-  release-chart:
-    needs: release-image
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Configure Git
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-      - name: Install Helm
-        uses: azure/setup-helm@v1
-        with:
-          version: v3.7.1
-      - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.3.0
-        with:
-          charts_dir: helm
-          charts_repo_url: https://hwameistor.io/hwameistor
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
