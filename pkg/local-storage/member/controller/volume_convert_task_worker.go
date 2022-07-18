@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -35,11 +36,19 @@ func (m *manager) startVolumeConvertTaskWorker(stopCh <-chan struct{}) {
 	m.volumeConvertTaskQueue.Shutdown()
 }
 
-func (m *manager) processVolumeConvert(name string) error {
-	logCtx := m.logger.WithFields(log.Fields{"VolumeConvert": name})
+func (m *manager) processVolumeConvert(vcNamespacedName string) error {
+	logCtx := m.logger.WithFields(log.Fields{"VolumeConvert": vcNamespacedName})
 	logCtx.Debug("Working on a VolumeConvert task")
+
+	splitRes := strings.Split(vcNamespacedName, "/")
+	var ns, vcName string
+	if len(splitRes) >= 2 {
+		ns = splitRes[0]
+		vcName = splitRes[1]
+	}
+
 	convert := &apisv1alpha1.LocalVolumeConvert{}
-	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: name}, convert); err != nil {
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: ns, Name: vcName}, convert); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get VolumeConvert from cache")
 			return err
@@ -102,17 +111,54 @@ func (m *manager) volumeConvertSubmit(convert *apisv1alpha1.LocalVolumeConvert) 
 		return err
 	}
 
-	if vol.Spec.ReplicaNumber == convert.Spec.ReplicaNumber {
-		convert.Status.State = apisv1alpha1.OperationStateSubmitted
-	} else if vol.Spec.ReplicaNumber == 1 && !vol.Spec.Convertible {
-		logCtx.WithField("volume", vol.Spec).Error("Can't convert the incovertible volume")
-		convert.Status.Message = "Inconvertible volume"
-	} else if vol.Spec.ReplicaNumber == 1 && convert.Spec.ReplicaNumber == 2 {
-		// currently, only support convertible non-HA volume to HA convertion
-		convert.Status.State = apisv1alpha1.OperationStateSubmitted
-	} else {
-		logCtx.WithField("volume", vol.Spec).Error("Too big convert")
-		convert.Status.Message = "Not supported"
+	localVolumeGroupName := vol.Spec.VolumeGroup
+
+	lvg := &apisv1alpha1.LocalVolumeGroup{}
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: convert.Namespace, Name: localVolumeGroupName}, lvg); err != nil {
+		if !errors.IsNotFound(err) {
+			logCtx.WithError(err).Error("VolumeMigrateStart: Failed to query lvg")
+		} else {
+			logCtx.Info("VolumeMigrateStart: Not found the lvg")
+		}
+		convert.Status.Message = err.Error()
+		m.apiClient.Status().Update(ctx, convert)
+		return err
+	}
+
+	for _, fnlr := range lvg.Finalizers {
+		if fnlr == volumeGroupFinalizer {
+			m.lock.Lock()
+			defer m.lock.Unlock()
+
+			volList := &apisv1alpha1.LocalVolumeList{}
+			if err := m.apiClient.List(context.TODO(), volList); err != nil {
+				m.logger.WithError(err).Fatal("VolumeMigrateStart: Failed to list LocalVolumes")
+			}
+
+			for _, vol := range volList.Items {
+				if vol.Spec.VolumeGroup == lvg.Name {
+					if len(vol.Name) == 0 {
+						convert.Status.Message = "Invalid volume name"
+						return m.apiClient.Status().Update(ctx, convert)
+					}
+					if vol.Spec.ReplicaNumber == convert.Spec.ReplicaNumber {
+						convert.Status.State = apisv1alpha1.OperationStateSubmitted
+					} else if vol.Spec.ReplicaNumber == 1 && !vol.Spec.Convertible {
+						logCtx.WithField("volume", vol.Spec).Error("Can't convert the inconvertible volume")
+						msg := fmt.Sprintf("Inconvertible volume: %s", vol.Name)
+						convert.Status.Message = msg
+						convert.Status.State = apisv1alpha1.OperationStateFailed
+						break
+					} else if vol.Spec.ReplicaNumber == 1 && convert.Spec.ReplicaNumber == 2 {
+						// currently, only support convertible non-HA volume to HA convertion
+						convert.Status.State = apisv1alpha1.OperationStateSubmitted
+					} else {
+						logCtx.WithField("volume", vol.Spec).Error("Too big convert")
+						convert.Status.Message = "Not supported"
+					}
+				}
+			}
+		}
 	}
 
 	return m.apiClient.Status().Update(ctx, convert)
@@ -136,16 +182,46 @@ func (m *manager) volumeConvertStart(convert *apisv1alpha1.LocalVolumeConvert) e
 		return err
 	}
 
-	if vol.Spec.ReplicaNumber == convert.Spec.ReplicaNumber {
-		convert.Status.State = apisv1alpha1.OperationStateInProgress
+	localVolumeGroupName := vol.Spec.VolumeGroup
+
+	lvg := &apisv1alpha1.LocalVolumeGroup{}
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: convert.Namespace, Name: localVolumeGroupName}, lvg); err != nil {
+		if !errors.IsNotFound(err) {
+			logCtx.WithError(err).Error("VolumeMigrateStart: Failed to query lvg")
+		} else {
+			logCtx.Info("VolumeMigrateStart: Not found the lvg")
+		}
+		convert.Status.Message = err.Error()
 		m.apiClient.Status().Update(ctx, convert)
+		return err
 	}
 
-	vol.Spec.ReplicaNumber = convert.Spec.ReplicaNumber
-	if err := m.apiClient.Update(ctx, vol); err != nil {
-		logCtx.WithError(err).Error("Failed to start the volume convert")
-		convert.Status.Message = err.Error()
-		return m.apiClient.Status().Update(ctx, convert)
+	for _, fnlr := range lvg.Finalizers {
+		if fnlr == volumeGroupFinalizer {
+			m.lock.Lock()
+			defer m.lock.Unlock()
+
+			volList := &apisv1alpha1.LocalVolumeList{}
+			if err := m.apiClient.List(context.TODO(), volList); err != nil {
+				m.logger.WithError(err).Fatal("VolumeMigrateStart: Failed to list LocalVolumes")
+			}
+
+			for _, vol := range volList.Items {
+				if vol.Spec.VolumeGroup == lvg.Name {
+					if vol.Spec.ReplicaNumber == convert.Spec.ReplicaNumber {
+						convert.Status.State = apisv1alpha1.OperationStateInProgress
+						m.apiClient.Status().Update(ctx, convert)
+					}
+
+					vol.Spec.ReplicaNumber = convert.Spec.ReplicaNumber
+					if err := m.apiClient.Update(ctx, &vol); err != nil {
+						logCtx.WithField("volName", vol.Name).WithError(err).Error("Volume failed to start the volume convert")
+						convert.Status.Message = err.Error()
+						m.apiClient.Status().Update(ctx, convert)
+					}
+				}
+			}
+		}
 	}
 
 	convert.Status.State = apisv1alpha1.OperationStateInProgress
@@ -159,21 +235,6 @@ func (m *manager) volumeConvertInProgress(convert *apisv1alpha1.LocalVolumeConve
 
 	ctx := context.TODO()
 
-	replicas, err := m.getReplicasForVolume(convert.Spec.VolumeName)
-	if err != nil {
-		logCtx.WithError(err).Error("Failed to list LocalVolumeReplica")
-		return err
-	}
-	if len(replicas) != int(convert.Spec.ReplicaNumber) {
-		logCtx.WithField("replicas_found", len(replicas)).Debug("Not enough volume replicas")
-		return fmt.Errorf("not enough replicas")
-	}
-	for _, replica := range replicas {
-		if replica.Status.State != apisv1alpha1.VolumeReplicaStateReady {
-			logCtx.WithField("replica", replica.Name).Debug("The replica is not ready")
-			return fmt.Errorf("replica not ready")
-		}
-	}
 	// update volume's capacity
 	vol := &apisv1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: convert.Spec.VolumeName}, vol); err != nil {
@@ -181,10 +242,55 @@ func (m *manager) volumeConvertInProgress(convert *apisv1alpha1.LocalVolumeConve
 		return err
 	}
 
-	if vol.Status.State != apisv1alpha1.VolumeStateReady {
-		logCtx.Debug("Volume is not ready")
-		convert.Status.Message = "In Progress"
-		return fmt.Errorf("volume not ready")
+	localVolumeGroupName := vol.Spec.VolumeGroup
+
+	lvg := &apisv1alpha1.LocalVolumeGroup{}
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: convert.Namespace, Name: localVolumeGroupName}, lvg); err != nil {
+		if !errors.IsNotFound(err) {
+			logCtx.WithError(err).Error("VolumeMigrateStart: Failed to query lvg")
+		} else {
+			logCtx.Info("VolumeMigrateStart: Not found the lvg")
+		}
+		convert.Status.Message = err.Error()
+		m.apiClient.Status().Update(ctx, convert)
+		return err
+	}
+
+	for _, fnlr := range lvg.Finalizers {
+		if fnlr == volumeGroupFinalizer {
+			m.lock.Lock()
+			defer m.lock.Unlock()
+
+			volList := &apisv1alpha1.LocalVolumeList{}
+			if err := m.apiClient.List(context.TODO(), volList); err != nil {
+				m.logger.WithError(err).Fatal("VolumeMigrateStart: Failed to list LocalVolumes")
+			}
+
+			for _, vol := range volList.Items {
+				if vol.Spec.VolumeGroup == lvg.Name {
+					replicas, err := m.getReplicasForVolume(vol.Name)
+					if err != nil {
+						logCtx.WithError(err).Error("Failed to list LocalVolumeReplica")
+						return err
+					}
+					if len(replicas) != int(convert.Spec.ReplicaNumber) {
+						logCtx.WithField("replicas_found", len(replicas)).Debug("Not enough volume replicas")
+						return fmt.Errorf("not enough replicas")
+					}
+					for _, replica := range replicas {
+						if replica.Status.State != apisv1alpha1.VolumeReplicaStateReady {
+							logCtx.WithField("replica", replica.Name).Debug("The replica is not ready")
+							return fmt.Errorf("replica not ready")
+						}
+					}
+					if vol.Status.State != apisv1alpha1.VolumeStateReady {
+						logCtx.Debug("Volume is not ready")
+						convert.Status.Message = "In Progress"
+						return fmt.Errorf("volume not ready")
+					}
+				}
+			}
+		}
 	}
 
 	convert.Status.State = apisv1alpha1.OperationStateCompleted

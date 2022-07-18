@@ -1,0 +1,104 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localvolumegroupmigrates.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalVolumeGroupMigrate
+    listKind: LocalVolumeGroupMigrateList
+    plural: localvolumegroupmigrates
+    shortNames:
+    - lvgmigrate
+    singular: localvolumegroupmigrate
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: Name of the volume to be migrated
+      jsonPath: .spec.volumeName
+      name: volume
+      type: string
+    - description: Node name of the volume replica to be migrated
+      jsonPath: .spec.nodeName
+      name: node
+      type: string
+    - description: Node name of the new volume replica
+      jsonPath: .status.targetNodeName
+      name: target
+      type: string
+    - description: State of the migration
+      jsonPath: .status.state
+      name: state
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalVolumeGroupMigrate is the Schema for the LocalVolumeGroupMigrates
+          API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalVolumeGroupMigrateSpec defines the desired state of
+              LocalVolumeGroupMigrate
+            properties:
+              abort:
+                default: false
+                type: boolean
+              localVolumeGroupName:
+                type: string
+              sourceNodesNames:
+                description: source NodeNames
+                items:
+                  type: string
+                type: array
+              targetNodesNames:
+                description: target NodeNames
+                items:
+                  type: string
+                type: array
+            required:
+            - localVolumeGroupName
+            - sourceNodesNames
+            - targetNodesNames
+            type: object
+          status:
+            description: LocalVolumeGroupMigrateStatus defines the observed state
+              of LocalVolumeGroupMigrate
+            properties:
+              message:
+                description: error message to describe some states
+                type: string
+              replicaNumber:
+                description: record the volume's replica number, it will be set internally
+                format: int64
+                type: integer
+              state:
+                description: State of the operation, e.g. submitted, started, completed,
+                  abort, ...
+                type: string
+              targetNodesNames:
+                description: record the node where the specified replica is migrated
+                  to
+                items:
+                  type: string
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

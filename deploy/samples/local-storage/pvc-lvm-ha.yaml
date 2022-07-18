@@ -1,0 +1,11 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: local-storage-pvc-lvm-ha
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-storage-hdd-lvm-ha
+  resources:
+    requests:
+      storage: 1Gi

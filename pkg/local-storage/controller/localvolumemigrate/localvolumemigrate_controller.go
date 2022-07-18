@@ -2,8 +2,11 @@ package localvolumemigrate
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
+	"github.com/wxnacy/wgo/arrays"
+	"k8s.io/apimachinery/pkg/types"
 
-    apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -84,6 +87,55 @@ func (r *ReconcileLocalVolumeMigrate) Reconcile(request reconcile.Request) (reco
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	vol := &apisv1alpha1.LocalVolume{}
+	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.VolumeName}, vol); err != nil {
+		if !errors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request.
+			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+			// Return and don't requeue
+			return reconcile.Result{}, nil
+		}
+		return reconcile.Result{}, err
+	}
+
+	localVolumeGroupName := vol.Spec.VolumeGroup
+
+	lvg := &apisv1alpha1.LocalVolumeGroup{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Namespace: instance.Namespace, Name: localVolumeGroupName}, lvg)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request.
+			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+			// Return and don't requeue
+			return reconcile.Result{}, nil
+		}
+		// Error reading the object - requeue the request.
+		return reconcile.Result{}, err
+	}
+
+	for _, tmpvol := range lvg.Spec.Volumes {
+		if tmpvol.LocalVolumeName == "" {
+			continue
+		}
+		vol := &apisv1alpha1.LocalVolume{}
+		if err := r.client.Get(context.TODO(), types.NamespacedName{Name: tmpvol.LocalVolumeName}, vol); err != nil {
+			if !errors.IsNotFound(err) {
+				log.WithFields(log.Fields{"volName": tmpvol.LocalVolumeName, "error": err.Error()}).Error("Failed to query volume")
+				return reconcile.Result{}, err
+			}
+		}
+		for _, nodeName := range instance.Spec.TargetNodesNames {
+			if arrays.ContainsString(vol.Spec.Accessibility.Nodes, nodeName) == -1 {
+				vol.Spec.Accessibility.Nodes = append(vol.Spec.Accessibility.Nodes, nodeName)
+			}
+		}
+		log.Debugf("ReconcileLocalVolumeGroupMigrate Reconcile vol = %v", vol)
+		if err := r.client.Update(context.TODO(), vol); err != nil {
+			log.WithError(err).Errorf("ReconcileLocalVolumeGroupMigrate Reconcile : Failed to re-configure Volume, vol.Name = %v, tmpvol.LocalVolumeName = %v", vol.Name, tmpvol.LocalVolumeName)
+			return reconcile.Result{}, err
+		}
 	}
 
 	r.storageMember.Controller().ReconcileVolumeMigrate(instance)

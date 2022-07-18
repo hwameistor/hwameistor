@@ -17,9 +17,16 @@ type LocalVolumeMigrateSpec struct {
 
 	VolumeName string `json:"volumeName"`
 
-	NodeName string `json:"nodeName"`
+	// target NodeNames
+	TargetNodesNames []string `json:"targetNodesNames"`
+
+	// source NodeNames
+	SourceNodesNames []string `json:"sourceNodesNames"`
 
 	// *** common section of all the operations ***
+
+	// +kubebuilder:default:=false
+	MigrateAllVols bool `json:"migrateAllVols,omitempty"`
 
 	// +kubebuilder:default:=false
 	Abort bool `json:"abort,omitempty"`

@@ -2,25 +2,26 @@ package controller
 
 import (
 	"context"
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
-	coorv1 "k8s.io/api/coordination/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/record"
 	"reflect"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sync"
 	"testing"
 	"time"
 
+	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 	log "github.com/sirupsen/logrus"
+
+	coorv1 "k8s.io/api/coordination/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var (
@@ -270,8 +271,8 @@ func GenFakeLocalVolumeMigrateObject() *apisv1alpha1.LocalVolumeMigrate {
 	}
 
 	Spec := apisv1alpha1.LocalVolumeMigrateSpec{
-		NodeName:   fakeNodename,
-		VolumeName: fakeLocalVolumeName,
+		TargetNodesNames: fakeNodenames,
+		VolumeName:       fakeLocalVolumeName,
 	}
 
 	lvm.ObjectMeta = ObjectMata
