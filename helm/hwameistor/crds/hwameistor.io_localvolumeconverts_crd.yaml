@@ -11,7 +11,7 @@ spec:
     shortNames:
     - lvconvert
     singular: localvolumeconvert
-  scope: Cluster
+  scope: Namespaced
   versions:
   - additionalPrinterColumns:
     - description: Name of the volume to convert
