@@ -42,7 +42,7 @@ spec:
 {{- end }}
         - name: manager
           # Replace this with the built image name
-          image: {{ .Values.hwameistorImageRegistry }}/{{ .Values.localDiskManager.manager.imageRepository}}:{{ .Values.localDiskManager.manager.tag}}
+          image: {{ .Values.hwameistorImageRegistry }}/{{ .Values.localDiskManager.manager.imageRepository}}:{{ template "hwameistor.localdiskmanagerImageTag" . }}
           command:
           - /local-disk-manager
           args:

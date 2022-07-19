@@ -8,7 +8,6 @@ scheduler:
   replicas: 1
   kubeApiServerConfigFilePath: /etc/kubernetes/admin.conf
   imageRepository: hwameistor/scheduler
-  tag: v0.3.0-rc.4
   resources:
     limits:
       cpu: 300m
@@ -32,7 +31,6 @@ localDiskManager:
         memory: 5Mi
   manager:
     imageRepository: hwameistor/local-disk-manager
-    tag: v0.3.0-rc.4
     resources:
       limits:
         cpu: 300m
@@ -78,7 +76,6 @@ localStorage:
         memory: 5Mi
   member:
     imageRepository: hwameistor/local-storage
-    tag: v0.3.0-rc.4
     resources:
       limits:
         cpu: 500m
