@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "helm/**"
+      - "helm/hwameistor/Chart.yaml"
 
 jobs:
   release-chart:
