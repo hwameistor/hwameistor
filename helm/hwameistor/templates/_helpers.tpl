@@ -3,6 +3,21 @@
   {{- default .Capabilities.KubeVersion.Version .Values.kubeVersion -}}
 {{- end -}}
 
+{{/* Allow Scheudler image tag to be overridden. */}}
+{{- define "hwameistor.scheudlerImageTag" -}}
+  {{- default .Chart.Version .Values.scheduler.tag -}}
+{{- end -}}
+
+{{/* Allow Local Storage image tag to be overridden. */}}
+{{- define "hwameistor.localstorageImageTag" -}}
+  {{- default .Chart.Version .Values.localStorage.tag -}}
+{{- end -}}
+
+{{/* Allow Scheudler image tag to be overridden. */}}
+{{- define "hwameistor.localdiskmanagerImageTag" -}}
+  {{- default .Chart.Version .Values.localDiskManager.tag -}}
+{{- end -}}
+
 {{/* Allow KubeletRootDir to be overridden. */}}
 {{- define "hwameistor.kubeletRootDir" -}}
   {{- default "/var/lib/kubelet" .Values.kubeletRootDir -}}
