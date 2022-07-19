@@ -6,6 +6,7 @@ set -e
 # common defines
 date=$(date +%Y%m%d%H%M)
 IMAGE_TAG=v${date}
+export IMAGE_TAG=${IMAGE_TAG}
 MODULES=(local-storage local-disk-manager scheduler)
 
 function build_image(){
@@ -22,14 +23,14 @@ function prepare_install_params() {
 	# FIXME: image tags should be passed by helm install params
 	sed -i '/.*ghcr.io*/c\hwameistorImageRegistry: '$ImageRegistry'' helm/hwameistor/values.yaml
 	
-	sed -i '/hwameistor\/local-disk-manager/{n;d}' helm/hwameistor/values.yaml
-	sed -i "/hwameistor\/local-disk-manager/a \ \ \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
+	# sed -i '/hwameistor\/local-disk-manager/{n;d}' helm/hwameistor/values.yaml
+	 sed -i "/hwameistor\/local-disk-manager/a \ \ \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
 	
-	sed -i '/local-storage/{n;d}' helm/hwameistor/values.yaml
-	sed -i "/local-storage/a \ \ \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
+	# sed -i '/local-storage/{n;d}' helm/hwameistor/values.yaml
+	 sed -i "/local-storage/a \ \ \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
 
-	sed -i '/hwameistor\/scheduler/{n;d}' helm/hwameistor/values.yaml
-	sed -i "/hwameistor\/scheduler/a \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
+	# sed -i '/hwameistor\/scheduler/{n;d}' helm/hwameistor/values.yaml
+	 sed -i "/hwameistor\/scheduler/a \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
 }
 
 # Step1: build all images tagged with <image_registry>/<module>:<date>
