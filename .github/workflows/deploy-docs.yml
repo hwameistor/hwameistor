@@ -1,0 +1,51 @@
+name: Deploy to Documentation Website
+on:
+  pull_request:
+    branches: [main]
+    paths: ['website/**']
+  push:
+    branches: [main]
+    paths: ['website/**']
+
+jobs:
+  test-deploy-docs:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16.14.2
+          cache: npm
+          cache-dependency-path: '**/package-lock.json'
+      - name: Install dependencies
+        run: npm ci
+      - name: Test build website
+        run: npm build
+  deploy-docs:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16.14.2
+          cache: npm
+          cache-dependency-path: '**/package-lock.json'
+      - uses: webfactory/ssh-agent@v0.5.0
+        with:
+          ssh-private-key: ${{ secrets.GH_PAGES_DEPLOY }}
+      - name: Deploy to GitHub Pages
+        env:
+          USE_SSH: true
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "gh-actions"
+          npm ci
+          yarn deploy
