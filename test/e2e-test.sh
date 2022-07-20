@@ -40,4 +40,4 @@ build_image
 prepare_install_params
 
 # Step3: go e2e test
-ginkgo --fail-fast --label-filter=${E2E_TESTING_LEVEL} test/e2e
+ginkgo --fail-fast --label-filter=${E2E_TESTING_LEVEL} test/e2e -timeout=3h
