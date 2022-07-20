@@ -10,12 +10,12 @@
 
 {{/* Allow Local Storage image tag to be overridden. */}}
 {{- define "hwameistor.localstorageImageTag" -}}
-  {{- default .Chart.Version .Values.localStorage.tag -}}
+  {{- default .Chart.Version .Values.localStorage.member.tag -}}
 {{- end -}}
 
 {{/* Allow Scheudler image tag to be overridden. */}}
 {{- define "hwameistor.localdiskmanagerImageTag" -}}
-  {{- default .Chart.Version .Values.localDiskManager.tag -}}
+  {{- default .Chart.Version .Values.localDiskManager.manager.tag -}}
 {{- end -}}
 
 {{/* Allow KubeletRootDir to be overridden. */}}
