@@ -1,12 +1,24 @@
 name: Deploy to Documentation Website
 on:
   pull_request:
-    branches: [main]
-    paths: ['website/**']
+    branches:
+    - main
+    paths: 
+    - 'website/**'
+    - 'docs/**'
+    - 'docs_cn/**'
+    - 'blog/**'
+    - 'blog.cn/**'
   push:
-    branches: [main]
-    paths: ['website/**']
-
+    branches:
+    - main
+    paths: 
+    - 'website/**'
+    - 'docs/**'
+    - 'docs_cn/**'
+    - 'blog/**'
+    - 'blog.cn/**'
+    
 jobs:
   test-deploy-docs:
     if: github.event_name != 'push'

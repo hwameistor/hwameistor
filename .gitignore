@@ -27,6 +27,13 @@ coverage.txt
 
 ## website ##
 
+# MD
+website/docs
+website/blog
+website/i18n/cn/docusaurus-plugin-content-blog
+website/i18n/cn/docusaurus-plugin-content-blog
+
+
 # Dependencies
 website/node_modules
 
