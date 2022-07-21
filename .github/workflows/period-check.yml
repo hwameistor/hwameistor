@@ -7,7 +7,7 @@ on:
 jobs:
   e2e-test:
     runs-on: ["self-hosted"]
-    timeout: 3h
+    timeout-minutes: 180
     steps:
       - name: delete
         run: |
