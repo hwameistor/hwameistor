@@ -1,16 +1,20 @@
 # Documentation Website
 
+## URL:
+
+[https://hwameistor.io](https://hwameistor.io/)
+
+## Static Backend
+
 Built using [Docusaurus 2](https://docusaurus.io/), a modern static website generator.
 
-All markdown documents are placed under `/docs`. 
+All markdown documents are placed under `./docs`. 
 
-Their translations are placed under `/i18n/cn/docusaurus-plugin-content-docs/current`
+Their translations are placed under `./i18n/cn/docusaurus-plugin-content-docs/current`
 
-## Install Docusaurus
+## Install Docusaurus modules
 
-```
-$ cd website/
-
+```bash
 $ npm ci
 ```
 
@@ -24,13 +28,13 @@ This command starts a local development server and opens up a browser window. Mo
 
 Note: You may not view `translation switch` using local development server. To view Chinese translation site **only**:
 
-```
+```bash
 $ npm start -- --locale cn
 ```
 
 ## Build
 
-```
+```bash
 $ npm run build
 ```
 
@@ -40,6 +44,6 @@ This command generates static content into the `build` directory and can be serv
 
 Note: Only `build` can view `translation switch`
 
-```
+```bash
 $ npm run serve
 ```

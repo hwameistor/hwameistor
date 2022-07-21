@@ -27,30 +27,23 @@ coverage.txt
 
 ## website ##
 
-# MD
-website/docs
-website/blog
-website/i18n/cn/docusaurus-plugin-content-blog
-website/i18n/cn/docusaurus-plugin-content-blog
-
-
 # Dependencies
-website/node_modules
+docs/node_modules
 
 # Production
-website/build
+docs/build
 
 # Generated files
-website/.docusaurus
-website/.cache-loader
+docs/.docusaurus
+docs/.cache-loader
 
 # Misc
-website/.DS_Store
-website/.env.local
-website/.env.development.local
-website/.env.test.local
-website/.env.production.local
+docs/.DS_Store
+docs/.env.local
+docs/.env.development.local
+docs/.env.test.local
+docs/.env.production.local
 
-website/npm-debug.log*
-website/yarn-debug.log*
-website/yarn-error.log*
+docs/npm-debug.log*
+docs/yarn-debug.log*
+docs/yarn-error.log*

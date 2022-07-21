@@ -3,16 +3,15 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "predoc": "rm -vfr ./docs && cp -r ../docs . && rm -vfr ./blog && cp -vfr ../blog . && rm -vfr ./i18n/cn/docusaurus-plugin-content-docs/current && cp -vfr ../docs.cn ./i18n/cn/docusaurus-plugin-content-docs/current && rm -vfr ./i18n/cn/docusaurus-plugin-content-blog && cp -vfr ../blog.cn ./i18n/cn/docusaurus-plugin-content-blog",
     "doc": "docusaurus",
-    "start": "npm run doc start",
-    "build": "npm run doc build",
+    "start": "docusaurus start",
+    "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
-    "deploy": "npm run doc deploy",
+    "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
     "serve": "docusaurus serve",
-    "write-translations": "npm run doc write-translations",
-    "write-heading-ids": "npm run doc write-heading-ids"
+    "write-translations": "docusaurus write-translations",
+    "write-heading-ids": "docusaurus write-heading-ids"
   },
   "dependencies": {
     "@docusaurus/core": "2.0.0-rc.1",

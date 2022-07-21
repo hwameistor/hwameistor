@@ -4,24 +4,15 @@ on:
     branches:
     - main
     paths: 
-    - 'website/**'
     - 'docs/**'
-    - 'docs_cn/**'
-    - 'blog/**'
-    - 'blog.cn/**'
   push:
     branches:
     - main
     paths: 
-    - 'website/**'
     - 'docs/**'
-    - 'docs_cn/**'
-    - 'blog/**'
-    - 'blog.cn/**'
-    
 jobs:
   test-deploy-docs:
-    if: github.event_name != 'push'
+    if: ${{ ( github.event_name != 'push' ) && ( github.repository == hwameistor/hwameistor ) }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -38,7 +29,7 @@ jobs:
       - name: Test build website
         run: npm build
   deploy-docs:
-    if: github.event_name != 'pull_request'
+    if: ${{ ( github.event_name != 'pull_request' ) && ( github.repository == hwameistor/hwameistor ) }}
     runs-on: ubuntu-latest
     defaults:
       run:
