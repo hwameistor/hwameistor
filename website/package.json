@@ -8,11 +8,11 @@
     "start": "npm run doc start",
     "build": "npm run doc build",
     "swizzle": "docusaurus swizzle",
-    "deploy": "doc deploy",
+    "deploy": "npm run doc deploy",
     "clear": "docusaurus clear",
     "serve": "docusaurus serve",
-    "write-translations": "doc write-translations",
-    "write-heading-ids": "doc write-heading-ids"
+    "write-translations": "npm run doc write-translations",
+    "write-heading-ids": "npm run doc write-heading-ids"
   },
   "dependencies": {
     "@docusaurus/core": "2.0.0-rc.1",
