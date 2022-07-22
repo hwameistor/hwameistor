@@ -14,11 +14,6 @@ Hwameistor is a cloud-native storage system. It creates a local storage resource
 
 HwameiStor contains modules local-disk-manager, local-storage, scheduler.
 
-| Directory 	| Description 	|
-|-----------	|-------------	|
-| cmd       	| App start cmd            	|
-| pkg | Core codes |
-
 ### Local-Disk-Manager
 Local-Disk-Manager(LDM) is designed to hold the management of disks on nodes.Other modules such as Local-Storage can take advantage of the management of disks by LDM.See more at LDM
 
