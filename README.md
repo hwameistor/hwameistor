@@ -2,7 +2,7 @@
 
 Hwameistor is a cloud-native storage system. It creates a local storage resource pool for centrally managing all disks such as HDD, SSD, and NVMe. It uses the CSI architecture to provide distributed services with local volumes and provides data persistence capabilities for stateful cloud-native workloads or components.
 
-![System architecture](docs/img/architecture.png)
+![System architecture](docs/docs/img/architecture.png)
 
 ## Current Status
 
