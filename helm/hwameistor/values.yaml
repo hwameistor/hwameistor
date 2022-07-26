@@ -16,6 +16,17 @@ scheduler:
       cpu: 100m
       memory: 100Mi
 
+webhook:
+  replicas: 1
+  imageRepository: hwameistor/admission
+  resources:
+    limits:
+      cpu: 300m
+      memory: 300Mi
+    requests:
+      cpu: 100m
+      memory: 100Mi
+
 localDiskManager:
   tolerationsOnMaster: true
   enableCSI: true
