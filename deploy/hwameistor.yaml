@@ -90,7 +90,7 @@ spec:
           value: unix://var/lib/kubelet/plugins/lvm.hwameistor.io/csi.sock
         - name: NODE_ANNOTATION_KEY_STORAGE_IPV4
           value: localstorage.hwameistor.io/storage-ipv4
-        image: ghcr.io/hwameistor/local-storage:v0.1.11
+        image: ghcr.io/hwameistor/local-storage:v0.3.1
         imagePullPolicy: IfNotPresent
         name: member
         ports:
@@ -230,7 +230,7 @@ spec:
               mountPath: /registration
         - name: manager
           # Replace this with the built image name
-          image: ghcr.io/hwameistor/local-disk-manager:v0.1.6
+          image: ghcr.io/hwameistor/local-disk-manager:v0.3.1
           command:
           - /local-disk-manager
           args:
@@ -359,7 +359,7 @@ spec:
         - --leader-elect-resource-name=hwameistor-scheduler
         - --leader-elect-resource-namespace=hwameistor-system
         - --config=/etc/hwameistor/hwameistor-scheduler-config.yaml
-        image: ghcr.io/hwameistor/scheduler:v0.1.6-kube-pre1.20
+        image: ghcr.io/hwameistor/scheduler:v0.3.1
         imagePullPolicy: IfNotPresent
         name: hwameistor-kube-scheduler
         resources:
