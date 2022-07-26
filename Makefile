@@ -11,6 +11,10 @@ LS_BUILD_INPUT = ${CMDS_DIR}/${LS_MODULE_NAME}/storage.go
 SCHEDULER_MODULE_NAME = scheduler
 SCHEDULER_BUILD_INPUT = ${CMDS_DIR}/${SCHEDULER_MODULE_NAME}/scheduler.go
 
+# admission build definitions
+ADMISSION_MODULE_NAME = admission
+ADMISSION_BUILD_INPUT = ${CMDS_DIR}/${ADMISSION_MODULE_NAME}/admission.go
+
 .PHONY: compile
 compile: compile_ldm compile_ls compile_scheduler
 
@@ -63,6 +67,17 @@ release_scheduler:
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} ${SCHEDULER_IMAGE_NAME}:${RELEASE_TAG}
 
+.PHONY: release_admission
+release_admission:
+	# build for amd64 version
+	${DOCKER_MAKE_CMD} make compile_admission
+	${DOCKER_BUILDX_CMD_AMD64} -t ${ADMISSION_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${ADMISSION_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# build for arm64 version
+	${DOCKER_MAKE_CMD} make compile_admission_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${ADMISSION_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${ADMISSION_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# push to a public registry
+	${MUILT_ARCH_PUSH_CMD} ${ADMISSION_IMAGE_NAME}:${RELEASE_TAG}
+
 .PHONY: build_ldm_image
 build_ldm_image:
 	@echo "Build local-disk-manager image ${LDM_IMAGE_NAME}:${IMAGE_TAG}"
@@ -80,6 +95,12 @@ build_scheduler_image:
 	@echo "Build scheduler image ${SCHEDULER_IMAGE_NAME}:${IMAGE_TAG}"
 	${DOCKER_MAKE_CMD} make compile_scheduler
 	docker build -t ${SCHEDULER_IMAGE_NAME}:${IMAGE_TAG} -f ${SCHEDULER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_admission_image
+build_admission_image:
+	@echo "Build admission image ${ADMISSION_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_admission
+	docker build -t ${ADMISSION_IMAGE_NAME}:${IMAGE_TAG} -f ${ADMISSION_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
 .PHONY: apis
 apis:
@@ -119,6 +140,14 @@ compile_scheduler:
 .PHONY: compile_scheduler_arm64
 compile_scheduler_arm64:
 	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${SCHEDULER_BUILD_OUTPUT} ${SCHEDULER_BUILD_INPUT}
+
+.PHONY: compile_admission
+compile_admission:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${ADMISSION_BUILD_OUTPUT} ${ADMISSION_BUILD_INPUT}
+
+.PHONY: compile_admission_arm64
+compile_admission_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${ADMISSION_BUILD_OUTPUT} ${ADMISSION_BUILD_INPUT}
 
 .PHONY: _enable_buildx
 _enable_buildx:
