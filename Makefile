@@ -16,13 +16,13 @@ ADMISSION_MODULE_NAME = admission
 ADMISSION_BUILD_INPUT = ${CMDS_DIR}/${ADMISSION_MODULE_NAME}/admission.go
 
 .PHONY: compile
-compile: compile_ldm compile_ls compile_scheduler
+compile: compile_ldm compile_ls compile_scheduler compile_admission
 
 .PHONY: image
-image: build_ldm_image build_ls_image build_scheduler_image
+image: build_ldm_image build_ls_image build_scheduler_image build_admission_image
 
 .PHONY: release
-release: release_ldm release_ls release_scheduler
+release: release_ldm release_ls release_scheduler release_admission
 
 .PHONY: unit-test
 unit-test:
