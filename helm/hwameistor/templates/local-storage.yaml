@@ -19,7 +19,10 @@ spec:
             nodeSelectorTerms:
             - matchExpressions:
               - key: lvm.hwameistor.io/enable
-                operator: Exists
+                operator: NotIn
+                values:
+                  - "false"
+
       containers:
       - args:
         - --v=5
