@@ -21,6 +21,9 @@ storageclass:
   diskType: HDD
   fsType: xfs
 
+# storageNodes means the nodes will be used for creating local volumes
+storageNodes: []
+
 scheduler:
   replicas: 1
   kubeApiServerConfigFilePath: /etc/kubernetes/admin.conf
