@@ -99,6 +99,7 @@ func (p *patchSchedulerName) ResourceNeedHandle(req admission.AdmissionReview) (
 		logrus.WithError(err).Errorf("could not deserialize pod object: %v", err)
 		return false, fmt.Errorf("could not deserialize pod object: %v", err)
 	}
+	pod.SetNamespace(req.Request.Namespace)
 	logCtx := logrus.Fields{"NameSpace": pod.GetNamespace(), "Pod": pod.GetGenerateName()}
 
 	for _, volume := range pod.Spec.Volumes {
