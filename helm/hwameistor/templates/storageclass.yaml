@@ -11,18 +11,12 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   annotations:
-    storageclass.kubernetes.io/is-default-class: {{ .Values.storageclass.allowVolumeExpansion | quote }}
-  name: hwameistor-storage-lvm-{{ .Values.storageclass.diskType | lower}}
-# Don't change this
-provisioner: lvm.hwameistor.io
+    storageclass.kubernetes.io/is-default-class: {{ .Values.storageclass.default | quote }}
+  name: hwameistor-storage-disk-{{ .Values.storageclass.diskType | lower}}
+provisioner: disk.hwameistor.io
 volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: {{ .Values.storageclass.allowVolumeExpansion }}
 reclaimPolicy: {{ .Values.storageclass.reclaimPolicy }}
 parameters:
-  replicaNumber: {{ include "replicaNumber" . | quote}}
-  poolClass: {{ .Values.storageclass.diskType | quote}}
-  poolType: "REGULAR"
-  volumeKind: "LVM"
-  striped: "true"
-  csi.storage.k8s.io/fstype: {{ .Values.storageclass.fsType | quote}}
- {{- end }}
+  diskType: {{ .Values.storageclass.diskType | quote}}
+{{- end }}
