@@ -1,6 +1,6 @@
 ---
 sidebar_position: 5
-sidebar_label: "FAQs"
+sidebar_label: "CRD Object Class"
 ---
 
 # HwameiStor's CRD Object Class

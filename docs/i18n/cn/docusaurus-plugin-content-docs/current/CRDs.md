@@ -1,9 +1,9 @@
 ---
 sidebar_position: 6
-sidebar_label: "FAQs"
+sidebar_label: "CRD 对象类"
 ---
 
-# HwameiStor's CRD Object Class
+# HwameiStor's CRD 对象类
 
 Hwameistor 在 Kubernetes 已有的 PV 和 PVC 对象类基础上，Hwameistor 定义了更丰富的对象类，把 PV/PVC 和本地数据盘关联起来。
 
