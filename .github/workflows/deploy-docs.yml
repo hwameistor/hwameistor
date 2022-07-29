@@ -5,18 +5,20 @@ on:
     - main
     paths: 
     - 'docs/**'
+    - '.github/workflows/deploy-docs.yml'
   push:
     branches:
     - main
     paths: 
     - 'docs/**'
+    - '.github/workflows/deploy-docs.yml'
 jobs:
   test-deploy-docs:
     if: ${{ ( github.repository == 'hwameistor/hwameistor' ) && ( github.event_name != 'push' ) }}
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: website
+        working-directory: docs
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v3
@@ -33,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: website
+        working-directory: docs
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v3
