@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: website
+        working-directory: docs
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v3
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: website
+        working-directory: docs
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v3
