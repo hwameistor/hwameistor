@@ -33,14 +33,14 @@
   },
   "link.item.label.GitHub": {
     "message": "GitHub",
-    "description": "The label of footer link with label=GitHub linking to https://github.com/hwameistor"
+    "description": "The label of footer link with label=GitHub linking to https://github.com/hwameistor/hwameistor"
   },
   "copyright": {
     "message": "版权所有 © 2022 HwameiStor, 上海道客网络科技有限公司.",
     "description": "The footer copyright"
   },
   "link.item.label.Documentation": {
-    "message": "Documentation",
+    "message": "文档",
     "description": "The label of footer link with label=Documentation linking to /docs/intro"
   }
 }
