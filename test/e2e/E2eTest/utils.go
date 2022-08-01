@@ -129,7 +129,7 @@ func configureEnvironment(ctx context.Context) bool {
 		Name:      "hwameistor-local-storage-csi-controller",
 		Namespace: "hwameistor",
 	}
-	err = client.Get(context.TODO(), controllerKey, controller)
+	err = client.Get(ctx, controllerKey, controller)
 	if err != nil {
 		logrus.Error(err)
 		f.ExpectNoError(err)
@@ -139,7 +139,7 @@ func configureEnvironment(ctx context.Context) bool {
 		Name:      "hwameistor-webhook",
 		Namespace: "hwameistor",
 	}
-	err = client.Get(context.TODO(), webhookKey, webhook)
+	err = client.Get(ctx, webhookKey, webhook)
 	if err != nil {
 		logrus.Error(err)
 		f.ExpectNoError(err)
@@ -151,7 +151,7 @@ func configureEnvironment(ctx context.Context) bool {
 		Namespace: "hwameistor",
 	}
 
-	err = client.Get(context.TODO(), schedulerKey, scheduler)
+	err = client.Get(ctx, schedulerKey, scheduler)
 	if err != nil {
 		logrus.Error(err)
 		f.ExpectNoError(err)
@@ -192,6 +192,11 @@ func configureEnvironment(ctx context.Context) bool {
 			err = client.Get(ctx, localDiskManagerKey, localDiskManager)
 			if err != nil {
 				logrus.Error("localDiskManager error ", err)
+				f.ExpectNoError(err)
+			}
+			err = client.Get(ctx, webhookKey, webhook)
+			if err != nil {
+				logrus.Error("webhook error ", err)
 				f.ExpectNoError(err)
 			}
 
