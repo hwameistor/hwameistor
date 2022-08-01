@@ -7,7 +7,7 @@ set -e
 date=$(date +%Y%m%d%H%M)
 IMAGE_TAG=v${date}
 export IMAGE_TAG=${IMAGE_TAG}
-MODULES=(local-storage local-disk-manager scheduler)
+MODULES=(local-storage local-disk-manager scheduler admission)
 
 function build_image(){
 	echo "Build hwameistor image"
@@ -31,6 +31,8 @@ function prepare_install_params() {
 
 	# sed -i '/hwameistor\/scheduler/{n;d}' helm/hwameistor/values.yaml
 	 sed -i "/hwameistor\/scheduler/a \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
+
+	 sed -i "/hwameistor\/admission/a \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
 }
 
 # Step1: build all images tagged with <image_registry>/<module>:<date>

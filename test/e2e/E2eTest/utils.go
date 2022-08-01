@@ -134,6 +134,16 @@ func configureEnvironment(ctx context.Context) bool {
 		logrus.Error(err)
 		f.ExpectNoError(err)
 	}
+	webhook := &appsv1.Deployment{}
+	webhookKey := k8sclient.ObjectKey{
+		Name:      "hwameistor-webhook",
+		Namespace: "hwameistor",
+	}
+	err = client.Get(context.TODO(), webhookKey, webhook)
+	if err != nil {
+		logrus.Error(err)
+		f.ExpectNoError(err)
+	}
 
 	scheduler := &appsv1.Deployment{}
 	schedulerKey := k8sclient.ObjectKey{
@@ -162,7 +172,7 @@ func configureEnvironment(ctx context.Context) bool {
 	logrus.Infof("waiting for ready")
 	ch := make(chan struct{}, 1)
 	go func() {
-		for localStorage.Status.DesiredNumberScheduled != localStorage.Status.NumberAvailable || controller.Status.AvailableReplicas != int32(1) || scheduler.Status.AvailableReplicas != int32(1) || localDiskManager.Status.DesiredNumberScheduled != localDiskManager.Status.NumberAvailable {
+		for localStorage.Status.DesiredNumberScheduled != localStorage.Status.NumberAvailable || controller.Status.AvailableReplicas != int32(1) || scheduler.Status.AvailableReplicas != int32(1) || localDiskManager.Status.DesiredNumberScheduled != localDiskManager.Status.NumberAvailable || webhook.Status.AvailableReplicas != int32(1) {
 			time.Sleep(10 * time.Second)
 			err := client.Get(ctx, localStorageKey, localStorage)
 			if err != nil {
