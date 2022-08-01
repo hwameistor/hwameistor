@@ -1,0 +1,30 @@
+{
+  "version.label": {
+    "message": "下一个",
+    "description": "The label for version current"
+  },
+  "sidebar.tutorialSidebar.category.Documentation - Features": {
+    "message": "功能",
+    "description": "The label for category Documentation - Features in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Documentation - Installation": {
+    "message": "安装",
+    "description": "The label for category Documentation - Installation in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Documentation - Concepts": {
+    "message": "基本概念",
+    "description": "The label for category Documentation - Concepts in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Features": {
+    "message": "功能",
+    "description": "The label for category Features in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Installation": {
+    "message": "安装",
+    "description": "The label for category Installation in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Concepts": {
+    "message": "概念",
+    "description": "The label for category Concepts in sidebar tutorialSidebar"
+  }
+}
