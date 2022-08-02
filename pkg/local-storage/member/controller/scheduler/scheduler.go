@@ -46,8 +46,9 @@ func (s *scheduler) initResources() {
 
 	s.once.Do(func() {
 		s.resourceCollections.apiClient = s.apiClient
-		s.resourceCollections.initilizeResources()
 	})
+
+	s.resourceCollections.initilizeResources()
 
 }
 

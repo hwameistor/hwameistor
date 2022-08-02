@@ -104,6 +104,8 @@ func (r *resources) initilizeResources() {
 	for i := range nodeList.Items {
 		if nodeList.Items[i].Status.State == apisv1alpha1.NodeStateReady {
 			r.addTotalStorage(&nodeList.Items[i])
+		} else {
+			r.delTotalStorage(&nodeList.Items[i])
 		}
 	}
 	// initialize allocated capacity
