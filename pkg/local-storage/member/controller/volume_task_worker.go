@@ -135,7 +135,6 @@ func (m *manager) processVolumeCreate(vol *apisv1alpha1.LocalVolume) error {
 
 func (m *manager) processVolumeReadyAndNotReady(vol *apisv1alpha1.LocalVolume) error {
 	logCtx := m.logger.WithFields(log.Fields{"volume": vol.Name, "state": vol.Status.State})
-	logCtx.Debug("Checking a LocalVolume")
 
 	if vol.Spec.Config == nil {
 		logCtx.Debug("No config generated, create it firstly")

@@ -57,6 +57,10 @@ spec:
           spec:
             description: LocalVolumeReplicaSpec defines the desired state of LocalVolumeReplica
             properties:
+              VolumeMigratedName:
+                description: VolumeMigratedName is the migrated name of the local
+                  volumes. It is designed for the unconvertible volume migrate.
+                type: string
               delete:
                 default: false
                 description: Delete is to indicate where the replica should be deleted
