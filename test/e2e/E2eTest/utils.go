@@ -216,6 +216,128 @@ func configureEnvironment(ctx context.Context) bool {
 
 }
 
+func configureEnvironmentForPrTest(ctx context.Context) bool {
+	err := wait.PollImmediate(10*time.Second, 10*time.Minute, func() (done bool, err error) {
+		output := runInLinux("kubectl get pod -A  |grep -v Running |wc -l")
+		if output != "1\n" {
+			return false, nil
+		} else {
+			logrus.Info("k8s ready")
+			return true, nil
+		}
+
+	})
+	if err != nil {
+		logrus.Error(err)
+	}
+	installHwameiStorByHelm()
+	addLabels()
+	f := framework.NewDefaultFramework(lsv1.AddToScheme)
+	client := f.GetClient()
+
+	localStorage := &appsv1.DaemonSet{}
+	localStorageKey := k8sclient.ObjectKey{
+		Name:      "hwameistor-local-storage",
+		Namespace: "hwameistor",
+	}
+	err = client.Get(ctx, localStorageKey, localStorage)
+	if err != nil {
+		logrus.Error("%+v ", err)
+		f.ExpectNoError(err)
+	}
+
+	controller := &appsv1.Deployment{}
+	controllerKey := k8sclient.ObjectKey{
+		Name:      "hwameistor-local-storage-csi-controller",
+		Namespace: "hwameistor",
+	}
+	err = client.Get(ctx, controllerKey, controller)
+	if err != nil {
+		logrus.Error(err)
+		f.ExpectNoError(err)
+	}
+	webhook := &appsv1.Deployment{}
+	webhookKey := k8sclient.ObjectKey{
+		Name:      "hwameistor-webhook",
+		Namespace: "hwameistor",
+	}
+	err = client.Get(ctx, webhookKey, webhook)
+	if err != nil {
+		logrus.Error(err)
+		f.ExpectNoError(err)
+	}
+
+	scheduler := &appsv1.Deployment{}
+	schedulerKey := k8sclient.ObjectKey{
+		Name:      "hwameistor-scheduler",
+		Namespace: "hwameistor",
+	}
+
+	err = client.Get(ctx, schedulerKey, scheduler)
+	if err != nil {
+		logrus.Error(err)
+		f.ExpectNoError(err)
+	}
+	localDiskManager := &appsv1.DaemonSet{}
+	localDiskManagerKey := k8sclient.ObjectKey{
+		Name:      "hwameistor-local-disk-manager",
+		Namespace: "hwameistor",
+	}
+
+	err = client.Get(ctx, localDiskManagerKey, localDiskManager)
+	if err != nil {
+		logrus.Error(err)
+		f.ExpectNoError(err)
+
+	}
+
+	logrus.Infof("waiting for ready")
+	ch := make(chan struct{}, 1)
+	go func() {
+		for localStorage.Status.DesiredNumberScheduled != localStorage.Status.NumberAvailable || controller.Status.AvailableReplicas != int32(1) || scheduler.Status.AvailableReplicas != int32(1) || localDiskManager.Status.DesiredNumberScheduled != localDiskManager.Status.NumberAvailable || webhook.Status.AvailableReplicas != int32(1) {
+			time.Sleep(10 * time.Second)
+			err := client.Get(ctx, localStorageKey, localStorage)
+			if err != nil {
+				logrus.Error(" localStorage error ", err)
+				f.ExpectNoError(err)
+			}
+			err = client.Get(ctx, controllerKey, controller)
+			if err != nil {
+				logrus.Error("controller error ", err)
+				f.ExpectNoError(err)
+			}
+			err = client.Get(ctx, schedulerKey, scheduler)
+			if err != nil {
+				logrus.Error("scheduler error ", err)
+				f.ExpectNoError(err)
+			}
+			err = client.Get(ctx, localDiskManagerKey, localDiskManager)
+			if err != nil {
+				logrus.Error("localDiskManager error ", err)
+				f.ExpectNoError(err)
+			}
+			err = client.Get(ctx, webhookKey, webhook)
+			if err != nil {
+				logrus.Error("webhook error ", err)
+				f.ExpectNoError(err)
+			}
+
+		}
+		ch <- struct{}{}
+	}()
+
+	select {
+	case <-ch:
+		logrus.Infof("Components are ready ")
+		return true
+	case <-time.After(10 * time.Minute):
+		logrus.Error("timeout")
+		return false
+
+	}
+
+}
+
 func uninstallHelm() {
 	logrus.Printf("helm uninstall hwameistor")
 	_ = runInLinux("helm list -A | grep 'hwameistor' | awk '{print $1}' | xargs helm uninstall -n hwameistor")
@@ -229,7 +351,7 @@ func uninstallHelm() {
 		f.ExpectNoError(err)
 	}
 	for _, crd := range crdList.Items {
-		myBool, _ := regexp.MatchString(".*hwameistor.*", crd.Name)
+		myBool, _ := regexp.MatchString(".*hwameistor.*", crd.ObjectMeta.Name)
 		if myBool {
 			err := client.Delete(context.TODO(), &crd)
 			if err != nil {

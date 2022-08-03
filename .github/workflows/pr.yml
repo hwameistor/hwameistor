@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - "pkg/*"
+      - "pkg/**"
+      - "test/**"
 
 jobs:
   unit-test:
@@ -21,3 +22,18 @@ jobs:
           go-version: 1.17
       - name: unit-test
         run: make unit-test
+  e2e-test:
+    runs-on: ["self-hosted"]
+    timeout-minutes: 180
+    steps:
+      - name: delete
+        run: |
+          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: e2e test
+        env:
+          E2E_TESTING_LEVEL: "pr-e2e"
+        run: make e2e-test
