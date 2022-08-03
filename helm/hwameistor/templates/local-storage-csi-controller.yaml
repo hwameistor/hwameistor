@@ -41,13 +41,8 @@ spec:
         image: {{ .Values.k8sImageRegistry}}/{{ .Values.localStorageCSIController.provisioner.imageRepository}}:{{ .Values.localStorageCSIController.provisioner.tag}}
         imagePullPolicy: IfNotPresent
         name: provisioner
-        resources:
-          limits:
-            cpu: {{ .Values.localStorageCSIController.provisioner.resources.limits.cpu}}
-            memory: {{ .Values.localStorageCSIController.provisioner.resources.limits.memory}}
-          requests:
-            cpu: {{ .Values.localStorageCSIController.provisioner.resources.requests.cpu}}
-            memory: {{ .Values.localStorageCSIController.provisioner.resources.requests.memory}}
+        resources: 
+          {{- toYaml .Values.localStorageCSIController.provisioner.resources | nindent 12 }}
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         volumeMounts:
@@ -64,13 +59,8 @@ spec:
         image: {{ .Values.k8sImageRegistry}}/{{ .Values.localStorageCSIController.attacher.imageRepository}}:{{ .Values.localStorageCSIController.attacher.tag}}
         imagePullPolicy: IfNotPresent
         name: attacher
-        resources:
-          limits:
-            cpu: {{ .Values.localStorageCSIController.attacher.resources.limits.cpu}}
-            memory: {{ .Values.localStorageCSIController.attacher.resources.limits.memory}}
-          requests:
-            cpu: {{ .Values.localStorageCSIController.attacher.resources.requests.cpu}}
-            memory: {{ .Values.localStorageCSIController.attacher.resources.requests.memory}}
+        resources: 
+          {{- toYaml .Values.localStorageCSIController.attacher.resources | nindent 12 }}
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         volumeMounts:
@@ -86,20 +76,15 @@ spec:
         image: {{ .Values.k8sImageRegistry}}/{{ .Values.localStorageCSIController.resizer.imageRepository}}:{{ .Values.localStorageCSIController.resizer.tag}}
         imagePullPolicy: IfNotPresent
         name: resizer
-        resources:
-          limits:
-            cpu: {{ .Values.localStorageCSIController.resizer.resources.limits.cpu}}
-            memory: {{ .Values.localStorageCSIController.resizer.resources.limits.memory}}
-          requests:
-            cpu: {{ .Values.localStorageCSIController.resizer.resources.requests.cpu}}
-            memory: {{ .Values.localStorageCSIController.resizer.resources.requests.memory}}
+        resources: 
+          {{- toYaml .Values.localStorageCSIController.resizer.resources | nindent 12 }}
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         volumeMounts:
         - mountPath: /csi
           name: socket-dir
       dnsPolicy: ClusterFirst
-      priorityClassName: system-cluster-critical
+      priorityClassName: {{ .Values.localStorageCSIController.priorityClassName }}
       restartPolicy: Always
       serviceAccountName: hwameistor-admin 
       serviceAccount: hwameistor-admin

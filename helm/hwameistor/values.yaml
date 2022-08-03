@@ -4,6 +4,8 @@ hwameistorImageRegistry: ghcr.io
 #k8sImageRegistry: quay.m.daocloud.io
 #hwameistorImageRegistry: ghcr.m.daocloud.io
 
+kubeletRootDir: /var/lib/kubelet
+
 # StorageClass Settings
 storageclass:
   # If enabled, a hwameistor storageclass will be created in your system
@@ -11,7 +13,7 @@ storageclass:
   # If enabled, hwameistor storageclass will be a default storageclass in system
   # Attention: ensure your system doesn't have any default storageclass before
   # more info: https://kubernetes.io/docs/tasks/administer-cluster/change-default-storage-class/
-  default: true
+  default: false
   # If allowed, volume can be expanded by modify pvc related field
   allowVolumeExpansion: true
   reclaimPolicy: Delete
@@ -28,24 +30,12 @@ scheduler:
   replicas: 1
   kubeApiServerConfigFilePath: /etc/kubernetes/admin.conf
   imageRepository: hwameistor/scheduler
-  resources:
-    limits:
-      cpu: 300m
-      memory: 300Mi
-    requests:
-      cpu: 100m
-      memory: 100Mi
+  resources: {}
 
 webhook:
   replicas: 1
   imageRepository: hwameistor/admission
-  resources:
-    limits:
-      cpu: 300m
-      memory: 300Mi
-    requests:
-      cpu: 100m
-      memory: 100Mi
+  resources: {}
 
 localDiskManager:
   tolerationsOnMaster: true
@@ -53,97 +43,46 @@ localDiskManager:
   registrar:
     imageRepository: k8scsi/csi-node-driver-registrar
     tag: v1.1.0
-    resources:
-      limits:
-        cpu: 500m
-        memory: 500Mi
-      requests:
-        cpu: 5m
-        memory: 5Mi
+    resources: {}
   manager:
     imageRepository: hwameistor/local-disk-manager
-    resources:
-      limits:
-        cpu: 300m
-        memory: 300Mi
-      requests:
-        cpu: 100m
-        memory: 100Mi
+    resources: {}
 
 localDiskManagerCSIController:
   replicas: 1
+  priorityClassName: 
   provisioner:
     imageRepository: k8scsi/csi-provisioner
     tag: v2.0.3
-    resources:
-      limits:
-        cpu: 500m
-        memory: 500Mi
-      requests:
-        cpu: 5m
-        memory: 5Mi
+    resources: {}
   attacher:
     imageRepository: k8scsi/csi-attacher
     tag: v3.0.1
-    resources:
-      limits:
-        cpu: 500m
-        memory: 500Mi
-      requests:
-        cpu: 5m
-        memory: 5Mi
-
+    resources: {}
+    
 localStorage:
   tolerationsOnMaster: true
+  priorityClassName: 
   registrar:
     imageRepository: k8scsi/csi-node-driver-registrar
     tag: v1.1.0
-    resources:
-      limits:
-        cpu: 500m
-        memory: 500Mi
-      requests:
-        cpu: 5m
-        memory: 5Mi
+    resources: {}
   member:
     imageRepository: hwameistor/local-storage
-    resources:
-      limits:
-        cpu: 500m
-        memory: 500Mi
-      requests:
-        cpu: 5m
-        memory: 5Mi
+    resources: {}
 
 localStorageCSIController:
   replicas: 1
+  priorityClassName:
   provisioner:
     imageRepository: k8scsi/csi-provisioner
     tag: v2.0.3
-    resources:
-      limits:
-        cpu: 500m
-        memory: 500Mi
-      requests:
-        cpu: 5m
-        memory: 5Mi
+    resources: {}
   attacher:
     imageRepository: k8scsi/csi-attacher
     tag: v3.0.1
-    resources:
-      limits:
-        cpu: 500m
-        memory: 500Mi
-      requests:
-        cpu: 5m
-        memory: 5Mi
+    resources: {}
   resizer:
     imageRepository: k8scsi/csi-resizer
     tag: v1.0.1
-    resources:
-      limits:
-        cpu: 500m
-        memory: 500Mi
-      requests:
-        cpu: 5m
-        memory: 5Mi
+    resources: {}

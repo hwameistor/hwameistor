@@ -8,8 +8,8 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 const config = {
   title: 'HwameiStor',
   tagline: 'Agile local storage system for cloud-native stateful workloads',
-  url: 'https://hwameistor.io ',
-  baseUrl: '/',
+  url: "https://hwameistor.io",
+  baseUrl: "/",
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
