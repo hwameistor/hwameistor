@@ -23,6 +23,8 @@ spec:
         - image: jackmmzhou/self-signed:v1
           imagePullPolicy: Always
           name: webhook-init
+          resources:
+            {{- toYaml .Values.webhook.resources | nindent 12 }}
           env:
             - name: WEBHOOK_NAMESPACE
               value: {{ .Release.Namespace}}
@@ -43,13 +45,8 @@ spec:
             - --tls-cert-file=tls.crt
           image: {{ .Values.hwameistorImageRegistry}}/{{ .Values.webhook.imageRepository}}:{{ template "hwameistor.webhookImageTag" . }}
           imagePullPolicy: IfNotPresent
-          resources:
-            limits:
-              cpu: {{ .Values.webhook.resources.limits.cpu}}
-              memory: {{ .Values.webhook.resources.limits.memory}}
-            requests:
-              cpu: {{ .Values.webhook.resources.requests.cpu}}
-              memory: {{ .Values.webhook.resources.requests.memory}}
+          resources: 
+            {{- toYaml .Values.webhook.resources | nindent 12 }}
           ports:
             - containerPort: 18443
               name: webhook-api

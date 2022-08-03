@@ -14,7 +14,7 @@ spec:
       labels:
         app: hwameistor-local-disk-csi-controller
     spec:
-      priorityClassName: system-cluster-critical
+      priorityClassName: {{ .Values.localDiskManagerCSIController.priorityClassName }}
       affinity:
         podAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -28,6 +28,8 @@ spec:
       serviceAccount: hwameistor-admin
       containers:
         - name: provisioner
+          resources: 
+            {{- toYaml .Values.localDiskManagerCSIController.provisioner.resources | nindent 12 }}
           image: {{ .Values.k8sImageRegistry}}/{{ .Values.localDiskManagerCSIController.provisioner.imageRepository}}:{{ .Values.localDiskManagerCSIController.provisioner.tag}}
           imagePullPolicy: "IfNotPresent"
           args:
@@ -44,6 +46,8 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: attacher
+          resources: 
+            {{- toYaml .Values.localDiskManagerCSIController.attacher.resources | nindent 12 }}
           image: {{ .Values.k8sImageRegistry}}/{{ .Values.localDiskManagerCSIController.attacher.imageRepository}}:{{ .Values.localDiskManagerCSIController.attacher.tag}}
           imagePullPolicy: IfNotPresent
           args:

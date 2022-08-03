@@ -35,13 +35,8 @@ spec:
         image: {{ .Values.hwameistorImageRegistry}}/{{ .Values.scheduler.imageRepository}}:{{ template "hwameistor.scheudlerImageTag" . }}
         imagePullPolicy: IfNotPresent
         name: hwameistor-kube-scheduler
-        resources:
-          limits:
-            cpu: {{ .Values.scheduler.resources.limits.cpu}}
-            memory: {{ .Values.scheduler.resources.limits.memory}}
-          requests:
-            cpu: {{ .Values.scheduler.resources.requests.cpu}}
-            memory: {{ .Values.scheduler.resources.requests.memory}}
+        resources: 
+          {{- toYaml .Values.scheduler.resources | nindent 12 }}
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         volumeMounts:
