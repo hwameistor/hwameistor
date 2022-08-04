@@ -17,8 +17,8 @@ storageclass:
   # If allowed, volume can be expanded by modify pvc related field
   allowVolumeExpansion: true
   reclaimPolicy: Delete
-  # If set true, you need install drbd kernel module first
-  enableVolumeHA: false
+  # If value >1, means enable volumeHA, you need install drbd kernel module on each node first
+  replicaNumber: 1
   # Represent which kind disk will be used to provision volume
   diskType: HDD
   fsType: xfs
