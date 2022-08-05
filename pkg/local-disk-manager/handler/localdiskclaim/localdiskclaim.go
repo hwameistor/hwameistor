@@ -2,6 +2,7 @@ package localdiskclaim
 
 import (
 	"context"
+	"fmt"
 
 	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
 	localdisk2 "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
@@ -105,7 +106,7 @@ func (ldcHandler *LocalDiskClaimHandler) AssignFreeDisk() error {
 
 	if len(assignedDisks) == 0 {
 		log.Infof("There is no available disk assigned to %v", ldc.GetName())
-		return nil
+		return fmt.Errorf("there is no available disk assigned to %v", ldc.GetName())
 	}
 
 	log.Infof("Disk %v has been assigned to %v", assignedDisks, ldc.GetName())
