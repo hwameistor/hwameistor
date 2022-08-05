@@ -1,4 +1,3 @@
-{{- if not (lookup "rbac.authorization.k8s.io/v1" "ClusterRole" "" "hwameistor-role") }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -10,4 +9,3 @@ rules:
   verbs: ["*"]
 - nonResourceURLs: ["*"]
   verbs: ["*"]
-{{- end }}

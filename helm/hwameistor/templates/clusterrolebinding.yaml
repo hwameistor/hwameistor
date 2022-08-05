@@ -1,4 +1,3 @@
-{{- if not (lookup "rbac.authorization.k8s.io/v1" "ClusterRoleBinding" "" "hwameistor-admin-binding") }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -11,4 +10,4 @@ subjects:
 - kind: ServiceAccount
   name: hwameistor-admin
   namespace: {{ .Release.Namespace}}
-{{- end }}
+  
