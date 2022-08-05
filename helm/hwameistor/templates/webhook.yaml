@@ -1,4 +1,3 @@
-{{- if not (lookup "apps/v1" "Deployment" .Release.Namespace "hwameistor-webhook") }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -57,10 +56,8 @@ spec:
       volumes:
        - name: webhook-tls-certs
          emptyDir: {}
- {{ end }}
 
 ---
-{{- if not (lookup "apps/v1" "Service" .Release.Namespace "hwameistor-webhook") -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -72,4 +69,3 @@ spec:
   ports:
     - port: 443
       targetPort: webhook-api
-  {{- end -}}
