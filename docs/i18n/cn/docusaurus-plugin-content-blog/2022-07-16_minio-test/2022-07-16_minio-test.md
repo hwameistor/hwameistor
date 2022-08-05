@@ -1,9 +1,11 @@
 ﻿---
 slug: minio
-title: HwameiStor 对 Minio 的支持
+title: 'HwameiStor 对 Minio 的支持'
 authors: [Simon]
 tags: [Test]
 ---
+
+# HwameiStor 对 Minio 的支持
 
 ## MinIO 简介
 
