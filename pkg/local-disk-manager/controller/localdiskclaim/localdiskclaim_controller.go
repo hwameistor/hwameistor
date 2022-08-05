@@ -2,6 +2,7 @@ package localdiskclaim
 
 import (
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskclaim"
+	"time"
 
 	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
 	log "github.com/sirupsen/logrus"
@@ -23,6 +24,12 @@ import (
 
 // Add creates a new LocalDiskClaim Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
+
+const (
+	// RequeueInterval Requeue every 5 seconds
+	RequeueInterval = time.Second * 5
+)
+
 func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
 }
@@ -95,8 +102,8 @@ func (r *ReconcileLocalDiskClaim) Reconcile(req reconcile.Request) (reconcile.Re
 	case ldmv1alpha1.LocalDiskClaimStatusPending:
 		if err = ldcHandler.AssignFreeDisk(); err != nil {
 			r.Recorder.Eventf(ldc, v1.EventTypeWarning, "LocalDiskClaimFail", "Assign free disk fail, due to error: %v", err)
-			log.WithError(err).Errorf("Assign free disk for locadiskclaim %v/%v fail", ldc.GetNamespace(), ldc.GetName())
-			return reconcile.Result{}, err
+			log.WithError(err).Errorf("Assign free disk for locadiskclaim %v/%v fail, will try after %v", ldc.GetNamespace(), ldc.GetName(), RequeueInterval)
+			return reconcile.Result{RequeueAfter: RequeueInterval}, nil
 		}
 
 	case ldmv1alpha1.LocalDiskClaimStatusBound:
