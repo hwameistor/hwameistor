@@ -1,4 +1,3 @@
-{{- if not (lookup "apps/v1" "DaemonSet" .Release.Namespace "hwameistor-local-storage") }}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -171,4 +170,3 @@ spec:
     rollingUpdate:
       maxUnavailable: 1
     type: RollingUpdate
-{{- end -}}

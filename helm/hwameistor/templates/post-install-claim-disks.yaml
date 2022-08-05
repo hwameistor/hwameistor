@@ -1,7 +1,6 @@
 # Claim nodes disks
 {{-  range .Values.storageNodes }}
 {{- $name :=  .  }}
-{{- if not (lookup "hwameistor.io/v1alpha1" "LocalDiskClaim" "" $name ) }}
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalDiskClaim
 metadata:
@@ -17,5 +16,4 @@ spec:
   description:
     diskType: {{ $.Values.storageclass.diskType }}
 ---
-{{- end}}
 {{- end}}
