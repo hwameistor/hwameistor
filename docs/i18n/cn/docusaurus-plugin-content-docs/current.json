@@ -15,9 +15,9 @@
     "message": "后端操作",
     "description": "The label for category Backend Operations in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.Components": {
-    "message": "组件",
-    "description": "The label for category Components in sidebar tutorialSidebar"
+  "sidebar.tutorialSidebar.category.Modules": {
+    "message": "模块",
+    "description": "The label for category modules in sidebar tutorialSidebar"
   },
   "sidebar.tutorialSidebar.category.Applications": {
     "message": "应用",
