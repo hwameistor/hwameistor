@@ -1,0 +1,5 @@
+operator:
+  image:
+    repository: minio/operator
+    tag: noop
+    pullPolicy: IfNotPresent

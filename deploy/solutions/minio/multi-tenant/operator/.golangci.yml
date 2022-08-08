@@ -1,0 +1,40 @@
+linters-settings:
+  golint:
+    min-confidence: 0
+
+  misspell:
+    locale: US
+
+linters:
+  disable-all: true
+  enable:
+    - typecheck
+    - goimports
+    - misspell
+    - govet
+    - revive
+    - ineffassign
+    - gosimple
+    - deadcode
+    - structcheck
+    - gomodguard
+    - unused
+    - structcheck
+    - unconvert
+    - varcheck
+    - gofumpt
+
+issues:
+  exclude-use-default: false
+  exclude:
+      - should have a package comment
+      - error strings should not be capitalized or end with punctuation or a newline
+  exclude-rules:
+    # Exclude linters from running on auto-generated files.
+    - path: pkg/client
+      linters:
+        - revive
+        - deadcode
+
+service:
+  golangci-lint-version: 1.43.0 # use the fixed version to not introduce new linters unexpectedly
