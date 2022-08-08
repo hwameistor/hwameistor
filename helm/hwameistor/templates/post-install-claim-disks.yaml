@@ -14,6 +14,6 @@ spec:
   # The field value should be consistent with the nodeName in localdisk
   nodeName: {{ . }}
   description:
-    diskType: {{ $.Values.storageclass.diskType }}
+    diskType: {{ $.Values.storageClass.diskType }}
 ---
 {{- end}}

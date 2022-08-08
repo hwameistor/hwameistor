@@ -7,7 +7,7 @@ hwameistorImageRegistry: ghcr.io
 kubeletRootDir: /var/lib/kubelet
 
 # StorageClass Settings
-storageclass:
+storageClass:
   # If enabled, a hwameistor storageclass will be created in your system
   enabled: true
   # If enabled, hwameistor storageclass will be a default storageclass in system
