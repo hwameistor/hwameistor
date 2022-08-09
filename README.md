@@ -33,7 +33,7 @@ Local-Storage (LS) provides a cloud-native local storage system. It aims to prov
 The Scheduler is to automatically schedule the Pod to the correct node which has the associated HwameiStor volume.
 
 ### Admission-Controller
-Admission-Controller is a webhook that can automatically determine the pod that uses the HwameiStor Volume and help it modify the schedulerName to hwameistor-scheduler.
+Admission-Controller is a webhook that can automatically determine which pod uses the HwameiStor volume and, help to modify the schedulerName to hwameistor-scheduler.
 
 ## Documentation
 
