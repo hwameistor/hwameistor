@@ -5,10 +5,17 @@ sidebar_label: "安装后检查"
 
 # 安装后检查
 
-The below example is from a 4-node kubernetes cluster:
+下文展示了一个 kubernetes 集群的示例。
+
+运行以下命令查看各节点状态：
 
 ```bash
-$ kubectl get no
+kubectl get no
+```
+
+发现集群由 4 个节点组成：
+
+```console
 NAME           STATUS   ROLES   AGE   VERSION
 k8s-master-1   Ready    master  82d   v1.24.3-2+63243a96d1c393
 k8s-worker-1   Ready    worker  36d   v1.24.3-2+63243a96d1c393
@@ -16,12 +23,17 @@ k8s-worker-2   Ready    worker  59d   v1.24.3-2+63243a96d1c393
 k8s-worker-3   Ready    worker  36d   v1.24.3-2+63243a96d1c393
 ```
 
-## Step 1: Check the pods
+## 步骤 1：检查 Pod
 
-The following pods should be up and running:
+运行以下命令检查 hwameistor 相关 Pod。
 
 ```bash
-$ kubectl -n hwameistor get pod
+kubectl -n hwameistor get pod
+```
+
+屏幕显示正在运行的 Pod：
+
+```console
 NAME                                                       READY   STATUS                  RESTARTS   AGE
 hwameistor-local-disk-csi-controller-665bb7f47d-6227f      2/2     Running                 0          30s
 hwameistor-local-disk-manager-5ph2d                        2/2     Running                 0          30s
@@ -38,15 +50,35 @@ hwameistor-webhook-986479678-278cr                         1/1     Running      
 ```
 
 :::info
-`local-disk-manager` and `local-storage` are `DaemonSets`. They should have one pod on each Kubernetes node.
+`local-disk-manager` 和 `local-storage` 是 `DaemonSet`。在每个 Kubernetes 节点上都应该有一个 DaemonSet Pod。
 :::
 
-## Step 2: Check the APIs
+## 步骤 2：检查 StorageClass
 
-HwameiStor CRDs create the following APIs.
+创建 `storageClass` 后，运行以下命令：
 
 ```bash
-$ kubectl api-resources --api-group hwameistor.io
+kubectl get storageclass hwameistor-storage-disk-hdd
+```
+
+屏幕显示当前已创建的 StorageClass：
+
+```console
+NAME                          PROVISIONER          RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+hwameistor-storage-disk-hdd   disk.hwameistor.io   Delete          WaitForFirstConsumer   true                   4m29s
+```
+
+## 步骤 3：检查 API
+
+运行以下命令通过 HwameiStor CRD 创建 API。
+
+```bash
+kubectl api-resources --api-group hwameistor.io
+```
+
+创建的 API 如下：
+
+```console
 NAME                       SHORTNAMES   APIVERSION               NAMESPACED   KIND
 localdiskclaims            ldc          hwameistor.io/v1alpha1   false        LocalDiskClaim
 localdisknodes             ldn          hwameistor.io/v1alpha1   false        LocalDiskNode
@@ -63,21 +95,37 @@ localvolumereplicas        lvr          hwameistor.io/v1alpha1   false        Lo
 localvolumes               lv           hwameistor.io/v1alpha1   false        LocalVolume
 ```
 
-For the details about CRDs, please also refer to the chapter [CRDs](../../3.architecture_of_hwameistor/3.4.apis.md).
+有关 CRD 的详细信息，另请参见 [CRD](../04.modules/00.crd.md) 一节。
 
-# Step 3: Check the localDiskNode and localDisks
+## 步骤 4：检查 localDiskNode 和 localDisks
 
-HwameiStor autoscans each node and registers each disk as CRD `localDisk(ld)`. The unused disks are displayed with `PHASE: Unclaimed`.
+HwameiStor 自动扫描每个节点并将每个磁盘注册为 CRD `localDisk(ld)`。未使用的磁盘显示为 `PHASE: Unclaimed`。
+
+运行以下命令查看带有 localDisk 的节点：
 
 ```bash
-$ kubectl get localdisknodes
+kubectl get localdisknodes
+```
+
+屏幕显示当前 4 个节点上的磁盘状况：
+
+```console
 NAME           TOTALDISK   FREEDISK
 k8s-master-1   5           3
 k8s-worker-1   5           2
 k8s-worker-2   5           2
 k8s-worker-3   5           2
+```
 
-$ kubectl get localdisks
+运行以下命令查看 localdisk：
+
+```bash
+kubectl get localdisks
+```
+
+屏幕显示 sda、sdb、sdc、sdd、sde 等磁盘的信息：
+
+```console
 NAME               NODEMATCH      CLAIM   PHASE
 k8s-master-1-sda   k8s-master-1           Inuse
 k8s-worker-1-sda   k8s-worker-1           Inuse
@@ -90,4 +138,3 @@ k8s-worker-3-sda   k8s-worker-3           Inuse
 k8s-worker-3-sdb   k8s-worker-3           Unclaimed
 k8s-worker-3-sdc   k8s-worker-3           Unclaimed
 ```
-
