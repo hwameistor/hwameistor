@@ -17,10 +17,11 @@ The latest release of HwameiStor is [![hwameistor-releases](https://img.shields.
 
 ## Modules and Code
 
-HwameiStor contains 3 modules:
+HwameiStor contains 4 modules:
 * local-disk-manager
 * local-storage
 * scheduler
+* admission-controller
 
 ### Local-Disk-Manager
 Local-Disk-Manager (LDM) is designed to hold the management of disks on nodes. Other modules such as Local-Storage can take advantage of the management of disks by LDM.
@@ -30,6 +31,9 @@ Local-Storage (LS) provides a cloud-native local storage system. It aims to prov
 
 ### Scheduler
 The Scheduler is to automatically schedule the Pod to the correct node which has the associated HwameiStor volume.
+
+### Admission-Controller
+Admission-Controller is a webhook that can automatically determine the pod that uses the HwameiStor Volume and help it modify the schedulerName to hwameistor-scheduler.
 
 ## Documentation
 
