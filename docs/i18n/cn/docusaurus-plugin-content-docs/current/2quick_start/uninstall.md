@@ -6,45 +6,45 @@ sidebar_label: "卸载"
 # 卸载
 
 :::danger
-Before uninstalling HwameiStor, make sure you have backed up all the data.
+务必先备份好所有数据，再卸载 HwameiStor。
 :::
 
-## Step 1: Delete helm instance
+## 删除 Helm 实例
 
 ```bash
-$ helm delete \
-    --namespace hwameistor \
-    hwameistor
+helm delete \
+  --namespace hwameistor \
+  hwameistor
 ```
 
-## Step 2: Cleanup
+## 清理工作
 
-### Remove namespace
+1. 移除命名空间。
 
-```bash
-$ kubectl delete ns hwameistor
-```
+   ```bash
+   kubectl delete ns hwameistor
+   ```
 
-### Remove CRDs
+2. 移除 CRD。
 
-```bash
-$ kubectl get crd -o name \
-    | grep hwameistor \
-    | xargs -t kubectl delete
-```
+   ```bash
+   kubectl get crd -o name \
+     | grep hwameistor \
+     | xargs -t kubectl delete
+   ```
 
-### Remove clusterRoles and roleBindings
+3. 移除 clusterroles 和 rolebindings。
 
-```bash
-$ kubectl get clusterrolebinding,clusterrole -o name \
-    | grep hwameistor \
-    | xargs -t kubectl delete
-```
+   ```bash
+   kubectl get clusterrolebinding,clusterrole -o name \
+     | grep hwameistor \
+     | xargs -t kubectl delete
+   ```
 
-### Remove storageClass
+4. 移除 storageClass
 
-```bash
-$ kubectl get sc -o name \
-    | grep hwameistor-storage-lvm- \
-    | xargs -t kubectl delete
-```
+   ```bash
+   kubectl get sc -o name \
+     | grep hwameistor-storage-lvm- \
+     | xargs -t kubectl delete
+   ```
