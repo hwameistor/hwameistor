@@ -16,6 +16,7 @@ storageClass:
   default: false
   # If allowed, volume can be expanded by modify pvc related field
   allowVolumeExpansion: true
+  convertible: false
   reclaimPolicy: Delete
   # If value >1, means enable volumeHA, you need install drbd kernel module on each node first
   replicaNumber: 1
