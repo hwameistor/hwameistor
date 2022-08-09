@@ -1,71 +1,71 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hwameistor-webhook
+  name: hwameistor-admission-controller
   namespace: {{ .Release.Namespace}}
   labels:
-    app: hwameistor-webhook
+    app: hwameistor-admission-controller
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: hwameistor-webhook
+      app: hwameistor-admission-controller
   template:
     metadata:
       labels:
-        app: hwameistor-webhook
+        app: hwameistor-admission-controller
     spec:
       serviceAccountName: hwameistor-admin
       initContainers:
         - image: ghcr.io/hwameistor/self-signed:v1
           imagePullPolicy: Always
-          name: webhook-init
+          name: admission-controller-init
           resources:
-            {{- toYaml .Values.webhook.resources | nindent 12 }}
+            {{- toYaml .Values.admission.resources | nindent 12 }}
           env:
             - name: WEBHOOK_NAMESPACE
               value: {{ .Release.Namespace}}
             - name: MUTATE_CONFIG
               value: hwameistor-admission-mutate
             - name: WEBHOOK_SERVICE
-              value: hwameistor-webhook
+              value: hwameistor-admission-controller
             - name: MUTATE_PATH
               value: /mutate
           volumeMounts:
             - mountPath: /etc/webhook/certs
-              name: webhook-tls-certs
+              name: admission-controller-tls-certs
       containers:
         - name: server
           args:
             - --cert-dir=/etc/webhook/certs
             - --tls-private-key-file=tls.key
             - --tls-cert-file=tls.crt
-          image: {{ .Values.hwameistorImageRegistry}}/{{ .Values.webhook.imageRepository}}:{{ template "hwameistor.webhookImageTag" . }}
+          image: {{ .Values.hwameistorImageRegistry}}/{{ .Values.admission.imageRepository}}:{{ template "hwameistor.admissionImageTag" . }}
           imagePullPolicy: IfNotPresent
           resources: 
-            {{- toYaml .Values.webhook.resources | nindent 12 }}
+            {{- toYaml .Values.admission.resources | nindent 12 }}
           ports:
             - containerPort: 18443
-              name: webhook-api
+              name: admission-api
           volumeMounts:
-            - name: webhook-tls-certs
+            - name: admission-controller-tls-certs
               mountPath: /etc/webhook/certs
               readOnly: true
       volumes:
-       - name: webhook-tls-certs
+       - name: admission-controller-tls-certs
          emptyDir: {}
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: hwameistor-webhook
+  name: hwameistor-admission-controller
   namespace: {{ .Release.Namespace}}
 spec:
   selector:
-    app: hwameistor-webhook
+    app: hwameistor-admission-controller
   ports:
     - port: 443
-      targetPort: webhook-api
+      targetPort: admission-api
