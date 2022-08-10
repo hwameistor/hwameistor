@@ -18,9 +18,9 @@
   {{- default .Chart.Version .Values.localDiskManager.manager.tag -}}
 {{- end -}}
 
-{{/* Allow Webhook image tag to be overridden. */}}
-{{- define "hwameistor.webhookImageTag" -}}
-  {{- default .Chart.Version .Values.webhook.tag -}}
+{{/* Allow Admission image tag to be overridden. */}}
+{{- define "hwameistor.admissionImageTag" -}}
+  {{- default .Chart.Version .Values.admission.tag -}}
 {{- end -}}
 
 {{/* Allow KubeletRootDir to be overridden. */}}

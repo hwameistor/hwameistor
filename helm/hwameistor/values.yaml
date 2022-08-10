@@ -32,7 +32,7 @@ scheduler:
   imageRepository: hwameistor/scheduler
   resources: {}
 
-webhook:
+admission:
   replicas: 1
   imageRepository: hwameistor/admission
   resources: {}
