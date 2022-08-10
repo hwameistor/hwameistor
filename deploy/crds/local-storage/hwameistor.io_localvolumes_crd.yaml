@@ -170,9 +170,9 @@ spec:
                   associated PVC
                 type: string
               replicaNumber:
-                description: 'replica number: 1 - non-HA, 2 - HA, 3 - migration (temp)'
+                description: 'replica number: 1 - non-HA, 2 - HA, 6 - migration (temp)'
                 format: int64
-                maximum: 3
+                maximum: 6
                 minimum: 1
                 type: integer
               requiredCapacityBytes:
