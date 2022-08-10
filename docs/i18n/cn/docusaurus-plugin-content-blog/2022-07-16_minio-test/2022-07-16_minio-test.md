@@ -7,6 +7,8 @@ tags: [Test]
 
 # HwameiStor 对 Minio 的支持
 
+本文讲述如何以 HwameiStor 为底座，搭建 MinIO 存储解决方案，实践验证了 MinIO 的各项基本功能和多租户隔离测试。
+
 ## MinIO 简介
 
 MinIO 是一款高性能、分布式、兼容 S3 的多云对象存储系统套件。MinIO 原生支持 Kubernetes，能够支持所有公有云、私有云及边缘计算环境。
@@ -343,6 +345,6 @@ kubect get lvr
 
 ## 结论
 
-本次测试是在 kubernetes 1.22 平台上部署了 minio 分布式对象存储并对接 HwameiStor 本地存储。在此环境中完成了基本能力测试，系统安全测试及运维管理测试。
+本次测试是在 Kubernetes 1.22 平台上部署了 MinIO 分布式对象存储并对接 HwameiStor 本地存储。在此环境中完成了基本能力测试、系统安全测试及运维管理测试。
 
-全部测试成功通过。
+全部测试成功通过，证实了 HwameiStor 能够完美适配 MinIO 存储方案。
