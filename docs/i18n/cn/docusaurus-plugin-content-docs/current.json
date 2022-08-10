@@ -1,30 +1,42 @@
 {
   "version.label": {
-    "message": "下一个",
+    "message": "下一页",
     "description": "The label for version current"
   },
-  "sidebar.tutorialSidebar.category.Quick Deployment": {
-    "message": "快速安装",
-    "description": "The label for category Quick Deployment in sidebar tutorialSidebar"
+  "sidebar.tutorialSidebar.category.Quick Start": {
+    "message": "快速入门",
+    "description": "The label for category Quick Start in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.Frontend Operations": {
-    "message": "前端操作",
-    "description": "The label for category Frontend Operations in sidebar tutorialSidebar"
+  "sidebar.tutorialSidebar.category.Installation": {
+    "message": "安装",
+    "description": "The label for category Installation in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.Backend Operations": {
-    "message": "后端操作",
-    "description": "The label for category Backend Operations in sidebar tutorialSidebar"
+  "sidebar.tutorialSidebar.category.Start a Stateful Application": {
+    "message": "部署一个有状态应用",
+    "description": "The label for category Start a Stateful Application in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Advanced Features": {
+    "message": "高级功能",
+    "description": "The label for category Advanced Features in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Architecture of HwameiStor": {
+    "message": "HwameiStor 的架构",
+    "description": "The label for category Architecture of HwameiStor in sidebar tutorialSidebar"
   },
   "sidebar.tutorialSidebar.category.Modules": {
-    "message": "模块",
-    "description": "The label for category modules in sidebar tutorialSidebar"
+    "message": "组件",
+    "description": "The label for category Modules in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Development Designs": {
+    "message": "研发设计",
+    "description": "The label for category Development Designs in sidebar tutorialSidebar"
   },
   "sidebar.tutorialSidebar.category.Applications": {
     "message": "应用",
     "description": "The label for category Applications in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.Terminology": {
+  "sidebar.tutorialSidebar.category.Terminologies": {
     "message": "术语",
-    "description": "The label for category Terminology in sidebar tutorialSidebar"
+    "description": "The label for category Terminologies in sidebar tutorialSidebar"
   }
 }
