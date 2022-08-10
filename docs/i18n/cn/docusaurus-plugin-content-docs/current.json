@@ -1,30 +1,42 @@
 {
   "version.label": {
-    "message": "下一个",
+    "message": "下一页",
     "description": "The label for version current"
   },
-  "sidebar.tutorialSidebar.category.Quick Deployment": {
-    "message": "快速安装",
-    "description": "The label for category Quick Deployment in sidebar tutorialSidebar"
+  "sidebar.tutorialSidebar.category.2. Quick Start": {
+    "message": "2. 快速入门",
+    "description": "The label for category 2. Quick Start in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.Frontend Operations": {
-    "message": "前端操作",
-    "description": "The label for category Frontend Operations in sidebar tutorialSidebar"
+  "sidebar.tutorialSidebar.category.2.1. Installation": {
+    "message": "2.1. 安装",
+    "description": "The label for category 2.1. Installation in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.Backend Operations": {
-    "message": "后端操作",
-    "description": "The label for category Backend Operations in sidebar tutorialSidebar"
+  "sidebar.tutorialSidebar.category.2.2. Start a Stateful Application": {
+    "message": "2.2. 部署一个有状态应用",
+    "description": "The label for category 2.2. Start a Stateful Application in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.Modules": {
-    "message": "模块",
-    "description": "The label for category modules in sidebar tutorialSidebar"
+  "sidebar.tutorialSidebar.category.2.3. Advanced Features": {
+    "message": "2.3. 高级功能",
+    "description": "The label for category 2.3. Advanced Features in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.Applications": {
-    "message": "应用",
-    "description": "The label for category Applications in sidebar tutorialSidebar"
+  "sidebar.tutorialSidebar.category.3. Architecture of HwameiStor": {
+    "message": "3. HwameiStor 的架构",
+    "description": "The label for category 3. Architecture of HwameiStor in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.Terminology": {
-    "message": "术语",
-    "description": "The label for category Terminology in sidebar tutorialSidebar"
+  "sidebar.tutorialSidebar.category.3.2. Modules": {
+    "message": "3.2. 组件",
+    "description": "The label for category 3.2. Modules in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.4. Development Designs": {
+    "message": "4. 研发设计",
+    "description": "The label for category 4. Development Designs in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.5. Applications": {
+    "message": "5. 应用",
+    "description": "The label for category 5. Applications in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.6. Terminologies": {
+    "message": "6. 术语",
+    "description": "The label for category 6. Terminologies in sidebar tutorialSidebar"
   }
 }
