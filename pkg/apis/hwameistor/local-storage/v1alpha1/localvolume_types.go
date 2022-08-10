@@ -17,9 +17,9 @@ type LocalVolumeSpec struct {
 	// PoolName is the name of the storage pool, e.g. LocalStorage_PoolHDD, LocalStorage_PoolSSD, etc..
 	PoolName string `json:"poolName,omitempty"`
 
-	// replica number: 1 - non-HA, 2 - HA, 3 - migration (temp)
+	// replica number: 1 - non-HA, 2 - HA, 6 - migration (temp)
 	// +kubebuilder:validation:Minimum:=1
-	// +kubebuilder:validation:Maximum:=3
+	// +kubebuilder:validation:Maximum:=6
 	ReplicaNumber int64 `json:"replicaNumber,omitempty"`
 
 	// Convertible is to indicate if the non-HA volume can be transitted to HA volume or not

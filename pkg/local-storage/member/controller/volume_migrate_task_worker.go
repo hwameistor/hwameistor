@@ -263,19 +263,24 @@ func (m *manager) volumeMigrateStart(migrate *apisv1alpha1.LocalVolumeMigrate) e
 							migrate.Status.Message = "VolumeGroupMigrateStart: Volume And VolumeReplica both not ready"
 							return m.apiClient.Status().Update(context.TODO(), migrate)
 						}
-						return m.apiClient.Status().Update(context.TODO(), migrate)
 					}
 
-					// start the migrate by adding a new replica which will be scheduled on a new node
-					// trigger the migration
-					vol.Spec.ReplicaNumber++
+					replicas, err := m.getReplicasForVolume(vol.Name)
+					if err != nil {
+						logCtx.Error("VolumeGroupMigrateStart: Failed to list VolumeReplica")
+						return err
+					}
+					for i := 0; i < len(replicas); i++ {
+						// start the migrate by adding a new replica which will be scheduled on a new node
+						// trigger the migration
+						vol.Spec.ReplicaNumber++
+					}
 					if err := m.apiClient.Update(ctx, &vol); err != nil {
-						logCtx.WithFields(log.Fields{"volume": vol.Name}).WithError(err).Error("VolumeGroupMigrateStart: Failed to add a new replica")
+						logCtx.WithFields(log.Fields{"volume": vol.Name}).WithError(err).Error("VolumeMigrateStart: Failed to add a new replica")
 						migrate.Status.Message = err.Error()
-					} else {
-						migrate.Status.State = apisv1alpha1.OperationStateInProgress
+						return m.apiClient.Status().Update(ctx, migrate)
 					}
-
+					migrate.Status.State = apisv1alpha1.OperationStateInProgress
 					m.apiClient.Status().Update(ctx, migrate)
 				}
 			}
@@ -360,11 +365,13 @@ func (m *manager) volumeMigrateInProgress(migrate *apisv1alpha1.LocalVolumeMigra
 
 						vol.Spec.ReplicaNumber = migrate.Status.ReplicaNumber
 						replicas := []apisv1alpha1.VolumeReplica{}
+						migrateSrcHostNames := []string{}
+						for _, nodeName := range migrate.Spec.SourceNodesNames {
+							migrateSrcHostNames = append(migrateSrcHostNames, nodeName)
+						}
 						for i := range vol.Spec.Config.Replicas {
-							for _, nodeName := range migrate.Spec.SourceNodesNames {
-								if vol.Spec.Config.Replicas[i].Hostname != nodeName {
-									replicas = append(replicas, vol.Spec.Config.Replicas[i])
-								}
+							if arrays.ContainsString(migrateSrcHostNames, vol.Spec.Config.Replicas[i].Hostname) == -1 {
+								replicas = append(replicas, vol.Spec.Config.Replicas[i])
 							}
 						}
 						vol.Spec.Config.Replicas = replicas
