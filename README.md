@@ -24,7 +24,8 @@ HwameiStor contains 4 modules:
 * admission-controller
 
 ### Local-Disk-Manager
-Local-Disk-Manager (LDM) is designed to hold the management of disks on nodes. Other modules such as Local-Storage can take advantage of the management of disks by LDM.
+local-disk-manager (LDM) is designed to hold the management of disks on nodes.
+Other modules such as local-storage can take advantage of the disk management feature provided by LDM.
 
 ### Local-Storage
 Local-Storage (LS) provides a cloud-native local storage system. It aims to provision high-performance persistent LVM volume with local access to applicatios.
