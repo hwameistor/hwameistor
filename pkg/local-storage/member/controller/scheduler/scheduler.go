@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -53,15 +54,26 @@ func (s *scheduler) initResources() {
 }
 
 // GetNodeCandidates gets available nodes for the volume, used by K8s scheduler
-func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) []*apisv1alpha1.LocalStorageNode {
+func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) (qualifiedNodes []*apisv1alpha1.LocalStorageNode) {
+	logCtx := s.logger.WithFields(log.Fields{"vols": lvString(vols)})
 
+	// show available nodes for debug
+	defer func() {
+		for _, node := range qualifiedNodes {
+			logCtx.Debugf("node candidates %v", func() (ns []string) {
+				strings.Join(ns, node.Name)
+				return
+			}())
+		}
+	}()
+
+	// init all available nodes resources
 	s.initResources()
-
-	qualifiedNodes := []*apisv1alpha1.LocalStorageNode{}
 
 	bigLVs := map[string]*apisv1alpha1.LocalVolume{}
 	for _, lv := range vols {
 		if !isLocalVolumeSameClass(bigLVs[lv.Spec.PoolName], lv) {
+			logCtx.Debugf("volumes has different storageclass")
 			return qualifiedNodes
 		}
 		bigLVs[lv.Spec.PoolName] = appendLocalVolume(bigLVs[lv.Spec.PoolName], lv)
@@ -69,6 +81,7 @@ func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) []*apisv
 
 	for _, lv := range bigLVs {
 		if nodes, err := s.resourceCollections.getNodeCandidates(lv); err != nil {
+			logCtx.WithError(err).WithField("volume", lv.Name).Debugf("fail to getNodeCandidates")
 			return qualifiedNodes
 		} else {
 			if len(qualifiedNodes) == 0 {
@@ -119,6 +132,13 @@ func unionSet(strs1 []*apisv1alpha1.LocalStorageNode, strs2 []*apisv1alpha1.Loca
 		}
 	}
 	return strs
+}
+
+func lvString(vols []*apisv1alpha1.LocalVolume) (vs []string) {
+	for _, vol := range vols {
+		strings.Join(vs, vol.Name)
+	}
+	return
 }
 
 // Allocate schedule right nodes and generate volume config
