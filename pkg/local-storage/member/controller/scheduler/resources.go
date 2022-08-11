@@ -73,6 +73,17 @@ func (r *resources) init(apiClient client.Client, informerCache runtimecache.Cac
 
 func (r *resources) initilizeResources() {
 	r.logger.Debug("Initializing resources ...")
+
+	// show available nodes resources for debug
+	defer func(nodes map[string]*apisv1alpha1.LocalStorageNode) {
+		r.logger.Debugf("%d available resource: %v", len(nodes), func() (ns []string) {
+			for _, node := range nodes {
+				strings.Join(ns, node.Name)
+			}
+			return
+		}())
+	}(r.storageNodes)
+
 	volList := &apisv1alpha1.LocalVolumeList{}
 	if err := r.apiClient.List(context.TODO(), volList); err != nil {
 		r.logger.WithError(err).Fatal("Failed to list LocalVolumes")
@@ -105,6 +116,9 @@ func (r *resources) initilizeResources() {
 		if nodeList.Items[i].Status.State == apisv1alpha1.NodeStateReady {
 			r.addTotalStorage(&nodeList.Items[i])
 		} else {
+			r.logger.WithField("node", nodeList.Items[i].Name).
+				WithField("state", nodeList.Items[i].Status.State).
+				Debugf("delete node")
 			r.delTotalStorage(&nodeList.Items[i])
 		}
 	}
