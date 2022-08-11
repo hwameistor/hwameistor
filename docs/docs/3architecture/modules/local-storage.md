@@ -31,11 +31,11 @@ For the HA local LVM volume, it's the best solution for data persistency in the 
 
 ## Usage with Helm Chart
 
-Local Storage is a component of HwameiStor and must work with [Local Disk Manager](./3.2.1.local_disk_manager.md) module. It's suggested to [install by helm-charts](../../2.quick_start/2.1.installation/2.1.2.deploy_helm_charts.md).
+Local Storage is a component of HwameiStor and must work with [Local Disk Manager](local-storage.md) module. It's suggested to [install by helm-charts](../../2quick_start/install/deploy_helm_charts.md).
 
 ## Usage with Independent Installation
 
-Developer can start using local-storage with [helm chart](../../2.quick_start/2.1.installation/2.1.2.deploy_helm_charts.md). This is for dev or test, and will deploy local-storage from github repo. In this case, you should first install the Local Disk Manager.
+Developer can start using local-storage with [helm chart](../../2quick_start/install/deploy_helm_charts.md). This is for dev or test, and will deploy local-storage from github repo. In this case, you should first install the Local Disk Manager.
 
 ## Roadmap
 

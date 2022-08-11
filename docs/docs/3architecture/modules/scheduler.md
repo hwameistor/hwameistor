@@ -11,7 +11,7 @@ The Scheduler should be deployed with the HA mode in the cluster, which is a bes
 
 **Install by Helm Chart**
 
-Scheduler must work with Local Storage and Local Disk Manager. It's suggested to install by [Helm Chart](../../2.quick_start/2.1.installation/2.1.2.deploy_helm_charts.md).
+Scheduler must work with Local Storage and Local Disk Manager. It's suggested to install by [Helm Chart](../../2quick_start/install/deploy_helm_charts.md).
 
 **Install by YAML (for developing)**
 

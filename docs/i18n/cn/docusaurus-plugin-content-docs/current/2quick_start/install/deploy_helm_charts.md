@@ -27,7 +27,7 @@ $ helm install \
 
 *That's it!*
 
-To verify the deployment, please refer to the next chapter [Post Deployment](./2.1.3.post_deployment_inspect.md)
+To verify the deployment, please refer to the next chapter [Post Deployment](post_check.md)
 
 ## Use image repository mirrors
 

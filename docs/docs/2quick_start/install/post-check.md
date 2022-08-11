@@ -63,7 +63,7 @@ localvolumereplicas        lvr          hwameistor.io/v1alpha1   false        Lo
 localvolumes               lv           hwameistor.io/v1alpha1   false        LocalVolume
 ```
 
-For the details about CRDs, please also refer to the chapter [CRDs](../../3.architecture_of_hwameistor/3.4.apis.md).
+For the details about CRDs, please also refer to the chapter [CRDs](../../3architecture/apis.md).
 
 # Step 3: Check the localDiskNode and localDisks
 

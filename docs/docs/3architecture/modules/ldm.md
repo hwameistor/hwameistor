@@ -25,7 +25,7 @@ LocalDiskClaim (LDC): This is a way to use disks. A user can add the disk descri
 
 ## Usage
 
-If you want to entirely deploy HwameiStor, refer to [Usage with Helm Chart](../../2.quick_start/2.1.installation/2.1.2.deploy_helm_charts.md).
+If you want to entirely deploy HwameiStor, refer to [Usage with Helm Chart](../../2quick_start/install/deploy_helm_charts.md).
 
 If you just want to deploy LDM separately, refer to the following installation procedure.
 
