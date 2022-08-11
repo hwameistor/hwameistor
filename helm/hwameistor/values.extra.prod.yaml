@@ -8,7 +8,7 @@ scheduler:
       cpu: 100m
       memory: 100Mi
 
-webhook:
+admission:
   replicas: 3
   resources:
     limits:

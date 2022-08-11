@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hwameistor-admission-controller
+  namespace: {{ .Release.Namespace}}
+  labels:
+    app: hwameistor-admission-controller
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hwameistor-admission-controller
+  template:
+    metadata:
+      labels:
+        app: hwameistor-admission-controller
+    spec:
+      serviceAccountName: hwameistor-admin
+      initContainers:
+        - image: ghcr.io/hwameistor/self-signed:v1
+          imagePullPolicy: Always
+          name: admission-controller-init
+          resources:
+            {{- toYaml .Values.admission.resources | nindent 12 }}
+          env:
+            - name: WEBHOOK_NAMESPACE
+              value: {{ .Release.Namespace}}
+            - name: MUTATE_CONFIG
+              value: hwameistor-admission-mutate
+            - name: WEBHOOK_SERVICE
+              value: hwameistor-admission-controller
+            - name: MUTATE_PATH
+              value: /mutate
+          volumeMounts:
+            - mountPath: /etc/webhook/certs
+              name: admission-controller-tls-certs
+      containers:
+        - name: server
+          args:
+            - --cert-dir=/etc/webhook/certs
+            - --tls-private-key-file=tls.key
+            - --tls-cert-file=tls.crt
+          image: {{ .Values.hwameistorImageRegistry}}/{{ .Values.admission.imageRepository}}:{{ template "hwameistor.admissionImageTag" . }}
+          imagePullPolicy: IfNotPresent
+          resources: 
+            {{- toYaml .Values.admission.resources | nindent 12 }}
+          ports:
+            - containerPort: 18443
+              name: admission-api
+          volumeMounts:
+            - name: admission-controller-tls-certs
+              mountPath: /etc/webhook/certs
+              readOnly: true
+      volumes:
+       - name: admission-controller-tls-certs
+         emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hwameistor-admission-controller
+  namespace: {{ .Release.Namespace}}
+spec:
+  selector:
+    app: hwameistor-admission-controller
+  ports:
+    - port: 443
+      targetPort: admission-api

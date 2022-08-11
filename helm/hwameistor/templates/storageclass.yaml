@@ -15,5 +15,6 @@ parameters:
   poolType: "REGULAR"
   volumeKind: "LVM"
   striped: "true"
+  convertible: {{ .Values.storageClass.convertible | quote}}
   csi.storage.k8s.io/fstype: {{ .Values.storageClass.fsType | quote}}
 {{- end }}
