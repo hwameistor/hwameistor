@@ -57,14 +57,14 @@ func (s *scheduler) initResources() {
 func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) (qualifiedNodes []*apisv1alpha1.LocalStorageNode) {
 	logCtx := s.logger.WithFields(log.Fields{"vols": lvString(vols)})
 
-	// show available nodes for debug
+	// show available node candidates for debug
 	defer func() {
-		for _, node := range qualifiedNodes {
-			logCtx.Debugf("node candidates %v", func() (ns []string) {
-				strings.Join(ns, node.Name)
-				return
-			}())
-		}
+		logCtx.Debugf("matchable node candidates %v", func() (ns []string) {
+			for _, node := range qualifiedNodes {
+				ns = append(ns, node.Name)
+			}
+			return
+		}())
 	}()
 
 	// init all available nodes resources

@@ -78,7 +78,7 @@ func (r *resources) initilizeResources() {
 	defer func(nodes map[string]*apisv1alpha1.LocalStorageNode) {
 		r.logger.Debugf("%d available resource: %v", len(nodes), func() (ns []string) {
 			for _, node := range nodes {
-				strings.Join(ns, node.Name)
+				ns = append(ns, node.Name)
 			}
 			return
 		}())
@@ -137,8 +137,6 @@ func (r *resources) predicate(vol *apisv1alpha1.LocalVolume, nodeName string) er
 
 	totalPool := r.totalStorages.pools[vol.Spec.PoolName]
 	allocatedPool := r.allocatedStorages.pools[vol.Spec.PoolName]
-	//logCtx.Debug("predicate totalPool = %v, allocatedPool = %v", totalPool, allocatedPool)
-	fmt.Printf("predicate totalPool = %+v, allocatedPool = %+v", totalPool, allocatedPool)
 
 	if strings.Contains(strings.Join(vol.Spec.Accessibility.Nodes, ","), nodeName) {
 		if vol.Spec.RequiredCapacityBytes > totalPool.capacities[nodeName]-allocatedPool.capacities[nodeName] {
@@ -198,6 +196,8 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 	if vol.Spec.Config != nil {
 		for _, rep := range vol.Spec.Config.Replicas {
 			excludedNodes[rep.Hostname] = true
+			// show excludedNodes for debug
+			logCtx.WithField("node", rep.Hostname).Debug("node will not be added to candidates, because of founding a exist volume replica allocated on this node")
 		}
 	}
 
@@ -206,9 +206,11 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 	for _, nn := range vol.Spec.Accessibility.Nodes {
 		if len(nn) > 0 && !excludedNodes[nn] {
 			if err := r.predicate(vol, nn); err != nil {
+				logCtx.WithField("node", nn).WithError(err).Error("predicate accessibility node fail")
 				return nil, err
 			}
 			candidates = append(candidates, r.storageNodes[nn])
+			logCtx.WithField("node", nn).Debug("Adding a candidate")
 			excludedNodes[nn] = true
 		}
 	}
@@ -221,11 +223,12 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 		}
 
 		if err := r.predicate(vol, node.Name); err != nil {
+			logCtx.WithError(err).WithField("node", node.Name).Debug("filter out a candidate node for predicate fail")
 			continue
 		}
 		priority, err := r.score(vol, node.Name)
 		if err != nil {
-			logCtx.Error(err)
+			logCtx.WithError(err).WithField("node", node.Name).Debug("filter out a candidate node for score fail")
 			continue
 		}
 		heap.Push(
