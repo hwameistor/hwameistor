@@ -18,8 +18,8 @@ storageClass:
   allowVolumeExpansion: true
   convertible: false
   reclaimPolicy: Delete
-  # If value >1, means enable volumeHA, you need install drbd kernel module on each node first
-  replicaNumber: 1
+  # If enabled, you need install drbd kernel module on each node first
+  enableHA: false
   # Represent which kind disk will be used to provision volume
   diskType: HDD
   fsType: xfs
