@@ -38,7 +38,7 @@ admission-controller is a webhook that can automatically determine which pod use
 
 ## Documentation
 
-Full documentation is hosted at our project website [hwameistor.io](https://hwameistor.io/docs/intro).
+For full documentation see website [hwameistor.io](https://hwameistor.io/docs/intro).
 
 ## Roadmap
 | Feature                                  	| Status    	| Release 	|  Description                                     	|
