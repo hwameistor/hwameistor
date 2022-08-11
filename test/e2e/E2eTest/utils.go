@@ -136,7 +136,7 @@ func configureEnvironment(ctx context.Context) bool {
 	}
 	webhook := &appsv1.Deployment{}
 	webhookKey := k8sclient.ObjectKey{
-		Name:      "hwameistor-webhook",
+		Name:      "hwameistor-admission-controller",
 		Namespace: "hwameistor",
 	}
 	err = client.Get(ctx, webhookKey, webhook)
