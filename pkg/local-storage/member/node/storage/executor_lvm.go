@@ -252,7 +252,9 @@ func (lvm *lvmExecutor) CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeRep
 		"--stripes", fmt.Sprintf("%d", 1),
 	}
 	if err := lvm.lvcreate(replica.Spec.VolumeName, replica.Spec.PoolName, options); err != nil {
-		return nil, err
+		if !strings.Contains(err.Error(), ErrorLocalVolumeExistsInVolumeGroup.Error()) {
+			return nil, err
+		}
 	}
 
 	// query current status of the replica
