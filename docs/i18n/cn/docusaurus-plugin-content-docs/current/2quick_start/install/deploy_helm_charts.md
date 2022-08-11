@@ -1,97 +1,95 @@
 ---
 sidebar_position: 2
-sidebar_label: "使用 Helm Chart 部署"
+sidebar_label: "通过 Helm Chart 安装"
 ---
 
-# 使用 Helm Chart 部署
+# 通过 Helm Chart 安装
 
-**The entire HwameiStor stack can be easily deployed by Helm Charts.**
+推荐使用这种安装方式，HwameiStor 的任何组件都可以通过 Helm Charts 轻松安装。
 
-## Step 1: Prepare helm tool
+1. 准备 Helm 工具。
 
-To install [Helm](https://helm.sh/) commandline tool, please refer to [Helm's Documentation](https://helm.sh/docs/).
+   安装 [Helm](https://helm.sh/) 命令行工具，请参阅 [Helm 文档](https://helm.sh/docs/)。
 
-## Step 2: Deploy HwameiStor
+2. 依次运行如下命令，安装 HwameiStor。
 
-```bash
-$ git clone https://github.com/hwameistor/helm-charts.git
+   ```bash
+   git clone https://github.com/hwameistor/hwameistor.git
+   cd hwameistor
+   helm install \
+     --namespace hwameistor \
+     --create-namespace \
+     hwameistor \
+     helm/hwameistor \
+   ```
 
-$ cd hwameistor
+3. 安装完成！
 
-$ helm install \
-    --namespace hwameistor \
-    --create-namespace \
-    hwameistor \
-    helm/hwameistor \
-```
+   要验证安装效果，请参见下一章[安装后检查](2.1.3.post_deployment_inspect.md)。
 
-*That's it!*
-
-To verify the deployment, please refer to the next chapter [Post Deployment](./2.1.3.post_deployment_inspect.md)
-
-## Use image repository mirrors
+## 使用镜像仓库镜像
 
 :::tip
 
-The default image repositories are `quay.io` and `ghcr.io`. 
-In case they are blocked in some places, DaoCloud provides their mirrors at `quay.m.daocloud.io` and `ghcr.m.daocloud.io`
+默认的镜像仓库是 `quay.io` 和 `ghcr.io`。
+如果无法访问，可尝试使用 DaoCloud 提供的镜像源：`quay.m.daocloud.io` 和 `ghcr.m.daocloud.io`。
 
 :::
 
-To switch image repository mirrors, use `--set` to change the value of parameters: `k8sImageRegistry` and `hwameistorImageRegistry`
+要切换镜像仓库的镜像，请如下使用 `--set` 更改这两个参数值：`k8sImageRegistry` 和 `hwameistorImageRegistry`。
 
 ```bash
-$ helm install \
-    --namespace hwameistor \
-    --create-namespace \
-    hwameistor \
-    helm/hwameistor \
-    --set k8sImageRegistry=quay.m.daocloud.io \
-    --set hwameistorImageRegistry=ghcr.m.daocloud.io
+helm install \
+  --namespace hwameistor \
+  --create-namespace \
+  hwameistor \
+  helm/hwameistor \
+  --set k8sImageRegistry=quay.m.daocloud.io \
+  --set hwameistorImageRegistry=ghcr.m.daocloud.io
 ```
 
-## Customize kubelet root directory
+## 自定义 kubelet 根目录
 
 :::caution
 
-The default `kubelet` directory is `/var/lib/kubelet`.
-If your Kubernetes distribution uses a different `kubelet` directory, you must set the parameter `kubeletRootDir`.
+默认的 `kubelet` 目录为 `/var/lib/kubelet`。
+如果你的 Kubernetes 发行版使用不同的 `kubelet` 目录，您必须设置参数 `kubeletRootDir`。
 
 :::
 
-For example, on [Canonical's MicroK8s](https://microk8s.io/) which uses `/var/snap/microk8s/common/var/lib/kubelet/` as `kubelet` directory,  HwameiStor needs to be deployed as:
+例如，在将 `/var/snap/microk8s/common/var/lib/kubelet/` 用作 `kubelet` 目录的 [Canonical 的 MicroK8s](https://microk8s.io/) 上，HwameiStor 需要按以下方式安装：
  
 ```bash
-$ helm install \
-    --namespace hwameistor \
-    --create-namespace \
-    hwameistor \
-    helm/hwameistor \
-    --set kubeletRootDir=/var/snap/microk8s/common/var/lib/kubelet/
+helm install \
+  --namespace hwameistor \
+  --create-namespace \
+  hwameistor \
+  helm/hwameistor \
+  --set kubeletRootDir=/var/snap/microk8s/common/var/lib/kubelet/
 ```
 
-## Production setup
+## 生产环境安装
 
-A production environment would require:
+生产环境需要：
 
-- specify resource configuration
-- avoid deploying on master nodes
-- implement quick failover of controllers
+- 指定资源配置
+- 避免部署到 Master 节点
+- 实现控制器的快速故障切换
   
-We provide some recommended values in `values.extra.prod.yaml`, to use it:
+`values.extra.prod.yaml` 文件中提供了一些推荐值，具体用法为：
 
 ```bash
-$ helm install \
-    --namespace hwameistor \
-    --create-namespace \
-    hwameistor \
-    helm/hwameistor \
-    -f helm/hwameistor/values.yaml \
-    -f helm/hwameistor/values.extra.prod.yaml
+helm install \
+  --namespace hwameistor \
+  --create-namespace \
+  hwameistor \
+  helm/hwameistor \
+  -f helm/hwameistor/values.yaml \
+  -f helm/hwameistor/values.extra.prod.yaml
 ```
 
 :::caution
 
-In a resource-strained test environment, setting above-mentioned values would cause pods unable to start!
+在资源紧张的测试环境中，设置上述数值会造成 Pod 无法启动！
 
 :::
