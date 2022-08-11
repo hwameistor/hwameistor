@@ -30,7 +30,7 @@ Local-Disk-Manager (LDM) is designed to hold the management of disks on nodes. O
 Local-Storage (LS) provides a cloud-native local storage system. It aims to provision high-performance persistent LVM volume with local access to applicatios.
 
 ### Scheduler
-The Scheduler is to automatically schedule the Pod to the correct node which has the associated HwameiStor volume.
+Scheduler is to automatically schedule a pod to a correct node which has the associated HwameiStor volumes.
 
 ### Admission-Controller
 Admission-Controller is a webhook that can automatically determine which pod uses the HwameiStor volume and, help to modify the schedulerName to hwameistor-scheduler.
