@@ -270,7 +270,15 @@ func (m *manager) volumeMigrateStart(migrate *apisv1alpha1.LocalVolumeMigrate) e
 						logCtx.Error("VolumeGroupMigrateStart: Failed to list VolumeReplica")
 						return err
 					}
-					for i := 0; i < len(replicas); i++ {
+
+					var needMigrateNum int
+					if len(replicas) > len(migrate.Spec.TargetNodesNames) {
+						needMigrateNum = len(migrate.Spec.TargetNodesNames)
+					} else {
+						needMigrateNum = len(replicas)
+					}
+
+					for i := 0; i < needMigrateNum; i++ {
 						// start the migrate by adding a new replica which will be scheduled on a new node
 						// trigger the migration
 						vol.Spec.ReplicaNumber++
