@@ -43,13 +43,10 @@ func (s *scheduler) Init() {
 }
 
 func (s *scheduler) initResources() {
-
 	s.once.Do(func() {
 		s.resourceCollections.apiClient = s.apiClient
 	})
-
-	s.resourceCollections.initilizeResources()
-
+	s.resourceCollections.initilizeTotalStorage()
 }
 
 // GetNodeCandidates gets available nodes for the volume, used by K8s scheduler

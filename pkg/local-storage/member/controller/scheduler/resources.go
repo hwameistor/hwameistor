@@ -71,6 +71,21 @@ func (r *resources) init(apiClient client.Client, informerCache runtimecache.Cac
 	})
 }
 
+func (r *resources) initilizeTotalStorage() {
+	nodeList := &apisv1alpha1.LocalStorageNodeList{}
+	if err := r.apiClient.List(context.TODO(), nodeList); err != nil {
+		r.logger.WithError(err).Fatal("Failed to list LocalStorageNodes")
+	}
+	// initialize total capacity
+	for i := range nodeList.Items {
+		if nodeList.Items[i].Status.State == apisv1alpha1.NodeStateReady {
+			r.addTotalStorage(&nodeList.Items[i])
+		} else {
+			r.delTotalStorage(&nodeList.Items[i])
+		}
+	}
+}
+
 func (r *resources) initilizeResources() {
 	r.logger.Debug("Initializing resources ...")
 	volList := &apisv1alpha1.LocalVolumeList{}
