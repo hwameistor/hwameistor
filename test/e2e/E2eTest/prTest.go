@@ -23,11 +23,12 @@ import (
 )
 
 var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("pr-e2e"), ginkgo.Ordered, func() {
-
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
+
 	ginkgo.It("Configure the base environment", func() {
+
 		result := configureEnvironmentForPrTest(ctx)
 		gomega.Expect(result).To(gomega.Equal(true))
 		createLdc(ctx)
