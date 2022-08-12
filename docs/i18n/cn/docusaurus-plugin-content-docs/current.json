@@ -1,6 +1,6 @@
 {
   "version.label": {
-    "message": "下一页",
+    "message": "下一个",
     "description": "The label for version current"
   },
   "sidebar.tutorialSidebar.category.Quick Start": {
@@ -12,7 +12,7 @@
     "description": "The label for category Installation in sidebar tutorialSidebar"
   },
   "sidebar.tutorialSidebar.category.Start a Stateful Application": {
-    "message": "部署一个有状态应用",
+    "message": "部署一个有状态的应用",
     "description": "The label for category Start a Stateful Application in sidebar tutorialSidebar"
   },
   "sidebar.tutorialSidebar.category.Advanced Features": {
@@ -24,11 +24,11 @@
     "description": "The label for category Architecture of HwameiStor in sidebar tutorialSidebar"
   },
   "sidebar.tutorialSidebar.category.Modules": {
-    "message": "组件",
+    "message": "模块",
     "description": "The label for category Modules in sidebar tutorialSidebar"
   },
   "sidebar.tutorialSidebar.category.Development Designs": {
-    "message": "研发设计",
+    "message": "开发设计",
     "description": "The label for category Development Designs in sidebar tutorialSidebar"
   },
   "sidebar.tutorialSidebar.category.Applications": {
