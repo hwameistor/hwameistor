@@ -23,8 +23,6 @@ type scheduler struct {
 	lock sync.Mutex
 
 	informerCache runtimecache.Cache
-
-	once sync.Once
 }
 
 // New a scheduler instance
@@ -32,7 +30,7 @@ func New(apiClient client.Client, informerCache runtimecache.Cache, maxHAVolumeC
 	return &scheduler{
 		apiClient:           apiClient,
 		informerCache:       informerCache,
-		resourceCollections: newResources(maxHAVolumeCount),
+		resourceCollections: newResources(maxHAVolumeCount, apiClient),
 		logger:              log.WithField("Module", "Scheduler"),
 	}
 }
@@ -41,13 +39,6 @@ func (s *scheduler) Init() {
 
 	s.resourceCollections.init(s.apiClient, s.informerCache)
 
-}
-
-func (s *scheduler) initResources() {
-	s.once.Do(func() {
-		s.resourceCollections.apiClient = s.apiClient
-	})
-	s.resourceCollections.initilizeTotalStorage()
 }
 
 // GetNodeCandidates gets available nodes for the volume, used by K8s scheduler
@@ -65,7 +56,7 @@ func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) (qualifi
 	}()
 
 	// init all available nodes resources
-	s.initResources()
+	s.resourceCollections.syncTotalStorage()
 
 	bigLVs := map[string]*apisv1alpha1.LocalVolume{}
 	for _, lv := range vols {
