@@ -10,6 +10,15 @@ sidebar_label: "Prerequisites"
 1. Kubernetes `1.18+`
 1. CoreDNS is deployed
 
+### Unsupported platforms
+
+1. Openshift
+1. Rancher
+
+:::note
+Above platforms are not supported yet but will be supported in the future.
+:::
+
 ## Host
 
 ### Linux Distributions
