@@ -34,8 +34,9 @@ type resources struct {
 	logger *log.Entry
 }
 
-func newResources(maxHAVolumeCount int) *resources {
+func newResources(maxHAVolumeCount int, apiClient client.Client) *resources {
 	return &resources{
+		apiClient:            apiClient,
 		logger:               log.WithField("Module", "Scheduler/Resources"),
 		allocatedResourceIDs: make(map[string]int),
 		freeResourceIDList:   make([]int, 0, maxHAVolumeCount),
@@ -71,7 +72,8 @@ func (r *resources) init(apiClient client.Client, informerCache runtimecache.Cac
 	})
 }
 
-func (r *resources) initilizeTotalStorage() {
+// syncTotalStorage sync available LocalStorageNodes to storageNodes at now
+func (r *resources) syncTotalStorage() {
 	nodeList := &apisv1alpha1.LocalStorageNodeList{}
 	if err := r.apiClient.List(context.TODO(), nodeList); err != nil {
 		r.logger.WithError(err).Fatal("Failed to list LocalStorageNodes")
@@ -81,6 +83,9 @@ func (r *resources) initilizeTotalStorage() {
 		if nodeList.Items[i].Status.State == apisv1alpha1.NodeStateReady {
 			r.addTotalStorage(&nodeList.Items[i])
 		} else {
+			r.logger.WithField("node", nodeList.Items[i].Name).
+				WithField("state", nodeList.Items[i].Status.State).
+				Debugf("delete node from totalStorage")
 			r.delTotalStorage(&nodeList.Items[i])
 		}
 	}
@@ -103,10 +108,6 @@ func (r *resources) initilizeResources() {
 	if err := r.apiClient.List(context.TODO(), volList); err != nil {
 		r.logger.WithError(err).Fatal("Failed to list LocalVolumes")
 	}
-	nodeList := &apisv1alpha1.LocalStorageNodeList{}
-	if err := r.apiClient.List(context.TODO(), nodeList); err != nil {
-		r.logger.WithError(err).Fatal("Failed to list LocalStorageNodes")
-	}
 
 	// initialize resource IDs
 	usedResourceIDMap := make(map[int]bool)
@@ -127,16 +128,8 @@ func (r *resources) initilizeResources() {
 	}
 
 	// initialize total capacity
-	for i := range nodeList.Items {
-		if nodeList.Items[i].Status.State == apisv1alpha1.NodeStateReady {
-			r.addTotalStorage(&nodeList.Items[i])
-		} else {
-			r.logger.WithField("node", nodeList.Items[i].Name).
-				WithField("state", nodeList.Items[i].Status.State).
-				Debugf("delete node")
-			r.delTotalStorage(&nodeList.Items[i])
-		}
-	}
+	r.syncTotalStorage()
+
 	// initialize allocated capacity
 	for i := range volList.Items {
 		r.addAllocatedStorage(&volList.Items[i])
