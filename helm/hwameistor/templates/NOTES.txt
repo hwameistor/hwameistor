@@ -7,15 +7,14 @@ To learn more about the release, try:
   $ helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
   $ helm get manifest {{ .Release.Name }} -n {{ .Release.Namespace }}
 
-You can use hwameistor to provide LVM and Disk volume:
+You can use hwameistor to provide LVM volume:
 
-  1. Create free disks on storage-nodes where the volume will be created
-
-  2. Add label "lvm.hwameistor.io/enable=true" for the nodes where the volume will be created
-       $ kubectl label node <storage-nodes> lvm.hwameistor.io/enable=true
-
-  4. Apply a LocalDiskClaim to claim free disks 
+  1. Check each storageNode's storage capacity 
   
-  3. Create hwameistor storageclass and specify it in pvc.spec.storageClassName 
+     $ kubectl get lsn {{ .Values.storageNodes }} -o jsonpath='{.status.pools.LocalStorage_PoolHDD.freeCapacityBytes}'
   
-Read more about how to use hwameistor here: https://github.com/hwameistor/local-storage/blob/main/doc/installation.md
+  2. Create a PVC and specify 'hwameistor-storage-lvm-{{ .Values.storageClass.diskType | lower}}' in pvc.spec.storageClassName
+  
+  3. Create your application and use the above pvc
+
+Read more about how to use hwameistor here: https://hwameistor.io/
