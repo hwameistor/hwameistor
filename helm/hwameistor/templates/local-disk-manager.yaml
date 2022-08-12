@@ -1,4 +1,3 @@
-{{- if not (lookup "apps/v1" "DaemonSet" .Release.Namespace "hwameistor-local-disk-manager") }}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -19,6 +18,8 @@ spec:
       containers:
 {{- if .Values.localDiskManager.enableCSI }}  
         - name: registrar
+          resources: 
+            {{- toYaml .Values.localDiskManager.registrar.resources | nindent 12 }}
           image: {{ .Values.k8sImageRegistry }}/{{ .Values.localDiskManager.registrar.imageRepository }}:{{ .Values.localDiskManager.registrar.tag }}
           imagePullPolicy: IfNotPresent
           args:
@@ -41,6 +42,8 @@ spec:
               mountPath: /registration
 {{- end }}
         - name: manager
+          resources: 
+            {{- toYaml .Values.localDiskManager.manager.resources | nindent 12 }}
           # Replace this with the built image name
           image: {{ .Values.hwameistorImageRegistry }}/{{ .Values.localDiskManager.manager.imageRepository}}:{{ template "hwameistor.localdiskmanagerImageTag" . }}
           command:
@@ -136,4 +139,3 @@ spec:
           key: node.cloudprovider.kubernetes.io/uninitialized
           operator: Exists
       {{- end }}
-{{- end }}

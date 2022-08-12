@@ -10,11 +10,12 @@ import (
 
 // variables
 var (
-	ErrorPoolNotFound                 = errors.New("not found pool")
-	ErrorReplicaNotFound              = errors.New("not found replica")
-	ErrorReplicaExists                = errors.New("already exists replica")
-	ErrorInsufficientRequestResources = errors.New("insufficient request resources")
-	ErrorOverLimitedRequestResource   = errors.New("over limited request resources")
+	ErrorPoolNotFound                   = errors.New("not found pool")
+	ErrorReplicaNotFound                = errors.New("not found replica")
+	ErrorReplicaExists                  = errors.New("already exists replica")
+	ErrorLocalVolumeExistsInVolumeGroup = errors.New("already exists in volume group")
+	ErrorInsufficientRequestResources   = errors.New("insufficient request resources")
+	ErrorOverLimitedRequestResource     = errors.New("over limited request resources")
 )
 
 // LocalPoolManager is an interface to manage local storage pools

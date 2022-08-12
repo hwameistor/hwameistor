@@ -1,0 +1,106 @@
+scheduler:
+  replicas: 3
+  resources:
+    limits:
+      cpu: 300m
+      memory: 300Mi
+    requests:
+      cpu: 100m
+      memory: 100Mi
+
+admission:
+  replicas: 3
+  resources:
+    limits:
+      cpu: 300m
+      memory: 300Mi
+    requests:
+      cpu: 100m
+      memory: 100Mi
+
+localDiskManager:
+  tolerationsOnMaster: false
+  registrar:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      requests:
+        cpu: 5m
+        memory: 5Mi
+  manager:
+    resources:
+      limits:
+        cpu: 300m
+        memory: 300Mi
+      requests:
+        cpu: 100m
+        memory: 100Mi
+
+localDiskManagerCSIController:
+  replicas: 3
+  priorityClassName: system-node-critical
+  provisioner:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      requests:
+        cpu: 5m
+        memory: 5Mi
+  attacher:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      requests:
+        cpu: 5m
+        memory: 5Mi
+
+localStorage:
+  tolerationsOnMaster: false
+  priorityClassName: system-node-critical
+  registrar:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      requests:
+        cpu: 5m
+        memory: 5Mi
+  member:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      requests:
+        cpu: 5m
+        memory: 5Mi
+
+localStorageCSIController:
+  replicas: 3
+  priorityClassName: system-node-critical
+  provisioner:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      requests:
+        cpu: 5m
+        memory: 5Mi
+  attacher:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      requests:
+        cpu: 5m
+        memory: 5Mi
+  resizer:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      requests:
+        cpu: 5m
+        memory: 5Mi

@@ -1,22 +1,28 @@
 {{- define "replicaNumber" -}}
-{{- if .Values.storageclass.enableVolumeHA }}
+{{- if .Values.storageClass.enableHA -}}
 {{- print 2 -}}
 {{- else -}}
 {{- print 1 -}}
 {{- end -}}
 {{- end -}}
 
-{{- if .Values.storageclass.enabled -}}
+{{- if .Values.storageClass.enabled -}}
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   annotations:
-    storageclass.kubernetes.io/is-default-class: {{ .Values.storageclass.default | quote }}
-  name: hwameistor-storage-disk-{{ .Values.storageclass.diskType | lower}}
-provisioner: disk.hwameistor.io
+    storageClass.kubernetes.io/is-default-class: {{ .Values.storageClass.default | quote }}
+  name: hwameistor-storage-lvm-{{ .Values.storageClass.diskType | lower}}
+provisioner: lvm.hwameistor.io
 volumeBindingMode: WaitForFirstConsumer
-allowVolumeExpansion: {{ .Values.storageclass.allowVolumeExpansion }}
-reclaimPolicy: {{ .Values.storageclass.reclaimPolicy }}
+allowVolumeExpansion: {{ .Values.storageClass.allowVolumeExpansion }}
+reclaimPolicy: {{ .Values.storageClass.reclaimPolicy }}
 parameters:
-  diskType: {{ .Values.storageclass.diskType | quote}}
+  replicaNumber: {{ include "replicaNumber" . | quote}}
+  poolClass: {{ .Values.storageClass.diskType | quote}}
+  poolType: "REGULAR"
+  volumeKind: "LVM"
+  striped: "true"
+  convertible: {{ .Values.storageClass.convertible | quote}}
+  csi.storage.k8s.io/fstype: {{ .Values.storageClass.fsType | quote}}
 {{- end }}

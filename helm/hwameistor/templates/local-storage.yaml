@@ -1,4 +1,3 @@
-{{- if not (lookup "apps/v1" "DaemonSet" .Release.Namespace "hwameistor-local-storage") }}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -45,12 +44,7 @@ spec:
               - rm -rf /registration/lvm.hwameistor.io /registration/lvm.hwameistor.io-reg.sock
         name: registrar
         resources: 
-          limits:
-            cpu: {{ .Values.localStorage.registrar.resources.limits.cpu}}
-            memory: {{ .Values.localStorage.registrar.resources.limits.memory}}
-          requests:
-            cpu: {{ .Values.localStorage.registrar.resources.requests.cpu}}
-            memory: {{ .Values.localStorage.registrar.resources.requests.memory}}
+          {{- toYaml .Values.localStorage.registrar.resources | nindent 12 }}
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         volumeMounts:
@@ -101,13 +95,8 @@ spec:
           periodSeconds: 2
           successThreshold: 1
           timeoutSeconds: 3
-        resources:
-          limits:
-            cpu: {{ .Values.localStorage.member.resources.limits.cpu}}
-            memory: {{ .Values.localStorage.member.resources.limits.memory}}
-          requests:
-            cpu: {{ .Values.localStorage.member.resources.requests.cpu}}
-            memory: {{ .Values.localStorage.member.resources.requests.memory}}
+        resources: 
+          {{- toYaml .Values.localStorage.member.resources | nindent 12 }}
         securityContext:
           #  allowPrivilegeEscalation: true
           capabilities:
@@ -132,7 +121,7 @@ spec:
           name: host-etc-drbd
       dnsPolicy: ClusterFirstWithHostNet
       hostPID: true
-      priorityClassName: system-node-critical
+      priorityClassName: {{ .Values.localStorage.priorityClassName }}
       restartPolicy: Always
       schedulerName: default-scheduler
       serviceAccountName: hwameistor-admin 
@@ -181,4 +170,3 @@ spec:
     rollingUpdate:
       maxUnavailable: 1
     type: RollingUpdate
-{{- end -}}

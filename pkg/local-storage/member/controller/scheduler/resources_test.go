@@ -72,7 +72,7 @@ func Test_newResources(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := newResources(tt.args.maxHAVolumeCount); !reflect.DeepEqual(got, tt.want) {
+			if got := newResources(tt.args.maxHAVolumeCount, nil); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("newResources() = %v, want %v", got, tt.want)
 			}
 		})

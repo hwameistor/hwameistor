@@ -34,8 +34,9 @@ type resources struct {
 	logger *log.Entry
 }
 
-func newResources(maxHAVolumeCount int) *resources {
+func newResources(maxHAVolumeCount int, apiClient client.Client) *resources {
 	return &resources{
+		apiClient:            apiClient,
 		logger:               log.WithField("Module", "Scheduler/Resources"),
 		allocatedResourceIDs: make(map[string]int),
 		freeResourceIDList:   make([]int, 0, maxHAVolumeCount),
@@ -71,15 +72,41 @@ func (r *resources) init(apiClient client.Client, informerCache runtimecache.Cac
 	})
 }
 
-func (r *resources) initilizeResources() {
-	r.logger.Debug("Initializing resources ...")
-	volList := &apisv1alpha1.LocalVolumeList{}
-	if err := r.apiClient.List(context.TODO(), volList); err != nil {
-		r.logger.WithError(err).Fatal("Failed to list LocalVolumes")
-	}
+// syncTotalStorage sync available LocalStorageNodes to storageNodes at now
+func (r *resources) syncTotalStorage() {
 	nodeList := &apisv1alpha1.LocalStorageNodeList{}
 	if err := r.apiClient.List(context.TODO(), nodeList); err != nil {
 		r.logger.WithError(err).Fatal("Failed to list LocalStorageNodes")
+	}
+	// initialize total capacity
+	for i := range nodeList.Items {
+		if nodeList.Items[i].Status.State == apisv1alpha1.NodeStateReady {
+			r.addTotalStorage(&nodeList.Items[i])
+		} else {
+			r.logger.WithField("node", nodeList.Items[i].Name).
+				WithField("state", nodeList.Items[i].Status.State).
+				Debugf("delete node from totalStorage")
+			r.delTotalStorage(&nodeList.Items[i])
+		}
+	}
+}
+
+func (r *resources) initilizeResources() {
+	r.logger.Debug("Initializing resources ...")
+
+	// show available nodes resources for debug
+	defer func(nodes map[string]*apisv1alpha1.LocalStorageNode) {
+		r.logger.Debugf("%d available resource: %v", len(nodes), func() (ns []string) {
+			for _, node := range nodes {
+				ns = append(ns, node.Name)
+			}
+			return
+		}())
+	}(r.storageNodes)
+
+	volList := &apisv1alpha1.LocalVolumeList{}
+	if err := r.apiClient.List(context.TODO(), volList); err != nil {
+		r.logger.WithError(err).Fatal("Failed to list LocalVolumes")
 	}
 
 	// initialize resource IDs
@@ -101,11 +128,8 @@ func (r *resources) initilizeResources() {
 	}
 
 	// initialize total capacity
-	for i := range nodeList.Items {
-		if nodeList.Items[i].Status.State == apisv1alpha1.NodeStateReady {
-			r.addTotalStorage(&nodeList.Items[i])
-		}
-	}
+	r.syncTotalStorage()
+
 	// initialize allocated capacity
 	for i := range volList.Items {
 		r.addAllocatedStorage(&volList.Items[i])
@@ -121,8 +145,6 @@ func (r *resources) predicate(vol *apisv1alpha1.LocalVolume, nodeName string) er
 
 	totalPool := r.totalStorages.pools[vol.Spec.PoolName]
 	allocatedPool := r.allocatedStorages.pools[vol.Spec.PoolName]
-	//logCtx.Debug("predicate totalPool = %v, allocatedPool = %v", totalPool, allocatedPool)
-	fmt.Printf("predicate totalPool = %+v, allocatedPool = %+v", totalPool, allocatedPool)
 
 	if strings.Contains(strings.Join(vol.Spec.Accessibility.Nodes, ","), nodeName) {
 		if vol.Spec.RequiredCapacityBytes > totalPool.capacities[nodeName]-allocatedPool.capacities[nodeName] {
@@ -182,6 +204,8 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 	if vol.Spec.Config != nil {
 		for _, rep := range vol.Spec.Config.Replicas {
 			excludedNodes[rep.Hostname] = true
+			// show excludedNodes for debug
+			logCtx.WithField("node", rep.Hostname).Debug("node will not be added to candidates, because of founding a exist volume replica allocated on this node")
 		}
 	}
 
@@ -190,9 +214,11 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 	for _, nn := range vol.Spec.Accessibility.Nodes {
 		if len(nn) > 0 && !excludedNodes[nn] {
 			if err := r.predicate(vol, nn); err != nil {
+				logCtx.WithField("node", nn).WithError(err).Error("predicate accessibility node fail")
 				return nil, err
 			}
 			candidates = append(candidates, r.storageNodes[nn])
+			logCtx.WithField("node", nn).Debug("Adding a candidate")
 			excludedNodes[nn] = true
 		}
 	}
@@ -205,11 +231,12 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 		}
 
 		if err := r.predicate(vol, node.Name); err != nil {
+			logCtx.WithError(err).WithField("node", node.Name).Debug("filter out a candidate node for predicate fail")
 			continue
 		}
 		priority, err := r.score(vol, node.Name)
 		if err != nil {
-			logCtx.Error(err)
+			logCtx.WithError(err).WithField("node", node.Name).Debug("filter out a candidate node for score fail")
 			continue
 		}
 		heap.Push(

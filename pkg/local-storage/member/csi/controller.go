@@ -145,7 +145,11 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 			}
 		}
 	}
-	if !foundThisNode || len(selectedNodes) < int(params.replicaNumber) {
+	if !foundThisNode {
+		p.logger.WithField("requireNode", requiredNodeName).Errorf("requireNode is not exist in candidateNodes")
+		return nil, fmt.Errorf("requireNode %s is not ready", requiredNodeName)
+	}
+	if len(selectedNodes) < int(params.replicaNumber) {
 		p.logger.WithFields(log.Fields{"nodes": selectedNodes, "replica": params.replicaNumber}).Error("No enough nodes")
 		return nil, fmt.Errorf("no enough nodes")
 	}
