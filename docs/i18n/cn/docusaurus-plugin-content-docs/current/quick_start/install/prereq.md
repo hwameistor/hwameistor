@@ -10,6 +10,15 @@ sidebar_label: "准备工作"
 1. Kubernetes `1.18+`
 2. 部署 CoreDNS
 
+### 不支持的平台
+
+1. Openshift
+1. Rancher
+
+:::note
+暂时不支持以上平台，但是计划未来支持。
+:::
+
 ## 主机配置
 
 ### Linux 发行版
