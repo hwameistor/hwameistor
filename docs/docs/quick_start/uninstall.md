@@ -22,12 +22,7 @@ $ helm delete \
 ### Remove LVGCRDInstances
 
 ```bash
-$ kubectl get crd -o name \
-    | grep localvolumegroups.hwameistor.io \
-    | xargs -t kubectl get \
-    | awk 'NR!=1 {print $1}' \
-    | xargs -t kubectl get -o name \
-    | xargs -t kubectl delete
+$ kubectl  delete localvolumegroups.hwameistor.io --all
 ```
 
 ### Remove namespace
