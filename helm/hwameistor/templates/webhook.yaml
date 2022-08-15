@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hwameistor-webhook
+  namespace: {{ .Release.Namespace}}
+  labels:
+    app: hwameistor-webhook
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hwameistor-webhook
+  template:
+    metadata:
+      labels:
+        app: hwameistor-webhook
+    spec:
+      serviceAccountName: hwameistor-admin
+      initContainers:
+        - image: ghcr.io/hwameistor/self-signed:v1
+          imagePullPolicy: Always
+          name: webhook-init
+          resources:
+            {{- toYaml .Values.webhook.resources | nindent 12 }}
+          env:
+            - name: WEBHOOK_NAMESPACE
+              value: {{ .Release.Namespace}}
+            - name: MUTATE_CONFIG
+              value: hwameistor-admission-mutate
+            - name: WEBHOOK_SERVICE
+              value: hwameistor-webhook
+            - name: MUTATE_PATH
+              value: /mutate
+          volumeMounts:
+            - mountPath: /etc/webhook/certs
+              name: webhook-tls-certs
+      containers:
+        - name: server
+          args:
+            - --cert-dir=/etc/webhook/certs
+            - --tls-private-key-file=tls.key
+            - --tls-cert-file=tls.crt
+          image: {{ .Values.hwameistorImageRegistry}}/{{ .Values.webhook.imageRepository}}:{{ template "hwameistor.webhookImageTag" . }}
+          imagePullPolicy: IfNotPresent
+          resources: 
+            {{- toYaml .Values.webhook.resources | nindent 12 }}
+          ports:
+            - containerPort: 18443
+              name: webhook-api
+          volumeMounts:
+            - name: webhook-tls-certs
+              mountPath: /etc/webhook/certs
+              readOnly: true
+      volumes:
+       - name: webhook-tls-certs
+         emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hwameistor-webhook
+  namespace: {{ .Release.Namespace}}
+spec:
+  selector:
+    app: hwameistor-webhook
+  ports:
+    - port: 443
+      targetPort: webhook-api
