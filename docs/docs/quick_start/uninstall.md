@@ -19,6 +19,17 @@ $ helm delete \
 
 ## Step 2: Cleanup
 
+### Remove LVGCRDInstances
+
+```bash
+$ kubectl get crd -o name \
+    | grep localvolumegroups.hwameistor.io \
+    | xargs -t kubectl get \
+    | awk 'NR!=1 {print $1}' \
+    | xargs -t kubectl get -o name \
+    | xargs -t kubectl delete
+```
+
 ### Remove namespace
 
 ```bash
