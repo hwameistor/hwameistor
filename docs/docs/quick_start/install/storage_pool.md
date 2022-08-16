@@ -5,20 +5,44 @@ sidebar_label: "Set up a Storage Pool"
 
 # Step up a Storage Pool
 
-## Step 1: Create LocalDiskClaim objects
+The below example is from a 4-node kubernetes cluster:
 
-HwameiStor sets up storage pools by creating `LocalDiskClaim` objects according to the storage media types. To create an HDD pool on all kubernetes worker nodes:
-
-```bash
-$ helm template helm/hwameistor \
-        -s templates/post-install-claim-disks.yaml \
-        --set storageNodes='{k8s-worker-1,k8s-worker-2,k8s-worker-3}' \
-        | kubectl apply -f -
+```console
+$ kubectl get no
+NAME           STATUS   ROLES   AGE   VERSION
+k8s-master-1   Ready    master  82d   v1.24.3-2+63243a96d1c393
+k8s-worker-1   Ready    worker  36d   v1.24.3-2+63243a96d1c393
+k8s-worker-2   Ready    worker  59d   v1.24.3-2+63243a96d1c393
+k8s-worker-3   Ready    worker  36d   v1.24.3-2+63243a96d1c393
 ```
 
-## Step 2: Verify LocalDiskClaim objects
+## Steps
 
-```bash
+### 1. Create `LocalDiskClaim` objects
+
+HwameiStor sets up storage pools by creating `LocalDiskClaim` objects according to the storage media types. To create an HDD pool, the user needs to specify `storageNodes`:
+
+```console
+$ helm template ./hwameistor \
+   -s templates/post-install-claim-disks.yaml \
+   --set storageNodes='{k8s-worker-1,k8s-worker-2,k8s-worker-3}' \
+  | kubectl apply -f -
+```
+
+or set all the worker nodes as `storageNodes`:
+
+```console
+$ sn="$( kubectl get no -l node-role.kubernetes.io/worker -o jsonpath="{.items[*].metadata.name}" | tr ' ' ',' )"
+
+$ helm template ./hwameistor \
+    -s templates/post-install-claim-disks.yaml \
+    --set storageNodes="{$sn}" \
+  | kubectl apply -f -
+```
+
+### 2. Verify `LocalDiskClaim` objects
+
+```console
 $ kubectl get ldc
 NAME           NODEMATCH      PHASE
 k8s-worker-1   k8s-worker-1   Bound
@@ -26,17 +50,17 @@ k8s-worker-2   k8s-worker-2   Bound
 k8s-worker-3   k8s-worker-3   Bound
 ```
 
-## Step 3: Verify StorageClass
+### 3. Verify `StorageClass`
 
-```bash
+```console
 $  kubectl get sc hwameistor-storage-lvm-hdd
 NAME                         PROVISIONER         RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 hwameistor-storage-lvm-hdd   lvm.hwameistor.io   Delete          WaitForFirstConsumer   true                   114s
 ```
 
-## Step 4: Verify LocalDisk objects
+### 4. Verify `LocalDisk` objects
 
-```bash
+```console
 $ kubectl get ld
 NAME               NODEMATCH      CLAIM          PHASE
 k8s-worker-1-sda   k8s-worker-1                  Inuse
@@ -50,11 +74,11 @@ k8s-worker-3-sdb   k8s-worker-3   k8s-worker-3   Claimed
 k8s-worker-3-sdc   k8s-worker-3   k8s-worker-3   Claimed
 ```
 
-## Step 5 (Optional): Observe VG
+### 5. Observe VG (Optional)
 
 On a kubernetes worker node, observe a `VG` is created for an `LocalDiskClaim` object
 
-```bash
+```console
 root@k8s-worker-1:~$ vgdisplay LocalStorage_PoolHDD
   --- Volume group ---
   VG Name               LocalStorage_PoolHDD
@@ -80,13 +104,12 @@ root@k8s-worker-1:~$ vgdisplay LocalStorage_PoolHDD
 
 ## Set up storage pool during deployment
 
-A storage pool can be configured during HwameiStor deployment by helm command:
+A storage pool can be configured during HwameiStor deployment by setting the same `storageNodes` parameter:
 
-```bash
-$ helm install \
-    --namespace hwameistor \
-    --create-namespace \
-    hwameistor \
-    helm/hwameistor \
+for example:
+
+```console
+$ helm install hwameistor ./hwameistor \
+    -n hwameistor --create-namespace \
     --set storageNodes='{k8s-worker-1,k8s-worker-2,k8s-worker-3}'
 ```

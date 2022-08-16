@@ -5,24 +5,31 @@ sidebar_label: "Deploy by Helm Charts"
 
 # Deploy by Helm Charts
 
-**The entire HwameiStor stack can be easily deployed by Helm Charts.**
+The entire HwameiStor stack can be easily deployed by Helm Charts.
 
-## Step 1: Prepare helm tool
+## Steps
+
+### 1. Prepare helm tool
 
 To install [Helm](https://helm.sh/) commandline tool, please refer to [Helm's Documentation](https://helm.sh/docs/).
 
-## Step 2: Deploy HwameiStor
+### 2. Download `hwameistor` repo 
 
-```bash
-$ git clone https://github.com/hwameistor/helm-charts.git
+Download and extract repo file to the local directory.
 
-$ cd hwameistor
+```console
+$ helm repo add hwameistor http://hwameistor.io/hwameistor
 
-$ helm install \
-    --namespace hwameistor \
-    --create-namespace \
-    hwameistor \
-    helm/hwameistor \
+$ helm repo update hwameistor
+
+$ helm pull hwameistor/hwameistor --untar
+```
+
+### 3. Deploy HwameiStor
+
+```console
+$ helm install hwameistor ./hwameistor \
+    -n hwameistor --create-namespace
 ```
 
 *That's it!*
@@ -33,19 +40,16 @@ To verify the deployment, please refer to the next chapter [Post Deployment](./p
 
 :::tip
 
-The default image repositories are `quay.io` and `ghcr.io`. 
+The default image repositories are `quay.io` and `ghcr.io`.
 In case they are blocked in some places, DaoCloud provides their mirrors at `quay.m.daocloud.io` and `ghcr.m.daocloud.io`
 
 :::
 
 To switch image repository mirrors, use `--set` to change the value of parameters: `k8sImageRegistry` and `hwameistorImageRegistry`
 
-```bash
-$ helm install \
-    --namespace hwameistor \
-    --create-namespace \
-    hwameistor \
-    helm/hwameistor \
+```console
+$ helm install hwameistor ./hwameistor \
+    -n hwameistor --create-namespace \
     --set k8sImageRegistry=quay.m.daocloud.io \
     --set hwameistorImageRegistry=ghcr.m.daocloud.io
 ```
@@ -61,12 +65,9 @@ If your Kubernetes distribution uses a different `kubelet` directory, you must s
 
 For example, on [Canonical's MicroK8s](https://microk8s.io/) which uses `/var/snap/microk8s/common/var/lib/kubelet/` as `kubelet` directory,  HwameiStor needs to be deployed as:
  
-```bash
-$ helm install \
-    --namespace hwameistor \
-    --create-namespace \
-    hwameistor \
-    helm/hwameistor \
+```console
+$ helm install hwameistor ./hwameistor \
+    -n hwameistor --create-namespace \
     --set kubeletRootDir=/var/snap/microk8s/common/var/lib/kubelet/
 ```
 
@@ -77,21 +78,17 @@ A production environment would require:
 - specify resource configuration
 - avoid deploying on master nodes
 - implement quick failover of controllers
-  
+
 We provide some recommended values in `values.extra.prod.yaml`, to use it:
 
-```bash
-$ helm install \
-    --namespace hwameistor \
-    --create-namespace \
-    hwameistor \
-    helm/hwameistor \
-    -f helm/hwameistor/values.yaml \
-    -f helm/hwameistor/values.extra.prod.yaml
+```console
+$ helm install hwameistor ./hwameistor \
+    -n hwameistor --create-namespace \
+    -f ./hwameistor/values.yaml \
+    -f ./hwameistor/values.extra.prod.yaml
 ```
 
 :::caution
 
-In a resource-strained test environment, setting above-mentioned values would cause pods unable to start!
-
+In a resource-strained test environment, setting the above-mentioned values would cause pods unable to start! 
 :::

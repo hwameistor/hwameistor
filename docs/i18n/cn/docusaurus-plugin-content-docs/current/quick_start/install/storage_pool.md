@@ -5,56 +5,71 @@ sidebar_label: "创建存储池"
 
 # 创建存储池
 
-## 步骤 1：创建 LocalDiskClaim 对象
+下面的例子来自于一个4节点的 Kubernetes 集群：
 
-HwameiStor 根据存储介质类型创建 `LocalDiskClaim` 对象来创建存储池。
-要在所有 Kubernetes Worker 节点上创建一个 HDD 存储池，运行以下命令：
-
-```bash
-helm template helm/hwameistor \
-      -s templates/post-install-claim-disks.yaml \
-      --set storageNodes='{k8s-worker-1,k8s-worker-2,k8s-worker-3}' \
-      | kubectl apply -f -
+```console
+$ kubectl get no
+NAME           STATUS   ROLES   AGE   VERSION
+k8s-master-1   Ready    master  82d   v1.24.3-2+63243a96d1c393
+k8s-worker-1   Ready    worker  36d   v1.24.3-2+63243a96d1c393
+k8s-worker-2   Ready    worker  59d   v1.24.3-2+63243a96d1c393
+k8s-worker-3   Ready    worker  36d   v1.24.3-2+63243a96d1c393
 ```
 
-## 步骤 2：验证 LocalDiskClaim 对象
+## 步骤
+
+### 1. 创建 `LocalDiskClaim` 对象
+
+HwameiStor 根据存储介质类型创建 `LocalDiskClaim` 对象来创建存储池。
+要在所有 Kubernetes Worker 节点上创建一个 HDD 存储池，用户需要通过 `storageNodes` 参数输入各个 Worker 节点名：
+
+```console
+$ helm template ./hwameistor \
+   -s templates/post-install-claim-disks.yaml \
+   --set storageNodes='{k8s-worker-1,k8s-worker-2,k8s-worker-3}' \
+   | kubectl apply -f -
+```
+
+或者通过以下方法指定所有 Worker 节点：
+
+```console
+$ sn="$( kubectl get no -l node-role.kubernetes.io/worker -o jsonpath="{.items[*].metadata.name}" | tr ' ' ',' )"
+
+$ helm template ./hwameistor \
+    -s templates/post-install-claim-disks.yaml \
+    --set storageNodes="{$sn}" \
+  | kubectl apply -f -
+```
+
+
+### 2. 验证 `LocalDiskClaim` 对象
 
 运行以下命令：
 
-```bash
-kubectl get ldc
-```
-
-输出类似于：
-
 ```console
+$ kubectl get ldc
 NAME           NODEMATCH      PHASE
 k8s-worker-1   k8s-worker-1   Bound
 k8s-worker-2   k8s-worker-2   Bound
 k8s-worker-3   k8s-worker-3   Bound
 ```
 
-## 步骤 3：验证 StorageClass
+### 3. 验证 `StorageClass`
 
 运行以下命令：
 
-```bash
-kubectl get sc hwameistor-storage-lvm-hdd
-```
-
-输出类似于：
-
 ```console
+$ kubectl get sc hwameistor-storage-lvm-hdd
 NAME                         PROVISIONER         RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 hwameistor-storage-lvm-hdd   lvm.hwameistor.io   Delete          WaitForFirstConsumer   true                   114s
 ```
 
-## 步骤 4：验证 LocalDisk 对象
+### 4. 验证 `LocalDisk` 对象
 
 运行以下命令：
 
-```bash
-kubectl get ld
+```console
+$ kubectl get ld
 ```
 
 输出类似于：
@@ -72,19 +87,14 @@ k8s-worker-3-sdb   k8s-worker-3   k8s-worker-3   Claimed
 k8s-worker-3-sdc   k8s-worker-3   k8s-worker-3   Claimed
 ```
 
-## 步骤 5（可选）：观察 VG
+### 5. 观察 `VG` (可选)
 
 在一个 Kubernetes Worker 节点上，观察为 `LocalDiskClaim` 对象创建 `VG`。
 
 运行以下命令：
 
-```bash
-vgdisplay LocalStorage_PoolHDD
-```
-
-输出类似于：
-
 ```console
+$ vgdisplay LocalStorage_PoolHDD
   --- Volume group ---
   VG Name               LocalStorage_PoolHDD
   System ID
@@ -111,11 +121,8 @@ vgdisplay LocalStorage_PoolHDD
 
 通过 Helm 命令安装 HwameiStor 期间可以配置一个存储池：
 
-```bash
-helm install \
-  --namespace hwameistor \
-  --create-namespace \
-  hwameistor \
-  helm/hwameistor \
-  --set storageNodes='{k8s-worker-1,k8s-worker-2,k8s-worker-3}'
+```console
+$ helm install hwameistor ./hwameistor \
+    -n hwameistor --create-namespace \
+    --set storageNodes='{k8s-worker-1,k8s-worker-2,k8s-worker-3}'
 ```
