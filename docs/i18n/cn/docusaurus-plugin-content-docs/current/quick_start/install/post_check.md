@@ -5,7 +5,7 @@ sidebar_label: "安装后检查"
 
 # 安装后检查
 
-下文的示例来自一个4节点的 Kubernetes 集群
+下文的示例来自一个 4 节点的 Kubernetes 集群
 
 ```console
 $ kubectl get no

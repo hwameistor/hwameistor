@@ -33,7 +33,7 @@ $ kubectl delete ns hwameistor
 $ kubectl delete localvolumegroups.hwameistor.io --all
 ```
 
-### 3. 移除 CRD, Hook 和 RBAC
+### 3. 移除 CRD、Hook 和 RBAC
 
 ```console
 $ kubectl get crd,mutatingwebhookconfiguration,clusterrolebinding,clusterrole -o name \

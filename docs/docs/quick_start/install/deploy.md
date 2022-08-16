@@ -9,11 +9,11 @@ The entire HwameiStor stack can be easily deployed by Helm Charts.
 
 ## Steps
 
-### 1. Prepare helm tool
+### 1. Prepare helm tools
 
 To install [Helm](https://helm.sh/) commandline tool, please refer to [Helm's Documentation](https://helm.sh/docs/).
 
-### 2. Download `hwameistor` repo 
+### 2. Download `hwameistor` repo
 
 Download and extract repo file to the local directory.
 

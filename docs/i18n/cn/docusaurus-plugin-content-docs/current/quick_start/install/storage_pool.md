@@ -5,7 +5,7 @@ sidebar_label: "创建存储池"
 
 # 创建存储池
 
-下面的例子来自于一个4节点的 Kubernetes 集群：
+下面的例子来自于一个 4 节点的 Kubernetes 集群：
 
 ```console
 $ kubectl get no
@@ -119,7 +119,7 @@ $ vgdisplay LocalStorage_PoolHDD
 
 ## 安装期间配置存储池
 
-通过 Helm 命令安装 HwameiStor 期间可以配置一个存储池：
+在安装 HwameiStor 期间也可以通过设置 `storageNode` 参数配置存储池：
 
 ```console
 $ helm install hwameistor ./hwameistor \

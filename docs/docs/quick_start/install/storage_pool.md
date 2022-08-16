@@ -104,9 +104,7 @@ root@k8s-worker-1:~$ vgdisplay LocalStorage_PoolHDD
 
 ## Set up storage pool during deployment
 
-A storage pool can be configured during HwameiStor deployment by setting the same `storageNodes` parameter:
-
-for example:
+A storage pool can be configured during HwameiStor deployment by setting the same `storageNodes` parameter as shown in the below example: 
 
 ```console
 $ helm install hwameistor ./hwameistor \
