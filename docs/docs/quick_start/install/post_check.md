@@ -7,7 +7,7 @@ sidebar_label: "Post-Deployment Check"
 
 The below example is from a 4-node kubernetes cluster:
 
-```bash
+```console
 $ kubectl get no
 NAME           STATUS   ROLES   AGE   VERSION
 k8s-master-1   Ready    master  82d   v1.24.3-2+63243a96d1c393
@@ -16,11 +16,11 @@ k8s-worker-2   Ready    worker  59d   v1.24.3-2+63243a96d1c393
 k8s-worker-3   Ready    worker  36d   v1.24.3-2+63243a96d1c393
 ```
 
-## Step 1: Check the pods
+## Check the pods
 
 The following pods should be up and running:
 
-```bash
+```console
 $ kubectl -n hwameistor get pod
 NAME                                                       READY   STATUS                  RESTARTS   AGE
 hwameistor-local-disk-csi-controller-665bb7f47d-6227f      2/2     Running                 0          30s
@@ -41,12 +41,13 @@ hwameistor-webhook-986479678-278cr                         1/1     Running      
 `local-disk-manager` and `local-storage` are `DaemonSets`. They should have one pod on each Kubernetes node.
 :::
 
-## Step 2: Check the APIs
+## Check the APIs
 
 HwameiStor CRDs create the following APIs.
 
-```bash
+```console
 $ kubectl api-resources --api-group hwameistor.io
+
 NAME                       SHORTNAMES   APIVERSION               NAMESPACED   KIND
 localdiskclaims            ldc          hwameistor.io/v1alpha1   false        LocalDiskClaim
 localdisknodes             ldn          hwameistor.io/v1alpha1   false        LocalDiskNode
@@ -65,11 +66,11 @@ localvolumes               lv           hwameistor.io/v1alpha1   false        Lo
 
 For the details about CRDs, please also refer to the chapter [CRDs](../../architecture/apis.md).
 
-# Step 3: Check the localDiskNode and localDisks
+## Check the `LocalDiskNode` and `localDisks`
 
-HwameiStor autoscans each node and registers each disk as CRD `localDisk(ld)`. The unused disks are displayed with `PHASE: Unclaimed`.
+HwameiStor autoscans each node and registers each disk as CRD `LocalDisk(ld)`. The unused disks are displayed with `PHASE: Unclaimed`.
 
-```bash
+```console
 $ kubectl get localdisknodes
 NAME           TOTALDISK   FREEDISK
 k8s-master-1   5           3
@@ -90,4 +91,3 @@ k8s-worker-3-sda   k8s-worker-3           Inuse
 k8s-worker-3-sdb   k8s-worker-3           Unclaimed
 k8s-worker-3-sdc   k8s-worker-3           Unclaimed
 ```
-

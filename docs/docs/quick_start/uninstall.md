@@ -6,45 +6,45 @@ sidebar_label: "Uninstall"
 # Uninstall
 
 :::danger
-Before uninstalling HwameiStor, make sure you have backed up all the data.
+Before uninstalling HwameiStor, please make sure you have backed up all the data.
 :::
 
-## Step 1: Delete helm instance
+## Delete helm instance
 
-```bash
-$ helm delete \
-    --namespace hwameistor \
-    hwameistor
+```console
+$ helm delete -n hwameistor hwameistor
 ```
 
-## Step 2: Cleanup
+## Cleanup
 
-### Remove namespace
+### 1. Remove namespace
 
-```bash
+```console
 $ kubectl delete ns hwameistor
 ```
 
-### Remove CRDs
+### 2. Remove `LocalVolumeGroup` instances
+   
+:::note
+   `LocalVolumeGroup` object has a special finalizer, so its instances must be deleted before its definition is deleted.
+:::
 
-```bash
-$ kubectl get crd -o name \
-    | grep hwameistor \
-    | xargs -t kubectl delete
+```console
+$ kubectl delete localvolumegroups.hwameistor.io --all
 ```
 
-### Remove clusterRoles and roleBindings
+### 3. Remove CRD, Hook and RBAC
 
-```bash
-$ kubectl get clusterrolebinding,clusterrole -o name \
-    | grep hwameistor \
-    | xargs -t kubectl delete
+```console
+$ kubectl get crd,mutatingwebhookconfiguration,clusterrolebinding,clusterrole -o name \
+      | grep hwameistor \
+      | xargs -t kubectl delete
 ```
 
-### Remove storageClass
+### 4. Remove StorageClass
 
-```bash
+```console
 $ kubectl get sc -o name \
-    | grep hwameistor-storage-lvm- \
-    | xargs -t kubectl delete
+      | grep hwameistor-storage-lvm- \
+      | xargs -t kubectl delete
 ```

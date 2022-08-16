@@ -38,12 +38,12 @@ sidebar_label: "准备工作"
 1. 安装 `LVM2`
 2. 高可用功能需要安装和当前运行的 kernel 版本一致的 `kernel-devel`
 
-```bash
-# CentOS/RHEL, Rocky 和 Kylin
+```console title="CentOS/RHEL, Rocky 和 Kylin"
 $ yum install -y lvm2
 $ yum install -y kernel-devel-$(uname -r)
+```
 
-# Ubuntu
+```console title="Ubuntu"
 $ apt-get install -y lvm2
 $ apt-get install -y linux-headers-$(uname -r)
 ```

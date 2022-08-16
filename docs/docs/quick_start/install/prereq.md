@@ -38,12 +38,12 @@ Above platforms are not supported yet but will be supported in the future.
 1. `LVM2` is installed
 2. For HA features, `kernel-devel` must be installed and match the version of the operating `kernel`
 
-```bash
-# CentOS/RHEL, Rocky and Kylin
+```console title="CentOS/RHEL, Rocky and Kylin"
 $ yum install -y lvm2
 $ yum install -y kernel-devel-$(uname -r)
+```
 
-# Ubuntu
+```console title="Ubuntu"
 $ apt-get install -y lvm2
 $ apt-get install -y linux-headers-$(uname -r)
 ```
