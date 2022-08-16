@@ -3,8 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"github.com/wxnacy/wgo/arrays"
-
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -121,11 +119,6 @@ func (m *manager) processVolumeCreate(vol *apisv1alpha1.LocalVolume) error {
 			config.Version = vol.Spec.Config.Version + 1
 		}
 		vol.Spec.Config = config
-		for _, replicas := range config.Replicas {
-			if arrays.ContainsString(vol.Spec.Accessibility.Nodes, replicas.Hostname) == -1 {
-				vol.Spec.Accessibility.Nodes = append(vol.Spec.Accessibility.Nodes, replicas.Hostname)
-			}
-		}
 		return m.apiClient.Update(context.TODO(), vol)
 	}
 
