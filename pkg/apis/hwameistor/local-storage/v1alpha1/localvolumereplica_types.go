@@ -14,6 +14,9 @@ type LocalVolumeReplicaSpec struct {
 	// VolumeName is the name of the volume, e.g. pvc-fbf3ffc3-66db-4dae-9032-bda3c61b8f85
 	VolumeName string `json:"volumeName,omitempty"`
 
+	// VolumeMigratedName is the migrated name of the local volumes. It is designed for the unconvertible volume migrate.
+	VolumeMigratedName string `json:"VolumeMigratedName,omitempty"`
+
 	// PoolName is the name of the storage pool, e.g. LocalStorage_PoolHDD, LocalStorage_PoolSSD, etc..
 	PoolName string `json:"poolName,omitempty"`
 
