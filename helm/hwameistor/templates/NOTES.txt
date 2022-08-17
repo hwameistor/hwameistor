@@ -11,7 +11,7 @@ You can use hwameistor to provide LVM volume:
 
   1. Check each storageNode's storage capacity 
   
-     $ kubectl get lsn {{ .Values.storageNodes }} -o jsonpath='{.status.pools.LocalStorage_PoolHDD.freeCapacityBytes}'
+     $ kubectl get lsn -o jsonpath='{.items[*].status.pools.LocalStorage_PoolHDD.freeCapacityBytes}'
   
   2. Create a PVC and specify 'hwameistor-storage-lvm-{{ .Values.storageClass.diskType | lower}}' in pvc.spec.storageClassName
   

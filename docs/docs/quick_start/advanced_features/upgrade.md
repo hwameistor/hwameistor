@@ -7,11 +7,8 @@ sidebar_label: "Upgrade"
 
 Helm makes upgrading HwameiStor very easy:
 
-```bash
-$ helm upgrade \
-    --namespace hwameistor \
-    hwameistor \
-    -f new.values.yaml
+```console
+$ helm upgrade -n hwameistor hwameistor -f new.values.yaml
 ```
 
 The upgrade will restart each HwameiStor pod in a rolling fashion.

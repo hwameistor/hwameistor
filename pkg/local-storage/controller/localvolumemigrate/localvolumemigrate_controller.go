@@ -116,6 +116,8 @@ func (r *ReconcileLocalVolumeMigrate) Reconcile(request reconcile.Request) (reco
 	}
 
 	var accessibilityNodeNames []string
+	var errMsg error
+
 	for _, tmpvol := range lvg.Spec.Volumes {
 		if tmpvol.LocalVolumeName == "" {
 			continue
@@ -134,11 +136,14 @@ func (r *ReconcileLocalVolumeMigrate) Reconcile(request reconcile.Request) (reco
 				accessibilityNodeNames = vol.Spec.Accessibility.Nodes
 			}
 		}
-		log.Debugf("ReconcileLocalVolumeGroupMigrate Reconcile vol = %v", vol)
 		if err := r.client.Update(context.TODO(), vol); err != nil {
-			log.WithError(err).Errorf("ReconcileLocalVolumeGroupMigrate Reconcile : Failed to re-configure Volume, vol.Name = %v, tmpvol.LocalVolumeName = %v", vol.Name, tmpvol.LocalVolumeName)
-			return reconcile.Result{}, err
+			log.WithError(err).Errorf("ReconcileLocalVolumeMigrate Reconcile : Failed to re-configure Volume, vol.Name = %v, tmpvol.LocalVolumeName = %v", vol.Name, tmpvol.LocalVolumeName)
+			errMsg = err
 		}
+	}
+
+	if errMsg != nil {
+		return reconcile.Result{}, errMsg
 	}
 
 	r.storageMember.Controller().ReconcileVolumeMigrate(instance)

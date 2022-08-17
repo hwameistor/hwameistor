@@ -19,9 +19,9 @@ spec:
     spec:
       serviceAccountName: hwameistor-admin
       initContainers:
-        - image: ghcr.io/hwameistor/self-signed:v1
-          imagePullPolicy: Always
-          name: admission-controller-init
+        - image:  {{ .Values.hwameistorImageRegistry}}/{{ .Values.admission.selfSigned.imageRepository}}:{{ .Values.admission.selfSigned.tag}}
+          imagePullPolicy: IfNotPresent
+          name: self-signed
           resources:
             {{- toYaml .Values.admission.resources | nindent 12 }}
           env:

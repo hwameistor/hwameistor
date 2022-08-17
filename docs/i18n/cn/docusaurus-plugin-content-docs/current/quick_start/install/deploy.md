@@ -7,25 +7,34 @@ sidebar_label: "通过 Helm Chart 安装"
 
 推荐使用这种安装方式，HwameiStor 的任何组件都可以通过 Helm Charts 轻松安装。
 
-1. 准备 Helm 工具。
+## 步骤
 
-   安装 [Helm](https://helm.sh/) 命令行工具，请参阅 [Helm 文档](https://helm.sh/docs/)。
+### 1. 准备 Helm 工具
 
-2. 依次运行如下命令，安装 HwameiStor。
+安装 [Helm](https://helm.sh/) 命令行工具，请参阅 [Helm 文档](https://helm.sh/docs/)。
 
-   ```bash
-   git clone https://github.com/hwameistor/hwameistor.git
-   cd hwameistor
-   helm install \
-     --namespace hwameistor \
-     --create-namespace \
-     hwameistor \
-     helm/hwameistor \
-   ```
+### 2. 下载 `hwameistor` Repo
 
-3. 安装完成！
+下载并解压 Repo 文件到本地
 
-   要验证安装效果，请参见下一章[安装后检查](./post_check.md)。
+```console
+$ helm repo add hwameistor http://hwameistor.io/hwameistor
+
+$ helm repo update hwameistor
+
+$ helm pull hwameistor/hwameistor --untar
+```
+
+### 3. 安装 HwameiStor
+
+```console
+$ helm install hwameistor ./hwameistor \
+    -n hwameistor --create-namespace
+```
+
+**安装完成!**
+
+要验证安装效果，请参见下一章[安装后检查](./post_check.md)。
 
 ## 使用镜像仓库镜像
 
@@ -38,14 +47,11 @@ sidebar_label: "通过 Helm Chart 安装"
 
 要切换镜像仓库的镜像，请如下使用 `--set` 更改这两个参数值：`k8sImageRegistry` 和 `hwameistorImageRegistry`。
 
-```bash
-helm install \
-  --namespace hwameistor \
-  --create-namespace \
-  hwameistor \
-  helm/hwameistor \
-  --set k8sImageRegistry=quay.m.daocloud.io \
-  --set hwameistorImageRegistry=ghcr.m.daocloud.io
+```console
+$ helm install hwameistor ./hwameistor \
+    -n hwameistor --create-namespace \
+    --set k8sImageRegistry=quay.m.daocloud.io \
+    --set hwameistorImageRegistry=ghcr.m.daocloud.io
 ```
 
 ## 自定义 kubelet 根目录
@@ -59,13 +65,10 @@ helm install \
 
 例如，在将 `/var/snap/microk8s/common/var/lib/kubelet/` 用作 `kubelet` 目录的 [Canonical 的 MicroK8s](https://microk8s.io/) 上，HwameiStor 需要按以下方式安装：
  
-```bash
-helm install \
-  --namespace hwameistor \
-  --create-namespace \
-  hwameistor \
-  helm/hwameistor \
-  --set kubeletRootDir=/var/snap/microk8s/common/var/lib/kubelet/
+```console
+$ helm install hwameistor ./hwameistor \
+    -n hwameistor --create-namespace \
+    --set kubeletRootDir=/var/snap/microk8s/common/var/lib/kubelet/
 ```
 
 ## 生产环境安装
@@ -78,14 +81,11 @@ helm install \
   
 `values.extra.prod.yaml` 文件中提供了一些推荐值，具体用法为：
 
-```bash
-helm install \
-  --namespace hwameistor \
-  --create-namespace \
-  hwameistor \
-  helm/hwameistor \
-  -f helm/hwameistor/values.yaml \
-  -f helm/hwameistor/values.extra.prod.yaml
+```console
+$ helm install hwameistor ./hwameistor \
+    -n hwameistor --create-namespace \
+    -f ./hwameistor/values.yaml \
+    -f ./hwameistor/values.extra.prod.yaml
 ```
 
 :::caution

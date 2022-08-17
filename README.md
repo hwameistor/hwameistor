@@ -1,6 +1,6 @@
 # HwameiStor
 
-Hwameistor is a cloud-native storage system. It creates a local storage resource pool for centrally managing all disks such as HDD, SSD, and NVMe. It uses the CSI architecture to provide distributed services with local volumes and provides data persistence capabilities for stateful cloud-native workloads or components.
+Hwameistor is an HA local storage system for cloud-native stateful workloads. It creates a local storage resource pool for centrally managing all disks such as HDD, SSD, and NVMe. It uses the CSI architecture to provide distributed services with local volumes and provides data persistence capabilities for stateful cloud-native workloads or components.
 
 ![System architecture](docs/docs/img/architecture.png)
 
@@ -8,10 +8,12 @@ Hwameistor is a cloud-native storage system. It creates a local storage resource
 >At present, HwameiStor is still in the alpha stage.
 
 The latest release of HwameiStor is [![hwameistor-releases](https://img.shields.io/github/v/release/hwameistor/hwameistor.svg?include_prereleases)](https://github.com/hwameistor/hwameistor/releases)
+
 ## Build Status
 ![period-check](https://github.com/hwameistor/hwameistor/actions/workflows/period-check.yml/badge.svg) [![codecov](https://codecov.io/gh/hwameistor/hwameistor/branch/main/graph/badge.svg?token=AWRUI46FEX)](https://codecov.io/gh/hwameistor/hwameistor) [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/5685/badge)](https://bestpractices.coreinfrastructure.org/projects/5685)
+
 ## Release Status
-| Release  | Version | Type   |    
+| Release  | Version | Type   |
 |----------|---------|--------|
 | v0.3     | v0.3.2  | latest |
 
@@ -28,7 +30,7 @@ local-disk-manager (LDM) is designed to hold the management of disks on nodes.
 Other modules such as local-storage can take advantage of the disk management feature provided by LDM.
 
 ### Local-Storage
-Local-Storage (LS) provides a cloud-native local storage system. It aims to provision high-performance persistent LVM volume with local access to applicatios.
+Local-Storage (LS) provides a cloud-native local storage system. It aims to provision high-performance persistent LVM volume with local access to applications.
 
 ### Scheduler
 Scheduler is to automatically schedule a pod to a correct node which has the associated HwameiStor volumes.
@@ -38,7 +40,7 @@ admission-controller is a webhook that can automatically determine which pod use
 
 ## Documentation
 
-For full documentation see website [hwameistor.io](https://hwameistor.io/docs/intro).
+For full documentation, please see our website [hwameistor.io](https://hwameistor.io/docs/intro).
 
 ## Roadmap
 | Feature                                  	| Status    	| Release 	|  Description                                     	|
