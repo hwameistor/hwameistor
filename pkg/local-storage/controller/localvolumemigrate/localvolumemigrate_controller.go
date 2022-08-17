@@ -115,7 +115,9 @@ func (r *ReconcileLocalVolumeMigrate) Reconcile(request reconcile.Request) (reco
 		return reconcile.Result{}, err
 	}
 
+	var accessibilityNodeNames []string
 	var errMsg error
+
 	for _, tmpvol := range lvg.Spec.Volumes {
 		if tmpvol.LocalVolumeName == "" {
 			continue
@@ -129,7 +131,9 @@ func (r *ReconcileLocalVolumeMigrate) Reconcile(request reconcile.Request) (reco
 		}
 		for _, nodeName := range instance.Spec.TargetNodesNames {
 			if arrays.ContainsString(vol.Spec.Accessibility.Nodes, nodeName) == -1 {
-				vol.Spec.Accessibility.Nodes = append(vol.Spec.Accessibility.Nodes, nodeName)
+				accessibilityNodeNames = append(accessibilityNodeNames, nodeName)
+			} else {
+				accessibilityNodeNames = vol.Spec.Accessibility.Nodes
 			}
 		}
 		if err := r.client.Update(context.TODO(), vol); err != nil {
