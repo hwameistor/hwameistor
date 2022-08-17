@@ -37,6 +37,10 @@ admission:
   replicas: 1
   imageRepository: hwameistor/admission
   resources: {}
+  # self-signed is a tool image for generating self-signed certs used by api-server
+  selfSigned:
+    imageRepository: hwameistor/self-signed
+    tag: v1
 
 localDiskManager:
   tolerationsOnMaster: true
