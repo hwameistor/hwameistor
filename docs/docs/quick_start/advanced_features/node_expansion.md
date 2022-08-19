@@ -5,23 +5,28 @@ sidebar_label: "Node Expansion"
 
 # Node Expansion
 
-It's one of common requirements for a storage system to expand the capacity by adding a new storage node. HwameiStor provides this feature by the following simple procedure.
+A storage system is ususally expected to expand its capacity by adding a new storage node. In HwameiStor, it can be done with the following steps.
 
 ## Steps
 
-### 1. Prepare a storage node (e.g. k8s-worker-4, /dev/sdb, SSD disk)
+### 1. Prepare a new storage node
 
-Add a node into the Kubernetes cluster, or select a Kubernetes node. And ensure the node has all the required items which are described in [Prerequisites](../install/prereq.md).
+Add the node into the Kubernetes cluster, or select a Kubernetes node. The node should have all the required items described in [Prerequisites](../install/prereq.md).
 
-After the new node is already in the Kubernetes cluster, make sure the following HwameiStor pods are already running on this node.
+For example, the new node and disk information is as follows:
+- name: k8s-worker-4
+- devPath: /dev/sdb
+- diskType: SSD disk
+
+After the new node is already added into the Kubernetes cluster, make sure the following HwameiStor pods are already running on this node.
 
 ```console
 $ kubectl -n hwameistor get pod -o wide | grep k8s-worker-4
-[root@demo-dev-master-01 ~]# k -n hwameistor get pod -o wide | grep demo-dev-worker-02
+$ k -n hwameistor get pod -o wide | grep k8s-worker-4
 hwameistor-local-disk-manager-c86g5     2/2     Running   0     19h   10.6.182.105      k8s-worker-4   <none>  <none>
 hwameistor-local-storage-s4zbw          2/2     Running   0     19h   192.168.140.82    k8s-worker-4   <none>  <none>
 
-# check for the LSN which is for the metadata of the node's storage
+# check LocalStorageNode to get metadata of the storage node.
 $ kubectl get localstoragenode k8s-worker-4
 NAME                 IP           ZONE      REGION    STATUS   AGE
 k8s-worker-4   10.6.182.103       default   default   Ready    8d
@@ -46,7 +51,7 @@ EOF
 
 ### 3. Post check
 
-Finally, check if the node has the storage pool setup by following:
+Finally, check if the node has the storage pool setup by checking the LSN:
 
 ```console
 apiVersion: hwameistor.io/v1alpha1
