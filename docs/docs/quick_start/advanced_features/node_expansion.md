@@ -21,12 +21,20 @@ For example, the new node and disk information is as follows:
 After the new node is already added into the Kubernetes cluster, make sure the following HwameiStor pods are already running on this node.
 
 ```console
+$ kubectl get node
+NAME           STATUS   ROLES            AGE     VERSION
+k8s-master-1   Ready    master           96d     v1.24.3-2+63243a96d1c393
+k8s-worker-1   Ready    worker           96h     v1.24.3-2+63243a96d1c393
+k8s-worker-2   Ready    worker           96h     v1.24.3-2+63243a96d1c393
+k8s-worker-3   Ready    worker           96d     v1.24.3-2+63243a96d1c393
+k8s-worker-4   Ready    worker           1h      v1.24.3-2+63243a96d1c393
+
 $ kubectl -n hwameistor get pod -o wide | grep k8s-worker-4
 $ k -n hwameistor get pod -o wide | grep k8s-worker-4
 hwameistor-local-disk-manager-c86g5     2/2     Running   0     19h   10.6.182.105      k8s-worker-4   <none>  <none>
 hwameistor-local-storage-s4zbw          2/2     Running   0     19h   192.168.140.82    k8s-worker-4   <none>  <none>
 
-# check LocalStorageNode to get metadata of the storage node.
+# check if LocalStorageNode exists
 $ kubectl get localstoragenode k8s-worker-4
 NAME                 IP           ZONE      REGION    STATUS   AGE
 k8s-worker-4   10.6.182.103       default   default   Ready    8d
@@ -34,7 +42,7 @@ k8s-worker-4   10.6.182.103       default   default   Ready    8d
 
 ### 2. Add the storage node into HwameiStor
 
-Add the storage label into the node by adding a LocalStorageClaim CR as below:
+Construct the storage pool of the node by adding a LocalStorageClaim CR as below:
 
 ```console
 $ kubectl apply -f - <<EOF
@@ -51,7 +59,7 @@ EOF
 
 ### 3. Post check
 
-Finally, check if the node has the storage pool setup by checking the LSN:
+Finally, check if the node has setup the storage pool by checking the LocalStorageNode CR:
 
 ```console
 apiVersion: hwameistor.io/v1alpha1
