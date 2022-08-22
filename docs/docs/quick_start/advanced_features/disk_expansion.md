@@ -14,6 +14,7 @@ A storage system is usually expected to expand its capacity by adding a new disk
 Select a storage node from the HwameiStor system, and add a new disk into it.
 
 For example, the storage node and new disk information are as follows:
+
 - name: k8s-worker-4
 - devPath: /dev/sdc
 - diskType: SSD
