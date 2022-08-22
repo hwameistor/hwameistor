@@ -35,7 +35,7 @@ k8s-worker-4-sdc   k8s-worker-4       Unclaimed
 
 ### 2. Add the new disk into the node's storage pool
 
-The new disk should be added into the existing SSD storage pool of the node. If the storage pool doesn't exists, it will be constructed automatically and the new disk should be added into it.
+The new disk should be added into the existing SSD storage pool of the node. If the storage pool doesn't exist, it will be constructed automatically and the new disk should be added into it.
 
 ```console
 $ kubectl apply -f - <<EOF
