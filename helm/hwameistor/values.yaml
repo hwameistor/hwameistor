@@ -1,4 +1,4 @@
-k8sImageRegistry: quay.io
+k8sImageRegistry: k8s.gcr.io
 hwameistorImageRegistry: ghcr.io
 # Users in China can change to these sites for option
 #k8sImageRegistry: quay.m.daocloud.io
@@ -46,8 +46,8 @@ localDiskManager:
   tolerationsOnMaster: true
   enableCSI: true
   registrar:
-    imageRepository: k8scsi/csi-node-driver-registrar
-    tag: v1.1.0
+    imageRepository: sig-storage/csi-node-driver-registrar
+    tag: v2.5.0
     resources: {}
   manager:
     imageRepository: hwameistor/local-disk-manager
@@ -57,11 +57,11 @@ localDiskManagerCSIController:
   replicas: 1
   priorityClassName: 
   provisioner:
-    imageRepository: k8scsi/csi-provisioner
+    imageRepository: sig-storage/csi-provisioner
     tag: v2.0.3
     resources: {}
   attacher:
-    imageRepository: k8scsi/csi-attacher
+    imageRepository: sig-storage/csi-attacher
     tag: v3.0.1
     resources: {}
     
@@ -69,8 +69,8 @@ localStorage:
   tolerationsOnMaster: true
   priorityClassName: 
   registrar:
-    imageRepository: k8scsi/csi-node-driver-registrar
-    tag: v1.1.0
+    imageRepository: sig-storage/csi-node-driver-registrar
+    tag: v2.5.0
     resources: {}
   member:
     imageRepository: hwameistor/local-storage
@@ -80,14 +80,14 @@ localStorageCSIController:
   replicas: 1
   priorityClassName:
   provisioner:
-    imageRepository: k8scsi/csi-provisioner
+    imageRepository: sig-storage/csi-provisioner
     tag: v2.0.3
     resources: {}
   attacher:
-    imageRepository: k8scsi/csi-attacher
+    imageRepository: sig-storage/csi-attacher
     tag: v3.0.1
     resources: {}
   resizer:
-    imageRepository: k8scsi/csi-resizer
+    imageRepository: sig-storage/csi-resizer
     tag: v1.0.1
     resources: {}
