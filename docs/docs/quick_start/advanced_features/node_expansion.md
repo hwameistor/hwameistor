@@ -14,6 +14,7 @@ A storage system is ususally expected to expand its capacity by adding a new sto
 Add the node into the Kubernetes cluster, or select a Kubernetes node. The node should have all the required items described in [Prerequisites](../install/prereq.md).
 
 For example, the new node and disk information is as follows:
+
 - name: k8s-worker-4
 - devPath: /dev/sdb
 - diskType: SSD disk
@@ -30,7 +31,6 @@ k8s-worker-3   Ready    worker           96d     v1.24.3-2+63243a96d1c393
 k8s-worker-4   Ready    worker           1h      v1.24.3-2+63243a96d1c393
 
 $ kubectl -n hwameistor get pod -o wide | grep k8s-worker-4
-$ k -n hwameistor get pod -o wide | grep k8s-worker-4
 hwameistor-local-disk-manager-c86g5     2/2     Running   0     19h   10.6.182.105      k8s-worker-4   <none>  <none>
 hwameistor-local-storage-s4zbw          2/2     Running   0     19h   192.168.140.82    k8s-worker-4   <none>  <none>
 
