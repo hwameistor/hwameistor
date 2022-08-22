@@ -2,7 +2,6 @@ package csi
 
 import (
 	"fmt"
-
 	localapis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
 
@@ -95,6 +94,16 @@ func (p *plugin) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 	have to allow multiple mounts per node
 	in order to support Pod rolling upgrade
 	*/
+
+	// return directly if device has already mounted at TargetPath
+	if isStringInArray(req.GetTargetPath(), p.mounter.GetDeviceMountPoints(devicePath)) {
+		p.logger.WithFields(log.Fields{
+			"volume":     req.VolumeId,
+			"targetPath": req.TargetPath,
+			"devicePath": devicePath,
+		}).Debug("device has already mounted at target path")
+		return resp, nil
+	}
 
 	if req.GetVolumeCapability().GetBlock() != nil {
 		// raw block
