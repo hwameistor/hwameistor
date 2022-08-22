@@ -5,20 +5,20 @@ sidebar_label: "Disk Expansion"
 
 # Disk Expansion
 
-A storage system is ususally expected to expand its capacity by adding a new disk into a storage node. In HwameiStor, it can be done with the following steps.
+A storage system is usually expected to expand its capacity by adding a new disk into a storage node. In HwameiStor, it can be done with the following steps.
 
 ## Steps
 
 ### 1. Prepare a new storage disk
 
-Select a storage node from HwameiStor system, and add a new disk into it.
+Select a storage node from the HwameiStor system, and add a new disk into it.
 
-For example, the storage node and new disk information is as follows:
+For example, the storage node and new disk information are as follows:
 - name: k8s-worker-4
 - devPath: /dev/sdc
 - diskType: SSD
 
-After the new disk is added into the storage node k8s-worker-4, you can check the disk status as below:
+After the new disk is added into the storage node `k8s-worker-4`, you can check the disk status as below:
 
 ```console
 # 1. Check if the new disk is added into the node successfully
@@ -34,7 +34,7 @@ k8s-worker-4-sdc   k8s-worker-4       Unclaimed
 
 ### 2. Add the new disk into the node's storage pool
 
-The new disk should be added into the existing SSD storage pool of the node. Otherwise a new SSD storage pool will be constructed if it doesn't exist, and the new disk should be added into it.
+The new disk should be added into the existing SSD storage pool of the node. If the storage pool doesn't exists, it will be constructed automatically and the new disk should be added into it.
 
 ```console
 $ kubectl apply -f - <<EOF
