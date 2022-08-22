@@ -1,0 +1,1456 @@
+---
+# CustomResourceDefination: localstoragenode
+# Source: hwameistor/crds/hwameistor.io_localstoragenodes_crd.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localdisknodes.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalDiskNode
+    listKind: LocalDiskNodeList
+    plural: localdisknodes
+    shortNames:
+    - ldn
+    singular: localdisknode
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.totalDisk
+      name: TotalDisk
+      type: integer
+    - jsonPath: .status.allocatableDisk
+      name: FreeDisk
+      type: integer
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalDiskNode is the Schema for the localdisknodes API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalDiskNodeSpec defines the desired state of LocalDiskNode
+            properties:
+              attachNode:
+                description: AttachNode represent where disk is attached
+                type: string
+            required:
+            - attachNode
+            type: object
+          status:
+            description: LocalDiskNodeStatus defines the observed state of LocalDiskNode
+            properties:
+              allocatableDisk:
+                description: AllocatableDisk
+                format: int64
+                type: integer
+              disks:
+                additionalProperties:
+                  properties:
+                    capacity:
+                      description: Capacity
+                      format: int64
+                      type: integer
+                    devPath:
+                      description: DevPath
+                      type: string
+                    diskType:
+                      description: DiskType SSD/HDD/NVME...
+                      type: string
+                    status:
+                      description: Status
+                      type: string
+                  required:
+                  - devPath
+                  - diskType
+                  - status
+                  type: object
+                description: Disks key is the name of LocalDisk
+                type: object
+              totalDisk:
+                description: TotalDisk
+                format: int64
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}
+
+---
+# CustomResourceDefination: localvolume
+# Source: hwameistor/crds/hwameistor.io_localvolumes_crd.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localvolumes.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalVolume
+    listKind: LocalVolumeList
+    plural: localvolumes
+    shortNames:
+    - lv
+    singular: localvolume
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: Name of storage pool
+      jsonPath: .spec.poolName
+      name: pool
+      type: string
+    - description: Number of volume replica
+      jsonPath: .spec.replicaNumber
+      name: replicas
+      type: integer
+    - description: Required capacity of the volume
+      jsonPath: .spec.requiredCapacityBytes
+      name: capacity
+      type: integer
+    - description: Accessibility of volume
+      jsonPath: .spec.accessibility.node
+      name: accessibility
+      type: string
+    - description: State of the volume
+      jsonPath: .status.state
+      name: state
+      type: string
+    - description: Allocated resource ID for the volume
+      jsonPath: .spec.config.resourceID
+      name: resource
+      type: integer
+    - description: Name of the node where the volume is in-use
+      jsonPath: .status.publishedNode
+      name: published
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalVolume is the Schema for the volumes API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalVolumeSpec defines the desired state of LocalVolume
+            properties:
+              accessibility:
+                description: Accessibility is the topology requirement of the volume.
+                  It describes how to locate and distribute the volume replicas
+                properties:
+                  nodes:
+                    description: Nodes is the collection of storage nodes the volume
+                      replicas must locate at
+                    items:
+                      type: string
+                    type: array
+                  regions:
+                    default:
+                    - default
+                    description: regions where the volume replicas should be distributed
+                      across, it's Optional
+                    items:
+                      type: string
+                    type: array
+                  zones:
+                    default:
+                    - default
+                    description: zones where the volume replicas should be distributed
+                      across, it's Optional
+                    items:
+                      type: string
+                    type: array
+                type: object
+              config:
+                description: 'Config is the configration for the volume replicas It
+                  will be managed by the controller, and watched by all the nodes
+                  Important: node will manage volume replica according this config'
+                properties:
+                  convertible:
+                    description: Convertible is to indicate if the non-HA volume can
+                      be transitted to HA volume or not
+                    type: boolean
+                  initialized:
+                    type: boolean
+                  readyToInitialize:
+                    type: boolean
+                  replicas:
+                    items:
+                      description: VolumeReplica contains informations of replica
+                        peer
+                      properties:
+                        hostname:
+                          type: string
+                        id:
+                          type: integer
+                        ip:
+                          type: string
+                        primary:
+                          type: boolean
+                      required:
+                      - hostname
+                      - id
+                      - ip
+                      - primary
+                      type: object
+                    type: array
+                  requiredCapacityBytes:
+                    format: int64
+                    type: integer
+                  resourceID:
+                    description: ResourceID is for HA volume, set to '-1' for non-HA
+                      volume
+                    type: integer
+                  version:
+                    description: Version of config, start from 0, plus 1 every time
+                      config update
+                    type: integer
+                  volumeName:
+                    type: string
+                required:
+                - initialized
+                - readyToInitialize
+                - replicas
+                - resourceID
+                - version
+                - volumeName
+                type: object
+              convertible:
+                default: false
+                description: Convertible is to indicate if the non-HA volume can be
+                  transitted to HA volume or not
+                type: boolean
+              delete:
+                default: false
+                description: Delete is to indicate where the replica should be deleted
+                  or not. It's different from the regular resource delete interface
+                  in Kubernetes. The purpose is to protect it from any mistakes
+                type: boolean
+              poolName:
+                description: PoolName is the name of the storage pool, e.g. LocalStorage_PoolHDD,
+                  LocalStorage_PoolSSD, etc..
+                type: string
+              pvcName:
+                description: PersistentVolumeClaimName is the name of the associated
+                  PVC
+                type: string
+              pvcNamespace:
+                description: PersistentVolumeClaimNamespace is the namespace of the
+                  associated PVC
+                type: string
+              replicaNumber:
+                description: 'replica number: 1 - non-HA, 2 - HA, 3 - migration (temp)'
+                format: int64
+                maximum: 3
+                minimum: 1
+                type: integer
+              requiredCapacityBytes:
+                format: int64
+                minimum: 4194304
+                type: integer
+              volumegroup:
+                description: VolumeGroup is the group name of the local volumes. It
+                  is designed for the scheduling and allocating.
+                type: string
+            type: object
+          status:
+            description: LocalVolumeStatus defines the observed state of LocalVolume
+            properties:
+              allocatedCapacityBytes:
+                description: AllocatedCapacityBytes is the real allocated capacity
+                  in bytes of the volume replicas. In case of HA volume with multiple
+                  replicas, the value is equal to the one of a replica's size
+                format: int64
+                type: integer
+              publishedNode:
+                description: PublishedNodeName is the node where the volume is published
+                  and used by pod
+                type: string
+              replicas:
+                description: Volume is a logical concept and composed by one or many
+                  replicas which will be located at different node.
+                items:
+                  type: string
+                type: array
+              state:
+                description: State is the phase of volume replica, e.g. Creating,
+                  Ready, NotReady, ToBeDeleted, Deleted
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+
+---
+# CustomResourceDefination: localvolumecovert
+# Source: hwameistor/crds/hwameistor.io_localvolumeconverts_crd.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localvolumeconverts.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalVolumeConvert
+    listKind: LocalVolumeConvertList
+    plural: localvolumeconverts
+    shortNames:
+    - lvconvert
+    singular: localvolumeconvert
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: Name of the volume to convert
+      jsonPath: .spec.volumeName
+      name: volume
+      type: string
+    - description: Number of volume replica
+      jsonPath: .spec.replicaNumber
+      name: replicas
+      type: integer
+    - description: State of the expansion
+      jsonPath: .status.state
+      name: state
+      type: string
+    - description: Event message of the expansion
+      jsonPath: .status.message
+      name: message
+      type: string
+    - description: Abort the operation
+      jsonPath: .spec.abort
+      name: abort
+      type: boolean
+    - jsonPath: .metadata.creationTimestamp
+      name: age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalVolumeConvert is the Schema for the localvolumeconverts
+          API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalVolumeConvertSpec defines the desired state of LocalVolumeConvert
+            properties:
+              abort:
+                default: false
+                type: boolean
+              replicaNumber:
+                description: ReplicaNumber is the number of replicas which the volume
+                  will be converted to currently, only support the case of converting
+                  a non-HA volume to HA
+                format: int64
+                maximum: 2
+                minimum: 2
+                type: integer
+              volumeName:
+                type: string
+            type: object
+          status:
+            description: LocalVolumeConvertStatus defines the observed state of LocalVolumeConvert
+            properties:
+              message:
+                type: string
+              state:
+                description: State is state type of resources
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+
+---
+# CustomResourceDefination: localvolumeexpand
+# Source: hwameistor/crds/hwameistor.io_localvolumeexpands_crd.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localvolumeexpands.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalVolumeExpand
+    listKind: LocalVolumeExpandList
+    plural: localvolumeexpands
+    shortNames:
+    - lvexpand
+    singular: localvolumeexpand
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: New capacity of the volume
+      jsonPath: .spec.requiredCapacityBytes
+      name: newCapacity
+      type: integer
+    - description: Abort the operation
+      jsonPath: .spec.abort
+      name: abort
+      type: boolean
+    - description: State of the expansion
+      jsonPath: .status.state
+      name: state
+      type: string
+    - description: Sub-operations on each volume replica expansion
+      jsonPath: .status.subs
+      name: subs
+      type: string
+    - description: Event message of the expansion
+      jsonPath: .status.message
+      name: message
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalVolumeExpand is the Schema for the localvolumeexpands API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalVolumeExpandSpec defines the desired state of LocalVolumeExpand
+            properties:
+              abort:
+                default: false
+                type: boolean
+              requiredCapacityBytes:
+                format: int64
+                minimum: 4194304
+                type: integer
+              volumeName:
+                type: string
+            type: object
+          status:
+            description: LocalVolumeExpandStatus defines the observed state of LocalVolumeExpand
+            properties:
+              allocatedCapacityBytes:
+                format: int64
+                type: integer
+              message:
+                type: string
+              state:
+                description: State is state type of resources
+                type: string
+              subs:
+                description: sub resources at different node.
+                items:
+                  type: string
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+
+---
+# CustomResourceDefination: localvolumegroup
+# Source: hwameistor/crds/hwameistor.io_localvolumegroups_crd.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localvolumegroups.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalVolumeGroup
+    listKind: LocalVolumeGroupList
+    plural: localvolumegroups
+    shortNames:
+    - lvg
+    singular: localvolumegroup
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: Name of associated pod
+      jsonPath: .spec.pods
+      name: pod
+      type: string
+    - description: Namespace of associated pod
+      jsonPath: .spec.namespace
+      name: namespace
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalVolumeGroup is the Schema for the localvolumegroups API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalVolumeGroupSpec defines the desired state of LocalVolumeGroup
+            properties:
+              accessibility:
+                description: Accessibility is the topology requirement of the volume.
+                  It describes how to locate and distribute the volume replicas
+                properties:
+                  nodes:
+                    description: Nodes is the collection of storage nodes the volume
+                      replicas must locate at
+                    items:
+                      type: string
+                    type: array
+                  regions:
+                    default:
+                    - default
+                    description: regions where the volume replicas should be distributed
+                      across, it's Optional
+                    items:
+                      type: string
+                    type: array
+                  zones:
+                    default:
+                    - default
+                    description: zones where the volume replicas should be distributed
+                      across, it's Optional
+                    items:
+                      type: string
+                    type: array
+                type: object
+              pods:
+                items:
+                  type: string
+                type: array
+              volumes:
+                description: Volumes is the collection of the volumes in the group
+                items:
+                  properties:
+                    localvolume:
+                      description: LocalVolumeName is the name of the LocalVolume
+                      type: string
+                    pvc:
+                      description: PersistentVolumeClaimName is the name of the associated
+                        PVC
+                      type: string
+                  type: object
+                type: array
+            type: object
+          status:
+            description: LocalVolumeGroupStatus defines the observed state of LocalVolumeGroup
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+
+---
+# CustomResourceDefination: localvolumemigrate
+# Source: hwameistor/crds/hwameistor.io_localvolumemigrates_crd.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localvolumemigrates.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalVolumeMigrate
+    listKind: LocalVolumeMigrateList
+    plural: localvolumemigrates
+    shortNames:
+    - lvmigrate
+    singular: localvolumemigrate
+  scope: Namespaced
+  versions:
+    - additionalPrinterColumns:
+        - description: Name of the volume to be migrated
+          jsonPath: .spec.volumeName
+          name: volume
+          type: string
+        - description: Node name of the volume replica to be migrated
+          jsonPath: .spec.nodeName
+          name: node
+          type: string
+        - description: Node name of the new volume replica
+          jsonPath: .status.targetNodeName
+          name: target
+          type: string
+        - description: State of the migration
+          jsonPath: .status.state
+          name: state
+          type: string
+        - jsonPath: .metadata.creationTimestamp
+          name: age
+          type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: LocalVolumeMigrate is the Schema for the localvolumemigrates
+            API
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: LocalVolumeMigrateSpec defines the desired state of LocalVolumeMigrate
+              properties:
+                abort:
+                  default: false
+                  type: boolean
+                migrateAllVols:
+                  default: false
+                  type: boolean
+                sourceNodesNames:
+                  description: source NodeNames
+                  items:
+                    type: string
+                  type: array
+                targetNodesNames:
+                  description: target NodeNames
+                  items:
+                    type: string
+                  type: array
+                volumeName:
+                  type: string
+              required:
+                - sourceNodesNames
+                - targetNodesNames
+                - volumeName
+              type: object
+            status:
+              description: LocalVolumeMigrateStatus defines the observed state of LocalVolumeMigrate
+              properties:
+                message:
+                  description: error message to describe some states
+                  type: string
+                replicaNumber:
+                  description: record the volume's replica number, it will be set internally
+                  format: int64
+                  type: integer
+                state:
+                  description: State of the operation, e.g. submitted, started, completed,
+                    abort, ...
+                  type: string
+                targetNodeName:
+                  description: record the node where the specified replica is migrated
+                    to
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+
+---
+# CustomResourceDefination: localvolumereplica
+# Source: hwameistor/crds/hwameistor.io_localvolumereplicas_crd.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localvolumereplicas.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalVolumeReplica
+    listKind: LocalVolumeReplicaList
+    plural: localvolumereplicas
+    shortNames:
+    - lvr
+    singular: localvolumereplica
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: Required capacity of the volume replica
+      jsonPath: .spec.requiredCapacityBytes
+      name: capacity
+      type: integer
+    - description: Node name where the volume replica is located at
+      jsonPath: .spec.nodeName
+      name: node
+      type: string
+    - description: State of the volume replica
+      jsonPath: .status.state
+      name: state
+      type: string
+    - description: Sync status of the volume replica
+      jsonPath: .status.synced
+      name: synced
+      type: boolean
+    - description: Device path of the volume replica
+      jsonPath: .status.devPath
+      name: device
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalVolumeReplica is the Schema for the volumereplicas API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalVolumeReplicaSpec defines the desired state of LocalVolumeReplica
+            properties:
+              delete:
+                default: false
+                description: Delete is to indicate where the replica should be deleted
+                  or not. It's different from the regular resource delete interface
+                  in Kubernetes. The purpose is to protect it from any mistakes
+                type: boolean
+              nodeName:
+                description: NodeName is the assigned node where the volume replica
+                  is located
+                type: string
+              poolName:
+                description: PoolName is the name of the storage pool, e.g. LocalStorage_PoolHDD,
+                  LocalStorage_PoolSSD, etc..
+                type: string
+              requiredCapacityBytes:
+                format: int64
+                minimum: 4194304
+                type: integer
+              volumeName:
+                description: VolumeName is the name of the volume, e.g. pvc-fbf3ffc3-66db-4dae-9032-bda3c61b8f85
+                type: string
+            type: object
+          status:
+            description: LocalVolumeReplicaStatus defines the observed state of LocalVolumeReplica
+            properties:
+              allocatedCapacityBytes:
+                description: AllocatedCapacityBytes is the real allocated capacity
+                  in bytes
+                format: int64
+                type: integer
+              devPath:
+                description: DevicePath is a link path of the StoragePath of the volume
+                  replica, e.g. /dev/LocalStorage_PoolHDD/pvc-fbf3ffc3-66db-4dae-9032-bda3c61b8f85
+                type: string
+              disks:
+                description: Disks is a list of physical disks where the volume replica
+                  is spread cross, especially for striped LVM volume replica
+                items:
+                  type: string
+                type: array
+              haState:
+                description: HAState is state for ha replica, replica.Status.State
+                  == Ready only when HAState is Consistent of nil
+                properties:
+                  reason:
+                    description: Reason is why this state happened
+                    type: string
+                  state:
+                    description: Consistent, Inconsistent, replica is ready only when
+                      consistent
+                    type: string
+                required:
+                - state
+                type: object
+              inuse:
+                default: false
+                description: InUse is one of volume replica's states, which indicates
+                  the replica is used by a Pod or not
+                type: boolean
+              state:
+                description: State is the phase of volume replica, e.g. Creating,
+                  Ready, NotReady, ToBeDeleted, Deleted
+                type: string
+              storagePath:
+                description: StoragePath is a real path of the volume replica, like
+                  /dev/sdg.
+                type: string
+              synced:
+                default: false
+                description: Synced is the sync state of the volume replica, which
+                  is important in HA volume
+                type: boolean
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+
+---
+# CustomResourceDefination: localdisk
+# Source: hwameistor/crds/hwameistor.io_localdisks_crd.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localdisks.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalDisk
+    listKind: LocalDiskList
+    plural: localdisks
+    shortNames:
+    - ld
+    singular: localdisk
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.nodeName
+      name: NodeMatch
+      type: string
+    - jsonPath: .spec.claimRef.name
+      name: Claim
+      type: string
+    - jsonPath: .status.claimState
+      name: Phase
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalDisk is the Schema for the localdisks API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalDiskSpec defines the desired state of LocalDisk
+            properties:
+              capacity:
+                description: Capacity of the disk in bytes
+                format: int64
+                type: integer
+              claimRef:
+                description: ClaimRef is the reference to the LDC which has claimed
+                  this LD
+                properties:
+                  apiVersion:
+                    description: API version of the referent.
+                    type: string
+                  fieldPath:
+                    description: 'If referring to a piece of an object instead of
+                      an entire object, this string should contain a valid JSON/Go
+                      field access statement, such as desiredState.manifest.containers[2].
+                      For example, if the object reference is to a container within
+                      a pod, this would take on a value like: "spec.containers{name}"
+                      (where "name" refers to the name of the container that triggered
+                      the event) or if no container name is specified "spec.containers[2]"
+                      (container with index 2 in this pod). This syntax is chosen
+                      only to have some well-defined way of referencing a part of
+                      an object. TODO: this design is not final and this field is
+                      subject to change in the future.'
+                    type: string
+                  kind:
+                    description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                    type: string
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                    type: string
+                  namespace:
+                    description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                    type: string
+                  resourceVersion:
+                    description: 'Specific resourceVersion to which this reference
+                      is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                    type: string
+                  uid:
+                    description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                    type: string
+                type: object
+              devicePath:
+                description: DevicePath is the disk path in the OS
+                type: string
+              diskAttributes:
+                description: DiskAttributes has hardware/static attributes of the
+                  disk
+                properties:
+                  devType:
+                    description: DeviceType represents the type of device like sparse,
+                      disk, partition, lvm, crypt
+                    type: string
+                  formFactor:
+                    description: FormFactor is the disk size, like 2.5 inches
+                    type: string
+                  modelName:
+                    description: ModelName is the name of disk model
+                    type: string
+                  pciVendorID:
+                    description: PCIVendorID is the ID of the PCI vendor, for NVMe
+                      disk only
+                    type: string
+                  product:
+                    description: Product is a class of disks the vendor produces
+                    type: string
+                  protocol:
+                    description: Protocol is for data transport, such as ATA, SCSI,
+                      NVMe
+                    type: string
+                  rotationRate:
+                    description: RotationRate is the rate of the disk rotation
+                    format: int64
+                    type: integer
+                  serialNumber:
+                    description: SerialNumber is a unique number assigned to a disk
+                    type: string
+                  type:
+                    description: Type is the disk type, such as ata, scsi, nvme, megaraid,N,
+                      ...
+                    type: string
+                  vendor:
+                    description: Vendor is who provides the disk
+                    type: string
+                type: object
+              isRaid:
+                description: HasRAID identifies if the disk is a raid disk or not
+                type: boolean
+              nodeName:
+                description: NodeName represents the node where the disk is attached
+                type: string
+              partitionInfo:
+                description: PartitionInfo contains partition information
+                items:
+                  description: PartitionInfo contains partition information(e.g. FileSystem)
+                  properties:
+                    filesystem:
+                      description: FileSystem contains mount point and filesystem
+                        type
+                      properties:
+                        fsType:
+                          description: Type represents the FileSystem type of the
+                            disk
+                          type: string
+                        mountPoint:
+                          description: MountPoint represents the mountpoint of the
+                            disk
+                          type: string
+                      type: object
+                    hasFileSystem:
+                      description: HasFileSystem represents whether the filesystem
+                        is included
+                      type: boolean
+                    path:
+                      description: Path represents the partition path in the OS
+                      type: string
+                  required:
+                  - hasFileSystem
+                  - path
+                  type: object
+                type: array
+              partitioned:
+                description: HasPartition represents if the disk has partitions or
+                  not
+                type: boolean
+              raidInfo:
+                description: RAIDInfo contains RAID information
+                properties:
+                  raidMaster:
+                    description: RAIDMaster is the master of the RAID disk, it works
+                      for only RAID slave disk, e.g. /dev/bus/0
+                    type: string
+                type: object
+              smartInfo:
+                description: SmartInfo contains infos collected by smartctl
+                properties:
+                  overallHealth:
+                    description: OverallHealth identifies if the disk is healthy or
+                      not
+                    type: string
+                required:
+                - overallHealth
+                type: object
+              state:
+                description: State is the current state of the disk (Active/Inactive/Unknown)
+                enum:
+                - Active
+                - Inactive
+                - Unknown
+                type: string
+              supportSmart:
+                description: HasSmartInfo identified if the disk supports SMART or
+                  not
+                type: boolean
+              uuid:
+                description: UUID global unique identifier of the disk
+                type: string
+            required:
+            - nodeName
+            type: object
+          status:
+            description: LocalDiskStatus defines the observed state of LocalDisk
+            properties:
+              claimState:
+                description: State represents the claim state of the disk
+                enum:
+                - Claimed
+                - Unclaimed
+                - Released
+                - Reserved
+                - Inuse
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}
+
+---
+# CustomResourceDefination: localdiskclaim
+# Source: hwameistor/crds/hwameistor.io_localdiskclaims_crd.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localdiskclaims.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalDiskClaim
+    listKind: LocalDiskClaimList
+    plural: localdiskclaims
+    shortNames:
+    - ldc
+    singular: localdiskclaim
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.nodeName
+      name: NodeMatch
+      type: string
+    - jsonPath: .status.status
+      name: Phase
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalDiskClaim is the Schema for the localdiskclaims API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalDiskClaimSpec defines the desired state of LocalDiskClaim
+            properties:
+              description:
+                description: Description of the disk to be claimed
+                properties:
+                  capacity:
+                    description: Capacity of the disk in bytes
+                    format: int64
+                    type: integer
+                  diskType:
+                    description: DiskType represents the type of drive like SSD, HDD
+                      etc.,
+                    type: string
+                type: object
+              diskRefs:
+                description: DiskRefs represents which disks are assigned to the LocalDiskClaim
+                items:
+                  description: 'ObjectReference contains enough information to let
+                    you inspect or modify the referred object. --- New uses of this
+                    type are discouraged because of difficulty describing its usage
+                    when embedded in APIs.  1. Ignored fields.  It includes many fields
+                    which are not generally honored.  For instance, ResourceVersion
+                    and FieldPath are both very rarely valid in actual usage.  2.
+                    Invalid usage help.  It is impossible to add specific help for
+                    individual usage.  In most embedded usages, there are particular     restrictions
+                    like, "must refer only to types A and B" or "UID not honored"
+                    or "name must be restricted".     Those cannot be well described
+                    when embedded.  3. Inconsistent validation.  Because the usages
+                    are different, the validation rules are different by usage, which
+                    makes it hard for users to predict what will happen.  4. The fields
+                    are both imprecise and overly precise.  Kind is not a precise
+                    mapping to a URL. This can produce ambiguity     during interpretation
+                    and require a REST mapping.  In most cases, the dependency is
+                    on the group,resource tuple     and the version of the actual
+                    struct is irrelevant.  5. We cannot easily change it.  Because
+                    this type is embedded in many locations, updates to this type     will
+                    affect numerous schemas.  Don''t make new APIs embed an underspecified
+                    API type they do not control. Instead of using this type, create
+                    a locally provided and used type that is well-focused on your
+                    reference. For example, ServiceReferences for admission registration:
+                    https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533
+                    .'
+                  properties:
+                    apiVersion:
+                      description: API version of the referent.
+                      type: string
+                    fieldPath:
+                      description: 'If referring to a piece of an object instead of
+                        an entire object, this string should contain a valid JSON/Go
+                        field access statement, such as desiredState.manifest.containers[2].
+                        For example, if the object reference is to a container within
+                        a pod, this would take on a value like: "spec.containers{name}"
+                        (where "name" refers to the name of the container that triggered
+                        the event) or if no container name is specified "spec.containers[2]"
+                        (container with index 2 in this pod). This syntax is chosen
+                        only to have some well-defined way of referencing a part of
+                        an object. TODO: this design is not final and this field is
+                        subject to change in the future.'
+                      type: string
+                    kind:
+                      description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                      type: string
+                    name:
+                      description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                      type: string
+                    namespace:
+                      description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                      type: string
+                    resourceVersion:
+                      description: 'Specific resourceVersion to which this reference
+                        is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                      type: string
+                    uid:
+                      description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                      type: string
+                  type: object
+                type: array
+              nodeName:
+                description: NodeName represents where disk has to be claimed.
+                type: string
+            required:
+            - nodeName
+            type: object
+          status:
+            description: LocalDiskClaimStatus defines the observed state of LocalDiskClaim
+            properties:
+              status:
+                description: Status represents the current statue of the claim
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}
+
+---
+# CustomResourceDefination: localdisknode
+# Source: hwameistor/crds/hwameistor.io_localdisknodes_crd.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localdisknodes.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalDiskNode
+    listKind: LocalDiskNodeList
+    plural: localdisknodes
+    shortNames:
+    - ldn
+    singular: localdisknode
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.totalDisk
+      name: TotalDisk
+      type: integer
+    - jsonPath: .status.allocatableDisk
+      name: FreeDisk
+      type: integer
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalDiskNode is the Schema for the localdisknodes API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalDiskNodeSpec defines the desired state of LocalDiskNode
+            properties:
+              attachNode:
+                description: AttachNode represent where disk is attached
+                type: string
+            required:
+            - attachNode
+            type: object
+          status:
+            description: LocalDiskNodeStatus defines the observed state of LocalDiskNode
+            properties:
+              allocatableDisk:
+                description: AllocatableDisk
+                format: int64
+                type: integer
+              disks:
+                additionalProperties:
+                  properties:
+                    capacity:
+                      description: Capacity
+                      format: int64
+                      type: integer
+                    devPath:
+                      description: DevPath
+                      type: string
+                    diskType:
+                      description: DiskType SSD/HDD/NVME...
+                      type: string
+                    status:
+                      description: Status
+                      type: string
+                  required:
+                  - devPath
+                  - diskType
+                  - status
+                  type: object
+                description: Disks key is the name of LocalDisk
+                type: object
+              totalDisk:
+                description: TotalDisk
+                format: int64
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}
+
+---
+# CustomResourceDefination: localdiskvolume
+# Source: hwameistor/crds/hwameistor.io_localdiskvolumes_crd.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localdiskvolumes.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalDiskVolume
+    listKind: LocalDiskVolumeList
+    plural: localdiskvolumes
+    shortNames:
+    - ldv
+    singular: localdiskvolume
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.accessibility.node
+      name: Node
+      type: string
+    - jsonPath: .status.devPath
+      name: Disk
+      type: string
+    - jsonPath: .status.allocatedCapacityBytes
+      name: AllocatedCap
+      type: integer
+    - jsonPath: .spec.diskType
+      name: Type
+      type: string
+    - jsonPath: .status.state
+      name: Status
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalDiskVolume is the Schema for the localdiskvolumes API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalDiskVolumeSpec defines the desired state of LocalDiskVolume
+            properties:
+              accessibility:
+                description: Accessibility is the topology requirement of the volume.
+                  It describes how to locate and distribute the volume replicas
+                properties:
+                  node:
+                    description: One of the volume replica must be located at this
+                      node
+                    type: string
+                  regions:
+                    default:
+                    - default
+                    description: regions where the volume replicas should be distributed
+                      across, it's Optional
+                    items:
+                      type: string
+                    type: array
+                  zones:
+                    default:
+                    - default
+                    description: zones where the volume replicas should be distributed
+                      across, it's Optional
+                    items:
+                      type: string
+                    type: array
+                type: object
+              canWipe:
+                description: CanWipe represents if disk can wipe after Volume is deleted
+                  If disk has been writen data, this is will be changed to true
+                type: boolean
+              diskType:
+                description: DiskType represents the type of drive like SSD, HDD etc.,
+                type: string
+              persistentVolumeClaimName:
+                description: PersistentVolumeClaimName is the reference of the associated
+                  PVC
+                type: string
+              requiredCapacityBytes:
+                description: RequiredCapacityBytes
+                format: int64
+                type: integer
+            required:
+            - diskType
+            type: object
+          status:
+            description: LocalDiskVolumeStatus defines the observed state of LocalDiskVolume
+            properties:
+              allocatedCapacityBytes:
+                description: AllocatedCapacityBytes is the real allocated capacity
+                  in bytes
+                format: int64
+                type: integer
+              devPath:
+                description: DevPath is the disk path in the OS
+                type: string
+              localDiskName:
+                description: LocalDiskName is disk name which is used to create this
+                  volume
+                type: string
+              mountPoints:
+                description: MountPoints
+                items:
+                  description: MountPoint
+                  properties:
+                    fsTye:
+                      description: FsTye
+                      type: string
+                    mountOptions:
+                      description: MountOptions
+                      items:
+                        type: string
+                      type: array
+                    phase:
+                      description: Phase indicates the volume's next or current operation
+                      type: string
+                    targetPath:
+                      description: TargetPath
+                      type: string
+                    volumeCap:
+                      description: VolumeCap
+                      properties:
+                        accessMode:
+                          format: int32
+                          type: integer
+                        accessType:
+                          type: string
+                      type: object
+                  type: object
+                type: array
+              state:
+                description: State is the phase of volume replica, e.g. Creating,
+                  Ready, NotReady, ToBeDeleted, Deleted
+                type: string
+            required:
+            - devPath
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}

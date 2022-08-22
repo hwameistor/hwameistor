@@ -1,0 +1,707 @@
+---
+# Config: namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hwameistor-system
+
+---
+# Component: hwameistor/local-storage
+# Source: hwameistor/templates/local-storage.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: hwameistor-local-storage 
+  namespace: hwameistor-system
+spec:
+  selector:
+    matchLabels:
+      app: hwameistor-local-storage 
+  template:
+    metadata:
+      labels:
+        app: hwameistor-local-storage 
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: lvm.hwameistor.io/enable
+                operator: Exists
+      containers:
+      - args:
+        - --v=5
+        - --csi-address=/csi/csi.sock
+        - --kubelet-registration-path=/var/lib/kubelet/plugins/lvm.hwameistor.io/csi.sock
+        env:
+        - name: KUBE_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        image: quay.io/k8scsi/csi-node-driver-registrar:v1.1.0
+        imagePullPolicy: IfNotPresent
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - rm -rf /registration/lvm.hwameistor.io /registration/lvm.hwameistor.io-reg.sock
+        name: registrar
+        resources: 
+          limits:
+            cpu: 500m
+            memory: 500Mi
+          requests:
+            cpu: 5m
+            memory: 5Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /csi
+          name: socket-dir
+        - mountPath: /registration
+          name: registration-dir
+      - args:
+        - --nodename=$(MY_NODENAME)
+        - --namespace=$(POD_NAMESPACE)
+        - --csi-address=$(CSI_ENDPOINT)
+        - --http-port=80
+        - --debug=true
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: MY_NODENAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: CSI_ENDPOINT
+          value: unix://var/lib/kubelet/plugins/lvm.hwameistor.io/csi.sock
+        - name: NODE_ANNOTATION_KEY_STORAGE_IPV4
+          value: localstorage.hwameistor.io/storage-ipv4
+        image: ghcr.io/hwameistor/local-storage:v0.3.1
+        imagePullPolicy: IfNotPresent
+        name: member
+        ports:
+        - containerPort: 80
+          name: healthz
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /healthz
+            port: healthz
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 2
+          successThreshold: 1
+          timeoutSeconds: 3
+        resources:
+          limits:
+            cpu: 500m
+            memory: 500Mi
+          requests:
+            cpu: 5m
+            memory: 5Mi
+        securityContext:
+          #  allowPrivilegeEscalation: true
+          capabilities:
+            add:
+            - SYS_ADMIN
+          privileged: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/lib/kubelet/plugins
+          mountPropagation: Bidirectional
+          name: plugin-dir
+        - mountPath: /var/lib/kubelet/plugins_registry
+          name: registration-dir
+        - mountPath: /var/lib/kubelet/pods
+          mountPropagation: Bidirectional
+          name: pods-mount-dir
+        - mountPath: /dev
+          name: host-dev
+        - mountPath: /etc/drbd.d
+          mountPropagation: Bidirectional
+          name: host-etc-drbd
+      dnsPolicy: ClusterFirstWithHostNet
+      hostPID: true
+      priorityClassName: system-node-critical
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      serviceAccountName: hwameistor-admin 
+      serviceAccount: hwameistor-admin
+      terminationGracePeriodSeconds: 30
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoSchedule
+        key: node.kubernetes.io/not-ready
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      - effect: NoSchedule
+        key: node.cloudprovider.kubernetes.io/uninitialized
+        operator: Exists
+      volumes:
+      - hostPath:
+          path: /var/lib/kubelet/plugins/lvm.hwameistor.io
+          type: DirectoryOrCreate
+        name: socket-dir
+      - hostPath:
+          path: /var/lib/kubelet/plugins
+          type: DirectoryOrCreate
+        name: plugin-dir
+      - hostPath:
+          path: /var/lib/kubelet/plugins_registry/
+          type: Directory
+        name: registration-dir
+      - hostPath:
+          path: /dev
+          type: ""
+        name: host-dev
+      - hostPath:
+          path: /etc/drbd.d
+          type: DirectoryOrCreate
+        name: host-etc-drbd
+      - hostPath:
+          path: /var/lib/kubelet/pods
+          type: DirectoryOrCreate
+        name: pods-mount-dir
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+
+---
+# Component: hwameistor/local-disk-manager
+# Source: hwameistor/templates/local-disk-manager.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: hwameistor-local-disk-manager
+  namespace: hwameistor-system
+spec:
+  selector:
+    matchLabels:
+      app: hwameistor-local-disk-manager
+  template:
+    metadata:
+      labels:
+        app: hwameistor-local-disk-manager
+    spec:
+      hostNetwork: true
+      hostPID: true
+      serviceAccountName: hwameistor-admin
+      containers:  
+        - name: registrar
+          image: quay.io/k8scsi/csi-node-driver-registrar:v1.1.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - --v=5
+            - --csi-address=/csi/csi.sock
+            - --kubelet-registration-path=/var/lib/kubelet/plugins/disk.hwameistor.io/csi.sock
+          lifecycle:
+            preStop:
+              exec:
+                command: [ "/bin/sh", "-c", "rm -rf /registration/disk.hwameistor.io  /registration/disk.hwameistor.io-reg.sock" ]
+          env:
+              - name: KUBE_NODE_NAME
+                valueFrom:
+                  fieldRef:
+                    fieldPath: spec.nodeName
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+            - name: registration-dir
+              mountPath: /registration
+        - name: manager
+          # Replace this with the built image name
+          image: ghcr.io/hwameistor/local-disk-manager:v0.3.1
+          command:
+          - /local-disk-manager
+          args:
+            - --endpoint=$(CSI_ENDPOINT)
+            - --nodeid=$(NODENAME)
+            - --csi-enable=true
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+          - name: udev
+            mountPath: /run/udev
+          - name: procmount
+            mountPath: /host/proc
+            readOnly: true
+          - name: devmount
+            mountPath: /dev
+          - name: registration-dir
+            mountPath: /var/lib/kubelet/plugins_registry
+          - name: plugin-dir
+            mountPath: /var/lib/kubelet/plugins
+            mountPropagation: "Bidirectional"
+          - name: pods-mount-dir
+            mountPath: /var/lib/kubelet/pods
+            mountPropagation: "Bidirectional"
+          env:
+            - name: CSI_ENDPOINT
+              value: unix://var/lib/kubelet/plugins/disk.hwameistor.io/csi.sock
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NODENAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: OPERATOR_NAME
+              value: "local-disk-manager"
+          securityContext:
+            privileged: true
+      volumes:
+      - name: udev
+        hostPath:
+          path: /run/udev
+          type: Directory
+      - name: procmount
+        # mount /proc/1/mounts (mount file of process 1 of host) inside container
+        # to read which partition is mounted on / path
+        hostPath:
+          path: /proc
+          type: Directory
+      - name: devmount
+        # the /dev directory is mounted so that we have access to the devices that
+        # are connected at runtime of the pod.
+        hostPath:
+          path: /dev
+          type: Directory
+      - name: socket-dir
+        hostPath:
+          path: /var/lib/kubelet/plugins/disk.hwameistor.io
+          type: DirectoryOrCreate
+      - name: registration-dir
+        hostPath:
+          path: /var/lib/kubelet/plugins_registry/
+          type: Directory
+      - name: plugin-dir
+        hostPath:
+          path: /var/lib/kubelet/plugins
+          type: DirectoryOrCreate
+      - name: pods-mount-dir
+        hostPath:
+          path: /var/lib/kubelet/pods
+          type: DirectoryOrCreate
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoSchedule
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+        - effect: NoSchedule
+          key: node.cloudprovider.kubernetes.io/uninitialized
+          operator: Exists
+
+---
+# Component: hwameistor/scheduler
+# Source: hwameistor/templates/scheduler.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hwameistor-scheduler
+  namespace: hwameistor-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hwameistor-scheduler
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: hwameistor-scheduler
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role.kubernetes.io/master
+                operator: Exists
+      containers:
+      - args:
+        - -v=2
+        - --bind-address=0.0.0.0
+        - --kubeconfig=/etc/kubernetes/scheduler.conf
+        - --leader-elect=false
+        - --leader-elect-resource-name=hwameistor-scheduler
+        - --leader-elect-resource-namespace=hwameistor-system
+        - --config=/etc/hwameistor/hwameistor-scheduler-config.yaml
+        image: ghcr.io/hwameistor/scheduler:v0.3.1
+        imagePullPolicy: IfNotPresent
+        name: hwameistor-kube-scheduler
+        resources:
+          limits:
+            cpu: 300m
+            memory: 300Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/kubernetes/scheduler.conf
+          name: kubeconfig
+          readOnly: true
+        - mountPath: /etc/hwameistor/
+          name: hwameistor-scheduler-config
+          readOnly: true
+      volumes:
+      - hostPath:
+          path: /etc/kubernetes/admin.conf
+          type: FileOrCreate
+        name: kubeconfig
+      - configMap:
+          name: hwameistor-scheduler-config 
+          items:
+          - key: hwameistor-scheduler-config.yaml
+            path: hwameistor-scheduler-config.yaml
+        name: hwameistor-scheduler-config
+      serviceAccountName: hwameistor-admin 
+      serviceAccount: hwameistor-admin
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoSchedule
+        key: node.kubernetes.io/not-ready
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      - effect: NoSchedule
+        key: node.cloudprovider.kubernetes.io/uninitialized
+        operator: Exists
+
+---
+# Component: hwameistor/admission
+# Source: hwameistor/templates/webhook.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hwameistor-webhook
+  namespace: hwameitor-system
+  labels:
+    app: hwameistor-webhook
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hwameistor-webhook
+  template:
+    metadata:
+      labels:
+        app: hwameistor-webhook
+    spec:
+      serviceAccountName: hwameistor-admin
+      initContainers:
+        - image: jackmmzhou/self-signed:v1
+          imagePullPolicy: Always
+          name: webhook-init
+          env:
+            - name: WEBHOOK_NAMESPACE
+              value: hwameitor-system
+            - name: MUTATE_CONFIG
+              value: hwameistor-admission-mutate
+            - name: WEBHOOK_SERVICE
+              value: hwameistor-webhook
+            - name: MUTATE_PATH
+              value: /mutate
+          volumeMounts:
+            - mountPath: /etc/webhook/certs
+              name: webhook-tls-certs
+      containers:
+        - name: server
+          args:
+            - --cert-dir=/etc/webhook/certs
+            - --tls-private-key-file=tls.key
+            - --tls-cert-file=tls.crt
+          image: ghcr.io/hwameistor/admission:v0.3.2-rc.0
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 300m
+              memory: 300Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          ports:
+            - containerPort: 18443
+              name: webhook-api
+          volumeMounts:
+            - name: webhook-tls-certs
+              mountPath: /etc/webhook/certs
+              readOnly: true
+      volumes:
+        - name: webhook-tls-certs
+          emptyDir: {}
+
+---
+# Config: scheduler-config
+# Source: hwameistor/templates/webhook.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: hwameistor-webhook
+  namespace: hwameitor-system
+spec:
+  selector:
+    app: hwameistor-webhook
+  ports:
+    - port: 443
+      targetPort: webhook-api
+
+---
+# Component: hwameistor/local-disk-manager/csi/controller
+# Source: hwameistor/templates/local-disk-manager-csi-controller.yaml
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: hwameistor-local-disk-csi-controller
+  namespace: hwameistor-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hwameistor-local-disk-csi-controller
+  template:
+    metadata:
+      labels:
+        app: hwameistor-local-disk-csi-controller
+    spec:
+      priorityClassName: system-cluster-critical
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - hwameistor-local-disk-manager
+            topologyKey: topology.disk.hwameistor.io/node
+      serviceAccount: hwameistor-admin
+      containers:
+        - name: provisioner
+          image: quay.io/k8scsi/csi-provisioner:v2.0.3
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - "--v=5"
+            - "--csi-address=$(CSI_ADDRESS)"
+            - "--leader-election=true"
+            - "--feature-gates=Topology=true"
+            - "--strict-topology"
+            - "--extra-create-metadata=true"
+          env:
+            - name: CSI_ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+        - name: attacher
+          image: quay.io/k8scsi/csi-attacher:v3.0.1
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--v=5"
+            - "--csi-address=$(CSI_ADDRESS)"
+            - "--leader-election=true"
+            - "--timeout=120s"
+          env:
+            - name: CSI_ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/disk.hwameistor.io
+            type: DirectoryOrCreate
+
+---
+# Component: hwameistor/local-storage/csi/controller
+# Source: hwameistor/templates/local-storage-csi-controller.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hwameistor-local-storage-csi-controller 
+  namespace: hwameistor-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hwameistor-local-storage-csi-controller
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: hwameistor-local-storage-csi-controller
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - hwameistor-local-storage
+            topologyKey: topology.lvm.hwameistor.io/node
+      containers:
+      - args:
+        - --v=5
+        - --csi-address=$(CSI_ADDRESS)
+        - --leader-election=true
+        - --feature-gates=Topology=true
+        - --strict-topology
+        - --extra-create-metadata=true
+        env:
+        - name: CSI_ADDRESS
+          value: /csi/csi.sock
+        image: quay.io/k8scsi/csi-provisioner:v2.0.3
+        imagePullPolicy: IfNotPresent
+        name: provisioner
+        resources:
+          limits:
+            cpu: 500m
+            memory: 500Mi
+          requests:
+            cpu: 5m
+            memory: 5Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /csi
+          name: socket-dir
+      - args:
+        - --v=5
+        - --csi-address=$(CSI_ADDRESS)
+        - --leader-election=true
+        - --timeout=120s
+        env:
+        - name: CSI_ADDRESS
+          value: /csi/csi.sock
+        image: quay.io/k8scsi/csi-attacher:v3.0.1
+        imagePullPolicy: IfNotPresent
+        name: attacher
+        resources:
+          limits:
+            cpu: 500m
+            memory: 500Mi
+          requests:
+            cpu: 5m
+            memory: 5Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /csi
+          name: socket-dir
+      - args:
+        - --v=5
+        - --csi-address=$(CSI_ADDRESS)
+        - --leader-election=true
+        env:
+        - name: CSI_ADDRESS
+          value: /csi/csi.sock
+        image: quay.io/k8scsi/csi-resizer:v1.0.1
+        imagePullPolicy: IfNotPresent
+        name: resizer
+        resources:
+          limits:
+            cpu: 500m
+            memory: 500Mi
+          requests:
+            cpu: 5m
+            memory: 5Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /csi
+          name: socket-dir
+      dnsPolicy: ClusterFirst
+      priorityClassName: system-cluster-critical
+      restartPolicy: Always
+      serviceAccountName: hwameistor-admin 
+      serviceAccount: hwameistor-admin
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoSchedule
+        key: node.kubernetes.io/not-ready
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      - effect: NoSchedule
+        key: node.cloudprovider.kubernetes.io/uninitialized
+        operator: Exists
+      volumes:
+      - hostPath:
+          path: /var/lib/kubelet/plugins/lvm.hwameistor.io
+          type: DirectoryOrCreate
+        name: socket-dir
+
+---
+# Config: scheduler-config
+# Source: hwameistor/templates/scheduler-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hwameistor-scheduler-config
+  namespace: hwameistor-system
+data:
+  hwameistor-scheduler-config.yaml: |
+    apiVersion: kubescheduler.config.k8s.io/v1alpha1
+    kind: KubeSchedulerConfiguration
+    schedulerName: hwameistor-scheduler
+    leaderElection:
+      leaderElect: true
+      lockObjectName: hwameistor-scheduler
+      resourceLock: leases
+    plugins:
+      filter:
+        enabled:
+          - name: hwameistor-scheduler-plugin
+      reserve:
+        enabled:
+          - name: hwameistor-scheduler-plugin
+      unreserve:
+        enabled:
+          - name: hwameistor-scheduler-plugin
