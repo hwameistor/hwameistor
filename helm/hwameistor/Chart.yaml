@@ -2,5 +2,5 @@ apiVersion: v2
 name: hwameistor
 description: the HwameiStor local storage
 type: application
-version: v0.3.4
-appVersion: v0.3.4
+version: v0.3.5-rc.0
+appVersion: v0.3.5-rc.0
