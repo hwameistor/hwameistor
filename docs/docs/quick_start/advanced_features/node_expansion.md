@@ -5,7 +5,7 @@ sidebar_label: "Node Expansion"
 
 # Node Expansion
 
-A storage system is ususally expected to expand its capacity by adding a new storage node. In HwameiStor, it can be done with the following steps.
+A storage system is usually expected to expand its capacity by adding a new storage node. In HwameiStor, it can be done with the following steps.
 
 ## Steps
 
@@ -13,7 +13,7 @@ A storage system is ususally expected to expand its capacity by adding a new sto
 
 Add the node into the Kubernetes cluster, or select a Kubernetes node. The node should have all the required items described in [Prerequisites](../install/prereq.md).
 
-For example, the new node and disk information is as follows:
+For example, the new node and disk information are as follows:
 
 - name: k8s-worker-4
 - devPath: /dev/sdb
@@ -59,9 +59,10 @@ EOF
 
 ### 3. Post check
 
-Finally, check if the node has setup the storage pool by checking the LocalStorageNode CR:
+Finally, check if the node has constructed the storage pool by checking the LocalStorageNode CR:
 
 ```console
+$ kubectl get localstoragenode k8s-worker-4
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalStorageNode
 metadata:
