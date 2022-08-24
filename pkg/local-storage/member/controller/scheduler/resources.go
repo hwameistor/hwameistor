@@ -397,12 +397,12 @@ func (r *resources) handleVolumeUpdate(oldObj, newObj interface{}) {
 	// 1. calculate allocated capacity according to LocalVolume.Spec.Config
 	// recycle old volume
 	r.recycleAllocatedStorage(oVol)
-	// allocate new volume
-	r.addAllocatedStorage(nVol)
 
 	// 2. recycle resource ID when LocalVolume is deleted
 	if nVol.Status.State == apisv1alpha1.VolumeStateDeleted {
 		r.recycleResourceID(nVol)
+	} else {
+		r.addAllocatedStorage(nVol)
 	}
 	if nVol.Spec.Config == nil {
 		r.recycleResourceID(nVol)
