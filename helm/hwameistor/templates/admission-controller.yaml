@@ -18,12 +18,14 @@ spec:
         app: hwameistor-admission-controller
     spec:
       serviceAccountName: hwameistor-admin
-      initContainers:
-        - image:  {{ .Values.hwameistorImageRegistry}}/{{ .Values.admission.selfSigned.imageRepository}}:{{ .Values.admission.selfSigned.tag}}
+      containers:
+        - name: server
+          args:
+            - --cert-dir=/etc/webhook/certs
+            - --tls-private-key-file=tls.key
+            - --tls-cert-file=tls.crt
+          image: {{ .Values.hwameistorImageRegistry}}/{{ .Values.admission.imageRepository}}:{{ template "hwameistor.admissionImageTag" . }}
           imagePullPolicy: IfNotPresent
-          name: self-signed
-          resources:
-            {{- toYaml .Values.admission.resources | nindent 12 }}
           env:
             - name: WEBHOOK_NAMESPACE
               value: {{ .Release.Namespace}}
@@ -33,17 +35,6 @@ spec:
               value: hwameistor-admission-controller
             - name: MUTATE_PATH
               value: /mutate
-          volumeMounts:
-            - mountPath: /etc/webhook/certs
-              name: admission-controller-tls-certs
-      containers:
-        - name: server
-          args:
-            - --cert-dir=/etc/webhook/certs
-            - --tls-private-key-file=tls.key
-            - --tls-cert-file=tls.crt
-          image: {{ .Values.hwameistorImageRegistry}}/{{ .Values.admission.imageRepository}}:{{ template "hwameistor.admissionImageTag" . }}
-          imagePullPolicy: IfNotPresent
           resources: 
             {{- toYaml .Values.admission.resources | nindent 12 }}
           ports:
@@ -52,7 +43,6 @@ spec:
           volumeMounts:
             - name: admission-controller-tls-certs
               mountPath: /etc/webhook/certs
-              readOnly: true
       volumes:
        - name: admission-controller-tls-certs
          emptyDir: {}
