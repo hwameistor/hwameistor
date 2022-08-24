@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hwameistor/hwameistor/pkg/webhook"
+	hookcfg "github.com/hwameistor/hwameistor/pkg/webhook/config"
 	"github.com/hwameistor/hwameistor/pkg/webhook/scheduler"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -142,4 +143,7 @@ func RegisterHwameiStorMutateWebhooks(o webhook.ServerOption) http.Handler {
 
 func init() {
 	webhook.AddToMutateHooks(scheduler.NewPatchSchedulerWebHook())
+	if err := hookcfg.CreateOrUpdateWebHookConfig(); err != nil {
+		panic(err)
+	}
 }
