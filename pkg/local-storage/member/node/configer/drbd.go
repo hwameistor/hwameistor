@@ -199,6 +199,11 @@ func (m *drbdConfigure) ApplyConfig(replica *apisv1alpha1.LocalVolumeReplica, co
 		}
 	}
 
+	// remove symblink
+	if err = os.Remove(replica.Status.DevicePath); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("remove symbolic path %s err: %s", replica.Status.DevicePath, err)
+	}
+
 	// adjust for created or updated replica
 	if err = m.adjustResource(conf.ResourceName); err != nil {
 		return fmt.Errorf("adjust replica err: %s", err)
