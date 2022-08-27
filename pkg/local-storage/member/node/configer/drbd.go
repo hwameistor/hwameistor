@@ -199,11 +199,6 @@ func (m *drbdConfigure) ApplyConfig(replica *apisv1alpha1.LocalVolumeReplica, co
 		}
 	}
 
-	// remove symblink
-	if err = os.Remove(replica.Status.DevicePath); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("remove symbolic path %s err: %s", replica.Status.DevicePath, err)
-	}
-
 	// adjust for created or updated replica
 	if err = m.adjustResource(conf.ResourceName); err != nil {
 		return fmt.Errorf("adjust replica err: %s", err)
@@ -364,7 +359,7 @@ func (m *drbdConfigure) adjustResource(resourceName string) error {
 	return nil
 }
 
-func (m *drbdConfigure) getResourceDiskState(resourceName string) (state string, err error) {
+func (m *drbdConfigure) getResourceDiskState(resourceName string) (string, error) {
 	params := exechelper.ExecParams{
 		CmdName: drbdadmCmd,
 		CmdArgs: []string{"dstate", resourceName},
@@ -373,9 +368,34 @@ func (m *drbdConfigure) getResourceDiskState(resourceName string) (state string,
 	if result.ExitCode != 0 {
 		return "", fmt.Errorf("get resource %s disk state err: %d, %s", resourceName, result.ExitCode, result.ErrBuf.String())
 	}
+
 	// there may be peers disk state
-	state = strings.SplitN(result.OutBuf.String(), "/", 2)[0]
-	return state, nil
+	return strings.SplitN(result.OutBuf.String(), "/", 2)[0], nil
+}
+
+// Show the current configuration of the resource
+// if resource existed, config is not empty
+func (m *drbdConfigure) showResource(resourceName string) (string, error) {
+	cmd := exec.Command("nsenter", "-t", "1", "-n", "-u", "-i", "-m", "--",
+		drbdsetupCmd, "show", resourceName)
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	m.logger.Debugf("exec: %s %s", cmd.Path, cmd.Args)
+	defer func() {
+		m.logger.Debugf("stdout: %s stderr: %s", stdout.String(), stderr.String())
+	}()
+
+	var err error
+	if err = cmd.Start(); err != nil {
+		return "", err
+	}
+	if err = cmd.Wait(); err != nil {
+		return "", err
+	}
+
+	return stdout.String(), nil
 }
 
 // resizeResource is idempotent
@@ -399,13 +419,14 @@ func (m *drbdConfigure) getResourceDevicePath(conf drbdConfig) string {
 func (m *drbdConfigure) DeleteConfig(replica *apisv1alpha1.LocalVolumeReplica) error {
 	m.logger.WithField("Replica", replica.Name).Info("Delete Config")
 
-	// down resource
 	resourceName := m.genResourceName(replica)
+	config, err := m.showResource(resourceName)
+	if err != nil {
+		return fmt.Errorf("show resource %s failed: %s", resourceName, err)
+	}
 
-	// resource is deleted when get disk state err, and
-	// ignore if reousrce already deleted
-	_, err := m.getResourceDiskState(resourceName)
-	if err == nil {
+	// only do down and wipe-md operation when resource is existed
+	if config != "" {
 		err := m.downResource(resourceName)
 		if err != nil {
 			return fmt.Errorf("down replica %s resource failed: %s", replica.Name, err)
@@ -414,6 +435,11 @@ func (m *drbdConfigure) DeleteConfig(replica *apisv1alpha1.LocalVolumeReplica) e
 		if err = m.wipeMetadata(resourceName); err != nil {
 			return fmt.Errorf("wipe replica resource metadata failed: %s", err)
 		}
+	}
+
+	// remove symblink
+	if err = os.Remove(replica.Status.DevicePath); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("remove symbolic path %s err: %s", replica.Status.DevicePath, err)
 	}
 
 	// remove config file
@@ -448,7 +474,7 @@ func (m *drbdConfigure) downResource(resourceName string) error {
 // run wipeMetadata multi time for same resource is OK
 func (m *drbdConfigure) wipeMetadata(resourceName string) error {
 	cmd := exec.Command("nsenter", "-t", "1", "-n", "-u", "-i", "-m", "--",
-		drbdadmCmd, "wipe-md", resourceName)
+		drbdadmCmd, "wipe-md", resourceName, "--force")
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	cmd.Stdout = stdout
@@ -458,14 +484,8 @@ func (m *drbdConfigure) wipeMetadata(resourceName string) error {
 		m.logger.Debugf("stdout: %s stderr: %s", stdout.String(), stderr.String())
 	}()
 
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		return err
-	}
+	var err error
 	if err = cmd.Start(); err != nil {
-		return err
-	}
-	if _, err = stdin.Write([]byte("yes\n")); err != nil {
 		return err
 	}
 	if err = cmd.Wait(); err != nil {
