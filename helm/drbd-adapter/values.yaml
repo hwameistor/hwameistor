@@ -1,0 +1,17 @@
+# Default values for drbd-adapter.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: 
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: lvm.hwameistor.io/enable
+          operator: NotIn
+          values:
+            - "false"
