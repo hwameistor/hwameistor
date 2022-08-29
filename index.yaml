@@ -1,6 +1,27 @@
 apiVersion: v1
 entries:
+  drbd-adapter:
+  - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2022-08-29T09:01:23.98140131Z"
+    description: A Helm chart for Kubernetes
+    digest: 6d32781aa330b77403d3c1db3ac2c21c9f840a30a43b4f28a9abfd78276d099c
+    name: drbd-adapter
+    type: application
+    urls:
+    - https://github.com/hwameistor/hwameistor/releases/download/0.1.0/drbd-adapter-0.1.0.tgz
+    version: 0.1.0
   hwameistor:
+  - apiVersion: v2
+    appVersion: v0.3.5-rc.2
+    created: "2022-08-29T09:01:24.137043298Z"
+    description: the HwameiStor local storage
+    digest: 37d9c29ca6fa7b881945c4efd04dd830cca7586814a6c927789a88d3b91d08af
+    name: hwameistor
+    type: application
+    urls:
+    - https://github.com/hwameistor/hwameistor/releases/download/v0.3.5-rc.2/hwameistor-v0.3.5-rc.2.tgz
+    version: v0.3.5-rc.2
   - apiVersion: v2
     appVersion: v0.3.5-rc.1
     created: "2022-08-29T02:37:55.217156147Z"
@@ -224,4 +245,4 @@ entries:
     urls:
     - https://github.com/hwameistor/helm-charts/releases/download/hwameistor-0.2.3/hwameistor-0.2.3.tgz
     version: 0.2.3
-generated: "2022-08-29T02:37:55.217493054Z"
+generated: "2022-08-29T09:01:24.13745041Z"
