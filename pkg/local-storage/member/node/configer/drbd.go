@@ -416,6 +416,11 @@ func (m *drbdConfigure) DeleteConfig(replica *apisv1alpha1.LocalVolumeReplica) e
 		}
 	}
 
+	// remove symblink
+	if err = os.Remove(replica.Status.DevicePath); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("remove symbolic path %s err: %s", replica.Status.DevicePath, err)
+	}
+
 	// remove config file
 	if err = removeResourceConfigFile(resourceName); err != nil {
 		return fmt.Errorf("remove replica %s config file err: %s", replica.Name, err)
