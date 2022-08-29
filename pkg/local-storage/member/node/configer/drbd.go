@@ -211,7 +211,7 @@ func (m *drbdConfigure) ApplyConfig(replica *apisv1alpha1.LocalVolumeReplica, co
 
 	// create symbolic
 	devicePath := m.getResourceDevicePath(conf)
-	if _, err := os.Stat(replica.Status.DevicePath); err != nil && os.IsExist(err) {
+	if _, err := os.Stat(replica.Status.DevicePath); err != nil && os.IsNotExist(err) {
 		if err = os.Symlink(devicePath, replica.Status.DevicePath); err != nil {
 			return fmt.Errorf("create symbolic link for %s err: %s", replica.Name, err)
 		}
