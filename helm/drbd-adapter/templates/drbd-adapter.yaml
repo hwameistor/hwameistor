@@ -1,0 +1,191 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: drbd9-adapter
+  labels:
+    k8s-app: drbd9-adapter
+spec:
+  selector:
+    matchLabels:
+      name: drbd9-adapter
+  template:
+    metadata:
+      labels:
+        name: drbd9-adapter
+    spec:
+      initContainers:
+      - name: shipper
+        image: daocloud.io/daocloud/drbd9-shipper:v9.1.8
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: pkgs
+          mountPath: /pkgs
+      - name: drbd9-rhel7
+        image: daocloud.io/daocloud/drbd9-rhel7:v9.1.8
+        imagePullPolicy: IfNotPresent
+        command: [ /pkgs/entrypoint.adapter.sh ]
+        securityContext:
+          privileged: true
+        env:
+        - name: LB_DROP
+          value: 'yes'
+        volumeMounts:
+        - name: centos-release
+          mountPath: /etc/centos-release
+          readOnly: true
+        - name: pkgs
+          mountPath: /pkgs
+        - name: os-release
+          mountPath: /etc/host-release
+          readOnly: true
+        - name: usr-src
+          mountPath: /usr/src
+          readOnly: true
+        - name: lib-modules
+          mountPath: /lib/modules
+        - name: usr-local-bin
+          mountPath: /usr/local/bin
+        - name: etc-modules-load
+          mountPath: /etc/modules-load.d
+
+      - name: drbd9-rhel8
+        image: daocloud.io/daocloud/drbd9-rhel8:v9.1.8
+        imagePullPolicy: IfNotPresent
+        command: [ /pkgs/entrypoint.adapter.sh ]
+        securityContext:
+          privileged: true
+        env:
+        - name: LB_DROP
+          value: 'yes'
+        volumeMounts:
+        - name: centos-release
+          mountPath: /etc/centos-release
+          readOnly: true
+        - name: pkgs
+          mountPath: /pkgs
+        - name: os-release
+          mountPath: /etc/host-release
+          readOnly: true
+        - name: usr-src
+          mountPath: /usr/src
+          readOnly: true
+        - name: lib-modules
+          mountPath: /lib/modules
+        - name: usr-local-bin
+          mountPath: /usr/local/bin
+        - name: etc-modules-load
+          mountPath: /etc/modules-load.d
+
+      - name: drbd9-bionic
+        image: daocloud.io/daocloud/drbd9-bionic:v9.1.8
+        imagePullPolicy: IfNotPresent
+        command: [ /pkgs/entrypoint.adapter.sh ]
+        securityContext:
+          privileged: true
+        env:
+        - name: LB_DROP
+          value: 'yes'
+        volumeMounts:
+        - name: pkgs
+          mountPath: /pkgs
+        - name: os-release
+          mountPath: /etc/host-release
+          readOnly: true
+        - name: usr-src
+          mountPath: /usr/src
+          readOnly: true
+        - name: lib-modules
+          mountPath: /lib/modules
+        - name: usr-local-bin
+          mountPath: /usr/local/bin
+        - name: etc-modules-load
+          mountPath: /etc/modules-load.d
+
+      - name: drbd9-focal
+        image: daocloud.io/daocloud/drbd9-focal:v9.1.8
+        imagePullPolicy: IfNotPresent
+        command: [ /pkgs/entrypoint.adapter.sh ]
+        securityContext:
+          privileged: true
+        env:
+        - name: LB_DROP
+          value: 'yes'
+        volumeMounts:
+        - name: pkgs
+          mountPath: /pkgs
+        - name: os-release
+          mountPath: /etc/host-release
+          readOnly: true
+        - name: usr-src
+          mountPath: /usr/src
+          readOnly: true
+        - name: lib-modules
+          mountPath: /lib/modules
+        - name: usr-local-bin
+          mountPath: /usr/local/bin
+        - name: etc-modules-load
+          mountPath: /etc/modules-load.d
+
+      - name: drbd9-jammy
+        image: daocloud.io/daocloud/drbd9-jammy:v9.1.8
+        imagePullPolicy: IfNotPresent
+        command: [ /pkgs/entrypoint.adapter.sh ]
+        securityContext:
+          privileged: true
+        env:
+        - name: LB_DROP
+          value: 'yes'
+        volumeMounts:
+        - name: pkgs
+          mountPath: /pkgs
+        - name: os-release
+          mountPath: /etc/host-release
+          readOnly: true
+        - name: usr-src
+          mountPath: /usr/src
+          readOnly: true
+        - name: lib-modules
+          mountPath: /lib/modules
+        - name: usr-local-bin
+          mountPath: /usr/local/bin
+        - name: etc-modules-load
+          mountPath: /etc/modules-load.d
+
+      containers:
+      - name: monitor
+        image: daocloud.io/daocloud/drbd-reactor
+        imagePullPolicy: IfNotPresent
+        command:
+        - drbd-reactor 
+        - -c
+        - /pkgs/drbd-reactor.toml
+        volumeMounts:
+        - name: pkgs
+          mountPath: /pkgs
+          readOnly: true
+      hostNetwork: true
+      terminationGracePeriodSeconds: 0
+      volumes:
+      - name: pkgs
+        emptyDir: {}
+      - name: os-release
+        hostPath:
+          path: /etc/os-release
+      - name: centos-release
+        hostPath:
+          path: /etc/centos-release
+      - name: usr-src
+        hostPath:
+          path: /usr/src    
+      - name: lib-modules
+        hostPath:
+          path: /lib/modules
+      - name: usr-local-bin
+        hostPath:
+          path: /usr/local/bin
+      - name: etc-modules-load
+        hostPath:
+          path: /etc/modules-load.d
+      affinity:
+        nodeAffinity:
+		 {{- toYaml .Values.affinity.nodeAffinity | nindent 10 }}
