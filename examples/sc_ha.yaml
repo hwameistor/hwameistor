@@ -1,0 +1,16 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: hwameistor-storage-lvm-hdd-ha
+parameters:
+  convertible: "false"
+  csi.storage.k8s.io/fstype: xfs
+  poolClass: HDD
+  poolType: REGULAR
+  replicaNumber: "2"
+  striped: "true"
+  volumeKind: LVM
+provisioner: lvm.hwameistor.io
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true

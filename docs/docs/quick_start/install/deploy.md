@@ -92,3 +92,14 @@ $ helm install hwameistor ./hwameistor \
 
 In a resource-strained test environment, setting the above-mentioned values would cause pods unable to start! 
 :::
+
+## [Optional] Install DRBD
+
+To enable provisioning HA volumes, DRBD must be installed:
+
+```console 
+$ helm pull hwameistor/drbd9-adapter --untar
+
+$ helm install drbd9 ./drbd9-adapter \
+    -n hwameistor --create-namespace
+```

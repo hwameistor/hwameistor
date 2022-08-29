@@ -74,5 +74,21 @@
   "sidebar.tutorialSidebar.category.Terminologies.link.generated-index.description": {
     "message": "本章节介绍以下内容：",
     "description": "The generated-index page description for category Terminologies in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Basic Operations": {
+    "message": "基础操作",
+    "description": "The label for category Basic Operations in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Basic Operations.link.generated-index.description": {
+    "message": "本章节介绍以下内容：",
+    "description": "The generated-index page description for category Basic Operations in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Advanced Operations": {
+    "message": "高级操作",
+    "description": "The label for category Advanced Operations in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Advanced Operations.link.generated-index.description": {
+    "message": "本章节介绍以下内容：",
+    "description": "The generated-index page description for category Advanced Operations in sidebar tutorialSidebar"
   }
 }
