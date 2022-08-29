@@ -93,3 +93,14 @@ $ helm install hwameistor ./hwameistor \
 在资源紧张的测试环境中，设置上述数值会造成 Pod 无法启动！
 
 :::
+
+## [可选] 安装 DRBD
+
+如果要启用高可用卷, 必须安装 DRBD
+
+```console
+$ helm pull hwameistor/drbd9-adapter --untar
+
+$ helm install drbd9 ./drbd9-adapter \
+    -n hwameistor --create-namespace
+```
