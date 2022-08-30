@@ -17,3 +17,21 @@ HwameiStor is an open source, lightweight, and cost-efficient local storage syst
  By using the CAS pattern, users can achieve the benefits of higher performance, better cost-efficiency, and easier management for their container storage. It can be deployed by helm charts or directly use the independent installation. You can easily enable the high-performance local storage across entire cluster with one click and automatically identify disks.
 
 HwameiStor is easy to deploy and ready to go.
+
+## Features
+
+1. Automated Maintenance
+
+    Disks can be automatically discovered, identified, managed, and allocated. Smart scheduling of applications and data based on affinity. Automatically monitor disk status and give early warning.
+
+1. High Availability
+
+    Use cross-node replicas to synchronize data for high availability. When a problem occurs, the application will be automatically scheduled to the high-availability data node to ensure the continuity of the application.
+
+1. Full-Range support of Storage Medium
+
+   Aggregate HDD, SSD, and NVMe disks to provide low-latency, high-throughput data services.
+
+1. Agile Linear Scalability
+
+   Dynamically expand the cluster according to flexibly meet the data persistence requirements of the application.
