@@ -2,6 +2,10 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+registry: ghcr.io/hwameistor
+
+drbdVersion: v9.1.8
+
 nodeSelector: {}
 
 tolerations: []
@@ -11,7 +15,5 @@ affinity:
     requiredDuringSchedulingIgnoredDuringExecution:
       nodeSelectorTerms:
       - matchExpressions:
-        - key: lvm.hwameistor.io/enable
-          operator: NotIn
-          values:
-            - "false"
+        - key: node-role.kubernetes.io/master
+          operator: DoesNotExist

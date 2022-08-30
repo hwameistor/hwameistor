@@ -20,7 +20,7 @@ HwameiStor 使用开源的 DRBD 数据同步技术创建 **高可用卷**，又�
 ```console
 $ kubectl apply -f examples/sc_ha.yaml
 
-$ kubectl get sc hwameistor-storage-lvm-hdd -o yaml
+$ kubectl get sc hwameistor-storage-lvm-hdd-ha -o yaml
 
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -64,15 +64,6 @@ spec:
       resources:
         requests:
           storage: 1Gi
-```
-
-和 `schedulerName: hwameistor-scheduler`:
-
-```yaml
-spec:
-  template:
-    spec:
-      schedulerName: hwameistor-scheduler
 ```
 
 ## 查看 MySQL Pod and `PVC/PV`

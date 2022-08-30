@@ -20,7 +20,7 @@ The yaml file for MySQL is borrowed from [the official Repo of Kubernetes](https
 ```console
 $ kubectl apply -f examples/sc_ha.yaml
 
-$ kubectl get sc hwameistor-storage-lvm-hdd -o yaml
+$ kubectl get sc hwameistor-storage-lvm-hdd-ha -o yaml
 
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -64,15 +64,6 @@ spec:
       resources:
         requests:
           storage: 1Gi
-```
-
-and `schedulerName: hwameistor-scheduler`:
-
-```yaml
-spec:
-  template:
-    spec:
-      schedulerName: hwameistor-scheduler
 ```
 
 ## Verify MySQL Pod and `PVC/PV`
