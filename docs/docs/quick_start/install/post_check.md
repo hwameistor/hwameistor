@@ -91,3 +91,38 @@ k8s-worker-3-sda   k8s-worker-3           Inuse
 k8s-worker-3-sdb   k8s-worker-3           Unclaimed
 k8s-worker-3-sdc   k8s-worker-3           Unclaimed
 ```
+
+## [Optional] Check DRBD Installation
+
+`drbd-adapter` pod should be running on each worker node
+
+```console
+$ kubectl -n hwameistor get po -l k8s-app=drbd-adapter -o wide
+NAME                 READY   STATUS    RESTARTS   AGE   IP            NODE        
+drbd-adapter-4rndg   1/1     Running   0          9h    10.6.254.22   k8s-worker-2   
+drbd-adapter-bpprj   1/1     Running   0          9h    10.6.254.21   k8s-worker-1
+drbd-adapter-n52w4   1/1     Running   0          9h    10.6.254.24   k8s-worker-4
+drbd-adapter-rs9zk   1/1     Running   0          9h    10.6.254.25   k8s-worker-5
+drbd-adapter-zc882   1/1     Running   0          9h    10.6.254.23   k8s-worker-3
+```
+
+On each worker node, DRBD kernel module should be loaded, for example on node `k8s-worker-1`：
+
+```console
+[root@k8s-worker-1 ~]$ lsmod | grep ^drbd
+drbd_transport_tcp     22227  0
+drbd                  606840  1 drbd_transport_tcp
+
+[root@k8s-worker-1 ~]$ modinfo drbd
+filename:       /lib/modules/3.10.0-1160.66.1.el7.x86_64/extra/drbd/drbd.ko
+alias:          block-major-147-*
+license:        GPL
+version:        9.1.8
+description:    drbd - Distributed Replicated Block Device v9.1.8
+author:         Philipp Reisner <phil@linbit.com>, Lars Ellenberg <lars@linbit.com>
+retpoline:      Y
+rhelversion:    7.9
+srcversion:     B00851F51A1D6E67F9EBD4D
+depends:        libcrc32c
+vermagic:       3.10.0-1160.el7.x86_64 SMP mod_unload modversions
+```
