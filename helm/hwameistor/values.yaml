@@ -1,7 +1,7 @@
 k8sImageRegistry: k8s.gcr.io
 hwameistorImageRegistry: ghcr.io
 # Users in China can change to these sites for option
-#k8sImageRegistry: gcr.m.daocloud.io
+#k8sImageRegistry: k8s-gcr.m.daocloud.io
 #hwameistorImageRegistry: ghcr.m.daocloud.io
 
 kubeletRootDir: /var/lib/kubelet
