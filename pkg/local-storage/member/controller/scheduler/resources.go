@@ -223,6 +223,7 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 		}
 	}
 
+	var getNodeCandidatesErrMsg string
 	// step 3. check the rest of all nodes for the volume replica, and queue the qualified by the avaliable storage space
 	pq := make(PriorityQueue, 0)
 	for _, node := range r.storageNodes {
@@ -232,6 +233,7 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 
 		if err := r.predicate(vol, node.Name); err != nil {
 			logCtx.WithError(err).WithField("node", node.Name).Debug("filter out a candidate node for predicate fail")
+			getNodeCandidatesErrMsg = getNodeCandidatesErrMsg + node.Name + ":" + err.Error() + ","
 			continue
 		}
 		priority, err := r.score(vol, node.Name)
@@ -255,7 +257,7 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 		r.logger.WithFields(log.Fields{"node": item.name, "total": pq.Len()}).Debug("Adding a candidate")
 	}
 
-	return candidates, nil
+	return candidates, fmt.Errorf(getNodeCandidatesErrMsg)
 }
 
 func (r *resources) getResourceIDForVolume(vol *apisv1alpha1.LocalVolume) (int, error) {

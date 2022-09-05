@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -42,7 +43,7 @@ func (s *scheduler) Init() {
 }
 
 // GetNodeCandidates gets available nodes for the volume, used by K8s scheduler
-func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) (qualifiedNodes []*apisv1alpha1.LocalStorageNode) {
+func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) (qualifiedNodes []*apisv1alpha1.LocalStorageNode, err error) {
 	logCtx := s.logger.WithFields(log.Fields{"vols": lvString(vols)})
 
 	// show available node candidates for debug
@@ -62,15 +63,18 @@ func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) (qualifi
 	for _, lv := range vols {
 		if !isLocalVolumeSameClass(bigLVs[lv.Spec.PoolName], lv) {
 			logCtx.Debugf("volumes has different storageclass")
-			return qualifiedNodes
+			err := errors.New("volumes has different storageclass")
+			return qualifiedNodes, err
 		}
 		bigLVs[lv.Spec.PoolName] = appendLocalVolume(bigLVs[lv.Spec.PoolName], lv)
 	}
 
+	var getNodeCandidatesErrMsg string
 	for _, lv := range bigLVs {
 		if nodes, err := s.resourceCollections.getNodeCandidates(lv); err != nil {
 			logCtx.WithError(err).WithField("volume", lv.Name).Debugf("fail to getNodeCandidates")
-			return qualifiedNodes
+			getNodeCandidatesErrMsg = getNodeCandidatesErrMsg + err.Error()
+			return qualifiedNodes, err
 		} else {
 			if len(qualifiedNodes) == 0 {
 				qualifiedNodes = nodes
@@ -80,7 +84,7 @@ func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) (qualifi
 		}
 	}
 
-	return qualifiedNodes
+	return qualifiedNodes, fmt.Errorf(getNodeCandidatesErrMsg)
 }
 
 func isLocalVolumeSameClass(lv1 *apisv1alpha1.LocalVolume, lv2 *apisv1alpha1.LocalVolume) bool {

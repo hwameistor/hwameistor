@@ -125,7 +125,7 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 		p.logger.WithFields(log.Fields{"pvc": params.pvcName, "namespace": params.pvcNamespace}).WithError(err).Error("Not found associated volumes")
 		return nil, fmt.Errorf("not found associated volumes")
 	}
-	candidateNodes := p.storageMember.Controller().VolumeScheduler().GetNodeCandidates(lvs)
+	candidateNodes, err := p.storageMember.Controller().VolumeScheduler().GetNodeCandidates(lvs)
 	selectedNodes := []string{}
 	foundThisNode := false
 	for _, nn := range candidateNodes {
@@ -151,7 +151,7 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 	}
 	if len(selectedNodes) < int(params.replicaNumber) {
 		p.logger.WithFields(log.Fields{"nodes": selectedNodes, "replica": params.replicaNumber}).Error("No enough nodes")
-		return nil, fmt.Errorf("no enough nodes")
+		return nil, fmt.Errorf("no enough node, %v", err)
 	}
 	lvg = &apisv1alpha1.LocalVolumeGroup{
 		ObjectMeta: metav1.ObjectMeta{

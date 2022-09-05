@@ -112,9 +112,9 @@ func (s *LVMVolumeScheduler) filterForNewPVCs(pvcs []*corev1.PersistentVolumeCla
 		lvs = append(lvs, lv)
 	}
 
-	qualifiedNodes := s.replicaScheduler.GetNodeCandidates(lvs)
+	qualifiedNodes, err := s.replicaScheduler.GetNodeCandidates(lvs)
 	if len(qualifiedNodes) < int(lvs[0].Spec.ReplicaNumber) {
-		return false, fmt.Errorf("no enough nodes")
+		return false, fmt.Errorf("no enough nodes, %v", err)
 	}
 	for _, qn := range qualifiedNodes {
 		if qn.Name == node.Name {
