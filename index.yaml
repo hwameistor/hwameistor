@@ -1,7 +1,7 @@
 apiVersion: v1
 entries:
   drbd-adapter:
-     - apiVersion: v2
+    - apiVersion: v2
       appVersion: 9.1.10
       created: "2022-09-05T09:37:05.925918883Z"
       description: DRBD kernel loader that auto-adapt distros
