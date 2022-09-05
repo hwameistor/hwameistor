@@ -58,6 +58,12 @@ spec:
         - --csi-address=$(CSI_ENDPOINT)
         - --http-port=80
         - --debug=true
+        {{- if .Values.localStorage.member.config.drbdStartPort }}
+        - --drbd-start-port={{ .Values.localStorage.member.config.drbdStartPort }}
+        {{- end }}
+        {{- if .Values.localStorage.member.config.maxHAVolumeCount }}
+        - --max-ha-volume-count={{ .Values.localStorage.member.config.maxHAVolumeCount }}
+        {{- end }}
         env:
         - name: POD_NAME
           valueFrom:
