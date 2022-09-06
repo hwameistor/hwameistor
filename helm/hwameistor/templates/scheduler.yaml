@@ -15,13 +15,14 @@ spec:
       labels:
         app: hwameistor-scheduler
     spec:
-      nodeAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 1
-            preference:
-              matchExpressions:
-                - key: node-role.kubernetes.io/master
-                  operator: Exists
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              preference:
+                matchExpressions:
+                  - key: node-role.kubernetes.io/master
+                    operator: Exists
       containers:
       - args:
         - -v=2
