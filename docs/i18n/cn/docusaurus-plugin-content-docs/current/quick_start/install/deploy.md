@@ -50,7 +50,7 @@ $ helm install hwameistor ./hwameistor \
 ```console
 $ helm install hwameistor ./hwameistor \
     -n hwameistor --create-namespace \
-    --set k8sImageRegistry=quay.m.daocloud.io \
+    --set k8sImageRegistry=k8s-gcr.m.daocloud.io \
     --set hwameistorImageRegistry=ghcr.m.daocloud.io
 ```
 
