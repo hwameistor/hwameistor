@@ -40,8 +40,8 @@ To verify the deployment, please refer to the next chapter [Post Deployment](./p
 
 :::tip
 
-The default image repositories are `quay.io` and `ghcr.io`.
-In case they are blocked in some places, DaoCloud provides their mirrors at `quay.m.daocloud.io` and `ghcr.m.daocloud.io`
+The default image repositories are `k8s.gcr.io` and `ghcr.io`.
+In case they are blocked in some places, DaoCloud provides their mirrors at `k8s-gcr.m.daocloud.io` and `ghcr.m.daocloud.io`
 
 :::
 
@@ -50,7 +50,7 @@ To switch image repository mirrors, use `--set` to change the value of parameter
 ```console
 $ helm install hwameistor ./hwameistor \
     -n hwameistor --create-namespace \
-    --set k8sImageRegistry=quay.m.daocloud.io \
+    --set k8sImageRegistry=k8s-gcr.m.daocloud.io \
     --set hwameistorImageRegistry=ghcr.m.daocloud.io
 ```
 
@@ -92,3 +92,16 @@ $ helm install hwameistor ./hwameistor \
 
 In a resource-strained test environment, setting the above-mentioned values would cause pods unable to start! 
 :::
+
+## [Optional] Install DRBD
+
+
+
+To enable provisioning HA volumes, DRBD must be installed:
+
+```console
+$ helm pull hwameistor/drbd-adapter --untar
+
+$ helm install drbd-adapter ./drbd-adapter \
+    -n hwameistor --create-namespace
+```

@@ -5,6 +5,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/wxnacy/wgo/arrays"
 	"k8s.io/apimachinery/pkg/types"
+	"reflect"
+	"time"
 
 	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
@@ -17,6 +19,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+)
+
+const (
+	// RequeueInterval Requeue every 5 seconds
+	RequeueInterval = time.Second * 5
 )
 
 /**
@@ -129,6 +136,12 @@ func (r *ReconcileLocalVolumeMigrate) Reconcile(request reconcile.Request) (reco
 				return reconcile.Result{}, err
 			}
 		}
+
+		if reflect.DeepEqual(instance.Spec.SourceNodesNames, instance.Spec.TargetNodesNames) {
+			log.WithFields(log.Fields{"sourceNodesNames": instance.Spec.SourceNodesNames, "targetNodesNames": instance.Spec.TargetNodesNames}).Error("can not do migrate because sourceNodesNames equal with targetNodesNames")
+			return reconcile.Result{}, errors.NewBadRequest("can not do migrate because sourceNodesNames equal with targetNodesNames")
+		}
+
 		for _, nodeName := range instance.Spec.TargetNodesNames {
 			if arrays.ContainsString(vol.Spec.Accessibility.Nodes, nodeName) == -1 {
 				accessibilityNodeNames = append(accessibilityNodeNames, nodeName)
@@ -136,6 +149,8 @@ func (r *ReconcileLocalVolumeMigrate) Reconcile(request reconcile.Request) (reco
 				accessibilityNodeNames = vol.Spec.Accessibility.Nodes
 			}
 		}
+
+		vol.Spec.Accessibility.Nodes = accessibilityNodeNames
 		if err := r.client.Update(context.TODO(), vol); err != nil {
 			log.WithError(err).Errorf("ReconcileLocalVolumeMigrate Reconcile : Failed to re-configure Volume, vol.Name = %v, tmpvol.LocalVolumeName = %v", vol.Name, tmpvol.LocalVolumeName)
 			errMsg = err
@@ -143,7 +158,7 @@ func (r *ReconcileLocalVolumeMigrate) Reconcile(request reconcile.Request) (reco
 	}
 
 	if errMsg != nil {
-		return reconcile.Result{}, errMsg
+		return reconcile.Result{Requeue: true, RequeueAfter: RequeueInterval}, errMsg
 	}
 
 	r.storageMember.Controller().ReconcileVolumeMigrate(instance)

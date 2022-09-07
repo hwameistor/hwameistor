@@ -89,7 +89,6 @@ type jobWithEvent struct {
 }
 
 func (statusGenerator *statusGenerator) onAdd(obj interface{}) {
-	logger.Debug("statusGenerator onAdd 1")
 	job := obj.(*batchv1.Job)
 
 	//if !statusGenerator.isReleted(job) {
@@ -100,14 +99,11 @@ func (statusGenerator *statusGenerator) onAdd(obj interface{}) {
 		Job:   job,
 		Event: "ADD",
 	}
-	logger.Debug("statusGenerator onAdd 2")
 
 	statusGenerator.queue.Add(eventJob)
 }
 
 func (statusGenerator *statusGenerator) onUpdate(_, obj interface{}) {
-	logger.Debug("statusGenerator onUpdate 1")
-
 	job := obj.(*batchv1.Job)
 
 	//if !statusGenerator.isReleted(job) {
@@ -118,14 +114,11 @@ func (statusGenerator *statusGenerator) onUpdate(_, obj interface{}) {
 		Job:   job,
 		Event: "UPDATE",
 	}
-	logger.Debug("statusGenerator onUpdate 2")
 
 	statusGenerator.queue.Add(eventJob)
 }
 
 func (statusGenerator *statusGenerator) onDelete(obj interface{}) {
-	logger.Debug("statusGenerator onDelete 1")
-
 	job := obj.(*batchv1.Job)
 
 	//if !statusGenerator.isReleted(job) {
@@ -136,7 +129,6 @@ func (statusGenerator *statusGenerator) onDelete(obj interface{}) {
 		Job:   job,
 		Event: "DELETE",
 	}
-	logger.Debug("statusGenerator onDelete 2")
 
 	statusGenerator.queue.Done(eventJob)
 }
@@ -147,13 +139,11 @@ func (statusGenerator *statusGenerator) Run() {
 }
 
 func (statusGenerator *statusGenerator) processLoop(ctx context.Context) {
-	logger.Debugf("processLoop test start 1")
 
 	untyped, qClosed := statusGenerator.queue.Get()
 	if qClosed {
 		logger.Fatal("Unexpcted queue close")
 	}
-	logger.Debugf("processLoop test start 2")
 	statusGenerator.queue.Done(untyped)
 	jobNeedProcess := untyped.(*jobWithEvent)
 	logger.Infof(

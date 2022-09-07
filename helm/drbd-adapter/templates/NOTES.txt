@@ -1,0 +1,7 @@
+Thank you for installing {{ .Chart.Name }}.
+
+This is a tool image to help install drbd kernel modules and drbd utils.
+
+For now, we support rhel7, rhel8, rhel9, ubuntu.
+
+Read more info or want support more linux distributions, you can visit https://github.com/hwameistor/drbd-adapter.
