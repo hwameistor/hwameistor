@@ -154,6 +154,9 @@ spec:
         key: node-role.kubernetes.io/master
         operator: Exists
       - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      - effect: NoSchedule
         key: node.cloudprovider.kubernetes.io/uninitialized
         operator: Exists
       volumes:
@@ -320,6 +323,9 @@ spec:
           key: node-role.kubernetes.io/master
           operator: Exists
         - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+        - effect: NoSchedule
           key: node.cloudprovider.kubernetes.io/uninitialized
           operator: Exists
 
@@ -349,6 +355,9 @@ spec:
             nodeSelectorTerms:
             - matchExpressions:
               - key: node-role.kubernetes.io/master
+                operator: Exists
+            - matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
                 operator: Exists
       containers:
       - args:
@@ -399,6 +408,9 @@ spec:
         operator: Exists
       - effect: NoSchedule
         key: node-role.kubernetes.io/master
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
         operator: Exists
       - effect: NoSchedule
         key: node.cloudprovider.kubernetes.io/uninitialized
@@ -668,6 +680,9 @@ spec:
         operator: Exists
       - effect: NoSchedule
         key: node-role.kubernetes.io/master
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
         operator: Exists
       - effect: NoSchedule
         key: node.cloudprovider.kubernetes.io/uninitialized
