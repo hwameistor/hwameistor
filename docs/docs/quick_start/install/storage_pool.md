@@ -3,7 +3,7 @@ sidebar_position: 4
 sidebar_label: "Set up a Storage Pool"
 ---
 
-# Step up a Storage Pool
+# Setup up a Storage Pool
 
 The below example is from a 4-node kubernetes cluster:
 
