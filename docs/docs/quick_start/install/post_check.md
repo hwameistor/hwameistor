@@ -1,9 +1,9 @@
 ---
 sidebar_position: 3
-sidebar_label: "Post-Deployment Check"
+sidebar_label: "Post-Deployment Checkout"
 ---
 
-# Post-Deployment Check
+# Post-Deployment Checkout
 
 The below example is from a 4-node kubernetes cluster:
 
@@ -113,16 +113,8 @@ On each worker node, DRBD kernel module should be loaded, for example on node `k
 drbd_transport_tcp     22227  0
 drbd                  606840  1 drbd_transport_tcp
 
-[root@k8s-worker-1 ~]$ modinfo drbd
-filename:       /lib/modules/3.10.0-1160.66.1.el7.x86_64/extra/drbd/drbd.ko
-alias:          block-major-147-*
-license:        GPL
-version:        9.1.8
-description:    drbd - Distributed Replicated Block Device v9.1.8
-author:         Philipp Reisner <phil@linbit.com>, Lars Ellenberg <lars@linbit.com>
-retpoline:      Y
-rhelversion:    7.9
-srcversion:     B00851F51A1D6E67F9EBD4D
-depends:        libcrc32c
-vermagic:       3.10.0-1160.el7.x86_64 SMP mod_unload modversions
+[root@k8s-worker-1 ~]$ cat /proc/drbd
+version: 9.0.32-1 (api:2/proto:86-121)
+GIT-hash: 7d2933d5a3764fcc5e0bf54b71fd9cfb0363be1a build by @4904565a901d, 2022-09-07 08:53:17
+Transports (api:17): tcp (9.0.32-1)
 ```

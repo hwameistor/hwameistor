@@ -95,8 +95,6 @@ In a resource-strained test environment, setting the above-mentioned values woul
 
 ## [Optional] Install DRBD
 
-
-
 To enable provisioning HA volumes, DRBD must be installed:
 
 ```console
@@ -104,4 +102,12 @@ $ helm pull hwameistor/drbd-adapter --untar
 
 $ helm install drbd-adapter ./drbd-adapter \
     -n hwameistor --create-namespace
+```
+
+Users in China may use mirror `daocloud.io/daocloud`
+
+```console
+$ helm install drbd-adapter ./drbd-adapter \
+    -n hwameistor --create-namespace \
+    --set registry=daocloud.io/daocloud
 ```

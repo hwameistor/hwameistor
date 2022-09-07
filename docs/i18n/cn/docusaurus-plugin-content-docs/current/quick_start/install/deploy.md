@@ -104,3 +104,11 @@ $ helm pull hwameistor/drbd9-adapter --untar
 $ helm install drbd9 ./drbd9-adapter \
     -n hwameistor --create-namespace
 ```
+
+中国用户可以使用镜像仓库 `daocloud.io/daocloud` 加速
+
+```console
+$ helm install drbd-adapter ./drbd-adapter \
+    -n hwameistor --create-namespace \
+    --set registry=daocloud.io/daocloud
+```
