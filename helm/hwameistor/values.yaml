@@ -73,6 +73,14 @@ localStorage:
     tag: v2.5.0
     resources: {}
   member:
+    config:
+      # Each HA volume using DRBD will occupy a port for data volume synchronization.
+      # hwameistor limits each node to use up to 1000 volumes, so the final port range is [ startPort, startPort + maxHAVolumeCount - 1 ].
+      # default value: 43001
+      drbdStartPort:
+      # Max HA volume count
+      # default value: 1000
+      maxHAVolumeCount:
     imageRepository: hwameistor/local-storage
     resources: {}
 
