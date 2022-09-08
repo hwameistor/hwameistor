@@ -49,6 +49,7 @@ const (
 	ReplicationEstablished = "Established"
 	ReplicationSyncSource  = "SyncSource"
 	ReplicationSyncTarget  = "SyncTarget"
+	NoValidSignatureMsg    = "No valid meta-data signature found"
 
 	drbdMaxPeerCount = 3
 )
@@ -187,10 +188,8 @@ func (m *drbdConfigure) ApplyConfig(replica *apisv1alpha1.LocalVolumeReplica, co
 
 	// check if disk attached, only check/create metadata when disk unattached
 	if dstate, err := m.getResourceDiskState(conf.ResourceName); err != nil || dstate == DiskStateDiskless {
-		//m.logger.Debugf("get %s disk state: %s, err: %s", dstate, err)
-		fmt.Printf("get %s disk state: %s, err: %s", conf.ResourceName, dstate, err)
-
 		// check metadata
+		m.logger.Debugf("get %s disk state: %s, err: %s", conf.ResourceName, dstate, err)
 		if !m.hasMetadata(conf.Minor, conf.DevicePath) {
 			// create metadata
 			if err = m.createMetadata(conf.ResourceName, drbdMaxPeerCount); err != nil {
@@ -206,7 +205,18 @@ func (m *drbdConfigure) ApplyConfig(replica *apisv1alpha1.LocalVolumeReplica, co
 
 	// adjust for created or updated replica
 	if err = m.adjustResource(conf.ResourceName); err != nil {
-		return fmt.Errorf("adjust replica err: %s", err)
+		if strings.Contains(err.Error(), NoValidSignatureMsg) {
+			// create metadata
+			if err = m.createMetadata(conf.ResourceName, drbdMaxPeerCount); err != nil {
+				return fmt.Errorf("create replica metadata err: %s", err)
+			}
+			if err = m.adjustResource(conf.ResourceName); err != nil {
+				return fmt.Errorf("adjust replica err: %s", err)
+			}
+
+		} else {
+			return fmt.Errorf("adjust replica err: %s", err)
+		}
 	}
 
 	// create symbolic
