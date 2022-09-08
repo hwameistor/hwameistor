@@ -190,12 +190,10 @@ func (m *drbdConfigure) ApplyConfig(replica *apisv1alpha1.LocalVolumeReplica, co
 		//m.logger.Debugf("get %s disk state: %s, err: %s", dstate, err)
 		fmt.Printf("get %s disk state: %s, err: %s", conf.ResourceName, dstate, err)
 
-		// check metadata
-		if !m.hasMetadata(conf.Minor, conf.DevicePath) {
-			// create metadata
-			if err = m.createMetadata(conf.ResourceName, drbdMaxPeerCount); err != nil {
-				return fmt.Errorf("create replica metadata err: %s", err)
-			}
+		// should not check metadata, hasMetadata return true, means ambiguous config exists and maybe No valid meta-data signature found, return false, means no meatadata, both cases should createMetadata
+		// create metadata
+		if err = m.createMetadata(conf.ResourceName, drbdMaxPeerCount); err != nil {
+			return fmt.Errorf("create replica metadata err: %s", err)
 		}
 	}
 
