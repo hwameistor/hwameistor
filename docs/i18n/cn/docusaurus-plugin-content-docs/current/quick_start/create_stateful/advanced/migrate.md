@@ -9,16 +9,16 @@ sidebar_label:  "卷的迁移"
 
 ## 基本概念
 
-`LocalVolumeGroup(LVG)`（数据卷组）管理是HwameiStor中重要的一个功能。当应用 Pod 申请多个数据卷 `PVC` 时，为了保证 Pod 能正确运行，这些数据卷必须具有某些相同属性，例如：数据卷的副本数量，副本所在的节点。通过数据卷组管理功能正确地管理这些相关联的数据卷，是 HwameiStor 中非常重要的能力。
+`LocalVolumeGroup(LVG)`（数据卷组）管理是 HwameiStor 中重要的一个功能。当应用 Pod 申请多个数据卷 `PVC` 时，为了保证 Pod 能正确运行，这些数据卷必须具有某些相同属性，例如：数据卷的副本数量，副本所在的节点。通过数据卷组管理功能正确地管理这些相关联的数据卷，是 HwameiStor 中非常重要的能力。
 
 ## 前提条件
 
-LocalVolumeMigrate需要部署在Kubernetes系统中，需要部署应用满足下列条件：
+LocalVolumeMigrate 需要部署在 Kubernetes 系统中，需要部署应用满足下列条件：
 
 * 支持 lvm 类型的卷
-* convertible类型卷（需要在sc中增加配置项convertible: true）
-  * 应用pod申请多个数据卷PVCs时，对应数据卷需要使用相同配置sc
-  * 基于LocalVolume粒度迁移时，默认所属相同LocalVolumeGroup的数据卷不会一并迁移（若一并迁移，需要配置开关MigrateAllVols：true）
+* convertible 类型卷（需要在 sc 中增加配置项 convertible: true）
+  * 应用 Pod 申请多个数据卷 PVC 时，对应数据卷需要使用相同配置 sc
+  * 基于 LocalVolume 粒度迁移时，默认所属相同 LocalVolumeGroup 的数据卷不会一并迁移（若一并迁移，需要配置开关 MigrateAllVols：true）
 
 ## 步骤 1: 创建 convertible `StorageClass`
 
@@ -33,19 +33,19 @@ $ kubectl apply -f storageclass-convertible-lvm.yaml
 $ kubectl apply -f pvc-multiple-lvm.yaml
 ```
 
-## 步骤 3: 部署 多数据卷 Pod
+## 步骤 3: 部署多数据卷 Pod
 
 ```console
 $ kubectl apply -f nginx-multiple-lvm.yaml
 ```
 
-## 步骤 4: 解挂载 多数据卷 Pod
+## 步骤 4: 解挂载多数据卷 Pod
 
 ```console
 $ kubectl patch deployment nginx-local-storage-lvm --patch '{"spec": {"replicas": 0}}' -n hwameistor
 ```
 
-## 步骤 5: 创建 迁移任务
+## 步骤 5: 创建迁移任务
 
 ```console
 cat > ./migrate_lv.yaml <<- EOF
@@ -70,7 +70,7 @@ EOF
 $ kubectl apply -f ./migrate_lv.yaml
 ```
 
-## 步骤 6: 查看 迁移状态
+## 步骤 6: 查看迁移状态
 
 ```console
 $ kubectl  get LocalVolumeMigrate  -o yaml

@@ -45,7 +45,7 @@ $ helm install hwameistor ./hwameistor \
 
 :::
 
-要切换镜像仓库的镜像，请如下使用 `--set` 更改这两个参数值：`k8sImageRegistry` 和 `hwameistorImageRegistry`。
+要切换镜像仓库的镜像，请使用 `--set` 更改这两个参数值：`k8sImageRegistry` 和 `hwameistorImageRegistry`。
 
 ```console
 $ helm install hwameistor ./hwameistor \
@@ -59,7 +59,7 @@ $ helm install hwameistor ./hwameistor \
 :::caution
 
 默认的 `kubelet` 目录为 `/var/lib/kubelet`。
-如果你的 Kubernetes 发行版使用不同的 `kubelet` 目录，您必须设置参数 `kubeletRootDir`。
+如果你的 Kubernetes 发行版使用不同的 `kubelet` 目录，必须设置参数 `kubeletRootDir`。
 
 :::
 

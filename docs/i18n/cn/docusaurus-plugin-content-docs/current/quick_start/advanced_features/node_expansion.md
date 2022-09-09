@@ -19,7 +19,7 @@ sidebar_label: "节点扩展"
 - devPath: /dev/sdb
 - diskType: SSD disk
 
-新增节点已经成功加入 Kubernetes 集群之后，检查并确保下列 Pods 正常运行在该节点上，以及相关资源存在于集群中：
+新增节点已经成功加入 Kubernetes 集群之后，检查并确保下列 Pod 正常运行在该节点上，以及相关资源存在于集群中：
 
 ```console
 $ kubectl get node

@@ -5,7 +5,7 @@ sidebar_label:  "高可用卷"
 
 # 高可用卷
 
-HwameiStor 使用开源的 DRBD 数据同步技术创建 **高可用卷**，又叫**HA卷**。 
+HwameiStor 使用开源的 DRBD 数据同步技术创建**高可用卷**，又叫 **HA 卷**。
 
 这里我们使用一个 MySQL 应用作为例子。
 
@@ -80,9 +80,9 @@ NAME                     STATUS   VOLUME                                     CAP
 data-sts-mysql-ha-0   Bound    pvc-5236ee6f-8212-4628-9876-1b620a4c4c36   1Gi        RWO            hwameistor-storage-lvm-hdd    3m   Filesystem
 ```
 
-# 查看 `LocalVolume` and `LocalVolumeReplica` objects
+# 查看 `LocalVolume` and `LocalVolumeReplica` 对象
 
-通过查看和`PV`同名的 `LocalVolume(LV)`, 可以看到本地卷创建在了节点 `k8s-worker-1` 和节点 `k8s-worker-2`.
+通过查看和 `PV` 同名的 `LocalVolume(LV)`, 可以看到本地卷创建在了节点 `k8s-worker-1` 和节点 `k8s-worker-2`.
 
 ```console
 $ kubectl get lv pvc-5236ee6f-8212-4628-9876-1b620a4c4c36
@@ -93,7 +93,7 @@ pvc-5236ee6f-8212-4628-9876-1b620a4c4c36   LocalStorage_PoolHDD   1          107
 
 `LocalVolumeReplica (LVR)` 进一步显示每个节点上的后端逻辑卷设备：
 
-```concole
+```console
 kubectl get lvr
 NAME                                          CAPACITY     NODE           STATE   SYNCED   DEVICE                                                              AGE
 5236ee6f-8212-4628-9876-1b620a4c4c36-d2kn55   1073741824   k8s-worker-1   Ready   true     /dev/LocalStorage_PoolHDD-HA/5236ee6f-8212-4628-9876-1b620a4c4c36   4m
