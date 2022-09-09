@@ -321,6 +321,10 @@ func (lvm *lvmExecutor) CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeRep
 
 func (lvm *lvmExecutor) ExpandVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica, newCapacityBytes int64) (*apisv1alpha1.LocalVolumeReplica, error) {
 
+	if replica.Status.AllocatedCapacityBytes == newCapacityBytes {
+		return replica, nil
+	}
+
 	newLVMCapacityBytes := utils.NumericToLVMBytes(newCapacityBytes)
 
 	// for compatibility
@@ -743,7 +747,8 @@ func (lvm *lvmExecutor) lvextend(lvPath string, newCapacityBytes int64, options 
 	}
 	params.CmdArgs = append(params.CmdArgs, options...)
 	res := lvm.cmdExec.RunCommand(params)
-	if res.ExitCode == 0 {
+	errcontent := res.ErrBuf.String()
+	if res.ExitCode == 0 || strings.Contains(errcontent, "matches existing size") {
 		return nil
 	}
 	return res.Error
