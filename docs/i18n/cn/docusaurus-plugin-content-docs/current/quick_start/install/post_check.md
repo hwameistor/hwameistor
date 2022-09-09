@@ -107,7 +107,7 @@ k8s-worker-3-sdc   k8s-worker-3           Unclaimed
 
 ## [可选] 检查 DRBD 的安装
 
-`drbd-adapter` pod 需要在每个 worker 节点上运行：
+`drbd-adapter` Pod 需要在每个 Worker 节点上运行：
 
 ```console
 $ kubectl -n hwameistor get po -l k8s-app=drbd-adapter -o wide
@@ -119,7 +119,7 @@ drbd-adapter-rs9zk   1/1     Running   0          9h    10.6.254.25   k8s-worker
 drbd-adapter-zc882   1/1     Running   0          9h    10.6.254.23   k8s-worker-3
 ```
 
-在每个 worker 节点上， DRBD 的内核模块必须被加载， 例如在节点 `k8s-worker-1` 上：
+在每个 Worker 节点上，DRBD 的内核模块必须被加载，例如在节点 `k8s-worker-1` 上：
 
 ```console
 [root@k8s-worker-1 ~]$ lsmod | grep ^drbd

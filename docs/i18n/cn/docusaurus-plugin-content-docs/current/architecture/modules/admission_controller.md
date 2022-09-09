@@ -5,16 +5,16 @@ sidebar_label: "准入控制器"
 
 # 准入控制器
 
-admission-controller is a webhook that can automatically verify which pod uses the HwameiStor volume and, help to modify the schedulerName to hwameistor-scheduler. For the specific principle, refer to [K8S Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/).
+准入控制器是一种 webhook，可以自动验证 HwameiStor 数据卷，协助将 `schedulerName` 修改为 hwameistor-scheduler。具体信息，请参见 [K8S 动态准入控制](https://kubernetes.io/zh-cn/docs/reference/access-authn-authz/extensible-admission-controllers/)。
 
-# How to identify a HwameiStor volume?
+## 识别 HwameiStor 数据卷
 
-admission-controller gets all the PVCs used by a pod, and checks the [provisioner](https://kubernetes.io/docs/concepts/storage/storage-classes/) of each PVC in turn. If the name suffix of the provisioner is `*.hwameistor.io`, it is believed that the pod is using the volume provided by HwameiStor.
+准入控制器可以获取 Pod 使用的所有 PVC，并检查每个 PVC [存储制备器](https://kubernetes.io/zh-cn/docs/concepts/storage/storage-classes/#provisioner). 如果制备器的名称后缀是 `*.hwameistor.io`，表示 Pod 正在使用 HwameiStor 提供的数据卷。
 
-# Which resources will be verified?
+## 验证资源
 
-Only `POD` resources will be verified, and the verification process occurs at the time of creation.
+准入控制器只验证 `POD` 资源，并在创建资源时就进行验证。
 
 :::info
-In order to ensure that the pod of HwameiStor can be started smoothly and the pod of the namespace where HwameiStor is deployed will not be verified.
+为确保 HwameiStor 的 Pod 可以顺利启动，不会校验 HwameiStor 所在的命名空间下的 Pod。
 :::

@@ -15,7 +15,7 @@ sidebar_label:  "本地卷"
 
 ## 查看 `StorageClass`
 
-HwameiStor 的 helm charts 会默认安装一个 名为 `hwameistor-storage-lvm-hdd` 的 `StorageClass`. 它可以创建本地卷。
+HwameiStor 的 Helm charts 会默认安装一个 名为 `hwameistor-storage-lvm-hdd` 的 `StorageClass`. 它可以创建本地卷。
 
 ```console
 $ kubectl get sc hwameistor-storage-lvm-hdd -o yaml
@@ -95,7 +95,7 @@ data-sts-mysql-local-0   Bound    pvc-accf1ddd-6f47-4275-b520-dc317c90f80b   1Gi
 
 ## 查看 `LocalVolume` 对象
 
-通过查看和`PV`同名的 `LocalVolume(LV)`, 可以看到本地卷创建在了节点 `k8s-worker-3`上：
+通过查看和 `PV` 同名的 `LocalVolume(LV)`, 可以看到本地卷创建在了节点 `k8s-worker-3`上：
 
 ```console
 $ kubectl get lv pvc-accf1ddd-6f47-4275-b520-dc317c90f80b

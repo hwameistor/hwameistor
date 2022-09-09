@@ -1,9 +1,9 @@
 ---
 sidebar_position: 4
-sidebar_label: "APIs"
+sidebar_label: "API"
 ---
 
-# APIs
+# API
 
 ## CRD 对象类
 
