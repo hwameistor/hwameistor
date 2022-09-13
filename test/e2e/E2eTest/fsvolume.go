@@ -25,7 +25,7 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("periodCheck"), func() {
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
 		result := configureEnvironment(ctx)
-		gomega.Expect(result).To(gomega.Equal(true))
+		gomega.Expect(result).To(gomega.BeNil())
 
 	})
 	ginkgo.Context("create a StorageClass", func() {

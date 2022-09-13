@@ -31,7 +31,7 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("test"), func() {
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
 		result := configureEnvironment(ctx)
-		gomega.Expect(result).To(gomega.Equal(true))
+		gomega.Expect(result).To(gomega.BeNil())
 
 	})
 	ginkgo.Context("create a StorageClass", func() {
