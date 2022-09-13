@@ -371,11 +371,12 @@ func (m *drbdConfigure) getResourceDiskState(resourceName string) (state string,
 	}
 	result := m.cmdExec.RunCommand(params)
 	if result.ExitCode != 0 {
-		return "", fmt.Errorf("get resource %s disk state err: %d, %s", resourceName, result.ExitCode, result.ErrBuf.String())
+		err = fmt.Errorf("get resource %s disk state err: %d, %s", resourceName, result.ExitCode, result.ErrBuf.String())
+		return
 	}
 	// there may be peers disk state
 	state = strings.SplitN(result.OutBuf.String(), "/", 2)[0]
-	return state, nil
+	return
 }
 
 // resizeResource is idempotent
