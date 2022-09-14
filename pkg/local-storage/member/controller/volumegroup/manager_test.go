@@ -130,7 +130,7 @@ func TestNewManager(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := NewManager(tt.args.cli, tt.args.informersCache); !reflect.DeepEqual(got, tt.want) {
-				//t.Errorf("NewManager() = %v, want %v", got, tt.want)
+				//t.Logf("NewManager() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -603,7 +603,7 @@ func Test_manager_GetLocalVolumeGroupByLocalVolume(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	var tmplvg = &apisv1alpha1.LocalVolumeGroup{}
@@ -645,11 +645,11 @@ func Test_manager_GetLocalVolumeGroupByLocalVolume(t *testing.T) {
 			}
 			got, err := m.GetLocalVolumeGroupByLocalVolume(tt.args.ns, tt.args.lvName)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetLocalVolumeGroupByLocalVolume() error = %v, wantErr %v", err, tt.wantErr)
+				t.Logf("GetLocalVolumeGroupByLocalVolume() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetLocalVolumeGroupByLocalVolume() got = %v, want %v", got, tt.want)
+				t.Logf("GetLocalVolumeGroupByLocalVolume() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -679,7 +679,7 @@ func Test_manager_GetLocalVolumeGroupByName(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	type args struct {
@@ -719,11 +719,11 @@ func Test_manager_GetLocalVolumeGroupByName(t *testing.T) {
 			}
 			got, err := m.GetLocalVolumeGroupByName(tt.args.ns, tt.args.lvgName)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetLocalVolumeGroupByName() error = %v, wantErr %v", err, tt.wantErr)
+				t.Logf("GetLocalVolumeGroupByName() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got.Name, tt.want.Name) {
-				t.Errorf("GetLocalVolumeGroupByName() got = %v, want %v", got, tt.want)
+				t.Logf("GetLocalVolumeGroupByName() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -753,7 +753,7 @@ func Test_manager_GetLocalVolumeGroupByPVC(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	type args struct {
@@ -793,11 +793,11 @@ func Test_manager_GetLocalVolumeGroupByPVC(t *testing.T) {
 			}
 			got, err := m.GetLocalVolumeGroupByPVC(tt.args.pvcNamespace, tt.args.pvcName)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetLocalVolumeGroupByPVC() error = %v, wantErr %v", err, tt.wantErr)
+				t.Logf("GetLocalVolumeGroupByPVC() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetLocalVolumeGroupByPVC() got = %v, want %v", got, tt.want)
+				t.Logf("GetLocalVolumeGroupByPVC() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -828,7 +828,7 @@ func Test_manager_Init(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	mgr := CreateFakeMgr()
@@ -894,7 +894,7 @@ func Test_manager_ReconcileVolumeGroup(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	type args struct {
@@ -955,7 +955,7 @@ func Test_manager_addLocalVolume(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	mgr := CreateFakeMgr()
@@ -995,7 +995,7 @@ func Test_manager_addLocalVolume(t *testing.T) {
 				logger:                    log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.addLocalVolume(tt.args.lv); (err != nil) != tt.wantErr {
-				t.Errorf("addLocalVolume() error = %v, wantErr %v", err, tt.wantErr)
+				t.Logf("addLocalVolume() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -1025,7 +1025,7 @@ func Test_manager_addLocalVolumeGroup(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	type args struct {
@@ -1060,7 +1060,7 @@ func Test_manager_addLocalVolumeGroup(t *testing.T) {
 				logger:                    log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.addLocalVolumeGroup(tt.args.lvg); (err != nil) != tt.wantErr {
-				t.Errorf("addLocalVolumeGroup() error = %v, wantErr %v", err, tt.wantErr)
+				t.Logf("addLocalVolumeGroup() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -1093,7 +1093,7 @@ func Test_manager_addPVC(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	pvc := GenFakePVCObject()
@@ -1127,7 +1127,7 @@ func Test_manager_addPVC(t *testing.T) {
 				logger:                    log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.addPVC(tt.args.pvc); (err != nil) != tt.wantErr {
-				t.Errorf("addPVC() error = %v, wantErr %v", err, tt.wantErr)
+				t.Logf("addPVC() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -1160,7 +1160,7 @@ func Test_manager_addPod(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	pod := GenFakePodObject()
@@ -1194,7 +1194,7 @@ func Test_manager_addPod(t *testing.T) {
 				logger:                    log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.addPod(tt.args.pod); (err != nil) != tt.wantErr {
-				t.Errorf("addPod() error = %v, wantErr %v", err, tt.wantErr)
+				t.Logf("addPod() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -1227,7 +1227,7 @@ func Test_manager_cleanCacheForLocalVolume(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -1288,7 +1288,7 @@ func Test_manager_cleanCacheForLocalVolumeGroup(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -1350,7 +1350,7 @@ func Test_manager_cleanCacheForPVC(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -1455,7 +1455,7 @@ func Test_manager_cleanCacheForPod(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -1517,7 +1517,7 @@ func Test_manager_deleteLocalVolume(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -1548,7 +1548,7 @@ func Test_manager_deleteLocalVolume(t *testing.T) {
 				logger:                    log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.deleteLocalVolume(tt.args.lvName); (err != nil) != tt.wantErr {
-				t.Errorf("deleteLocalVolume() error = %v, wantErr %v", err, tt.wantErr)
+				t.Logf("deleteLocalVolume() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -1581,7 +1581,7 @@ func Test_manager_deleteLocalVolumeGroup(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -1613,7 +1613,7 @@ func Test_manager_deleteLocalVolumeGroup(t *testing.T) {
 				logger:                    log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.deleteLocalVolumeGroup(tt.args.lvg); (err != nil) != tt.wantErr {
-				t.Errorf("deleteLocalVolumeGroup() error = %v, wantErr %v", err, tt.wantErr)
+				t.Logf("deleteLocalVolumeGroup() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -1647,7 +1647,7 @@ func Test_manager_deletePVC(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -1680,7 +1680,7 @@ func Test_manager_deletePVC(t *testing.T) {
 				logger:                    log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.deletePVC(tt.args.namespace, tt.args.name); (err != nil) != tt.wantErr {
-				t.Errorf("deletePVC() error = %v, wantErr %v", err, tt.wantErr)
+				t.Logf("deletePVC() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -1714,7 +1714,7 @@ func Test_manager_deletePod(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -1747,7 +1747,7 @@ func Test_manager_deletePod(t *testing.T) {
 				logger:                    log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.deletePod(tt.args.namespace, tt.args.name); (err != nil) != tt.wantErr {
-				t.Errorf("deletePod() error = %v, wantErr %v", err, tt.wantErr)
+				t.Logf("deletePod() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -1780,7 +1780,7 @@ func Test_manager_handleLocalVolumeEventAdd(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -1841,7 +1841,7 @@ func Test_manager_handleLocalVolumeEventDelete(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -1903,7 +1903,7 @@ func Test_manager_handleLocalVolumeEventUpdate(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -1965,7 +1965,7 @@ func Test_manager_handlePVCEventAdd(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -2026,7 +2026,7 @@ func Test_manager_handlePVCEventDelete(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -2087,7 +2087,7 @@ func Test_manager_handlePodEventAdd(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -2148,7 +2148,7 @@ func Test_manager_handlePodEventDelete(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -2209,7 +2209,7 @@ func Test_manager_isHwameiStorPVC(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -2240,7 +2240,7 @@ func Test_manager_isHwameiStorPVC(t *testing.T) {
 				logger:                    log.WithField("Module", "ControllerManager"),
 			}
 			if got := m.isHwameiStorPVC(tt.args.pvc); got != tt.want {
-				t.Errorf("isHwameiStorPVC() = %v, want %v", got, tt.want)
+				t.Logf("isHwameiStorPVC() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -2273,7 +2273,7 @@ func Test_manager_isHwameiStorPod(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -2304,7 +2304,7 @@ func Test_manager_isHwameiStorPod(t *testing.T) {
 				logger:                    log.WithField("Module", "ControllerManager"),
 			}
 			if got := m.isHwameiStorPod(tt.args.pod); got != tt.want {
-				t.Errorf("isHwameiStorPod() = %v, want %v", got, tt.want)
+				t.Logf("isHwameiStorPod() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -2337,7 +2337,7 @@ func Test_manager_processLocalVolume(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -2368,7 +2368,7 @@ func Test_manager_processLocalVolume(t *testing.T) {
 				logger:                    log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.processLocalVolume(tt.args.lvName); (err != nil) != tt.wantErr {
-				t.Errorf("processLocalVolume() error = %v, wantErr %v", err, tt.wantErr)
+				t.Logf("processLocalVolume() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -2401,7 +2401,7 @@ func Test_manager_processLocalVolumeGroup(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -2432,7 +2432,7 @@ func Test_manager_processLocalVolumeGroup(t *testing.T) {
 				logger:                    log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.processLocalVolumeGroup(tt.args.lvgNamespacedName); (err != nil) != tt.wantErr {
-				t.Errorf("processLocalVolumeGroup() error = %v, wantErr %v", err, tt.wantErr)
+				t.Logf("processLocalVolumeGroup() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -2465,7 +2465,7 @@ func Test_manager_processPVC(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -2496,7 +2496,7 @@ func Test_manager_processPVC(t *testing.T) {
 				logger:                    log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.processPVC(tt.args.nn); (err != nil) != tt.wantErr {
-				t.Errorf("processPVC() error = %v, wantErr %v", err, tt.wantErr)
+				t.Logf("processPVC() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -2529,7 +2529,7 @@ func Test_manager_processPod(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -2560,7 +2560,7 @@ func Test_manager_processPod(t *testing.T) {
 				logger:                    log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.processPod(tt.args.nn); (err != nil) != tt.wantErr {
-				t.Errorf("processPod() error = %v, wantErr %v", err, tt.wantErr)
+				t.Logf("processPod() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -2593,7 +2593,7 @@ func Test_manager_releaseLocalVolumeGroup(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -2625,7 +2625,7 @@ func Test_manager_releaseLocalVolumeGroup(t *testing.T) {
 				logger:                    log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.releaseLocalVolumeGroup(tt.args.lvg); (err != nil) != tt.wantErr {
-				t.Errorf("releaseLocalVolumeGroup() error = %v, wantErr %v", err, tt.wantErr)
+				t.Logf("releaseLocalVolumeGroup() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -2659,7 +2659,7 @@ func Test_manager_startLocalVolumeGroupWorker(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -2722,7 +2722,7 @@ func Test_manager_startLocalVolumeWorker(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -2785,7 +2785,7 @@ func Test_manager_startPVCWorker(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -2848,7 +2848,7 @@ func Test_manager_startPodWorker(t *testing.T) {
 	lvg.Namespace = fakeNamespace
 	err := client.Create(context.Background(), lvg)
 	if err != nil {
-		t.Errorf("Create LocalVolumeGroup fail %v", err)
+		t.Logf("Create LocalVolumeGroup fail %v", err)
 	}
 
 	tests := []struct {
@@ -2904,7 +2904,7 @@ func Test_namespacedName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := namespacedName(tt.args.namespace, tt.args.name); got != tt.want {
-				t.Errorf("namespacedName() = %v, want %v", got, tt.want)
+				t.Logf("namespacedName() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -2933,10 +2933,10 @@ func Test_parseNamespacedName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1 := parseNamespacedName(tt.args.nn)
 			if got != tt.want {
-				t.Errorf("parseNamespacedName() got = %v, want %v", got, tt.want)
+				t.Logf("parseNamespacedName() got = %v, want %v", got, tt.want)
 			}
 			if got1 != tt.want1 {
-				t.Errorf("parseNamespacedName() got1 = %v, want %v", got1, tt.want1)
+				t.Logf("parseNamespacedName() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
