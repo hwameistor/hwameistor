@@ -476,6 +476,13 @@ func (p *plugin) ControllerUnpublishVolume(ctx context.Context, req *csi.Control
 		return resp, err
 	}
 
+	// when publish node is empty, return directly
+	// https://github.com/hwameistor/hwameistor/issues/296
+	if vol.Status.PublishedNodeName == "" {
+		p.logger.WithFields(log.Fields{"volume": req.VolumeId, "node": req.NodeId}).Debug("Volume has already unpublished")
+		return resp, nil
+	}
+
 	if vol.Status.PublishedNodeName != req.NodeId {
 		p.logger.WithFields(log.Fields{"volume": req.VolumeId, "node": req.NodeId}).Error("Wrong published node in request")
 		return resp, fmt.Errorf("wrong published node")
