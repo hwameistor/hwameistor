@@ -1,135 +1,2885 @@
 package volumegroup
 
 import (
-	"fmt"
-	"github.com/golang/mock/gomock"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"context"
+	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
+	coorv1 "k8s.io/api/coordination/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
+	"os"
+	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sync"
 	"testing"
+	"time"
+
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
+	log "github.com/sirupsen/logrus"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	crmgr "sigs.k8s.io/controller-runtime/pkg/manager"
+)
+
+// SystemMode of HA module
+type SystemMode string
+
+// Infinitely retry
+const maxRetries = 0
+
+var (
+	fakeLocalStorageNodeName              = "local-storage-node-example"
+	fakeLocalVolumeGroupName              = "local-volume-group-example"
+	fakeLocalStorageNodeUID               = "local-storage-node-uid"
+	fakeLocalStorageNodename              = "local-storage-node-example"
+	fakeLocalVolumeReplicaName            = "local-volume-replica-example"
+	fakeLocalVolumeConvertName            = "local-volume-convert-example"
+	fakeLocalVolumeMigrateName            = "local-volume-migrate-example"
+	fakeLocalVolumeGroupMigrateName       = "local-volume-group-migrate-example"
+	fakeLocalVolumeGroupConvertName       = "local-volume-group-convert-example"
+	fakeNamespace                         = "local-volume-group-test"
+	fakeName                              = "name-test"
+	fakeNodename                          = "10-6-118-10"
+	fakeStorageIp                         = "10.6.118.11"
+	fakeZone                              = "zone-test"
+	fakeRegion                            = "region-test"
+	fakeVgType                            = "LocalStorage_PoolHDD"
+	fakeVgName                            = "vg-test"
+	fakeTopo                              = apisv1alpha1.Topology{Region: fakeRegion, Zone: fakeZone}
+	fakeNodenames                         = []string{"10-6-118-10"}
+	fakePersistentPvcName                 = "pvc-test"
+	fakePodName                           = "pod-test"
+	fakeContainerName                     = "container-test"
+	fakePoolClass                         = "HDD"
+	fakePoolType                          = "REGULAR"
+	fakeLocalVolumeUID                    = "local-volume-uid"
+	fakeTotalCapacityBytes          int64 = 10 * 1024 * 1024 * 1024
+	fakeFreeCapacityBytes           int64 = 8 * 1024 * 1024 * 1024
+	fakeDiskCapacityBytes           int64 = 2 * 1024 * 1024 * 1024
+	fakeHolderIdentity                    = "fakeHolderIdentity"
+	fakeLeaseDurationSeconds              = int32(30)
+	fakeLeaseTransitions                  = int32(30)
+	fakeAcquireTime                       = time.Now()
+	fakeStorageClassName                  = "sc-test"
+
+	LocalVolumeKind             = "LocalVolume"
+	LocalStorageNodeKind        = "LocalStorageNode"
+	LeaseKind                   = "Lease"
+	LocalVolumeReplicaKind      = "LocalVolumeReplica"
+	LocalVolumeConvertKind      = "LocalVolumeConvert"
+	LocalVolumeMigrateKind      = "LocalVolumeMigrate"
+	LocalVolumeGroupConvertKind = "LocalVolumeGroupConvert"
+	LocalVolumeGroupMigrateKind = "LocalVolumeGroupMigrate"
+
+	fakePods                             = []string{"pod-test1"}
+	fakeAcesscibility                    = apisv1alpha1.AccessibilityTopology{Nodes: []string{"test-node1"}}
+	fakeLocalVolumeName                  = "local-volume-test1"
+	fakeVolumes                          = []apisv1alpha1.VolumeInfo{{LocalVolumeName: fakeLocalVolumeName, PersistentVolumeClaimName: fakePersistentPvcName}}
+	apiversion                           = "hwameistor.io/v1alpha1"
+	LocalVolumeGroupKind                 = "LocalVolumeGroup"
+	fakeRecorder                         = record.NewFakeRecorder(100)
+	SystemModeDRBD            SystemMode = "drbd"
+	defaultDRBDStartPort                 = 43001
+	defaultHAVolumeTotalCount            = 1000
 )
 
 func TestNewManager(t *testing.T) {
+	// Set default manager options
+	options := crmgr.Options{
+		Namespace: "", // watch all namespaces
+	}
 
+	// Get a config to talk to the apiserver
+	cfg, err := config.GetConfig()
+	if err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+
+	// Create a new manager to provide shared dependencies and start components
+	mgr, err := crmgr.New(cfg, options)
+	if err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+
+	type args struct {
+		cli            client.Client
+		informersCache cache.Cache
+	}
+	tests := []struct {
+		name string
+		args args
+		want v1alpha1.VolumeGroupManager
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				cli:            mgr.GetClient(),
+				informersCache: mgr.GetCache(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NewManager(tt.args.cli, tt.args.informersCache); !reflect.DeepEqual(got, tt.want) {
+				//t.Errorf("NewManager() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// GenFakeLocalVolumeObject Create lv request
+func GenFakeLocalVolumeObject() *apisv1alpha1.LocalVolume {
+	lv := &apisv1alpha1.LocalVolume{}
+
+	TypeMeta := metav1.TypeMeta{
+		Kind:       LocalVolumeKind,
+		APIVersion: apiversion,
+	}
+
+	ObjectMata := metav1.ObjectMeta{
+		Name:              fakeLocalVolumeName,
+		ResourceVersion:   "",
+		UID:               types.UID(fakeLocalVolumeUID),
+		CreationTimestamp: metav1.Time{Time: time.Now()},
+	}
+
+	Spec := apisv1alpha1.LocalVolumeSpec{
+		RequiredCapacityBytes: fakeDiskCapacityBytes,
+		ReplicaNumber:         1,
+		PoolName:              fakeVgType,
+		Delete:                false,
+		Convertible:           true,
+		Accessibility: apisv1alpha1.AccessibilityTopology{
+			Nodes:   fakeNodenames,
+			Regions: []string{fakeRegion},
+			Zones:   []string{fakeZone},
+		},
+		Config: &apisv1alpha1.VolumeConfig{
+			Convertible:           true,
+			Initialized:           true,
+			ReadyToInitialize:     true,
+			RequiredCapacityBytes: fakeDiskCapacityBytes,
+			ResourceID:            5,
+			Version:               11,
+			VolumeName:            fakeLocalVolumeName,
+			Replicas: []apisv1alpha1.VolumeReplica{
+				{
+					Hostname: fakeNodename,
+					ID:       1,
+					IP:       fakeStorageIp,
+					Primary:  true,
+				},
+			},
+		},
+	}
+
+	lv.ObjectMeta = ObjectMata
+	lv.TypeMeta = TypeMeta
+	lv.Spec = Spec
+	lv.Status.State = apisv1alpha1.VolumeStateCreating
+	lv.Status.AllocatedCapacityBytes = fakeTotalCapacityBytes - fakeFreeCapacityBytes
+	lv.Status.PublishedNodeName = fakeNodename
+	lv.Status.Replicas = []string{fakeLocalVolumeName}
+
+	return lv
+}
+
+// GenFakeLocalVolumeObject Create lv request
+func GenFakeLocalVolumeReplicaObject() *apisv1alpha1.LocalVolumeReplica {
+	lvr := &apisv1alpha1.LocalVolumeReplica{}
+
+	TypeMeta := metav1.TypeMeta{
+		Kind:       LocalVolumeReplicaKind,
+		APIVersion: apiversion,
+	}
+
+	ObjectMata := metav1.ObjectMeta{
+		Name:              fakeLocalVolumeName,
+		Namespace:         fakeNamespace,
+		ResourceVersion:   "",
+		UID:               types.UID(fakeLocalVolumeUID),
+		CreationTimestamp: metav1.Time{Time: time.Now()},
+	}
+
+	Spec := apisv1alpha1.LocalVolumeReplicaSpec{
+		RequiredCapacityBytes: fakeDiskCapacityBytes,
+		PoolName:              fakeVgType,
+		Delete:                false,
+		VolumeName:            fakeLocalVolumeName,
+		NodeName:              fakeNodename,
+	}
+
+	lvr.ObjectMeta = ObjectMata
+	lvr.TypeMeta = TypeMeta
+	lvr.Spec = Spec
+	lvr.Status.State = apisv1alpha1.VolumeStateCreating
+	lvr.Status.AllocatedCapacityBytes = fakeTotalCapacityBytes - fakeFreeCapacityBytes
+
+	return lvr
+}
+
+func GenFakeLocalVolumeConvertObject() *apisv1alpha1.LocalVolumeConvert {
+	lvc := &apisv1alpha1.LocalVolumeConvert{}
+
+	TypeMeta := metav1.TypeMeta{
+		Kind:       LocalVolumeConvertKind,
+		APIVersion: apiversion,
+	}
+
+	ObjectMata := metav1.ObjectMeta{
+		Name:              fakeLocalVolumeConvertName,
+		ResourceVersion:   "",
+		UID:               types.UID(fakeLocalVolumeUID),
+		CreationTimestamp: metav1.Time{Time: time.Now()},
+	}
+
+	Spec := apisv1alpha1.LocalVolumeConvertSpec{
+		ReplicaNumber: 1,
+		VolumeName:    fakeLocalVolumeName,
+	}
+
+	lvc.ObjectMeta = ObjectMata
+	lvc.TypeMeta = TypeMeta
+	lvc.Spec = Spec
+
+	return lvc
+}
+
+func GenFakeLocalVolumeMigrateObject() *apisv1alpha1.LocalVolumeMigrate {
+	lvm := &apisv1alpha1.LocalVolumeMigrate{}
+
+	TypeMeta := metav1.TypeMeta{
+		Kind:       LocalVolumeMigrateKind,
+		APIVersion: apiversion,
+	}
+
+	ObjectMata := metav1.ObjectMeta{
+		Name:              fakeLocalVolumeConvertName,
+		ResourceVersion:   "",
+		UID:               types.UID(fakeLocalVolumeUID),
+		CreationTimestamp: metav1.Time{Time: time.Now()},
+	}
+
+	Spec := apisv1alpha1.LocalVolumeMigrateSpec{
+		TargetNodesNames: fakeNodenames,
+		VolumeName:       fakeLocalVolumeName,
+	}
+
+	lvm.ObjectMeta = ObjectMata
+	lvm.TypeMeta = TypeMeta
+	lvm.Spec = Spec
+
+	return lvm
+}
+
+func GenFakeLocalVolumeGroupConvertObject() *apisv1alpha1.LocalVolumeGroupConvert {
+	lvgc := &apisv1alpha1.LocalVolumeGroupConvert{}
+
+	TypeMeta := metav1.TypeMeta{
+		Kind:       LocalVolumeGroupConvertKind,
+		APIVersion: apiversion,
+	}
+
+	ObjectMata := metav1.ObjectMeta{
+		Name:              fakeLocalVolumeGroupConvertName,
+		Namespace:         fakeNamespace,
+		ResourceVersion:   "",
+		UID:               types.UID(fakeLocalVolumeUID),
+		CreationTimestamp: metav1.Time{Time: time.Now()},
+	}
+
+	Spec := apisv1alpha1.LocalVolumeGroupConvertSpec{
+		ReplicaNumber:        1,
+		LocalVolumeGroupName: fakeLocalVolumeGroupName,
+	}
+
+	lvgc.ObjectMeta = ObjectMata
+	lvgc.TypeMeta = TypeMeta
+	lvgc.Spec = Spec
+
+	return lvgc
+}
+
+func GenFakeLocalVolumeGroupMigrateObject() *apisv1alpha1.LocalVolumeGroupMigrate {
+	lvgm := &apisv1alpha1.LocalVolumeGroupMigrate{}
+
+	TypeMeta := metav1.TypeMeta{
+		Kind:       LocalVolumeGroupMigrateKind,
+		APIVersion: apiversion,
+	}
+
+	ObjectMata := metav1.ObjectMeta{
+		Name:              fakeLocalVolumeGroupMigrateName,
+		Namespace:         fakeNamespace,
+		ResourceVersion:   "",
+		UID:               types.UID(fakeLocalVolumeUID),
+		CreationTimestamp: metav1.Time{Time: time.Now()},
+	}
+
+	Spec := apisv1alpha1.LocalVolumeGroupMigrateSpec{
+		SourceNodesNames:     fakeNodenames,
+		TargetNodesNames:     fakeNodenames,
+		LocalVolumeGroupName: fakeLocalVolumeGroupName,
+	}
+
+	lvgm.ObjectMeta = ObjectMata
+	lvgm.TypeMeta = TypeMeta
+	lvgm.Spec = Spec
+
+	return lvgm
+}
+
+func GenFakePVCObject() *corev1.PersistentVolumeClaim {
+	pvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fakePersistentPvcName,
+			Namespace: fakeNamespace,
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{
+				corev1.ReadWriteOnce,
+			},
+			StorageClassName: &fakeStorageClassName,
+		},
+	}
+	return pvc
+}
+
+func GenFakePodObject() *corev1.Pod {
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fakePodName,
+			Namespace: fakeNamespace,
+		},
+		Spec: corev1.PodSpec{
+			RestartPolicy: "Never",
+			Containers: []corev1.Container{
+				{
+					Name: fakeContainerName,
+				},
+			},
+		},
+	}
+	return pod
+}
+
+func GenFakeLocalVolumeGroupObject() *apisv1alpha1.LocalVolumeGroup {
+	lvg := &apisv1alpha1.LocalVolumeGroup{}
+
+	TypeMeta := metav1.TypeMeta{
+		Kind:       LocalVolumeGroupKind,
+		APIVersion: apiversion,
+	}
+
+	ObjectMata := metav1.ObjectMeta{
+		Name:              fakeLocalVolumeGroupName,
+		Namespace:         fakeNamespace,
+		ResourceVersion:   "",
+		UID:               types.UID(fakeLocalVolumeUID),
+		CreationTimestamp: metav1.Time{Time: time.Now()},
+	}
+
+	Spec := apisv1alpha1.LocalVolumeGroupSpec{
+		Volumes:       fakeVolumes,
+		Accessibility: fakeAcesscibility,
+		Pods:          fakePods,
+	}
+
+	lvg.ObjectMeta = ObjectMata
+	lvg.TypeMeta = TypeMeta
+	lvg.Spec = Spec
+
+	return lvg
+}
+
+func GenFakeLocalStorageNodeObject() *apisv1alpha1.LocalStorageNode {
+	lsn := &apisv1alpha1.LocalStorageNode{}
+
+	TypeMeta := metav1.TypeMeta{
+		Kind:       LocalVolumeGroupKind,
+		APIVersion: apiversion,
+	}
+
+	ObjectMata := metav1.ObjectMeta{
+		Name:              fakeLocalVolumeGroupName,
+		Namespace:         fakeNamespace,
+		ResourceVersion:   "",
+		UID:               types.UID(fakeLocalVolumeUID),
+		CreationTimestamp: metav1.Time{Time: time.Now()},
+	}
+
+	Spec := apisv1alpha1.LocalStorageNodeSpec{
+		HostName:  fakeNodename,
+		StorageIP: fakeStorageIp,
+		Topo:      fakeTopo,
+	}
+
+	lsn.ObjectMeta = ObjectMata
+	lsn.TypeMeta = TypeMeta
+	lsn.Spec = Spec
+
+	return lsn
+}
+
+func GenFakeLeaseObject() *coorv1.Lease {
+	lease := &coorv1.Lease{}
+
+	TypeMeta := metav1.TypeMeta{
+		Kind:       LocalVolumeGroupKind,
+		APIVersion: apiversion,
+	}
+
+	ObjectMata := metav1.ObjectMeta{
+		Name:              fakeLocalVolumeGroupName,
+		Namespace:         fakeNamespace,
+		ResourceVersion:   "",
+		UID:               types.UID(fakeLocalVolumeUID),
+		CreationTimestamp: metav1.Time{Time: time.Now()},
+	}
+
+	Spec := coorv1.LeaseSpec{
+		HolderIdentity:       &fakeHolderIdentity,
+		LeaseDurationSeconds: &fakeLeaseDurationSeconds,
+		LeaseTransitions:     &fakeLeaseTransitions,
+	}
+
+	lease.ObjectMeta = ObjectMata
+	lease.TypeMeta = TypeMeta
+	lease.Spec = Spec
+
+	return lease
+}
+
+// CreateFakeClient Create LocalVolume resource
+func CreateFakeMgr() crmgr.Manager {
+	// Set default manager options
+	options := crmgr.Options{
+		Namespace: "", // watch all namespaces
+	}
+
+	// Get a config to talk to the apiserver
+	cfg, err := config.GetConfig()
+	if err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+
+	// Create a new manager to provide shared dependencies and start components
+	mgr, err := crmgr.New(cfg, options)
+	if err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+	return mgr
+}
+
+// CreateFakeClient Create LocalVolume resource
+func CreateFakeClient() (client.Client, *runtime.Scheme) {
+
+	lv := GenFakeLocalVolumeObject()
+	lvList := &apisv1alpha1.LocalVolumeList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       LocalVolumeKind,
+			APIVersion: apiversion,
+		},
+	}
+
+	lvc := GenFakeLocalVolumeConvertObject()
+	lvcList := &apisv1alpha1.LocalVolumeConvertList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       LocalVolumeConvertKind,
+			APIVersion: apiversion,
+		},
+	}
+
+	lvgc := GenFakeLocalVolumeGroupConvertObject()
+	lvgcList := &apisv1alpha1.LocalVolumeGroupConvertList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       LocalVolumeGroupConvertKind,
+			APIVersion: apiversion,
+		},
+	}
+
+	lvm := GenFakeLocalVolumeMigrateObject()
+	lvmList := &apisv1alpha1.LocalVolumeMigrateList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       LocalVolumeMigrateKind,
+			APIVersion: apiversion,
+		},
+	}
+
+	lvgm := GenFakeLocalVolumeGroupMigrateObject()
+	lvgmList := &apisv1alpha1.LocalVolumeGroupMigrateList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       LocalVolumeGroupMigrateKind,
+			APIVersion: apiversion,
+		},
+	}
+
+	lvr := GenFakeLocalVolumeReplicaObject()
+	lvrList := &apisv1alpha1.LocalVolumeReplicaList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       LocalVolumeReplicaKind,
+			APIVersion: apiversion,
+		},
+	}
+
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvgList := &apisv1alpha1.LocalVolumeGroupList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       LocalVolumeGroupKind,
+			APIVersion: apiversion,
+		},
+	}
+
+	lsn := GenFakeLocalStorageNodeObject()
+	lsnList := &apisv1alpha1.LocalStorageNodeList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       LocalStorageNodeKind,
+			APIVersion: apiversion,
+		},
+	}
+
+	lease := GenFakeLeaseObject()
+	leaseList := &coorv1.LeaseList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       LeaseKind,
+			APIVersion: apiversion,
+		},
+	}
+
+	s := scheme.Scheme
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lv)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvList)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvc)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvcList)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvm)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvmList)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvgc)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvgcList)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvgm)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvgmList)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvr)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvrList)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvg)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvgList)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lsn)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lsnList)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lease)
+	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, leaseList)
+	return fake.NewFakeClientWithScheme(s), s
 }
 
 func Test_manager_GetLocalVolumeGroupByLocalVolume(t *testing.T) {
-	// 创建gomock控制器，用来记录后续的操作信息
-	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
-	defer ctrl.Finish()
-
-	var ns = "test_ns"
-	var lvName = "test_lv_name"
-	var lvg = &apisv1alpha1.LocalVolumeGroup{}
-
-	m := NewMockVolumeGroupManager(ctrl)
-	m.
-		EXPECT().
-		GetLocalVolumeGroupByLocalVolume(ns, lvName).
-		Return(lvg, nil).
-		Times(1)
-
-	lvg, err := m.GetLocalVolumeGroupByLocalVolume(ns, lvName)
-	fmt.Printf("Test_manager_GetLocalVolumeGroupByLocalVolume err = %+v", err)
-	if err != nil {
-		t.Fatal()
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
 	}
-	fmt.Printf("Test_manager_GetLocalVolumeGroupByLocalVolume lvg= %+v", lvg)
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	var tmplvg = &apisv1alpha1.LocalVolumeGroup{}
+
+	type args struct {
+		ns     string
+		lvName string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *apisv1alpha1.LocalVolumeGroup
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				ns:     fakeNamespace,
+				lvName: fakeLocalVolumeName,
+			},
+			wantErr: true,
+			want:    tmplvg,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			got, err := m.GetLocalVolumeGroupByLocalVolume(tt.args.ns, tt.args.lvName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetLocalVolumeGroupByLocalVolume() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetLocalVolumeGroupByLocalVolume() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func Test_manager_GetLocalVolumeGroupByName(t *testing.T) {
-	// 创建gomock控制器，用来记录后续的操作信息
-	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
-	defer ctrl.Finish()
-
-	var ns = "test_ns"
-	var lvgName = "test_lvg_name"
-	var lvg = &apisv1alpha1.LocalVolumeGroup{}
-
-	m := NewMockVolumeGroupManager(ctrl)
-	m.
-		EXPECT().
-		GetLocalVolumeGroupByName(ns, lvgName).
-		Return(lvg, nil).
-		Times(1)
-
-	lvg, err := m.GetLocalVolumeGroupByName(ns, lvgName)
-	fmt.Printf("Test_manager_GetLocalVolumeGroupByName err = %+v", err)
-	if err != nil {
-		t.Fatal()
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
 	}
-	fmt.Printf("Test_manager_GetLocalVolumeGroupByName lvg= %+v", lvg)
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	type args struct {
+		ns      string
+		lvgName string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *apisv1alpha1.LocalVolumeGroup
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				ns:      fakeNamespace,
+				lvgName: fakeLocalVolumeGroupName,
+			},
+			wantErr: false,
+			want:    lvg,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			got, err := m.GetLocalVolumeGroupByName(tt.args.ns, tt.args.lvgName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetLocalVolumeGroupByName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got.Name, tt.want.Name) {
+				t.Errorf("GetLocalVolumeGroupByName() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func Test_manager_GetLocalVolumeGroupByPVC(t *testing.T) {
-	// 创建gomock控制器，用来记录后续的操作信息
-	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
-	defer ctrl.Finish()
-
-	var pvc_ns = "test_ns"
-	var pvc_name = "test_pvc_name"
-	var lvg = &apisv1alpha1.LocalVolumeGroup{}
-
-	m := NewMockVolumeGroupManager(ctrl)
-	m.
-		EXPECT().
-		GetLocalVolumeGroupByPVC(pvc_ns, pvc_name).
-		Return(lvg, nil).
-		Times(1)
-
-	lvg, err := m.GetLocalVolumeGroupByPVC(pvc_ns, pvc_name)
-	fmt.Printf("Test_manager_GetLocalVolumeGroupByPVC err = %+v", err)
-	if err != nil {
-		t.Fatal()
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
 	}
-	fmt.Printf("Test_manager_GetLocalVolumeGroupByPVC lvg= %+v", lvg)
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	type args struct {
+		pvcNamespace string
+		pvcName      string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *apisv1alpha1.LocalVolumeGroup
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				pvcNamespace: fakeNamespace,
+				pvcName:      fakePersistentPvcName,
+			},
+			wantErr: true,
+			want:    nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			got, err := m.GetLocalVolumeGroupByPVC(tt.args.pvcNamespace, tt.args.pvcName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetLocalVolumeGroupByPVC() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetLocalVolumeGroupByPVC() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func Test_manager_Init(t *testing.T) {
-	// 创建gomock控制器，用来记录后续的操作信息
-	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
-	defer ctrl.Finish()
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
 	var stopCh <-chan struct{}
 
-	m := NewMockVolumeGroupManager(ctrl)
-	m.
-		EXPECT().
-		Init(stopCh).
-		Return().
-		Times(1)
+	client, _ := CreateFakeClient()
 
-	m.Init(stopCh)
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	mgr := CreateFakeMgr()
+
+	type args struct {
+		stopCh <-chan struct{}
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				stopCh: stopCh,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				informersCache:            mgr.GetCache(),
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			t.Logf("Init Debug ()")
+
+			m.Init(tt.args.stopCh)
+		})
+	}
 }
 
 func Test_manager_ReconcileVolumeGroup(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
 
-	var lvg = &apisv1alpha1.LocalVolumeGroup{}
-	lvg.Name = "test_lvg_name"
-	lvg.Namespace = "test_lvg_ns"
-	lvg.Spec.Accessibility.Nodes = []string{"node1"}
-	lvg.Spec.Pods = []string{"pod1"}
-	lvg.Spec.Volumes = []apisv1alpha1.VolumeInfo{{LocalVolumeName: "local-volume-test1", PersistentVolumeClaimName: "pvc-test1"}}
+	client, _ := CreateFakeClient()
 
-	// 创建gomock控制器，用来记录后续的操作信息
-	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
-	defer ctrl.Finish()
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
 
-	m := NewMockVolumeGroupManager(ctrl)
-	m.
-		EXPECT().
-		ReconcileVolumeGroup(lvg).
-		Return().
-		Times(1)
+	type args struct {
+		lvg *apisv1alpha1.LocalVolumeGroup
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				lvg: lvg,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.ReconcileVolumeGroup(tt.args.lvg)
+		})
+	}
+}
 
-	m.ReconcileVolumeGroup(lvg)
+func Test_manager_addLocalVolume(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	mgr := CreateFakeMgr()
+
+	lv := GenFakeLocalVolumeObject()
+
+	type args struct {
+		lv *apisv1alpha1.LocalVolume
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				lv: lv,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				informersCache:            mgr.GetCache(),
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			if err := m.addLocalVolume(tt.args.lv); (err != nil) != tt.wantErr {
+				t.Errorf("addLocalVolume() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_manager_addLocalVolumeGroup(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	type args struct {
+		lvg *apisv1alpha1.LocalVolumeGroup
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				lvg: lvg,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			if err := m.addLocalVolumeGroup(tt.args.lvg); (err != nil) != tt.wantErr {
+				t.Errorf("addLocalVolumeGroup() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_manager_addPVC(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		pvc *corev1.PersistentVolumeClaim
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	pvc := GenFakePVCObject()
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				pvc: pvc,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			if err := m.addPVC(tt.args.pvc); (err != nil) != tt.wantErr {
+				t.Errorf("addPVC() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_manager_addPod(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		pod *corev1.Pod
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	pod := GenFakePodObject()
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				pod: pod,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			if err := m.addPod(tt.args.pod); (err != nil) != tt.wantErr {
+				t.Errorf("addPod() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_manager_cleanCacheForLocalVolume(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		name string
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				name: fakeLocalVolumeName,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.cleanCacheForLocalVolume(tt.args.name)
+		})
+	}
+}
+
+func Test_manager_cleanCacheForLocalVolumeGroup(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		name string
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				name: fakeLocalVolumeGroupName,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.cleanCacheForLocalVolumeGroup(tt.args.name)
+		})
+	}
+}
+
+func Test_manager_cleanCacheForPVC(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		namespace string
+		name      string
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				namespace: fakeNamespace,
+				name:      fakePersistentPvcName,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.cleanCacheForPVC(tt.args.namespace, tt.args.name)
+		})
+	}
+}
+
+func Test_manager_debug(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				apiClient:                 tt.fields.apiClient,
+				informersCache:            tt.fields.informersCache,
+				logger:                    tt.fields.logger,
+				nameSpace:                 tt.fields.nameSpace,
+				lock:                      tt.fields.lock,
+				localVolumeGroupQueue:     tt.fields.localVolumeGroupQueue,
+				localVolumeQueue:          tt.fields.localVolumeQueue,
+				pvcQueue:                  tt.fields.pvcQueue,
+				podQueue:                  tt.fields.podQueue,
+				localVolumeToVolumeGroups: tt.fields.localVolumeToVolumeGroups,
+				pvcToVolumeGroups:         tt.fields.pvcToVolumeGroups,
+				podToVolumeGroups:         tt.fields.podToVolumeGroups,
+			}
+			m.debug()
+		})
+	}
+}
+
+func Test_manager_cleanCacheForPod(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		namespace string
+		name      string
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				namespace: fakeNamespace,
+				name:      fakePodName,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.cleanCacheForPod(tt.args.namespace, tt.args.name)
+		})
+	}
+}
+
+func Test_manager_deleteLocalVolume(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		lvName string
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				lvName: fakeLocalVolumeName,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			if err := m.deleteLocalVolume(tt.args.lvName); (err != nil) != tt.wantErr {
+				t.Errorf("deleteLocalVolume() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_manager_deleteLocalVolumeGroup(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		lvg *apisv1alpha1.LocalVolumeGroup
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				lvg: lvg,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			if err := m.deleteLocalVolumeGroup(tt.args.lvg); (err != nil) != tt.wantErr {
+				t.Errorf("deleteLocalVolumeGroup() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_manager_deletePVC(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		namespace string
+		name      string
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				namespace: fakeNamespace,
+				name:      fakePersistentPvcName,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			if err := m.deletePVC(tt.args.namespace, tt.args.name); (err != nil) != tt.wantErr {
+				t.Errorf("deletePVC() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_manager_deletePod(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		namespace string
+		name      string
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				namespace: fakeNamespace,
+				name:      fakePodName,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			if err := m.deletePod(tt.args.namespace, tt.args.name); (err != nil) != tt.wantErr {
+				t.Errorf("deletePod() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_manager_handleLocalVolumeEventAdd(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		obj interface{}
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				obj: GenFakeLocalVolumeObject(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.handleLocalVolumeEventAdd(tt.args.obj)
+		})
+	}
+}
+
+func Test_manager_handleLocalVolumeEventDelete(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		obj interface{}
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				obj: GenFakeLocalVolumeObject(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.handleLocalVolumeEventDelete(tt.args.obj)
+		})
+	}
+}
+
+func Test_manager_handleLocalVolumeEventUpdate(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		oldObj interface{}
+		newObj interface{}
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				oldObj: GenFakeLocalVolumeObject(),
+				newObj: GenFakeLocalVolumeObject(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.handleLocalVolumeEventUpdate(tt.args.oldObj, tt.args.newObj)
+		})
+	}
+}
+
+func Test_manager_handlePVCEventAdd(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		obj interface{}
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				obj: GenFakePVCObject(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.handlePVCEventAdd(tt.args.obj)
+		})
+	}
+}
+
+func Test_manager_handlePVCEventDelete(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		obj interface{}
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				obj: GenFakePVCObject(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.handlePVCEventDelete(tt.args.obj)
+		})
+	}
+}
+
+func Test_manager_handlePodEventAdd(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		obj interface{}
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				obj: GenFakePodObject(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.handlePodEventAdd(tt.args.obj)
+		})
+	}
+}
+
+func Test_manager_handlePodEventDelete(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		obj interface{}
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				obj: GenFakePodObject(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.handlePodEventDelete(tt.args.obj)
+		})
+	}
+}
+
+func Test_manager_isHwameiStorPVC(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		pvc *corev1.PersistentVolumeClaim
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				pvc: GenFakePVCObject(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			if got := m.isHwameiStorPVC(tt.args.pvc); got != tt.want {
+				t.Errorf("isHwameiStorPVC() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_manager_isHwameiStorPod(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		pod *corev1.Pod
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				pod: GenFakePodObject(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			if got := m.isHwameiStorPod(tt.args.pod); got != tt.want {
+				t.Errorf("isHwameiStorPod() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_manager_processLocalVolume(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		lvName string
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				lvName: fakeLocalVolumeName,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			if err := m.processLocalVolume(tt.args.lvName); (err != nil) != tt.wantErr {
+				t.Errorf("processLocalVolume() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_manager_processLocalVolumeGroup(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		lvgNamespacedName string
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				lvgNamespacedName: fakeLocalVolumeGroupName,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			if err := m.processLocalVolumeGroup(tt.args.lvgNamespacedName); (err != nil) != tt.wantErr {
+				t.Errorf("processLocalVolumeGroup() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_manager_processPVC(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		nn string
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				nn: fakeNamespace + "/" + fakePersistentPvcName,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			if err := m.processPVC(tt.args.nn); (err != nil) != tt.wantErr {
+				t.Errorf("processPVC() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_manager_processPod(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		nn string
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				nn: fakeNamespace + "/" + fakePodName,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			if err := m.processPod(tt.args.nn); (err != nil) != tt.wantErr {
+				t.Errorf("processPod() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_manager_releaseLocalVolumeGroup(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		lvg *apisv1alpha1.LocalVolumeGroup
+	}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			args: args{
+				lvg: lvg,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			if err := m.releaseLocalVolumeGroup(tt.args.lvg); (err != nil) != tt.wantErr {
+				t.Errorf("releaseLocalVolumeGroup() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_manager_startLocalVolumeGroupWorker(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		stopCh <-chan struct{}
+	}
+	//var stopCh <-chan struct{}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		//{
+		//	args: args{
+		//		stopCh: stopCh,
+		//	},
+		//},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.startLocalVolumeGroupWorker(tt.args.stopCh)
+		})
+	}
+}
+
+func Test_manager_startLocalVolumeWorker(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		stopCh <-chan struct{}
+	}
+
+	//var stopCh <-chan struct{}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		//{
+		//	args: args{
+		//		stopCh: stopCh,
+		//	},
+		//},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.startLocalVolumeWorker(tt.args.stopCh)
+		})
+	}
+}
+
+func Test_manager_startPVCWorker(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		stopCh <-chan struct{}
+	}
+
+	//var stopCh <-chan struct{}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		//{
+		//	args: args{
+		//		stopCh: stopCh,
+		//	},
+		//},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.startPVCWorker(tt.args.stopCh)
+		})
+	}
+}
+
+func Test_manager_startPodWorker(t *testing.T) {
+	type fields struct {
+		apiClient                 client.Client
+		informersCache            cache.Cache
+		logger                    *log.Entry
+		nameSpace                 string
+		lock                      sync.Mutex
+		localVolumeGroupQueue     *common.TaskQueue
+		localVolumeQueue          *common.TaskQueue
+		pvcQueue                  *common.TaskQueue
+		podQueue                  *common.TaskQueue
+		localVolumeToVolumeGroups map[string]string
+		pvcToVolumeGroups         map[string]string
+		podToVolumeGroups         map[string]string
+	}
+	type args struct {
+		stopCh <-chan struct{}
+	}
+
+	//var stopCh <-chan struct{}
+
+	client, _ := CreateFakeClient()
+
+	// Create LocalVolumeGroup
+	lvg := GenFakeLocalVolumeGroupObject()
+	lvg.Name = fakeLocalVolumeGroupName
+	lvg.Namespace = fakeNamespace
+	err := client.Create(context.Background(), lvg)
+	if err != nil {
+		t.Errorf("Create LocalVolumeGroup fail %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		//{
+		//	args: args{
+		//		stopCh: stopCh,
+		//	},
+		//},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 client,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.startPodWorker(tt.args.stopCh)
+		})
+	}
 }
 
 func Test_namespacedName(t *testing.T) {
@@ -143,6 +2893,13 @@ func Test_namespacedName(t *testing.T) {
 		want string
 	}{
 		// TODO: Add test cases.
+		{
+			args: args{
+				namespace: fakeNamespace,
+				name:      fakeName,
+			},
+			want: fakeNamespace + "/" + fakeName,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -164,6 +2921,13 @@ func Test_parseNamespacedName(t *testing.T) {
 		want1 string
 	}{
 		// TODO: Add test cases.
+		{
+			args: args{
+				nn: fakeNamespace + "/" + fakeName,
+			},
+			want:  fakeNamespace,
+			want1: fakeName,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
