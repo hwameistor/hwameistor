@@ -97,6 +97,10 @@ In a resource-strained test environment, setting the above-mentioned values woul
 
 To enable provisioning HA volumes, DRBD must be installed:
 
+:::caution
+Please refer to [**Prerequisites**](./prereq.md) for environmental requirements.
+:::
+
 ```console
 $ helm pull hwameistor/drbd-adapter --untar
 
