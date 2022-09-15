@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("test convertible localstorage volume ", ginkgo.Label("periodCheck"), ginkgo.Label("pr-e2e"), func() {
+var _ = ginkgo.Describe("test convertible localstorage volume ", ginkgo.Label("periodCheck"), func() {
 
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
@@ -350,6 +350,49 @@ var _ = ginkgo.Describe("test convertible localstorage volume ", ginkgo.Label("p
 			}
 			gomega.Expect(err).To(gomega.BeNil())
 
+		})
+		ginkgo.It("check test file", func() {
+			config, err := config.GetConfig()
+			if err != nil {
+				return
+			}
+
+			deployment := &appsv1.Deployment{}
+			deployKey := k8sclient.ObjectKey{
+				Name:      HaDeploymentName,
+				Namespace: "default",
+			}
+			err = client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
+			selector := labels.NewSelector()
+			selector = selector.Add(*apps)
+			listOption := k8sclient.ListOptions{
+				LabelSelector: selector,
+			}
+			podlist := &v1.PodList{}
+			err = client.List(ctx, podlist, &listOption)
+
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			containers := deployment.Spec.Template.Spec.Containers
+			for _, pod := range podlist.Items {
+				for _, container := range containers {
+					output, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
+					if err != nil {
+						logrus.Printf("%+v ", err)
+						f.ExpectNoError(err)
+					}
+					gomega.Expect(output).To(gomega.Equal("it-is-a-test"))
+				}
+			}
 		})
 		ginkgo.It("Delete test data", func() {
 			config, err := config.GetConfig()
