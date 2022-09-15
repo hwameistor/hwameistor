@@ -30,7 +30,7 @@ var _ = ginkgo.Describe("test LocalVolumeGroupConvert ", ginkgo.Label("test"), f
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
 		result := configureEnvironment(ctx)
-		gomega.Expect(result).To(gomega.Equal(true))
+		gomega.Expect(result).To(gomega.BeNil())
 		createLdc(ctx)
 
 	})

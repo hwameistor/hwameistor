@@ -27,7 +27,7 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("test"), func() {
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
 		result := configureEnvironment(ctx)
-		gomega.Expect(result).To(gomega.Equal(true))
+		gomega.Expect(result).To(gomega.BeNil())
 		createLdc(ctx)
 	})
 	ginkgo.Context("create a HA-StorageClass", func() {

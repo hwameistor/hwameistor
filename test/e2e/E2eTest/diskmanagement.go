@@ -18,7 +18,9 @@ var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("periodCheck"), 
 	ctx := context.TODO()
 	ginkgo.Context("test Local Disk", func() {
 		ginkgo.It("Configure the base environment", func() {
-			configureEnvironment(ctx)
+			result := configureEnvironment(ctx)
+			gomega.Expect(result).To(gomega.BeNil())
+
 		})
 		ginkgo.It("Check existed Local Disk", func() {
 			time.Sleep(2 * time.Minute)

@@ -29,7 +29,7 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
 		result := configureEnvironment(ctx)
-		gomega.Expect(result).To(gomega.Equal(true))
+		gomega.Expect(result).To(gomega.BeNil())
 		createLdc(ctx)
 	})
 	ginkgo.Context("create a HA-StorageClass", func() {

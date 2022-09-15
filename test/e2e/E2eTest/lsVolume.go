@@ -23,17 +23,18 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("pr"), ginkgo.Label("periodCheck"), func() {
+var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("periodCheck"), func() {
 
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
 		result := configureEnvironment(ctx)
-		gomega.Expect(result).To(gomega.Equal(true))
+		gomega.Expect(result).To(gomega.BeNil())
 		createLdc(ctx)
 
 	})
+
 	ginkgo.Context("create a StorageClass", func() {
 		ginkgo.It("create a sc", func() {
 			//create sc
