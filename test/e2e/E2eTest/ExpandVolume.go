@@ -271,7 +271,6 @@ var _ = ginkgo.Describe("test localstorage expand volume", ginkgo.Label("periodC
 			storageMap[apiv1.ResourceStorage] = resource.MustParse("2Gi")
 			pvc.Spec.Resources.Requests = storageMap
 			err = client.Update(ctx, pvc)
-
 			pvc = &apiv1.PersistentVolumeClaim{}
 			pvcKey = k8sclient.ObjectKey{
 				Name:      "pvc-lvm",
@@ -282,10 +281,10 @@ var _ = ginkgo.Describe("test localstorage expand volume", ginkgo.Label("periodC
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
-
+			logrus.Infof(pvc.Status.Capacity.Storage().String())
 			logrus.Infof("Waiting for the PVC to be bound")
 			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
-				if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Phase != apiv1.ClaimBound {
+				if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Capacity.Storage().String() != "2Gi" {
 					return false, nil
 				}
 				return true, nil
