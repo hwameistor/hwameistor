@@ -186,13 +186,30 @@ func (m *drbdConfigure) ApplyConfig(replica *apisv1alpha1.LocalVolumeReplica, co
 	}
 
 	// check if disk attached, only check/create metadata when disk unattached
-	if dstate, err := m.getResourceDiskState(conf.ResourceName); err != nil || dstate == DiskStateDiskless {
-		//m.logger.Debugf("get %s disk state: %s, err: %s", dstate, err)
-		fmt.Printf("get %s disk state: %s, err: %s", conf.ResourceName, dstate, err)
+	if dstate, err := m.getResourceDiskState(conf.ResourceName); err != nil || dstate == DiskStateDiskless ||
+		strings.Contains(dstate, "No such device") {
+		m.logger.Debugf("get %s disk state: %s, err: %s", conf.ResourceName, dstate, err)
 
 		// check metadata
-		if !m.hasMetadata(conf.Minor, conf.DevicePath) {
-			// create metadata
+		needCreateMetadata := true
+		if m.hasMetadata(conf.Minor, conf.DevicePath) {
+			needCreateMetadata = false
+			nodeID := m.getNodeID(config)
+			// validate metadata by node id
+			if !m.validateMetadata(conf.ResourceName, nodeID) {
+				m.logger.WithFields(log.Fields{
+					"device":       conf.DevicePath,
+					"minor":        conf.Minor,
+					"resourceName": conf.ResourceName,
+					"nodeID":       nodeID,
+				}).Debug("found invalidate metadata")
+				needCreateMetadata = true
+			}
+		}
+
+		// create metadata
+		if needCreateMetadata {
+			m.logger.WithField("resourceName", conf.ResourceName).Debug("create metadata for resource")
 			if err = m.createMetadata(conf.ResourceName, drbdMaxPeerCount); err != nil {
 				return fmt.Errorf("create replica metadata err: %s", err)
 			}
@@ -668,6 +685,31 @@ func (m *drbdConfigure) hasMetadata(minor int, devicePath string) bool {
 	return result.ExitCode == 0
 }
 
+func (m *drbdConfigure) dumpMetadata(resourceName string, force bool) (string, error) {
+	params := exechelper.ExecParams{
+		CmdName: drbdadmCmd,
+		CmdArgs: []string{"dump-md", resourceName},
+		Timeout: 0,
+	}
+
+	if force {
+		params.CmdArgs = append(params.CmdArgs, "--force")
+	}
+
+	result := m.cmdExec.RunCommand(params)
+	return result.OutBuf.String(), result.Error
+}
+
+func (m *drbdConfigure) validateMetadata(resourceName string, nodeID int) bool {
+	dumpMetadata, err := m.dumpMetadata(resourceName, true)
+	if err != nil {
+		m.logger.WithFields(log.Fields{"resourceName": resourceName, "nodeID": nodeID}).Debug("failed to dump-md")
+		return false
+	}
+
+	return strings.IndexAny(dumpMetadata, fmt.Sprintf("node-id: %d", nodeID)) == -1
+}
+
 func (m *drbdConfigure) config2DRBDConfig(replica *apisv1alpha1.LocalVolumeReplica, config apisv1alpha1.VolumeConfig) drbdConfig {
 	port := config.ResourceID + m.systemConfig.DRBD.StartPort
 	return drbdConfig{
@@ -802,4 +844,14 @@ func (m *drbdConfigure) isPrimary(config apisv1alpha1.VolumeConfig) bool {
 	}
 
 	return false
+}
+
+func (m *drbdConfigure) getNodeID(config apisv1alpha1.VolumeConfig) int {
+	for _, peer := range config.Replicas {
+		if peer.Hostname == m.hostname {
+			return peer.ID
+		}
+	}
+
+	return -1
 }
