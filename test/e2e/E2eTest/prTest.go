@@ -22,7 +22,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("pr-e2e"), ginkgo.Ordered, func() {
+var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Ordered, func() {
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()

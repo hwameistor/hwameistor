@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("test convertible localstorage volume ", ginkgo.Label("periodCheck"), func() {
+var _ = ginkgo.Describe("test convertible localstorage volume ", ginkgo.Label("periodCheck"), ginkgo.Label("pr-e2e"), func() {
 
 	f := framework.NewDefaultFramework(ldapis.AddToScheme)
 	client := f.GetClient()
