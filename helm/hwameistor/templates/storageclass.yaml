@@ -11,7 +11,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   annotations:
-    storageClass.kubernetes.io/is-default-class: {{ .Values.storageClass.default | quote }}
+    storageclass.kubernetes.io/is-default-class: {{ .Values.storageClass.default | quote }}
   name: hwameistor-storage-lvm-{{ .Values.storageClass.diskType | lower}}
 provisioner: lvm.hwameistor.io
 volumeBindingMode: WaitForFirstConsumer
