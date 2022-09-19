@@ -48,6 +48,18 @@ $ apt-get install -y lvm2
 $ apt-get install -y linux-headers-$(uname -r)
 ```
 
+### Secure Boot
+
+The HA feature does not yet support `Secure Boot`. Make sure `Secure Boot` is `disabled`：
+
+```console
+$ mokutil --sb-state
+SecureBoot disabled
+
+$ dmesg | grep secureboot
+[    0.000000] secureboot: Secure boot disabled
+```
+
 ### Data Disk
 
 HwameiStor supports `HDD`, `SSD` and `NVMe`.

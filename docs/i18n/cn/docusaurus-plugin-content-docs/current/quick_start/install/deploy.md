@@ -96,7 +96,11 @@ $ helm install hwameistor ./hwameistor \
 
 ## [可选] 安装 DRBD
 
-如果要启用高可用卷, 必须安装 DRBD
+如果要启用高可用卷, 必须安装 DRBD:
+
+:::caution
+请注意 [**准备工作**](./prereq.md) 里的环境要求
+:::
 
 ```console
 $ helm pull hwameistor/drbd9-adapter --untar

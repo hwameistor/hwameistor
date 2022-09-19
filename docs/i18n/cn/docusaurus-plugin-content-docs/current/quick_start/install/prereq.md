@@ -48,6 +48,18 @@ $ apt-get install -y lvm2
 $ apt-get install -y linux-headers-$(uname -r)
 ```
 
+### Secure Boot
+
+高可用功能暂时不支持 `Secure Boot`, 确认 `Secure Boot` 是 `disabled` 状态：
+
+```console
+$ mokutil --sb-state
+SecureBoot disabled
+
+$ dmesg | grep secureboot
+[    0.000000] secureboot: Secure boot disabled
+```
+
 ### 数据盘
 
 HwameiStor 支持物理硬盘(HDD)、固态硬盘(SSD) 和 NVMe 闪存盘.
