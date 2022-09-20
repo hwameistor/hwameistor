@@ -97,7 +97,7 @@ func installHwameiStorByHelm() {
 func configureEnvironment(ctx context.Context) error {
 	logrus.Info("start rollback")
 	_ = runInLinux("sh rollback.sh")
-	err := wait.PollImmediate(10*time.Second, 10*time.Minute, func() (done bool, err error) {
+	err := wait.PollImmediate(10*time.Second, 20*time.Minute, func() (done bool, err error) {
 		output := runInLinux("kubectl get pod -A  |grep -v Running |wc -l")
 		if output != "1\n" {
 			return false, nil
@@ -164,7 +164,7 @@ func configureEnvironment(ctx context.Context) error {
 
 	logrus.Infof("waiting for drbd ready")
 
-	err = wait.PollImmediate(3*time.Second, 10*time.Minute, func() (done bool, err error) {
+	err = wait.PollImmediate(3*time.Second, 15*time.Minute, func() (done bool, err error) {
 		err1 := client.Get(ctx, drbdKey1, drbd1)
 		err2 := client.Get(ctx, drbdKey2, drbd2)
 
@@ -176,7 +176,7 @@ func configureEnvironment(ctx context.Context) error {
 
 	logrus.Infof("waiting for hwamei ready")
 
-	err = wait.PollImmediate(3*time.Second, 10*time.Minute, func() (done bool, err error) {
+	err = wait.PollImmediate(3*time.Second, 15*time.Minute, func() (done bool, err error) {
 		err = client.Get(ctx, localStorageKey, localStorage)
 		if err != nil {
 			logrus.Error(" localStorage error ", err)
