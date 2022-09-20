@@ -98,6 +98,7 @@ func (ctr Controller) mergerLocalDisk(oldLd ldm.LocalDisk, newLd *ldm.LocalDisk)
 	newLd.Status = oldLd.Status
 	newLd.TypeMeta = oldLd.TypeMeta
 	newLd.ObjectMeta = oldLd.ObjectMeta
+	newLd.Spec.ClaimRef = oldLd.Spec.ClaimRef
 }
 
 func (ctr Controller) GenLocalDiskName(disk manager.DiskInfo) string {
