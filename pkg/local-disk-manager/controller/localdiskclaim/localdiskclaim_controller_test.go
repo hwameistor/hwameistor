@@ -141,6 +141,71 @@ func TestReconcileLocalDiskClaim_Reconcile(t *testing.T) {
 	r.CheckLocalDiskClaimIsBound(t, claim, true)
 }
 
+func TestReconcileDiskClaim_Reconcile_WhenDiskBoundAlready(t *testing.T) {
+	cli, s := CreateFakeClient()
+	// Create a Reconcile for LocalDiskClaim
+	r := ReconcileLocalDiskClaim{
+		Client:   cli,
+		Scheme:   s,
+		Recorder: fakeRecorder,
+	}
+
+	// Create LocalDisk
+	disk := GenFakeLocalDiskObject()
+	err := r.Create(context.Background(), disk)
+	if err != nil {
+		t.Errorf("Create LocalDisk fail %v", err)
+	}
+	defer r.DeleteFakeLocalDisk(t, disk)
+
+	// Create LocalDiskClaim
+	claim := GenFakeLocalDiskClaimObject()
+	err = r.Create(context.Background(), claim)
+	if err != nil {
+		t.Errorf("Create LocalDiskClaim fail %v", err)
+	}
+	defer r.DeleteFakeLocalDiskClaim(t, claim)
+
+	// Mock LocalDiskClaim request
+	req := reconcile.Request{NamespacedName: types.NamespacedName{Namespace: claim.GetNamespace(), Name: claim.GetName()}}
+	_, err = r.Reconcile(req)
+	if err != nil {
+		t.Errorf("Reconcile fail %v", err)
+	}
+
+	// Update claim
+	err = r.Get(context.Background(), req.NamespacedName, claim)
+	if err != nil {
+		t.Errorf("Get disk claim fail %v", err)
+	}
+
+	// Checkout claim status, it should be bound
+	r.CheckLocalDiskClaimIsBound(t, claim, true)
+
+	// KEY_TEST: Set claim diskRef empty and status empty
+	claim.Status.Status = ldmv1alpha1.DiskClaimStatusEmpty
+	claim.Spec.DiskRefs = nil
+	err = r.Update(context.Background(), claim)
+	if err != nil {
+		t.Errorf("Update disk claim fail %v", err)
+	}
+
+	// Mock LocalDiskClaim request again
+	_, err = r.Reconcile(req)
+	if err != nil {
+		t.Errorf("Reconcile fail %v", err)
+	}
+
+	// Update claim
+	err = r.Get(context.Background(), req.NamespacedName, claim)
+	if err != nil {
+		t.Errorf("Get disk claim fail %v", err)
+	}
+
+	// Checkout claim status, it should be bound
+	r.CheckLocalDiskClaimIsBound(t, claim, true)
+}
+
 // CheckLocalDiskClaimIsBound
 func (r *ReconcileLocalDiskClaim) CheckLocalDiskClaimIsBound(t *testing.T,
 	claim *ldmv1alpha1.LocalDiskClaim, wantBound bool) {

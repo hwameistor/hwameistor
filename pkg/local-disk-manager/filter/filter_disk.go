@@ -110,6 +110,18 @@ func (ld *LocalDiskFilter) NoPartition() *LocalDiskFilter {
 	return ld
 }
 
+// HasBoundWith indicates disk has already bound with the claim
+// https://github.com/hwameistor/hwameistor/issues/315
+func (ld *LocalDiskFilter) HasBoundWith(claimName string) bool {
+	if ld.LocalDisk.Spec.ClaimRef != nil {
+		if ld.LocalDisk.Spec.ClaimRef.Name == claimName {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Capacity
 func (ld *LocalDiskFilter) GetTotalResult() bool {
 	return ld.Result == TRUE
