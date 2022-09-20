@@ -141,6 +141,12 @@ func (ldHandler *LocalDiskHandler) ClaimRef() *v1.ObjectReference {
 
 // FilterDisk
 func (ldHandler *LocalDiskHandler) FilterDisk(ldc ldm.LocalDiskClaim) bool {
+	// Bounded disk
+	if ldHandler.filter.HasBoundWith(ldc.GetName()) {
+		return true
+	}
+
+	// Unbound disk
 	return ldHandler.filter.
 		Init().
 		Unclaimed().

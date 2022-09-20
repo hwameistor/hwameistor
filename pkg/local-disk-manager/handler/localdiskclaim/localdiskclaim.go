@@ -140,7 +140,17 @@ func (ldcHandler *LocalDiskClaimHandler) BoundWith(ld ldmv1alpha1.LocalDisk) err
 		return err
 	}
 
-	ldcHandler.ldc.Spec.DiskRefs = append(ldcHandler.ldc.Spec.DiskRefs, ldRef)
+	// check if this disk has already bound
+	needBound := true
+	for _, boundDisk := range ldcHandler.ldc.Spec.DiskRefs {
+		if boundDisk.Name == ld.GetName() {
+			needBound = false
+		}
+	}
+	if needBound {
+		ldcHandler.ldc.Spec.DiskRefs = append(ldcHandler.ldc.Spec.DiskRefs, ldRef)
+	}
+
 	ldcHandler.ldc.Status.Status = ldmv1alpha1.LocalDiskClaimStatusBound
 
 	ldcHandler.EventRecorder.Eventf(&ldcHandler.ldc, v1.EventTypeNormal, "BoundLocalDisk", "Bound disk %v", ld.Name)
