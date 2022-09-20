@@ -359,7 +359,7 @@ var _ = ginkgo.Describe("test convertible localstorage volume ", ginkgo.Label("p
 
 			deployment := &appsv1.Deployment{}
 			deployKey := k8sclient.ObjectKey{
-				Name:      HaDeploymentName,
+				Name:      DeploymentName,
 				Namespace: "default",
 			}
 			err = client.Get(ctx, deployKey, deployment)
