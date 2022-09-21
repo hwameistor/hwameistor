@@ -9,7 +9,7 @@ entries:
     name: drbd-adapter
     type: application
     urls:
-      - https://github.com/hwameistor/drbd-adapter/releases/download/0.3.3/drbd-adapter-0.3.3.tgz
+    - https://github.com/hwameistor/drbd-adapter/releases/download/0.3.3/drbd-adapter-0.3.3.tgz
     version: 0.3.3
   - apiVersion: v2
     appVersion: 9.0.32
@@ -19,7 +19,7 @@ entries:
     name: drbd-adapter
     type: application
     urls:
-      - https://github.com/hwameistor/drbd-adapter/releases/download/0.3.1/drbd-adapter-0.3.1.tgz
+    - https://github.com/hwameistor/drbd-adapter/releases/download/0.3.1/drbd-adapter-0.3.1.tgz
     version: 0.3.1
   - apiVersion: v2
     appVersion: 9.0.32
@@ -29,7 +29,7 @@ entries:
     name: drbd-adapter
     type: application
     urls:
-      - https://github.com/hwameistor/drbd-adapter/releases/download/0.3.0/drbd-adapter-0.3.0.tgz
+    - https://github.com/hwameistor/drbd-adapter/releases/download/0.3.0/drbd-adapter-0.3.0.tgz
     version: 0.3.0
   - apiVersion: v2
     appVersion: 9.0.32
@@ -39,7 +39,7 @@ entries:
     name: drbd-adapter
     type: application
     urls:
-      - https://github.com/hwameistor/drbd-adapter/releases/download/0.2.0/drbd-adapter-0.2.0.tgz
+    - https://github.com/hwameistor/drbd-adapter/releases/download/0.2.0/drbd-adapter-0.2.0.tgz
     version: 0.2.0
   - apiVersion: v2
     appVersion: 9.1.10
@@ -92,6 +92,16 @@ entries:
     - https://github.com/hwameistor/drbd-adapter/releases/download/0.1.0/drbd-adapter-0.1.0.tgz
     version: 0.1.0
   hwameistor:
+  - apiVersion: v2
+    appVersion: v0.3.7-rc.0
+    created: "2022-09-21T02:31:28.835991224Z"
+    description: the HwameiStor local storage
+    digest: 5c994202fbfef61aabab289562afae52e60e94f5b55dac3ff0db47717f5bd452
+    name: hwameistor
+    type: application
+    urls:
+    - https://github.com/hwameistor/hwameistor/releases/download/v0.3.7-rc.0/hwameistor-v0.3.7-rc.0.tgz
+    version: v0.3.7-rc.0
   - apiVersion: v2
     appVersion: v0.3.6
     created: "2022-09-07T08:50:15.925038932Z"
@@ -365,4 +375,4 @@ entries:
     urls:
     - https://github.com/hwameistor/helm-charts/releases/download/hwameistor-0.2.3/hwameistor-0.2.3.tgz
     version: 0.2.3
-generated: "2022-09-07T08:50:15.925304433Z"
+generated: "2022-09-21T02:31:28.836451427Z"
