@@ -146,7 +146,7 @@ func (m *manager) createVolumeReplica(vol *apisv1alpha1.LocalVolume) error {
 				PoolName:              vol.Spec.PoolName,
 				RequiredCapacityBytes: vol.Spec.RequiredCapacityBytes,
 				NodeName:              m.name,
-				VolumeMigratedName:    srcVolumeName,
+				//VolumeMigratedName:    srcVolumeName,
 			},
 		}
 	}
