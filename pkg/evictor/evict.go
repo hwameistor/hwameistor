@@ -15,7 +15,6 @@ import (
 	localstorageapis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/common"
 
-	kutils "github.com/hwameistor/hwameistor/pkg/utils/kubernetes"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,23 +61,16 @@ type evictor struct {
 */
 
 // New an assistant instance
-func New(storageServerEP string, failoverCoolDownDuration time.Duration) Evictor {
+func New(clientset *kubernetes.Clientset) Evictor {
 	return &evictor{
+		clientset:          clientset,
 		evictedPodQueue:    *common.NewTaskQueue("EvictedPods", 0),
 		migrateVolumeQueue: *common.NewTaskQueue("MigrateVolumes", 0),
 	}
 }
 
 func (ev *evictor) Run(stopCh <-chan struct{}) error {
-	clientset, err := kutils.NewClientSet()
-	if err != nil {
-		log.WithError(err).Error("Failed to build cluster clientset")
-		return err
-	}
-
-	// Initialize the Kubernetes cluster resources
-	ev.clientset = clientset
-	factory := informers.NewSharedInformerFactory(clientset, 0)
+	factory := informers.NewSharedInformerFactory(ev.clientset, 0)
 
 	ev.podInformer = factory.Core().V1().Pods()
 	ev.podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -99,7 +91,7 @@ func (ev *evictor) Run(stopCh <-chan struct{}) error {
 	}
 
 	// Initialize HwameiStor LocalStorage resources
-	ev.lsClientset = localstorageclientset.New(clientset.RESTClient())
+	ev.lsClientset = localstorageclientset.New(ev.clientset.RESTClient())
 	lsFactory := localstorageinformers.NewSharedInformerFactory(ev.lsClientset, 0)
 	ev.lvLister = lsFactory.Hwameistor().V1alpha1().LocalVolumes().Lister()
 
