@@ -15,14 +15,17 @@ SCHEDULER_BUILD_INPUT = ${CMDS_DIR}/${SCHEDULER_MODULE_NAME}/scheduler.go
 ADMISSION_MODULE_NAME = admission
 ADMISSION_BUILD_INPUT = ${CMDS_DIR}/${ADMISSION_MODULE_NAME}/admission.go
 
+EVICTOR_MODULE_NAME = evictor
+EVICTOR_BUILD_INPUT = ${CMDS_DIR}/${EVICTOR_MODULE_NAME}/main.go
+
 .PHONY: compile
-compile: compile_ldm compile_ls compile_scheduler compile_admission
+compile: compile_ldm compile_ls compile_scheduler compile_admission compile_evictor
 
 .PHONY: image
-image: build_ldm_image build_ls_image build_scheduler_image build_admission_image
+image: build_ldm_image build_ls_image build_scheduler_image build_admission_image build_evictor_image
 
 .PHONY: release
-release: release_ldm release_ls release_scheduler release_admission
+release: release_ldm release_ls release_scheduler release_admission release_evictor
 
 .PHONY: unit-test
 unit-test:
@@ -78,6 +81,17 @@ release_admission:
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} ${ADMISSION_IMAGE_NAME}:${RELEASE_TAG}
 
+.PHONY: release_evictor
+release_evictor:
+	# build for amd64 version
+	${DOCKER_MAKE_CMD} make compile_evictor
+	${DOCKER_BUILDX_CMD_AMD64} -t ${EVICTOR_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# build for arm64 version
+	${DOCKER_MAKE_CMD} make compile_evictor_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${EVICTOR_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# push to a public registry
+	${MUILT_ARCH_PUSH_CMD} ${EVICTOR_IMAGE_NAME}:${RELEASE_TAG}
+
 .PHONY: build_ldm_image
 build_ldm_image:
 	@echo "Build local-disk-manager image ${LDM_IMAGE_NAME}:${IMAGE_TAG}"
@@ -101,6 +115,12 @@ build_admission_image:
 	@echo "Build admission image ${ADMISSION_IMAGE_NAME}:${IMAGE_TAG}"
 	${DOCKER_MAKE_CMD} make compile_admission
 	docker build -t ${ADMISSION_IMAGE_NAME}:${IMAGE_TAG} -f ${ADMISSION_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_evictor_image
+build_evictor_image:
+	@echo "Build evictor image ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_evictor
+	docker build -t ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG} -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
 .PHONY: apis
 apis:
@@ -148,6 +168,14 @@ compile_admission:
 .PHONY: compile_admission_arm64
 compile_admission_arm64:
 	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${ADMISSION_BUILD_OUTPUT} ${ADMISSION_BUILD_INPUT}
+
+.PHONY: compile_evictor
+compile_evictor:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${EVICTOR_BUILD_OUTPUT} ${EVICTOR_BUILD_INPUT}
+
+.PHONY: compile_evictor_arm64
+compile_evictor_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${EVICTOR_BUILD_OUTPUT} ${EVICTOR_BUILD_INPUT}
 
 .PHONY: _enable_buildx
 _enable_buildx:
