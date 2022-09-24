@@ -7,6 +7,34 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+type ConditionStatus string
+
+// These are valid condition statuses. "ConditionTrue" means a resource is in the condition.
+// "ConditionFalse" means a resource is not in the condition. "ConditionUnknown" means kubernetes
+// can't decide if a resource is in the condition or not. In the future, we could add other
+// intermediate conditions, e.g. ConditionDegraded.
+const (
+	ConditionTrue    ConditionStatus = "True"
+	ConditionFalse   ConditionStatus = "False"
+	ConditionUnknown ConditionStatus = "Unknown"
+)
+
+type LocalStorageNodeConditionType string
+
+// These are valid conditions of a localstoragenode.
+const (
+	// StorageAvailable Available means the localstoragenode is available, i.e. the free storage capacity is more than or equal 0
+	StorageAvailable LocalStorageNodeConditionType = "Available"
+	// StorageUnAvailable UnAvailable means the localstoragenode is unavailable, i.e. the free storage capacity is less than or equal 0
+	StorageUnAvailable LocalStorageNodeConditionType = "UnAvailable"
+	// StorageProgressing Progressing means the localstoragenode is progressing, i.e. extending storage capacity
+	StorageProgressing LocalStorageNodeConditionType = "Progressing"
+	// StorageExpandFailure is added in a localstoragenode when a disk fails to be joined the storage pool
+	StorageExpandFailure LocalStorageNodeConditionType = "StorageExpandFailure"
+	// StorageExpandSuccess is added in a localstoragenode when a disk succeeds to be joined the storage pool
+	StorageExpandSuccess LocalStorageNodeConditionType = "StorageExpandSuccess"
+)
+
 // LocalStorageNodeSpec defines the desired state of LocalStorageNode
 type LocalStorageNodeSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -30,6 +58,26 @@ type LocalStorageNodeStatus struct {
 
 	// State of the Local Storage Node/Member: New, Active, Inactive, Failed
 	State State `json:"state,omitempty"`
+
+	// Represents the latest available observations of a localstoragenode's current state.
+	// +optional
+	Conditions []LocalStorageNodeCondition `json:"conditions,omitempty"`
+}
+
+// LocalStorageNodeCondition describes the state of a localstoragenode at a certain point.
+type LocalStorageNodeCondition struct {
+	// Type of localstoragenode condition.
+	Type LocalStorageNodeConditionType `json:"type"`
+	// Status of the condition, one of True, False, Unknown.
+	Status ConditionStatus `json:"status"`
+	// The last time this condition was updated.
+	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty"`
+	// Last time the condition transitioned from one status to another.
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
+	// The reason for the condition's last transition.
+	Reason string `json:"reason,omitempty"`
+	// A human-readable message indicating details about the transition.
+	Message string `json:"message,omitempty"`
 }
 
 // NodeConfig defines local storage system configurations

@@ -14,7 +14,7 @@ type localPoolManager struct {
 	lm      *LocalManager
 }
 
-func (mgr *localPoolManager) ExtendPools(localDisks []*apisv1alpha1.LocalDisk) error {
+func (mgr *localPoolManager) ExtendPools(localDisks []*apisv1alpha1.LocalDisk) (bool, error) {
 
 	return mgr.cmdExec.ExtendPools(localDisks)
 }

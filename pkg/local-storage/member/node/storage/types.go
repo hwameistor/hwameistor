@@ -21,7 +21,7 @@ var (
 // LocalPoolManager is an interface to manage local storage pools
 ////go:generate mockgen -source=types.go -destination=../../../member/node/storage/pools_mock.go  -package=storage
 type LocalPoolManager interface {
-	ExtendPools(localDisks []*apisv1alpha1.LocalDisk) error
+	ExtendPools(localDisks []*apisv1alpha1.LocalDisk) (bool, error)
 
 	ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDisk) (map[string]*apisv1alpha1.LocalPool, error)
 
@@ -53,6 +53,7 @@ type LocalRegistry interface {
 	HasVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) bool
 	UpdateNodeForVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica)
 	SyncResourcesToNodeCRD(localDisks map[string]*apisv1alpha1.LocalDisk) error
+	UpdateCondition(condition apisv1alpha1.LocalStorageNodeCondition) error
 }
 
 // DeviceInfo struct
@@ -84,7 +85,7 @@ type LocalVolumeExecutor interface {
 // LocalPoolExecutor interface
 ////go:generate mockgen -source=types.go -destination=../../../member/node/storage/pools_executor_mock.go  -package=storage
 type LocalPoolExecutor interface {
-	ExtendPools(localDisks []*apisv1alpha1.LocalDisk) error
+	ExtendPools(localDisks []*apisv1alpha1.LocalDisk) (bool, error)
 	ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDisk) (map[string]*apisv1alpha1.LocalPool, error)
 	GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error)
 }
