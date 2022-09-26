@@ -12,6 +12,7 @@ import (
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
 	storage "github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
 	runtime "k8s.io/apimachinery/pkg/runtime"
+	record "k8s.io/client-go/tools/record"
 	cache "sigs.k8s.io/controller-runtime/pkg/cache"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -40,17 +41,17 @@ func (m *MockLocalStorageMember) EXPECT() *MockLocalStorageMemberMockRecorder {
 }
 
 // ConfigureBase mocks base method.
-func (m *MockLocalStorageMember) ConfigureBase(name, namespace string, haSystemConfig v1alpha1.SystemConfig, cli client.Client, informersCache cache.Cache) apis.LocalStorageMember {
+func (m *MockLocalStorageMember) ConfigureBase(name, namespace string, haSystemConfig v1alpha1.SystemConfig, cli client.Client, informersCache cache.Cache, recorder record.EventRecorder) apis.LocalStorageMember {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ConfigureBase", name, namespace, haSystemConfig, cli, informersCache)
+	ret := m.ctrl.Call(m, "ConfigureBase", name, namespace, haSystemConfig, cli, informersCache, recorder)
 	ret0, _ := ret[0].(apis.LocalStorageMember)
 	return ret0
 }
 
 // ConfigureBase indicates an expected call of ConfigureBase.
-func (mr *MockLocalStorageMemberMockRecorder) ConfigureBase(name, namespace, haSystemConfig, cli, informersCache interface{}) *gomock.Call {
+func (mr *MockLocalStorageMemberMockRecorder) ConfigureBase(name, namespace, haSystemConfig, cli, informersCache, recorder interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfigureBase", reflect.TypeOf((*MockLocalStorageMember)(nil).ConfigureBase), name, namespace, haSystemConfig, cli, informersCache)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfigureBase", reflect.TypeOf((*MockLocalStorageMember)(nil).ConfigureBase), name, namespace, haSystemConfig, cli, informersCache, recorder)
 }
 
 // ConfigureCSIDriver mocks base method.
@@ -82,17 +83,17 @@ func (mr *MockLocalStorageMemberMockRecorder) ConfigureController(scheme interfa
 }
 
 // ConfigureNode mocks base method.
-func (m *MockLocalStorageMember) ConfigureNode() apis.LocalStorageMember {
+func (m *MockLocalStorageMember) ConfigureNode(scheme *runtime.Scheme) apis.LocalStorageMember {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ConfigureNode")
+	ret := m.ctrl.Call(m, "ConfigureNode", scheme)
 	ret0, _ := ret[0].(apis.LocalStorageMember)
 	return ret0
 }
 
 // ConfigureNode indicates an expected call of ConfigureNode.
-func (mr *MockLocalStorageMemberMockRecorder) ConfigureNode() *gomock.Call {
+func (mr *MockLocalStorageMemberMockRecorder) ConfigureNode(scheme interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfigureNode", reflect.TypeOf((*MockLocalStorageMember)(nil).ConfigureNode))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfigureNode", reflect.TypeOf((*MockLocalStorageMember)(nil).ConfigureNode), scheme)
 }
 
 // ConfigureRESTServer mocks base method.

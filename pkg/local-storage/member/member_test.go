@@ -2,6 +2,7 @@ package member
 
 import (
 	"fmt"
+	"k8s.io/client-go/tools/record"
 	"reflect"
 	"testing"
 
@@ -58,6 +59,7 @@ func Test_localStorageMember_ConfigureBase(t *testing.T) {
 	var systemConfig apisv1alpha1.SystemConfig
 	var cli client.Client
 	var informersCache cache.Cache
+	var recorder record.EventRecorder
 
 	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
@@ -68,11 +70,11 @@ func Test_localStorageMember_ConfigureBase(t *testing.T) {
 	m := memmock.NewMockLocalStorageMember(ctrl)
 	m.
 		EXPECT().
-		ConfigureBase(name, namespace, systemConfig, cli, informersCache).
+		ConfigureBase(name, namespace, systemConfig, cli, informersCache, recorder).
 		Return(m).
 		Times(1)
 
-	v := m.ConfigureBase(name, namespace, systemConfig, cli, informersCache)
+	v := m.ConfigureBase(name, namespace, systemConfig, cli, informersCache, recorder)
 
 	fmt.Printf("Test_localStorageMember_ConfigureBase v= %+v", v)
 }
@@ -87,11 +89,11 @@ func Test_localStorageMember_ConfigureNode(t *testing.T) {
 	m := memmock.NewMockLocalStorageMember(ctrl)
 	m.
 		EXPECT().
-		ConfigureNode().
+		ConfigureNode(nil).
 		Return(m).
 		Times(1)
 
-	v := m.ConfigureNode()
+	v := m.ConfigureNode(nil)
 
 	fmt.Printf("Test_localStorageMember_ConfigureNode v= %+v", v)
 }

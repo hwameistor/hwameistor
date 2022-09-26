@@ -9,6 +9,7 @@ import (
 	localrest "github.com/hwameistor/hwameistor/pkg/local-storage/member/rest"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -54,22 +55,26 @@ type localStorageMember struct {
 	nodeManager localapis.NodeManager
 
 	systemConfig apisv1alpha1.SystemConfig
+
+	recorder record.EventRecorder
 }
 
-func (m *localStorageMember) ConfigureBase(name string, namespace string, systemConfig apisv1alpha1.SystemConfig, cli client.Client, informersCache cache.Cache) localapis.LocalStorageMember {
+func (m *localStorageMember) ConfigureBase(name string, namespace string, systemConfig apisv1alpha1.SystemConfig,
+	cli client.Client, informersCache cache.Cache, recorder record.EventRecorder) localapis.LocalStorageMember {
 	m.name = name
 	m.version = localapis.Version
 	m.namespace = namespace
 	m.apiClient = cli
 	m.informersCache = informersCache
 	m.systemConfig = systemConfig
+	m.recorder = recorder
 	return m
 }
 
-func (m *localStorageMember) ConfigureNode() localapis.LocalStorageMember {
+func (m *localStorageMember) ConfigureNode(scheme *runtime.Scheme) localapis.LocalStorageMember {
 	if m.nodeManager == nil {
 		var err error
-		m.nodeManager, err = localnode.New(m.name, m.namespace, m.apiClient, m.informersCache, m.systemConfig)
+		m.nodeManager, err = localnode.New(m.name, m.namespace, m.apiClient, m.informersCache, m.systemConfig, scheme, m.recorder)
 		if err != nil {
 			panic(err)
 		}

@@ -4,6 +4,7 @@ import (
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
 	nodestorage "github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -25,9 +26,9 @@ type LocalStorageMember interface {
 	Run(stopCh <-chan struct{})
 
 	// ******  configuration ******* //
-	ConfigureBase(name string, namespace string, haSystemConfig apisv1alpha1.SystemConfig, cli client.Client, informersCache cache.Cache) LocalStorageMember
+	ConfigureBase(name string, namespace string, haSystemConfig apisv1alpha1.SystemConfig, cli client.Client, informersCache cache.Cache, recorder record.EventRecorder) LocalStorageMember
 
-	ConfigureNode() LocalStorageMember
+	ConfigureNode(scheme *runtime.Scheme) LocalStorageMember
 
 	ConfigureController(scheme *runtime.Scheme) LocalStorageMember
 

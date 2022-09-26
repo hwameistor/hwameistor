@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/tools/record"
 	"sync"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
@@ -22,6 +24,8 @@ type localRegistry struct {
 	lock   *sync.Mutex
 	logger *log.Entry
 	lm     *LocalManager
+	// recorder is used to record events in the API server
+	recorder record.EventRecorder
 }
 
 // newLocalRegistry creates a local storage registry
@@ -34,6 +38,7 @@ func newLocalRegistry(lm *LocalManager) LocalRegistry {
 		lock:      &sync.Mutex{},
 		logger:    log.WithField("Module", "NodeManager/LocalRegistry"),
 		lm:        lm,
+		recorder:  lm.recorder,
 	}
 }
 
@@ -236,6 +241,26 @@ func (lr *localRegistry) HasVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica) b
 	lr.showReplicaOnHost()
 	_, has := lr.replicas[vr.Spec.VolumeName]
 	return has
+}
+
+// UpdateCondition append current condition about LocalStorageNode, i.e. StorageExpandSuccess, StorageExpandFail, UnAvailable
+func (lr *localRegistry) UpdateCondition(condition apisv1alpha1.LocalStorageNodeCondition) error {
+	node := &apisv1alpha1.LocalStorageNode{}
+	if err := lr.apiClient.Get(context.TODO(), types.NamespacedName{Name: lr.lm.nodeConf.Name}, node); err != nil {
+		lr.logger.WithError(err).WithField("condition", condition).Error("Failed to query Node")
+		return nil
+	}
+	switch condition.Type {
+	case apisv1alpha1.StorageExpandFailure, apisv1alpha1.StorageUnAvailable:
+		lr.recorder.Event(node, v1.EventTypeWarning, string(condition.Type), condition.Message)
+	case apisv1alpha1.StorageExpandSuccess, apisv1alpha1.StorageProgressing:
+		lr.recorder.Event(node, v1.EventTypeNormal, string(condition.Type), condition.Message)
+	default:
+		lr.recorder.Event(node, v1.EventTypeNormal, string(condition.Type), condition.Message)
+	}
+
+	node.Status.Conditions = append(node.Status.Conditions, condition)
+	return lr.apiClient.Status().Update(context.TODO(), node)
 }
 
 // showReplicaOnHost debug func for now

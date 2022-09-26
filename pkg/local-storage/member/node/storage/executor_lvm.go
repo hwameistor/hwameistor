@@ -379,13 +379,14 @@ func (lvm *lvmExecutor) TestVolumeReplica(replica *apisv1alpha1.LocalVolumeRepli
 	return newReplica, nil
 }
 
-func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*apisv1alpha1.LocalDisk) error {
+func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*apisv1alpha1.LocalDisk) (bool, error) {
 	lvm.logger.Debugf("Adding available disk %+v, count: %d\n.", availableLocalDisks, len(availableLocalDisks))
 
+	extend := false
 	existingPVMap, err := lvm.getExistingPVs()
 	if err != nil {
 		lvm.logger.WithError(err).Error("Failed to getExistingPVs.")
-		return err
+		return false, err
 	}
 
 	disksToBeExtends := make(map[string][]*apisv1alpha1.LocalDisk)
@@ -407,11 +408,12 @@ func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*apisv1alpha1.LocalDis
 	for poolName, classifiedDisks := range disksToBeExtends {
 		if err := lvm.extendPool(poolName, classifiedDisks); err != nil {
 			lvm.logger.WithError(err).Error("Add available disk failed.")
-			return err
+			return extend, err
 		}
+		extend = true
 	}
 
-	return nil
+	return extend, nil
 }
 
 func (lvm *lvmExecutor) ConsistencyCheck(crdReplicas map[string]*apisv1alpha1.LocalVolumeReplica) {

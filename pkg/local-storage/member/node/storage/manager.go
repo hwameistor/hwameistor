@@ -2,6 +2,8 @@ package storage
 
 import (
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -9,6 +11,8 @@ import (
 type LocalManager struct {
 	nodeConf    *apisv1alpha1.NodeConfig
 	apiClient   client.Client
+	scheme      *runtime.Scheme
+	recorder    record.EventRecorder
 	poolManager LocalPoolManager
 	//diskManager                LocalDiskManager
 	volumeReplicaManager       LocalVolumeReplicaManager
@@ -17,11 +21,13 @@ type LocalManager struct {
 }
 
 // NewLocalManager creates a local manager
-func NewLocalManager(nodeConf *apisv1alpha1.NodeConfig, cli client.Client) *LocalManager {
+func NewLocalManager(nodeConf *apisv1alpha1.NodeConfig, cli client.Client, scheme *runtime.Scheme, recorder record.EventRecorder) *LocalManager {
 	lm := &LocalManager{
 		nodeConf:                   nodeConf,
 		apiClient:                  cli,
 		addEmptyDiskToDefaultPools: true,
+		scheme:                     scheme,
+		recorder:                   recorder,
 	}
 	//lm.diskManager = newLocalDiskManager(lm)
 	lm.registry = newLocalRegistry(lm)

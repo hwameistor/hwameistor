@@ -145,8 +145,9 @@ func main() {
 
 	//initialize the local storage node/member as:
 	log.Info("Configuring the Local Storage Member")
-	storageMember := member.Member().ConfigureBase(*nodeName, *namespace, systemConfig, mgr.GetClient(), mgr.GetCache()).
-		ConfigureNode().
+	storageMember := member.Member().ConfigureBase(*nodeName, *namespace, systemConfig, mgr.GetClient(), mgr.GetCache(),
+		mgr.GetEventRecorderFor(fmt.Sprintf("%s/%s", "localstoragemanager", *nodeName))).
+		ConfigureNode(mgr.GetScheme()).
 		ConfigureController(mgr.GetScheme()).
 		ConfigureCSIDriver(apisv1alpha1.CSIDriverName, *csiSockAddr).
 		ConfigureRESTServer(*httpPort)

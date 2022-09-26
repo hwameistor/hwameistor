@@ -3,6 +3,8 @@ package node
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	"net"
 	"os"
 	"sync"
@@ -63,10 +65,16 @@ type manager struct {
 	logger *log.Entry
 
 	lock sync.Mutex
+
+	scheme *runtime.Scheme
+
+	// recorder is used to record events in the API server
+	recorder record.EventRecorder
 }
 
 // New node manager
-func New(name string, namespace string, cli client.Client, informersCache runtimecache.Cache, config apisv1alpha1.SystemConfig) (apis.NodeManager, error) {
+func New(name string, namespace string, cli client.Client, informersCache runtimecache.Cache, config apisv1alpha1.SystemConfig,
+	scheme *runtime.Scheme, recorder record.EventRecorder) (apis.NodeManager, error) {
 	configManager, err := NewConfigManager(name, config, cli)
 	if err != nil {
 		return nil, err
@@ -85,6 +93,8 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 		diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 		configManager:  configManager,
 		logger:         log.WithField("Module", "NodeManager"),
+		scheme:         scheme,
+		recorder:       recorder,
 	}, nil
 }
 
@@ -256,7 +266,7 @@ func (m *manager) register() {
 	}
 	nodeConfig.Name = m.name
 
-	m.storageMgr = storage.NewLocalManager(nodeConfig, m.apiClient)
+	m.storageMgr = storage.NewLocalManager(nodeConfig, m.apiClient, m.scheme, m.recorder)
 	if err := m.storageMgr.Register(); err != nil {
 		logCtx.WithError(err).Fatal("Failed to register node's storage manager")
 	}
