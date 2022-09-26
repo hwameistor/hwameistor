@@ -45,13 +45,13 @@ $ helm install hwameistor ./hwameistor \
 
 :::
 
-要切换镜像仓库的镜像，请使用 `--set` 更改这两个参数值：`k8sImageRegistry` 和 `hwameistorImageRegistry`。
+要切换镜像仓库的镜像，请使用 `--set` 更改这两个参数值：`global.k8sImageRegistry` 和 `global.hwameistorImageRegistry`。
 
 ```console
 $ helm install hwameistor ./hwameistor \
     -n hwameistor --create-namespace \
-    --set k8sImageRegistry=k8s-gcr.m.daocloud.io \
-    --set hwameistorImageRegistry=ghcr.m.daocloud.io
+    --set global.k8sImageRegistry=k8s-gcr.m.daocloud.io \
+    --set global.hwameistorImageRegistry=ghcr.m.daocloud.io
 ```
 
 ## 自定义 kubelet 根目录
