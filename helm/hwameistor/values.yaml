@@ -42,6 +42,11 @@ admission:
     imageRepository: hwameistor/self-signed
     tag: v1
 
+evictor:
+  replicas: 1
+  imageRepository: hwameistor/evictor
+  resources: {} 
+
 localDiskManager:
   tolerationsOnMaster: true
   enableCSI: true
