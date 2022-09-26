@@ -45,13 +45,13 @@ In case they are blocked in some places, DaoCloud provides their mirrors at `k8s
 
 :::
 
-To switch image repository mirrors, use `--set` to change the value of parameters: `k8sImageRegistry` and `hwameistorImageRegistry`
+To switch image repository mirrors, use `--set` to change the value of parameters: `global.k8sImageRegistry` and `global.hwameistorImageRegistry`
 
 ```console
 $ helm install hwameistor ./hwameistor \
     -n hwameistor --create-namespace \
-    --set k8sImageRegistry=k8s-gcr.m.daocloud.io \
-    --set hwameistorImageRegistry=ghcr.m.daocloud.io
+    --set global.k8sImageRegistry=k8s-gcr.m.daocloud.io \
+    --set global.hwameistorImageRegistry=ghcr.m.daocloud.io
 ```
 
 ## Customize kubelet root directory

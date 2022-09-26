@@ -1,10 +1,17 @@
-k8sImageRegistry: k8s.gcr.io
-hwameistorImageRegistry: ghcr.io
-# Users in China can change to these sites for option
-#k8sImageRegistry: k8s-gcr.m.daocloud.io
-#hwameistorImageRegistry: ghcr.m.daocloud.io
-
-kubeletRootDir: /var/lib/kubelet
+# global config
+global:
+  # k8sImageRegistry is used to control which image registry the CSIController
+  # images, i.e. provisioner,attacher,registrar,resizer is pulled from
+  # Users in China can change to these sites for option
+  # k8sImageRegistry: k8s-gcr.m.daocloud.io
+  k8sImageRegistry: k8s.gcr.io
+  # hwameistorImageRegistry is used to control which image registry the hwameistor
+  # images, i.e. localDiskManager,localstorage,scheduler,admission,evictor is pulled from
+  # Users in China can change to these sites for option
+  # hwameistorImageRegistry: ghcr.m.daocloud.io
+  hwameistorImageRegistry: ghcr.io
+  # kubeletRootDir is used to inform Hwameistor Kubelet plugin directory
+  kubeletRootDir: /var/lib/kubelet
 
 # StorageClass Settings
 storageClass:

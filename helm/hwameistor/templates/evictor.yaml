@@ -20,7 +20,7 @@ spec:
       serviceAccountName: hwameistor-admin
       containers:
         - name: evictor
-          image: {{ .Values.hwameistorImageRegistry}}/{{ .Values.evictor.imageRepository}}:{{ template "hwameistor.evictorImageTag" . }}
+          image: {{ .Values.global.hwameistorImageRegistry}}/{{ .Values.evictor.imageRepository}}:{{ template "hwameistor.evictorImageTag" . }}
           imagePullPolicy: IfNotPresent
           resources: 
             {{- toYaml .Values.evictor.resources | nindent 12 }}
