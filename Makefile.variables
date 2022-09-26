@@ -1,6 +1,6 @@
 # [ COMMON ]
 #----------------
-MODULE_NAME = "hwameistor"
+MODULE_NAME = hwameistor
 PROJECT_SOURCE_CODE_DIR ?= $(CURDIR)
 BINS_DIR = ${PROJECT_SOURCE_CODE_DIR}/_build
 CMDS_DIR = ${PROJECT_SOURCE_CODE_DIR}/cmd
