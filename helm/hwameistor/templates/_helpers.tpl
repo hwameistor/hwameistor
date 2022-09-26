@@ -23,6 +23,11 @@
   {{- default .Chart.Version .Values.admission.tag -}}
 {{- end -}}
 
+{{/* Allow Evictor image tag to be overridden. */}}
+{{- define "hwameistor.evictorImageTag" -}}
+  {{- default .Chart.Version .Values.evictor.tag -}}
+{{- end -}}
+
 {{/* Allow KubeletRootDir to be overridden. */}}
 {{- define "hwameistor.kubeletRootDir" -}}
   {{- default "/var/lib/kubelet" .Values.kubeletRootDir -}}
