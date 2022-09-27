@@ -406,6 +406,9 @@ func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*apisv1alpha1.LocalDis
 	}
 
 	for poolName, classifiedDisks := range disksToBeExtends {
+		if len(classifiedDisks) == 0 {
+			continue
+		}
 		if err := lvm.extendPool(poolName, classifiedDisks); err != nil {
 			lvm.logger.WithError(err).Error("Add available disk failed.")
 			return extend, err
