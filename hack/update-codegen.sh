@@ -26,9 +26,7 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${SCRIPT_ROOT}"; ls -d -1 ./vendor/k8s.io/code-
 #                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 bash "${CODEGEN_PKG}"/generate-groups.sh "client,informer,lister" \
-  github.com/hwameistor/hwameistor/pkg/apis/generated github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager \
+  github.com/hwameistor/hwameistor/pkg/apis/generated github.com/hwameistor/hwameistor/pkg/apis/hwameistor \
   hwameistor:v1alpha1 \
   --output-base "$(pwd)" \
-  --go-header-file "${SCRIPT_ROOT}"/build/boilerplate.go.txt && \
-  cp -rf github.com/hwameistor/local-disk-manager/pkg/apis/generated "${SCRIPT_ROOT}"/pkg/apis/ && \
-  rm -rf github.com/
+  --go-header-file "${SCRIPT_ROOT}"/build/boilerplate.go.txt

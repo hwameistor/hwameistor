@@ -33,7 +33,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: spec.nodeName
-        image: {{ .Values.k8sImageRegistry }}/{{ .Values.localStorage.registrar.imageRepository }}:{{ .Values.localStorage.registrar.tag }}
+        image: {{ .Values.global.k8sImageRegistry }}/{{ .Values.localStorage.registrar.imageRepository }}:{{ .Values.localStorage.registrar.tag }}
         imagePullPolicy: IfNotPresent
         lifecycle:
           preStop:
@@ -84,7 +84,7 @@ spec:
           value: unix:/{{ template "hwameistor.kubeletRootDir" . }}/plugins/lvm.hwameistor.io/csi.sock
         - name: NODE_ANNOTATION_KEY_STORAGE_IPV4
           value: localstorage.hwameistor.io/storage-ipv4
-        image: {{ .Values.hwameistorImageRegistry}}/{{ .Values.localStorage.member.imageRepository}}:{{ template "hwameistor.localstorageImageTag" . }}
+        image: {{ .Values.global.hwameistorImageRegistry}}/{{ .Values.localStorage.member.imageRepository}}:{{ template "hwameistor.localstorageImageTag" . }}
         imagePullPolicy: IfNotPresent
         name: member
         ports:

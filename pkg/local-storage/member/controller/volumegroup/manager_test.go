@@ -2,9 +2,10 @@ package volumegroup
 
 import (
 	"fmt"
-	"github.com/golang/mock/gomock"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 func TestNewManager(t *testing.T) {

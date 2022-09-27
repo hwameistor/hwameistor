@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	vgmock "github.com/hwameistor/hwameistor/pkg/local-storage/member/controller/volumegroup"
 )
 
@@ -18,14 +18,14 @@ func Test_scheduler_Allocate(t *testing.T) {
 	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
-	var vol = &apisv1alpha1.LocalVolume{}
+	var vol = &v1alpha1.LocalVolume{}
 	vol.Name = "vol1"
 	vol.Namespace = "test1"
 	vol.Spec.RequiredCapacityBytes = 1240
 	vol.Spec.PoolName = "pool1"
 	vol.Spec.Accessibility.Nodes = []string{"node1"}
 
-	var vc = &apisv1alpha1.VolumeConfig{}
+	var vc = &v1alpha1.VolumeConfig{}
 
 	m := vgmock.NewMockVolumeScheduler(ctrl)
 	m.
@@ -48,8 +48,8 @@ func Test_scheduler_GetNodeCandidates(t *testing.T) {
 	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
-	var volList []*apisv1alpha1.LocalVolume
-	var vol = &apisv1alpha1.LocalVolume{}
+	var volList []*v1alpha1.LocalVolume
+	var vol = &v1alpha1.LocalVolume{}
 	vol.Name = "vol1"
 	vol.Namespace = "test1"
 	vol.Spec.RequiredCapacityBytes = 1240
@@ -57,7 +57,7 @@ func Test_scheduler_GetNodeCandidates(t *testing.T) {
 	vol.Spec.Accessibility.Nodes = []string{"node1"}
 	volList = append(volList, vol)
 
-	var lsns = []*apisv1alpha1.LocalStorageNode{}
+	var lsns = []*v1alpha1.LocalStorageNode{}
 
 	m := vgmock.NewMockVolumeScheduler(ctrl)
 	m.
@@ -91,37 +91,37 @@ func Test_scheduler_Init(t *testing.T) {
 
 func Test_isLocalVolumeSameClass(t *testing.T) {
 	type args struct {
-		lv1 *apisv1alpha1.LocalVolume
-		lv2 *apisv1alpha1.LocalVolume
+		lv1 *v1alpha1.LocalVolume
+		lv2 *v1alpha1.LocalVolume
 	}
-	var lv1 *apisv1alpha1.LocalVolume
-	var lv2 *apisv1alpha1.LocalVolume
-	var lv12 = &apisv1alpha1.LocalVolume{}
+	var lv1 *v1alpha1.LocalVolume
+	var lv2 *v1alpha1.LocalVolume
+	var lv12 = &v1alpha1.LocalVolume{}
 	lv12.Name = "test12"
 	lv12.Spec.PoolName = "pool12"
-	var lv22 = &apisv1alpha1.LocalVolume{}
+	var lv22 = &v1alpha1.LocalVolume{}
 	lv22.Name = "test12"
 	lv22.Spec.PoolName = "pool22"
 
-	var lv13 = &apisv1alpha1.LocalVolume{}
+	var lv13 = &v1alpha1.LocalVolume{}
 	lv13.Name = "test13"
 	lv13.Spec.PoolName = "pool13"
 	lv13.Spec.ReplicaNumber = 1
 	lv13.Spec.Convertible = true
 
-	var lv23 = &apisv1alpha1.LocalVolume{}
+	var lv23 = &v1alpha1.LocalVolume{}
 	lv23.Name = "test13"
 	lv23.Spec.PoolName = "pool13"
 	lv23.Spec.ReplicaNumber = 2
 	lv23.Spec.Convertible = true
 
-	var lv14 = &apisv1alpha1.LocalVolume{}
+	var lv14 = &v1alpha1.LocalVolume{}
 	lv13.Name = "test13"
 	lv13.Spec.PoolName = "pool13"
 	lv13.Spec.ReplicaNumber = 1
 	lv13.Spec.Convertible = true
 
-	var lv24 = &apisv1alpha1.LocalVolume{}
+	var lv24 = &v1alpha1.LocalVolume{}
 	lv23.Name = "test13"
 	lv23.Spec.PoolName = "pool13"
 	lv23.Spec.ReplicaNumber = 1
@@ -161,33 +161,33 @@ func Test_isLocalVolumeSameClass(t *testing.T) {
 
 func Test_appendLocalVolume(t *testing.T) {
 	type args struct {
-		bigLv *apisv1alpha1.LocalVolume
-		lv    *apisv1alpha1.LocalVolume
+		bigLv *v1alpha1.LocalVolume
+		lv    *v1alpha1.LocalVolume
 	}
-	var bigLv *apisv1alpha1.LocalVolume
-	var lv = &apisv1alpha1.LocalVolume{}
+	var bigLv *v1alpha1.LocalVolume
+	var lv = &v1alpha1.LocalVolume{}
 	lv.Name = "lv"
 
-	var bigLv1 = &apisv1alpha1.LocalVolume{}
+	var bigLv1 = &v1alpha1.LocalVolume{}
 	bigLv1.Name = "bigLv1"
-	var lv1 *apisv1alpha1.LocalVolume
+	var lv1 *v1alpha1.LocalVolume
 
-	var bigLv2 = &apisv1alpha1.LocalVolume{}
+	var bigLv2 = &v1alpha1.LocalVolume{}
 	bigLv2.Name = "bigLv2"
 	bigLv2.Spec.RequiredCapacityBytes = 1240
 
-	var lv2 = &apisv1alpha1.LocalVolume{}
+	var lv2 = &v1alpha1.LocalVolume{}
 	lv2.Name = "lv2"
 	lv2.Spec.RequiredCapacityBytes = 1240
 
-	var bigLv22 = &apisv1alpha1.LocalVolume{}
+	var bigLv22 = &v1alpha1.LocalVolume{}
 	bigLv22 = bigLv2.DeepCopy()
 	bigLv22.Spec.RequiredCapacityBytes = 2480
 
 	tests := []struct {
 		name string
 		args args
-		want *apisv1alpha1.LocalVolume
+		want *v1alpha1.LocalVolume
 	}{
 		// TODO: Add test cases.
 		{
@@ -214,35 +214,35 @@ func Test_appendLocalVolume(t *testing.T) {
 
 func Test_unionSet(t *testing.T) {
 	type args struct {
-		strs1 []*apisv1alpha1.LocalStorageNode
-		strs2 []*apisv1alpha1.LocalStorageNode
+		strs1 []*v1alpha1.LocalStorageNode
+		strs2 []*v1alpha1.LocalStorageNode
 	}
-	var strs1 []*apisv1alpha1.LocalStorageNode
-	var strs2 []*apisv1alpha1.LocalStorageNode
-	var lsn1 = &apisv1alpha1.LocalStorageNode{}
+	var strs1 []*v1alpha1.LocalStorageNode
+	var strs2 []*v1alpha1.LocalStorageNode
+	var lsn1 = &v1alpha1.LocalStorageNode{}
 	lsn1.Name = "lsn1"
 	strs1 = append(strs1, lsn1)
 
-	var lsn2 = &apisv1alpha1.LocalStorageNode{}
+	var lsn2 = &v1alpha1.LocalStorageNode{}
 	lsn2.Name = "lsn2"
 	strs2 = append(strs2, lsn2)
 
-	strs := []*apisv1alpha1.LocalStorageNode{}
+	strs := []*v1alpha1.LocalStorageNode{}
 
-	var strs11 []*apisv1alpha1.LocalStorageNode
-	var strs21 []*apisv1alpha1.LocalStorageNode
-	var lsn11 = &apisv1alpha1.LocalStorageNode{}
+	var strs11 []*v1alpha1.LocalStorageNode
+	var strs21 []*v1alpha1.LocalStorageNode
+	var lsn11 = &v1alpha1.LocalStorageNode{}
 	lsn11.Name = "lsn1"
 	strs11 = append(strs11, lsn11)
 
-	var lsn21 = &apisv1alpha1.LocalStorageNode{}
+	var lsn21 = &v1alpha1.LocalStorageNode{}
 	lsn21.Name = "lsn1"
 	strs21 = append(strs21, lsn21)
 
 	tests := []struct {
 		name string
 		args args
-		want []*apisv1alpha1.LocalStorageNode
+		want []*v1alpha1.LocalStorageNode
 	}{
 		// TODO: Add test cases.
 		{

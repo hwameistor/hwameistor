@@ -1,14 +1,14 @@
 package node
 
 import (
-	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"reflect"
+	"testing"
+
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/configer"
 	log "github.com/sirupsen/logrus"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"testing"
 )
 
 func TestNewConfigManager(t *testing.T) {
@@ -49,7 +49,7 @@ func TestVolumeReplica(t *testing.T) {
 		syncReplicaStatusQueue *common.TaskQueue
 	}
 	type args struct {
-		replica *apisv1alpha1.LocalVolumeReplica
+		replica *v1alpha1.LocalVolumeReplica
 	}
 	tests := []struct {
 		name    string
@@ -116,7 +116,7 @@ func Test_configManager_DeleteConfig(t *testing.T) {
 		syncReplicaStatusQueue *common.TaskQueue
 	}
 	type args struct {
-		replica *apisv1alpha1.LocalVolumeReplica
+		replica *v1alpha1.LocalVolumeReplica
 	}
 	tests := []struct {
 		name    string
@@ -153,7 +153,7 @@ func Test_configManager_EnsureConfig(t *testing.T) {
 		syncReplicaStatusQueue *common.TaskQueue
 	}
 	type args struct {
-		replica *apisv1alpha1.LocalVolumeReplica
+		replica *v1alpha1.LocalVolumeReplica
 	}
 	tests := []struct {
 		name    string
@@ -227,8 +227,8 @@ func Test_configManager_ensureConfigForHA(t *testing.T) {
 		syncReplicaStatusQueue *common.TaskQueue
 	}
 	type args struct {
-		replica *apisv1alpha1.LocalVolumeReplica
-		config  *apisv1alpha1.VolumeConfig
+		replica *v1alpha1.LocalVolumeReplica
+		config  *v1alpha1.VolumeConfig
 	}
 	tests := []struct {
 		name    string
@@ -265,8 +265,8 @@ func Test_configManager_ensureConfigForNonHA(t *testing.T) {
 		syncReplicaStatusQueue *common.TaskQueue
 	}
 	type args struct {
-		replica *apisv1alpha1.LocalVolumeReplica
-		config  *apisv1alpha1.VolumeConfig
+		replica *v1alpha1.LocalVolumeReplica
+		config  *v1alpha1.VolumeConfig
 	}
 	tests := []struct {
 		name    string
@@ -340,7 +340,7 @@ func Test_configManager_genDevicePath(t *testing.T) {
 		syncReplicaStatusQueue *common.TaskQueue
 	}
 	type args struct {
-		replica *apisv1alpha1.LocalVolumeReplica
+		replica *v1alpha1.LocalVolumeReplica
 	}
 	tests := []struct {
 		name   string
@@ -414,13 +414,13 @@ func Test_configManager_getConfig(t *testing.T) {
 		syncReplicaStatusQueue *common.TaskQueue
 	}
 	type args struct {
-		replica *apisv1alpha1.LocalVolumeReplica
+		replica *v1alpha1.LocalVolumeReplica
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *apisv1alpha1.VolumeConfig
+		want    *v1alpha1.VolumeConfig
 		want1   bool
 		wantErr bool
 	}{
@@ -463,7 +463,7 @@ func Test_configManager_getCurrentNodeReplicas(t *testing.T) {
 	tests := []struct {
 		name         string
 		fields       fields
-		wantReplicas []apisv1alpha1.LocalVolumeReplica
+		wantReplicas []v1alpha1.LocalVolumeReplica
 		wantErr      bool
 	}{
 		// TODO: Add test cases.
@@ -642,8 +642,8 @@ func Test_configManager_updateConfig(t *testing.T) {
 		syncReplicaStatusQueue *common.TaskQueue
 	}
 	type args struct {
-		replica *apisv1alpha1.LocalVolumeReplica
-		config  *apisv1alpha1.VolumeConfig
+		replica *v1alpha1.LocalVolumeReplica
+		config  *v1alpha1.VolumeConfig
 	}
 	tests := []struct {
 		name    string

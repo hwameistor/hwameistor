@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	localapis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
@@ -107,7 +107,7 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 		p.logger.WithFields(log.Fields{"volume": req.Name, "accessibility": req.AccessibilityRequirements}).Error("Not found accessibility requirements")
 		return nil, fmt.Errorf("not found accessibility requirements")
 	}
-	requiredNodeName := req.AccessibilityRequirements.Requisite[0].Segments[localapis.TopologyNodeKey]
+	requiredNodeName := req.AccessibilityRequirements.Requisite[0].Segments[apis.TopologyNodeKey]
 
 	// fetch the local volume group by PVC
 	lvg, err := p.getLocalVolumeGroupByPVC(params.pvcNamespace, params.pvcName)
@@ -355,7 +355,7 @@ func (p *plugin) ControllerGetVolume(ctx context.Context, req *csi.ControllerGet
 		resp.Volume.AccessibleTopology = append(resp.Volume.AccessibleTopology,
 			&csi.Topology{
 				Segments: map[string]string{
-					localapis.TopologyNodeKey: volReplica.Spec.NodeName,
+					apis.TopologyNodeKey: volReplica.Spec.NodeName,
 				},
 			},
 		)
@@ -588,7 +588,7 @@ func (p *plugin) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (
 					entry.Volume.AccessibleTopology = append(entry.Volume.AccessibleTopology,
 						&csi.Topology{
 							Segments: map[string]string{
-								localapis.TopologyNodeKey: replica.Spec.NodeName,
+								apis.TopologyNodeKey: replica.Spec.NodeName,
 							},
 						},
 					)

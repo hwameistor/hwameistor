@@ -2,8 +2,10 @@ package E2eTest
 
 import (
 	"context"
-	ldapis "github.com/hwameistor/hwameistor/pkg/apis/generated/local-disk-manager/clientset/versioned/scheme"
-	lsv1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"time"
+
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -20,12 +22,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	"time"
 )
 
 var _ = ginkgo.Describe("test convertible localstorage volume ", ginkgo.Label("periodCheck"), func() {
 
-	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
@@ -262,14 +263,14 @@ var _ = ginkgo.Describe("test convertible localstorage volume ", ginkgo.Label("p
 			}
 		})
 		ginkgo.It("convert volume", func() {
-			lvlist := &lsv1.LocalVolumeList{}
+			lvlist := &v1alpha1.LocalVolumeList{}
 			err := client.List(ctx, lvlist)
 			if err != nil {
 				logrus.Error("%+v ", err)
 				f.ExpectNoError(err)
 			}
 			lvname := lvlist.Items[0].Name
-			lvc := &lsv1.LocalVolumeConvert{
+			lvc := &v1alpha1.LocalVolumeConvert{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: "hwameistor.io/v1alpha1",
 					Kind:       "LocalVolumeConvert",
@@ -278,7 +279,7 @@ var _ = ginkgo.Describe("test convertible localstorage volume ", ginkgo.Label("p
 					Name:      "localvolumeconvert-1",
 					Namespace: "default",
 				},
-				Spec: lsv1.LocalVolumeConvertSpec{
+				Spec: v1alpha1.LocalVolumeConvertSpec{
 					VolumeName:    lvname,
 					ReplicaNumber: 2,
 				},

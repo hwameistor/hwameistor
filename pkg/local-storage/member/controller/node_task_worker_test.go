@@ -2,15 +2,15 @@ package controller
 
 import (
 	"context"
-	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"sync"
+	"testing"
+
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sync"
-	"testing"
 )
 
 func Test_manager_processNode(t *testing.T) {
@@ -30,7 +30,7 @@ func Test_manager_processNode(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
@@ -77,7 +77,7 @@ func Test_manager_processNode(t *testing.T) {
 				volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 				volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
 				volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
-				localNodes:                  map[string]apisv1alpha1.State{},
+				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.processNode(tt.args.nodeName); (err != nil) != tt.wantErr {

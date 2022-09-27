@@ -1,0 +1,193 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localstoragenodes.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalStorageNode
+    listKind: LocalStorageNodeList
+    plural: localstoragenodes
+    shortNames:
+    - lsn
+    singular: localstoragenode
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: IPv4 address
+      jsonPath: .spec.storageIP
+      name: ip
+      type: string
+    - description: State of the Local Storage Node
+      jsonPath: .status.state
+      name: status
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalStorageNode is the Schema for the localstoragenodes API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalStorageNodeSpec defines the desired state of LocalStorageNode
+            properties:
+              hostname:
+                type: string
+              storageIP:
+                description: IPv4 address is for HA replication traffic
+                type: string
+              topogoly:
+                description: Topology defines the topology info of Node
+                properties:
+                  region:
+                    default: default
+                    description: Region is a collection of Zones
+                    type: string
+                  zone:
+                    default: default
+                    description: Zone is a collection of Local Storage Nodes
+                    type: string
+                type: object
+            type: object
+          status:
+            description: LocalStorageNodeStatus defines the observed state of LocalStorageNode
+            properties:
+              conditions:
+                description: Represents the latest available observations of a localstoragenode's
+                  current state.
+                items:
+                  description: LocalStorageNodeCondition describes the state of a
+                    localstoragenode at a certain point.
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    lastUpdateTime:
+                      description: The last time this condition was updated.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human-readable message indicating details about
+                        the transition.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of localstoragenode condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              pools:
+                additionalProperties:
+                  description: LocalPool is storage pool struct
+                  properties:
+                    class:
+                      description: 'Supported class: HDD, SSD, NVMe'
+                      enum:
+                      - HDD
+                      - SSD
+                      - NVMe
+                      type: string
+                    disks:
+                      items:
+                        description: LocalDevice is disk struct
+                        properties:
+                          capacityBytes:
+                            description: disk capacity
+                            format: int64
+                            type: integer
+                          devPath:
+                            description: e.g. /dev/sdb
+                            type: string
+                          state:
+                            description: 'Possible state: Available, Inuse, Offline'
+                            type: string
+                          type:
+                            description: 'Supported: HDD, SSD, NVMe, RAM'
+                            type: string
+                        type: object
+                      type: array
+                    freeCapacityBytes:
+                      format: int64
+                      type: integer
+                    freeVolumeCount:
+                      format: int64
+                      type: integer
+                    name:
+                      description: 'Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL'
+                      type: string
+                    path:
+                      description: VG path
+                      type: string
+                    totalCapacityBytes:
+                      format: int64
+                      type: integer
+                    totalVolumeCount:
+                      format: int64
+                      type: integer
+                    type:
+                      default: REGULAR
+                      description: 'Supported type: REGULAR'
+                      enum:
+                      - REGULAR
+                      type: string
+                    usedCapacityBytes:
+                      format: int64
+                      type: integer
+                    usedVolumeCount:
+                      format: int64
+                      type: integer
+                    volumeCapacityBytesLimit:
+                      format: int64
+                      type: integer
+                    volumes:
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - class
+                  - freeCapacityBytes
+                  - freeVolumeCount
+                  - totalCapacityBytes
+                  - totalVolumeCount
+                  - type
+                  - usedCapacityBytes
+                  - usedVolumeCount
+                  - volumeCapacityBytesLimit
+                  type: object
+                description: 'There may have multiple storage pools in a node. e.g.
+                  HDD_POOL, SSD_POOL, NVMe_POOL Pools: poolName -> LocalPool'
+                type: object
+              state:
+                description: 'State of the Local Storage Node/Member: New, Active,
+                  Inactive, Failed'
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

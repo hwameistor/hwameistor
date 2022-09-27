@@ -8,11 +8,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	localstorageclientset "github.com/hwameistor/hwameistor/pkg/apis/generated/local-storage/clientset/versioned"
-	localstorageinformers "github.com/hwameistor/hwameistor/pkg/apis/generated/local-storage/informers/externalversions"
-	localstorageinformersv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/generated/local-storage/informers/externalversions/hwameistor/v1alpha1"
-	localstoragelisters "github.com/hwameistor/hwameistor/pkg/apis/generated/local-storage/listers/hwameistor/v1alpha1"
-	localstorageapis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	localstorageclientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned"
+	localstorageinformers "github.com/hwameistor/hwameistor/pkg/apis/client/informers/externalversions"
+	localstorageinformersv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/client/informers/externalversions/hwameistor/v1alpha1"
+	localstoragelisters "github.com/hwameistor/hwameistor/pkg/apis/client/listers/hwameistor/v1alpha1"
+	localstorageapis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/common"
 
 	corev1 "k8s.io/api/core/v1"

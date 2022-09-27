@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -48,9 +48,9 @@ func TestLocalDiskClaimController_FilterByDiskCapacity(t *testing.T) {
 
 	testcases := []struct {
 		description string
-		ld          *ldmv1alpha1.LocalDisk
-		ldc         *ldmv1alpha1.LocalDiskClaim
-		setProperty func(claim *ldmv1alpha1.LocalDiskClaim, disk *ldmv1alpha1.LocalDisk)
+		ld          *v1alpha1.LocalDisk
+		ldc         *v1alpha1.LocalDiskClaim
+		setProperty func(claim *v1alpha1.LocalDiskClaim, disk *v1alpha1.LocalDisk)
 		wantBound   bool
 	}{
 		// Disk cap100G is sufficient, should success
@@ -58,7 +58,7 @@ func TestLocalDiskClaimController_FilterByDiskCapacity(t *testing.T) {
 			description: "Should return success, ldc state should be Bound",
 			ld:          GenFakeLocalDiskObject(),
 			ldc:         GenFakeLocalDiskClaimObject(),
-			setProperty: func(claim *ldmv1alpha1.LocalDiskClaim, disk *ldmv1alpha1.LocalDisk) {
+			setProperty: func(claim *v1alpha1.LocalDiskClaim, disk *v1alpha1.LocalDisk) {
 				// Modify disk cap100G to meet disk requirements
 				disk.Spec.Capacity = cap100G
 				claim.Spec.Description.Capacity = cap100G
@@ -71,7 +71,7 @@ func TestLocalDiskClaimController_FilterByDiskCapacity(t *testing.T) {
 			description: "Should return fail, ldc state should be Pending",
 			ld:          GenFakeLocalDiskObject(),
 			ldc:         GenFakeLocalDiskClaimObject(),
-			setProperty: func(claim *ldmv1alpha1.LocalDiskClaim, disk *ldmv1alpha1.LocalDisk) {
+			setProperty: func(claim *v1alpha1.LocalDiskClaim, disk *v1alpha1.LocalDisk) {
 				// Modify disk cap10G to do not meet disk requirements
 				disk.Spec.Capacity = cap10G
 				claim.Spec.Description.Capacity = cap100G
@@ -183,7 +183,7 @@ func TestReconcileDiskClaim_Reconcile_WhenDiskBoundAlready(t *testing.T) {
 	r.CheckLocalDiskClaimIsBound(t, claim, true)
 
 	// KEY_TEST: Set claim diskRef empty and status empty
-	claim.Status.Status = ldmv1alpha1.DiskClaimStatusEmpty
+	claim.Status.Status = v1alpha1.DiskClaimStatusEmpty
 	claim.Spec.DiskRefs = nil
 	err = r.Update(context.Background(), claim)
 	if err != nil {
@@ -208,13 +208,13 @@ func TestReconcileDiskClaim_Reconcile_WhenDiskBoundAlready(t *testing.T) {
 
 // CheckLocalDiskClaimIsBound
 func (r *ReconcileLocalDiskClaim) CheckLocalDiskClaimIsBound(t *testing.T,
-	claim *ldmv1alpha1.LocalDiskClaim, wantBound bool) {
+	claim *v1alpha1.LocalDiskClaim, wantBound bool) {
 
-	wantPhase := ldmv1alpha1.DiskClaimStatusEmpty
+	wantPhase := v1alpha1.DiskClaimStatusEmpty
 	if wantBound {
-		wantPhase = ldmv1alpha1.LocalDiskClaimStatusBound
+		wantPhase = v1alpha1.LocalDiskClaimStatusBound
 	} else {
-		wantPhase = ldmv1alpha1.LocalDiskClaimStatusPending
+		wantPhase = v1alpha1.LocalDiskClaimStatusPending
 	}
 
 	if claim.Status.Status == wantPhase {
@@ -226,7 +226,7 @@ func (r *ReconcileLocalDiskClaim) CheckLocalDiskClaimIsBound(t *testing.T,
 
 // ClaimLocalDisk Create disk and claim request, then try to reconcile the claim request
 func (r *ReconcileLocalDiskClaim) ClaimLocalDisk(t *testing.T,
-	disk *ldmv1alpha1.LocalDisk, claim *ldmv1alpha1.LocalDiskClaim) {
+	disk *v1alpha1.LocalDisk, claim *v1alpha1.LocalDiskClaim) {
 
 	// Create LocalDisk
 	err := r.Create(context.Background(), disk)
@@ -263,7 +263,7 @@ func (r *ReconcileLocalDiskClaim) ClaimLocalDisk(t *testing.T,
 }
 
 // CheckDiskBound check disk is bound with designated claim
-func (r *ReconcileLocalDiskClaim) CheckDiskBound(t *testing.T, disk *ldmv1alpha1.LocalDisk, claim *ldmv1alpha1.LocalDiskClaim) {
+func (r *ReconcileLocalDiskClaim) CheckDiskBound(t *testing.T, disk *v1alpha1.LocalDisk, claim *v1alpha1.LocalDiskClaim) {
 	// Check that DiskRef is the specified disk
 	findDisk := false
 	for _, boundDisk := range claim.Spec.DiskRefs {
@@ -280,14 +280,14 @@ func (r *ReconcileLocalDiskClaim) CheckDiskBound(t *testing.T, disk *ldmv1alpha1
 }
 
 // DeleteFakeLocalDisk
-func (r *ReconcileLocalDiskClaim) DeleteFakeLocalDisk(t *testing.T, ld *ldmv1alpha1.LocalDisk) {
+func (r *ReconcileLocalDiskClaim) DeleteFakeLocalDisk(t *testing.T, ld *v1alpha1.LocalDisk) {
 	if err := r.Delete(context.Background(), ld); err != nil {
 		t.Errorf("Delete LocalDisk %v fail %v", ld.GetName(), err)
 	}
 }
 
 // DeleteFakeLocalDiskClaim
-func (r *ReconcileLocalDiskClaim) DeleteFakeLocalDiskClaim(t *testing.T, ldc *ldmv1alpha1.LocalDiskClaim) {
+func (r *ReconcileLocalDiskClaim) DeleteFakeLocalDiskClaim(t *testing.T, ldc *v1alpha1.LocalDiskClaim) {
 	if err := r.Delete(context.Background(), ldc); err != nil {
 		t.Errorf("Delete LocalDiskClaim %v fail %v", ldc.GetName(), err)
 	}
@@ -295,8 +295,8 @@ func (r *ReconcileLocalDiskClaim) DeleteFakeLocalDiskClaim(t *testing.T, ldc *ld
 
 // GenFakeLocalDiskClaimObject Create claim request
 // By default, claim can be bound to the sample disk
-func GenFakeLocalDiskClaimObject() *ldmv1alpha1.LocalDiskClaim {
-	ldc := &ldmv1alpha1.LocalDiskClaim{}
+func GenFakeLocalDiskClaimObject() *v1alpha1.LocalDiskClaim {
+	ldc := &v1alpha1.LocalDiskClaim{}
 
 	TypeMeta := metav1.TypeMeta{
 		Kind:       localDiskClaimKind,
@@ -311,9 +311,9 @@ func GenFakeLocalDiskClaimObject() *ldmv1alpha1.LocalDiskClaim {
 		CreationTimestamp: metav1.Time{Time: time.Now()},
 	}
 
-	Spec := ldmv1alpha1.LocalDiskClaimSpec{
+	Spec := v1alpha1.LocalDiskClaimSpec{
 		NodeName: fakeNodename,
-		Description: ldmv1alpha1.DiskClaimDescription{
+		Description: v1alpha1.DiskClaimDescription{
 			DiskType: diskTypeHDD,
 			Capacity: cap100G,
 		},
@@ -322,14 +322,14 @@ func GenFakeLocalDiskClaimObject() *ldmv1alpha1.LocalDiskClaim {
 	ldc.ObjectMeta = ObjectMata
 	ldc.TypeMeta = TypeMeta
 	ldc.Spec = Spec
-	ldc.Status.Status = ldmv1alpha1.LocalDiskClaimStatusPending
+	ldc.Status.Status = v1alpha1.LocalDiskClaimStatusPending
 	return ldc
 }
 
 // GenFakeLocalDiskObject Create disk
 // By default, disk can be claimed by the sample calim
-func GenFakeLocalDiskObject() *ldmv1alpha1.LocalDisk {
-	ld := &ldmv1alpha1.LocalDisk{}
+func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
+	ld := &v1alpha1.LocalDisk{}
 
 	TypeMeta := metav1.TypeMeta{
 		Kind:       localDiskKind,
@@ -343,25 +343,25 @@ func GenFakeLocalDiskObject() *ldmv1alpha1.LocalDisk {
 		CreationTimestamp: metav1.Time{Time: time.Now()},
 	}
 
-	Spec := ldmv1alpha1.LocalDiskSpec{
+	Spec := v1alpha1.LocalDiskSpec{
 		NodeName:     fakeNodename,
 		DevicePath:   devPath,
 		Capacity:     cap100G,
 		HasPartition: false,
 		HasRAID:      false,
-		RAIDInfo:     ldmv1alpha1.RAIDInfo{},
+		RAIDInfo:     v1alpha1.RAIDInfo{},
 		HasSmartInfo: false,
-		SmartInfo:    ldmv1alpha1.SmartInfo{},
-		DiskAttributes: ldmv1alpha1.DiskAttributes{
+		SmartInfo:    v1alpha1.SmartInfo{},
+		DiskAttributes: v1alpha1.DiskAttributes{
 			Type:     diskTypeHDD,
 			DevType:  devType,
 			Vendor:   vendorVMware,
 			Protocol: proSCSI,
 		},
-		State: ldmv1alpha1.LocalDiskActive,
+		State: v1alpha1.LocalDiskActive,
 	}
 
-	Status := ldmv1alpha1.LocalDiskStatus{State: ldmv1alpha1.LocalDiskUnclaimed}
+	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskUnclaimed}
 
 	ld.TypeMeta = TypeMeta
 	ld.ObjectMeta = ObjectMata
@@ -373,7 +373,7 @@ func GenFakeLocalDiskObject() *ldmv1alpha1.LocalDisk {
 // CreateFakeClient Create LocalDisk and LocalDiskClaim resource
 func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	disk := GenFakeLocalDiskObject()
-	diskList := &ldmv1alpha1.LocalDiskList{
+	diskList := &v1alpha1.LocalDiskList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       localDiskKind,
 			APIVersion: apiversion,
@@ -381,7 +381,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	}
 
 	claim := GenFakeLocalDiskClaimObject()
-	claimList := &ldmv1alpha1.LocalDiskList{
+	claimList := &v1alpha1.LocalDiskList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       localDiskClaimKind,
 			APIVersion: apiversion,
@@ -389,9 +389,9 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	}
 
 	s := scheme.Scheme
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, disk)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, diskList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, claim)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, claimList)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, disk)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, diskList)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, claim)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, claimList)
 	return fake.NewFakeClientWithScheme(s), s
 }

@@ -2,8 +2,10 @@ package E2eTest
 
 import (
 	"context"
-	ldapis "github.com/hwameistor/hwameistor/pkg/apis/generated/local-disk-manager/clientset/versioned/scheme"
-	lsv1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"time"
+
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -19,11 +21,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	"time"
 )
 
 var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), func() {
-	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
 
@@ -213,12 +214,12 @@ var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Ordered, ginkgo.Labe
 	})
 	ginkgo.Context("Test the volume", func() {
 		ginkgo.It("check lvg", func() {
-			lvrList := &lsv1.LocalVolumeReplicaList{}
+			lvrList := &v1alpha1.LocalVolumeReplicaList{}
 			err := client.List(ctx, lvrList)
 			if err != nil {
 				logrus.Printf("list lvr failed ：%+v ", err)
 			}
-			lvgList := &lsv1.LocalVolumeGroupList{}
+			lvgList := &v1alpha1.LocalVolumeGroupList{}
 			err = client.List(ctx, lvgList)
 			if err != nil {
 				logrus.Printf("list lvg failed ：%+v ", err)

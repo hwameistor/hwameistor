@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	localdisk2 "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -20,7 +20,7 @@ import (
 type LocalDiskClaimHandler struct {
 	client.Client
 	record.EventRecorder
-	ldc ldmv1alpha1.LocalDiskClaim
+	ldc v1alpha1.LocalDiskClaim
 }
 
 // NewLocalDiskClaimHandler
@@ -32,8 +32,8 @@ func NewLocalDiskClaimHandler(client client.Client, recorder record.EventRecorde
 }
 
 // ListLocalDiskClaim
-func (ldcHandler *LocalDiskClaimHandler) ListLocalDiskClaim() (*ldmv1alpha1.LocalDiskClaimList, error) {
-	list := &ldmv1alpha1.LocalDiskClaimList{
+func (ldcHandler *LocalDiskClaimHandler) ListLocalDiskClaim() (*v1alpha1.LocalDiskClaimList, error) {
+	list := &v1alpha1.LocalDiskClaimList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "LocalDiskClaim",
 			APIVersion: "v1alpha1",
@@ -45,8 +45,8 @@ func (ldcHandler *LocalDiskClaimHandler) ListLocalDiskClaim() (*ldmv1alpha1.Loca
 }
 
 // GetLocalDiskClaim
-func (ldcHandler *LocalDiskClaimHandler) GetLocalDiskClaim(key client.ObjectKey) (*ldmv1alpha1.LocalDiskClaim, error) {
-	ldc := &ldmv1alpha1.LocalDiskClaim{}
+func (ldcHandler *LocalDiskClaimHandler) GetLocalDiskClaim(key client.ObjectKey) (*v1alpha1.LocalDiskClaim, error) {
+	ldc := &v1alpha1.LocalDiskClaim{}
 	if err := ldcHandler.Get(context.Background(), key, ldc); err != nil {
 		if errors.IsNotFound(err) {
 			return nil, nil
@@ -58,8 +58,8 @@ func (ldcHandler *LocalDiskClaimHandler) GetLocalDiskClaim(key client.ObjectKey)
 }
 
 // ListLocalDiskClaim
-func (ldcHandler *LocalDiskClaimHandler) ListUnboundLocalDiskClaim() (*ldmv1alpha1.LocalDiskClaimList, error) {
-	list := &ldmv1alpha1.LocalDiskClaimList{
+func (ldcHandler *LocalDiskClaimHandler) ListUnboundLocalDiskClaim() (*v1alpha1.LocalDiskClaimList, error) {
+	list := &v1alpha1.LocalDiskClaimList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "LocalDiskClaim",
 			APIVersion: "v1alpha1",
@@ -74,7 +74,7 @@ func (ldcHandler *LocalDiskClaimHandler) ListUnboundLocalDiskClaim() (*ldmv1alph
 }
 
 // For
-func (ldcHandler *LocalDiskClaimHandler) For(ldc ldmv1alpha1.LocalDiskClaim) *LocalDiskClaimHandler {
+func (ldcHandler *LocalDiskClaimHandler) For(ldc v1alpha1.LocalDiskClaim) *LocalDiskClaimHandler {
 	ldcHandler.ldc = ldc
 	return ldcHandler
 }
@@ -120,7 +120,7 @@ func (ldcHandler *LocalDiskClaimHandler) UpdateSpec() error {
 
 // Bounded
 func (ldcHandler *LocalDiskClaimHandler) Bounded() bool {
-	return ldcHandler.ldc.Status.Status == ldmv1alpha1.LocalDiskClaimStatusBound
+	return ldcHandler.ldc.Status.Status == v1alpha1.LocalDiskClaimStatusBound
 }
 
 // DiskRefs
@@ -129,12 +129,12 @@ func (ldcHandler *LocalDiskClaimHandler) DiskRefs() []*v1.ObjectReference {
 }
 
 // DiskRefs
-func (ldcHandler *LocalDiskClaimHandler) Phase() ldmv1alpha1.DiskClaimStatus {
+func (ldcHandler *LocalDiskClaimHandler) Phase() v1alpha1.DiskClaimStatus {
 	return ldcHandler.ldc.Status.Status
 }
 
 // BoundWith
-func (ldcHandler *LocalDiskClaimHandler) BoundWith(ld ldmv1alpha1.LocalDisk) error {
+func (ldcHandler *LocalDiskClaimHandler) BoundWith(ld v1alpha1.LocalDisk) error {
 	ldRef, err := reference.GetReference(nil, &ld)
 	if err != nil {
 		return err
@@ -151,14 +151,14 @@ func (ldcHandler *LocalDiskClaimHandler) BoundWith(ld ldmv1alpha1.LocalDisk) err
 		ldcHandler.ldc.Spec.DiskRefs = append(ldcHandler.ldc.Spec.DiskRefs, ldRef)
 	}
 
-	ldcHandler.ldc.Status.Status = ldmv1alpha1.LocalDiskClaimStatusBound
+	ldcHandler.ldc.Status.Status = v1alpha1.LocalDiskClaimStatusBound
 
 	ldcHandler.EventRecorder.Eventf(&ldcHandler.ldc, v1.EventTypeNormal, "BoundLocalDisk", "Bound disk %v", ld.Name)
 	return nil
 }
 
 // SetupClaimStatus
-func (ldcHandler *LocalDiskClaimHandler) SetupClaimStatus(status ldmv1alpha1.DiskClaimStatus) {
+func (ldcHandler *LocalDiskClaimHandler) SetupClaimStatus(status v1alpha1.DiskClaimStatus) {
 	ldcHandler.ldc.Status.Status = status
 }
 

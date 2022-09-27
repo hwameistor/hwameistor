@@ -7,9 +7,7 @@ import (
 	"testing"
 	"time"
 
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
-	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 	log "github.com/sirupsen/logrus"
 
@@ -53,10 +51,10 @@ var (
 	fakeLeaseTransitions            = int32(30)
 	fakeAcquireTime                 = time.Now()
 
-	fakeTopo                     = apisv1alpha1.Topology{Region: fakeRegion, Zone: fakeZone}
+	fakeTopo                     = v1alpha1.Topology{Region: fakeRegion, Zone: fakeZone}
 	fakeVgmNamespacedName        = "local-volume-test/local-volume-group-example"
 	fakePods                     = []string{"pod-test1"}
-	fakeVolumes                  = []apisv1alpha1.VolumeInfo{{LocalVolumeName: "local-volume-test1", PersistentVolumeClaimName: "pvc-test1"}}
+	fakeVolumes                  = []v1alpha1.VolumeInfo{{LocalVolumeName: "local-volume-test1", PersistentVolumeClaimName: "pvc-test1"}}
 	fakeTotalCapacityBytes int64 = 10 * 1024 * 1024 * 1024
 	fakeFreeCapacityBytes  int64 = 8 * 1024 * 1024 * 1024
 	fakeDiskCapacityBytes  int64 = 2 * 1024 * 1024 * 1024
@@ -75,7 +73,7 @@ var (
 
 	defaultDRBDStartPort      = 43001
 	defaultHAVolumeTotalCount = 1000
-	fakeAcesscibility         = apisv1alpha1.AccessibilityTopology{Nodes: []string{"test-node1"}}
+	fakeAcesscibility         = v1alpha1.AccessibilityTopology{Nodes: []string{"test-node1"}}
 )
 
 func Test_manager_startVolumeTaskWorker(t *testing.T) {
@@ -95,7 +93,7 @@ func Test_manager_startVolumeTaskWorker(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
@@ -129,7 +127,7 @@ func Test_manager_startVolumeTaskWorker(t *testing.T) {
 				volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 				volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
 				volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
-				localNodes:                  map[string]apisv1alpha1.State{},
+				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
 			m.startVolumeTaskWorker(tt.args.stopCh)
@@ -138,8 +136,8 @@ func Test_manager_startVolumeTaskWorker(t *testing.T) {
 }
 
 // GenFakeLocalVolumeObject Create lv request
-func GenFakeLocalVolumeObject() *apisv1alpha1.LocalVolume {
-	lv := &apisv1alpha1.LocalVolume{}
+func GenFakeLocalVolumeObject() *v1alpha1.LocalVolume {
+	lv := &v1alpha1.LocalVolume{}
 
 	TypeMeta := metav1.TypeMeta{
 		Kind:       LocalVolumeKind,
@@ -153,18 +151,18 @@ func GenFakeLocalVolumeObject() *apisv1alpha1.LocalVolume {
 		CreationTimestamp: metav1.Time{Time: time.Now()},
 	}
 
-	Spec := apisv1alpha1.LocalVolumeSpec{
+	Spec := v1alpha1.LocalVolumeSpec{
 		RequiredCapacityBytes: fakeDiskCapacityBytes,
 		ReplicaNumber:         1,
 		PoolName:              fakeVgType,
 		Delete:                false,
 		Convertible:           true,
-		Accessibility: apisv1alpha1.AccessibilityTopology{
+		Accessibility: v1alpha1.AccessibilityTopology{
 			Nodes:   fakeNodenames,
 			Regions: []string{fakeRegion},
 			Zones:   []string{fakeZone},
 		},
-		Config: &apisv1alpha1.VolumeConfig{
+		Config: &v1alpha1.VolumeConfig{
 			Convertible:           true,
 			Initialized:           true,
 			ReadyToInitialize:     true,
@@ -172,7 +170,7 @@ func GenFakeLocalVolumeObject() *apisv1alpha1.LocalVolume {
 			ResourceID:            5,
 			Version:               11,
 			VolumeName:            fakeLocalVolumeName,
-			Replicas: []apisv1alpha1.VolumeReplica{
+			Replicas: []v1alpha1.VolumeReplica{
 				{
 					Hostname: fakeNodename,
 					ID:       1,
@@ -186,7 +184,7 @@ func GenFakeLocalVolumeObject() *apisv1alpha1.LocalVolume {
 	lv.ObjectMeta = ObjectMata
 	lv.TypeMeta = TypeMeta
 	lv.Spec = Spec
-	lv.Status.State = apisv1alpha1.VolumeStateCreating
+	lv.Status.State = v1alpha1.VolumeStateCreating
 	lv.Status.AllocatedCapacityBytes = fakeTotalCapacityBytes - fakeFreeCapacityBytes
 	lv.Status.PublishedNodeName = fakeNodename
 	lv.Status.Replicas = []string{fakeLocalVolumeName}
@@ -195,8 +193,8 @@ func GenFakeLocalVolumeObject() *apisv1alpha1.LocalVolume {
 }
 
 // GenFakeLocalVolumeObject Create lv request
-func GenFakeLocalVolumeReplicaObject() *apisv1alpha1.LocalVolumeReplica {
-	lvr := &apisv1alpha1.LocalVolumeReplica{}
+func GenFakeLocalVolumeReplicaObject() *v1alpha1.LocalVolumeReplica {
+	lvr := &v1alpha1.LocalVolumeReplica{}
 
 	TypeMeta := metav1.TypeMeta{
 		Kind:       LocalVolumeReplicaKind,
@@ -211,7 +209,7 @@ func GenFakeLocalVolumeReplicaObject() *apisv1alpha1.LocalVolumeReplica {
 		CreationTimestamp: metav1.Time{Time: time.Now()},
 	}
 
-	Spec := apisv1alpha1.LocalVolumeReplicaSpec{
+	Spec := v1alpha1.LocalVolumeReplicaSpec{
 		RequiredCapacityBytes: fakeDiskCapacityBytes,
 		PoolName:              fakeVgType,
 		Delete:                false,
@@ -222,14 +220,14 @@ func GenFakeLocalVolumeReplicaObject() *apisv1alpha1.LocalVolumeReplica {
 	lvr.ObjectMeta = ObjectMata
 	lvr.TypeMeta = TypeMeta
 	lvr.Spec = Spec
-	lvr.Status.State = apisv1alpha1.VolumeStateCreating
+	lvr.Status.State = v1alpha1.VolumeStateCreating
 	lvr.Status.AllocatedCapacityBytes = fakeTotalCapacityBytes - fakeFreeCapacityBytes
 
 	return lvr
 }
 
-func GenFakeLocalVolumeConvertObject() *apisv1alpha1.LocalVolumeConvert {
-	lvc := &apisv1alpha1.LocalVolumeConvert{}
+func GenFakeLocalVolumeConvertObject() *v1alpha1.LocalVolumeConvert {
+	lvc := &v1alpha1.LocalVolumeConvert{}
 
 	TypeMeta := metav1.TypeMeta{
 		Kind:       LocalVolumeConvertKind,
@@ -243,7 +241,7 @@ func GenFakeLocalVolumeConvertObject() *apisv1alpha1.LocalVolumeConvert {
 		CreationTimestamp: metav1.Time{Time: time.Now()},
 	}
 
-	Spec := apisv1alpha1.LocalVolumeConvertSpec{
+	Spec := v1alpha1.LocalVolumeConvertSpec{
 		ReplicaNumber: 1,
 		VolumeName:    fakeLocalVolumeName,
 	}
@@ -255,8 +253,8 @@ func GenFakeLocalVolumeConvertObject() *apisv1alpha1.LocalVolumeConvert {
 	return lvc
 }
 
-func GenFakeLocalVolumeMigrateObject() *apisv1alpha1.LocalVolumeMigrate {
-	lvm := &apisv1alpha1.LocalVolumeMigrate{}
+func GenFakeLocalVolumeMigrateObject() *v1alpha1.LocalVolumeMigrate {
+	lvm := &v1alpha1.LocalVolumeMigrate{}
 
 	TypeMeta := metav1.TypeMeta{
 		Kind:       LocalVolumeMigrateKind,
@@ -270,7 +268,7 @@ func GenFakeLocalVolumeMigrateObject() *apisv1alpha1.LocalVolumeMigrate {
 		CreationTimestamp: metav1.Time{Time: time.Now()},
 	}
 
-	Spec := apisv1alpha1.LocalVolumeMigrateSpec{
+	Spec := v1alpha1.LocalVolumeMigrateSpec{
 		TargetNodesNames: fakeNodenames,
 		VolumeName:       fakeLocalVolumeName,
 	}
@@ -282,8 +280,8 @@ func GenFakeLocalVolumeMigrateObject() *apisv1alpha1.LocalVolumeMigrate {
 	return lvm
 }
 
-func GenFakeLocalVolumeGroupConvertObject() *apisv1alpha1.LocalVolumeGroupConvert {
-	lvgc := &apisv1alpha1.LocalVolumeGroupConvert{}
+func GenFakeLocalVolumeGroupConvertObject() *v1alpha1.LocalVolumeGroupConvert {
+	lvgc := &v1alpha1.LocalVolumeGroupConvert{}
 
 	TypeMeta := metav1.TypeMeta{
 		Kind:       LocalVolumeGroupConvertKind,
@@ -298,7 +296,7 @@ func GenFakeLocalVolumeGroupConvertObject() *apisv1alpha1.LocalVolumeGroupConver
 		CreationTimestamp: metav1.Time{Time: time.Now()},
 	}
 
-	Spec := apisv1alpha1.LocalVolumeGroupConvertSpec{
+	Spec := v1alpha1.LocalVolumeGroupConvertSpec{
 		ReplicaNumber:        1,
 		LocalVolumeGroupName: fakeLocalVolumeGroupName,
 	}
@@ -310,8 +308,8 @@ func GenFakeLocalVolumeGroupConvertObject() *apisv1alpha1.LocalVolumeGroupConver
 	return lvgc
 }
 
-func GenFakeLocalVolumeGroupMigrateObject() *apisv1alpha1.LocalVolumeGroupMigrate {
-	lvgm := &apisv1alpha1.LocalVolumeGroupMigrate{}
+func GenFakeLocalVolumeGroupMigrateObject() *v1alpha1.LocalVolumeGroupMigrate {
+	lvgm := &v1alpha1.LocalVolumeGroupMigrate{}
 
 	TypeMeta := metav1.TypeMeta{
 		Kind:       LocalVolumeGroupMigrateKind,
@@ -326,7 +324,7 @@ func GenFakeLocalVolumeGroupMigrateObject() *apisv1alpha1.LocalVolumeGroupMigrat
 		CreationTimestamp: metav1.Time{Time: time.Now()},
 	}
 
-	Spec := apisv1alpha1.LocalVolumeGroupMigrateSpec{
+	Spec := v1alpha1.LocalVolumeGroupMigrateSpec{
 		SourceNodesNames:     fakeNodenames,
 		TargetNodesNames:     fakeNodenames,
 		LocalVolumeGroupName: fakeLocalVolumeGroupName,
@@ -339,8 +337,8 @@ func GenFakeLocalVolumeGroupMigrateObject() *apisv1alpha1.LocalVolumeGroupMigrat
 	return lvgm
 }
 
-func GenFakeLocalVolumeGroupObject() *apisv1alpha1.LocalVolumeGroup {
-	lvc := &apisv1alpha1.LocalVolumeGroup{}
+func GenFakeLocalVolumeGroupObject() *v1alpha1.LocalVolumeGroup {
+	lvc := &v1alpha1.LocalVolumeGroup{}
 
 	TypeMeta := metav1.TypeMeta{
 		Kind:       LocalVolumeGroupKind,
@@ -355,7 +353,7 @@ func GenFakeLocalVolumeGroupObject() *apisv1alpha1.LocalVolumeGroup {
 		CreationTimestamp: metav1.Time{Time: time.Now()},
 	}
 
-	Spec := apisv1alpha1.LocalVolumeGroupSpec{
+	Spec := v1alpha1.LocalVolumeGroupSpec{
 		Volumes:       fakeVolumes,
 		Accessibility: fakeAcesscibility,
 		Pods:          fakePods,
@@ -368,8 +366,8 @@ func GenFakeLocalVolumeGroupObject() *apisv1alpha1.LocalVolumeGroup {
 	return lvc
 }
 
-func GenFakeLocalStorageNodeObject() *apisv1alpha1.LocalStorageNode {
-	lsn := &apisv1alpha1.LocalStorageNode{}
+func GenFakeLocalStorageNodeObject() *v1alpha1.LocalStorageNode {
+	lsn := &v1alpha1.LocalStorageNode{}
 
 	TypeMeta := metav1.TypeMeta{
 		Kind:       LocalVolumeGroupKind,
@@ -384,7 +382,7 @@ func GenFakeLocalStorageNodeObject() *apisv1alpha1.LocalStorageNode {
 		CreationTimestamp: metav1.Time{Time: time.Now()},
 	}
 
-	Spec := apisv1alpha1.LocalStorageNodeSpec{
+	Spec := v1alpha1.LocalStorageNodeSpec{
 		HostName:  fakeNodename,
 		StorageIP: fakeStorageIp,
 		Topo:      fakeTopo,
@@ -430,7 +428,7 @@ func GenFakeLeaseObject() *coorv1.Lease {
 func CreateFakeClient() (client.Client, *runtime.Scheme) {
 
 	lv := GenFakeLocalVolumeObject()
-	lvList := &apisv1alpha1.LocalVolumeList{
+	lvList := &v1alpha1.LocalVolumeList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       LocalVolumeKind,
 			APIVersion: apiversion,
@@ -438,7 +436,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	}
 
 	lvc := GenFakeLocalVolumeConvertObject()
-	lvcList := &apisv1alpha1.LocalVolumeConvertList{
+	lvcList := &v1alpha1.LocalVolumeConvertList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       LocalVolumeConvertKind,
 			APIVersion: apiversion,
@@ -446,7 +444,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	}
 
 	lvgc := GenFakeLocalVolumeGroupConvertObject()
-	lvgcList := &apisv1alpha1.LocalVolumeGroupConvertList{
+	lvgcList := &v1alpha1.LocalVolumeGroupConvertList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       LocalVolumeGroupConvertKind,
 			APIVersion: apiversion,
@@ -454,7 +452,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	}
 
 	lvm := GenFakeLocalVolumeMigrateObject()
-	lvmList := &apisv1alpha1.LocalVolumeMigrateList{
+	lvmList := &v1alpha1.LocalVolumeMigrateList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       LocalVolumeMigrateKind,
 			APIVersion: apiversion,
@@ -462,7 +460,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	}
 
 	lvgm := GenFakeLocalVolumeGroupMigrateObject()
-	lvgmList := &apisv1alpha1.LocalVolumeGroupMigrateList{
+	lvgmList := &v1alpha1.LocalVolumeGroupMigrateList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       LocalVolumeGroupMigrateKind,
 			APIVersion: apiversion,
@@ -470,7 +468,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	}
 
 	lvr := GenFakeLocalVolumeReplicaObject()
-	lvrList := &apisv1alpha1.LocalVolumeReplicaList{
+	lvrList := &v1alpha1.LocalVolumeReplicaList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       LocalVolumeReplicaKind,
 			APIVersion: apiversion,
@@ -478,7 +476,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	}
 
 	lvg := GenFakeLocalVolumeGroupObject()
-	lvgList := &apisv1alpha1.LocalVolumeGroupList{
+	lvgList := &v1alpha1.LocalVolumeGroupList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       LocalVolumeGroupKind,
 			APIVersion: apiversion,
@@ -486,7 +484,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	}
 
 	lsn := GenFakeLocalStorageNodeObject()
-	lsnList := &apisv1alpha1.LocalStorageNodeList{
+	lsnList := &v1alpha1.LocalStorageNodeList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       LocalStorageNodeKind,
 			APIVersion: apiversion,
@@ -502,24 +500,24 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	}
 
 	s := scheme.Scheme
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lv)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvc)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvcList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvm)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvmList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvgc)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvgcList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvgm)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvgmList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvr)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvrList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvg)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvgList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lsn)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lsnList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lease)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, leaseList)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lv)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvList)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvc)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvcList)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvm)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvmList)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvgc)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvgcList)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvgm)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvgmList)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvr)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvrList)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvg)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvgList)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lsn)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lsnList)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lease)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, leaseList)
 	return fake.NewFakeClientWithScheme(s), s
 }
 
@@ -530,8 +528,8 @@ func Test_manager_processVolume(t *testing.T) {
 		apiClient                   client.Client
 		informersCache              cache.Cache
 		scheme                      *runtime.Scheme
-		volumeScheduler             apisv1alpha1.VolumeScheduler
-		volumeGroupManager          apisv1alpha1.VolumeGroupManager
+		volumeScheduler             v1alpha1.VolumeScheduler
+		volumeGroupManager          v1alpha1.VolumeGroupManager
 		nodeTaskQueue               *common.TaskQueue
 		k8sNodeTaskQueue            *common.TaskQueue
 		volumeTaskQueue             *common.TaskQueue
@@ -540,7 +538,7 @@ func Test_manager_processVolume(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
@@ -575,7 +573,7 @@ func Test_manager_processVolume(t *testing.T) {
 				volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 				volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
 				volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
-				localNodes:                  map[string]apisv1alpha1.State{},
+				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.processVolume(tt.args.volName); (err != nil) != tt.wantErr {
@@ -592,8 +590,8 @@ func Test_manager_processVolumeSubmit(t *testing.T) {
 		apiClient                   client.Client
 		informersCache              cache.Cache
 		scheme                      *runtime.Scheme
-		volumeScheduler             apisv1alpha1.VolumeScheduler
-		volumeGroupManager          apisv1alpha1.VolumeGroupManager
+		volumeScheduler             v1alpha1.VolumeScheduler
+		volumeGroupManager          v1alpha1.VolumeGroupManager
 		nodeTaskQueue               *common.TaskQueue
 		k8sNodeTaskQueue            *common.TaskQueue
 		volumeTaskQueue             *common.TaskQueue
@@ -602,12 +600,12 @@ func Test_manager_processVolumeSubmit(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
 	type args struct {
-		vol *apisv1alpha1.LocalVolume
+		vol *v1alpha1.LocalVolume
 	}
 
 	client, _ := CreateFakeClient()
@@ -652,7 +650,7 @@ func Test_manager_processVolumeSubmit(t *testing.T) {
 				volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 				volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
 				volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
-				localNodes:                  map[string]apisv1alpha1.State{},
+				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.processVolumeSubmit(tt.args.vol); (err != nil) != tt.wantErr {
@@ -669,8 +667,8 @@ func Test_manager_getReplicasForVolume(t *testing.T) {
 		apiClient                   client.Client
 		informersCache              cache.Cache
 		scheme                      *runtime.Scheme
-		volumeScheduler             apisv1alpha1.VolumeScheduler
-		volumeGroupManager          apisv1alpha1.VolumeGroupManager
+		volumeScheduler             v1alpha1.VolumeScheduler
+		volumeGroupManager          v1alpha1.VolumeGroupManager
 		nodeTaskQueue               *common.TaskQueue
 		k8sNodeTaskQueue            *common.TaskQueue
 		volumeTaskQueue             *common.TaskQueue
@@ -679,7 +677,7 @@ func Test_manager_getReplicasForVolume(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
@@ -690,7 +688,7 @@ func Test_manager_getReplicasForVolume(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*apisv1alpha1.LocalVolumeReplica
+		want    []*v1alpha1.LocalVolumeReplica
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -736,8 +734,8 @@ func Test_manager_processVolumeCreate(t *testing.T) {
 		apiClient                   client.Client
 		informersCache              cache.Cache
 		scheme                      *runtime.Scheme
-		volumeScheduler             apisv1alpha1.VolumeScheduler
-		volumeGroupManager          apisv1alpha1.VolumeGroupManager
+		volumeScheduler             v1alpha1.VolumeScheduler
+		volumeGroupManager          v1alpha1.VolumeGroupManager
 		nodeTaskQueue               *common.TaskQueue
 		k8sNodeTaskQueue            *common.TaskQueue
 		volumeTaskQueue             *common.TaskQueue
@@ -746,12 +744,12 @@ func Test_manager_processVolumeCreate(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
 	type args struct {
-		vol *apisv1alpha1.LocalVolume
+		vol *v1alpha1.LocalVolume
 	}
 	client, _ := CreateFakeClient()
 
@@ -794,7 +792,7 @@ func Test_manager_processVolumeCreate(t *testing.T) {
 				volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 				volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
 				volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
-				localNodes:                  map[string]apisv1alpha1.State{},
+				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.processVolumeCreate(tt.args.vol); (err != nil) != tt.wantErr {
@@ -811,8 +809,8 @@ func Test_manager_processVolumeReadyAndNotReady(t *testing.T) {
 		apiClient                   client.Client
 		informersCache              cache.Cache
 		scheme                      *runtime.Scheme
-		volumeScheduler             apisv1alpha1.VolumeScheduler
-		volumeGroupManager          apisv1alpha1.VolumeGroupManager
+		volumeScheduler             v1alpha1.VolumeScheduler
+		volumeGroupManager          v1alpha1.VolumeGroupManager
 		nodeTaskQueue               *common.TaskQueue
 		k8sNodeTaskQueue            *common.TaskQueue
 		volumeTaskQueue             *common.TaskQueue
@@ -821,12 +819,12 @@ func Test_manager_processVolumeReadyAndNotReady(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
 	type args struct {
-		vol *apisv1alpha1.LocalVolume
+		vol *v1alpha1.LocalVolume
 	}
 
 	client, _ := CreateFakeClient()
@@ -871,7 +869,7 @@ func Test_manager_processVolumeReadyAndNotReady(t *testing.T) {
 				volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 				volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
 				volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
-				localNodes:                  map[string]apisv1alpha1.State{},
+				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.processVolumeReadyAndNotReady(tt.args.vol); (err != nil) != tt.wantErr {
@@ -883,7 +881,7 @@ func Test_manager_processVolumeReadyAndNotReady(t *testing.T) {
 
 func Test_isVolumeReplicaUp(t *testing.T) {
 	type args struct {
-		replica *apisv1alpha1.LocalVolumeReplica
+		replica *v1alpha1.LocalVolumeReplica
 	}
 	tests := []struct {
 		name string
@@ -908,8 +906,8 @@ func Test_manager_processVolumeDelete(t *testing.T) {
 		apiClient                   client.Client
 		informersCache              cache.Cache
 		scheme                      *runtime.Scheme
-		volumeScheduler             apisv1alpha1.VolumeScheduler
-		volumeGroupManager          apisv1alpha1.VolumeGroupManager
+		volumeScheduler             v1alpha1.VolumeScheduler
+		volumeGroupManager          v1alpha1.VolumeGroupManager
 		nodeTaskQueue               *common.TaskQueue
 		k8sNodeTaskQueue            *common.TaskQueue
 		volumeTaskQueue             *common.TaskQueue
@@ -918,12 +916,12 @@ func Test_manager_processVolumeDelete(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
 	type args struct {
-		vol *apisv1alpha1.LocalVolume
+		vol *v1alpha1.LocalVolume
 	}
 
 	client, _ := CreateFakeClient()
@@ -968,7 +966,7 @@ func Test_manager_processVolumeDelete(t *testing.T) {
 				volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 				volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
 				volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
-				localNodes:                  map[string]apisv1alpha1.State{},
+				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.processVolumeDelete(tt.args.vol); (err != nil) != tt.wantErr {
@@ -985,8 +983,8 @@ func Test_manager_processVolumeCleanup(t *testing.T) {
 		apiClient                   client.Client
 		informersCache              cache.Cache
 		scheme                      *runtime.Scheme
-		volumeScheduler             apisv1alpha1.VolumeScheduler
-		volumeGroupManager          apisv1alpha1.VolumeGroupManager
+		volumeScheduler             v1alpha1.VolumeScheduler
+		volumeGroupManager          v1alpha1.VolumeGroupManager
 		nodeTaskQueue               *common.TaskQueue
 		k8sNodeTaskQueue            *common.TaskQueue
 		volumeTaskQueue             *common.TaskQueue
@@ -995,12 +993,12 @@ func Test_manager_processVolumeCleanup(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
 	type args struct {
-		vol *apisv1alpha1.LocalVolume
+		vol *v1alpha1.LocalVolume
 	}
 
 	client, _ := CreateFakeClient()
@@ -1044,7 +1042,7 @@ func Test_manager_processVolumeCleanup(t *testing.T) {
 				volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 				volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
 				volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
-				localNodes:                  map[string]apisv1alpha1.State{},
+				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.processVolumeCleanup(tt.args.vol); (err != nil) != tt.wantErr {

@@ -13,7 +13,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 
-	ldm "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	runtime2 "k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/controller"
@@ -25,7 +25,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 
-	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/log/zap"
 	"github.com/operator-framework/operator-sdk/pkg/metrics"
@@ -260,7 +259,7 @@ func newClusterManager(cfg *rest.Config) (manager.Manager, error) {
 
 	log.Info("Registering Cluster Components.")
 	// Setup Scheme for all resources
-	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
+	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return nil, err
 	}
 
@@ -286,7 +285,7 @@ func newNodeManager(cfg *rest.Config) (manager.Manager, error) {
 
 	log.Info("Registering Node Components.")
 	// Setup Scheme for node resources
-	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
+	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return nil, err
 	}
 
@@ -310,13 +309,13 @@ func setIndexField(cache cache.Cache) {
 		{
 			field: "spec.nodeName",
 			Func: func(obj runtime2.Object) []string {
-				return []string{obj.(*ldm.LocalDisk).Spec.NodeName}
+				return []string{obj.(*v1alpha1.LocalDisk).Spec.NodeName}
 			},
 		},
 	}
 
 	for _, index := range indexes {
-		if err := cache.IndexField(context.Background(), &ldm.LocalDisk{}, index.field, index.Func); err != nil {
+		if err := cache.IndexField(context.Background(), &v1alpha1.LocalDisk{}, index.field, index.Func); err != nil {
 			log.Error(err, "failed to setup index field %s", index.field)
 			continue
 		}

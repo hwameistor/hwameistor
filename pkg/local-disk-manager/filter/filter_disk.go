@@ -1,7 +1,7 @@
 package filter
 
 import (
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/sys"
 	v1 "k8s.io/api/core/v1"
 )
@@ -14,12 +14,12 @@ const (
 )
 
 type LocalDiskFilter struct {
-	LocalDisk ldmv1alpha1.LocalDisk
+	LocalDisk v1alpha1.LocalDisk
 	Result    Bool
 }
 
 // NewLocalDiskFilter
-func NewLocalDiskFilter(ld ldmv1alpha1.LocalDisk) LocalDiskFilter {
+func NewLocalDiskFilter(ld v1alpha1.LocalDisk) LocalDiskFilter {
 	return LocalDiskFilter{
 		LocalDisk: ld,
 		Result:    TRUE,
@@ -34,7 +34,7 @@ func (ld *LocalDiskFilter) Init() *LocalDiskFilter {
 
 // Unclaimed
 func (ld *LocalDiskFilter) Unclaimed() *LocalDiskFilter {
-	if ld.LocalDisk.Status.State == ldmv1alpha1.LocalDiskUnclaimed {
+	if ld.LocalDisk.Status.State == v1alpha1.LocalDiskUnclaimed {
 		ld.setResult(TRUE)
 	} else {
 		ld.setResult(FALSE)

@@ -2,18 +2,19 @@ package E2eTest
 
 import (
 	"context"
-	ldapis "github.com/hwameistor/hwameistor/pkg/apis/generated/local-disk-manager/clientset/versioned/scheme"
-	ldv1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
+	"time"
+
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"time"
 )
 
 var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("periodCheck"), ginkgo.Ordered, func() {
-	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.Context("test Local Disk", func() {
@@ -24,7 +25,7 @@ var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("periodCheck"), 
 		})
 		ginkgo.It("Check existed Local Disk", func() {
 			time.Sleep(2 * time.Minute)
-			localDiskList := &ldv1.LocalDiskList{}
+			localDiskList := &v1alpha1.LocalDiskList{}
 			err := client.List(ctx, localDiskList)
 			if err != nil {
 				logrus.Error(err)
@@ -36,7 +37,7 @@ var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("periodCheck"), 
 			output := runInLinux("sh adddisk.sh")
 			logrus.Info("add  disk :", output)
 			err := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
-				localDiskList := &ldv1.LocalDiskList{}
+				localDiskList := &v1alpha1.LocalDiskList{}
 				err = client.List(ctx, localDiskList)
 				if err != nil {
 					logrus.Error("add disk failed")

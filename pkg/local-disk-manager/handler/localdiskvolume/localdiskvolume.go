@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	ldm "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	lscsi "github.com/hwameistor/hwameistor/pkg/local-storage/member/csi"
 	log "github.com/sirupsen/logrus"
@@ -25,7 +25,7 @@ const (
 type DiskVolumeHandler struct {
 	client.Client
 	record.EventRecorder
-	Ldv     *ldm.LocalDiskVolume
+	Ldv     *v1alpha1.LocalDiskVolume
 	mounter lscsi.Mounter
 }
 
@@ -52,14 +52,14 @@ func (v *DiskVolumeHandler) ReconcileMount() (reconcile.Result, error) {
 
 	// Mount RawBlock or FileSystem Volumes
 	for _, mountPoint := range mountPoints {
-		if mountPoint.Phase != ldm.MountPointToBeMounted {
+		if mountPoint.Phase != v1alpha1.MountPointToBeMounted {
 			continue
 		}
 
 		switch mountPoint.VolumeCap.AccessType {
-		case ldm.VolumeCapability_AccessType_Mount:
+		case v1alpha1.VolumeCapability_AccessType_Mount:
 			err = v.MountFileSystem(devPath, mountPoint.TargetPath, mountPoint.FsTye, mountPoint.MountOptions...)
-		case ldm.VolumeCapability_AccessType_Block:
+		case v1alpha1.VolumeCapability_AccessType_Block:
 			err = v.MountRawBlock(devPath, mountPoint.TargetPath)
 		default:
 			// record and skip this mountpoint
@@ -72,13 +72,13 @@ func (v *DiskVolumeHandler) ReconcileMount() (reconcile.Result, error) {
 			result.Requeue = true
 			continue
 		}
-		v.UpdateMountPointPhase(mountPoint.TargetPath, ldm.MountPointMounted)
+		v.UpdateMountPointPhase(mountPoint.TargetPath, v1alpha1.MountPointMounted)
 		// once a volume is attached success, the disk will be wiped when volume is delete
 		v.SetCanWipe(true)
 	}
 
 	if !result.Requeue {
-		v.SetupVolumeStatus(ldm.VolumeStateReady)
+		v.SetupVolumeStatus(v1alpha1.VolumeStateReady)
 	}
 
 	return result, v.UpdateLocalDiskVolume()
@@ -90,7 +90,7 @@ func (v *DiskVolumeHandler) ReconcileUnmount() (reconcile.Result, error) {
 	var mountPoints = v.GetMountPoints()
 
 	for _, mountPoint := range mountPoints {
-		if mountPoint.Phase == ldm.MountPointToBeUnMount {
+		if mountPoint.Phase == v1alpha1.MountPointToBeUnMount {
 			if err = v.UnMount(mountPoint.TargetPath); err != nil {
 				log.WithError(err).Errorf("Failed to unmount %s", mountPoint.TargetPath)
 				result.Requeue = true
@@ -103,7 +103,7 @@ func (v *DiskVolumeHandler) ReconcileUnmount() (reconcile.Result, error) {
 	if !result.Requeue {
 		// Considering that a disk will be mounted to multiple pods,
 		// if a mount point is processed, the entire LocalDiskVolume will be setup to the Ready state
-		v.SetupVolumeStatus(ldm.VolumeStateReady)
+		v.SetupVolumeStatus(v1alpha1.VolumeStateReady)
 	}
 
 	return result, v.UpdateLocalDiskVolume()
@@ -150,8 +150,8 @@ func (v *DiskVolumeHandler) WipeDisk() error {
 	return nil
 }
 
-func (v *DiskVolumeHandler) GetLocalDiskVolume(key client.ObjectKey) (volume *ldm.LocalDiskVolume, err error) {
-	volume = &ldm.LocalDiskVolume{}
+func (v *DiskVolumeHandler) GetLocalDiskVolume(key client.ObjectKey) (volume *v1alpha1.LocalDiskVolume, err error) {
+	volume = &v1alpha1.LocalDiskVolume{}
 	err = v.Get(context.Background(), key, volume)
 	return
 }
@@ -165,7 +165,7 @@ func (v *DiskVolumeHandler) UpdateLocalDiskVolume() error {
 }
 
 func (v *DiskVolumeHandler) DeleteLocalDiskVolume() error {
-	v.SetupVolumeStatus(ldm.VolumeStateDeleted)
+	v.SetupVolumeStatus(v1alpha1.VolumeStateDeleted)
 	return v.UpdateLocalDiskVolume()
 }
 
@@ -177,10 +177,10 @@ func (v *DiskVolumeHandler) RemoveFinalizers() error {
 
 func (v *DiskVolumeHandler) AddFinalizers(finalizer []string) {
 	v.Ldv.Finalizers = finalizer
-	return
+	//return
 }
 
-func (v *DiskVolumeHandler) GetMountPoints() []ldm.MountPoint {
+func (v *DiskVolumeHandler) GetMountPoints() []v1alpha1.MountPoint {
 	return v.Ldv.Status.MountPoints
 }
 
@@ -253,7 +253,7 @@ func (v *DiskVolumeHandler) IsDevMountPoint(mountPoint string) bool {
 	return false
 }
 
-func (v *DiskVolumeHandler) VolumeState() ldm.State {
+func (v *DiskVolumeHandler) VolumeState() v1alpha1.State {
 	return v.Ldv.Status.State
 }
 
@@ -268,14 +268,14 @@ func (v *DiskVolumeHandler) ExistMountPoint(targetPath string) bool {
 }
 
 func (v *DiskVolumeHandler) AppendMountPoint(targetPath string, volCap *csi.VolumeCapability) {
-	mountPoint := ldm.MountPoint{TargetPath: targetPath, Phase: ldm.MountPointToBeMounted}
+	mountPoint := v1alpha1.MountPoint{TargetPath: targetPath, Phase: v1alpha1.MountPointToBeMounted}
 	switch volCap.AccessType.(type) {
 	case *csi.VolumeCapability_Block:
-		mountPoint.VolumeCap = ldm.VolumeCapability{AccessType: ldm.VolumeCapability_AccessType_Block}
+		mountPoint.VolumeCap = v1alpha1.VolumeCapability{AccessType: v1alpha1.VolumeCapability_AccessType_Block}
 	case *csi.VolumeCapability_Mount:
 		mountPoint.FsTye = volCap.GetMount().FsType
 		mountPoint.MountOptions = volCap.GetMount().MountFlags
-		mountPoint.VolumeCap = ldm.VolumeCapability{AccessType: ldm.VolumeCapability_AccessType_Mount}
+		mountPoint.VolumeCap = v1alpha1.VolumeCapability{AccessType: v1alpha1.VolumeCapability_AccessType_Mount}
 	default:
 	}
 	v.Ldv.Status.MountPoints = append(v.Ldv.Status.MountPoints, mountPoint)
@@ -290,7 +290,7 @@ func (v *DiskVolumeHandler) MoveMountPoint(targetPath string) {
 	}
 }
 
-func (v *DiskVolumeHandler) UpdateMountPointPhase(targetPath string, phase ldm.State) {
+func (v *DiskVolumeHandler) UpdateMountPointPhase(targetPath string, phase v1alpha1.State) {
 	for i, mountPoint := range v.GetMountPoints() {
 		if mountPoint.TargetPath == targetPath {
 			v.Ldv.Status.MountPoints[i].Phase = phase
@@ -317,14 +317,14 @@ func (v *DiskVolumeHandler) WaitVolumeReady(ctx context.Context) error {
 		if err := v.RefreshVolume(); err != nil {
 			return err
 		}
-		if v.VolumeState() == ldm.VolumeStateReady {
+		if v.VolumeState() == v1alpha1.VolumeStateReady {
 			return nil
 		}
 		timer.Reset(1 * time.Second)
 	}
 }
 
-func (v *DiskVolumeHandler) WaitVolume(ctx context.Context, state ldm.State) error {
+func (v *DiskVolumeHandler) WaitVolume(ctx context.Context, state v1alpha1.State) error {
 	if _, ok := ctx.Deadline(); !ok {
 		return fmt.Errorf("no deadline is set")
 	}
@@ -366,7 +366,7 @@ func (v *DiskVolumeHandler) WaitVolumeUnmounted(ctx context.Context, mountPoint 
 		if err := v.RefreshVolume(); err != nil {
 			return err
 		}
-		if v.VolumeState() == ldm.VolumeStateReady && !v.ExistMountPoint(mountPoint) {
+		if v.VolumeState() == v1alpha1.VolumeStateReady && !v.ExistMountPoint(mountPoint) {
 			return nil
 		}
 		timer.Reset(1 * time.Second)
@@ -385,7 +385,7 @@ func (v *DiskVolumeHandler) RefreshVolume() error {
 	return nil
 }
 
-func (v *DiskVolumeHandler) SetupVolumeStatus(status ldm.State) {
+func (v *DiskVolumeHandler) SetupVolumeStatus(status v1alpha1.State) {
 	v.Ldv.Status.State = status
 }
 
@@ -397,7 +397,7 @@ func (v *DiskVolumeHandler) CheckFinalizers() error {
 	}
 
 	// volume is ready for delete, don't append finalizer
-	if v.VolumeState() == ldm.VolumeStateDeleted {
+	if v.VolumeState() == v1alpha1.VolumeStateDeleted {
 		return nil
 	}
 
@@ -415,6 +415,6 @@ func (v *DiskVolumeHandler) GetBoundDisk() string {
 	return v.Ldv.Status.LocalDiskName
 }
 
-func (v *DiskVolumeHandler) For(volume *ldm.LocalDiskVolume) {
+func (v *DiskVolumeHandler) For(volume *v1alpha1.LocalDiskVolume) {
 	v.Ldv = volume
 }

@@ -2,9 +2,10 @@ package storage
 
 import (
 	"fmt"
-	"github.com/golang/mock/gomock"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 func Test_lvmExecutor_CreateVolumeReplica(t *testing.T) {
@@ -179,8 +180,8 @@ func TestVolumeReplica2(t *testing.T) {
 }
 
 func Test_lvmExecutor_ExtendPools(t *testing.T) {
-	disks := make([]*apisv1alpha1.LocalDisk, 0, 10)
-	var localdisk1 = &apisv1alpha1.LocalDisk{}
+	disks := make([]*apisv1alpha1.LocalDevice, 0, 10)
+	var localdisk1 = &apisv1alpha1.LocalDevice{}
 	localdisk1.DevPath = "/dev/sdf"
 	localdisk1.State = apisv1alpha1.DiskStateAvailable
 	localdisk1.Class = "HDD"

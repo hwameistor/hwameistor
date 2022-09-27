@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 func Test_localRegistry_Disks(t *testing.T) {
@@ -68,8 +68,8 @@ func Test_localRegistry_Pools(t *testing.T) {
 }
 
 func Test_localRegistry_SyncResourcesToNodeCRD(t *testing.T) {
-	var localDiskM = map[string]*apisv1alpha1.LocalDisk{}
-	localDiskM["/dev/sdb"] = &apisv1alpha1.LocalDisk{
+	var localDiskM = map[string]*apisv1alpha1.LocalDevice{}
+	localDiskM["/dev/sdb"] = &apisv1alpha1.LocalDevice{
 		DevPath:       "/dev/sdb",
 		Class:         apisv1alpha1.DiskClassNameHDD,
 		CapacityBytes: 10240,

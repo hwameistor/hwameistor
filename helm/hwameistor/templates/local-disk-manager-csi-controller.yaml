@@ -29,7 +29,7 @@ spec:
         - name: provisioner
           resources: 
             {{- toYaml .Values.localDiskManagerCSIController.provisioner.resources | nindent 12 }}
-          image: {{ .Values.k8sImageRegistry}}/{{ .Values.localDiskManagerCSIController.provisioner.imageRepository}}:{{ .Values.localDiskManagerCSIController.provisioner.tag}}
+          image: {{ .Values.global.k8sImageRegistry}}/{{ .Values.localDiskManagerCSIController.provisioner.imageRepository}}:{{ .Values.localDiskManagerCSIController.provisioner.tag}}
           imagePullPolicy: "IfNotPresent"
           args:
             - "--v=5"
@@ -47,7 +47,7 @@ spec:
         - name: attacher
           resources: 
             {{- toYaml .Values.localDiskManagerCSIController.attacher.resources | nindent 12 }}
-          image: {{ .Values.k8sImageRegistry}}/{{ .Values.localDiskManagerCSIController.attacher.imageRepository}}:{{ .Values.localDiskManagerCSIController.attacher.tag}}
+          image: {{ .Values.global.k8sImageRegistry}}/{{ .Values.localDiskManagerCSIController.attacher.imageRepository}}:{{ .Values.localDiskManagerCSIController.attacher.tag}}
           imagePullPolicy: IfNotPresent
           args:
             - "--v=5"

@@ -3,9 +3,9 @@ package E2eTest
 import (
 	"bytes"
 	"context"
-	ldapis "github.com/hwameistor/hwameistor/pkg/apis/generated/local-disk-manager/clientset/versioned/scheme"
-	ldv1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
-	lsv1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	b1 "k8s.io/api/batch/v1"
@@ -44,7 +44,7 @@ func runInLinux(cmd string) string {
 
 func nodeList() *apiv1.NodeList {
 	logrus.Printf("get node list")
-	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	nodelist := &apiv1.NodeList{}
 	err := client.List(context.TODO(), nodelist)
@@ -57,7 +57,7 @@ func nodeList() *apiv1.NodeList {
 
 func addLabels() {
 	logrus.Printf("add node labels")
-	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	nodelist := &apiv1.NodeList{}
 	err := client.List(context.TODO(), nodelist)
@@ -116,7 +116,7 @@ func configureEnvironment(ctx context.Context) error {
 		logrus.Error(err)
 	}
 	addLabels()
-	f := framework.NewDefaultFramework(lsv1.AddToScheme)
+	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
 	client := f.GetClient()
 
 	drbd1 := &b1.Job{}
@@ -228,7 +228,7 @@ func configureEnvironmentForPrTest(ctx context.Context) bool {
 	}
 	installHwameiStorByHelm()
 	addLabels()
-	f := framework.NewDefaultFramework(lsv1.AddToScheme)
+	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
 	client := f.GetClient()
 
 	localStorage := &appsv1.DaemonSet{}
@@ -364,17 +364,17 @@ func uninstallHelm() {
 func createLdc(ctx context.Context) error {
 	logrus.Printf("create ldc for each node")
 	nodelist := nodeList()
-	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	for _, nodes := range nodelist.Items {
-		exmlocalDiskClaim := &ldv1.LocalDiskClaim{
+		exmlocalDiskClaim := &v1alpha1.LocalDiskClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "localdiskclaim-" + nodes.Name,
 				Namespace: "kube-system",
 			},
-			Spec: ldv1.LocalDiskClaimSpec{
+			Spec: v1alpha1.LocalDiskClaimSpec{
 				NodeName: nodes.Name,
-				Description: ldv1.DiskClaimDescription{
+				Description: v1alpha1.DiskClaimDescription{
 					DiskType: "HDD",
 				},
 			},
@@ -389,7 +389,7 @@ func createLdc(ctx context.Context) error {
 	err := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
 		for _, nodes := range nodelist.Items {
 			time.Sleep(3 * time.Second)
-			localDiskClaim := &ldv1.LocalDiskClaim{}
+			localDiskClaim := &v1alpha1.LocalDiskClaim{}
 			localDiskClaimKey := k8sclient.ObjectKey{
 				Name:      "localdiskclaim-" + nodes.Name,
 				Namespace: "kube-system",
@@ -399,7 +399,7 @@ func createLdc(ctx context.Context) error {
 				logrus.Error(err)
 				f.ExpectNoError(err)
 			}
-			if localDiskClaim.Status.Status != ldv1.LocalDiskClaimStatusBound {
+			if localDiskClaim.Status.Status != v1alpha1.LocalDiskClaimStatusBound {
 				return false, nil
 			}
 		}
@@ -416,7 +416,7 @@ func createLdc(ctx context.Context) error {
 
 func deleteAllPVC(ctx context.Context) error {
 	logrus.Printf("delete All PVC")
-	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	pvcList := &apiv1.PersistentVolumeClaimList{}
 	err := client.List(ctx, pvcList)
@@ -458,7 +458,7 @@ func deleteAllPVC(ctx context.Context) error {
 
 func deleteAllSC(ctx context.Context) error {
 	logrus.Printf("delete All SC")
-	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	scList := &storagev1.StorageClassList{}
 	err := client.List(ctx, scList)
