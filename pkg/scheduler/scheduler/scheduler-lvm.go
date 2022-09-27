@@ -114,7 +114,8 @@ func (s *LVMVolumeScheduler) filterForNewPVCs(pvcs []*corev1.PersistentVolumeCla
 
 	qualifiedNodes := s.replicaScheduler.GetNodeCandidates(lvs)
 	if len(qualifiedNodes) < int(lvs[0].Spec.ReplicaNumber) {
-		return false, fmt.Errorf("no enough nodes")
+		return false, fmt.Errorf("need %d node(s) to place volume, but only find %d node(s) meet the volume capacity requirements",
+			int(lvs[0].Spec.ReplicaNumber), len(qualifiedNodes))
 	}
 	for _, qn := range qualifiedNodes {
 		if qn.Name == node.Name {
