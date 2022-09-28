@@ -4,7 +4,7 @@ import (
 	"context"
 	"reflect"
 
-	ldm "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	localdisk2 "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -16,7 +16,7 @@ import (
 type DiskNodeHandler struct {
 	client.Client
 	record.EventRecorder
-	diskNode    *ldm.LocalDiskNode
+	diskNode    *v1alpha1.LocalDiskNode
 	diskHandler *localdisk2.LocalDiskHandler
 }
 
@@ -29,7 +29,7 @@ func NewDiskNodeHelper(cli client.Client, recorder record.EventRecorder) *DiskNo
 }
 
 func (n *DiskNodeHandler) For(name types.NamespacedName) error {
-	ldn := &ldm.LocalDiskNode{}
+	ldn := &v1alpha1.LocalDiskNode{}
 	err := n.Get(context.Background(), name, ldn)
 	if err != nil {
 		return err
@@ -50,11 +50,11 @@ func (n *DiskNodeHandler) UpdateStatus() error {
 	return err
 }
 
-func (n *DiskNodeHandler) UpdateDiskLists(updateDisks, removedDisks map[string]ldm.Disk) {
+func (n *DiskNodeHandler) UpdateDiskLists(updateDisks, removedDisks map[string]v1alpha1.Disk) {
 	// remove disk
 	for name, removeDisk := range removedDisks {
 		delete(n.diskNode.Status.Disks, name)
-		if removeDisk.Status != string(ldm.LocalDiskUnclaimed) && removeDisk.Status != string(ldm.LocalDiskReleased) {
+		if removeDisk.Status != string(v1alpha1.LocalDiskUnclaimed) && removeDisk.Status != string(v1alpha1.LocalDiskReleased) {
 			n.EventRecorder.Eventf(n.diskNode, v1.EventTypeWarning, "RemoveDisk", ""+
 				"Disk %s is removed but state is %s, disk last info: %+v", removeDisk.DevPath, removeDisk.Status, removeDisk)
 		} else {
@@ -64,7 +64,7 @@ func (n *DiskNodeHandler) UpdateDiskLists(updateDisks, removedDisks map[string]l
 
 	// update disk
 	if n.diskNode.Status.Disks == nil {
-		n.diskNode.Status.Disks = make(map[string]ldm.Disk, len(updateDisks))
+		n.diskNode.Status.Disks = make(map[string]v1alpha1.Disk, len(updateDisks))
 	}
 	for name, updateDisk := range updateDisks {
 		oldDisk, exist := n.diskNode.Status.Disks[name]
@@ -84,24 +84,24 @@ func (n *DiskNodeHandler) UpdateDiskStats() {
 	n.diskNode.Status.AllocatableDisk = 0
 	for _, disk := range n.Disks() {
 		n.diskNode.Status.TotalDisk++
-		if disk.Status == string(ldm.LocalDiskUnclaimed) ||
-			disk.Status == string(ldm.LocalDiskReleased) {
+		if disk.Status == string(v1alpha1.LocalDiskUnclaimed) ||
+			disk.Status == string(v1alpha1.LocalDiskReleased) {
 			n.diskNode.Status.AllocatableDisk++
 		}
 	}
 }
 
-func (n *DiskNodeHandler) Disks() map[string]ldm.Disk {
+func (n *DiskNodeHandler) Disks() map[string]v1alpha1.Disk {
 	return n.diskNode.Status.Disks
 }
 
-func (n *DiskNodeHandler) ListNodeDisks() (map[string]ldm.Disk, error) {
+func (n *DiskNodeHandler) ListNodeDisks() (map[string]v1alpha1.Disk, error) {
 	lds, err := n.diskHandler.ListNodeLocalDisk(n.diskNode.Spec.AttachNode)
 	if err != nil {
 		return nil, err
 	}
 
-	disks := map[string]ldm.Disk{}
+	disks := map[string]v1alpha1.Disk{}
 	for _, ld := range lds.Items {
 		disks[ld.GetName()] = convertToDisk(ld)
 	}
@@ -109,14 +109,14 @@ func (n *DiskNodeHandler) ListNodeDisks() (map[string]ldm.Disk, error) {
 }
 
 // IsSameDisk judge the disk in LocalDiskNode is same as disk in LocalDisk
-func (n *DiskNodeHandler) IsSameDisk(name string, newDisk ldm.Disk) bool {
+func (n *DiskNodeHandler) IsSameDisk(name string, newDisk v1alpha1.Disk) bool {
 	oldDisk := n.Disks()[name]
 
 	return reflect.DeepEqual(&oldDisk, &newDisk)
 }
 
-func convertToDisk(ld ldm.LocalDisk) ldm.Disk {
-	return ldm.Disk{
+func convertToDisk(ld v1alpha1.LocalDisk) v1alpha1.Disk {
+	return v1alpha1.Disk{
 		DevPath:  ld.Spec.DevicePath,
 		Capacity: ld.Spec.Capacity,
 		DiskType: ld.Spec.DiskAttributes.Type,

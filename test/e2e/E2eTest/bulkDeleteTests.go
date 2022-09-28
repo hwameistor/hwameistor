@@ -2,8 +2,11 @@ package E2eTest
 
 import (
 	"context"
-	ldapis "github.com/hwameistor/hwameistor/pkg/apis/generated/local-disk-manager/clientset/versioned/scheme"
-	lsv1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"strconv"
+	"time"
+
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -16,18 +19,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
-	"time"
 )
 
 var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("test"), func() {
 
-	f := framework.NewDefaultFramework(lsv1.AddToScheme)
+	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
 		result := configureEnvironment(ctx)
-		gomega.Expect(result).To(gomega.Equal(true))
+		gomega.Expect(result).To(gomega.BeNil())
 		createLdc(ctx)
 	})
 	ginkgo.Context("create a HA-StorageClass", func() {
@@ -277,7 +278,7 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("test"), func() {
 		})
 		ginkgo.It("check pv", func() {
 			logrus.Printf("check pv")
-			f := framework.NewDefaultFramework(ldapis.AddToScheme)
+			f := framework.NewDefaultFramework(clientset.AddToScheme)
 			client := f.GetClient()
 			pvList := &apiv1.PersistentVolumeList{}
 

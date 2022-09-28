@@ -3,7 +3,7 @@ package rest
 import (
 	"net/http"
 
-	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
+	"github.com/hwameistor/hwameistor/pkg/common"
 )
 
 func (rs *restServer) buildRoutes() []common.Route {

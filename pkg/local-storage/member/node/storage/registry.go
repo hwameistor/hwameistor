@@ -4,7 +4,10 @@ import (
 	"context"
 	"sync"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/tools/record"
+
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	log "github.com/sirupsen/logrus"
 
@@ -15,25 +18,28 @@ import (
 type localRegistry struct {
 	apiClient client.Client
 
-	disks    map[string]*apisv1alpha1.LocalDisk
+	disks    map[string]*apisv1alpha1.LocalDevice
 	pools    map[string]*apisv1alpha1.LocalPool
 	replicas map[string]*apisv1alpha1.LocalVolumeReplica
 
 	lock   *sync.Mutex
 	logger *log.Entry
 	lm     *LocalManager
+	// recorder is used to record events in the API server
+	recorder record.EventRecorder
 }
 
 // newLocalRegistry creates a local storage registry
 func newLocalRegistry(lm *LocalManager) LocalRegistry {
 	return &localRegistry{
 		apiClient: lm.apiClient,
-		disks:     map[string]*apisv1alpha1.LocalDisk{},
+		disks:     map[string]*apisv1alpha1.LocalDevice{},
 		pools:     map[string]*apisv1alpha1.LocalPool{},
 		replicas:  map[string]*apisv1alpha1.LocalVolumeReplica{},
 		lock:      &sync.Mutex{},
 		logger:    log.WithField("Module", "NodeManager/LocalRegistry"),
 		lm:        lm,
+		recorder:  lm.recorder,
 	}
 }
 
@@ -44,24 +50,24 @@ func newLocalRegistry(lm *LocalManager) LocalRegistry {
 // }
 
 // func (lr *localRegistry) resetDisks() {
-// 	lr.disks = make(map[string]*apisv1alpha1.LocalDisk)
+// 	lr.disks = make(map[string]*apisv1alpha1.LocalDevice)
 // }
 
 func (lr *localRegistry) resetPools() {
 	lr.pools = make(map[string]*apisv1alpha1.LocalPool)
 }
 
-func (lr *localRegistry) resetReplicas() {
-	lr.logger.Debug("Start to reset replicas")
-	lr.replicas = make(map[string]*apisv1alpha1.LocalVolumeReplica)
-}
+// func (lr *localRegistry) resetReplicas() {
+// 	lr.logger.Debug("Start to reset replicas")
+// 	lr.replicas = make(map[string]*apisv1alpha1.LocalVolumeReplica)
+// }
 
 func (lr *localRegistry) Init() {
 
 	lr.rebuildRegistryReplicas()
 }
 
-func (lr *localRegistry) SyncResourcesToNodeCRD(localDisks map[string]*apisv1alpha1.LocalDisk) error {
+func (lr *localRegistry) SyncResourcesToNodeCRD(localDisks map[string]*apisv1alpha1.LocalDevice) error {
 
 	lr.lock.Lock()
 	defer lr.lock.Unlock()
@@ -179,7 +185,7 @@ func (lr *localRegistry) syncToNodeCRD() error {
 	node.Status.Pools = make(map[string]apisv1alpha1.LocalPool)
 	for poolName, pool := range lr.pools {
 		localPool := apisv1alpha1.LocalPool{
-			Disks:   []apisv1alpha1.LocalDisk{},
+			Disks:   []apisv1alpha1.LocalDevice{},
 			Volumes: []string{},
 		}
 		pool.DeepCopyInto(&localPool)
@@ -192,7 +198,7 @@ func (lr *localRegistry) syncToNodeCRD() error {
 func (lr *localRegistry) rebuildRegistryDisks() error {
 	lr.logger.Debug("rebuildRegistryDisks start")
 
-	disks := make(map[string]*apisv1alpha1.LocalDisk)
+	disks := make(map[string]*apisv1alpha1.LocalDevice)
 	for _, pool := range lr.pools {
 		for _, disk := range pool.Disks {
 			disks[disk.DevPath] = disk.DeepCopy()
@@ -219,7 +225,7 @@ func (lr *localRegistry) rebuildRegistryReplicas() error {
 	return nil
 }
 
-func (lr *localRegistry) Disks() map[string]*apisv1alpha1.LocalDisk {
+func (lr *localRegistry) Disks() map[string]*apisv1alpha1.LocalDevice {
 	return lr.disks
 }
 
@@ -238,10 +244,30 @@ func (lr *localRegistry) HasVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica) b
 	return has
 }
 
+// UpdateCondition append current condition about LocalStorageNode, i.e. StorageExpandSuccess, StorageExpandFail, UnAvailable
+func (lr *localRegistry) UpdateCondition(condition apisv1alpha1.LocalStorageNodeCondition) error {
+	node := &apisv1alpha1.LocalStorageNode{}
+	if err := lr.apiClient.Get(context.TODO(), types.NamespacedName{Name: lr.lm.nodeConf.Name}, node); err != nil {
+		lr.logger.WithError(err).WithField("condition", condition).Error("Failed to query Node")
+		return nil
+	}
+	switch condition.Type {
+	case apisv1alpha1.StorageExpandFailure, apisv1alpha1.StorageUnAvailable:
+		lr.recorder.Event(node, v1.EventTypeWarning, string(condition.Type), condition.Message)
+	case apisv1alpha1.StorageExpandSuccess, apisv1alpha1.StorageProgressing:
+		lr.recorder.Event(node, v1.EventTypeNormal, string(condition.Type), condition.Message)
+	default:
+		lr.recorder.Event(node, v1.EventTypeNormal, string(condition.Type), condition.Message)
+	}
+
+	node.Status.Conditions = append(node.Status.Conditions, condition)
+	return lr.apiClient.Status().Update(context.TODO(), node)
+}
+
 // showReplicaOnHost debug func for now
 func (lr *localRegistry) showReplicaOnHost() {
 	lr.logger.WithFields(log.Fields{"node": lr.lm.NodeConfig().Name, "count": len(lr.replicas)}).Info("Show existing volumes on host")
-	for volume, _ := range lr.replicas {
+	for volume := range lr.replicas {
 		lr.logger.WithField("volume", volume).Infof("Existing volume replica on host")
 	}
 }

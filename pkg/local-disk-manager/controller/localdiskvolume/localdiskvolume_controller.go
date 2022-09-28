@@ -9,7 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	ldm "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -48,7 +48,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource LocalDiskVolume
-	err = c.Watch(&source.Kind{Type: &ldm.LocalDiskVolume{}}, &handler.EnqueueRequestForObject{}, withCurrentNode())
+	err = c.Watch(&source.Kind{Type: &v1alpha1.LocalDiskVolume{}}, &handler.EnqueueRequestForObject{}, withCurrentNode())
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Watch for changes to secondary resource Pods and requeue the owner LocalDiskVolume
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &ldm.LocalDiskVolume{},
+		OwnerType:    &v1alpha1.LocalDiskVolume{},
 	})
 	if err != nil {
 		return err
@@ -70,20 +70,20 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 func withCurrentNode() predicate.Predicate {
 	return predicate.Funcs{
 		CreateFunc: func(event event.CreateEvent) bool {
-			volume, _ := event.Object.DeepCopyObject().(*ldm.LocalDiskVolume)
-			return volume.Spec.Accessibility.Node == utils.GetNodeName()
+			volume, _ := event.Object.DeepCopyObject().(*v1alpha1.LocalDiskVolume)
+			return len(volume.Spec.Accessibility.Nodes) > 0 && volume.Spec.Accessibility.Nodes[0] == utils.GetNodeName()
 		},
 		DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
-			volume, _ := deleteEvent.Object.DeepCopyObject().(*ldm.LocalDiskVolume)
-			return volume.Spec.Accessibility.Node == utils.GetNodeName()
+			volume, _ := deleteEvent.Object.DeepCopyObject().(*v1alpha1.LocalDiskVolume)
+			return len(volume.Spec.Accessibility.Nodes) > 0 && volume.Spec.Accessibility.Nodes[0] == utils.GetNodeName()
 		},
 		UpdateFunc: func(updateEvent event.UpdateEvent) bool {
-			volume, _ := updateEvent.ObjectNew.DeepCopyObject().(*ldm.LocalDiskVolume)
-			return volume.Spec.Accessibility.Node == utils.GetNodeName()
+			volume, _ := updateEvent.ObjectNew.DeepCopyObject().(*v1alpha1.LocalDiskVolume)
+			return len(volume.Spec.Accessibility.Nodes) > 0 && volume.Spec.Accessibility.Nodes[0] == utils.GetNodeName()
 		},
 		GenericFunc: func(genericEvent event.GenericEvent) bool {
-			volume, _ := genericEvent.Object.DeepCopyObject().(*ldm.LocalDiskVolume)
-			return volume.Spec.Accessibility.Node == utils.GetNodeName()
+			volume, _ := genericEvent.Object.DeepCopyObject().(*v1alpha1.LocalDiskVolume)
+			return len(volume.Spec.Accessibility.Nodes) > 0 && volume.Spec.Accessibility.Nodes[0] == utils.GetNodeName()
 		},
 	}
 }
@@ -121,19 +121,19 @@ func (r *ReconcileLocalDiskVolume) Reconcile(request reconcile.Request) (reconci
 
 	switch v.VolumeState() {
 	// Mount Volumes
-	case ldm.VolumeStateNotReady, ldm.VolumeStateEmpty:
+	case v1alpha1.VolumeStateNotReady, v1alpha1.VolumeStateEmpty:
 		return v.ReconcileMount()
 
 	// Unmount Volumes
-	case ldm.VolumeStateToBeUnmount:
+	case v1alpha1.VolumeStateToBeUnmount:
 		return v.ReconcileUnmount()
 
 	// ToDelete Volume
-	case ldm.VolumeStateToBeDeleted:
+	case v1alpha1.VolumeStateToBeDeleted:
 		return v.ReconcileToBeDeleted()
 
 	// Delete Volume
-	case ldm.VolumeStateDeleted:
+	case v1alpha1.VolumeStateDeleted:
 		return v.ReconcileDeleted()
 
 	// Volume Ready/Creating/... do nothing

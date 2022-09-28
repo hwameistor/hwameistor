@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"

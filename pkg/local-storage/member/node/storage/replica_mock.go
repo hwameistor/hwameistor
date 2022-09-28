@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 // MockLocalPoolManager is a mock of LocalPoolManager interface.
@@ -35,7 +35,7 @@ func (m *MockLocalPoolManager) EXPECT() *MockLocalPoolManagerMockRecorder {
 }
 
 // ExtendPools mocks base method.
-func (m *MockLocalPoolManager) ExtendPools(localDisks []*v1alpha1.LocalDisk) error {
+func (m *MockLocalPoolManager) ExtendPools(localDisks []*v1alpha1.LocalDevice) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendPools", localDisks)
 	ret0, _ := ret[0].(error)
@@ -49,7 +49,7 @@ func (mr *MockLocalPoolManagerMockRecorder) ExtendPools(localDisks interface{}) 
 }
 
 // ExtendPoolsInfo mocks base method.
-func (m *MockLocalPoolManager) ExtendPoolsInfo(localDisks map[string]*v1alpha1.LocalDisk) (map[string]*v1alpha1.LocalPool, error) {
+func (m *MockLocalPoolManager) ExtendPoolsInfo(localDisks map[string]*v1alpha1.LocalDevice) (map[string]*v1alpha1.LocalPool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendPoolsInfo", localDisks)
 	ret0, _ := ret[0].(map[string]*v1alpha1.LocalPool)
@@ -211,10 +211,10 @@ func (m *MockLocalRegistry) EXPECT() *MockLocalRegistryMockRecorder {
 }
 
 // Disks mocks base method.
-func (m *MockLocalRegistry) Disks() map[string]*v1alpha1.LocalDisk {
+func (m *MockLocalRegistry) Disks() map[string]*v1alpha1.LocalDevice {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Disks")
-	ret0, _ := ret[0].(map[string]*v1alpha1.LocalDisk)
+	ret0, _ := ret[0].(map[string]*v1alpha1.LocalDevice)
 	return ret0
 }
 
@@ -265,7 +265,7 @@ func (mr *MockLocalRegistryMockRecorder) Pools() *gomock.Call {
 }
 
 // SyncResourcesToNodeCRD mocks base method.
-func (m *MockLocalRegistry) SyncResourcesToNodeCRD(localDisks map[string]*v1alpha1.LocalDisk) error {
+func (m *MockLocalRegistry) SyncResourcesToNodeCRD(localDisks map[string]*v1alpha1.LocalDevice) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SyncResourcesToNodeCRD", localDisks)
 	ret0, _ := ret[0].(error)
@@ -437,7 +437,7 @@ func (m *MockLocalPoolExecutor) EXPECT() *MockLocalPoolExecutorMockRecorder {
 }
 
 // ExtendPools mocks base method.
-func (m *MockLocalPoolExecutor) ExtendPools(localDisks []*v1alpha1.LocalDisk) error {
+func (m *MockLocalPoolExecutor) ExtendPools(localDisks []*v1alpha1.LocalDevice) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendPools", localDisks)
 	ret0, _ := ret[0].(error)
@@ -451,7 +451,7 @@ func (mr *MockLocalPoolExecutorMockRecorder) ExtendPools(localDisks interface{})
 }
 
 // ExtendPoolsInfo mocks base method.
-func (m *MockLocalPoolExecutor) ExtendPoolsInfo(localDisks map[string]*v1alpha1.LocalDisk) (map[string]*v1alpha1.LocalPool, error) {
+func (m *MockLocalPoolExecutor) ExtendPoolsInfo(localDisks map[string]*v1alpha1.LocalDevice) (map[string]*v1alpha1.LocalPool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendPoolsInfo", localDisks)
 	ret0, _ := ret[0].(map[string]*v1alpha1.LocalPool)

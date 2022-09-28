@@ -5,11 +5,13 @@ import (
 	"reflect"
 	"testing"
 
+	"k8s.io/client-go/tools/record"
+
 	"github.com/golang/mock/gomock"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	localapis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	memmock "github.com/hwameistor/hwameistor/pkg/local-storage/member/controller"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -18,7 +20,7 @@ import (
 func TestMember(t *testing.T) {
 	tests := []struct {
 		name string
-		want localapis.LocalStorageMember
+		want apis.LocalStorageMember
 	}{
 		{
 			want: &localStorageMember{},
@@ -37,7 +39,7 @@ func TestMember(t *testing.T) {
 func Test_newMember(t *testing.T) {
 	tests := []struct {
 		name string
-		want localapis.LocalStorageMember
+		want apis.LocalStorageMember
 	}{
 		{
 			want: &localStorageMember{},
@@ -58,6 +60,7 @@ func Test_localStorageMember_ConfigureBase(t *testing.T) {
 	var systemConfig apisv1alpha1.SystemConfig
 	var cli client.Client
 	var informersCache cache.Cache
+	var recorder record.EventRecorder
 
 	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
@@ -68,11 +71,11 @@ func Test_localStorageMember_ConfigureBase(t *testing.T) {
 	m := memmock.NewMockLocalStorageMember(ctrl)
 	m.
 		EXPECT().
-		ConfigureBase(name, namespace, systemConfig, cli, informersCache).
+		ConfigureBase(name, namespace, systemConfig, cli, informersCache, recorder).
 		Return(m).
 		Times(1)
 
-	v := m.ConfigureBase(name, namespace, systemConfig, cli, informersCache)
+	v := m.ConfigureBase(name, namespace, systemConfig, cli, informersCache, recorder)
 
 	fmt.Printf("Test_localStorageMember_ConfigureBase v= %+v", v)
 }
@@ -87,11 +90,11 @@ func Test_localStorageMember_ConfigureNode(t *testing.T) {
 	m := memmock.NewMockLocalStorageMember(ctrl)
 	m.
 		EXPECT().
-		ConfigureNode().
+		ConfigureNode(nil).
 		Return(m).
 		Times(1)
 
-	v := m.ConfigureNode()
+	v := m.ConfigureNode(nil)
 
 	fmt.Printf("Test_localStorageMember_ConfigureNode v= %+v", v)
 }
@@ -179,7 +182,7 @@ func Test_localStorageMember_Run(t *testing.T) {
 }
 
 func Test_localStorageMember_Controller(t *testing.T) {
-	var cm localapis.ControllerManager
+	var cm apis.ControllerManager
 	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
 	// 断言期望的方法都被执行
@@ -199,7 +202,7 @@ func Test_localStorageMember_Controller(t *testing.T) {
 }
 
 func Test_localStorageMember_Node(t *testing.T) {
-	var nm localapis.NodeManager
+	var nm apis.NodeManager
 	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
 	// 断言期望的方法都被执行

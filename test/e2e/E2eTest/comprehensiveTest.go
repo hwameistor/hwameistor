@@ -2,9 +2,11 @@ package E2eTest
 
 import (
 	"context"
-	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager"
-	lsv1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
+
+	"time"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -21,17 +23,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	"time"
 )
 
 var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("test"), func() {
 
-	f := framework.NewDefaultFramework(apis.AddToScheme)
+	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
 		result := configureEnvironment(ctx)
-		gomega.Expect(result).To(gomega.Equal(true))
+		gomega.Expect(result).To(gomega.BeNil())
 
 	})
 	ginkgo.Context("create a StorageClass", func() {
@@ -442,12 +443,12 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("test"), func() {
 	})
 	ginkgo.Context("Test the volume", func() {
 		ginkgo.It("check lvg", func() {
-			lvrList := &lsv1.LocalVolumeReplicaList{}
+			lvrList := &v1alpha1.LocalVolumeReplicaList{}
 			err := client.List(ctx, lvrList)
 			if err != nil {
 				logrus.Printf("list lvr failed ：%+v ", err)
 			}
-			lvgList := &lsv1.LocalVolumeGroupList{}
+			lvgList := &v1alpha1.LocalVolumeGroupList{}
 			err = client.List(ctx, lvgList)
 			if err != nil {
 				logrus.Printf("list lvg failed ：%+v ", err)
@@ -905,12 +906,12 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("test"), func() {
 	ginkgo.Context("test HA-volumes", func() {
 		ginkgo.It("create a localvolumemigrate", func() {
 
-			lvrList := &lsv1.LocalVolumeReplicaList{}
+			lvrList := &v1alpha1.LocalVolumeReplicaList{}
 			err := client.List(ctx, lvrList)
 			if err != nil {
 				logrus.Printf("list lvr failed ：%+v ", err)
 			}
-			lvgList := &lsv1.LocalVolumeGroupList{}
+			lvgList := &v1alpha1.LocalVolumeGroupList{}
 			err = client.List(ctx, lvgList)
 			if err != nil {
 				logrus.Printf("list lvg failed ：%+v ", err)
@@ -919,12 +920,12 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("test"), func() {
 				if lvr.Spec.NodeName == "k8s-master" {
 					for _, lvg := range lvgList.Items {
 						if lvg.Spec.Accessibility.Nodes[0] == "k8s-master" {
-							exlvgm := &lsv1.LocalVolumeGroupMigrate{
+							exlvgm := &v1alpha1.LocalVolumeGroupMigrate{
 								ObjectMeta: metav1.ObjectMeta{
 									Name:      "localvolumegroupmigrate-1",
 									Namespace: "default",
 								},
-								Spec: lsv1.LocalVolumeGroupMigrateSpec{
+								Spec: v1alpha1.LocalVolumeGroupMigrateSpec{
 									TargetNodesNames:     []string{"k8s-node2"},
 									SourceNodesNames:     []string{"k8s-master"},
 									LocalVolumeGroupName: lvg.Name,

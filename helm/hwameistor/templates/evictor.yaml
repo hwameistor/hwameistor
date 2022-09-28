@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hwameistor-volume-evictor
+  namespace: {{ .Release.Namespace}}
+  labels:
+    app: hwameistor-volume-evictor
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hwameistor-volume-evictor
+  template:
+    metadata:
+      labels:
+        app: hwameistor-volume-evictor
+    spec:
+      serviceAccountName: hwameistor-admin
+      containers:
+        - name: evictor
+          image: {{ .Values.global.hwameistorImageRegistry}}/{{ .Values.evictor.imageRepository}}:{{ template "hwameistor.evictorImageTag" . }}
+          imagePullPolicy: IfNotPresent
+          resources: 
+            {{- toYaml .Values.evictor.resources | nindent 12 }}

@@ -3,11 +3,13 @@ package E2eTest
 import (
 	"bytes"
 	"context"
-	ldapis "github.com/hwameistor/hwameistor/pkg/apis/generated/local-disk-manager/clientset/versioned/scheme"
-	ldv1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
-	lsv1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
+	b1 "k8s.io/api/batch/v1"
+	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"os/exec"
@@ -42,7 +44,7 @@ func runInLinux(cmd string) string {
 
 func nodeList() *apiv1.NodeList {
 	logrus.Printf("get node list")
-	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	nodelist := &apiv1.NodeList{}
 	err := client.List(context.TODO(), nodelist)
@@ -55,7 +57,7 @@ func nodeList() *apiv1.NodeList {
 
 func addLabels() {
 	logrus.Printf("add node labels")
-	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	nodelist := &apiv1.NodeList{}
 	err := client.List(context.TODO(), nodelist)
@@ -92,10 +94,10 @@ func installHwameiStorByHelm() {
 	_ = runInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace ")
 }
 
-func configureEnvironment(ctx context.Context) bool {
+func configureEnvironment(ctx context.Context) error {
 	logrus.Info("start rollback")
 	_ = runInLinux("sh rollback.sh")
-	err := wait.PollImmediate(10*time.Second, 10*time.Minute, func() (done bool, err error) {
+	err := wait.PollImmediate(10*time.Second, 20*time.Minute, func() (done bool, err error) {
 		output := runInLinux("kubectl get pod -A  |grep -v Running |wc -l")
 		if output != "1\n" {
 			return false, nil
@@ -109,9 +111,24 @@ func configureEnvironment(ctx context.Context) bool {
 		logrus.Error(err)
 	}
 	installHwameiStorByHelm()
+	installDrbd()
+	if err != nil {
+		logrus.Error(err)
+	}
 	addLabels()
-	f := framework.NewDefaultFramework(lsv1.AddToScheme)
+	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
 	client := f.GetClient()
+
+	drbd1 := &b1.Job{}
+	drbdKey1 := k8sclient.ObjectKey{
+		Name:      "drbd-adapter-k8s-node1-rhel7",
+		Namespace: "hwameistor",
+	}
+	drbd2 := &b1.Job{}
+	drbdKey2 := k8sclient.ObjectKey{
+		Name:      "drbd-adapter-k8s-node2-rhel7",
+		Namespace: "hwameistor",
+	}
 
 	localStorage := &appsv1.DaemonSet{}
 	localStorageKey := k8sclient.ObjectKey{
@@ -119,10 +136,6 @@ func configureEnvironment(ctx context.Context) bool {
 		Namespace: "hwameistor",
 	}
 	err = client.Get(ctx, localStorageKey, localStorage)
-	if err != nil {
-		logrus.Error("%+v ", err)
-		f.ExpectNoError(err)
-	}
 
 	controller := &appsv1.Deployment{}
 	controllerKey := k8sclient.ObjectKey{
@@ -130,19 +143,11 @@ func configureEnvironment(ctx context.Context) bool {
 		Namespace: "hwameistor",
 	}
 	err = client.Get(ctx, controllerKey, controller)
-	if err != nil {
-		logrus.Error(err)
-		f.ExpectNoError(err)
-	}
+
 	webhook := &appsv1.Deployment{}
 	webhookKey := k8sclient.ObjectKey{
 		Name:      "hwameistor-admission-controller",
 		Namespace: "hwameistor",
-	}
-	err = client.Get(ctx, webhookKey, webhook)
-	if err != nil {
-		logrus.Error(err)
-		f.ExpectNoError(err)
 	}
 
 	scheduler := &appsv1.Deployment{}
@@ -151,69 +156,60 @@ func configureEnvironment(ctx context.Context) bool {
 		Namespace: "hwameistor",
 	}
 
-	err = client.Get(ctx, schedulerKey, scheduler)
-	if err != nil {
-		logrus.Error(err)
-		f.ExpectNoError(err)
-	}
 	localDiskManager := &appsv1.DaemonSet{}
 	localDiskManagerKey := k8sclient.ObjectKey{
 		Name:      "hwameistor-local-disk-manager",
 		Namespace: "hwameistor",
 	}
 
-	err = client.Get(ctx, localDiskManagerKey, localDiskManager)
-	if err != nil {
-		logrus.Error(err)
-		f.ExpectNoError(err)
+	logrus.Infof("waiting for drbd ready")
 
-	}
+	err = wait.PollImmediate(3*time.Second, 15*time.Minute, func() (done bool, err error) {
+		err1 := client.Get(ctx, drbdKey1, drbd1)
+		err2 := client.Get(ctx, drbdKey2, drbd2)
 
-	logrus.Infof("waiting for ready")
-	ch := make(chan struct{}, 1)
-	go func() {
-		for localStorage.Status.DesiredNumberScheduled != localStorage.Status.NumberAvailable || controller.Status.AvailableReplicas != int32(1) || scheduler.Status.AvailableReplicas != int32(1) || localDiskManager.Status.DesiredNumberScheduled != localDiskManager.Status.NumberAvailable || webhook.Status.AvailableReplicas != int32(1) {
-			time.Sleep(10 * time.Second)
-			err := client.Get(ctx, localStorageKey, localStorage)
-			if err != nil {
-				logrus.Error(" localStorage error ", err)
-				f.ExpectNoError(err)
-			}
-			err = client.Get(ctx, controllerKey, controller)
-			if err != nil {
-				logrus.Error("controller error ", err)
-				f.ExpectNoError(err)
-			}
-			err = client.Get(ctx, schedulerKey, scheduler)
-			if err != nil {
-				logrus.Error("scheduler error ", err)
-				f.ExpectNoError(err)
-			}
-			err = client.Get(ctx, localDiskManagerKey, localDiskManager)
-			if err != nil {
-				logrus.Error("localDiskManager error ", err)
-				f.ExpectNoError(err)
-			}
-			err = client.Get(ctx, webhookKey, webhook)
-			if err != nil {
-				logrus.Error("admission-controller error ", err)
-				f.ExpectNoError(err)
-			}
-
+		if k8serror.IsNotFound(err1) && k8serror.IsNotFound(err2) {
+			return true, nil
 		}
-		ch <- struct{}{}
-	}()
+		return false, nil
+	})
 
-	select {
-	case <-ch:
-		logrus.Infof("Components are ready ")
-		return true
-	case <-time.After(15 * time.Minute):
-		logrus.Error("timeout")
-		return false
+	logrus.Infof("waiting for hwamei ready")
 
-	}
+	err = wait.PollImmediate(3*time.Second, 15*time.Minute, func() (done bool, err error) {
+		err = client.Get(ctx, localStorageKey, localStorage)
+		if err != nil {
+			logrus.Error(" localStorage error ", err)
+			f.ExpectNoError(err)
+		}
+		err = client.Get(ctx, controllerKey, controller)
+		if err != nil {
+			logrus.Error("controller error ", err)
+			f.ExpectNoError(err)
+		}
+		err = client.Get(ctx, schedulerKey, scheduler)
+		if err != nil {
+			logrus.Error("scheduler error ", err)
+			f.ExpectNoError(err)
+		}
+		err = client.Get(ctx, localDiskManagerKey, localDiskManager)
+		if err != nil {
+			logrus.Error("localDiskManager error ", err)
+			f.ExpectNoError(err)
+		}
+		err = client.Get(ctx, webhookKey, webhook)
+		if err != nil {
+			logrus.Error("admission-controller error ", err)
+			f.ExpectNoError(err)
+		}
 
+		if localStorage.Status.DesiredNumberScheduled == localStorage.Status.NumberAvailable && controller.Status.AvailableReplicas == int32(1) && scheduler.Status.AvailableReplicas == int32(1) && localDiskManager.Status.DesiredNumberScheduled == localDiskManager.Status.NumberAvailable && webhook.Status.AvailableReplicas == int32(1) {
+			return true, nil
+		}
+		return false, nil
+	})
+
+	return err
 }
 
 func configureEnvironmentForPrTest(ctx context.Context) bool {
@@ -232,7 +228,7 @@ func configureEnvironmentForPrTest(ctx context.Context) bool {
 	}
 	installHwameiStorByHelm()
 	addLabels()
-	f := framework.NewDefaultFramework(lsv1.AddToScheme)
+	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
 	client := f.GetClient()
 
 	localStorage := &appsv1.DaemonSet{}
@@ -368,17 +364,17 @@ func uninstallHelm() {
 func createLdc(ctx context.Context) error {
 	logrus.Printf("create ldc for each node")
 	nodelist := nodeList()
-	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	for _, nodes := range nodelist.Items {
-		exmlocalDiskClaim := &ldv1.LocalDiskClaim{
+		exmlocalDiskClaim := &v1alpha1.LocalDiskClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "localdiskclaim-" + nodes.Name,
 				Namespace: "kube-system",
 			},
-			Spec: ldv1.LocalDiskClaimSpec{
+			Spec: v1alpha1.LocalDiskClaimSpec{
 				NodeName: nodes.Name,
-				Description: ldv1.DiskClaimDescription{
+				Description: v1alpha1.DiskClaimDescription{
 					DiskType: "HDD",
 				},
 			},
@@ -393,7 +389,7 @@ func createLdc(ctx context.Context) error {
 	err := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
 		for _, nodes := range nodelist.Items {
 			time.Sleep(3 * time.Second)
-			localDiskClaim := &ldv1.LocalDiskClaim{}
+			localDiskClaim := &v1alpha1.LocalDiskClaim{}
 			localDiskClaimKey := k8sclient.ObjectKey{
 				Name:      "localdiskclaim-" + nodes.Name,
 				Namespace: "kube-system",
@@ -403,7 +399,7 @@ func createLdc(ctx context.Context) error {
 				logrus.Error(err)
 				f.ExpectNoError(err)
 			}
-			if localDiskClaim.Status.Status != ldv1.LocalDiskClaimStatusBound {
+			if localDiskClaim.Status.Status != v1alpha1.LocalDiskClaimStatusBound {
 				return false, nil
 			}
 		}
@@ -420,7 +416,7 @@ func createLdc(ctx context.Context) error {
 
 func deleteAllPVC(ctx context.Context) error {
 	logrus.Printf("delete All PVC")
-	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	pvcList := &apiv1.PersistentVolumeClaimList{}
 	err := client.List(ctx, pvcList)
@@ -462,7 +458,7 @@ func deleteAllPVC(ctx context.Context) error {
 
 func deleteAllSC(ctx context.Context) error {
 	logrus.Printf("delete All SC")
-	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	scList := &storagev1.StorageClassList{}
 	err := client.List(ctx, scList)
@@ -540,4 +536,10 @@ func ExecInPod(config *rest.Config, namespace, podName, command, containerName s
 		return "", "", err
 	}
 	return strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), err
+}
+
+func installDrbd() {
+	logrus.Printf("installing drbd")
+	_ = runInLinux("sh install_drbd.sh")
+
 }

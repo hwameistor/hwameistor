@@ -5,8 +5,7 @@ import (
 	"os"
 	"time"
 
-	localdiskmanagerv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
-	localstoragev1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	lvmscheduler "github.com/hwameistor/hwameistor/pkg/local-storage/member/controller/scheduler"
 
 	log "github.com/sirupsen/logrus"
@@ -49,13 +48,8 @@ func NewScheduler(f framework.FrameworkHandle) *Scheduler {
 	}
 
 	// Setup Scheme for all resources of Local Storage
-	if err := localstoragev1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
+	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		log.WithError(err).Fatal("Failed to setup scheme for local-storage resources")
-	}
-
-	// Setup Scheme for all resources of Local Disk Manager
-	if err := localdiskmanagerv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
-		log.WithError(err).Fatal("Failed to setup scheme for local-disk-manager resources")
 	}
 
 	apiClient := mgr.GetClient()

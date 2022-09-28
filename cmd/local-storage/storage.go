@@ -10,9 +10,8 @@ import (
 	"strings"
 	"time"
 
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
-	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/controller"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
@@ -132,11 +131,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := ldmv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
-		log.WithError(err).Error("Failed to setup scheme for all resources")
-		os.Exit(1)
-	}
-
 	// Setup all Controllers for Local Storage Member
 	if err := controller.AddToManager(mgr); err != nil {
 		log.WithError(err).Error("Failed to setup controllers for all local storage resources")
@@ -145,8 +139,9 @@ func main() {
 
 	//initialize the local storage node/member as:
 	log.Info("Configuring the Local Storage Member")
-	storageMember := member.Member().ConfigureBase(*nodeName, *namespace, systemConfig, mgr.GetClient(), mgr.GetCache()).
-		ConfigureNode().
+	storageMember := member.Member().ConfigureBase(*nodeName, *namespace, systemConfig, mgr.GetClient(), mgr.GetCache(),
+		mgr.GetEventRecorderFor(fmt.Sprintf("%s/%s", "localstoragemanager", *nodeName))).
+		ConfigureNode(mgr.GetScheme()).
 		ConfigureController(mgr.GetScheme()).
 		ConfigureCSIDriver(apisv1alpha1.CSIDriverName, *csiSockAddr).
 		ConfigureRESTServer(*httpPort)

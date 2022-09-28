@@ -5,7 +5,7 @@ import (
 	"os"
 	"syscall"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 // variables
@@ -21,9 +21,9 @@ var (
 // LocalPoolManager is an interface to manage local storage pools
 ////go:generate mockgen -source=types.go -destination=../../../member/node/storage/pools_mock.go  -package=storage
 type LocalPoolManager interface {
-	ExtendPools(localDisks []*apisv1alpha1.LocalDisk) error
+	ExtendPools(localDisks []*apisv1alpha1.LocalDevice) (bool, error)
 
-	ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDisk) (map[string]*apisv1alpha1.LocalPool, error)
+	ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDevice) (map[string]*apisv1alpha1.LocalPool, error)
 
 	GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error)
 }
@@ -47,12 +47,13 @@ type LocalVolumeReplicaManager interface {
 type LocalRegistry interface {
 	Init()
 
-	Disks() map[string]*apisv1alpha1.LocalDisk
+	Disks() map[string]*apisv1alpha1.LocalDevice
 	Pools() map[string]*apisv1alpha1.LocalPool
 	VolumeReplicas() map[string]*apisv1alpha1.LocalVolumeReplica
 	HasVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) bool
 	UpdateNodeForVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica)
-	SyncResourcesToNodeCRD(localDisks map[string]*apisv1alpha1.LocalDisk) error
+	SyncResourcesToNodeCRD(localDisks map[string]*apisv1alpha1.LocalDevice) error
+	UpdateCondition(condition apisv1alpha1.LocalStorageNodeCondition) error
 }
 
 // DeviceInfo struct
@@ -84,7 +85,7 @@ type LocalVolumeExecutor interface {
 // LocalPoolExecutor interface
 ////go:generate mockgen -source=types.go -destination=../../../member/node/storage/pools_executor_mock.go  -package=storage
 type LocalPoolExecutor interface {
-	ExtendPools(localDisks []*apisv1alpha1.LocalDisk) error
-	ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDisk) (map[string]*apisv1alpha1.LocalPool, error)
+	ExtendPools(localDisks []*apisv1alpha1.LocalDevice) (bool, error)
+	ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDevice) (map[string]*apisv1alpha1.LocalPool, error)
 	GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error)
 }

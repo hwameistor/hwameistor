@@ -5,8 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,7 +30,7 @@ func Test_manager_processVolumeConvert(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
@@ -101,7 +100,7 @@ func Test_manager_processVolumeConvert(t *testing.T) {
 				volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 				volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
 				volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
-				localNodes:                  map[string]apisv1alpha1.State{},
+				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.processVolumeConvert(tt.args.name); (err != nil) != tt.wantErr {
@@ -128,12 +127,12 @@ func Test_manager_volumeConvertAbort(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
 	type args struct {
-		convert *apisv1alpha1.LocalVolumeConvert
+		convert *v1alpha1.LocalVolumeConvert
 	}
 
 	client, _ := CreateFakeClient()
@@ -199,7 +198,7 @@ func Test_manager_volumeConvertAbort(t *testing.T) {
 				volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 				volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
 				volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
-				localNodes:                  map[string]apisv1alpha1.State{},
+				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.volumeConvertAbort(tt.args.convert); (err != nil) != tt.wantErr {
@@ -226,12 +225,12 @@ func Test_manager_volumeConvertCleanup(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
 	type args struct {
-		convert *apisv1alpha1.LocalVolumeConvert
+		convert *v1alpha1.LocalVolumeConvert
 	}
 
 	client, _ := CreateFakeClient()
@@ -297,7 +296,7 @@ func Test_manager_volumeConvertCleanup(t *testing.T) {
 				volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 				volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
 				volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
-				localNodes:                  map[string]apisv1alpha1.State{},
+				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.volumeConvertCleanup(tt.args.convert); (err != nil) != tt.wantErr {
@@ -324,12 +323,12 @@ func Test_manager_volumeConvertInProgress(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
 	type args struct {
-		convert *apisv1alpha1.LocalVolumeConvert
+		convert *v1alpha1.LocalVolumeConvert
 	}
 
 	client, _ := CreateFakeClient()
@@ -395,7 +394,7 @@ func Test_manager_volumeConvertInProgress(t *testing.T) {
 				volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 				volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
 				volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
-				localNodes:                  map[string]apisv1alpha1.State{},
+				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.volumeConvertInProgress(tt.args.convert); (err != nil) != tt.wantErr {
@@ -422,12 +421,12 @@ func Test_manager_volumeConvertStart(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
 	type args struct {
-		convert *apisv1alpha1.LocalVolumeConvert
+		convert *v1alpha1.LocalVolumeConvert
 	}
 
 	client, _ := CreateFakeClient()
@@ -493,7 +492,7 @@ func Test_manager_volumeConvertStart(t *testing.T) {
 				volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 				volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
 				volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
-				localNodes:                  map[string]apisv1alpha1.State{},
+				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.volumeConvertStart(tt.args.convert); (err != nil) != tt.wantErr {
@@ -520,12 +519,12 @@ func Test_manager_volumeConvertSubmit(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
 	type args struct {
-		convert *apisv1alpha1.LocalVolumeConvert
+		convert *v1alpha1.LocalVolumeConvert
 	}
 
 	client, _ := CreateFakeClient()
@@ -591,7 +590,7 @@ func Test_manager_volumeConvertSubmit(t *testing.T) {
 				volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 				volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
 				volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
-				localNodes:                  map[string]apisv1alpha1.State{},
+				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.volumeConvertSubmit(tt.args.convert); (err != nil) != tt.wantErr {

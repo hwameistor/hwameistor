@@ -2,14 +2,15 @@ package localvolumemigrate
 
 import (
 	"context"
-	log "github.com/sirupsen/logrus"
-	"github.com/wxnacy/wgo/arrays"
-	"k8s.io/apimachinery/pkg/types"
 	"reflect"
 	"time"
 
-	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	log "github.com/sirupsen/logrus"
+	"github.com/wxnacy/wgo/arrays"
+	"k8s.io/apimachinery/pkg/types"
+
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -150,10 +151,20 @@ func (r *ReconcileLocalVolumeMigrate) Reconcile(request reconcile.Request) (reco
 			}
 		}
 
-		vol.Spec.Accessibility.Nodes = accessibilityNodeNames
-		if err := r.client.Update(context.TODO(), vol); err != nil {
-			log.WithError(err).Errorf("ReconcileLocalVolumeMigrate Reconcile : Failed to re-configure Volume, vol.Name = %v, tmpvol.LocalVolumeName = %v", vol.Name, tmpvol.LocalVolumeName)
-			errMsg = err
+		if !reflect.DeepEqual(vol.Spec.Accessibility.Nodes, accessibilityNodeNames) {
+			vol.Spec.Accessibility.Nodes = accessibilityNodeNames
+			if err := r.client.Update(context.TODO(), vol); err != nil {
+				log.WithError(err).Errorf("ReconcileLocalVolumeMigrate Reconcile : Failed to re-configure Volume, vol.Name = %v, tmpvol.LocalVolumeName = %v", vol.Name, tmpvol.LocalVolumeName)
+				errMsg = err
+
+				tmpVol := &apisv1alpha1.LocalVolume{}
+				if tmperr := r.client.Get(context.TODO(), types.NamespacedName{Name: vol.Name}, tmpVol); tmperr == nil {
+					tmpVol.Spec.Accessibility.Nodes = accessibilityNodeNames
+					if err := r.client.Update(context.TODO(), tmpVol); err != nil {
+						errMsg = err
+					}
+				}
+			}
 		}
 	}
 

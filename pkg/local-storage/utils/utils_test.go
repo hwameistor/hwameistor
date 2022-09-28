@@ -1,9 +1,10 @@
 package utils
 
 import (
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
 	"reflect"
 	"testing"
+
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 func TestBuildStoragePoolName(t *testing.T) {

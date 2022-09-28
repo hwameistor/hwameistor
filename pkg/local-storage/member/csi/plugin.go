@@ -7,7 +7,7 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-storage/exechelper/nsexecutor"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
-	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

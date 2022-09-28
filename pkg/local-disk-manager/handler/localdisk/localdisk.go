@@ -3,7 +3,7 @@ package localdisk
 import (
 	"context"
 
-	ldm "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/filter"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +17,7 @@ import (
 type LocalDiskHandler struct {
 	client.Client
 	record.EventRecorder
-	Ld     ldm.LocalDisk
+	Ld     v1alpha1.LocalDisk
 	filter filter.LocalDiskFilter
 }
 
@@ -30,8 +30,8 @@ func NewLocalDiskHandler(client client.Client, recorder record.EventRecorder) *L
 }
 
 // GetLocalDisk
-func (ldHandler *LocalDiskHandler) GetLocalDisk(key client.ObjectKey) (*ldm.LocalDisk, error) {
-	ld := ldm.LocalDisk{}
+func (ldHandler *LocalDiskHandler) GetLocalDisk(key client.ObjectKey) (*v1alpha1.LocalDisk, error) {
+	ld := v1alpha1.LocalDisk{}
 	if err := ldHandler.Get(context.Background(), key, &ld); err != nil {
 		return nil, err
 	}
@@ -39,8 +39,8 @@ func (ldHandler *LocalDiskHandler) GetLocalDisk(key client.ObjectKey) (*ldm.Loca
 	return &ld, nil
 }
 
-func (ldHandler *LocalDiskHandler) GetLocalDiskWithLabels(labels labels.Set) (*ldm.LocalDiskList, error) {
-	list := &ldm.LocalDiskList{
+func (ldHandler *LocalDiskHandler) GetLocalDiskWithLabels(labels labels.Set) (*v1alpha1.LocalDiskList, error) {
+	list := &v1alpha1.LocalDiskList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "LocalDisk",
 			APIVersion: "v1alpha1",
@@ -50,8 +50,8 @@ func (ldHandler *LocalDiskHandler) GetLocalDiskWithLabels(labels labels.Set) (*l
 }
 
 // ListLocalDisk
-func (ldHandler *LocalDiskHandler) ListLocalDisk() (*ldm.LocalDiskList, error) {
-	list := &ldm.LocalDiskList{
+func (ldHandler *LocalDiskHandler) ListLocalDisk() (*v1alpha1.LocalDiskList, error) {
+	list := &v1alpha1.LocalDiskList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "LocalDisk",
 			APIVersion: "v1alpha1",
@@ -63,8 +63,8 @@ func (ldHandler *LocalDiskHandler) ListLocalDisk() (*ldm.LocalDiskList, error) {
 }
 
 // ListNodeLocalDisk
-func (ldHandler *LocalDiskHandler) ListNodeLocalDisk(node string) (*ldm.LocalDiskList, error) {
-	list := &ldm.LocalDiskList{
+func (ldHandler *LocalDiskHandler) ListNodeLocalDisk(node string) (*v1alpha1.LocalDiskList, error) {
+	list := &v1alpha1.LocalDiskList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "LocalDisk",
 			APIVersion: "v1alpha1",
@@ -76,7 +76,7 @@ func (ldHandler *LocalDiskHandler) ListNodeLocalDisk(node string) (*ldm.LocalDis
 }
 
 // For
-func (ldHandler *LocalDiskHandler) For(ld ldm.LocalDisk) *LocalDiskHandler {
+func (ldHandler *LocalDiskHandler) For(ld v1alpha1.LocalDisk) *LocalDiskHandler {
 	ldHandler.Ld = ld
 	ldHandler.filter = filter.NewLocalDiskFilter(ld)
 	return ldHandler
@@ -91,14 +91,14 @@ func (ldHandler *LocalDiskHandler) UnClaimed() bool {
 }
 
 // BoundTo assign disk to ldc
-func (ldHandler *LocalDiskHandler) BoundTo(ldc ldm.LocalDiskClaim) error {
+func (ldHandler *LocalDiskHandler) BoundTo(ldc v1alpha1.LocalDiskClaim) error {
 	ldcRef, err := reference.GetReference(nil, &ldc)
 	if err != nil {
 		return err
 	}
 
 	ldHandler.Ld.Spec.ClaimRef = ldcRef
-	ldHandler.Ld.Status.State = ldm.LocalDiskClaimed
+	ldHandler.Ld.Status.State = v1alpha1.LocalDiskClaimed
 
 	if err = ldHandler.UpdateStatus(); err != nil {
 		return err
@@ -108,7 +108,7 @@ func (ldHandler *LocalDiskHandler) BoundTo(ldc ldm.LocalDiskClaim) error {
 }
 
 // UpdateStatus
-func (ldHandler *LocalDiskHandler) SetupStatus(status ldm.LocalDiskClaimState) {
+func (ldHandler *LocalDiskHandler) SetupStatus(status v1alpha1.LocalDiskClaimState) {
 	ldHandler.Ld.Status.State = status
 }
 
@@ -140,7 +140,13 @@ func (ldHandler *LocalDiskHandler) ClaimRef() *v1.ObjectReference {
 }
 
 // FilterDisk
-func (ldHandler *LocalDiskHandler) FilterDisk(ldc ldm.LocalDiskClaim) bool {
+func (ldHandler *LocalDiskHandler) FilterDisk(ldc v1alpha1.LocalDiskClaim) bool {
+	// Bounded disk
+	if ldHandler.filter.HasBoundWith(ldc.GetName()) {
+		return true
+	}
+
+	// Unbound disk
 	return ldHandler.filter.
 		Init().
 		Unclaimed().

@@ -2,8 +2,10 @@ package E2eTest
 
 import (
 	"context"
-	ldapis "github.com/hwameistor/hwameistor/pkg/apis/generated/local-disk-manager/clientset/versioned/scheme"
-	lsv1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"time"
+
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -20,17 +22,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	"time"
 )
 
 var _ = ginkgo.Describe("lvg mix test ", ginkgo.Label("test"), func() {
 
-	f := framework.NewDefaultFramework(ldapis.AddToScheme)
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
 		result := configureEnvironment(ctx)
-		gomega.Expect(result).To(gomega.Equal(true))
+		gomega.Expect(result).To(gomega.BeNil())
 		createLdc(ctx)
 
 	})
@@ -410,12 +411,12 @@ var _ = ginkgo.Describe("lvg mix test ", ginkgo.Label("test"), func() {
 	})
 	ginkgo.Context("Test the volume & lvgc", func() {
 		ginkgo.It("check lvg", func() {
-			lvrList := &lsv1.LocalVolumeReplicaList{}
+			lvrList := &v1alpha1.LocalVolumeReplicaList{}
 			err := client.List(ctx, lvrList)
 			if err != nil {
 				logrus.Printf("list lvr failed ：%+v ", err)
 			}
-			lvgList := &lsv1.LocalVolumeGroupList{}
+			lvgList := &v1alpha1.LocalVolumeGroupList{}
 			err = client.List(ctx, lvgList)
 			if err != nil {
 				logrus.Printf("list lvg failed ：%+v ", err)
@@ -477,7 +478,7 @@ var _ = ginkgo.Describe("lvg mix test ", ginkgo.Label("test"), func() {
 			}
 		})
 		ginkgo.It("create LocalVolumeGroupConvert", func() {
-			lvgList := &lsv1.LocalVolumeGroupList{}
+			lvgList := &v1alpha1.LocalVolumeGroupList{}
 			err := client.List(ctx, lvgList)
 			if err != nil {
 				logrus.Printf("list lvg failed ：%+v ", err)
@@ -486,13 +487,13 @@ var _ = ginkgo.Describe("lvg mix test ", ginkgo.Label("test"), func() {
 				logrus.Error("wrong number of lvg")
 			}
 			mylvg := lvgList.Items[0]
-			lvgc := &lsv1.LocalVolumeGroupConvert{
+			lvgc := &v1alpha1.LocalVolumeGroupConvert{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "localvolumegroupconvert-1",
 					Namespace: "default",
 				},
 
-				Spec: lsv1.LocalVolumeGroupConvertSpec{
+				Spec: v1alpha1.LocalVolumeGroupConvertSpec{
 					LocalVolumeGroupName: mylvg.Name,
 					ReplicaNumber:        2,
 				},
@@ -503,7 +504,7 @@ var _ = ginkgo.Describe("lvg mix test ", ginkgo.Label("test"), func() {
 				logrus.Printf("Create lvgc failed ：%+v ", err)
 			}
 			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
-				lvrList := &lsv1.LocalVolumeReplicaList{}
+				lvrList := &v1alpha1.LocalVolumeReplicaList{}
 				err = client.List(ctx, lvrList)
 				if err != nil {
 					logrus.Printf("list lvr failed ：%+v ", err)
@@ -571,12 +572,12 @@ var _ = ginkgo.Describe("lvg mix test ", ginkgo.Label("test"), func() {
 	ginkgo.Context("test HA-volumes & lvgm", func() {
 		ginkgo.It("create a localvolumemigrate", func() {
 
-			lvrList := &lsv1.LocalVolumeReplicaList{}
+			lvrList := &v1alpha1.LocalVolumeReplicaList{}
 			err := client.List(ctx, lvrList)
 			if err != nil {
 				logrus.Printf("list lvr failed ：%+v ", err)
 			}
-			lvgList := &lsv1.LocalVolumeGroupList{}
+			lvgList := &v1alpha1.LocalVolumeGroupList{}
 			err = client.List(ctx, lvgList)
 			if err != nil {
 				logrus.Printf("list lvg failed ：%+v ", err)
@@ -585,12 +586,12 @@ var _ = ginkgo.Describe("lvg mix test ", ginkgo.Label("test"), func() {
 				if lvr.Spec.NodeName == "k8s-master" {
 					for _, lvg := range lvgList.Items {
 						if lvg.Spec.Accessibility.Nodes[0] == "k8s-master" {
-							exlvgm := &lsv1.LocalVolumeGroupMigrate{
+							exlvgm := &v1alpha1.LocalVolumeGroupMigrate{
 								ObjectMeta: metav1.ObjectMeta{
 									Name:      "localvolumegroupmigrate-1",
 									Namespace: "hwameistor",
 								},
-								Spec: lsv1.LocalVolumeGroupMigrateSpec{
+								Spec: v1alpha1.LocalVolumeGroupMigrateSpec{
 									TargetNodesNames:     []string{"k8s-node2"},
 									SourceNodesNames:     []string{"k8s-master"},
 									LocalVolumeGroupName: lvg.Name,

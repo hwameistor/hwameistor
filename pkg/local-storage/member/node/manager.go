@@ -3,14 +3,18 @@ package node
 import (
 	"context"
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	"net"
 	"os"
 	"sync"
 
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
-	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
+
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/member/csi"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
 	log "github.com/sirupsen/logrus"
@@ -28,7 +32,15 @@ import (
 // a task is going to be requeued:
 //
 // Infinitely retry
-const maxRetries = 0
+const (
+	maxRetries              = 0
+	rcloneKeyConfigMapName  = "rclone-key-config"
+	rcloneConfigMapName     = "migrate-rclone-config"
+	rclonePubKey            = "rclone.pub"
+	rcloneTmpPubKeyFilePath = "rclone.pub.tmp"
+	srcMountPoint           = "/mnt/src/"
+	dstMountPoint           = "/mnt/dst/"
+)
 
 type manager struct {
 	name string
@@ -52,6 +64,8 @@ type manager struct {
 
 	volumeTaskQueue *common.TaskQueue
 
+	volumeBlockMountTaskQueue *common.TaskQueue
+
 	volumeReplicaTaskQueue *common.TaskQueue
 
 	localDiskClaimTaskQueue *common.TaskQueue
@@ -63,28 +77,39 @@ type manager struct {
 	logger *log.Entry
 
 	lock sync.Mutex
+
+	scheme *runtime.Scheme
+
+	// recorder is used to record events in the API server
+	recorder record.EventRecorder
+	mounter  csi.Mounter
 }
 
 // New node manager
-func New(name string, namespace string, cli client.Client, informersCache runtimecache.Cache, config apisv1alpha1.SystemConfig) (apis.NodeManager, error) {
+func New(name string, namespace string, cli client.Client, informersCache runtimecache.Cache, config apisv1alpha1.SystemConfig,
+	scheme *runtime.Scheme, recorder record.EventRecorder) (apis.NodeManager, error) {
 	configManager, err := NewConfigManager(name, config, cli)
 	if err != nil {
 		return nil, err
 	}
 	return &manager{
-		name:                    name,
-		namespace:               namespace,
-		apiClient:               cli,
-		informersCache:          informersCache,
-		replicaRecords:          map[string]string{},
-		volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
-		volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
-		localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-		localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+		name:                      name,
+		namespace:                 namespace,
+		apiClient:                 cli,
+		informersCache:            informersCache,
+		replicaRecords:            map[string]string{},
+		volumeTaskQueue:           common.NewTaskQueue("VolumeTask", maxRetries),
+		volumeBlockMountTaskQueue: common.NewTaskQueue("volumeBlockMount", maxRetries),
+		volumeReplicaTaskQueue:    common.NewTaskQueue("VolumeReplicaTask", maxRetries),
+		localDiskClaimTaskQueue:   common.NewTaskQueue("LocalDiskClaim", maxRetries),
+		localDiskTaskQueue:        common.NewTaskQueue("LocalDisk", maxRetries),
 		// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 		diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 		configManager:  configManager,
 		logger:         log.WithField("Module", "NodeManager"),
+		scheme:         scheme,
+		recorder:       recorder,
+		mounter:        csi.NewLinuxMounter(log.WithField("Module", "NodeManager")),
 	}, nil
 }
 
@@ -96,6 +121,8 @@ func (m *manager) Run(stopCh <-chan struct{}) {
 	m.setupInformers()
 
 	go m.startVolumeTaskWorker(stopCh)
+
+	go m.startVolumeBlockMountTaskWorker(stopCh)
 
 	go m.startVolumeReplicaTaskWorker(stopCh)
 
@@ -176,7 +203,7 @@ func (m *manager) setupInformers() {
 		UpdateFunc: m.handleVolumeReplicaUpdate,
 	})
 
-	localDiskClaimInformer, err := m.informersCache.GetInformer(context.TODO(), &ldmv1alpha1.LocalDiskClaim{})
+	localDiskClaimInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalDiskClaim{})
 	if err != nil {
 		// error happens, crash the node
 		//m.logger.WithError(err).Fatal("Failed to get informer for LocalDiskClaim")
@@ -187,7 +214,7 @@ func (m *manager) setupInformers() {
 		UpdateFunc: m.handleLocalDiskClaimUpdate,
 	})
 
-	localDiskInformer, err := m.informersCache.GetInformer(context.TODO(), &ldmv1alpha1.LocalDisk{})
+	localDiskInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalDisk{})
 	if err != nil {
 		// error happens, crash the node
 		m.logger.WithError(err).Fatal("Failed to get informer for LocalDisk")
@@ -196,6 +223,15 @@ func (m *manager) setupInformers() {
 		UpdateFunc: m.handleLocalDiskUpdate,
 	})
 
+	k8sCMInformer, err := m.informersCache.GetInformer(context.TODO(), &k8scorev1.ConfigMap{})
+	if err != nil {
+		// error happens, crash the node
+		m.logger.WithError(err).Fatal("Failed to get informer for k8s cm")
+	}
+	k8sCMInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		UpdateFunc: m.handleK8sCMUpdatedEvent,
+		AddFunc:    m.handleK8sCMAddEvent,
+	})
 }
 
 func (m *manager) Storage() *storage.LocalManager {
@@ -256,7 +292,7 @@ func (m *manager) register() {
 	}
 	nodeConfig.Name = m.name
 
-	m.storageMgr = storage.NewLocalManager(nodeConfig, m.apiClient)
+	m.storageMgr = storage.NewLocalManager(nodeConfig, m.apiClient, m.scheme, m.recorder)
 	if err := m.storageMgr.Register(); err != nil {
 		logCtx.WithError(err).Fatal("Failed to register node's storage manager")
 	}
@@ -321,7 +357,7 @@ func (m *manager) handleVolumeReplicaUpdate(oldObj, newObj interface{}) {
 }
 
 func (m *manager) handleLocalDiskClaimUpdate(oldObj, newObj interface{}) {
-	localDiskClaim, _ := newObj.(*ldmv1alpha1.LocalDiskClaim)
+	localDiskClaim, _ := newObj.(*apisv1alpha1.LocalDiskClaim)
 	if localDiskClaim.Spec.NodeName != m.name {
 		return
 	}
@@ -329,7 +365,7 @@ func (m *manager) handleLocalDiskClaimUpdate(oldObj, newObj interface{}) {
 }
 
 func (m *manager) handleLocalDiskClaimAdd(obj interface{}) {
-	localDiskClaim, _ := obj.(*ldmv1alpha1.LocalDiskClaim)
+	localDiskClaim, _ := obj.(*apisv1alpha1.LocalDiskClaim)
 	if localDiskClaim.Spec.NodeName != m.name {
 		return
 	}
@@ -337,7 +373,7 @@ func (m *manager) handleLocalDiskClaimAdd(obj interface{}) {
 }
 
 func (m *manager) handleLocalDiskUpdate(oldObj, newObj interface{}) {
-	localDisk, _ := newObj.(*ldmv1alpha1.LocalDisk)
+	localDisk, _ := newObj.(*apisv1alpha1.LocalDisk)
 	if localDisk.Spec.NodeName != m.name {
 		return
 	}
@@ -387,4 +423,47 @@ func (m *manager) handleNodeDelete(obj interface{}) {
 	if err := m.apiClient.Status().Update(context.TODO(), nodeToRecovery); err != nil {
 		m.logger.WithFields(log.Fields{"node": nodeToRecovery.GetName()}).WithError(err).Error("Failed to rebuild VolumeReplica")
 	}
+}
+
+func (m *manager) handleK8sCMUpdatedEvent(oldObj, newObj interface{}) {
+	newCM, _ := newObj.(*k8scorev1.ConfigMap)
+	if newCM.Name == rcloneConfigMapName {
+		if newCM.Data["lvname"] != "" {
+			lvNameData := newCM.Data["lvname"]
+			m.volumeBlockMountTaskQueue.Add(newCM.Namespace + "/" + lvNameData)
+		}
+	}
+	if newCM.Name == rcloneKeyConfigMapName {
+		if newCM.Data[rclonePubKey] != "" {
+			pubKeyData := newCM.Data[rclonePubKey]
+			pubKeyData = "\n" + pubKeyData
+			utils.WriteDataIntoSysFSFile(pubKeyData, rcloneTmpPubKeyFilePath)
+		}
+	}
+}
+
+func (m *manager) handleK8sCMAddEvent(newObj interface{}) {
+	newCM, _ := newObj.(*k8scorev1.ConfigMap)
+	if newCM.Name == rcloneConfigMapName {
+		if newCM.Data["lvname"] != "" {
+			lvNameData := newCM.Data["lvname"]
+			m.volumeBlockMountTaskQueue.Add(newCM.Namespace + "/" + lvNameData)
+		}
+	}
+	if newCM.Name == rcloneKeyConfigMapName {
+		if newCM.Data[rclonePubKey] != "" {
+			pubKeyData := newCM.Data[rclonePubKey]
+			pubKeyData = "\n" + pubKeyData
+			utils.WriteDataIntoSysFSFile(pubKeyData, rcloneTmpPubKeyFilePath)
+		}
+	}
+}
+
+func isStringInArray(str string, strs []string) bool {
+	for _, s := range strs {
+		if str == s {
+			return true
+		}
+	}
+	return false
 }

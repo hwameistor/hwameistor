@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/exechelper"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/exechelper/nsexecutor"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
@@ -97,7 +97,7 @@ type lvmExecutor struct {
 	logger  *log.Entry
 }
 
-func (lvm *lvmExecutor) ExtendPoolsInfo(disks map[string]*apisv1alpha1.LocalDisk) (map[string]*apisv1alpha1.LocalPool, error) {
+func (lvm *lvmExecutor) ExtendPoolsInfo(disks map[string]*apisv1alpha1.LocalDevice) (map[string]*apisv1alpha1.LocalPool, error) {
 	oldRegistryDisks := lvm.lm.registry.Disks()
 	localDisks := mergeRegistryDiskMap(oldRegistryDisks, disks)
 
@@ -132,7 +132,7 @@ func (lvm *lvmExecutor) ExtendPoolsInfo(disks map[string]*apisv1alpha1.LocalDisk
 
 		// Prepare PV status
 		pvRecords := lvmStatus.getPVsByVGName(vgName)
-		disks := make([]apisv1alpha1.LocalDisk, 0, len(pvRecords))
+		disks := make([]apisv1alpha1.LocalDevice, 0, len(pvRecords))
 
 		for _, pv := range pvRecords {
 			if _, exists := localDisks[pv.Name]; !exists {
@@ -143,7 +143,7 @@ func (lvm *lvmExecutor) ExtendPoolsInfo(disks map[string]*apisv1alpha1.LocalDisk
 				lvm.logger.WithError(err).Errorf("Failed to convert LVM byte numbers int64: %s\n.", pv.PvSize)
 				return nil, err
 			}
-			typedPv := &apisv1alpha1.LocalDisk{
+			typedPv := &apisv1alpha1.LocalDevice{
 				DevPath:       pv.Name,
 				Class:         localDisks[pv.Name].Class,
 				CapacityBytes: pvcap,
@@ -257,65 +257,25 @@ func (lvm *lvmExecutor) CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeRep
 		}
 	}
 
-	newReplica := replica.DeepCopy()
-
-	if replica.Spec.VolumeMigratedName != "" {
-		// query current status of the replica
-		record, _ := lvm.lvRecord(replica.Spec.VolumeMigratedName, replica.Spec.PoolName)
-		if record == nil {
-			if err := lvm.lvcreate(replica.Spec.VolumeMigratedName, replica.Spec.PoolName, options); err != nil {
-				return nil, err
-			}
-		}
-		// query current status of the replica
-		record, err := lvm.lvRecord(replica.Spec.VolumeMigratedName, replica.Spec.PoolName)
-		if err != nil {
-			return nil, err
-		}
-		allocatedCapacityBytes, err := utils.ConvertLVMBytesToNumeric(record.LvCapacity)
-		if err != nil {
-			return nil, err
-		}
-		status, err := lvm.lvdisplay(record.LvPath)
-		if err != nil {
-			return nil, err
-		}
-
-		newReplica.Status.AllocatedCapacityBytes = allocatedCapacityBytes
-		newReplica.Status.StoragePath = record.LvPath
-		newReplica.Status.DevicePath = record.LvPath
-		newReplica.Status.Disks = status.disks
-
-		return newReplica, nil
-	} else {
-		// query current status of the replica
-		record, _ := lvm.lvRecord(replica.Spec.VolumeName, replica.Spec.PoolName)
-		if record == nil {
-			if err := lvm.lvcreate(replica.Spec.VolumeName, replica.Spec.PoolName, options); err != nil {
-				return nil, err
-			}
-		}
-		// query current status of the replica
-		record, err := lvm.lvRecord(replica.Spec.VolumeName, replica.Spec.PoolName)
-		if err != nil {
-			return nil, err
-		}
-		allocatedCapacityBytes, err := utils.ConvertLVMBytesToNumeric(record.LvCapacity)
-		if err != nil {
-			return nil, err
-		}
-		status, err := lvm.lvdisplay(record.LvPath)
-		if err != nil {
-			return nil, err
-		}
-
-		newReplica.Status.AllocatedCapacityBytes = allocatedCapacityBytes
-		newReplica.Status.StoragePath = record.LvPath
-		newReplica.Status.DevicePath = record.LvPath
-		newReplica.Status.Disks = status.disks
-
-		return newReplica, nil
+	// query current status of the replica
+	record, err := lvm.lvRecord(replica.Spec.VolumeName, replica.Spec.PoolName)
+	if err != nil {
+		return nil, err
 	}
+	allocatedCapacityBytes, err := utils.ConvertLVMBytesToNumeric(record.LvCapacity)
+	if err != nil {
+		return nil, err
+	}
+	status, err := lvm.lvdisplay(record.LvPath)
+	if err != nil {
+		return nil, err
+	}
+	newReplica := replica.DeepCopy()
+	newReplica.Status.AllocatedCapacityBytes = allocatedCapacityBytes
+	newReplica.Status.StoragePath = record.LvPath
+	newReplica.Status.DevicePath = record.LvPath
+	newReplica.Status.Disks = status.disks
+
 	return newReplica, nil
 }
 
@@ -379,16 +339,17 @@ func (lvm *lvmExecutor) TestVolumeReplica(replica *apisv1alpha1.LocalVolumeRepli
 	return newReplica, nil
 }
 
-func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*apisv1alpha1.LocalDisk) error {
+func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*apisv1alpha1.LocalDevice) (bool, error) {
 	lvm.logger.Debugf("Adding available disk %+v, count: %d\n.", availableLocalDisks, len(availableLocalDisks))
 
+	extend := false
 	existingPVMap, err := lvm.getExistingPVs()
 	if err != nil {
 		lvm.logger.WithError(err).Error("Failed to getExistingPVs.")
-		return err
+		return false, err
 	}
 
-	disksToBeExtends := make(map[string][]*apisv1alpha1.LocalDisk)
+	disksToBeExtends := make(map[string][]*apisv1alpha1.LocalDevice)
 	for _, disk := range availableLocalDisks {
 		poolName, err := getPoolNameAccordingDisk(disk)
 		if err != nil {
@@ -396,7 +357,7 @@ func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*apisv1alpha1.LocalDis
 			continue
 		}
 		if disksToBeExtends[poolName] == nil {
-			disksToBeExtends[poolName] = make([]*apisv1alpha1.LocalDisk, 0, len(availableLocalDisks))
+			disksToBeExtends[poolName] = make([]*apisv1alpha1.LocalDevice, 0, len(availableLocalDisks))
 		}
 		if _, ok := existingPVMap[disk.DevPath]; ok {
 			continue
@@ -405,13 +366,17 @@ func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*apisv1alpha1.LocalDis
 	}
 
 	for poolName, classifiedDisks := range disksToBeExtends {
+		if len(classifiedDisks) == 0 {
+			continue
+		}
 		if err := lvm.extendPool(poolName, classifiedDisks); err != nil {
 			lvm.logger.WithError(err).Error("Add available disk failed.")
-			return err
+			return extend, err
 		}
+		extend = true
 	}
 
-	return nil
+	return extend, nil
 }
 
 func (lvm *lvmExecutor) ConsistencyCheck(crdReplicas map[string]*apisv1alpha1.LocalVolumeReplica) {
@@ -508,7 +473,7 @@ func (lvm *lvmExecutor) getExistingPVs() (map[string]struct{}, error) {
 	return existingPVsMap, nil
 }
 
-func (lvm *lvmExecutor) extendPool(poolName string, disks []*apisv1alpha1.LocalDisk) error {
+func (lvm *lvmExecutor) extendPool(poolName string, disks []*apisv1alpha1.LocalDevice) error {
 	if len(disks) == 0 {
 		lvm.logger.Info("Empty disk list given.")
 		return nil

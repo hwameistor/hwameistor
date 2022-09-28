@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	localstorageapis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
-	localstoragev1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -24,19 +24,19 @@ type LVMVolumeScheduler struct {
 	csiDriverName    string
 	topoNodeLabelKey string
 
-	replicaScheduler localstoragev1alpha1.VolumeScheduler
+	replicaScheduler v1alpha1.VolumeScheduler
 	hwameiStorCache  cache.Cache
 
 	scLister storagev1lister.StorageClassLister
 }
 
-func NewLVMVolumeScheduler(f framework.FrameworkHandle, scheduler localstoragev1alpha1.VolumeScheduler, hwameiStorCache cache.Cache, cli client.Client) VolumeScheduler {
+func NewLVMVolumeScheduler(f framework.FrameworkHandle, scheduler v1alpha1.VolumeScheduler, hwameiStorCache cache.Cache, cli client.Client) VolumeScheduler {
 
 	sche := &LVMVolumeScheduler{
 		fHandle:          f,
 		apiClient:        cli,
-		topoNodeLabelKey: localstorageapis.TopologyNodeKey,
-		csiDriverName:    localstoragev1alpha1.CSIDriverName,
+		topoNodeLabelKey: apis.TopologyNodeKey,
+		csiDriverName:    v1alpha1.CSIDriverName,
 		replicaScheduler: scheduler,
 		hwameiStorCache:  hwameiStorCache,
 		scLister:         f.SharedInformerFactory().Storage().V1().StorageClasses().Lister(),
@@ -69,7 +69,7 @@ func (s *LVMVolumeScheduler) filterForExistingLocalVolumes(lvs []string, node *c
 
 	// Bound PVC already has volume created in the cluster. Just check if this node has the expected volume
 	for _, lvName := range lvs {
-		lv := &localstoragev1alpha1.LocalVolume{}
+		lv := &v1alpha1.LocalVolume{}
 		if err := s.hwameiStorCache.Get(context.Background(), types.NamespacedName{Name: lvName}, lv); err != nil {
 			log.WithFields(log.Fields{"localvolume": lvName}).WithError(err).Error("Failed to fetch LocalVolume")
 			return false, err
@@ -103,7 +103,7 @@ func (s *LVMVolumeScheduler) filterForNewPVCs(pvcs []*corev1.PersistentVolumeCla
 	for _, pvc := range pvcs {
 		log.WithField("pvc", pvc.Name).WithField("node", node.Name).Debug("New PVC")
 	}
-	lvs := []*localstoragev1alpha1.LocalVolume{}
+	lvs := []*v1alpha1.LocalVolume{}
 	for i := range pvcs {
 		lv, err := s.constructLocalVolumeForPVC(pvcs[i])
 		if err != nil {
@@ -114,7 +114,8 @@ func (s *LVMVolumeScheduler) filterForNewPVCs(pvcs []*corev1.PersistentVolumeCla
 
 	qualifiedNodes := s.replicaScheduler.GetNodeCandidates(lvs)
 	if len(qualifiedNodes) < int(lvs[0].Spec.ReplicaNumber) {
-		return false, fmt.Errorf("no enough nodes")
+		return false, fmt.Errorf("need %d node(s) to place volume, but only find %d node(s) meet the volume capacity requirements",
+			int(lvs[0].Spec.ReplicaNumber), len(qualifiedNodes))
 	}
 	for _, qn := range qualifiedNodes {
 		if qn.Name == node.Name {
@@ -125,16 +126,16 @@ func (s *LVMVolumeScheduler) filterForNewPVCs(pvcs []*corev1.PersistentVolumeCla
 	return false, nil
 }
 
-func (s *LVMVolumeScheduler) constructLocalVolumeForPVC(pvc *corev1.PersistentVolumeClaim) (*localstoragev1alpha1.LocalVolume, error) {
+func (s *LVMVolumeScheduler) constructLocalVolumeForPVC(pvc *corev1.PersistentVolumeClaim) (*v1alpha1.LocalVolume, error) {
 
 	sc, err := s.scLister.Get(*pvc.Spec.StorageClassName)
 	if err != nil {
 		return nil, err
 	}
-	localVolume := localstoragev1alpha1.LocalVolume{}
+	localVolume := v1alpha1.LocalVolume{}
 	poolName, err := buildStoragePoolName(
-		sc.Parameters[localstoragev1alpha1.VolumeParameterPoolClassKey],
-		sc.Parameters[localstoragev1alpha1.VolumeParameterPoolTypeKey])
+		sc.Parameters[v1alpha1.VolumeParameterPoolClassKey],
+		sc.Parameters[v1alpha1.VolumeParameterPoolTypeKey])
 	if err != nil {
 		return nil, err
 	}
@@ -142,21 +143,21 @@ func (s *LVMVolumeScheduler) constructLocalVolumeForPVC(pvc *corev1.PersistentVo
 	localVolume.Spec.PoolName = poolName
 	storage := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
 	localVolume.Spec.RequiredCapacityBytes = storage.Value()
-	replica, _ := strconv.Atoi(sc.Parameters[localstoragev1alpha1.VolumeParameterReplicaNumberKey])
+	replica, _ := strconv.Atoi(sc.Parameters[v1alpha1.VolumeParameterReplicaNumberKey])
 	localVolume.Spec.ReplicaNumber = int64(replica)
 	return &localVolume, nil
 }
 
 func buildStoragePoolName(poolClass string, poolType string) (string, error) {
 
-	if poolClass == localstoragev1alpha1.DiskClassNameHDD && poolType == localstoragev1alpha1.PoolTypeRegular {
-		return localstoragev1alpha1.PoolNameForHDD, nil
+	if poolClass == v1alpha1.DiskClassNameHDD && poolType == v1alpha1.PoolTypeRegular {
+		return v1alpha1.PoolNameForHDD, nil
 	}
-	if poolClass == localstoragev1alpha1.DiskClassNameSSD && poolType == localstoragev1alpha1.PoolTypeRegular {
-		return localstoragev1alpha1.PoolNameForSSD, nil
+	if poolClass == v1alpha1.DiskClassNameSSD && poolType == v1alpha1.PoolTypeRegular {
+		return v1alpha1.PoolNameForSSD, nil
 	}
-	if poolClass == localstoragev1alpha1.DiskClassNameNVMe && poolType == localstoragev1alpha1.PoolTypeRegular {
-		return localstoragev1alpha1.PoolNameForNVMe, nil
+	if poolClass == v1alpha1.DiskClassNameNVMe && poolType == v1alpha1.PoolTypeRegular {
+		return v1alpha1.PoolNameForNVMe, nil
 	}
 
 	return "", fmt.Errorf("invalid pool info")

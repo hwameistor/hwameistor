@@ -6,8 +6,7 @@ import (
 	"testing"
 	"time"
 
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
@@ -50,10 +49,10 @@ var (
 	fakeZone                        = "zone-test"
 	fakeRegion                      = "region-test"
 	fakeVgType                      = "LocalStorage_PoolHDD"
-	fakePartitionInfo               = []ldmv1alpha1.PartitionInfo{{Path: "test", HasFileSystem: true, FileSystem: ldmv1alpha1.FileSystemInfo{Type: "test", Mountpoint: "test"}}}
-	fakeRaidInfo                    = ldmv1alpha1.RAIDInfo{RAIDMaster: "test"}
-	fakeSmartInfo                   = ldmv1alpha1.SmartInfo{OverallHealth: ldmv1alpha1.SmartAssessResult("test")}
-	fakeDiskAttributes              = ldmv1alpha1.DiskAttributes{Type: "test"}
+	fakePartitionInfo               = []apisv1alpha1.PartitionInfo{{Path: "test", HasFileSystem: true, FileSystem: apisv1alpha1.FileSystemInfo{Type: "test", Mountpoint: "test"}}}
+	fakeRaidInfo                    = apisv1alpha1.RAIDInfo{RAIDMaster: "test"}
+	fakeSmartInfo                   = apisv1alpha1.SmartInfo{OverallHealth: apisv1alpha1.SmartAssessResult("test")}
+	fakeDiskAttributes              = apisv1alpha1.DiskAttributes{Type: "test"}
 	fakeDescription                 = "fakeDescription"
 	fakePersistentVolumeClaimName   = "pvc-name-test"
 	fakePoolClass                   = "HDD"
@@ -550,8 +549,8 @@ func Test_manager_updateVolumeReplica(t *testing.T) {
 }
 
 // GenFakeLocalDiskClaimObject Create ldc request
-func GenFakeLocalDiskClaimObject() *ldmv1alpha1.LocalDiskClaim {
-	ldc := &ldmv1alpha1.LocalDiskClaim{}
+func GenFakeLocalDiskClaimObject() *apisv1alpha1.LocalDiskClaim {
+	ldc := &apisv1alpha1.LocalDiskClaim{}
 
 	TypeMeta := metav1.TypeMeta{
 		Kind:       LocalDiskClaimKind,
@@ -565,9 +564,9 @@ func GenFakeLocalDiskClaimObject() *ldmv1alpha1.LocalDiskClaim {
 		CreationTimestamp: metav1.Time{Time: time.Now()},
 	}
 
-	Spec := ldmv1alpha1.LocalDiskClaimSpec{
+	Spec := apisv1alpha1.LocalDiskClaimSpec{
 		NodeName: fakeNodename,
-		Description: ldmv1alpha1.DiskClaimDescription{
+		Description: apisv1alpha1.DiskClaimDescription{
 			DiskType: "test",
 			Capacity: fakeDiskCapacityBytes,
 		},
@@ -576,14 +575,14 @@ func GenFakeLocalDiskClaimObject() *ldmv1alpha1.LocalDiskClaim {
 	ldc.ObjectMeta = ObjectMata
 	ldc.TypeMeta = TypeMeta
 	ldc.Spec = Spec
-	ldc.Status.Status = ldmv1alpha1.DiskClaimStatusEmpty
+	ldc.Status.Status = apisv1alpha1.DiskClaimStatusEmpty
 
 	return ldc
 }
 
 // GenFakeLocalDiskObject Create ld request
-func GenFakeLocalDiskObject() *ldmv1alpha1.LocalDisk {
-	ld := &ldmv1alpha1.LocalDisk{}
+func GenFakeLocalDiskObject() *apisv1alpha1.LocalDisk {
+	ld := &apisv1alpha1.LocalDisk{}
 
 	TypeMeta := metav1.TypeMeta{
 		Kind:       LocalDiskKind,
@@ -597,7 +596,7 @@ func GenFakeLocalDiskObject() *ldmv1alpha1.LocalDisk {
 		CreationTimestamp: metav1.Time{Time: time.Now()},
 	}
 
-	Spec := ldmv1alpha1.LocalDiskSpec{
+	Spec := apisv1alpha1.LocalDiskSpec{
 		NodeName:       fakeNodename,
 		UUID:           fakeLocalDiskUID,
 		DevicePath:     fakeDevicePath,
@@ -614,7 +613,7 @@ func GenFakeLocalDiskObject() *ldmv1alpha1.LocalDisk {
 	ld.ObjectMeta = ObjectMata
 	ld.TypeMeta = TypeMeta
 	ld.Spec = Spec
-	ld.Status.State = ldmv1alpha1.LocalDiskUnclaimed
+	ld.Status.State = apisv1alpha1.LocalDiskUnclaimed
 
 	return ld
 }
@@ -730,7 +729,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	}
 
 	ld := GenFakeLocalDiskObject()
-	ldList := &ldmv1alpha1.LocalDiskList{
+	ldList := &apisv1alpha1.LocalDiskList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       LocalDiskKind,
 			APIVersion: apiversion,
@@ -738,7 +737,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	}
 
 	ldc := GenFakeLocalDiskClaimObject()
-	ldcList := &ldmv1alpha1.LocalDiskClaimList{
+	ldcList := &apisv1alpha1.LocalDiskClaimList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       LocalDiskClaimKind,
 			APIVersion: apiversion,
@@ -746,14 +745,14 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	}
 
 	s := scheme.Scheme
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lv)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvr)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvrList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, ld)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, ldList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, ldc)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, ldcList)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lv)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvList)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvr)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvrList)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, ld)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, ldList)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, ldc)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, ldcList)
 
 	return fake.NewFakeClientWithScheme(s), s
 }

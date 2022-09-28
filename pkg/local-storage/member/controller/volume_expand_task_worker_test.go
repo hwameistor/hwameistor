@@ -1,15 +1,15 @@
 package controller
 
 import (
-	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"sync"
+	"testing"
+
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sync"
-	"testing"
 )
 
 func Test_manager_processVolumeExpand(t *testing.T) {
@@ -29,7 +29,7 @@ func Test_manager_processVolumeExpand(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
@@ -90,7 +90,7 @@ func Test_manager_startVolumeExpandTaskWorker(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
@@ -148,12 +148,12 @@ func Test_manager_volumeExpandAbort(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
 	type args struct {
-		expand *apisv1alpha1.LocalVolumeExpand
+		expand *v1alpha1.LocalVolumeExpand
 	}
 	tests := []struct {
 		name    string
@@ -209,12 +209,12 @@ func Test_manager_volumeExpandCleanup(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
 	type args struct {
-		expand *apisv1alpha1.LocalVolumeExpand
+		expand *v1alpha1.LocalVolumeExpand
 	}
 	tests := []struct {
 		name    string
@@ -270,12 +270,12 @@ func Test_manager_volumeExpandInProgress(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
 	type args struct {
-		expand *apisv1alpha1.LocalVolumeExpand
+		expand *v1alpha1.LocalVolumeExpand
 	}
 	tests := []struct {
 		name    string
@@ -331,12 +331,12 @@ func Test_manager_volumeExpandStart(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
 	type args struct {
-		expand *apisv1alpha1.LocalVolumeExpand
+		expand *v1alpha1.LocalVolumeExpand
 	}
 	tests := []struct {
 		name    string
@@ -392,12 +392,12 @@ func Test_manager_volumeExpandSubmit(t *testing.T) {
 		volumeGroupMigrateTaskQueue *common.TaskQueue
 		volumeConvertTaskQueue      *common.TaskQueue
 		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]apisv1alpha1.State
+		localNodes                  map[string]v1alpha1.State
 		logger                      *log.Entry
 		lock                        sync.Mutex
 	}
 	type args struct {
-		expand *apisv1alpha1.LocalVolumeExpand
+		expand *v1alpha1.LocalVolumeExpand
 	}
 	tests := []struct {
 		name    string

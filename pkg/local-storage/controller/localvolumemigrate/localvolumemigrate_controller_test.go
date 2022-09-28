@@ -5,14 +5,12 @@ import (
 	"testing"
 	"time"
 
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -25,31 +23,31 @@ var (
 	fakeNodenames              = []string{"10-6-118-10"}
 
 	LocalVolumeMigrateKind = "LocalVolumeMigrate"
-	fakeRecorder           = record.NewFakeRecorder(100)
+	//fakeRecorder           = record.NewFakeRecorder(100)
 
-	fakeLocalVolumeName                   = "local-volume-test1"
-	fakeLocalVolumeGroupName              = "local-volume-group-example"
-	fakeLocalVolumeGroupMigrateName       = "local-volume-group-convert-example"
-	fakeLocalVolumeGroupMigrateUID        = "local-volume-group-convert-uid"
-	fakeLocalVolumeGroupUID               = "local-volume-group-uid"
-	fakeLocalVolumeUID                    = "local-volume-uid"
-	fakeNamespace                         = "local-volume-group-test"
-	fakeSourceNodenames                   = []string{"10-6-118-10"}
-	fakeTargetNodenames                   = []string{"10-6-118-11"}
-	fakePersistentPvcName                 = "pvc-test"
-	fakeVolumes                           = []apisv1alpha1.VolumeInfo{{LocalVolumeName: fakeLocalVolumeName, PersistentVolumeClaimName: fakePersistentPvcName}}
-	fakeStorageIp                         = "10.6.118.11"
-	fakeZone                              = "zone-test"
-	fakeRegion                            = "region-test"
-	fakePods                              = []string{"pod-test1"}
-	fakeVgType                            = "LocalStorage_PoolHDD"
-	fakeVgName                            = "vg-test"
-	fakePoolClass                         = "HDD"
-	fakePoolType                          = "REGULAR"
-	fakePoolName                          = "pool-test-1"
-	fakeTotalCapacityBytes          int64 = 10 * 1024 * 1024 * 1024
-	fakeFreeCapacityBytes           int64 = 8 * 1024 * 1024 * 1024
-	fakeDiskCapacityBytes           int64 = 2 * 1024 * 1024 * 1024
+	fakeLocalVolumeName      = "local-volume-test1"
+	fakeLocalVolumeGroupName = "local-volume-group-example"
+	// fakeLocalVolumeGroupMigrateName       = "local-volume-group-convert-example"
+	// fakeLocalVolumeGroupMigrateUID        = "local-volume-group-convert-uid"
+	fakeLocalVolumeGroupUID = "local-volume-group-uid"
+	fakeLocalVolumeUID      = "local-volume-uid"
+	fakeNamespace           = "local-volume-group-test"
+	// fakeSourceNodenames                   = []string{"10-6-118-10"}
+	// fakeTargetNodenames                   = []string{"10-6-118-11"}
+	fakePersistentPvcName = "pvc-test"
+	fakeVolumes           = []apisv1alpha1.VolumeInfo{{LocalVolumeName: fakeLocalVolumeName, PersistentVolumeClaimName: fakePersistentPvcName}}
+	fakeStorageIp         = "10.6.118.11"
+	fakeZone              = "zone-test"
+	fakeRegion            = "region-test"
+	fakePods              = []string{"pod-test1"}
+	fakeVgType            = "LocalStorage_PoolHDD"
+	fakeVgName            = "vg-test"
+	fakePoolClass         = "HDD"
+	fakePoolType          = "REGULAR"
+	// fakePoolName                          = "pool-test-1"
+	fakeTotalCapacityBytes int64 = 10 * 1024 * 1024 * 1024
+	fakeFreeCapacityBytes  int64 = 8 * 1024 * 1024 * 1024
+	fakeDiskCapacityBytes  int64 = 2 * 1024 * 1024 * 1024
 
 	apiversion                  = "hwameistor.io/v1alpha1"
 	LocalVolumeGroupMigrateKind = "LocalVolumeGroupMigrate"
@@ -149,8 +147,8 @@ func GenFakeLocalVolumeMigrateObject() *apisv1alpha1.LocalVolumeMigrate {
 		Abort:            true,
 	}
 
-	disks := make([]apisv1alpha1.LocalDisk, 0, 10)
-	var localdisk1 apisv1alpha1.LocalDisk
+	disks := make([]apisv1alpha1.LocalDevice, 0, 10)
+	var localdisk1 apisv1alpha1.LocalDevice
 	localdisk1.DevPath = "/dev/sdf"
 	localdisk1.State = apisv1alpha1.DiskStateAvailable
 	localdisk1.Class = fakePoolClass
@@ -210,12 +208,12 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	}
 
 	s := scheme.Scheme
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvm)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvmList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvg)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvgList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lv)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvList)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvm)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvmList)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvg)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvgList)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lv)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvList)
 	return fake.NewFakeClientWithScheme(s), s
 }
 
@@ -242,8 +240,8 @@ func GenFakeLocalVolumeGroupObject(lvgName string) *apisv1alpha1.LocalVolumeGrou
 		Pods:          fakePods,
 	}
 
-	disks := make([]apisv1alpha1.LocalDisk, 0, 10)
-	var localdisk1 apisv1alpha1.LocalDisk
+	disks := make([]apisv1alpha1.LocalDevice, 0, 10)
+	var localdisk1 apisv1alpha1.LocalDevice
 	localdisk1.DevPath = "/dev/sdf"
 	localdisk1.State = apisv1alpha1.DiskStateAvailable
 	localdisk1.Class = fakePoolClass

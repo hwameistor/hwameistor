@@ -2,9 +2,10 @@ package controller
 
 import (
 	"fmt"
-	"github.com/golang/mock/gomock"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 func Test_manager_ReconcileNode(t *testing.T) {

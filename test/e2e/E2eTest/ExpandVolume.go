@@ -2,7 +2,9 @@ package E2eTest
 
 import (
 	"context"
-	lsv1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"time"
+
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -19,16 +21,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	"time"
 )
 
 var _ = ginkgo.Describe("test localstorage expand volume", ginkgo.Label("periodCheck"), func() {
-	f := framework.NewDefaultFramework(lsv1.AddToScheme)
+	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
 		result := configureEnvironment(ctx)
-		gomega.Expect(result).To(gomega.Equal(true))
+		gomega.Expect(result).To(gomega.BeNil())
 		createLdc(ctx)
 	})
 	ginkgo.Context("create a StorageClass", func() {
@@ -271,7 +272,6 @@ var _ = ginkgo.Describe("test localstorage expand volume", ginkgo.Label("periodC
 			storageMap[apiv1.ResourceStorage] = resource.MustParse("2Gi")
 			pvc.Spec.Resources.Requests = storageMap
 			err = client.Update(ctx, pvc)
-
 			pvc = &apiv1.PersistentVolumeClaim{}
 			pvcKey = k8sclient.ObjectKey{
 				Name:      "pvc-lvm",
@@ -282,10 +282,10 @@ var _ = ginkgo.Describe("test localstorage expand volume", ginkgo.Label("periodC
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
-
+			logrus.Infof(pvc.Status.Capacity.Storage().String())
 			logrus.Infof("Waiting for the PVC to be bound")
 			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
-				if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Phase != apiv1.ClaimBound {
+				if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Capacity.Storage().String() != "2Gi" {
 					return false, nil
 				}
 				return true, nil

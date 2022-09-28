@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/configer"
 )
@@ -182,8 +182,8 @@ func (m *configManager) getConfig(replica *apisv1alpha1.LocalVolumeReplica) (*ap
 	if vol.Spec.Config == nil {
 		return nil, false, fmt.Errorf("not found")
 	}
-	return vol.Spec.Config, len(vol.Spec.Config.Replicas) > 1 || vol.Spec.Config.Convertible, nil
-
+	//return vol.Spec.Config, len(vol.Spec.Config.Replicas) > 1 || vol.Spec.Config.Convertible, nil
+	return vol.Spec.Config, vol.Spec.Config.Convertible, nil
 }
 
 func (m *configManager) updateConfig(replica *apisv1alpha1.LocalVolumeReplica, config *apisv1alpha1.VolumeConfig) error {

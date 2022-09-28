@@ -2,8 +2,9 @@ package csi
 
 import (
 	"fmt"
-	localapis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
@@ -30,7 +31,7 @@ func (p *plugin) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (
 		// MaxVolumesPerNode: 1048576, // TODO: should set it? how?
 		AccessibleTopology: &csi.Topology{
 			Segments: map[string]string{
-				localapis.TopologyNodeKey: p.nodeName,
+				apis.TopologyNodeKey: p.nodeName,
 			}},
 	}, nil
 }

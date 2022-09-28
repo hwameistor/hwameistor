@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	apisv1alpha "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apisv1alpha "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 func Test_localPoolManager_ExtendPoolsInfo(t *testing.T) {
-	var localDiskM = map[string]*apisv1alpha.LocalDisk{}
-	localDiskM["/dev/sdb"] = &apisv1alpha.LocalDisk{
+	var localDiskM = map[string]*apisv1alpha.LocalDevice{}
+	localDiskM["/dev/sdb"] = &apisv1alpha.LocalDevice{
 		DevPath:       "/dev/sdb",
 		Class:         apisv1alpha.DiskClassNameHDD,
 		CapacityBytes: 10240,
@@ -82,27 +82,27 @@ func Test_getPoolClassTypeByName(t *testing.T) {
 
 func Test_getPoolNameAccordingDisk(t *testing.T) {
 	type args struct {
-		disk *apisv1alpha.LocalDisk
+		disk *apisv1alpha.LocalDevice
 	}
-	var disk = &apisv1alpha.LocalDisk{
+	var disk = &apisv1alpha.LocalDevice{
 		DevPath:       "/dev/sdb",
 		Class:         apisv1alpha.DiskClassNameHDD,
 		CapacityBytes: 10240,
 		State:         apisv1alpha.DiskStateAvailable,
 	}
-	var disk2 = &apisv1alpha.LocalDisk{
+	var disk2 = &apisv1alpha.LocalDevice{
 		DevPath:       "/dev/sdb",
 		Class:         apisv1alpha.DiskClassNameSSD,
 		CapacityBytes: 10240,
 		State:         apisv1alpha.DiskStateAvailable,
 	}
-	var disk3 = &apisv1alpha.LocalDisk{
+	var disk3 = &apisv1alpha.LocalDevice{
 		DevPath:       "/dev/sdb",
 		Class:         apisv1alpha.DiskClassNameNVMe,
 		CapacityBytes: 10240,
 		State:         apisv1alpha.DiskStateAvailable,
 	}
-	var disk4 = &apisv1alpha.LocalDisk{
+	var disk4 = &apisv1alpha.LocalDevice{
 		DevPath:       "/dev/sdb",
 		Class:         "Unknown",
 		CapacityBytes: 10240,
@@ -180,8 +180,8 @@ func Test_localPoolManager_GetReplicas(t *testing.T) {
 }
 
 func Test_localPoolManager_ExtendPools(t *testing.T) {
-	var localDisks = []*apisv1alpha.LocalDisk{}
-	var disk = &apisv1alpha.LocalDisk{
+	var localDisks = []*apisv1alpha.LocalDevice{}
+	var disk = &apisv1alpha.LocalDevice{
 		DevPath:       "/dev/sdb",
 		Class:         apisv1alpha.DiskClassNameHDD,
 		CapacityBytes: 10240,
@@ -209,8 +209,8 @@ func Test_localPoolManager_ExtendPools(t *testing.T) {
 }
 
 func Test_localPoolManager_ExtendPoolsInfo1(t *testing.T) {
-	var localDiskM = map[string]*apisv1alpha.LocalDisk{}
-	localDiskM["/dev/sdb"] = &apisv1alpha.LocalDisk{
+	var localDiskM = map[string]*apisv1alpha.LocalDevice{}
+	localDiskM["/dev/sdb"] = &apisv1alpha.LocalDevice{
 		DevPath:       "/dev/sdb",
 		Class:         apisv1alpha.DiskClassNameHDD,
 		CapacityBytes: 10240,

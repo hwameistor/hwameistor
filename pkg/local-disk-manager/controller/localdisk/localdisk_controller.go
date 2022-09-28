@@ -6,7 +6,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	ldm "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -44,19 +44,19 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 func withCurrentNode() predicate.Predicate {
 	return predicate.Funcs{
 		CreateFunc: func(event event.CreateEvent) bool {
-			disk, _ := event.Object.DeepCopyObject().(*ldm.LocalDisk)
+			disk, _ := event.Object.DeepCopyObject().(*v1alpha1.LocalDisk)
 			return disk.Spec.NodeName == utils.GetNodeName()
 		},
 		DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
-			disk, _ := deleteEvent.Object.DeepCopyObject().(*ldm.LocalDisk)
+			disk, _ := deleteEvent.Object.DeepCopyObject().(*v1alpha1.LocalDisk)
 			return disk.Spec.NodeName == utils.GetNodeName()
 		},
 		UpdateFunc: func(updateEvent event.UpdateEvent) bool {
-			disk, _ := updateEvent.ObjectNew.DeepCopyObject().(*ldm.LocalDisk)
+			disk, _ := updateEvent.ObjectNew.DeepCopyObject().(*v1alpha1.LocalDisk)
 			return disk.Spec.NodeName == utils.GetNodeName()
 		},
 		GenericFunc: func(genericEvent event.GenericEvent) bool {
-			disk, _ := genericEvent.Object.DeepCopyObject().(*ldm.LocalDisk)
+			disk, _ := genericEvent.Object.DeepCopyObject().(*v1alpha1.LocalDisk)
 			return disk.Spec.NodeName == utils.GetNodeName()
 		},
 	}
@@ -71,7 +71,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource LocalDisk
-	err = c.Watch(&source.Kind{Type: &ldm.LocalDisk{}}, &handler.EnqueueRequestForObject{}, withCurrentNode())
+	err = c.Watch(&source.Kind{Type: &v1alpha1.LocalDisk{}}, &handler.EnqueueRequestForObject{}, withCurrentNode())
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (r *ReconcileLocalDisk) Reconcile(req reconcile.Request) (reconcile.Result,
 
 	// Update status
 	if ldHandler.ClaimRef() != nil && ldHandler.UnClaimed() {
-		ldHandler.SetupStatus(ldm.LocalDiskClaimed)
+		ldHandler.SetupStatus(v1alpha1.LocalDiskClaimed)
 		if err := ldHandler.UpdateStatus(); err != nil {
 			r.Recorder.Eventf(&ldHandler.Ld, v1.EventTypeWarning, "UpdateStatusFail", "Update status fail, due to error: %v", err)
 			log.WithError(err).Errorf("Update LocalDisk %v status fail", ldHandler.Ld.Name)

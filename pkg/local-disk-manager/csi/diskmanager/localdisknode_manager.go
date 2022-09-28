@@ -14,7 +14,7 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/builder/localdisknode"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/kubernetes"
 )
