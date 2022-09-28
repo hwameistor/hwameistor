@@ -8,7 +8,7 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/diskmanager"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/builder/localdiskvolume"
 	volumectr "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskvolume"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
@@ -163,7 +163,7 @@ func (vm *LocalDiskVolumeManager) CreateVolume(name string, parameters interface
 		SetupAllocateCap(reservedDisk.Capacity).
 		SetupRequiredCapacityBytes(r.RequireCapacity).
 		SetupPVCNameSpaceName(r.PVCNameSpace + "/" + r.PVCName).
-		SetupAccessibility(v1alpha1.AccessibilityTopology{Node: r.OwnerNodeName}).
+		SetupAccessibility(v1alpha1.AccessibilityTopology{Nodes: []string{r.OwnerNodeName}}).
 		SetupStatus(v1alpha1.VolumeStateCreated).Build()
 	if err != nil {
 		log.WithError(err).Error("Failed to build volume object")
@@ -204,11 +204,11 @@ func (vm *LocalDiskVolumeManager) UpdateVolume(name string, parameters interface
 	if volume.Status.AllocatedCapacityBytes < r.RequireCapacity {
 		return nil, fmt.Errorf("RequireCapacity in VolumeRequest is modified "+
 			"but is bigger than allocted disk %s/%s (the disk capacity %d)",
-			volume.Spec.Accessibility.Node, volume.Status.DevPath, volume.Status.AllocatedCapacityBytes)
+			volume.Spec.Accessibility.Nodes, volume.Status.DevPath, volume.Status.AllocatedCapacityBytes)
 	}
 
 	newVolume, err := localdiskvolume.NewBuilderFrom(volume).
-		SetupAccessibility(v1alpha1.AccessibilityTopology{Node: r.OwnerNodeName}).
+		SetupAccessibility(v1alpha1.AccessibilityTopology{Nodes: []string{r.OwnerNodeName}}).
 		SetupRequiredCapacityBytes(r.RequireCapacity).
 		SetupDiskType(r.DiskType).
 		SetupPVCNameSpaceName(r.PVCNameSpace + "/" + r.PVCName).Build()
@@ -356,7 +356,7 @@ func (vm *LocalDiskVolumeManager) GetVolumeInfo(name string) (*Volume, error) {
 	}
 	volume.Name = v.GetName()
 	volume.Capacity = v.Status.AllocatedCapacityBytes
-	volume.AttachNode = v.Spec.Accessibility.Node
+	volume.AttachNode = v.Spec.Accessibility.Nodes[0]
 
 	return volume, nil
 }

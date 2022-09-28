@@ -3,11 +3,12 @@ package volumegroup
 import (
 	"context"
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	"strings"
 	"sync"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
+
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 
 	log "github.com/sirupsen/logrus"
@@ -488,12 +489,12 @@ func (m *manager) cleanCacheForPVC(namespace string, name string) {
 	delete(m.pvcToVolumeGroups, namespacedName(namespace, name))
 }
 
-func (m *manager) cleanCacheForPod(namespace string, name string) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
+// func (m *manager) cleanCacheForPod(namespace string, name string) {
+// 	m.lock.Lock()
+// 	defer m.lock.Unlock()
 
-	delete(m.podToVolumeGroups, namespacedName(namespace, name))
-}
+// 	delete(m.podToVolumeGroups, namespacedName(namespace, name))
+// }
 
 func (m *manager) processLocalVolume(lvName string) error {
 	lv := &apisv1alpha1.LocalVolume{}

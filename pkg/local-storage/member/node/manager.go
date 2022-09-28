@@ -3,15 +3,15 @@ package node
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/record"
 	"net"
 	"os"
 	"sync"
 
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
-	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
+
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
@@ -186,7 +186,7 @@ func (m *manager) setupInformers() {
 		UpdateFunc: m.handleVolumeReplicaUpdate,
 	})
 
-	localDiskClaimInformer, err := m.informersCache.GetInformer(context.TODO(), &ldmv1alpha1.LocalDiskClaim{})
+	localDiskClaimInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalDiskClaim{})
 	if err != nil {
 		// error happens, crash the node
 		//m.logger.WithError(err).Fatal("Failed to get informer for LocalDiskClaim")
@@ -197,7 +197,7 @@ func (m *manager) setupInformers() {
 		UpdateFunc: m.handleLocalDiskClaimUpdate,
 	})
 
-	localDiskInformer, err := m.informersCache.GetInformer(context.TODO(), &ldmv1alpha1.LocalDisk{})
+	localDiskInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalDisk{})
 	if err != nil {
 		// error happens, crash the node
 		m.logger.WithError(err).Fatal("Failed to get informer for LocalDisk")
@@ -331,7 +331,7 @@ func (m *manager) handleVolumeReplicaUpdate(oldObj, newObj interface{}) {
 }
 
 func (m *manager) handleLocalDiskClaimUpdate(oldObj, newObj interface{}) {
-	localDiskClaim, _ := newObj.(*ldmv1alpha1.LocalDiskClaim)
+	localDiskClaim, _ := newObj.(*apisv1alpha1.LocalDiskClaim)
 	if localDiskClaim.Spec.NodeName != m.name {
 		return
 	}
@@ -339,7 +339,7 @@ func (m *manager) handleLocalDiskClaimUpdate(oldObj, newObj interface{}) {
 }
 
 func (m *manager) handleLocalDiskClaimAdd(obj interface{}) {
-	localDiskClaim, _ := obj.(*ldmv1alpha1.LocalDiskClaim)
+	localDiskClaim, _ := obj.(*apisv1alpha1.LocalDiskClaim)
 	if localDiskClaim.Spec.NodeName != m.name {
 		return
 	}
@@ -347,7 +347,7 @@ func (m *manager) handleLocalDiskClaimAdd(obj interface{}) {
 }
 
 func (m *manager) handleLocalDiskUpdate(oldObj, newObj interface{}) {
-	localDisk, _ := newObj.(*ldmv1alpha1.LocalDisk)
+	localDisk, _ := newObj.(*apisv1alpha1.LocalDisk)
 	if localDisk.Spec.NodeName != m.name {
 		return
 	}

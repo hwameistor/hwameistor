@@ -4,7 +4,7 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisknode"
 	"k8s.io/apimachinery/pkg/api/errors"
 
-	ldm "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -49,14 +49,14 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource LocalDiskNode
-	err = c.Watch(&source.Kind{Type: &ldm.LocalDiskNode{}}, &handler.EnqueueRequestForObject{}, withCurrentNode())
+	err = c.Watch(&source.Kind{Type: &v1alpha1.LocalDiskNode{}}, &handler.EnqueueRequestForObject{}, withCurrentNode())
 	if err != nil {
 		return err
 	}
 
 	localDiskToLocalDiskNodeRequestFunc := handler.ToRequestsFunc(
 		func(a handler.MapObject) []reconcile.Request {
-			ld, ok := a.Object.(*ldm.LocalDisk)
+			ld, ok := a.Object.(*v1alpha1.LocalDisk)
 			if !ok || ld.Spec.NodeName != utils.GetNodeName() {
 				return []reconcile.Request{}
 			}
@@ -69,7 +69,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		})
 
 	// Watch for changes for resource LocalDisk on this node
-	err = c.Watch(&source.Kind{Type: &ldm.LocalDisk{}}, &handler.EnqueueRequestsFromMapFunc{
+	err = c.Watch(&source.Kind{Type: &v1alpha1.LocalDisk{}}, &handler.EnqueueRequestsFromMapFunc{
 		ToRequests: localDiskToLocalDiskNodeRequestFunc})
 	if err != nil {
 		return err
@@ -82,20 +82,20 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 func withCurrentNode() predicate.Predicate {
 	return predicate.Funcs{
 		CreateFunc: func(event event.CreateEvent) bool {
-			node, _ := event.Object.DeepCopyObject().(*ldm.LocalDiskNode)
+			node, _ := event.Object.DeepCopyObject().(*v1alpha1.LocalDiskNode)
 			return node.Spec.AttachNode == utils.GetNodeName()
 		},
 		DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
-			node, _ := deleteEvent.Object.DeepCopyObject().(*ldm.LocalDiskNode)
+			node, _ := deleteEvent.Object.DeepCopyObject().(*v1alpha1.LocalDiskNode)
 			return node.Spec.AttachNode == utils.GetNodeName()
 		},
 		UpdateFunc: func(updateEvent event.UpdateEvent) bool {
-			node, _ := updateEvent.ObjectNew.DeepCopyObject().(*ldm.LocalDiskNode)
+			node, _ := updateEvent.ObjectNew.DeepCopyObject().(*v1alpha1.LocalDiskNode)
 			return node.Spec.AttachNode == utils.GetNodeName() &&
 				updateEvent.MetaNew.GetGeneration() != updateEvent.MetaOld.GetGeneration()
 		},
 		GenericFunc: func(genericEvent event.GenericEvent) bool {
-			node, _ := genericEvent.Object.DeepCopyObject().(*ldm.LocalDiskNode)
+			node, _ := genericEvent.Object.DeepCopyObject().(*v1alpha1.LocalDiskNode)
 			return node.Spec.AttachNode == utils.GetNodeName()
 		},
 	}
@@ -135,7 +135,7 @@ func (r *ReconcileLocalDiskNode) Reconcile(request reconcile.Request) (reconcile
 	}
 
 	// find out new disks
-	needUpdateDisks := map[string]ldm.Disk{}
+	needUpdateDisks := map[string]v1alpha1.Disk{}
 	for name, newDisk := range newDisks {
 		if !ldnHandler.IsSameDisk(name, newDisk) {
 			needUpdateDisks[name] = *newDisk.DeepCopy()
@@ -143,7 +143,7 @@ func (r *ReconcileLocalDiskNode) Reconcile(request reconcile.Request) (reconcile
 	}
 
 	// find out disk which is removed already
-	needRemoveDisks := map[string]ldm.Disk{}
+	needRemoveDisks := map[string]v1alpha1.Disk{}
 	for name, disk := range ldnHandler.Disks() {
 		if _, exist := newDisks[name]; !exist {
 			needRemoveDisks[name] = *disk.DeepCopy()

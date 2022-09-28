@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	diskmonitor "github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
 	log "github.com/sirupsen/logrus"
 
@@ -49,7 +49,7 @@ func (m *manager) processLocalDisk(localDiskNameSpacedName string) error {
 		diskName = splitRes[1]
 	}
 
-	localDisk := &ldmv1alpha1.LocalDisk{}
+	localDisk := &apisv1alpha1.LocalDisk{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: diskName}, localDisk); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get LocalDisk from cache, retry it later ...")
@@ -65,18 +65,18 @@ func (m *manager) processLocalDisk(localDiskNameSpacedName string) error {
 	}
 
 	switch localDisk.Spec.State {
-	case ldmv1alpha1.LocalDiskInactive:
+	case apisv1alpha1.LocalDiskInactive:
 		logCtx.Debug("LocalDiskInactive, todo ...")
 		// 构建离线的event
 		event := &diskmonitor.DiskEvent{}
 		m.diskEventQueue.Add(event)
 		return nil
 
-	case ldmv1alpha1.LocalDiskActive:
+	case apisv1alpha1.LocalDiskActive:
 		logCtx.Debug("LocalDiskActive ...")
 		return nil
 
-	case ldmv1alpha1.LocalDiskUnknown:
+	case apisv1alpha1.LocalDiskUnknown:
 		logCtx.Debug("LocalDiskUnknown ...")
 		return nil
 
@@ -85,15 +85,15 @@ func (m *manager) processLocalDisk(localDiskNameSpacedName string) error {
 	}
 
 	switch localDisk.Status.State {
-	case ldmv1alpha1.LocalDiskUnclaimed:
+	case apisv1alpha1.LocalDiskUnclaimed:
 		logCtx.Debug("LocalDiskUnclaimed ...")
 		return nil
 
-	case ldmv1alpha1.LocalDiskReleased:
+	case apisv1alpha1.LocalDiskReleased:
 		logCtx.Debug("LocalDiskReleased ...")
 		return nil
 
-	case ldmv1alpha1.LocalDiskClaimed:
+	case apisv1alpha1.LocalDiskClaimed:
 		logCtx.Debug("LocalDiskClaimed ...")
 		return nil
 	default:
@@ -103,7 +103,7 @@ func (m *manager) processLocalDisk(localDiskNameSpacedName string) error {
 	return fmt.Errorf("invalid LocalDisk state")
 }
 
-// func (m *manager) processLocalDiskBound(claim *ldmv1alpha1.LocalDisk) error {
+// func (m *manager) processLocalDiskBound(claim *apisv1alpha1.LocalDisk) error {
 // 	m.logger.Debug("processLocalDiskBound start ...")
 // 	return nil
 // }

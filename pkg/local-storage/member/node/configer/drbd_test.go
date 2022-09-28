@@ -2,10 +2,11 @@ package configer
 
 import (
 	"fmt"
-	"github.com/golang/mock/gomock"
 	"testing"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"github.com/golang/mock/gomock"
+
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 func Test_drbdConfigure_Run(t *testing.T) {

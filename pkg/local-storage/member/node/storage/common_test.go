@@ -4,23 +4,23 @@ import (
 	"reflect"
 	"testing"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 func Test_mergeRegistryDiskMap(t *testing.T) {
 	type args struct {
-		localDiskMap []map[string]*apisv1alpha1.LocalDisk
+		localDiskMap []map[string]*apisv1alpha1.LocalDevice
 	}
-	var localDiskM []map[string]*apisv1alpha1.LocalDisk
-	var localDiskM1 = map[string]*apisv1alpha1.LocalDisk{}
-	localDiskM1["/dev/sdb"] = &apisv1alpha1.LocalDisk{
+	var localDiskM []map[string]*apisv1alpha1.LocalDevice
+	var localDiskM1 = map[string]*apisv1alpha1.LocalDevice{}
+	localDiskM1["/dev/sdb"] = &apisv1alpha1.LocalDevice{
 		DevPath:       "/dev/sdb",
 		Class:         apisv1alpha1.DiskClassNameHDD,
 		CapacityBytes: 10240,
 		State:         apisv1alpha1.DiskStateAvailable,
 	}
-	var localDiskM2 = map[string]*apisv1alpha1.LocalDisk{}
-	localDiskM2["/dev/sdc"] = &apisv1alpha1.LocalDisk{
+	var localDiskM2 = map[string]*apisv1alpha1.LocalDevice{}
+	localDiskM2["/dev/sdc"] = &apisv1alpha1.LocalDevice{
 		DevPath:       "/dev/sdc",
 		Class:         apisv1alpha1.DiskClassNameHDD,
 		CapacityBytes: 102400,
@@ -28,14 +28,14 @@ func Test_mergeRegistryDiskMap(t *testing.T) {
 	}
 	localDiskM = append(localDiskM, localDiskM1)
 	localDiskM = append(localDiskM, localDiskM2)
-	var wantLocalDiskM = map[string]*apisv1alpha1.LocalDisk{}
-	wantLocalDiskM["/dev/sdb"] = &apisv1alpha1.LocalDisk{
+	var wantLocalDiskM = map[string]*apisv1alpha1.LocalDevice{}
+	wantLocalDiskM["/dev/sdb"] = &apisv1alpha1.LocalDevice{
 		DevPath:       "/dev/sdb",
 		Class:         apisv1alpha1.DiskClassNameHDD,
 		CapacityBytes: 10240,
 		State:         apisv1alpha1.DiskStateAvailable,
 	}
-	wantLocalDiskM["/dev/sdc"] = &apisv1alpha1.LocalDisk{
+	wantLocalDiskM["/dev/sdc"] = &apisv1alpha1.LocalDevice{
 		DevPath:       "/dev/sdc",
 		Class:         apisv1alpha1.DiskClassNameHDD,
 		CapacityBytes: 102400,
@@ -45,7 +45,7 @@ func Test_mergeRegistryDiskMap(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want map[string]*apisv1alpha1.LocalDisk
+		want map[string]*apisv1alpha1.LocalDevice
 	}{
 		// TODO: Add test cases.
 		{

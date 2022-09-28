@@ -9,7 +9,7 @@ import (
 	"time"
 	"unicode"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/kubernetes-csi/csi-lib-utils/leaderelection"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -163,11 +163,11 @@ func BuildStoragePoolName(poolClass string, poolType string) (string, error) {
 	return "", fmt.Errorf("invalid pool info")
 }
 
-const (
-	devDiskByPathDir   = "/dev/disk/by-path"
-	prefixPCIDevice    = "pci-"
-	pciNVMePlaceholder = "-nvme-"
-)
+// const (
+// 	devDiskByPathDir   = "/dev/disk/by-path"
+// 	prefixPCIDevice    = "pci-"
+// 	pciNVMePlaceholder = "-nvme-"
+// )
 
 // PCIDiskInfo struct
 type PCIDiskInfo struct {

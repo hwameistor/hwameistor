@@ -18,6 +18,10 @@ ADMISSION_BUILD_INPUT = ${CMDS_DIR}/${ADMISSION_MODULE_NAME}/admission.go
 EVICTOR_MODULE_NAME = evictor
 EVICTOR_BUILD_INPUT = ${CMDS_DIR}/${EVICTOR_MODULE_NAME}/main.go
 
+.PHONY: debug
+debug:
+	${DOCKER_DEBUG_CMD} ash
+
 .PHONY: compile
 compile: compile_ldm compile_ls compile_scheduler compile_admission compile_evictor
 
@@ -131,11 +135,17 @@ builder:
 	docker build -t ${BUILDER_NAME}:${BUILDER_TAG} -f ${BUILDER_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	docker push ${BUILDER_NAME}:${BUILDER_TAG}
 
+# .PHONY: _gen-apis
+# _gen-apis:
+# 	${OPERATOR_CMD} generate k8s
+# 	${OPERATOR_CMD} generate crds
+# 	bash hack/update-codegen.sh
+
 .PHONY: _gen-apis
 _gen-apis:
 	${OPERATOR_CMD} generate k8s
 	${OPERATOR_CMD} generate crds
-	bash hack/update-codegen.sh
+	GOPROXY=https://goproxy.cn,direct /code-generator/generate-groups.sh all github.com/hwameistor/hwameistor/pkg/apis/client github.com/hwameistor/hwameistor/pkg/apis "hwameistor:v1alpha1" --go-header-file /go/src/github.com/hwameistor/hwameistor/build/boilerplate.go.txt
 
 .PHONY: compile_ldm
 compile_ldm:

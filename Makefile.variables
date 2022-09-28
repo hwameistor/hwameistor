@@ -71,7 +71,7 @@ EVICTOR_BUILD_OUTPUT = ${BINS_DIR}/${EVICTOR_MODULE_NAME}
 BUILDER_NAME = ${IMAGE_REGISTRY}/${MODULE_NAME}-builder
 BUILDER_TAG = latest
 BUILDER_DOCKERFILE = ${PROJECT_SOURCE_CODE_DIR}/build/builder/Dockerfile
-BUILDER_MOUNT_DST_DIR = /go/src/github.com/hwameistor/
+BUILDER_MOUNT_DST_DIR = /go/src/github.com/hwameistor/hwameistor
 
 # [OPERATOR]
 #----------------

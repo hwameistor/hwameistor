@@ -8,8 +8,8 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	storage "github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	record "k8s.io/client-go/tools/record"

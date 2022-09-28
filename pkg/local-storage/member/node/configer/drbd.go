@@ -16,7 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/exechelper"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/exechelper/nsexecutor"
 )
@@ -799,34 +799,34 @@ func (m *drbdConfigure) newCurrentUUID(resourceName string, clearBitmap bool) er
 	return nil
 }
 
-func (m *drbdConfigure) primaryResource(resourceName string, force bool) error {
-	params := exechelper.ExecParams{
-		CmdName: drbdadmCmd,
-		CmdArgs: []string{"primary", resourceName},
-	}
-	if force {
-		params.CmdArgs = append(params.CmdArgs, "--force")
-	}
-	result := m.cmdExec.RunCommand(params)
-	if result.ExitCode != 0 {
-		return fmt.Errorf("primary resource err: %d, %s", result.ExitCode, result.ErrBuf.String())
-	}
+// func (m *drbdConfigure) primaryResource(resourceName string, force bool) error {
+// 	params := exechelper.ExecParams{
+// 		CmdName: drbdadmCmd,
+// 		CmdArgs: []string{"primary", resourceName},
+// 	}
+// 	if force {
+// 		params.CmdArgs = append(params.CmdArgs, "--force")
+// 	}
+// 	result := m.cmdExec.RunCommand(params)
+// 	if result.ExitCode != 0 {
+// 		return fmt.Errorf("primary resource err: %d, %s", result.ExitCode, result.ErrBuf.String())
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func (m *drbdConfigure) secondaryResource(resourceName string) error {
-	params := exechelper.ExecParams{
-		CmdName: drbdadmCmd,
-		CmdArgs: []string{"secondary", resourceName},
-	}
-	result := m.cmdExec.RunCommand(params)
-	if result.ExitCode != 0 {
-		return fmt.Errorf("secondary resource err: %d, %s", result.ExitCode, result.ErrBuf.String())
-	}
+// func (m *drbdConfigure) secondaryResource(resourceName string) error {
+// 	params := exechelper.ExecParams{
+// 		CmdName: drbdadmCmd,
+// 		CmdArgs: []string{"secondary", resourceName},
+// 	}
+// 	result := m.cmdExec.RunCommand(params)
+// 	if result.ExitCode != 0 {
+// 		return fmt.Errorf("secondary resource err: %d, %s", result.ExitCode, result.ErrBuf.String())
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func (m *drbdConfigure) genResourceName(replica *apisv1alpha1.LocalVolumeReplica) string {
 	return replica.Spec.VolumeName
@@ -836,15 +836,15 @@ func (m *drbdConfigure) getReplicaName(resourceName string) string {
 	return m.resourceReplicaNameMap[resourceName]
 }
 
-func (m *drbdConfigure) isPrimary(config apisv1alpha1.VolumeConfig) bool {
-	for _, peer := range config.Replicas {
-		if peer.Hostname == m.hostname && peer.Primary {
-			return true
-		}
-	}
+// func (m *drbdConfigure) isPrimary(config apisv1alpha1.VolumeConfig) bool {
+// 	for _, peer := range config.Replicas {
+// 		if peer.Hostname == m.hostname && peer.Primary {
+// 			return true
+// 		}
+// 	}
 
-	return false
-}
+// 	return false
+// }
 
 func (m *drbdConfigure) getNodeID(config apisv1alpha1.VolumeConfig) int {
 	for _, peer := range config.Replicas {

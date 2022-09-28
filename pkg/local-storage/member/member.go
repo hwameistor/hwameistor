@@ -1,8 +1,8 @@
 package member
 
 import (
-	localapis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	localapis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	localctrl "github.com/hwameistor/hwameistor/pkg/local-storage/member/controller"
 	localcsi "github.com/hwameistor/hwameistor/pkg/local-storage/member/csi"
 	localnode "github.com/hwameistor/hwameistor/pkg/local-storage/member/node"

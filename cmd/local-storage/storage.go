@@ -10,9 +10,8 @@ import (
 	"strings"
 	"time"
 
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
-	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/controller"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
@@ -128,11 +127,6 @@ func main() {
 
 	// Setup Scheme for all resources of Local Storage Member
 	if err := apisv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
-		log.WithError(err).Error("Failed to setup scheme for all resources")
-		os.Exit(1)
-	}
-
-	if err := ldmv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		log.WithError(err).Error("Failed to setup scheme for all resources")
 		os.Exit(1)
 	}

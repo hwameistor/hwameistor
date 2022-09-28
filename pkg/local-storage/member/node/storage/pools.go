@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -14,12 +14,12 @@ type localPoolManager struct {
 	lm      *LocalManager
 }
 
-func (mgr *localPoolManager) ExtendPools(localDisks []*apisv1alpha1.LocalDisk) (bool, error) {
+func (mgr *localPoolManager) ExtendPools(localDisks []*apisv1alpha1.LocalDevice) (bool, error) {
 
 	return mgr.cmdExec.ExtendPools(localDisks)
 }
 
-func (mgr *localPoolManager) ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDisk) (map[string]*apisv1alpha1.LocalPool, error) {
+func (mgr *localPoolManager) ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDevice) (map[string]*apisv1alpha1.LocalPool, error) {
 	return mgr.cmdExec.ExtendPoolsInfo(localDisks)
 }
 
@@ -47,7 +47,7 @@ func getPoolClassTypeByName(poolName string) (poolClass, poolType string) {
 	return "", ""
 }
 
-func getPoolNameAccordingDisk(disk *apisv1alpha1.LocalDisk) (string, error) {
+func getPoolNameAccordingDisk(disk *apisv1alpha1.LocalDevice) (string, error) {
 	switch disk.Class {
 	case apisv1alpha1.DiskClassNameHDD:
 		return apisv1alpha1.PoolNameForHDD, nil

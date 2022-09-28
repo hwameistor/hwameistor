@@ -5,8 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
@@ -48,7 +47,7 @@ func Test_manager_getLocalDiskByName(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *ldmv1alpha1.LocalDisk
+		want    *apisv1alpha1.LocalDisk
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -117,13 +116,13 @@ func Test_manager_getLocalDisksByDiskRefs(t *testing.T) {
 	if err != nil {
 		t.Errorf("Create LocalVolumeConvert fail %v", err)
 	}
-	var want []*ldmv1alpha1.LocalDisk
+	var want []*apisv1alpha1.LocalDisk
 
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    []*ldmv1alpha1.LocalDisk
+		want    []*apisv1alpha1.LocalDisk
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -180,7 +179,7 @@ func Test_manager_getLocalDisksByLocalDiskClaim(t *testing.T) {
 		logger                  *log.Entry
 	}
 	type args struct {
-		ldc *ldmv1alpha1.LocalDiskClaim
+		ldc *apisv1alpha1.LocalDiskClaim
 	}
 
 	client, _ := CreateFakeClient()
@@ -205,7 +204,7 @@ func Test_manager_getLocalDisksByLocalDiskClaim(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*apisv1alpha1.LocalDisk
+		want    []*apisv1alpha1.LocalDevice
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -259,7 +258,7 @@ func Test_manager_getLocalDisksMapByLocalDiskClaim(t *testing.T) {
 		logger                  *log.Entry
 	}
 	type args struct {
-		ldc *ldmv1alpha1.LocalDiskClaim
+		ldc *apisv1alpha1.LocalDiskClaim
 	}
 
 	client, _ := CreateFakeClient()
@@ -284,7 +283,7 @@ func Test_manager_getLocalDisksMapByLocalDiskClaim(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    map[string]*apisv1alpha1.LocalDisk
+		want    map[string]*apisv1alpha1.LocalDevice
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -338,7 +337,7 @@ func Test_manager_listAllAvailableLocalDisksByLocalClaimDisk(t *testing.T) {
 		logger                  *log.Entry
 	}
 	type args struct {
-		ldc *ldmv1alpha1.LocalDiskClaim
+		ldc *apisv1alpha1.LocalDiskClaim
 	}
 
 	client, _ := CreateFakeClient()
@@ -363,7 +362,7 @@ func Test_manager_listAllAvailableLocalDisksByLocalClaimDisk(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*ldmv1alpha1.LocalDisk
+		want    []*apisv1alpha1.LocalDisk
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -417,7 +416,7 @@ func Test_manager_listAllInUseLocalDisksByLocalClaimDisk(t *testing.T) {
 		logger                  *log.Entry
 	}
 	type args struct {
-		ldc *ldmv1alpha1.LocalDiskClaim
+		ldc *apisv1alpha1.LocalDiskClaim
 	}
 
 	client, _ := CreateFakeClient()
@@ -442,7 +441,7 @@ func Test_manager_listAllInUseLocalDisksByLocalClaimDisk(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*ldmv1alpha1.LocalDisk
+		want    []*apisv1alpha1.LocalDisk
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -496,7 +495,7 @@ func Test_manager_listLocalDisksByLocalDiskClaim(t *testing.T) {
 		logger                  *log.Entry
 	}
 	type args struct {
-		ldc *ldmv1alpha1.LocalDiskClaim
+		ldc *apisv1alpha1.LocalDiskClaim
 	}
 
 	client, _ := CreateFakeClient()
@@ -521,7 +520,7 @@ func Test_manager_listLocalDisksByLocalDiskClaim(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*ldmv1alpha1.LocalDisk
+		want    []*apisv1alpha1.LocalDisk
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -648,7 +647,7 @@ func Test_manager_processLocalDiskClaimBound(t *testing.T) {
 		logger                  *log.Entry
 	}
 	type args struct {
-		claim *ldmv1alpha1.LocalDiskClaim
+		claim *apisv1alpha1.LocalDiskClaim
 	}
 
 	client, _ := CreateFakeClient()

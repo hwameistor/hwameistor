@@ -2,11 +2,12 @@ package node
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/golang/mock/gomock"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	memmock "github.com/hwameistor/hwameistor/pkg/local-storage/member/controller"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
-	"testing"
 )
 
 func Test_manager_ReconcileVolumeReplica(t *testing.T) {

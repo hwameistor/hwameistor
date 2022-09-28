@@ -3,13 +3,13 @@ package localvolumereplica
 import (
 	"context"
 	"fmt"
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"strings"
 	"testing"
 	"time"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-storage/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -143,8 +143,8 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	}
 
 	s := scheme.Scheme
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lv)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvList)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lv)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvList)
 	return fake.NewFakeClientWithScheme(s), s
 }
 

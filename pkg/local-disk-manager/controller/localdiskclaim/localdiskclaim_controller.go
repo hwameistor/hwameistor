@@ -1,10 +1,11 @@
 package localdiskclaim
 
 import (
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskclaim"
 	"time"
 
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/local-disk-manager/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskclaim"
+
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -52,7 +53,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource LocalDiskClaim
-	err = c.Watch(&source.Kind{Type: &ldmv1alpha1.LocalDiskClaim{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &v1alpha1.LocalDiskClaim{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -97,16 +98,16 @@ func (r *ReconcileLocalDiskClaim) Reconcile(req reconcile.Request) (reconcile.Re
 	}
 
 	switch ldcHandler.Phase() {
-	case ldmv1alpha1.DiskClaimStatusEmpty:
+	case v1alpha1.DiskClaimStatusEmpty:
 		fallthrough
-	case ldmv1alpha1.LocalDiskClaimStatusPending:
+	case v1alpha1.LocalDiskClaimStatusPending:
 		if err = ldcHandler.AssignFreeDisk(); err != nil {
 			r.Recorder.Eventf(ldc, v1.EventTypeWarning, "LocalDiskClaimFail", "Assign free disk fail, due to error: %v", err)
 			log.WithError(err).Errorf("Assign free disk for locadiskclaim %v/%v fail, will try after %v", ldc.GetNamespace(), ldc.GetName(), RequeueInterval)
 			return reconcile.Result{RequeueAfter: RequeueInterval}, nil
 		}
 
-	case ldmv1alpha1.LocalDiskClaimStatusBound:
+	case v1alpha1.LocalDiskClaimStatusBound:
 		// TODO: handle delete events
 	default:
 		log.Warningf("LocalDiskClaim %s status %v is UNKNOWN", ldc.Name, ldcHandler.Phase())
