@@ -281,63 +281,6 @@ func GenFakeLocalVolumeMigrateObject() *apisv1alpha1.LocalVolumeMigrate {
 	return lvm
 }
 
-func GenFakeLocalVolumeGroupConvertObject() *apisv1alpha1.LocalVolumeGroupConvert {
-	lvgc := &apisv1alpha1.LocalVolumeGroupConvert{}
-
-	TypeMeta := metav1.TypeMeta{
-		Kind:       LocalVolumeGroupConvertKind,
-		APIVersion: apiversion,
-	}
-
-	ObjectMata := metav1.ObjectMeta{
-		Name:              fakeLocalVolumeGroupConvertName,
-		Namespace:         fakeNamespace,
-		ResourceVersion:   "",
-		UID:               types.UID(fakeLocalVolumeUID),
-		CreationTimestamp: metav1.Time{Time: time.Now()},
-	}
-
-	Spec := apisv1alpha1.LocalVolumeGroupConvertSpec{
-		ReplicaNumber:        1,
-		LocalVolumeGroupName: fakeLocalVolumeGroupName,
-	}
-
-	lvgc.ObjectMeta = ObjectMata
-	lvgc.TypeMeta = TypeMeta
-	lvgc.Spec = Spec
-
-	return lvgc
-}
-
-func GenFakeLocalVolumeGroupMigrateObject() *apisv1alpha1.LocalVolumeGroupMigrate {
-	lvgm := &apisv1alpha1.LocalVolumeGroupMigrate{}
-
-	TypeMeta := metav1.TypeMeta{
-		Kind:       LocalVolumeGroupMigrateKind,
-		APIVersion: apiversion,
-	}
-
-	ObjectMata := metav1.ObjectMeta{
-		Name:              fakeLocalVolumeGroupMigrateName,
-		Namespace:         fakeNamespace,
-		ResourceVersion:   "",
-		UID:               types.UID(fakeLocalVolumeUID),
-		CreationTimestamp: metav1.Time{Time: time.Now()},
-	}
-
-	Spec := apisv1alpha1.LocalVolumeGroupMigrateSpec{
-		SourceNodesNames:     fakeNodenames,
-		TargetNodesNames:     fakeNodenames,
-		LocalVolumeGroupName: fakeLocalVolumeGroupName,
-	}
-
-	lvgm.ObjectMeta = ObjectMata
-	lvgm.TypeMeta = TypeMeta
-	lvgm.Spec = Spec
-
-	return lvgm
-}
-
 func GenFakePVCObject() *corev1.PersistentVolumeClaim {
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -501,26 +444,10 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 		},
 	}
 
-	lvgc := GenFakeLocalVolumeGroupConvertObject()
-	lvgcList := &apisv1alpha1.LocalVolumeGroupConvertList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       LocalVolumeGroupConvertKind,
-			APIVersion: apiversion,
-		},
-	}
-
 	lvm := GenFakeLocalVolumeMigrateObject()
 	lvmList := &apisv1alpha1.LocalVolumeMigrateList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       LocalVolumeMigrateKind,
-			APIVersion: apiversion,
-		},
-	}
-
-	lvgm := GenFakeLocalVolumeGroupMigrateObject()
-	lvgmList := &apisv1alpha1.LocalVolumeGroupMigrateList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       LocalVolumeGroupMigrateKind,
 			APIVersion: apiversion,
 		},
 	}
@@ -564,10 +491,6 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvcList)
 	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvm)
 	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvmList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvgc)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvgcList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvgm)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvgmList)
 	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvr)
 	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvrList)
 	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvg)
