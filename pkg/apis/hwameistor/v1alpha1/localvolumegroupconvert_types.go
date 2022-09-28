@@ -46,7 +46,7 @@ type LocalVolumeGroupConvertStatus struct {
 
 // LocalVolumeGroupConvert is the Schema for the localVolumeGroupConverts API
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:path=localVolumeGroupConverts,scope=Cluster,shortName=lvconvert
+// +kubebuilder:resource:path=localvolumegroupconverts,scope=Cluster,shortName=lvconvert
 // +kubebuilder:printcolumn:name="volume",type=string,JSONPath=`.spec.volumeName`,description="Name of the volume to convert"
 // +kubebuilder:printcolumn:name="replicas",type=integer,JSONPath=`.spec.replicaNumber`,description="Number of volume replica"
 // +kubebuilder:printcolumn:name="state",type=string,JSONPath=`.status.state`,description="State of the expansion"
