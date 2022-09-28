@@ -143,37 +143,37 @@ func (m *manager) processVolumeMigrate(vmNamespacedName string) error {
 	logCtx.Debug("Starting to process a VolumeMigrate task")
 	switch migrate.Status.State {
 	case "":
-		if convertible == true {
+		if convertible {
 			return m.volumeMigrateSubmit(migrate)
 		} else {
 			return m.nonConvertibleVolumeMigrateSubmit(migrate)
 		}
 	case apisv1alpha1.OperationStateSubmitted:
-		if convertible == true {
+		if convertible {
 			return m.volumeMigrateStart(migrate)
 		} else {
 			return m.nonConvertibleVolumeMigrateStart(migrate)
 		}
 	case apisv1alpha1.OperationStateInProgress:
-		if convertible == true {
+		if convertible {
 			return m.volumeMigrateInProgress(migrate)
 		} else {
 			return m.nonConvertibleVolumeMigrateInProgress(migrate)
 		}
 	case apisv1alpha1.OperationStateCompleted:
-		if convertible == true {
+		if convertible {
 			return m.volumeMigrateCleanup(migrate)
 		} else {
 			return m.nonConvertibleVolumeMigrateCleanup(migrate)
 		}
 	case apisv1alpha1.OperationStateToBeAborted:
-		if convertible == true {
+		if convertible {
 			return m.volumeMigrateAbort(migrate)
 		} else {
 			return m.nonConvertibleVolumeMigrateAbort(migrate)
 		}
 	case apisv1alpha1.OperationStateAborted:
-		if convertible == true {
+		if convertible {
 			return m.volumeMigrateCleanup(migrate)
 		} else {
 			return m.nonConvertibleVolumeMigrateCleanup(migrate)
@@ -228,7 +228,7 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate) 
 
 			for _, vol := range volList.Items {
 				if vol.Spec.VolumeGroup == lvg.Name {
-					if vol.Name != migrate.Spec.VolumeName && migrate.Spec.MigrateAllVols == false {
+					if vol.Name != migrate.Spec.VolumeName && !migrate.Spec.MigrateAllVols {
 						logCtx.WithFields(log.Fields{"volume": vol.Name, "migrateAllVols": migrate.Spec.MigrateAllVols}).Error("VolumeGroupMigrateSubmit: Can't migrate false migrateAllVols flag volume")
 						migrate.Status.Message = "VolumeGroupMigrateSubmit: Can't migrate volume whose localVolumeGroup has other volumes, meantime migrate's migrateAllVols flag is false; If you want migrateAllVols, modify migrateAllVols flag into true"
 						return m.apiClient.Status().Update(context.TODO(), migrate)
@@ -262,7 +262,7 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate) 
 								break
 							}
 						}
-						if needMigrate == false {
+						if !needMigrate {
 							migrate.Status.Message = "VolumeGroupMigrateSubmit: Volume And VolumeReplica both not ready"
 							return m.apiClient.Status().Update(context.TODO(), migrate)
 						}
@@ -322,7 +322,7 @@ func (m *manager) nonConvertibleVolumeMigrateSubmit(migrate *apisv1alpha1.LocalV
 
 			for _, vol := range volList.Items {
 				if vol.Spec.VolumeGroup == lvg.Name {
-					if vol.Name != migrate.Spec.VolumeName && migrate.Spec.MigrateAllVols == false {
+					if vol.Name != migrate.Spec.VolumeName && !migrate.Spec.MigrateAllVols {
 						logCtx.WithFields(log.Fields{"volume": vol.Name, "migrateAllVols": migrate.Spec.MigrateAllVols}).Error("VolumeGroupMigrateSubmit: Can't migrate false migrateAllVols flag volume")
 						migrate.Status.Message = "VolumeGroupMigrateSubmit: Can't migrate volume whose localVolumeGroup has other volumes, meantime migrate's migrateAllVols flag is false; If you want migrateAllVols, modify migrateAllVols flag into true"
 						return m.apiClient.Status().Update(context.TODO(), migrate)
@@ -501,7 +501,7 @@ func (m *manager) volumeMigrateStart(migrate *apisv1alpha1.LocalVolumeMigrate) e
 								break
 							}
 						}
-						if needMigrate == false {
+						if !needMigrate {
 							migrate.Status.Message = "VolumeGroupMigrateStart: Volume And VolumeReplica both not ready"
 							return m.apiClient.Status().Update(context.TODO(), migrate)
 						}
@@ -689,10 +689,7 @@ func (m *manager) volumeMigrateInProgress(migrate *apisv1alpha1.LocalVolumeMigra
 
 						vol.Spec.ReplicaNumber = migrate.Status.ReplicaNumber
 						replicas := []apisv1alpha1.VolumeReplica{}
-						migrateSrcHostNames := []string{}
-						for _, nodeName := range migrate.Spec.SourceNodesNames {
-							migrateSrcHostNames = append(migrateSrcHostNames, nodeName)
-						}
+						migrateSrcHostNames := migrate.Spec.SourceNodesNames
 						for i := range vol.Spec.Config.Replicas {
 							if arrays.ContainsString(migrateSrcHostNames, vol.Spec.Config.Replicas[i].Hostname) == -1 {
 								replicas = append(replicas, vol.Spec.Config.Replicas[i])
@@ -857,18 +854,18 @@ func (m *manager) nonConvertibleVolumeMigrateCleanup(migrate *apisv1alpha1.Local
 	return m.apiClient.Delete(context.TODO(), migrate)
 }
 
-func (m *manager) delMigratePod(ns string) error {
-	var migratePod = &corev1.Pod{}
-	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: ns, Name: migrateDstPodName}, migratePod); err != nil {
-		if !errors.IsNotFound(err) {
-			m.logger.WithError(err).Error("delMigratePod: Failed to query pod")
-		} else {
-			m.logger.Info("delMigratePod: Not found the pod")
-		}
-		return err
-	}
-	return m.apiClient.Delete(context.TODO(), migratePod)
-}
+// func (m *manager) delMigratePod(ns string) error {
+// 	var migratePod = &corev1.Pod{}
+// 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: ns, Name: migrateDstPodName}, migratePod); err != nil {
+// 		if !errors.IsNotFound(err) {
+// 			m.logger.WithError(err).Error("delMigratePod: Failed to query pod")
+// 		} else {
+// 			m.logger.Info("delMigratePod: Not found the pod")
+// 		}
+// 		return err
+// 	}
+// 	return m.apiClient.Delete(context.TODO(), migratePod)
+// }
 
 func (m *manager) makeMigratePod(lvs []apisv1alpha1.LocalVolume, ns string) (*corev1.Pod, error) {
 	m.logger.Debug("makeMigratePod start")
