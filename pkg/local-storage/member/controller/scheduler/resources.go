@@ -259,7 +259,7 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 }
 
 func (r *resources) getResourceIDForVolume(vol *apisv1alpha1.LocalVolume) (int, error) {
-	if vol.Spec.ReplicaNumber < 2 && !vol.Spec.Convertible {
+	if vol.Spec.ReplicaNumber <= 2 && !vol.Spec.Convertible {
 		// try to recycle the resource ID in case of this volume is HA before
 		r.recycleResourceID(vol)
 		// for non-HA volume, resource ID is -1

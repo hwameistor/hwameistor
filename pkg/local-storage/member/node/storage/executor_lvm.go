@@ -257,44 +257,6 @@ func (lvm *lvmExecutor) CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeRep
 		}
 	}
 
-	newReplica := replica.DeepCopy()
-
-	if replica.Spec.VolumeMigratedName != "" {
-		// query current status of the replica
-		record, _ := lvm.lvRecord(replica.Spec.VolumeMigratedName, replica.Spec.PoolName)
-		if record == nil {
-			if err := lvm.lvcreate(replica.Spec.VolumeMigratedName, replica.Spec.PoolName, options); err != nil {
-				return nil, err
-			}
-		}
-		// query current status of the replica
-		record, err := lvm.lvRecord(replica.Spec.VolumeMigratedName, replica.Spec.PoolName)
-		if err != nil {
-			return nil, err
-		}
-		allocatedCapacityBytes, err := utils.ConvertLVMBytesToNumeric(record.LvCapacity)
-		if err != nil {
-			return nil, err
-		}
-		status, err := lvm.lvdisplay(record.LvPath)
-		if err != nil {
-			return nil, err
-		}
-
-		newReplica.Status.AllocatedCapacityBytes = allocatedCapacityBytes
-		newReplica.Status.StoragePath = record.LvPath
-		newReplica.Status.DevicePath = record.LvPath
-		newReplica.Status.Disks = status.disks
-
-		return newReplica, nil
-	}
-	// query current status of the replica
-	record, _ := lvm.lvRecord(replica.Spec.VolumeName, replica.Spec.PoolName)
-	if record == nil {
-		if err := lvm.lvcreate(replica.Spec.VolumeName, replica.Spec.PoolName, options); err != nil {
-			return nil, err
-		}
-	}
 	// query current status of the replica
 	record, err := lvm.lvRecord(replica.Spec.VolumeName, replica.Spec.PoolName)
 	if err != nil {
@@ -308,7 +270,7 @@ func (lvm *lvmExecutor) CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeRep
 	if err != nil {
 		return nil, err
 	}
-
+	newReplica := replica.DeepCopy()
 	newReplica.Status.AllocatedCapacityBytes = allocatedCapacityBytes
 	newReplica.Status.StoragePath = record.LvPath
 	newReplica.Status.DevicePath = record.LvPath

@@ -182,8 +182,8 @@ func (m *configManager) getConfig(replica *apisv1alpha1.LocalVolumeReplica) (*ap
 	if vol.Spec.Config == nil {
 		return nil, false, fmt.Errorf("not found")
 	}
-	return vol.Spec.Config, len(vol.Spec.Config.Replicas) > 1 || vol.Spec.Config.Convertible, nil
-
+	//return vol.Spec.Config, len(vol.Spec.Config.Replicas) > 1 || vol.Spec.Config.Convertible, nil
+	return vol.Spec.Config, vol.Spec.Config.Convertible, nil
 }
 
 func (m *configManager) updateConfig(replica *apisv1alpha1.LocalVolumeReplica, config *apisv1alpha1.VolumeConfig) error {
