@@ -50,6 +50,22 @@ func (m *manager) processVolumeBlockMountTaskAssignment(lvNamespacedName string)
 		lvname = splitRes[1]
 	}
 
+	replicas, err := m.getReplicasForVolume(lvname)
+	if err != nil {
+		logCtx.Error("VolumeBlockMountTask: Failed to list VolumeReplica")
+		return err
+	}
+	if len(replicas) != 2 {
+		errMsg := fmt.Errorf("VolumeBlockMountTask: UnconvertibleVolume ReplicaNum should reach 2")
+		return errMsg
+	}
+	for _, replica := range replicas {
+		if replica.Status.State != apisv1alpha1.VolumeReplicaStateReady {
+			errMsg := fmt.Errorf("VolumeBlockMountTask: VolumeReplica State Not Ready")
+			return errMsg
+		}
+	}
+
 	cmList := &corev1.ConfigMapList{}
 	if err := m.apiClient.List(context.TODO(), cmList); err != nil {
 		m.logger.WithError(err).Error("Failed to get cmList")
@@ -146,4 +162,20 @@ func (m *manager) processVolumeBlockMountTaskAssignment(lvNamespacedName string)
 		}
 	}
 	return nil
+}
+
+func (m *manager) getReplicasForVolume(volName string) ([]*apisv1alpha1.LocalVolumeReplica, error) {
+	// todo
+	replicaList := &apisv1alpha1.LocalVolumeReplicaList{}
+	if err := m.apiClient.List(context.TODO(), replicaList); err != nil {
+		return nil, err
+	}
+
+	var replicas []*apisv1alpha1.LocalVolumeReplica
+	for i := range replicaList.Items {
+		if replicaList.Items[i].Spec.VolumeName == volName {
+			replicas = append(replicas, &replicaList.Items[i])
+		}
+	}
+	return replicas, nil
 }
