@@ -356,7 +356,9 @@ func (vm *LocalDiskVolumeManager) GetVolumeInfo(name string) (*Volume, error) {
 	}
 	volume.Name = v.GetName()
 	volume.Capacity = v.Status.AllocatedCapacityBytes
-	volume.AttachNode = v.Spec.Accessibility.Nodes[0]
+	if len(v.Spec.Accessibility.Nodes) > 0 {
+		volume.AttachNode = v.Spec.Accessibility.Nodes[0]
+	}
 
 	return volume, nil
 }
