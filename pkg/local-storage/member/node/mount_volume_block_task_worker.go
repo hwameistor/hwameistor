@@ -90,7 +90,6 @@ func (m *manager) processVolumeBlockMountTaskAssignment(lvNamespacedName string)
 			}
 		} else {
 			if syncDone == "True" {
-				m.logger.Debug("processVolumeBlockMountTaskAssignment Unmount tmpSrcMountPoint = %v, sourceNodeName = %v", tmpSrcMountPoint, sourceNodeName)
 				if err := m.mounter.Unmount(tmpSrcMountPoint); err != nil {
 					m.logger.WithError(err).Error("Failed to Unmount tmpSrcMountPoint")
 					return err
@@ -101,7 +100,6 @@ func (m *manager) processVolumeBlockMountTaskAssignment(lvNamespacedName string)
 		// return directly if device has already mounted at TargetPath
 		if isStringInArray(tmpDstMountPoint, m.mounter.GetDeviceMountPoints(devPath)) {
 			if syncDone == "True" {
-				m.logger.Debug("processVolumeBlockMountTaskAssignment Unmount tmpDstMountPoint = %v, sourceNodeName = %v", tmpDstMountPoint, sourceNodeName)
 				if err := m.mounter.Unmount(tmpDstMountPoint); err != nil {
 					m.logger.WithError(err).Error("Failed to Unmount tmpSrcMountPoint")
 					return err
@@ -119,7 +117,6 @@ func (m *manager) processVolumeBlockMountTaskAssignment(lvNamespacedName string)
 			}
 		} else {
 			if syncDone == "True" {
-				m.logger.Debug("processVolumeBlockMountTaskAssignment Unmount tmpDstMountPoint = %v, targetNodeName = %v", tmpDstMountPoint, targetNodeName)
 				if err := m.mounter.Unmount(tmpDstMountPoint); err != nil {
 					m.logger.WithError(err).Error("Failed to Unmount tmpDstMountPoint")
 					return err
@@ -130,7 +127,6 @@ func (m *manager) processVolumeBlockMountTaskAssignment(lvNamespacedName string)
 		// return directly if device has already mounted at TargetPath
 		if isStringInArray(tmpSrcMountPoint, m.mounter.GetDeviceMountPoints(devPath)) {
 			if syncDone == "True" {
-				m.logger.Debug("processVolumeBlockMountTaskAssignment Unmount tmpSrcMountPoint = %v, targetNodeName = %v", tmpSrcMountPoint, targetNodeName)
 				if err := m.mounter.Unmount(tmpSrcMountPoint); err != nil {
 					m.logger.WithError(err).Error("Failed to Unmount tmpSrcMountPoint")
 					return err

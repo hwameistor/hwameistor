@@ -437,8 +437,7 @@ func (m *manager) handleK8sCMUpdatedEvent(oldObj, newObj interface{}) {
 		if newCM.Data[rclonePubKey] != "" {
 			pubKeyData := newCM.Data[rclonePubKey]
 			pubKeyData = "\n" + pubKeyData
-			errwrite := utils.WriteDataIntoSysFSFile(pubKeyData, rcloneTmpPubKeyFilePath)
-			m.logger.Debug("handleK8sCMUpdatedEvent WriteDataIntoSysFSFile errwrite = %v", errwrite)
+			utils.WriteDataIntoSysFSFile(pubKeyData, rcloneTmpPubKeyFilePath)
 		}
 	}
 }
@@ -455,8 +454,7 @@ func (m *manager) handleK8sCMAddEvent(newObj interface{}) {
 		if newCM.Data[rclonePubKey] != "" {
 			pubKeyData := newCM.Data[rclonePubKey]
 			pubKeyData = "\n" + pubKeyData
-			errwrite := utils.WriteDataIntoSysFSFile(pubKeyData, rcloneTmpPubKeyFilePath)
-			m.logger.Debug("handleK8sCMAddEvent WriteDataIntoSysFSFile errwrite = %v", errwrite)
+			utils.WriteDataIntoSysFSFile(pubKeyData, rcloneTmpPubKeyFilePath)
 		}
 	}
 }

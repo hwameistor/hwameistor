@@ -312,7 +312,6 @@ func (m *manager) nonConvertibleVolumeMigrateSubmit(migrate *apisv1alpha1.LocalV
 		return err
 	}
 
-	logCtx.Debug("nonConvertibleVolumeMigrateSubmit migrate.Namespace = %v", migrate.Namespace)
 	for _, fnlr := range lvg.Finalizers {
 		if fnlr == volumeGroupFinalizer {
 			m.lock.Lock()
@@ -328,8 +327,6 @@ func (m *manager) nonConvertibleVolumeMigrateSubmit(migrate *apisv1alpha1.LocalV
 			}
 
 			rcloneKeyCM := m.rclone.GenerateRcloneKeyConfigMap(migrate.Namespace)
-			logCtx.Debug("nonConvertibleVolumeMigrateSubmit rcloneKeyCM = %v", rcloneKeyCM)
-
 			err = m.apiClient.Create(ctx, rcloneKeyCM)
 			if err != nil {
 				if errors.IsAlreadyExists(err) {

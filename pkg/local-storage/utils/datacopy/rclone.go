@@ -112,10 +112,9 @@ func (rcl *Rclone) GenerateRcloneKeyConfigMap(ns string) *corev1.ConfigMap {
 
 	var rcloneCM = &corev1.ConfigMap{}
 	rclonePubKeyData, rclonePrivateKeyData, err := rcl.generateSSHPubAndPrivateKeyCM()
-	logger.Debug("GenerateConfigMap ns = %v, rclonePubKeyData = %v, rclonePrivateKeyData = %v", ns, rclonePubKeyData, rclonePrivateKeyData)
 
 	if err != nil {
-		logger.Debug("generateRcloneKeyConfigMap generateSSHPubAndPrivateKeyCM err = %v", err)
+		logger.WithError(err).Errorf("generateRcloneKeyConfigMap generateSSHPubAndPrivateKeyCM")
 		return rcloneCM
 	}
 
