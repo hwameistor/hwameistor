@@ -3,9 +3,6 @@ package node
 import (
 	"context"
 	"fmt"
-	"strings"
-
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilrand "k8s.io/apimachinery/pkg/util/rand"
 
@@ -13,10 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-)
-
-const (
-	migratePvcSuffix = "-migrate"
 )
 
 func (m *manager) startVolumeTaskWorker(stopCh <-chan struct{}) {
@@ -104,51 +97,16 @@ func (m *manager) createVolumeReplica(vol *apisv1alpha1.LocalVolume) error {
 		return nil
 	}
 
-	var srcPvcName, srcVolumeName string
-	if strings.Contains(vol.Spec.PersistentVolumeClaimName, migratePvcSuffix) {
-		splitRes := strings.Split(vol.Spec.PersistentVolumeClaimName, migratePvcSuffix)
-		srcPvcName = splitRes[0]
-
-		srcPvc := &corev1.PersistentVolumeClaim{}
-		if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: srcPvcName, Namespace: vol.Spec.PersistentVolumeClaimNamespace}, srcPvc); err != nil {
-			if !errors.IsNotFound(err) {
-				m.logger.WithError(err).Error("createVolumeReplica Failed to query srcPvc")
-			} else {
-				m.logger.Info("createVolumeReplica Not found the srcPvc")
-			}
-			return err
-		}
-
-		srcVolumeName = srcPvc.Spec.VolumeName
-	}
-
-	var replica = &apisv1alpha1.LocalVolumeReplica{}
-
-	if srcVolumeName == "" {
-		replica = &apisv1alpha1.LocalVolumeReplica{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: fmt.Sprintf("%s-%s", vol.Name, utilrand.String(6)),
-			},
-			Spec: apisv1alpha1.LocalVolumeReplicaSpec{
-				VolumeName:            vol.Name,
-				PoolName:              vol.Spec.PoolName,
-				RequiredCapacityBytes: vol.Spec.RequiredCapacityBytes,
-				NodeName:              m.name,
-			},
-		}
-	} else {
-		replica = &apisv1alpha1.LocalVolumeReplica{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: fmt.Sprintf("%s-%s-%s", srcVolumeName, vol.Name, utilrand.String(6)),
-			},
-			Spec: apisv1alpha1.LocalVolumeReplicaSpec{
-				VolumeName:            vol.Name,
-				PoolName:              vol.Spec.PoolName,
-				RequiredCapacityBytes: vol.Spec.RequiredCapacityBytes,
-				NodeName:              m.name,
-				//VolumeMigratedName:    srcVolumeName,
-			},
-		}
+	replica := &apisv1alpha1.LocalVolumeReplica{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("%s-%s", vol.Name, utilrand.String(6)),
+		},
+		Spec: apisv1alpha1.LocalVolumeReplicaSpec{
+			VolumeName:            vol.Name,
+			PoolName:              vol.Spec.PoolName,
+			RequiredCapacityBytes: vol.Spec.RequiredCapacityBytes,
+			NodeName:              m.name,
+		},
 	}
 
 	err := m.apiClient.Create(context.TODO(), replica)
