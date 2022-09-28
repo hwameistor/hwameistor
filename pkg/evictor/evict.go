@@ -7,6 +7,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	localstorageclientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned"
 	localstorageinformers "github.com/hwameistor/hwameistor/pkg/apis/client/informers/externalversions"
@@ -91,7 +92,13 @@ func (ev *evictor) Run(stopCh <-chan struct{}) error {
 	}
 
 	// Initialize HwameiStor LocalStorage resources
-	ev.lsClientset = localstorageclientset.New(ev.clientset.RESTClient())
+	// Get a config to talk to the apiserver
+	cfg, err := config.GetConfig()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to get kubernetes cluster config")
+	}
+
+	ev.lsClientset = localstorageclientset.NewForConfigOrDie(cfg)
 	lsFactory := localstorageinformers.NewSharedInformerFactory(ev.lsClientset, 0)
 	ev.lvLister = lsFactory.Hwameistor().V1alpha1().LocalVolumes().Lister()
 
