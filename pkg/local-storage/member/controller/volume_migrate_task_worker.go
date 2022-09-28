@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/wxnacy/wgo/arrays"
@@ -11,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
@@ -755,20 +755,15 @@ func (m *manager) nonConvertibleVolumeMigrateInProgress(migrate *apisv1alpha1.Lo
 
 					rclonecm := &corev1.ConfigMap{}
 					err = m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: migrate.Namespace, Name: rcloneConfigMapName}, rclonecm)
-					if err != nil {
-						if !errors.IsNotFound(err) {
-							logCtx.WithError(err).Error("Failed to get rclonecm from cache")
+					if err == nil {
+						rclonecm.Data["syncDone"] = "True"
+						err = m.apiClient.Update(context.TODO(), rclonecm, &client.UpdateOptions{})
+						if err != nil {
+							logCtx.WithError(err).Error("Failed to update rclonecm")
 							return err
 						}
-						logCtx.Info("Not found the rclonecm from cache, should be deleted already.")
-						return err
-					}
-
-					rclonecm.Data["syncDone"] = "True"
-					err = m.apiClient.Update(context.TODO(), rclonecm, &client.UpdateOptions{})
-					if err != nil {
-						logCtx.WithError(err).Error("Failed to update rclonecm")
-						return err
+					} else {
+						logCtx.Error("Not found the rclonecm from cache, should be deleted already.")
 					}
 
 					// firstly, make sure all the replicas are ready
@@ -820,9 +815,15 @@ func (m *manager) nonConvertibleVolumeMigrateInProgress(migrate *apisv1alpha1.Lo
 
 						if err := m.apiClient.Update(ctx, &vol); err != nil {
 							logCtx.WithError(err).Error("VolumeMigrateInProgress: Failed to re-configure Volume")
-							migrate.Status.Message = err.Error()
-							m.apiClient.Status().Update(ctx, migrate)
-							return err
+							tmpVol := &apisv1alpha1.LocalVolume{}
+							if tmperr := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: vol.Name}, tmpVol); tmperr == nil {
+								tmpVol = vol.DeepCopy()
+								if err := m.apiClient.Update(context.TODO(), tmpVol); err != nil {
+									migrate.Status.Message = err.Error()
+									m.apiClient.Status().Update(ctx, migrate)
+									return err
+								}
+							}
 						}
 
 						return fmt.Errorf("VolumeMigrateInProgress: wait old replica deleted")

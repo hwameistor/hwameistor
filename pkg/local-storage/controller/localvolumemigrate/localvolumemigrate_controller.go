@@ -160,8 +160,8 @@ func (r *ReconcileLocalVolumeMigrate) Reconcile(request reconcile.Request) (reco
 				tmpVol := &apisv1alpha1.LocalVolume{}
 				if tmperr := r.client.Get(context.TODO(), types.NamespacedName{Name: vol.Name}, tmpVol); tmperr == nil {
 					tmpVol.Spec.Accessibility.Nodes = accessibilityNodeNames
-					if err2 := r.client.Update(context.TODO(), tmpVol); err2 != nil {
-						errMsg = err2
+					if err := r.client.Update(context.TODO(), tmpVol); err != nil {
+						errMsg = err
 					}
 				}
 			}

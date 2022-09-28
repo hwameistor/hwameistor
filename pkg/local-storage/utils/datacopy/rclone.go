@@ -165,7 +165,7 @@ func (rcl *Rclone) SrcMountPointToRemoteMountPoint(jobName, namespace, lvPoolNam
 	logger.Debugf("DstMountPointBind  rclone sync  %s:%s %s:%s", RcloneSrcName, tmpSrcMountPoint, RcloneRemoteName, tmpDstMountPoint)
 	//rcloneCommand := fmt.Sprintf("rclone mkdir %s; rclone mkdir %s; rclone mount --allow-non-empty --allow-other --daemon %s:%s %s; "+
 	//	"rclone mount --allow-non-empty --allow-other --daemon %s:%s %s; rclone sync %s %s --progress; sleep 1800s;",
-	rcloneCommand := fmt.Sprintf("sleep 10s; rclone sync %s:%s %s:%s --progress;", RcloneSrcName, tmpSrcMountPoint, RcloneRemoteName, tmpDstMountPoint)
+	rcloneCommand := fmt.Sprintf("sleep 18s; rclone sync %s:%s %s:%s --progress;", RcloneSrcName, tmpSrcMountPoint, RcloneRemoteName, tmpDstMountPoint)
 	jobStruct.Spec.Template.Spec.Containers[0].Command = []string{"sh", "-c", rcloneCommand}
 
 	if err := rcl.dcm.k8sControllerClient.Create(rcl.dcm.ctx, jobStruct); err != nil {
