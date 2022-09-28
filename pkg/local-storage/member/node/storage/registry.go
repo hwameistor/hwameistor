@@ -260,8 +260,9 @@ func (lr *localRegistry) UpdateCondition(condition apisv1alpha1.LocalStorageNode
 		lr.recorder.Event(node, v1.EventTypeNormal, string(condition.Type), condition.Message)
 	}
 
-	node.Status.Conditions = append(node.Status.Conditions, condition)
-	return lr.apiClient.Status().Update(context.TODO(), node)
+	newNode := node.DeepCopy()
+	newNode.Status.Conditions = append(newNode.Status.Conditions, condition)
+	return lr.apiClient.Status().Patch(context.TODO(), newNode, client.MergeFrom(node))
 }
 
 // showReplicaOnHost debug func for now
