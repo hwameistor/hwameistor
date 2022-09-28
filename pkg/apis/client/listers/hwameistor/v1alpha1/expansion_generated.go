@@ -38,14 +38,6 @@ type LocalVolumeExpandListerExpansion interface{}
 // LocalVolumeGroupLister.
 type LocalVolumeGroupListerExpansion interface{}
 
-// LocalVolumeGroupConvertListerExpansion allows custom methods to be added to
-// LocalVolumeGroupConvertLister.
-type LocalVolumeGroupConvertListerExpansion interface{}
-
-// LocalVolumeGroupMigrateListerExpansion allows custom methods to be added to
-// LocalVolumeGroupMigrateLister.
-type LocalVolumeGroupMigrateListerExpansion interface{}
-
 // LocalVolumeMigrateListerExpansion allows custom methods to be added to
 // LocalVolumeMigrateLister.
 type LocalVolumeMigrateListerExpansion interface{}

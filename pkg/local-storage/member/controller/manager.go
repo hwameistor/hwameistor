@@ -118,9 +118,7 @@ func (m *manager) start(stopCh <-chan struct{}) {
 
 		go m.startVolumeExpandTaskWorker(stopCh)
 		go m.startVolumeMigrateTaskWorker(stopCh)
-		go m.startVolumeGroupMigrateTaskWorker(stopCh)
 		go m.startVolumeConvertTaskWorker(stopCh)
-		go m.startVolumeGroupConvertTaskWorker(stopCh)
 
 		go m.startK8sNodeTaskWorker(stopCh)
 
@@ -209,19 +207,9 @@ func (m *manager) ReconcileVolumeMigrate(migrate *apisv1alpha1.LocalVolumeMigrat
 	m.volumeMigrateTaskQueue.Add(migrate.Namespace + "/" + migrate.Name)
 }
 
-// ReconcileVolumeGroupMigrate reconciles VolumeGroupMigrate CRD for any localvolumegroup resource change
-func (m *manager) ReconcileVolumeGroupMigrate(lvgmigrate *apisv1alpha1.LocalVolumeGroupMigrate) {
-	m.volumeGroupMigrateTaskQueue.Add(lvgmigrate.Namespace + "/" + lvgmigrate.Name)
-}
-
 // ReconcileVolumeConvert reconciles VolumeConvert CRD for any volume resource change
 func (m *manager) ReconcileVolumeConvert(convert *apisv1alpha1.LocalVolumeConvert) {
 	m.volumeConvertTaskQueue.Add(convert.Namespace + "/" + convert.Name)
-}
-
-// ReconcileVolumeGroupConvert reconciles VolumeGroupConvert CRD for any volumegroup resource change
-func (m *manager) ReconcileVolumeGroupConvert(lvgconvert *apisv1alpha1.LocalVolumeGroupConvert) {
-	m.volumeGroupConvertTaskQueue.Add(lvgconvert.Namespace + "/" + lvgconvert.Name)
 }
 
 func (m *manager) handleK8sNodeUpdatedEvent(oldObj, newObj interface{}) {
@@ -278,7 +266,7 @@ func (m *manager) handleVolumeExpandCRDDeletedEvent(obj interface{}) {
 func (m *manager) handleVolumeMigrateCRDDeletedEvent(obj interface{}) {
 	instance, _ := obj.(*apisv1alpha1.LocalVolumeMigrate)
 	m.logger.WithFields(log.Fields{"migrate": instance.Name, "spec": instance.Spec, "status": instance.Status}).Info("Observed a VolumeMigrate CRD deletion...")
-	if instance.Spec.Abort != true && instance.Status.State != apisv1alpha1.OperationStateCompleted && instance.Status.State != apisv1alpha1.OperationStateAborted {
+	if !instance.Spec.Abort && instance.Status.State != apisv1alpha1.OperationStateCompleted && instance.Status.State != apisv1alpha1.OperationStateAborted {
 		// must be deleted by a mistake, rebuild it
 		// TODO: need retry considering the case of creating failure
 		newInstance := &apisv1alpha1.LocalVolumeMigrate{}

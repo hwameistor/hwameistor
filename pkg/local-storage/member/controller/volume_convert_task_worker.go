@@ -12,6 +12,10 @@ import (
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
+const (
+	volumeGroupFinalizer = "hwameistor.io/localvolumegroup-protection"
+)
+
 func (m *manager) startVolumeConvertTaskWorker(stopCh <-chan struct{}) {
 	m.logger.Debug("VolumeConvert Worker is working now")
 	go func() {

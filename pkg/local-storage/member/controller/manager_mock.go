@@ -275,29 +275,6 @@ func (mr *MockControllerManagerMockRecorder) ReconcileVolumeGroup(volGroup inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReconcileVolumeGroup", reflect.TypeOf((*MockControllerManager)(nil).ReconcileVolumeGroup), volGroup)
 }
 
-// ReconcileVolumeGroupConvert mocks base method.
-func (m *MockControllerManager) ReconcileVolumeGroupConvert(lvgconvert *v1alpha1.LocalVolumeGroupConvert) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ReconcileVolumeGroupConvert", lvgconvert)
-}
-
-// ReconcileVolumeGroupConvert indicates an expected call of ReconcileVolumeGroupConvert.
-func (mr *MockControllerManagerMockRecorder) ReconcileVolumeGroupConvert(lvgconvert interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReconcileVolumeGroupConvert", reflect.TypeOf((*MockControllerManager)(nil).ReconcileVolumeGroupConvert), lvgconvert)
-}
-
-// ReconcileVolumeGroupMigrate mocks base method.
-func (m *MockControllerManager) ReconcileVolumeGroupMigrate(lvgmigrate *v1alpha1.LocalVolumeGroupMigrate) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ReconcileVolumeGroupMigrate", lvgmigrate)
-}
-
-// ReconcileVolumeGroupMigrate indicates an expected call of ReconcileVolumeGroupMigrate.
-func (mr *MockControllerManagerMockRecorder) ReconcileVolumeGroupMigrate(lvgmigrate interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReconcileVolumeGroupMigrate", reflect.TypeOf((*MockControllerManager)(nil).ReconcileVolumeGroupMigrate), lvgmigrate)
-}
 
 // ReconcileVolumeMigrate mocks base method.
 func (m *MockControllerManager) ReconcileVolumeMigrate(migrate *v1alpha1.LocalVolumeMigrate) {

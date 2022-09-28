@@ -127,53 +127,6 @@ func Test_manager_ReconcileVolumeGroup(t *testing.T) {
 	m.ReconcileVolumeGroup(volGroup)
 }
 
-func Test_manager_ReconcileVolumeGroupConvert(t *testing.T) {
-	var lvgconvert = &apisv1alpha1.LocalVolumeGroupConvert{}
-	lvgconvert.Name = "test_lvgc1"
-	lvgconvert.Namespace = "test"
-	lvgconvert.Spec.LocalVolumeGroupName = "test_lvg1"
-	lvgconvert.Spec.ReplicaNumber = 2
-
-	// 创建gomock控制器，用来记录后续的操作信息
-	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
-	defer ctrl.Finish()
-
-	m := NewMockControllerManager(ctrl)
-	m.
-		EXPECT().
-		ReconcileVolumeGroupConvert(lvgconvert).
-		Return().
-		Times(1)
-
-	m.ReconcileVolumeGroupConvert(lvgconvert)
-}
-
-func Test_manager_ReconcileVolumeGroupMigrate(t *testing.T) {
-	var lvgmigrate = &apisv1alpha1.LocalVolumeGroupMigrate{}
-	lvgmigrate.Name = "test_lvgm1"
-	lvgmigrate.Namespace = "test"
-	lvgmigrate.Spec.TargetNodesNames = []string{"test_node1"}
-	lvgmigrate.Spec.SourceNodesNames = []string{"test_node2"}
-	lvgmigrate.Spec.LocalVolumeGroupName = "test_lvg1"
-
-	// 创建gomock控制器，用来记录后续的操作信息
-	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
-	defer ctrl.Finish()
-
-	m := NewMockControllerManager(ctrl)
-	m.
-		EXPECT().
-		ReconcileVolumeGroupMigrate(lvgmigrate).
-		Return().
-		Times(1)
-
-	m.ReconcileVolumeGroupMigrate(lvgmigrate)
-}
-
 func Test_manager_ReconcileVolumeMigrate(t *testing.T) {
 	var migrate = &apisv1alpha1.LocalVolumeMigrate{}
 	migrate.Name = "test_lvm1"

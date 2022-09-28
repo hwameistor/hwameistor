@@ -137,37 +137,37 @@ func (m *manager) processVolumeMigrate(vmNamespacedName string) error {
 	logCtx.Debug("Starting to process a VolumeMigrate task")
 	switch migrate.Status.State {
 	case "":
-		if convertible == true {
+		if convertible {
 			return m.volumeMigrateSubmit(migrate)
 		} else {
 			return m.nonConvertibleVolumeMigrateSubmit(migrate)
 		}
 	case apisv1alpha1.OperationStateSubmitted:
-		if convertible == true {
+		if convertible {
 			return m.volumeMigrateStart(migrate)
 		} else {
 			return m.nonConvertibleVolumeMigrateStart(migrate)
 		}
 	case apisv1alpha1.OperationStateInProgress:
-		if convertible == true {
+		if convertible {
 			return m.volumeMigrateInProgress(migrate)
 		} else {
 			return m.nonConvertibleVolumeMigrateInProgress(migrate)
 		}
 	case apisv1alpha1.OperationStateCompleted:
-		if convertible == true {
+		if convertible {
 			return m.volumeMigrateCleanup(migrate)
 		} else {
 			return m.nonConvertibleVolumeMigrateCleanup(migrate)
 		}
 	case apisv1alpha1.OperationStateToBeAborted:
-		if convertible == true {
+		if convertible {
 			return m.volumeMigrateAbort(migrate)
 		} else {
 			return m.nonConvertibleVolumeMigrateAbort(migrate)
 		}
 	case apisv1alpha1.OperationStateAborted:
-		if convertible == true {
+		if convertible {
 			return m.volumeMigrateCleanup(migrate)
 		} else {
 			return m.nonConvertibleVolumeMigrateCleanup(migrate)
@@ -637,10 +637,7 @@ func (m *manager) volumeMigrateInProgress(migrate *apisv1alpha1.LocalVolumeMigra
 
 						vol.Spec.ReplicaNumber = migrate.Status.ReplicaNumber
 						replicas := []apisv1alpha1.VolumeReplica{}
-						migrateSrcHostNames := []string{}
-						for _, nodeName := range migrate.Spec.SourceNodesNames {
-							migrateSrcHostNames = append(migrateSrcHostNames, nodeName)
-						}
+						migrateSrcHostNames := migrate.Spec.SourceNodesNames
 						for i := range vol.Spec.Config.Replicas {
 							if arrays.ContainsString(migrateSrcHostNames, vol.Spec.Config.Replicas[i].Hostname) == -1 {
 								replicas = append(replicas, vol.Spec.Config.Replicas[i])
