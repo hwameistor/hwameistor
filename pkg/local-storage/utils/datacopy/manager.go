@@ -5,12 +5,14 @@ import (
 	"context"
 	"time"
 
+	"github.com/hwameistor/hwameistor/pkg/local-storage/exechelper/nsexecutor"
 	log "github.com/sirupsen/logrus"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	DefaultCopyTimeout = time.Hour * 48
+	DefaultCopyTimeout       = time.Hour * 48
+	rcloneMountContainerName = "data-src-mount-container"
 )
 
 var (
@@ -52,16 +54,20 @@ func NewDataCopyManager(ctx context.Context,
 func (dcm *DataCopyManager) UseRclone(
 	rcloneImage,
 	rcloneConfigMapName,
+	rcloneKeyConfigMapName,
 	rcloneConfigMapNamespace,
-	rcloneConfigMapKey string) *Rclone {
+	rcloneConfigMapKey, rcloneCrtKey string) *Rclone {
 	rclone := &Rclone{
 		rcloneImage:              rcloneImage,
-		rcloneContrinerName:      "data-copy-container",
+		rcloneMountContainerName: rcloneMountContainerName,
 		rcloneConfigMapName:      rcloneConfigMapName,
+		rcloneKeyConfigMapName:   rcloneKeyConfigMapName,
 		rcloneConfigMapNamespace: rcloneConfigMapNamespace,
 		rcloneConfigMapKey:       rcloneConfigMapKey,
+		rcloneCertKey:            rcloneCrtKey,
 		skipRcloneConfiguration:  true,
 		dcm:                      dcm,
+		cmdExec:                  nsexecutor.New(),
 	}
 
 	dcm.progressWatchingFunc = rclone.progressWatchingFunc

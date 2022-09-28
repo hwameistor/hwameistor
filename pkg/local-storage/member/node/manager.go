@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	"net"
 	"os"
 	"sync"
@@ -13,6 +14,7 @@ import (
 	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/member/csi"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
 	log "github.com/sirupsen/logrus"
@@ -30,7 +32,15 @@ import (
 // a task is going to be requeued:
 //
 // Infinitely retry
-const maxRetries = 0
+const (
+	maxRetries              = 0
+	rcloneKeyConfigMapName  = "rclone-key-config"
+	rcloneConfigMapName     = "migrate-rclone-config"
+	rclonePubKey            = "rclone.pub"
+	rcloneTmpPubKeyFilePath = "rclone.pub.tmp"
+	srcMountPoint           = "/mnt/src/"
+	dstMountPoint           = "/mnt/dst/"
+)
 
 type manager struct {
 	name string
@@ -54,6 +64,8 @@ type manager struct {
 
 	volumeTaskQueue *common.TaskQueue
 
+	volumeBlockMountTaskQueue *common.TaskQueue
+
 	volumeReplicaTaskQueue *common.TaskQueue
 
 	localDiskClaimTaskQueue *common.TaskQueue
@@ -70,6 +82,7 @@ type manager struct {
 
 	// recorder is used to record events in the API server
 	recorder record.EventRecorder
+	mounter  csi.Mounter
 }
 
 // New node manager
@@ -80,21 +93,23 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 		return nil, err
 	}
 	return &manager{
-		name:                    name,
-		namespace:               namespace,
-		apiClient:               cli,
-		informersCache:          informersCache,
-		replicaRecords:          map[string]string{},
-		volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
-		volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
-		localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-		localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+		name:                      name,
+		namespace:                 namespace,
+		apiClient:                 cli,
+		informersCache:            informersCache,
+		replicaRecords:            map[string]string{},
+		volumeTaskQueue:           common.NewTaskQueue("VolumeTask", maxRetries),
+		volumeBlockMountTaskQueue: common.NewTaskQueue("volumeBlockMount", maxRetries),
+		volumeReplicaTaskQueue:    common.NewTaskQueue("VolumeReplicaTask", maxRetries),
+		localDiskClaimTaskQueue:   common.NewTaskQueue("LocalDiskClaim", maxRetries),
+		localDiskTaskQueue:        common.NewTaskQueue("LocalDisk", maxRetries),
 		// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 		diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 		configManager:  configManager,
 		logger:         log.WithField("Module", "NodeManager"),
 		scheme:         scheme,
 		recorder:       recorder,
+		mounter:        csi.NewLinuxMounter(log.WithField("Module", "NodeManager")),
 	}, nil
 }
 
@@ -106,6 +121,8 @@ func (m *manager) Run(stopCh <-chan struct{}) {
 	m.setupInformers()
 
 	go m.startVolumeTaskWorker(stopCh)
+
+	go m.startVolumeBlockMountTaskWorker(stopCh)
 
 	go m.startVolumeReplicaTaskWorker(stopCh)
 
@@ -206,6 +223,15 @@ func (m *manager) setupInformers() {
 		UpdateFunc: m.handleLocalDiskUpdate,
 	})
 
+	k8sCMInformer, err := m.informersCache.GetInformer(context.TODO(), &k8scorev1.ConfigMap{})
+	if err != nil {
+		// error happens, crash the node
+		m.logger.WithError(err).Fatal("Failed to get informer for k8s cm")
+	}
+	k8sCMInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		UpdateFunc: m.handleK8sCMUpdatedEvent,
+		AddFunc:    m.handleK8sCMAddEvent,
+	})
 }
 
 func (m *manager) Storage() *storage.LocalManager {
@@ -397,4 +423,47 @@ func (m *manager) handleNodeDelete(obj interface{}) {
 	if err := m.apiClient.Status().Update(context.TODO(), nodeToRecovery); err != nil {
 		m.logger.WithFields(log.Fields{"node": nodeToRecovery.GetName()}).WithError(err).Error("Failed to rebuild VolumeReplica")
 	}
+}
+
+func (m *manager) handleK8sCMUpdatedEvent(oldObj, newObj interface{}) {
+	newCM, _ := newObj.(*k8scorev1.ConfigMap)
+	if newCM.Name == rcloneConfigMapName {
+		if newCM.Data["lvname"] != "" {
+			lvNameData := newCM.Data["lvname"]
+			m.volumeBlockMountTaskQueue.Add(newCM.Namespace + "/" + lvNameData)
+		}
+	}
+	if newCM.Name == rcloneKeyConfigMapName {
+		if newCM.Data[rclonePubKey] != "" {
+			pubKeyData := newCM.Data[rclonePubKey]
+			pubKeyData = "\n" + pubKeyData
+			utils.WriteDataIntoSysFSFile(pubKeyData, rcloneTmpPubKeyFilePath)
+		}
+	}
+}
+
+func (m *manager) handleK8sCMAddEvent(newObj interface{}) {
+	newCM, _ := newObj.(*k8scorev1.ConfigMap)
+	if newCM.Name == rcloneConfigMapName {
+		if newCM.Data["lvname"] != "" {
+			lvNameData := newCM.Data["lvname"]
+			m.volumeBlockMountTaskQueue.Add(newCM.Namespace + "/" + lvNameData)
+		}
+	}
+	if newCM.Name == rcloneKeyConfigMapName {
+		if newCM.Data[rclonePubKey] != "" {
+			pubKeyData := newCM.Data[rclonePubKey]
+			pubKeyData = "\n" + pubKeyData
+			utils.WriteDataIntoSysFSFile(pubKeyData, rcloneTmpPubKeyFilePath)
+		}
+	}
+}
+
+func isStringInArray(str string, strs []string) bool {
+	for _, s := range strs {
+		if str == s {
+			return true
+		}
+	}
+	return false
 }

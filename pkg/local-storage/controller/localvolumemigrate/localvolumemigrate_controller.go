@@ -151,10 +151,20 @@ func (r *ReconcileLocalVolumeMigrate) Reconcile(request reconcile.Request) (reco
 			}
 		}
 
-		vol.Spec.Accessibility.Nodes = accessibilityNodeNames
-		if err := r.client.Update(context.TODO(), vol); err != nil {
-			log.WithError(err).Errorf("ReconcileLocalVolumeMigrate Reconcile : Failed to re-configure Volume, vol.Name = %v, tmpvol.LocalVolumeName = %v", vol.Name, tmpvol.LocalVolumeName)
-			errMsg = err
+		if !reflect.DeepEqual(vol.Spec.Accessibility.Nodes, accessibilityNodeNames) {
+			vol.Spec.Accessibility.Nodes = accessibilityNodeNames
+			if err := r.client.Update(context.TODO(), vol); err != nil {
+				log.WithError(err).Errorf("ReconcileLocalVolumeMigrate Reconcile : Failed to re-configure Volume, vol.Name = %v, tmpvol.LocalVolumeName = %v", vol.Name, tmpvol.LocalVolumeName)
+				errMsg = err
+
+				tmpVol := &apisv1alpha1.LocalVolume{}
+				if tmperr := r.client.Get(context.TODO(), types.NamespacedName{Name: vol.Name}, tmpVol); tmperr == nil {
+					tmpVol.Spec.Accessibility.Nodes = accessibilityNodeNames
+					if err2 := r.client.Update(context.TODO(), tmpVol); err2 != nil {
+						errMsg = err2
+					}
+				}
+			}
 		}
 	}
 

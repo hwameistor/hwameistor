@@ -136,6 +136,11 @@ spec:
         - mountPath: /etc/drbd.d
           mountPropagation: Bidirectional
           name: host-etc-drbd
+        - mountPath: ~/.ssh/
+          name: sshkey-dir
+        - mountPath: /mnt
+          name: host-mnt
+          mountPropagation: "Bidirectional"
       dnsPolicy: ClusterFirstWithHostNet
       hostPID: true
       priorityClassName: system-node-critical
@@ -184,6 +189,14 @@ spec:
           path: /var/lib/kubelet/pods
           type: DirectoryOrCreate
         name: pods-mount-dir
+      - hostPath:
+          path: ~/.ssh/
+          type: DirectoryOrCreate
+        name: sshkey-dir
+      - hostPath:
+          path: /mnt
+          type: DirectoryOrCreate
+        name: host-mnt
   updateStrategy:
     rollingUpdate:
       maxUnavailable: 1
