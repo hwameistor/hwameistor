@@ -52,10 +52,10 @@ type LocalVolumeGroupMigrateStatus struct {
 
 // LocalVolumeGroupMigrate is the Schema for the LocalVolumeGroupMigrates API
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:path=LocalVolumeGroupMigrates,scope=Cluster,shortName=lvmigrate
+// +kubebuilder:resource:path=localvolumegroupmigrates,scope=Cluster,shortName=lvmigrate
 // +kubebuilder:printcolumn:name="volume",type=string,JSONPath=`.spec.volumeName`,description="Name of the volume to be migrated"
 // +kubebuilder:printcolumn:name="node",type=string,JSONPath=`.spec.nodeName`,description="Node name of the volume replica to be migrated"
-// +kubebuilder:printcolumn:name="target",type=string,JSONPath=`.status.targetNodeName`,description="Node name of the new volume replica"
+// +kubebuilder:printcolumn:name="target",type=string,JSONPath=`.status.targetNodesNames`,description="Node names of the new volume replica"
 // +kubebuilder:printcolumn:name="state",type=string,JSONPath=`.status.state`,description="State of the migration"
 // +kubebuilder:printcolumn:name="age",type=date,JSONPath=`.metadata.creationTimestamp`
 type LocalVolumeGroupMigrate struct {
