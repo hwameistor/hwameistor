@@ -33,7 +33,7 @@ release: release_ldm release_ls release_scheduler release_admission release_evic
 
 .PHONY: unit-test
 unit-test:
-	go test -race -coverprofile=coverage.txt -covermode=atomic ./pkg/local-disk-manager/... ./pkg/local-storage/member/... ./pkg/local-storage/controller/... ./pkg/local-storage/utils/... ./pkg/scheduler/... ./pkg/utils/... ./pkg/webhook/...
+	go test -race -coverprofile=coverage.txt -covermode=atomic ./pkg/local-disk-manager/... ./pkg/local-storage/member/... ./pkg/local-storage/utils/... ./pkg/scheduler/... ./pkg/utils/... ./pkg/webhook/...
 	curl -s https://codecov.io/bash | bash
 
 .PHONY: vendor
