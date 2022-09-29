@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 
@@ -12,6 +13,7 @@ import (
 
 func Test_scheduler_Allocate(t *testing.T) {
 
+	os.Setenv("KUBERNETES_MASTER", "test")
 	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
 	// 断言期望的方法都被执行
@@ -41,6 +43,7 @@ func Test_scheduler_Allocate(t *testing.T) {
 }
 
 func Test_scheduler_GetNodeCandidates(t *testing.T) {
+	os.Setenv("KUBERNETES_MASTER", "test")
 
 	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
@@ -72,6 +75,7 @@ func Test_scheduler_GetNodeCandidates(t *testing.T) {
 }
 
 func Test_scheduler_Init(t *testing.T) {
+	os.Setenv("KUBERNETES_MASTER", "test")
 
 	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
@@ -90,6 +94,8 @@ func Test_scheduler_Init(t *testing.T) {
 }
 
 func Test_isLocalVolumeSameClass(t *testing.T) {
+	os.Setenv("KUBERNETES_MASTER", "test")
+
 	type args struct {
 		lv1 *v1alpha1.LocalVolume
 		lv2 *v1alpha1.LocalVolume
@@ -160,6 +166,8 @@ func Test_isLocalVolumeSameClass(t *testing.T) {
 }
 
 func Test_appendLocalVolume(t *testing.T) {
+	os.Setenv("KUBERNETES_MASTER", "test")
+
 	type args struct {
 		bigLv *v1alpha1.LocalVolume
 		lv    *v1alpha1.LocalVolume
@@ -213,6 +221,8 @@ func Test_appendLocalVolume(t *testing.T) {
 }
 
 func Test_unionSet(t *testing.T) {
+	os.Setenv("KUBERNETES_MASTER", "test")
+
 	type args struct {
 		strs1 []*v1alpha1.LocalStorageNode
 		strs2 []*v1alpha1.LocalStorageNode
