@@ -2,10 +2,7 @@ package volumegroup
 
 import (
 	"context"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
-	log "github.com/sirupsen/logrus"
 	coorv1 "k8s.io/api/coordination/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,6 +16,10 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
+	log "github.com/sirupsen/logrus"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -88,51 +89,51 @@ var (
 	defaultHAVolumeTotalCount            = 1000
 )
 
-func TestNewManager(t *testing.T) {
-	// Set default manager options
-	options := crmgr.Options{
-		Namespace: "", // watch all namespaces
-	}
-
-	// Get a config to talk to the apiserver
-	cfg, err := config.GetConfig()
-	if err != nil {
-		log.Error(err, "")
-		os.Exit(1)
-	}
-
-	// Create a new manager to provide shared dependencies and start components
-	mgr, err := crmgr.New(cfg, options)
-	if err != nil {
-		log.Error(err, "")
-		os.Exit(1)
-	}
-
-	type args struct {
-		cli            client.Client
-		informersCache cache.Cache
-	}
-	tests := []struct {
-		name string
-		args args
-		want apisv1alpha1.VolumeGroupManager
-	}{
-		// TODO: Add test cases.
-		{
-			args: args{
-				cli:            mgr.GetClient(),
-				informersCache: mgr.GetCache(),
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewManager(tt.args.cli, tt.args.informersCache); !reflect.DeepEqual(got, tt.want) {
-				//t.Logf("NewManager() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+//func TestNewManager(t *testing.T) {
+//	// Set default manager options
+//	options := crmgr.Options{
+//		Namespace: "", // watch all namespaces
+//	}
+//
+//	// Get a config to talk to the apiserver
+//	cfg, err := config.GetConfig()
+//	if err != nil {
+//		log.Error(err, "")
+//		os.Exit(1)
+//	}
+//
+//	// Create a new manager to provide shared dependencies and start components
+//	mgr, err := crmgr.New(cfg, options)
+//	if err != nil {
+//		log.Error(err, "")
+//		os.Exit(1)
+//	}
+//
+//	type args struct {
+//		cli            client.Client
+//		informersCache cache.Cache
+//	}
+//	tests := []struct {
+//		name string
+//		args args
+//		want v1alpha1.VolumeGroupManager
+//	}{
+//		// TODO: Add test cases.
+//		{
+//			args: args{
+//				cli:            mgr.GetClient(),
+//				informersCache: mgr.GetCache(),
+//			},
+//		},
+//	}
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			if got := NewManager(tt.args.cli, tt.args.informersCache); !reflect.DeepEqual(got, tt.want) {
+//				//t.Logf("NewManager() = %v, want %v", got, tt.want)
+//			}
+//		})
+//	}
+//}
 
 // GenFakeLocalVolumeObject Create lv request
 func GenFakeLocalVolumeObject() *apisv1alpha1.LocalVolume {
