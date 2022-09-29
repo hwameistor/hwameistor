@@ -14,7 +14,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
 const (
@@ -54,8 +53,10 @@ func main() {
 		log.WithError(err).Fatal("Failed to create client set")
 	}
 
+	stopCh := make(chan struct{})
+
 	run := func(ctx context.Context) {
-		if err := evictor.New(leClientset).Run(signals.SetupSignalHandler()); err != nil {
+		if err := evictor.New(leClientset).Run(stopCh); err != nil {
 			log.WithFields(log.Fields{"error": err.Error()}).Error("failed to run evictor")
 			os.Exit(1)
 		}
@@ -66,6 +67,7 @@ func main() {
 	le.WithNamespace(opNamespace)
 
 	if err := le.Run(); err != nil {
+		stopCh <- struct{}{}
 		log.Fatalf("failed to initialize leader election: %v", err)
 	}
 
