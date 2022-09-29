@@ -3,6 +3,16 @@ entries:
   drbd-adapter:
   - apiVersion: v2
     appVersion: 9.0.32
+    created: "2022-09-29T05:45:26.937896648Z"
+    description: A DRBD kernel loader that auto-adapts OS distros
+    digest: 12d22dc889fe4b1be95b223819b0b7b18c74484a11e33827030fcbf7e5e5cbf8
+    name: drbd-adapter
+    type: application
+    urls:
+    - https://github.com/hwameistor/drbd-adapter/releases/download/0.3.4/drbd-adapter-0.3.4.tgz
+    version: 0.3.4
+  - apiVersion: v2
+    appVersion: 9.0.32
     created: "2022-09-19T08:11:52.047507221Z"
     description: A DRBD kernel loader that auto-adapts OS distros
     digest: 6efa9c6aac5ca0c3c009d2294ef076e8e333470af6776a961d56e2273ae870a9
