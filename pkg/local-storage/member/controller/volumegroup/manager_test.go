@@ -791,66 +791,66 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 //	}
 //}
 
-func Test_manager_ReconcileVolumeGroup(t *testing.T) {
-	type fields struct {
-		apiClient                 client.Client
-		informersCache            cache.Cache
-		logger                    *log.Entry
-		nameSpace                 string
-		lock                      sync.Mutex
-		localVolumeGroupQueue     *common.TaskQueue
-		localVolumeQueue          *common.TaskQueue
-		pvcQueue                  *common.TaskQueue
-		podQueue                  *common.TaskQueue
-		localVolumeToVolumeGroups map[string]string
-		pvcToVolumeGroups         map[string]string
-		podToVolumeGroups         map[string]string
-	}
-
-	client, _ := CreateFakeClient()
-
-	// Create LocalVolumeGroup
-	lvg := GenFakeLocalVolumeGroupObject()
-	lvg.Name = fakeLocalVolumeGroupName
-	lvg.Namespace = fakeNamespace
-	err := client.Create(context.Background(), lvg)
-	if err != nil {
-		t.Logf("Create LocalVolumeGroup fail %v", err)
-	}
-
-	type args struct {
-		lvg *apisv1alpha1.LocalVolumeGroup
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-		{
-			args: args{
-				lvg: lvg,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_ = &manager{
-				nameSpace:                 fakeNamespace,
-				apiClient:                 client,
-				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
-				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
-				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
-				podQueue:                  common.NewTaskQueue("pod", maxRetries),
-				localVolumeToVolumeGroups: make(map[string]string),
-				pvcToVolumeGroups:         make(map[string]string),
-				podToVolumeGroups:         make(map[string]string),
-				logger:                    log.WithField("Module", "ControllerManager"),
-			}
-			//m.ReconcileVolumeGroup(tt.args.lvg)
-		})
-	}
-}
+//func Test_manager_ReconcileVolumeGroup(t *testing.T) {
+//	type fields struct {
+//		apiClient                 client.Client
+//		informersCache            cache.Cache
+//		logger                    *log.Entry
+//		nameSpace                 string
+//		lock                      sync.Mutex
+//		localVolumeGroupQueue     *common.TaskQueue
+//		localVolumeQueue          *common.TaskQueue
+//		pvcQueue                  *common.TaskQueue
+//		podQueue                  *common.TaskQueue
+//		localVolumeToVolumeGroups map[string]string
+//		pvcToVolumeGroups         map[string]string
+//		podToVolumeGroups         map[string]string
+//	}
+//
+//	client, _ := CreateFakeClient()
+//
+//	// Create LocalVolumeGroup
+//	lvg := GenFakeLocalVolumeGroupObject()
+//	lvg.Name = fakeLocalVolumeGroupName
+//	lvg.Namespace = fakeNamespace
+//	err := client.Create(context.Background(), lvg)
+//	if err != nil {
+//		t.Logf("Create LocalVolumeGroup fail %v", err)
+//	}
+//
+//	type args struct {
+//		lvg *apisv1alpha1.LocalVolumeGroup
+//	}
+//	tests := []struct {
+//		name   string
+//		fields fields
+//		args   args
+//	}{
+//		// TODO: Add test cases.
+//		{
+//			args: args{
+//				lvg: lvg,
+//			},
+//		},
+//	}
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			_ = &manager{
+//				nameSpace:                 fakeNamespace,
+//				apiClient:                 client,
+//				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+//				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+//				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+//				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+//				localVolumeToVolumeGroups: make(map[string]string),
+//				pvcToVolumeGroups:         make(map[string]string),
+//				podToVolumeGroups:         make(map[string]string),
+//				logger:                    log.WithField("Module", "ControllerManager"),
+//			}
+//			//m.ReconcileVolumeGroup(tt.args.lvg)
+//		})
+//	}
+//}
 
 func Test_manager_addLocalVolume(t *testing.T) {
 	type fields struct {
