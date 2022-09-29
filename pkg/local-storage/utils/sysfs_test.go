@@ -17,7 +17,7 @@ func TestWriteDataIntoSysFSFile(t *testing.T) {
 		// TODO: Add test cases.
 		{
 			args:    args{content: "test", sysFilePath: "/test"},
-			wantErr: false,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
