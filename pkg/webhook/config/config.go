@@ -70,6 +70,7 @@ func CreateOrUpdateWebHookConfig() error {
 
 	if err = CreateAdmissionConfig(serverCertPEM); err != nil {
 		log.WithField("tls.cert", serverCertPEM.String()).WithError(err).Error("failed to create admission config")
+		return err
 	}
 
 	return nil
