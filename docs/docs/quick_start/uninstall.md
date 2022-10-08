@@ -26,14 +26,14 @@ $ kubectl delete ns hwameistor
 ### 2. Remove `LocalVolumeGroup` instances
    
 :::note
-   `LocalVolumeGroup` object has a special finalizer, so its instances must be deleted before its definition is deleted.
+   The `LocalVolumeGroup` object has a special finalizer, so its instances must be deleted before its definition is deleted.
 :::
 
 ```console
 $ kubectl delete localvolumegroups.hwameistor.io --all
 ```
 
-### 3. Remove CRD, Hook and RBAC
+### 3. Remove CRD, Hook, and RBAC
 
 ```console
 $ kubectl get crd,mutatingwebhookconfiguration,clusterrolebinding,clusterrole -o name \
