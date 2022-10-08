@@ -35,6 +35,8 @@ spec:
               value: hwameistor-admission-controller
             - name: MUTATE_PATH
               value: /mutate
+            - name: FAILURE_POLICY
+              value: {{ .Values.admission.failurePolicy }}
           resources: 
             {{- toYaml .Values.admission.resources | nindent 12 }}
           ports:

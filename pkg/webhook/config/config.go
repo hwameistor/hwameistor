@@ -24,6 +24,7 @@ var (
 	webhookService, _   = os.LookupEnv("WEBHOOK_SERVICE")
 	validatePath, _     = os.LookupEnv("VALIDATE_PATH")
 	mutationPath, _     = os.LookupEnv("MUTATE_PATH")
+	failurePolicy, _    = os.LookupEnv("FAILURE_POLICY")
 	dnsNames            = []string{webhookService, webhookService + "." + webhookNamespace, webhookService + "." + webhookNamespace + "." + "svc"}
 	commonName          = webhookService + "." + webhookNamespace + "." + "svc"
 	excludeNameSpaceKey = "name"
@@ -111,7 +112,15 @@ func CreateAdmissionConfig(caCert *bytes.Buffer) error {
 					},
 				}},
 				FailurePolicy: func() *admissionregistrationv1.FailurePolicyType {
-					pt := admissionregistrationv1.Fail
+					var pt admissionregistrationv1.FailurePolicyType
+					switch failurePolicy {
+					case string(admissionregistrationv1.Fail):
+						pt = admissionregistrationv1.Fail
+					case string(admissionregistrationv1.Ignore):
+						pt = admissionregistrationv1.Ignore
+					default:
+						pt = admissionregistrationv1.Fail
+					}
 					return &pt
 				}(),
 				NamespaceSelector: &metav1.LabelSelector{
