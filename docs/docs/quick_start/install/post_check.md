@@ -5,7 +5,7 @@ sidebar_label: "Post-Deployment Checkout"
 
 # Post-Deployment Checkout
 
-The below example is from a 4-node kubernetes cluster:
+The example below is from a 4-node kubernetes cluster:
 
 ```console
 $ kubectl get no
@@ -64,11 +64,11 @@ localvolumereplicas        lvr          hwameistor.io/v1alpha1   false        Lo
 localvolumes               lv           hwameistor.io/v1alpha1   false        LocalVolume
 ```
 
-For the details about CRDs, please also refer to the chapter [CRDs](../../architecture/apis.md).
+For the details about CRDs, please also refer to [CRDs](../../architecture/apis.md).
 
 ## Check the `LocalDiskNode` and `localDisks`
 
-HwameiStor autoscans each node and registers each disk as CRD `LocalDisk(ld)`. The unused disks are displayed with `PHASE: Unclaimed`.
+HwameiStor automatically scans each node and registers each disk as CRD `LocalDisk(ld)`. The unused disks are displayed with `PHASE: Unclaimed`.
 
 ```console
 $ kubectl get localdisknodes
@@ -94,7 +94,7 @@ k8s-worker-3-sdc   k8s-worker-3           Unclaimed
 
 ## [Optional] Check DRBD Installation
 
-`drbd-adapter` pod should be running on each worker node
+The `drbd-adapter` pod should be running on each worker node.
 
 ```console
 $ kubectl -n hwameistor get po -l k8s-app=drbd-adapter -o wide
@@ -106,7 +106,7 @@ drbd-adapter-rs9zk   1/1     Running   0          9h    10.6.254.25   k8s-worker
 drbd-adapter-zc882   1/1     Running   0          9h    10.6.254.23   k8s-worker-3
 ```
 
-On each worker node, DRBD kernel module should be loaded, for example on node `k8s-worker-1`：
+On each worker node, the DRBD kernel module should be loaded, for example on node `k8s-worker-1`：
 
 ```console
 [root@k8s-worker-1 ~]$ lsmod | grep ^drbd

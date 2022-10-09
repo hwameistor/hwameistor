@@ -50,7 +50,7 @@ $ apt-get install -y linux-headers-$(uname -r)
 
 ### Secure Boot
 
-The HA feature does not yet support `Secure Boot`. Make sure `Secure Boot` is `disabled`：
+The HA feature does not support `Secure Boot` currently. Make sure `Secure Boot` is `disabled`：
 
 ```console
 $ mokutil --sb-state
@@ -62,11 +62,11 @@ $ dmesg | grep secureboot
 
 ### Data Disk
 
-HwameiStor supports `HDD`, `SSD` and `NVMe`.
+HwameiStor supports `HDD`, `SSD`, and `NVMe`.
 
 For test, each host must have at least one unused drive with a minimal size of `10GiB`.
 
-For production, it is recommended to have a least one unused drive, protected by RAID1 or RAID5/6, with a minimal size of `200GiB`.
+For production, it is recommended to have at least one unused drive, protected by RAID1 or RAID5/6, with a minimal size of `200GiB`.
 
 ### Network
 

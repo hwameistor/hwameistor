@@ -54,7 +54,11 @@ EOF
 
 Finally, check if the new disk has been added into the node's storage pool successfully by checking the LocalStorageNode CR:
 
-```console
+```
+kubectl get localstoragenode k8s-worker-4
+```
+
+```yaml
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalStorageNode
 metadata:
