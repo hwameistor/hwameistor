@@ -216,8 +216,8 @@ type SystemConfig struct {
 type VolumeGroupManager interface {
 	Init(stopCh <-chan struct{})
 	ReconcileVolumeGroup(volGroup *LocalVolumeGroup)
-	GetLocalVolumeGroupByName(nameSpace, lvgName string) (*LocalVolumeGroup, error)
-	GetLocalVolumeGroupByLocalVolume(nameSpace, lvName string) (*LocalVolumeGroup, error)
+	GetLocalVolumeGroupByName(lvgName string) (*LocalVolumeGroup, error)
+	GetLocalVolumeGroupByLocalVolume(lvName string) (*LocalVolumeGroup, error)
 	GetLocalVolumeGroupByPVC(pvcName string, pvcNamespace string) (*LocalVolumeGroup, error)
 }
 
@@ -226,7 +226,7 @@ type VolumeGroupManager interface {
 // 		need so much more thinking!!!
 
 // VolumeScheduler interface
-////go:generate mockgen -source=types.go -destination=../../../member/controller/scheduler/scheduler_mock.go  -package=scheduler
+// //go:generate mockgen -source=types.go -destination=../../../member/controller/scheduler/scheduler_mock.go  -package=scheduler
 type VolumeScheduler interface {
 	Init()
 	// schedule will schedule all replicas, and generate a valid VolumeConfig

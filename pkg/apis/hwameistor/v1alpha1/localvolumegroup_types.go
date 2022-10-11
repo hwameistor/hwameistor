@@ -20,6 +20,8 @@ type LocalVolumeGroupSpec struct {
 	Accessibility AccessibilityTopology `json:"accessibility,omitempty"`
 
 	Pods []string `json:"pods,omitempty"`
+
+	Namespace string `json:"namespace,omitempty"`
 }
 
 type VolumeInfo struct {

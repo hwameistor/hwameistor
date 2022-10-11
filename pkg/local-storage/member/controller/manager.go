@@ -204,12 +204,12 @@ func (m *manager) ReconcileVolumeExpand(expand *apisv1alpha1.LocalVolumeExpand) 
 
 // ReconcileVolumeMigrate reconciles VolumeMigrate CRD for any volume resource change
 func (m *manager) ReconcileVolumeMigrate(migrate *apisv1alpha1.LocalVolumeMigrate) {
-	m.volumeMigrateTaskQueue.Add(migrate.Namespace + "/" + migrate.Name)
+	m.volumeMigrateTaskQueue.Add(migrate.Name)
 }
 
 // ReconcileVolumeConvert reconciles VolumeConvert CRD for any volume resource change
 func (m *manager) ReconcileVolumeConvert(convert *apisv1alpha1.LocalVolumeConvert) {
-	m.volumeConvertTaskQueue.Add(convert.Namespace + "/" + convert.Name)
+	m.volumeConvertTaskQueue.Add(convert.Name)
 }
 
 func (m *manager) handleK8sNodeUpdatedEvent(oldObj, newObj interface{}) {
@@ -270,7 +270,6 @@ func (m *manager) handleVolumeMigrateCRDDeletedEvent(obj interface{}) {
 		// must be deleted by a mistake, rebuild it
 		// TODO: need retry considering the case of creating failure
 		newInstance := &apisv1alpha1.LocalVolumeMigrate{}
-		newInstance.Namespace = instance.Namespace
 		newInstance.Name = instance.Name
 		newInstance.Spec = instance.Spec
 
