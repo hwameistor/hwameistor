@@ -22,14 +22,14 @@ import (
 
 var _ csi.ControllerServer = (*plugin)(nil)
 
-//ControllerGetCapabilities implementation
+// ControllerGetCapabilities implementation
 func (p *plugin) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
 	p.logger.Debug("ControllerGetCapabilities")
 
 	return &csi.ControllerGetCapabilitiesResponse{Capabilities: p.csCaps}, nil
 }
 
-//CreateVolume implementation, idempotent
+// CreateVolume implementation, idempotent
 func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	if req.VolumeContentSource != nil {
 		if req.VolumeContentSource.GetSnapshot() != nil {
@@ -155,11 +155,11 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 	}
 	lvg = &apisv1alpha1.LocalVolumeGroup{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      genUUID(),
-			Namespace: params.pvcNamespace,
+			Name: genUUID(),
 		},
 		Spec: apisv1alpha1.LocalVolumeGroupSpec{
-			Volumes: []apisv1alpha1.VolumeInfo{},
+			Namespace: params.pvcNamespace,
+			Volumes:   []apisv1alpha1.VolumeInfo{},
 			Accessibility: apisv1alpha1.AccessibilityTopology{
 				Nodes: selectedNodes,
 			},
@@ -183,7 +183,7 @@ func (p *plugin) getLocalVolumeGroupByPVC(pvcNamespace string, pvcName string) (
 		return nil, err
 	}
 	for i, lvg := range lvgList.Items {
-		if lvg.Namespace != pvcNamespace {
+		if lvg.Spec.Namespace != pvcNamespace {
 			continue
 		}
 		for _, vol := range lvg.Spec.Volumes {
@@ -315,7 +315,7 @@ func (p *plugin) cloneVolume(ctx context.Context, req *csi.CreateVolumeRequest) 
 	return &csi.CreateVolumeResponse{}, fmt.Errorf("not implemented")
 }
 
-//ControllerGetVolume implementation, idempotent
+// ControllerGetVolume implementation, idempotent
 func (p *plugin) ControllerGetVolume(ctx context.Context, req *csi.ControllerGetVolumeRequest) (*csi.ControllerGetVolumeResponse, error) {
 	p.logger.WithFields(log.Fields{"volume": req.VolumeId}).Debug("ControllerGetVolume")
 
@@ -372,7 +372,7 @@ func (p *plugin) ControllerGetVolume(ctx context.Context, req *csi.ControllerGet
 	return resp, nil
 }
 
-//DeleteVolume implementation, idempotent
+// DeleteVolume implementation, idempotent
 func (p *plugin) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 	p.logger.WithFields(log.Fields{
 		"volume":  req.VolumeId,
@@ -404,7 +404,7 @@ func (p *plugin) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 	return resp, fmt.Errorf("volume in deleting")
 }
 
-//ControllerPublishVolume implementation, idempotent
+// ControllerPublishVolume implementation, idempotent
 func (p *plugin) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
 	p.logger.WithFields(log.Fields{
 		"volume":        req.VolumeId,
@@ -460,7 +460,7 @@ func (p *plugin) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 	return resp, fmt.Errorf("not found valid volume replica")
 }
 
-//ControllerUnpublishVolume implementation, idempotent
+// ControllerUnpublishVolume implementation, idempotent
 func (p *plugin) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
 	p.logger.WithFields(log.Fields{
 		"volume":  req.VolumeId,
@@ -496,7 +496,7 @@ func (p *plugin) ControllerUnpublishVolume(ctx context.Context, req *csi.Control
 	return resp, nil
 }
 
-//ValidateVolumeCapabilities implementation
+// ValidateVolumeCapabilities implementation
 func (p *plugin) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
 	p.logger.WithFields(log.Fields{
 		"volume":             req.VolumeId,
@@ -528,7 +528,7 @@ func (p *plugin) ValidateVolumeCapabilities(ctx context.Context, req *csi.Valida
 
 }
 
-//ListVolumes implementation, consider the case of multiple pages
+// ListVolumes implementation, consider the case of multiple pages
 func (p *plugin) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
 	p.logger.WithFields(log.Fields{
 		"maxEntries": req.MaxEntries,
@@ -601,7 +601,7 @@ func (p *plugin) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (
 	return resp, nil
 }
 
-//GetCapacity implementation
+// GetCapacity implementation
 func (p *plugin) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
 	p.logger.WithFields(log.Fields{
 		"volumeCapabilities": req.VolumeCapabilities,
@@ -616,7 +616,7 @@ func (p *plugin) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (
 	return resp, fmt.Errorf("not supported")
 }
 
-//CreateSnapshot implementation, idempotent
+// CreateSnapshot implementation, idempotent
 func (p *plugin) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) {
 	p.logger.WithFields(log.Fields{
 		"name":         req.Name,
@@ -628,7 +628,7 @@ func (p *plugin) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequ
 	return nil, fmt.Errorf("not Implemented")
 }
 
-//DeleteSnapshot implementation, idempotent
+// DeleteSnapshot implementation, idempotent
 func (p *plugin) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
 	p.logger.WithFields(log.Fields{
 		"id":      req.SnapshotId,
@@ -638,7 +638,7 @@ func (p *plugin) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshotRequ
 	return nil, fmt.Errorf("not Implemented")
 }
 
-//ListSnapshots implementation, idempotent
+// ListSnapshots implementation, idempotent
 func (p *plugin) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRequest) (*csi.ListSnapshotsResponse, error) {
 	p.logger.WithFields(log.Fields{
 		"sourceVolume": req.SourceVolumeId,
@@ -651,7 +651,7 @@ func (p *plugin) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsReques
 	return nil, fmt.Errorf("not Implemented")
 }
 
-//ControllerExpandVolume - it will expand volume size in storage pool, idempotent
+// ControllerExpandVolume - it will expand volume size in storage pool, idempotent
 func (p *plugin) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
 	logCtx := p.logger.WithFields(log.Fields{"volume": req.VolumeId})
 	logCtx.WithFields(log.Fields{

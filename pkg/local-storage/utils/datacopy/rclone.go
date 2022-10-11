@@ -2,8 +2,9 @@ package datacopy
 
 import (
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/exechelper"
 	"time"
+
+	"github.com/hwameistor/hwameistor/pkg/local-storage/exechelper"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -170,10 +171,9 @@ func (rcl *Rclone) SrcMountPointToRemoteMountPoint(jobName, namespace, lvPoolNam
 
 	if err := rcl.dcm.k8sControllerClient.Create(rcl.dcm.ctx, jobStruct); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
-			fmt.Errorf("Failed to create MigrateJob, Job already exists")
-		} else {
-			return err
+			return fmt.Errorf("failed to create MigrateJob, Job already exists")
 		}
+		return err
 	}
 
 	return nil
@@ -193,12 +193,12 @@ func (rcl *Rclone) WaitMigrateJobTaskDone(jobName, lvName string, waitUntilSucce
 		select {
 		case res := <-resCh:
 			if res.Phase == DataCopyStatusFailed {
-				return fmt.Errorf("Failed to run job %s, message is [TODO] %s", res.JobName, res.Message)
+				return fmt.Errorf("failed to run job %s, message is [TODO] %s", res.JobName, res.Message)
 			} else {
 				return nil
 			}
 		case <-time.After(timeout):
-			return fmt.Errorf("Failed to copy data from srcMountPointName: %s to dstMountPointName: %s, timeout after %s", srcMountPoint+lvName, dstMountPoint+lvName, timeout)
+			return fmt.Errorf("failed to copy data from srcMountPointName: %s to dstMountPointName: %s, timeout after %s", srcMountPoint+lvName, dstMountPoint+lvName, timeout)
 		}
 	}
 

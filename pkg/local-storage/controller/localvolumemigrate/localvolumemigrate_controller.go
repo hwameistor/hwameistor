@@ -111,7 +111,7 @@ func (r *ReconcileLocalVolumeMigrate) Reconcile(request reconcile.Request) (reco
 	localVolumeGroupName := vol.Spec.VolumeGroup
 
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Namespace: instance.Namespace, Name: localVolumeGroupName}, lvg)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: localVolumeGroupName}, lvg)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.

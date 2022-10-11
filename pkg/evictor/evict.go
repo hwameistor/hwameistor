@@ -300,19 +300,6 @@ func (ev *evictor) evictVolume(migrateTask string) error {
 	return nil
 }
 
-// func getNamespacedName(namespace string, name string) string {
-// 	return fmt.Sprintf("%s/%s", namespace, name)
-// }
-
-// // output: namespace, name
-// func parseNamespacedName(nn string) (string, string) {
-// 	items := strings.Split(nn, "/")
-// 	if len(items) < 2 {
-// 		return items[0], ""
-// 	}
-// 	return items[0], items[1]
-// }
-
 func constructMigrateVolumeTask(lvName string, nodeName string) string {
 	return fmt.Sprintf("%s/%s", lvName, nodeName)
 }

@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	log "github.com/sirupsen/logrus"
@@ -12,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"strings"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
@@ -51,19 +51,12 @@ func (m *manager) startVolumeMigrateTaskWorker(stopCh <-chan struct{}) {
 	m.volumeMigrateTaskQueue.Shutdown()
 }
 
-func (m *manager) processVolumeMigrate(vmNamespacedName string) error {
-	logCtx := m.logger.WithFields(log.Fields{"VolumeMigrate": vmNamespacedName})
+func (m *manager) processVolumeMigrate(vmName string) error {
+	logCtx := m.logger.WithFields(log.Fields{"VolumeMigrate": vmName})
 	logCtx.Debug("Working on a VolumeMigrate task")
 
-	splitRes := strings.Split(vmNamespacedName, "/")
-	var ns, vmName string
-	if len(splitRes) >= 2 {
-		ns = splitRes[0]
-		vmName = splitRes[1]
-	}
-
 	migrate := &apisv1alpha1.LocalVolumeMigrate{}
-	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: ns, Name: vmName}, migrate); err != nil {
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: vmName}, migrate); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get VolumeMigrate from cache")
 			return err
@@ -99,7 +92,7 @@ func (m *manager) processVolumeMigrate(vmNamespacedName string) error {
 	localVolumeGroupName := vol.Spec.VolumeGroup
 
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: migrate.Namespace, Name: localVolumeGroupName}, lvg); err != nil {
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: localVolumeGroupName}, lvg); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("VolumeMigrateSubmit: Failed to query lvg")
 		} else {
@@ -199,7 +192,7 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate) 
 	localVolumeGroupName := vol.Spec.VolumeGroup
 
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: migrate.Namespace, Name: localVolumeGroupName}, lvg); err != nil {
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: localVolumeGroupName}, lvg); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("VolumeMigrateSubmit: Failed to query lvg")
 		} else {
@@ -222,7 +215,7 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate) 
 
 			for _, vol := range volList.Items {
 				if vol.Spec.VolumeGroup == lvg.Name {
-					if vol.Name != migrate.Spec.VolumeName && migrate.Spec.MigrateAllVols == false {
+					if vol.Name != migrate.Spec.VolumeName && !migrate.Spec.MigrateAllVols {
 						logCtx.WithFields(log.Fields{"volume": vol.Name, "migrateAllVols": migrate.Spec.MigrateAllVols}).Error("VolumeMigrateSubmit: Can't migrate false migrateAllVols flag volume")
 						migrate.Status.Message = "VolumeMigrateSubmit: Can't migrate volume whose localVolumeGroup has other volumes, meantime migrate's migrateAllVols flag is false; If you want migrateAllVols, modify migrateAllVols flag into true"
 						return m.apiClient.Status().Update(context.TODO(), migrate)
@@ -256,7 +249,7 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate) 
 								break
 							}
 						}
-						if needMigrate == false {
+						if !needMigrate {
 							migrate.Status.Message = "VolumeMigrateSubmit: Volume And VolumeReplica both not ready"
 							return m.apiClient.Status().Update(context.TODO(), migrate)
 						}
@@ -278,8 +271,8 @@ func (m *manager) nonConvertibleVolumeMigrateSubmit(migrate *apisv1alpha1.LocalV
 
 	ctx := context.TODO()
 
-	rcl := m.dataCopyManager.UseRclone(rcloneImageName, rcloneConfigMapName, rcloneKeyConfigMapName, migrate.Namespace, rcloneConfigMapKey, rcloneCertKey)
-	if err := rcl.EnsureRcloneConfigMapToTargetNamespace(migrate.Namespace); err != nil {
+	rcl := m.dataCopyManager.UseRclone(rcloneImageName, rcloneConfigMapName, rcloneKeyConfigMapName, m.namespace, rcloneConfigMapKey, rcloneCertKey)
+	if err := rcl.EnsureRcloneConfigMapToTargetNamespace(m.namespace); err != nil {
 		migrate.Status.Message = err.Error()
 		m.apiClient.Status().Update(ctx, migrate)
 		return err
@@ -301,7 +294,7 @@ func (m *manager) nonConvertibleVolumeMigrateSubmit(migrate *apisv1alpha1.LocalV
 	localVolumeGroupName := vol.Spec.VolumeGroup
 
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: migrate.Namespace, Name: localVolumeGroupName}, lvg); err != nil {
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: localVolumeGroupName}, lvg); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("VolumeMigrateSubmit: Failed to query lvg")
 		} else {
@@ -312,13 +305,48 @@ func (m *manager) nonConvertibleVolumeMigrateSubmit(migrate *apisv1alpha1.LocalV
 		return err
 	}
 
+	lvs := []*apisv1alpha1.LocalVolume{}
+	for _, fnlr := range lvg.Finalizers {
+		if fnlr == volumeGroupFinalizer {
+			m.lock.Lock()
+			defer m.lock.Unlock()
+
+			volList := &apisv1alpha1.LocalVolumeList{}
+			if err := m.apiClient.List(context.TODO(), volList); err != nil {
+				m.logger.WithError(err).Fatal("VolumeMigrateStart: Failed to list LocalVolumes")
+			}
+
+			for i, vol := range volList.Items {
+				if vol.Spec.VolumeGroup == lvg.Name {
+					if vol.Spec.Config == nil {
+						migrate.Status.Message = "VolumeMigrateStart: Volume to be migrated is not ready yet"
+						m.apiClient.Status().Update(ctx, migrate)
+						return fmt.Errorf("VolumeMigrateStart: volume not ready")
+					}
+					lvs = append(lvs, &volList.Items[i])
+				}
+			}
+		}
+	}
+
+	if len(migrate.Spec.SourceNodesNames) == 0 {
+		logCtx.Error("Not specified the source node name")
+		return fmt.Errorf("no source node")
+	}
+	migrateSrcName := migrate.Spec.SourceNodesNames[0]
+	migrateDstName, err := m.selectMigrateTargetNode(migrate, lvs)
+	if err != nil {
+		logCtx.WithError(err).Error("Failed to select the target node")
+		return err
+	}
+
 	for _, fnlr := range lvg.Finalizers {
 		if fnlr == volumeGroupFinalizer {
 			m.lock.Lock()
 			defer m.lock.Unlock()
 
 			tmpRcloneKeyConfigMap := &corev1.ConfigMap{}
-			err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: migrate.Namespace, Name: rcloneKeyConfigMapName}, tmpRcloneKeyConfigMap)
+			err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: m.namespace, Name: rcloneKeyConfigMapName}, tmpRcloneKeyConfigMap)
 			if err == nil {
 				if delErr := m.apiClient.Delete(context.TODO(), tmpRcloneKeyConfigMap); delErr != nil {
 					m.logger.WithError(err).Error("Failed to delete Configmap")
@@ -326,7 +354,7 @@ func (m *manager) nonConvertibleVolumeMigrateSubmit(migrate *apisv1alpha1.LocalV
 				}
 			}
 
-			rcloneKeyCM := m.rclone.GenerateRcloneKeyConfigMap(migrate.Namespace)
+			rcloneKeyCM := m.rclone.GenerateRcloneKeyConfigMap(m.namespace)
 			err = m.apiClient.Create(ctx, rcloneKeyCM)
 			if err != nil {
 				if errors.IsAlreadyExists(err) {
@@ -339,7 +367,7 @@ func (m *manager) nonConvertibleVolumeMigrateSubmit(migrate *apisv1alpha1.LocalV
 				}
 			}
 
-			err = m.makeMigrateRcloneConfigmap(migrate.Spec.TargetNodesNames[0], migrate.Spec.SourceNodesNames[0], migrate.Namespace, migrate.Spec.VolumeName)
+			err = m.makeMigrateRcloneConfigmap(migrateDstName, migrateSrcName, m.namespace, migrate.Spec.VolumeName)
 			if err != nil {
 				if errors.IsAlreadyExists(err) {
 					logCtx.WithError(err).Error("Failed to makeMigrateRcloneConfigmap, already exists")
@@ -354,10 +382,42 @@ func (m *manager) nonConvertibleVolumeMigrateSubmit(migrate *apisv1alpha1.LocalV
 			// cannot depend on vol.Spec.ReplicaNumber
 			migrate.Status.ReplicaNumber = 1
 			migrate.Status.State = apisv1alpha1.OperationStateSubmitted
+			migrate.Status.TargetNodeName = migrateDstName
 			m.apiClient.Status().Update(context.TODO(), migrate)
 		}
 	}
 	return nil
+}
+
+func (m *manager) selectMigrateTargetNode(migrate *apisv1alpha1.LocalVolumeMigrate, vols []*apisv1alpha1.LocalVolume) (string, error) {
+	qualifiedNodes := m.VolumeScheduler().GetNodeCandidates(vols)
+	if len(qualifiedNodes) == 0 {
+		return "", fmt.Errorf("no valid target node")
+	}
+	for _, node := range qualifiedNodes {
+		isSrcNode := false
+		isDstNode := false
+		for _, srcNodeName := range migrate.Spec.SourceNodesNames {
+			if node.Name == srcNodeName {
+				isSrcNode = true
+				break
+			}
+		}
+		if isSrcNode {
+			continue
+		}
+		for _, tgtNodeName := range migrate.Spec.TargetNodesNames {
+			if node.Name == tgtNodeName {
+				isDstNode = true
+				break
+			}
+		}
+		if isDstNode {
+			return node.Name, nil
+		}
+	}
+
+	return qualifiedNodes[0].Name, nil
 }
 
 func (m *manager) volumeMigrateStart(migrate *apisv1alpha1.LocalVolumeMigrate) error {
@@ -381,7 +441,7 @@ func (m *manager) volumeMigrateStart(migrate *apisv1alpha1.LocalVolumeMigrate) e
 	localVolumeGroupName := vol.Spec.VolumeGroup
 
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: migrate.Namespace, Name: localVolumeGroupName}, lvg); err != nil {
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: localVolumeGroupName}, lvg); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("VolumeMigrateStart: Failed to query lvg")
 		} else {
@@ -433,7 +493,7 @@ func (m *manager) volumeMigrateStart(migrate *apisv1alpha1.LocalVolumeMigrate) e
 								break
 							}
 						}
-						if needMigrate == false {
+						if !needMigrate {
 							migrate.Status.Message = "VolumeMigrateStart: Volume And VolumeReplica both not ready"
 							return m.apiClient.Status().Update(context.TODO(), migrate)
 						}
@@ -477,8 +537,8 @@ func (m *manager) nonConvertibleVolumeMigrateStart(migrate *apisv1alpha1.LocalVo
 	logCtx.Debug("nonConvertibleVolumeMigrateStart Start a VolumeMigrate")
 
 	ctx := context.TODO()
-	rcl := m.dataCopyManager.UseRclone(rcloneImageName, rcloneConfigMapName, rcloneKeyConfigMapName, migrate.Namespace, rcloneConfigMapKey, rcloneCertKey)
-	if err := rcl.EnsureRcloneConfigMapToTargetNamespace(migrate.Namespace); err != nil {
+	rcl := m.dataCopyManager.UseRclone(rcloneImageName, rcloneConfigMapName, rcloneKeyConfigMapName, m.namespace, rcloneConfigMapKey, rcloneCertKey)
+	if err := rcl.EnsureRcloneConfigMapToTargetNamespace(m.namespace); err != nil {
 		migrate.Status.Message = err.Error()
 		m.apiClient.Status().Update(ctx, migrate)
 		return err
@@ -499,7 +559,7 @@ func (m *manager) nonConvertibleVolumeMigrateStart(migrate *apisv1alpha1.LocalVo
 	localVolumeGroupName := vol.Spec.VolumeGroup
 
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: migrate.Namespace, Name: localVolumeGroupName}, lvg); err != nil {
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: localVolumeGroupName}, lvg); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("VolumeMigrateStart: Failed to query lvg")
 		} else {
@@ -539,14 +599,7 @@ func (m *manager) nonConvertibleVolumeMigrateStart(migrate *apisv1alpha1.LocalVo
 					}
 
 					jobName := migrate.Name + "-job-" + vol.Spec.PersistentVolumeClaimName
-					var migrateSrcName, migrateDstName string
-					if len(migrate.Spec.SourceNodesNames) == 1 && migrate.Spec.SourceNodesNames[0] != "" {
-						migrateSrcName = migrate.Spec.SourceNodesNames[0]
-					}
-					if len(migrate.Spec.TargetNodesNames) == 1 && migrate.Spec.TargetNodesNames[0] != "" {
-						migrateDstName = migrate.Spec.TargetNodesNames[0]
-					}
-					if err := rcl.SrcMountPointToRemoteMountPoint(jobName, migrate.Namespace, vol.Spec.PoolName, vol.Name, migrateSrcName, migrateDstName, true, 0); err != nil {
+					if err := rcl.SrcMountPointToRemoteMountPoint(jobName, m.namespace, vol.Spec.PoolName, vol.Name, migrate.Spec.SourceNodesNames[0], migrate.Status.TargetNodeName, true, 0); err != nil {
 						logCtx.WithError(err).Error("VolumeMigrateStart: Job SrcMountPointToRemoteMountPoint failed")
 						migrate.Status.Message = "VolumeMigrateStart: Job SrcMountPointToRemoteMountPoint failed"
 						m.apiClient.Status().Update(ctx, migrate)
@@ -579,7 +632,7 @@ func (m *manager) volumeMigrateInProgress(migrate *apisv1alpha1.LocalVolumeMigra
 	localVolumeGroupName := vol.Spec.VolumeGroup
 
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: migrate.Namespace, Name: localVolumeGroupName}, lvg); err != nil {
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: localVolumeGroupName}, lvg); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("VolumeMigrateInProgress: Failed to query lvg")
 		} else {
@@ -687,8 +740,8 @@ func (m *manager) nonConvertibleVolumeMigrateInProgress(migrate *apisv1alpha1.Lo
 
 	ctx := context.TODO()
 
-	rcl := m.dataCopyManager.UseRclone(rcloneImageName, rcloneConfigMapName, rcloneKeyConfigMapName, migrate.Namespace, rcloneConfigMapKey, rcloneCertKey)
-	if err := rcl.EnsureRcloneConfigMapToTargetNamespace(migrate.Namespace); err != nil {
+	rcl := m.dataCopyManager.UseRclone(rcloneImageName, rcloneConfigMapName, rcloneKeyConfigMapName, m.namespace, rcloneConfigMapKey, rcloneCertKey)
+	if err := rcl.EnsureRcloneConfigMapToTargetNamespace(m.namespace); err != nil {
 		migrate.Status.Message = err.Error()
 		m.apiClient.Status().Update(ctx, migrate)
 		return err
@@ -705,7 +758,7 @@ func (m *manager) nonConvertibleVolumeMigrateInProgress(migrate *apisv1alpha1.Lo
 	localVolumeGroupName := vol.Spec.VolumeGroup
 
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: migrate.Namespace, Name: localVolumeGroupName}, lvg); err != nil {
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: localVolumeGroupName}, lvg); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("nonConvertibleVolumeMigrateInProgress: Failed to query lvg")
 		} else {
@@ -732,7 +785,7 @@ func (m *manager) nonConvertibleVolumeMigrateInProgress(migrate *apisv1alpha1.Lo
 					jobName := migrate.Name + "-job-" + vol.Spec.PersistentVolumeClaimName
 
 					migrateJob := &batchv1.Job{}
-					err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: vol.Spec.PersistentVolumeClaimNamespace, Name: jobName}, migrateJob)
+					err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: m.namespace, Name: jobName}, migrateJob)
 					if err != nil {
 						if !errors.IsNotFound(err) {
 							logCtx.WithError(err).Error("Failed to get MigrateJob from cache")
@@ -751,7 +804,7 @@ func (m *manager) nonConvertibleVolumeMigrateInProgress(migrate *apisv1alpha1.Lo
 					}
 
 					rclonecm := &corev1.ConfigMap{}
-					err = m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: migrate.Namespace, Name: rcloneConfigMapName}, rclonecm)
+					err = m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: m.namespace, Name: rcloneConfigMapName}, rclonecm)
 					if err == nil {
 						rclonecm.Data["syncDone"] = "True"
 						err = m.apiClient.Update(context.TODO(), rclonecm, &client.UpdateOptions{})
@@ -797,10 +850,7 @@ func (m *manager) nonConvertibleVolumeMigrateInProgress(migrate *apisv1alpha1.Lo
 
 						vol.Spec.ReplicaNumber = migrate.Status.ReplicaNumber
 						replicas := []apisv1alpha1.VolumeReplica{}
-						migrateSrcHostNames := []string{}
-						for _, nodeName := range migrate.Spec.SourceNodesNames {
-							migrateSrcHostNames = append(migrateSrcHostNames, nodeName)
-						}
+						migrateSrcHostNames := migrate.Spec.SourceNodesNames
 						for i := range vol.Spec.Config.Replicas {
 							if arrays.ContainsString(migrateSrcHostNames, vol.Spec.Config.Replicas[i].Hostname) == -1 {
 								replicas = append(replicas, vol.Spec.Config.Replicas[i])

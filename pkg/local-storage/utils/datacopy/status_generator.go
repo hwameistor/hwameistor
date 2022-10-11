@@ -118,20 +118,20 @@ func (statusGenerator *statusGenerator) onUpdate(_, obj interface{}) {
 	statusGenerator.queue.Add(eventJob)
 }
 
-func (statusGenerator *statusGenerator) onDelete(obj interface{}) {
-	job := obj.(*batchv1.Job)
+// func (statusGenerator *statusGenerator) onDelete(obj interface{}) {
+// 	job := obj.(*batchv1.Job)
 
-	//if !statusGenerator.isReleted(job) {
-	//	return
-	//}
+// 	//if !statusGenerator.isReleted(job) {
+// 	//	return
+// 	//}
 
-	eventJob := &jobWithEvent{
-		Job:   job,
-		Event: "DELETE",
-	}
+// 	eventJob := &jobWithEvent{
+// 		Job:   job,
+// 		Event: "DELETE",
+// 	}
 
-	statusGenerator.queue.Done(eventJob)
-}
+// 	statusGenerator.queue.Done(eventJob)
+// }
 
 func (statusGenerator *statusGenerator) Run() {
 	logger.Debugf("statusGenerator Run")
@@ -273,20 +273,20 @@ func (statusGenerator *statusGenerator) delObject(name, namespace string, obj k8
 	return nil
 }
 
-// TODO This func should as a filter handler in front of the informer
-func (statusGenerator *statusGenerator) isReleted(job *batchv1.Job) bool {
-	if dataCopyStatusJSON, has := job.Annotations[statusGenerator.dataCopyStatusAnnotationName]; has {
-		dataCopyStatus := &DataCopyStatus{}
-		if err := json.Unmarshal([]byte(dataCopyStatusJSON), dataCopyStatus); err != nil {
-			return false
-		}
-		if _, exists := statusGenerator.relatedJobWithResultCh[dataCopyStatus.JobName]; exists {
-			return true
-		}
-	}
+// // TODO This func should as a filter handler in front of the informer
+// func (statusGenerator *statusGenerator) isReleted(job *batchv1.Job) bool {
+// 	if dataCopyStatusJSON, has := job.Annotations[statusGenerator.dataCopyStatusAnnotationName]; has {
+// 		dataCopyStatus := &DataCopyStatus{}
+// 		if err := json.Unmarshal([]byte(dataCopyStatusJSON), dataCopyStatus); err != nil {
+// 			return false
+// 		}
+// 		if _, exists := statusGenerator.relatedJobWithResultCh[dataCopyStatus.JobName]; exists {
+// 			return true
+// 		}
+// 	}
 
-	return false
-}
+// 	return false
+// }
 
 func (statusGenerator *statusGenerator) getJobRunningStatus(job *batchv1.Job) *DataCopyStatus {
 	rcloneRunningStatus := &DataCopyStatus{}
