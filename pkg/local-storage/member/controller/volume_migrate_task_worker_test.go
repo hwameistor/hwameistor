@@ -391,7 +391,7 @@ func Test_manager_volumeMigrateInProgress(t *testing.T) {
 				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
-			if err := m.volumeMigrateInProgress(tt.args.migrate); (err != nil) != tt.wantErr {
+			if err := m.volumeMigrateAddReplica(tt.args.migrate, lv, lvg); (err != nil) != tt.wantErr {
 				t.Errorf("volumeMigrateInProgress() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -488,7 +488,7 @@ func Test_manager_volumeMigrateStart(t *testing.T) {
 				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
-			if err := m.volumeMigrateStart(tt.args.migrate); (err != nil) != tt.wantErr {
+			if err := m.volumeMigrateStart(tt.args.migrate, lv, lvg); (err != nil) != tt.wantErr {
 				t.Errorf("volumeMigrateStart() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -585,7 +585,7 @@ func Test_manager_volumeMigrateSubmit(t *testing.T) {
 				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
-			if err := m.volumeMigrateSubmit(tt.args.migrate); (err != nil) != tt.wantErr {
+			if err := m.volumeMigrateSubmit(tt.args.migrate, lv, lvg); (err != nil) != tt.wantErr {
 				t.Errorf("volumeMigrateSubmit() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

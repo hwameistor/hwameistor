@@ -270,8 +270,8 @@ func (ev *evictor) evictVolume(migrateTask string) error {
 						//Namespace: "hwameistor",
 					},
 					Spec: localstorageapis.LocalVolumeMigrateSpec{
-						VolumeName:       lvName,
-						SourceNodesNames: []string{nodeName},
+						VolumeName:      lvName,
+						SourceNodesName: nodeName,
 						// don't specify the target nodes, so the scheduler will select from the avaliables
 						TargetNodesNames: []string{},
 						MigrateAllVols:   true,
