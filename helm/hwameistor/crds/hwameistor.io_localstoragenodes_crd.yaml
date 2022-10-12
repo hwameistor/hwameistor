@@ -18,22 +18,6 @@ spec:
       jsonPath: .spec.storageIP
       name: ip
       type: string
-    - description: volume kind
-      jsonPath: .spec.allowedVolumeKind
-      name: volumekind
-      type: string
-    - description: total storage space of ramdisk
-      jsonPath: .spec.allowedRAMDiskTotalCapacityBytes
-      name: ramdiskQuota
-      type: integer
-    - description: Zone of the node
-      jsonPath: .spec.topogoly.zone
-      name: zone
-      type: string
-    - description: Region of the node
-      jsonPath: .spec.topogoly.region
-      name: region
-      type: string
     - description: State of the Local Storage Node
       jsonPath: .status.state
       name: status
@@ -129,7 +113,7 @@ spec:
                       type: string
                     disks:
                       items:
-                        description: LocalDisk is disk struct
+                        description: LocalDevice is disk struct
                         properties:
                           capacityBytes:
                             description: disk capacity

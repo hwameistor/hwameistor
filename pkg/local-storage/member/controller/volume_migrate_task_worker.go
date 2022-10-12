@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/wxnacy/wgo/arrays"
@@ -16,10 +17,11 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 )
 
+var (
+	rcloneImageName = "daocloud.io/daocloud/hwameistor-migrate-rclone:v1.1.2"
+)
+
 const (
-	imageRegistry          = "daocloud.io/daocloud"
-	rcloneImageVersion     = "v1.1.2"
-	rcloneImageName        = imageRegistry + "/" + "hwameistor-migrate-rclone" + ":" + rcloneImageVersion
 	rcloneConfigMapName    = "migrate-rclone-config"
 	rcloneConfigMapKey     = "rclone.conf"
 	rcloneCertKey          = "rclonemerged"
@@ -27,6 +29,10 @@ const (
 )
 
 func (m *manager) startVolumeMigrateTaskWorker(stopCh <-chan struct{}) {
+	if value := os.Getenv("MIGRAGE_RCLONE_IMAGE"); len(value) > 0 {
+		rcloneImageName = value
+	}
+
 	m.logger.Debug("VolumeMigrate Worker is working now")
 	go func() {
 		for {
