@@ -66,7 +66,7 @@ type manager struct {
 
 	dataCopyManager *datacopyutil.DataCopyManager
 
-	rclone *datacopyutil.Rclone
+	//rclone *datacopyutil.Rclone
 }
 
 // New cluster manager

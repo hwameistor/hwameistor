@@ -17,11 +17,11 @@ type LocalVolumeMigrateSpec struct {
 
 	VolumeName string `json:"volumeName"`
 
+	// source NodeNames
+	SourceNodesName string `json:"sourceNodesName"`
+
 	// target NodeNames
 	TargetNodesNames []string `json:"targetNodesNames"`
-
-	// source NodeNames
-	SourceNodesNames []string `json:"sourceNodesNames"`
 
 	// *** common section of all the operations ***
 
@@ -39,7 +39,7 @@ type LocalVolumeMigrateStatus struct {
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
 
 	// record the volume's replica number, it will be set internally
-	ReplicaNumber int64 `json:"replicaNumber,omitempty"`
+	OriginalReplicaNumber int64 `json:"originalReplicaNumber,omitempty"`
 	// record the node where the specified replica is migrated to
 	TargetNodeName string `json:"targetNodeName,omitempty"`
 

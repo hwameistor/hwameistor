@@ -2,12 +2,7 @@ package localvolumemigrate
 
 import (
 	"context"
-	"reflect"
 	"time"
-
-	log "github.com/sirupsen/logrus"
-	"github.com/wxnacy/wgo/arrays"
-	"k8s.io/apimachinery/pkg/types"
 
 	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
@@ -95,81 +90,6 @@ func (r *ReconcileLocalVolumeMigrate) Reconcile(request reconcile.Request) (reco
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
-	}
-
-	vol := &apisv1alpha1.LocalVolume{}
-	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.VolumeName}, vol); err != nil {
-		if !errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
-			return reconcile.Result{}, nil
-		}
-		return reconcile.Result{}, err
-	}
-
-	localVolumeGroupName := vol.Spec.VolumeGroup
-
-	lvg := &apisv1alpha1.LocalVolumeGroup{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: localVolumeGroupName}, lvg)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
-			return reconcile.Result{}, nil
-		}
-		// Error reading the object - requeue the request.
-		return reconcile.Result{}, err
-	}
-
-	var accessibilityNodeNames []string
-	var errMsg error
-
-	for _, tmpvol := range lvg.Spec.Volumes {
-		if tmpvol.LocalVolumeName == "" {
-			continue
-		}
-		vol := &apisv1alpha1.LocalVolume{}
-		if err := r.client.Get(context.TODO(), types.NamespacedName{Name: tmpvol.LocalVolumeName}, vol); err != nil {
-			if !errors.IsNotFound(err) {
-				log.WithFields(log.Fields{"volName": tmpvol.LocalVolumeName, "error": err.Error()}).Error("Failed to query volume")
-				return reconcile.Result{}, err
-			}
-		}
-
-		if reflect.DeepEqual(instance.Spec.SourceNodesNames, instance.Spec.TargetNodesNames) {
-			log.WithFields(log.Fields{"sourceNodesNames": instance.Spec.SourceNodesNames, "targetNodesNames": instance.Spec.TargetNodesNames}).Error("can not do migrate because sourceNodesNames equal with targetNodesNames")
-			return reconcile.Result{}, errors.NewBadRequest("can not do migrate because sourceNodesNames equal with targetNodesNames")
-		}
-
-		for _, nodeName := range instance.Spec.TargetNodesNames {
-			if arrays.ContainsString(vol.Spec.Accessibility.Nodes, nodeName) == -1 {
-				accessibilityNodeNames = append(accessibilityNodeNames, nodeName)
-			} else {
-				accessibilityNodeNames = vol.Spec.Accessibility.Nodes
-			}
-		}
-
-		if !reflect.DeepEqual(vol.Spec.Accessibility.Nodes, accessibilityNodeNames) {
-			vol.Spec.Accessibility.Nodes = accessibilityNodeNames
-			if err := r.client.Update(context.TODO(), vol); err != nil {
-				log.WithError(err).Errorf("ReconcileLocalVolumeMigrate Reconcile : Failed to re-configure Volume, vol.Name = %v, tmpvol.LocalVolumeName = %v", vol.Name, tmpvol.LocalVolumeName)
-				errMsg = err
-
-				tmpVol := &apisv1alpha1.LocalVolume{}
-				if tmperr := r.client.Get(context.TODO(), types.NamespacedName{Name: vol.Name}, tmpVol); tmperr == nil {
-					tmpVol.Spec.Accessibility.Nodes = accessibilityNodeNames
-					if err := r.client.Update(context.TODO(), tmpVol); err != nil {
-						errMsg = err
-					}
-				}
-			}
-		}
-	}
-
-	if errMsg != nil {
-		return reconcile.Result{Requeue: true, RequeueAfter: RequeueInterval}, errMsg
 	}
 
 	r.storageMember.Controller().ReconcileVolumeMigrate(instance)

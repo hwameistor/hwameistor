@@ -36,13 +36,16 @@ const (
 
 	// purpose of the following CRDs is for operational job,
 	// so, they will be in different state machine from volume/volumereplica
-	OperationStateSubmitted   State = "Submitted"
-	OperationStateInProgress  State = "InProgress"
-	OperationStateCompleted   State = "Completed"
-	OperationStateToBeAborted State = "ToBeAborted"
-	OperationStateAborting    State = "Cancelled"
-	OperationStateAborted     State = "Aborted"
-	OperationStateFailed      State = "Failed"
+	OperationStateSubmitted           State = "Submitted"
+	OperationStateMigrateAddReplica   State = "AddReplica"
+	OperationStateMigrateSyncReplica  State = "SyncReplica"
+	OperationStateMigratePruneReplica State = "PruneReplica"
+	OperationStateInProgress          State = "InProgress"
+	OperationStateCompleted           State = "Completed"
+	OperationStateToBeAborted         State = "ToBeAborted"
+	OperationStateAborting            State = "Cancelled"
+	OperationStateAborted             State = "Aborted"
+	OperationStateFailed              State = "Failed"
 
 	DiskStateAvailable State = "Available"
 	DiskStateInUse     State = "InUse"

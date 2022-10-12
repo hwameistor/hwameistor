@@ -1142,11 +1142,6 @@ func (in *LocalVolumeMigrateSpec) DeepCopyInto(out *LocalVolumeMigrateSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.SourceNodesNames != nil {
-		in, out := &in.SourceNodesNames, &out.SourceNodesNames
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
 	return
 }
 

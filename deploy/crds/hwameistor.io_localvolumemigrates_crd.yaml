@@ -60,11 +60,9 @@ spec:
               migrateAllVols:
                 default: false
                 type: boolean
-              sourceNodesNames:
+              sourceNodesName:
                 description: source NodeNames
-                items:
-                  type: string
-                type: array
+                type: string
               targetNodesNames:
                 description: target NodeNames
                 items:
@@ -73,7 +71,7 @@ spec:
               volumeName:
                 type: string
             required:
-            - sourceNodesNames
+            - sourceNodesName
             - targetNodesNames
             - volumeName
             type: object
@@ -83,7 +81,7 @@ spec:
               message:
                 description: error message to describe some states
                 type: string
-              replicaNumber:
+              originalReplicaNumber:
                 description: record the volume's replica number, it will be set internally
                 format: int64
                 type: integer
