@@ -11,7 +11,7 @@ spec:
     shortNames:
     - lvg
     singular: localvolumegroup
-  scope: Namespaced
+  scope: Cluster
   versions:
   - additionalPrinterColumns:
     - description: Name of associated pod
@@ -72,6 +72,8 @@ spec:
                       type: string
                     type: array
                 type: object
+              namespace:
+                type: string
               pods:
                 items:
                   type: string
