@@ -18,10 +18,10 @@ type LocalVolumeMigrateSpec struct {
 	VolumeName string `json:"volumeName"`
 
 	// source NodeNames
-	SourceNodesName string `json:"sourceNodesName"`
+	SourceNode string `json:"sourceNode"`
 
-	// target NodeNames
-	TargetNodesNames []string `json:"targetNodesNames"`
+	// suggested target NodeNames
+	TargetNodesSuggested []string `json:"targetNodesSuggested"`
 
 	// *** common section of all the operations ***
 
@@ -41,7 +41,7 @@ type LocalVolumeMigrateStatus struct {
 	// record the volume's replica number, it will be set internally
 	OriginalReplicaNumber int64 `json:"originalReplicaNumber,omitempty"`
 	// record the node where the specified replica is migrated to
-	TargetNodeName string `json:"targetNodeName,omitempty"`
+	TargetNode string `json:"targetNode,omitempty"`
 
 	// State of the operation, e.g. submitted, started, completed, abort, ...
 	State State `json:"state,omitempty"`
@@ -57,8 +57,8 @@ type LocalVolumeMigrateStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=localvolumemigrates,scope=Cluster,shortName=lvmigrate
 // +kubebuilder:printcolumn:name="volume",type=string,JSONPath=`.spec.volumeName`,description="Name of the volume to be migrated"
-// +kubebuilder:printcolumn:name="node",type=string,JSONPath=`.spec.nodeName`,description="Node name of the volume replica to be migrated"
-// +kubebuilder:printcolumn:name="target",type=string,JSONPath=`.status.targetNodeName`,description="Node name of the new volume replica"
+// +kubebuilder:printcolumn:name="from",type=string,JSONPath=`.spec.sourceNode`,description="Node name of the volume replica to be migrated"
+// +kubebuilder:printcolumn:name="to",type=string,JSONPath=`.status.targetNode`,description="Node name of the new volume replica"
 // +kubebuilder:printcolumn:name="state",type=string,JSONPath=`.status.state`,description="State of the migration"
 // +kubebuilder:printcolumn:name="age",type=date,JSONPath=`.metadata.creationTimestamp`
 type LocalVolumeMigrate struct {

@@ -19,12 +19,12 @@ spec:
       name: volume
       type: string
     - description: Node name of the volume replica to be migrated
-      jsonPath: .spec.nodeName
-      name: node
+      jsonPath: .spec.sourceNode
+      name: from
       type: string
     - description: Node name of the new volume replica
-      jsonPath: .status.targetNodeName
-      name: target
+      jsonPath: .status.targetNode
+      name: to
       type: string
     - description: State of the migration
       jsonPath: .status.state
@@ -60,19 +60,19 @@ spec:
               migrateAllVols:
                 default: false
                 type: boolean
-              sourceNodesName:
+              sourceNode:
                 description: source NodeNames
                 type: string
-              targetNodesNames:
-                description: target NodeNames
+              targetNodesSuggested:
+                description: suggested target NodeNames
                 items:
                   type: string
                 type: array
               volumeName:
                 type: string
             required:
-            - sourceNodesName
-            - targetNodesNames
+            - sourceNode
+            - targetNodesSuggested
             - volumeName
             type: object
           status:
@@ -89,7 +89,7 @@ spec:
                 description: State of the operation, e.g. submitted, started, completed,
                   abort, ...
                 type: string
-              targetNodeName:
+              targetNode:
                 description: record the node where the specified replica is migrated
                   to
                 type: string
