@@ -5,8 +5,7 @@ severity="CRITICAL"
 e_code=${2:-0}
 
 # install trivy
-{ which trivy; } 2>&1 >/dev/null || echo "install trivy now..." && \
-curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin latest
+{ which trivy 2>/dev/null; } || { echo "install trivy now..."; curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin latest; }
 
 for arch in ${arch_list[@]}
 do
