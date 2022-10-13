@@ -269,8 +269,8 @@ func GenFakeLocalVolumeMigrateObject() *v1alpha1.LocalVolumeMigrate {
 	}
 
 	Spec := v1alpha1.LocalVolumeMigrateSpec{
-		TargetNodesNames: fakeNodenames,
-		VolumeName:       fakeLocalVolumeName,
+		TargetNodesSuggested: fakeNodenames,
+		VolumeName:           fakeLocalVolumeName,
 	}
 
 	lvm.ObjectMeta = ObjectMata

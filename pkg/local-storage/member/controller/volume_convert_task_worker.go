@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -40,19 +39,12 @@ func (m *manager) startVolumeConvertTaskWorker(stopCh <-chan struct{}) {
 	m.volumeConvertTaskQueue.Shutdown()
 }
 
-func (m *manager) processVolumeConvert(vcNamespacedName string) error {
-	logCtx := m.logger.WithFields(log.Fields{"VolumeConvert": vcNamespacedName})
+func (m *manager) processVolumeConvert(vcName string) error {
+	logCtx := m.logger.WithFields(log.Fields{"VolumeConvert": vcName})
 	logCtx.Debug("Working on a VolumeConvert task")
 
-	splitRes := strings.Split(vcNamespacedName, "/")
-	var ns, vcName string
-	if len(splitRes) >= 2 {
-		ns = splitRes[0]
-		vcName = splitRes[1]
-	}
-
 	convert := &apisv1alpha1.LocalVolumeConvert{}
-	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: ns, Name: vcName}, convert); err != nil {
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: vcName}, convert); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get VolumeConvert from cache")
 			return err
@@ -118,7 +110,7 @@ func (m *manager) volumeConvertSubmit(convert *apisv1alpha1.LocalVolumeConvert) 
 	localVolumeGroupName := vol.Spec.VolumeGroup
 
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: convert.Namespace, Name: localVolumeGroupName}, lvg); err != nil {
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: localVolumeGroupName}, lvg); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("VolumeMigrateStart: Failed to query lvg")
 		} else {
@@ -189,7 +181,7 @@ func (m *manager) volumeConvertStart(convert *apisv1alpha1.LocalVolumeConvert) e
 	localVolumeGroupName := vol.Spec.VolumeGroup
 
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: convert.Namespace, Name: localVolumeGroupName}, lvg); err != nil {
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: localVolumeGroupName}, lvg); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("VolumeMigrateStart: Failed to query lvg")
 		} else {
@@ -249,7 +241,7 @@ func (m *manager) volumeConvertInProgress(convert *apisv1alpha1.LocalVolumeConve
 	localVolumeGroupName := vol.Spec.VolumeGroup
 
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: convert.Namespace, Name: localVolumeGroupName}, lvg); err != nil {
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: localVolumeGroupName}, lvg); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("VolumeMigrateStart: Failed to query lvg")
 		} else {

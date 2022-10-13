@@ -74,7 +74,7 @@ func (ev *evictor) Run(stopCh <-chan struct{}) error {
 
 	ev.podInformer = factory.Core().V1().Pods()
 	ev.podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		UpdateFunc: ev.watchForEvictedPodOnUpdate,
+		// UpdateFunc: ev.watchForEvictedPodOnUpdate,
 		DeleteFunc: ev.watchForEvictedPodOnDelete,
 	})
 	go ev.podInformer.Informer().Run(stopCh)
@@ -118,26 +118,6 @@ func (ev *evictor) Run(stopCh <-chan struct{}) error {
 	return nil
 }
 
-func (ev *evictor) watchForEvictedPodOnUpdate(oObj, nObj interface{}) {
-	pod, _ := nObj.(*corev1.Pod)
-	log.WithFields(log.Fields{
-		"namespace": pod.Namespace,
-		"pod":       pod.Name,
-		"message":   pod.Status.Conditions[0].Type,
-		"reason":    pod.Status.Reason,
-		"phase":     pod.Status.Phase,
-	}).Debug("Watching for a Pod update event ...")
-	if isPodEvicted(pod) {
-		log.WithFields(log.Fields{
-			"namespace": pod.Namespace,
-			"pod":       pod.Name,
-			"phase":     pod.Status.Phase,
-			"reason":    pod.Status.Reason,
-		}).Debug("Got an evicted Pod to process")
-		go ev.filterForHwameiVolume(pod)
-	}
-}
-
 func (ev *evictor) watchForEvictedPodOnDelete(obj interface{}) {
 	pod, _ := obj.(*corev1.Pod)
 	log.WithFields(log.Fields{
@@ -159,7 +139,8 @@ func (ev *evictor) watchForEvictedPodOnDelete(obj interface{}) {
 }
 
 func isPodEvicted(pod *corev1.Pod) bool {
-	return true
+	// ??? should add the function to check for evicted pod ???
+	return false
 	// podFailed := pod.Status.Phase == corev1.PodFailed
 	// podEvicted := pod.Status.Reason == "Evicted"
 	// return podFailed && podEvicted
@@ -270,11 +251,11 @@ func (ev *evictor) evictVolume(migrateTask string) error {
 						//Namespace: "hwameistor",
 					},
 					Spec: localstorageapis.LocalVolumeMigrateSpec{
-						VolumeName:       lvName,
-						SourceNodesNames: []string{nodeName},
+						VolumeName: lvName,
+						SourceNode: nodeName,
 						// don't specify the target nodes, so the scheduler will select from the avaliables
-						TargetNodesNames: []string{},
-						MigrateAllVols:   true,
+						TargetNodesSuggested: []string{},
+						MigrateAllVols:       true,
 					},
 				}
 				if _, err := ev.lsClientset.HwameistorV1alpha1().LocalVolumeMigrates().Create(context.Background(), lvm, metav1.CreateOptions{}); err != nil {
@@ -299,19 +280,6 @@ func (ev *evictor) evictVolume(migrateTask string) error {
 	logCtx.Debug("The migration job has already completed")
 	return nil
 }
-
-// func getNamespacedName(namespace string, name string) string {
-// 	return fmt.Sprintf("%s/%s", namespace, name)
-// }
-
-// // output: namespace, name
-// func parseNamespacedName(nn string) (string, string) {
-// 	items := strings.Split(nn, "/")
-// 	if len(items) < 2 {
-// 		return items[0], ""
-// 	}
-// 	return items[0], items[1]
-// }
 
 func constructMigrateVolumeTask(lvName string, nodeName string) string {
 	return fmt.Sprintf("%s/%s", lvName, nodeName)

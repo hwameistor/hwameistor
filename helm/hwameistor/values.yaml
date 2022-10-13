@@ -95,6 +95,10 @@ localStorage:
       maxHAVolumeCount:
     imageRepository: hwameistor/local-storage
     resources: {}
+  migrate:
+    rclone:
+      imageRepository: daocloud.io/daocloud/hwameistor-migrate-rclone
+      tag: v1.1.2
 
 localStorageCSIController:
   replicas: 1

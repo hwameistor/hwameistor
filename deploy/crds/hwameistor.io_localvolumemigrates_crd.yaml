@@ -19,12 +19,12 @@ spec:
       name: volume
       type: string
     - description: Node name of the volume replica to be migrated
-      jsonPath: .spec.nodeName
-      name: node
+      jsonPath: .spec.sourceNode
+      name: from
       type: string
     - description: Node name of the new volume replica
-      jsonPath: .status.targetNodeName
-      name: target
+      jsonPath: .status.targetNode
+      name: to
       type: string
     - description: State of the migration
       jsonPath: .status.state
@@ -60,21 +60,19 @@ spec:
               migrateAllVols:
                 default: false
                 type: boolean
-              sourceNodesNames:
+              sourceNode:
                 description: source NodeNames
-                items:
-                  type: string
-                type: array
-              targetNodesNames:
-                description: target NodeNames
+                type: string
+              targetNodesSuggested:
+                description: suggested target NodeNames
                 items:
                   type: string
                 type: array
               volumeName:
                 type: string
             required:
-            - sourceNodesNames
-            - targetNodesNames
+            - sourceNode
+            - targetNodesSuggested
             - volumeName
             type: object
           status:
@@ -83,7 +81,7 @@ spec:
               message:
                 description: error message to describe some states
                 type: string
-              replicaNumber:
+              originalReplicaNumber:
                 description: record the volume's replica number, it will be set internally
                 format: int64
                 type: integer
@@ -91,7 +89,7 @@ spec:
                 description: State of the operation, e.g. submitted, started, completed,
                   abort, ...
                 type: string
-              targetNodeName:
+              targetNode:
                 description: record the node where the specified replica is migrated
                   to
                 type: string
