@@ -2,19 +2,20 @@ package volumegroup
 
 import (
 	"context"
+	"os"
+	"sync"
+	"testing"
+	"time"
+
 	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	coorv1 "k8s.io/api/coordination/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sync"
-	"testing"
-	"time"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
@@ -268,8 +269,8 @@ func GenFakeLocalVolumeMigrateObject() *apisv1alpha1.LocalVolumeMigrate {
 	}
 
 	Spec := apisv1alpha1.LocalVolumeMigrateSpec{
-		TargetNodesNames: fakeNodenames,
-		VolumeName:       fakeLocalVolumeName,
+		TargetNodesSuggested: fakeNodenames,
+		VolumeName:           fakeLocalVolumeName,
 	}
 
 	lvm.ObjectMeta = ObjectMata

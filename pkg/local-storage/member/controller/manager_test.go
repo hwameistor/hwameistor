@@ -132,7 +132,7 @@ func Test_manager_ReconcileVolumeMigrate(t *testing.T) {
 	migrate.Name = "test_lvm1"
 	migrate.Namespace = "test"
 	migrate.Spec.VolumeName = "test_vol1"
-	migrate.Spec.TargetNodesNames = fakeNodenames
+	migrate.Spec.TargetNodesSuggested = fakeNodenames
 
 	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)

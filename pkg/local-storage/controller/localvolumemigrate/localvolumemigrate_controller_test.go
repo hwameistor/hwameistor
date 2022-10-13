@@ -142,9 +142,9 @@ func GenFakeLocalVolumeMigrateObject() *apisv1alpha1.LocalVolumeMigrate {
 	}
 
 	Spec := apisv1alpha1.LocalVolumeMigrateSpec{
-		VolumeName:       fakeLocalVolumeName,
-		TargetNodesNames: fakeNodenames,
-		Abort:            true,
+		VolumeName:           fakeLocalVolumeName,
+		TargetNodesSuggested: fakeNodenames,
+		Abort:                true,
 	}
 
 	disks := make([]apisv1alpha1.LocalDevice, 0, 10)

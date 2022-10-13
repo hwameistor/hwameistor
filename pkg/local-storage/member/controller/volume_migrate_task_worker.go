@@ -90,7 +90,8 @@ func (m *manager) processVolumeMigrate(vmName string) error {
 			logCtx.Info("Not found the volume")
 		}
 		migrate.Status.Message = err.Error()
-		return m.apiClient.Status().Update(ctx, migrate)
+		m.apiClient.Status().Update(ctx, migrate)
+		return err
 	}
 
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
@@ -101,7 +102,8 @@ func (m *manager) processVolumeMigrate(vmName string) error {
 			logCtx.Info("VolumeMigrateSubmit: Not found the lvg")
 		}
 		migrate.Status.Message = err.Error()
-		return m.apiClient.Status().Update(ctx, migrate)
+		m.apiClient.Status().Update(ctx, migrate)
+		return err
 	}
 
 	// state chain: (empty) -> Submitted -> Start -> InProgress -> Completed
@@ -123,11 +125,9 @@ func (m *manager) processVolumeMigrate(vmName string) error {
 		}
 	case apisv1alpha1.OperationStateMigratePruneReplica:
 		return m.volumeMigratePruneReplica(migrate, vol, lvg)
-	case apisv1alpha1.OperationStateCompleted:
-		return m.volumeMigrateCleanup(migrate)
 	case apisv1alpha1.OperationStateToBeAborted:
 		return m.volumeMigrateAbort(migrate)
-	case apisv1alpha1.OperationStateAborted:
+	case apisv1alpha1.OperationStateCompleted, apisv1alpha1.OperationStateAborted:
 		return m.volumeMigrateCleanup(migrate)
 	default:
 		logCtx.Error("Invalid state/phase")
@@ -141,15 +141,16 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 
 	ctx := context.TODO()
 
-	if len(migrate.Status.TargetNodeName) == 0 {
+	if len(migrate.Status.TargetNode) == 0 {
 		logCtx.Debug("Selecting the target node for the migration")
 		tgtNodeName, err := m.selectMigrateTargetNode(migrate, lvg)
 		if err != nil {
 			logCtx.WithError(err).Error("No valid target node for the migration")
 			migrate.Status.Message = err.Error()
-			return m.apiClient.Status().Update(ctx, migrate)
+			m.apiClient.Status().Update(ctx, migrate)
+			return err
 		}
-		migrate.Status.TargetNodeName = tgtNodeName
+		migrate.Status.TargetNode = tgtNodeName
 		migrate.Status.Message = "Selected target node"
 		return m.apiClient.Status().Update(ctx, migrate)
 	}
@@ -160,7 +161,8 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 		if err != nil {
 			logCtx.WithField("LocalVolumeGroup", lvg.Name).WithError(err).Error("Failed to get all volumes in the group")
 			migrate.Status.Message = err.Error()
-			return m.apiClient.Status().Update(ctx, migrate)
+			m.apiClient.Status().Update(ctx, migrate)
+			return err
 		}
 		volList = vols
 	}
@@ -168,7 +170,8 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 		if err := m.checkReplicasForVolume(volList[i]); err != nil {
 			logCtx.WithField("LocalVolume", volList[i].Name).WithError(err).Error("Replicas are in problem")
 			migrate.Status.Message = err.Error()
-			return m.apiClient.Status().Update(ctx, migrate)
+			m.apiClient.Status().Update(ctx, migrate)
+			return err
 		}
 	}
 
@@ -183,11 +186,12 @@ func (m *manager) volumeMigrateStart(migrate *apisv1alpha1.LocalVolumeMigrate, v
 
 	ctx := context.TODO()
 	// set the target node in LocalVolumeGroup, so that the replica will be allocated base on it
-	if arrays.ContainsString(lvg.Spec.Accessibility.Nodes, migrate.Status.TargetNodeName) == -1 {
-		lvg.Spec.Accessibility.Nodes = append(lvg.Spec.Accessibility.Nodes, migrate.Status.TargetNodeName)
+	if arrays.ContainsString(lvg.Spec.Accessibility.Nodes, migrate.Status.TargetNode) == -1 {
+		lvg.Spec.Accessibility.Nodes = append(lvg.Spec.Accessibility.Nodes, migrate.Status.TargetNode)
 		if err := m.apiClient.Update(ctx, lvg); err != nil {
 			migrate.Status.Message = fmt.Sprintf("Failed to set the target node: %s", err.Error())
-			return m.apiClient.Status().Update(ctx, migrate)
+			m.apiClient.Status().Update(ctx, migrate)
+			return err
 		}
 	}
 
@@ -207,7 +211,8 @@ func (m *manager) volumeMigrateAddReplica(migrate *apisv1alpha1.LocalVolumeMigra
 		if err != nil {
 			logCtx.WithField("LocalVolumeGroup", lvg.Name).WithError(err).Error("Failed to get all volumes in the group")
 			migrate.Status.Message = err.Error()
-			return m.apiClient.Status().Update(ctx, migrate)
+			m.apiClient.Status().Update(ctx, migrate)
+			return err
 		}
 		volList = vols
 	}
@@ -217,7 +222,8 @@ func (m *manager) volumeMigrateAddReplica(migrate *apisv1alpha1.LocalVolumeMigra
 			if err := m.checkReplicasForVolume(volList[i]); err != nil {
 				logCtx.WithField("LocalVolume", volList[i].Name).WithError(err).Debug("Volume migration is still in process")
 				migrate.Status.Message = fmt.Sprintf("In progress: %s", err.Error())
-				return m.apiClient.Status().Update(ctx, migrate)
+				m.apiClient.Status().Update(ctx, migrate)
+				return err
 			}
 			logCtx.WithField("LocalVolume", volList[i].Name).Debug("Volume has added a new replica successfully")
 			continue
@@ -226,10 +232,12 @@ func (m *manager) volumeMigrateAddReplica(migrate *apisv1alpha1.LocalVolumeMigra
 		if err := m.apiClient.Update(ctx, volList[i]); err != nil {
 			logCtx.WithField("LocalVolume", volList[i].Name).WithError(err).Error("Failed to add a new replica to the volume")
 			migrate.Status.Message = fmt.Sprintf("Failed to migrate volume %s", volList[i].Name)
-		} else {
-			migrate.Status.Message = fmt.Sprintf("Adding a new replica to volume %s", volList[i].Name)
+			m.apiClient.Status().Update(ctx, migrate)
+			return fmt.Errorf("failed to migrate volume %s", volList[i].Name)
 		}
-		return m.apiClient.Status().Update(ctx, migrate)
+		migrate.Status.Message = fmt.Sprintf("Adding a new replica to volume %s", volList[i].Name)
+		m.apiClient.Status().Update(ctx, migrate)
+		return fmt.Errorf("still in progress")
 	}
 
 	logCtx.Debug("Successfully added the new replicas")
@@ -240,13 +248,16 @@ func (m *manager) volumeMigrateAddReplica(migrate *apisv1alpha1.LocalVolumeMigra
 
 func (m *manager) volumeMigratePruneReplica(migrate *apisv1alpha1.LocalVolumeMigrate, vol *apisv1alpha1.LocalVolume, lvg *apisv1alpha1.LocalVolumeGroup) error {
 	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "spec": migrate.Spec, "status": migrate.Status})
-	logCtx.Debug("Start a volumeMigrateInProgress")
+	logCtx.Debug("Start pruning the replicas")
 
 	ctx := context.TODO()
 
-	if arrays.ContainsString(lvg.Spec.Accessibility.Nodes, migrate.Spec.SourceNodesName) != -1 {
-		lvg.Spec.Accessibility.Nodes = utils.RemoveStringItem(lvg.Spec.Accessibility.Nodes, migrate.Spec.SourceNodesName)
-		return m.apiClient.Update(ctx, lvg)
+	if arrays.ContainsString(lvg.Spec.Accessibility.Nodes, migrate.Spec.SourceNode) != -1 {
+		lvg.Spec.Accessibility.Nodes = utils.RemoveStringItem(lvg.Spec.Accessibility.Nodes, migrate.Spec.SourceNode)
+		if err := m.apiClient.Update(ctx, lvg); err != nil {
+			logCtx.WithField("LocalVolumeGroup", lvg.Name).WithError(err).Error("Failed to update LocalVolumeGroup")
+			return err
+		}
 	}
 
 	volList := []*apisv1alpha1.LocalVolume{vol}
@@ -255,7 +266,8 @@ func (m *manager) volumeMigratePruneReplica(migrate *apisv1alpha1.LocalVolumeMig
 		if err != nil {
 			logCtx.WithField("LocalVolumeGroup", lvg.Name).WithError(err).Error("Failed to get all volumes in the group")
 			migrate.Status.Message = err.Error()
-			return m.apiClient.Status().Update(ctx, migrate)
+			m.apiClient.Status().Update(ctx, migrate)
+			return err
 		}
 		volList = vols
 	}
@@ -264,14 +276,27 @@ func (m *manager) volumeMigratePruneReplica(migrate *apisv1alpha1.LocalVolumeMig
 		// New replica is added and synced successfully, will remove the to-be-migrated replica from Volume's config
 		if volList[i].Spec.ReplicaNumber > migrate.Status.OriginalReplicaNumber {
 			// prune the to-be-migrated replica
+			replicas := []apisv1alpha1.VolumeReplica{}
+			for j := range volList[i].Spec.Config.Replicas {
+				if volList[i].Spec.Config.Replicas[j].Hostname != migrate.Spec.SourceNode {
+					replicas = append(replicas, volList[i].Spec.Config.Replicas[j])
+				}
+			}
+			volList[i].Spec.Config.Replicas = replicas
 			volList[i].Spec.ReplicaNumber = migrate.Status.OriginalReplicaNumber
 			if err := m.apiClient.Update(ctx, volList[i]); err != nil {
 				logCtx.WithField("LocalVolume", volList[i].Name).WithError(err).Error("Failed to prune a replica")
 				migrate.Status.Message = fmt.Sprintf("Failed to prune a replica of volume %s", volList[i].Name)
-			} else {
-				migrate.Status.Message = fmt.Sprintf("Pruning a replica of volume %s", volList[i].Name)
+				m.apiClient.Status().Update(ctx, migrate)
+				return fmt.Errorf("failed to prune a replica of volume %s", volList[i].Name)
 			}
-			return m.apiClient.Status().Update(ctx, migrate)
+			migrate.Status.Message = fmt.Sprintf("Pruning a replica of volume %s", volList[i].Name)
+			m.apiClient.Status().Update(ctx, migrate)
+			return fmt.Errorf("pruning replicas in progress")
+		}
+		if err := m.checkReplicasForVolume(volList[i]); err != nil {
+			logCtx.WithField("LocalVolume", volList[i].Name).WithError(err).Debug("Still pruning the replica")
+			return err
 		}
 	}
 
@@ -301,7 +326,8 @@ func (m *manager) nonConvertibleVolumeMigrateSyncReplica(migrate *apisv1alpha1.L
 	rcl := m.dataCopyManager.UseRclone(rcloneImageName, rcloneConfigMapName, rcloneKeyConfigMapName, m.namespace, rcloneConfigMapKey, rcloneCertKey)
 	if err := rcl.EnsureRcloneConfigMapToTargetNamespace(m.namespace); err != nil {
 		migrate.Status.Message = err.Error()
-		return m.apiClient.Status().Update(ctx, migrate)
+		m.apiClient.Status().Update(ctx, migrate)
+		return err
 	}
 	tmpRcloneKeyConfigMap := &corev1.ConfigMap{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: rcloneKeyConfigMapName}, tmpRcloneKeyConfigMap); err == nil {
@@ -317,16 +343,18 @@ func (m *manager) nonConvertibleVolumeMigrateSyncReplica(migrate *apisv1alpha1.L
 		} else {
 			logCtx.WithError(err).Error("Failed to create RcloneKeyConfigmap")
 			migrate.Status.Message = err.Error()
-			return m.apiClient.Status().Update(ctx, migrate)
+			m.apiClient.Status().Update(ctx, migrate)
+			return err
 		}
 	}
-	if err := m.makeMigrateRcloneConfigmap(migrate.Status.TargetNodeName, migrate.Spec.SourceNodesName, m.namespace, migrate.Spec.VolumeName); err != nil {
+	if err := m.makeMigrateRcloneConfigmap(migrate.Status.TargetNode, migrate.Spec.SourceNode, m.namespace, migrate.Spec.VolumeName); err != nil {
 		if errors.IsAlreadyExists(err) {
 			logCtx.WithError(err).Warning("MigrateRcloneConfigmap already exists")
 		} else {
 			logCtx.WithError(err).Error("Failed to makeMigrateRcloneConfigmap")
 			migrate.Status.Message = err.Error()
-			return m.apiClient.Status().Update(ctx, migrate)
+			m.apiClient.Status().Update(ctx, migrate)
+			return err
 		}
 	}
 
@@ -336,7 +364,8 @@ func (m *manager) nonConvertibleVolumeMigrateSyncReplica(migrate *apisv1alpha1.L
 		if err != nil {
 			logCtx.WithField("LocalVolumeGroup", lvg.Name).WithError(err).Error("Failed to get all volumes in the group")
 			migrate.Status.Message = err.Error()
-			return m.apiClient.Status().Update(ctx, migrate)
+			m.apiClient.Status().Update(ctx, migrate)
+			return err
 		}
 		volList = vols
 	}
@@ -351,21 +380,24 @@ func (m *manager) nonConvertibleVolumeMigrateSyncReplica(migrate *apisv1alpha1.L
 					jobName,
 					m.namespace,
 					volList[i].Spec.PoolName,
-					volList[i].Name, migrate.Spec.SourceNodesName,
-					migrate.Status.TargetNodeName,
+					volList[i].Name, migrate.Spec.SourceNode,
+					migrate.Status.TargetNode,
 					true,
 					0,
 				); err != nil {
 					logCtx.WithField("LocalVolume", volList[i].Name).WithError(err).Error("Failed to start a job to sync replicas")
 					migrate.Status.Message = fmt.Sprintf("Failed to start a job to sync replicas for volume %s", volList[i].Name)
-				} else {
-					migrate.Status.Message = fmt.Sprintf("Started a job to sync replicas for volume %s", volList[i].Name)
+					m.apiClient.Status().Update(ctx, migrate)
+					return fmt.Errorf("failed to start a job to sync replicas for volume %s", volList[i].Name)
 				}
-				return m.apiClient.Status().Update(ctx, migrate)
+				migrate.Status.Message = fmt.Sprintf("Started a job to sync replicas for volume %s", volList[i].Name)
+				m.apiClient.Status().Update(ctx, migrate)
+				return fmt.Errorf("syncing replica still in progress")
 			}
 			logCtx.WithError(err).Error("Failed to get MigrateJob from cache")
 			migrate.Status.Message = "Failed to get the job from cache"
-			return m.apiClient.Status().Update(ctx, migrate)
+			m.apiClient.Status().Update(ctx, migrate)
+			return err
 		}
 		// found the job, check the status
 		isJobCompleted := false
@@ -379,7 +411,8 @@ func (m *manager) nonConvertibleVolumeMigrateSyncReplica(migrate *apisv1alpha1.L
 				}).Debug("The replicas have already been synchronized successfully")
 				if err := m.apiClient.Delete(ctx, syncJob); err != nil {
 					migrate.Status.Message = "Failed to cleanup the sync job"
-					return m.apiClient.Status().Update(ctx, migrate)
+					m.apiClient.Status().Update(ctx, migrate)
+					return err
 				}
 				isJobCompleted = true
 			}
@@ -387,7 +420,8 @@ func (m *manager) nonConvertibleVolumeMigrateSyncReplica(migrate *apisv1alpha1.L
 		}
 		if !isJobCompleted {
 			migrate.Status.Message = fmt.Sprintf("Waiting for the sync job to complete: %s", syncJob.Name)
-			return m.apiClient.Status().Update(ctx, migrate)
+			m.apiClient.Status().Update(ctx, migrate)
+			return fmt.Errorf("waiting for the sync job to complete: %s", syncJob.Name)
 		}
 	}
 
@@ -449,11 +483,11 @@ func (m *manager) selectMigrateTargetNode(migrate *apisv1alpha1.LocalVolumeMigra
 	}
 	qualifiedNodes := []string{}
 	for i := range validNodes {
-		if migrate.Spec.SourceNodesName == validNodes[i].Name {
+		if migrate.Spec.SourceNode == validNodes[i].Name {
 			// skip the source node
 			continue
 		}
-		if arrays.ContainsString(migrate.Spec.TargetNodesNames, validNodes[i].Name) != -1 {
+		if arrays.ContainsString(migrate.Spec.TargetNodesSuggested, validNodes[i].Name) != -1 {
 			// return the target node immediately if it's qualified
 			return validNodes[i].Name, nil
 		}
@@ -464,7 +498,7 @@ func (m *manager) selectMigrateTargetNode(migrate *apisv1alpha1.LocalVolumeMigra
 		return "", fmt.Errorf("no qualified target node")
 	}
 
-	if len(migrate.Spec.TargetNodesNames) == 0 {
+	if len(migrate.Spec.TargetNodesSuggested) == 0 {
 		return qualifiedNodes[0], nil
 	}
 	return "", fmt.Errorf("invalid target node")
