@@ -118,26 +118,6 @@ func (ev *evictor) Run(stopCh <-chan struct{}) error {
 	return nil
 }
 
-// func (ev *evictor) watchForEvictedPodOnUpdate(oObj, nObj interface{}) {
-// 	pod, _ := nObj.(*corev1.Pod)
-// 	log.WithFields(log.Fields{
-// 		"namespace": pod.Namespace,
-// 		"pod":       pod.Name,
-// 		"message":   pod.Status.Conditions[0].Type,
-// 		"reason":    pod.Status.Reason,
-// 		"phase":     pod.Status.Phase,
-// 	}).Debug("Watching for a Pod update event ...")
-// 	if isPodEvicted(pod) {
-// 		log.WithFields(log.Fields{
-// 			"namespace": pod.Namespace,
-// 			"pod":       pod.Name,
-// 			"phase":     pod.Status.Phase,
-// 			"reason":    pod.Status.Reason,
-// 		}).Debug("Got an evicted Pod to process")
-// 		go ev.filterForHwameiVolume(pod)
-// 	}
-// }
-
 func (ev *evictor) watchForEvictedPodOnDelete(obj interface{}) {
 	pod, _ := obj.(*corev1.Pod)
 	log.WithFields(log.Fields{
@@ -160,7 +140,7 @@ func (ev *evictor) watchForEvictedPodOnDelete(obj interface{}) {
 
 func isPodEvicted(pod *corev1.Pod) bool {
 	// ??? should add the function to check for evicted pod ???
-	return true
+	return false
 	// podFailed := pod.Status.Phase == corev1.PodFailed
 	// podEvicted := pod.Status.Reason == "Evicted"
 	// return podFailed && podEvicted
