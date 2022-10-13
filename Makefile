@@ -50,7 +50,7 @@ release_ldm:
 	${DOCKER_MAKE_CMD} make compile_ldm_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${LDM_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${LDM_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# push to a public registry
-	${MUILT_ARCH_PUSH_CMD} ${LDM_IMAGE_NAME}:${RELEASE_TAG}
+	${MUILT_ARCH_PUSH_CMD} -i ${LDM_IMAGE_NAME}:${RELEASE_TAG}
 
 .PHONY: release_ls
 release_ls:
@@ -61,7 +61,7 @@ release_ls:
 	${DOCKER_MAKE_CMD} make compile_ls_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${LS_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${LS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# push to a public registry
-	${MUILT_ARCH_PUSH_CMD} ${LS_IMAGE_NAME}:${RELEASE_TAG}
+	${MUILT_ARCH_PUSH_CMD} -i ${LS_IMAGE_NAME}:${RELEASE_TAG}
 
 .PHONY: release_scheduler
 release_scheduler:
@@ -72,7 +72,7 @@ release_scheduler:
 	${DOCKER_MAKE_CMD} make compile_scheduler_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${SCHEDULER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${SCHEDULER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# push to a public registry
-	${MUILT_ARCH_PUSH_CMD} ${SCHEDULER_IMAGE_NAME}:${RELEASE_TAG}
+	${MUILT_ARCH_PUSH_CMD} -i ${SCHEDULER_IMAGE_NAME}:${RELEASE_TAG}
 
 .PHONY: release_admission
 release_admission:
@@ -83,7 +83,7 @@ release_admission:
 	${DOCKER_MAKE_CMD} make compile_admission_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${ADMISSION_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${ADMISSION_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# push to a public registry
-	${MUILT_ARCH_PUSH_CMD} ${ADMISSION_IMAGE_NAME}:${RELEASE_TAG}
+	${MUILT_ARCH_PUSH_CMD} -i ${ADMISSION_IMAGE_NAME}:${RELEASE_TAG}
 
 .PHONY: release_evictor
 release_evictor:
@@ -94,7 +94,7 @@ release_evictor:
 	${DOCKER_MAKE_CMD} make compile_evictor_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${EVICTOR_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# push to a public registry
-	${MUILT_ARCH_PUSH_CMD} ${EVICTOR_IMAGE_NAME}:${RELEASE_TAG}
+	${MUILT_ARCH_PUSH_CMD} -i ${EVICTOR_IMAGE_NAME}:${RELEASE_TAG}
 
 .PHONY: build_ldm_image
 build_ldm_image:
