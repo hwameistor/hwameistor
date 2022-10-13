@@ -4,6 +4,11 @@ on:
   create:
     tags:
      - '*'
+  workflow_call:
+    inputs:
+      release_tag:
+        required: true
+        type: string
 
 jobs:
   release-image:
@@ -28,7 +33,7 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Set env
         run: |
-          echo "RELEASE_TAG=`echo $(git describe --tags --abbrev=0)`" >> $GITHUB_ENV
+          echo "RELEASE_TAG=`[ "${{ inputs.release_tag }}" != "" ] && echo ${{ inputs.release_tag }} || echo $(git describe --tags --abbrev=0)`" >> $GITHUB_ENV
           echo "PROJECT_SOURCE_CODE_DIR=`echo ${GITHUB_WORKSPACE}`" >> $GITHUB_ENV
           echo "IMAGE_REGISTRY=`echo ghcr.io/$(echo ${{ github.repository_owner }} | tr 'A-Z' 'a-z')`" >> $GITHUB_ENV
       - name: Release image
