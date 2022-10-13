@@ -4,6 +4,10 @@ arch_list=("amd64" "arm64")
 severity="CRITICAL"
 e_code=${2:-0}
 
+# install trivy
+{ which trivy; } 2>&1 >/dev/null || echo "install trivy now..." && \
+curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin latest
+
 for arch in ${arch_list[@]}
 do
     img_of_cur_arch=${image_name}-${arch}
