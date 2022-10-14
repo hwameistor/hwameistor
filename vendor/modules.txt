@@ -73,7 +73,7 @@ github.com/docker/docker/pkg/term/windows
 ## explicit
 github.com/docker/spdystream
 github.com/docker/spdystream/spdy
-# github.com/emicklei/go-restful v2.9.5+incompatible
+# github.com/emicklei/go-restful v2.16.1-0.20220930181236-19cadd947697+incompatible
 ## explicit
 github.com/emicklei/go-restful
 github.com/emicklei/go-restful/log
