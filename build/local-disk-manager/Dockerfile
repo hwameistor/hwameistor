@@ -1,6 +1,7 @@
 FROM centos:7
 
-RUN yum install -y smartmontools lsscsi e4fsprogs
+RUN yum install -y smartmontools lsscsi e4fsprogs && \
+    yum upgrade nss -y
 
 COPY ./_build/local-disk-manager /local-disk-manager
 
