@@ -340,41 +340,41 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 			if err != nil {
 				logrus.Printf("list lvr failed ：%+v ", err)
 			}
-			lvgList := &v1alpha1.LocalVolumeGroupList{}
-			err = client.List(ctx, lvgList)
+			lvlist := &v1alpha1.LocalVolumeList{}
+			err = client.List(ctx, lvlist)
 			if err != nil {
-				logrus.Printf("list lvg failed ：%+v ", err)
+				logrus.Error("%+v ", err)
+				f.ExpectNoError(err)
 			}
+
+			lvname := lvlist.Items[0].Name
 			for _, lvr := range lvrList.Items {
 				if lvr.Spec.NodeName == "k8s-master" {
-					for _, lvg := range lvgList.Items {
-						if lvg.Spec.Accessibility.Nodes[0] == "k8s-master" {
-							exlvgm := &v1alpha1.LocalVolumeGroupMigrate{
-								ObjectMeta: metav1.ObjectMeta{
-									Name:      "localvolumegroupmigrate-1",
-									Namespace: "default",
-								},
-								Spec: v1alpha1.LocalVolumeGroupMigrateSpec{
-									TargetNodesNames:     []string{"k8s-node2"},
-									SourceNodesNames:     []string{"k8s-master"},
-									LocalVolumeGroupName: lvg.Name,
-								},
-							}
-
-							err = client.Create(ctx, exlvgm)
-							logrus.Infof("create lvgm")
-							if err != nil {
-								logrus.Printf("Create lvgm failed ：%+v ", err)
-								f.ExpectNoError(err)
-							}
-							logrus.Infof("wait 3 minutes for migrate lvr")
-							time.Sleep(3 * time.Minute)
-							break
-
-						}
+					exlvm := &v1alpha1.LocalVolumeMigrate{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "localvolumegroupmigrate-1",
+							Namespace: "default",
+						},
+						Spec: v1alpha1.LocalVolumeMigrateSpec{
+							TargetNodesSuggested: []string{"k8s-node2"},
+							SourceNode:           "k8s-master",
+							VolumeName:           lvname,
+							MigrateAllVols:       true,
+						},
 					}
 
+					err = client.Create(ctx, exlvm)
+					logrus.Infof("create lvm")
+					if err != nil {
+						logrus.Printf("Create lvgm failed ：%+v ", err)
+						f.ExpectNoError(err)
+					}
+					logrus.Infof("wait 3 minutes for migrate lv")
+					time.Sleep(3 * time.Minute)
+					break
+
 				}
+
 			}
 
 		})
