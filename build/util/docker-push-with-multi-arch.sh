@@ -23,7 +23,7 @@ scan_image_exit_code=1
 
 # scan image before push if set true
 if [ "${scan_image_before_push}" == "true" ];then
-  bash -x ${PAOGRAM}/scan-image-with-trivy.sh ${image_name} ${scan_image_exit_code} || echo "[Error] scan image ${image_name} fail"; exit 2
+  { bash -x ${PAOGRAM}/scan-image-with-trivy.sh ${image_name} ${scan_image_exit_code}; } || { echo "[Error] scan image ${image_name} fail"; exit 2; }
 fi
 
 for arch in ${arch_list[@]}
