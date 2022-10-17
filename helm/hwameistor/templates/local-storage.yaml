@@ -127,6 +127,9 @@ spec:
         - mountPath: /etc/drbd.d
           mountPropagation: Bidirectional
           name: host-etc-drbd
+        - mountPath: /root/.ssh
+          mountPropagation: Bidirectional
+          name: ssh-dir
       dnsPolicy: ClusterFirstWithHostNet
       hostPID: true
       priorityClassName: {{ .Values.localStorage.priorityClassName }}
@@ -177,6 +180,10 @@ spec:
           path: {{ template "hwameistor.kubeletRootDir" . }}/pods
           type: DirectoryOrCreate
         name: pods-mount-dir
+      - hostPath:
+          path: /root/.ssh
+          type: DirectoryOrCreate
+        name: ssh-dir
   updateStrategy:
     rollingUpdate:
       maxUnavailable: 1

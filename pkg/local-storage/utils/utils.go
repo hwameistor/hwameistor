@@ -42,7 +42,7 @@ var unitMap = map[string]int64{
 
 var unitArray = []string{"B", "KB", "MB", "GB", "TB"}
 
-//LogGRPC log grpc all info
+// LogGRPC log grpc all info
 func LogGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	/*	logCtx := log.WithFields(log.Fields{"call": info.FullMethod, "request": req})
 		resp, err := handler(ctx, req)
@@ -214,4 +214,17 @@ func GetNamespace() string {
 	}
 
 	return ns
+}
+
+func TouchFile(filepath string) error {
+	if _, err := os.Stat(filepath); err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+		// file does not exist
+		if _, e := os.Create(filepath); e != nil {
+			return e
+		}
+	}
+	return nil
 }

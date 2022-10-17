@@ -3,10 +3,12 @@ package node
 import (
 	"context"
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
+
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils/datacopy"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -74,7 +76,7 @@ func (m *manager) processVolumeBlockMountTaskAssignment(lvNamespacedName string)
 
 	var sourceNodeName, targetNodeName, syncDone string
 	for _, cm := range cmList.Items {
-		if cm.Name == rcloneConfigMapName {
+		if cm.Name == datacopy.RCloneConfigMapName {
 			sourceNodeName = cm.Data["sourceNodeName"]
 			targetNodeName = cm.Data["targetNodeName"]
 			syncDone = cm.Data["syncDone"]
@@ -90,8 +92,8 @@ func (m *manager) processVolumeBlockMountTaskAssignment(lvNamespacedName string)
 	newLvName := strings.Replace(lvname, "-", "--", -1)
 	devPath := fmt.Sprintf("/dev/mapper/%s-%s", tmpVol.Spec.PoolName, newLvName)
 
-	tmpDstMountPoint := dstMountPoint + lvname
-	tmpSrcMountPoint := srcMountPoint + lvname
+	tmpDstMountPoint := datacopy.RCloneDstMountPoint + lvname
+	tmpSrcMountPoint := datacopy.RCloneSrcMountPoint + lvname
 
 	var flags []string
 	fstype := "xfs"
@@ -153,7 +155,7 @@ func (m *manager) processVolumeBlockMountTaskAssignment(lvNamespacedName string)
 
 	if syncDone == "True" {
 		tmpConfigMap := &corev1.ConfigMap{}
-		err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: ns, Name: rcloneConfigMapName}, tmpConfigMap)
+		err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: ns, Name: datacopy.RCloneConfigMapName}, tmpConfigMap)
 		if err == nil {
 			if delErr := m.apiClient.Delete(context.TODO(), tmpConfigMap); delErr != nil {
 				m.logger.WithError(err).Error("Failed to delete Configmap")

@@ -51,20 +51,11 @@ func NewDataCopyManager(ctx context.Context,
 	return dcm, nil
 }
 
-func (dcm *DataCopyManager) UseRclone(
-	rcloneImage,
-	rcloneConfigMapName,
-	rcloneKeyConfigMapName,
-	rcloneConfigMapNamespace,
-	rcloneConfigMapKey, rcloneCrtKey string) *Rclone {
+func (dcm *DataCopyManager) UseRclone(rcloneImage string, rcloneConfigMapNamespace string) *Rclone {
 	rclone := &Rclone{
 		rcloneImage:              rcloneImage,
 		rcloneMountContainerName: rcloneMountContainerName,
-		rcloneConfigMapName:      rcloneConfigMapName,
-		rcloneKeyConfigMapName:   rcloneKeyConfigMapName,
 		rcloneConfigMapNamespace: rcloneConfigMapNamespace,
-		rcloneConfigMapKey:       rcloneConfigMapKey,
-		rcloneCertKey:            rcloneCrtKey,
 		skipRcloneConfiguration:  true,
 		dcm:                      dcm,
 		cmdExec:                  nsexecutor.New(),

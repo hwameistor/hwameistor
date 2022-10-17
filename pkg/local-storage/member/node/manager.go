@@ -3,10 +3,13 @@ package node
 import (
 	"context"
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	"net"
 	"os"
+	"path/filepath"
 	"sync"
+
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils/datacopy"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -33,13 +36,7 @@ import (
 //
 // Infinitely retry
 const (
-	maxRetries              = 0
-	rcloneKeyConfigMapName  = "rclone-key-config"
-	rcloneConfigMapName     = "migrate-rclone-config"
-	rclonePubKey            = "rclone.pub"
-	rcloneTmpPubKeyFilePath = "rclone.pub.tmp"
-	srcMountPoint           = "/mnt/src/"
-	dstMountPoint           = "/mnt/dst/"
+	maxRetries = 0
 )
 
 type manager struct {
@@ -114,6 +111,9 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 }
 
 func (m *manager) Run(stopCh <-chan struct{}) {
+
+	m.initForRClone()
+
 	m.initCache()
 
 	m.register()
@@ -165,6 +165,18 @@ func (m *manager) isPhysicalNode() bool {
 	return true
 }
 */
+
+func (m *manager) initForRClone() {
+	// make sure the following directories and files exist
+	// rcloneKeyDir = "/root/.ssh"
+	// if err := os.MkdirAll(datacopy.RCloneKeyDir, 0755); err != nil {
+	// 	m.logger.WithField("directory", datacopy.RCloneKeyDir).WithError(err).Panic("Failed to create a rclone directory")
+	// }
+	if err := utils.TouchFile(filepath.Join(datacopy.RCloneKeyDir, "authorized_keys")); err != nil {
+		m.logger.WithField("file", filepath.Join(datacopy.RCloneKeyDir, "authorized_keys")).WithError(err).Panic("Failed to create a rclone file")
+	}
+
+}
 
 func (m *manager) initCache() {
 	// initialize replica records
@@ -425,38 +437,29 @@ func (m *manager) handleNodeDelete(obj interface{}) {
 	}
 }
 
-func (m *manager) handleK8sCMUpdatedEvent(oldObj, newObj interface{}) {
+func (m *manager) handleK8sCMAddEvent(newObj interface{}) {
 	newCM, _ := newObj.(*k8scorev1.ConfigMap)
-	if newCM.Name == rcloneConfigMapName {
+	if newCM.Namespace != m.namespace {
+		return
+	}
+	if newCM.Name == datacopy.RCloneConfigMapName {
 		if newCM.Data["lvname"] != "" {
 			lvNameData := newCM.Data["lvname"]
 			m.volumeBlockMountTaskQueue.Add(newCM.Namespace + "/" + lvNameData)
 		}
 	}
-	if newCM.Name == rcloneKeyConfigMapName {
-		if newCM.Data[rclonePubKey] != "" {
-			pubKeyData := newCM.Data[rclonePubKey]
-			pubKeyData = "\n" + pubKeyData
-			utils.WriteDataIntoSysFSFile(pubKeyData, rcloneTmpPubKeyFilePath)
+	if newCM.Name == datacopy.RCloneKeyConfigMapName {
+		if newCM.Data[datacopy.RClonePubKeyFileName] != "" {
+			pubKeyData := newCM.Data[datacopy.RClonePubKeyFileName]
+			if err := utils.AddPubKeyIntoAuthorizedKeys(pubKeyData); err != nil {
+				m.logger.WithError(err).Error("Failed to write public key into authorized keys file")
+			}
 		}
 	}
 }
 
-func (m *manager) handleK8sCMAddEvent(newObj interface{}) {
-	newCM, _ := newObj.(*k8scorev1.ConfigMap)
-	if newCM.Name == rcloneConfigMapName {
-		if newCM.Data["lvname"] != "" {
-			lvNameData := newCM.Data["lvname"]
-			m.volumeBlockMountTaskQueue.Add(newCM.Namespace + "/" + lvNameData)
-		}
-	}
-	if newCM.Name == rcloneKeyConfigMapName {
-		if newCM.Data[rclonePubKey] != "" {
-			pubKeyData := newCM.Data[rclonePubKey]
-			pubKeyData = "\n" + pubKeyData
-			utils.WriteDataIntoSysFSFile(pubKeyData, rcloneTmpPubKeyFilePath)
-		}
-	}
+func (m *manager) handleK8sCMUpdatedEvent(oldObj, newObj interface{}) {
+	m.handleK8sCMAddEvent(newObj)
 }
 
 func isStringInArray(str string, strs []string) bool {
