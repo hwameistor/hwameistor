@@ -176,7 +176,7 @@ func configureEnvironment(ctx context.Context) error {
 
 	logrus.Infof("waiting for hwamei ready")
 
-	err = wait.PollImmediate(3*time.Second, 15*time.Minute, func() (done bool, err error) {
+	err = wait.PollImmediate(3*time.Second, 20*time.Minute, func() (done bool, err error) {
 		err = client.Get(ctx, localStorageKey, localStorage)
 		if err != nil {
 			logrus.Error(" localStorage error ", err)
@@ -326,7 +326,7 @@ func configureEnvironmentForPrTest(ctx context.Context) bool {
 	case <-ch:
 		logrus.Infof("Components are ready ")
 		return true
-	case <-time.After(15 * time.Minute):
+	case <-time.After(20 * time.Minute):
 		logrus.Error("timeout")
 		return false
 
