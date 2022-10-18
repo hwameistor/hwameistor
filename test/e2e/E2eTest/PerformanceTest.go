@@ -1,7 +1,10 @@
 package E2eTest
 
 import (
+	"bufio"
 	"context"
+	"os"
+	"strings"
 	"time"
 
 	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
@@ -279,7 +282,36 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("pr-e2e"), func() {
 						logrus.Printf("%+v ", err)
 						f.ExpectNoError(err)
 					}
-					logrus.Info(output)
+					filePath1 := "/e2e-test/log/" + time.Now().Format(time.RFC3339) + ".txt"
+					logrus.Printf(filePath1)
+					file, err := os.OpenFile(filePath1, os.O_WRONLY|os.O_CREATE, 0666)
+					if err != nil {
+						logrus.Printf("open file err=%v\n", err)
+						return
+					}
+					defer file.Close()
+					writer := bufio.NewWriter(file)
+					writer.WriteString(output)
+					writer.Flush()
+
+					filePath2 := "/e2e-test/summary.txt"
+					file2, err := os.OpenFile(filePath2, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
+					if err != nil {
+						logrus.Printf("open file err=%v\n", err)
+						return
+					}
+					defer file2.Close()
+					writer2 := bufio.NewWriter(file2)
+					result_head := strings.Index(output, "write: IOPS")
+					result_end := strings.Index(output, "slat")
+					result := time.Now().Format(time.RFC3339) + output[result_head:result_end]
+					if _, err = writer2.WriteString(result); err != nil {
+						logrus.Error(err)
+					}
+					if err = writer2.Flush(); err != nil {
+						logrus.Error(err)
+					}
+					logrus.Info(result)
 				}
 			}
 		})
