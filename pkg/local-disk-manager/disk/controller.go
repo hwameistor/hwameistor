@@ -31,7 +31,7 @@ func NewController(mgr crmanager.Manager) *Controller {
 }
 
 // StartMonitor
-func (ctr Controller) StartMonitor() {
+func (ctr *Controller) StartMonitor() {
 	// Wait cache synced
 	ctr.localDiskController.Mgr.GetCache().WaitForCacheSync(make(chan struct{}))
 
@@ -52,7 +52,7 @@ func (ctr Controller) StartMonitor() {
 }
 
 // HandleEvent
-func (ctr Controller) HandleEvent() {
+func (ctr *Controller) HandleEvent() {
 	var DiskParser = defaultDiskParser()
 	for {
 		event := ctr.Pop()
