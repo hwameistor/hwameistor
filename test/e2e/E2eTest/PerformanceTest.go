@@ -304,7 +304,7 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("pr-e2e"), func() {
 					writer2 := bufio.NewWriter(file2)
 					result_head := strings.Index(output, "write: IOPS")
 					result_end := strings.Index(output, "slat")
-					result := output[result_head:result_end]
+					result := time.Now().Format(time.RFC3339) + output[result_head:result_end]
 					if _, err = writer2.WriteString(result); err != nil {
 						logrus.Error(err)
 					}
