@@ -56,7 +56,6 @@ func (dcm *DataCopyManager) UseRclone(rcloneImage string, rcloneConfigMapNamespa
 		rcloneImage:              rcloneImage,
 		rcloneMountContainerName: rcloneMountContainerName,
 		rcloneConfigMapNamespace: rcloneConfigMapNamespace,
-		skipRcloneConfiguration:  true,
 		dcm:                      dcm,
 		cmdExec:                  nsexecutor.New(),
 	}

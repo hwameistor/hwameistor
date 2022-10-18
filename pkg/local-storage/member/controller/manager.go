@@ -170,6 +170,7 @@ func (m *manager) setupInformers() {
 	k8sNodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: m.handleK8sNodeUpdatedEvent,
 	})
+
 }
 
 // VolumeScheduler retrieve the volume scheduler instance

@@ -130,6 +130,9 @@ spec:
         - mountPath: /root/.ssh
           mountPropagation: Bidirectional
           name: ssh-dir
+        - mountPath: /mnt
+          name: host-mnt
+          mountPropagation: "Bidirectional"
       dnsPolicy: ClusterFirstWithHostNet
       hostPID: true
       priorityClassName: {{ .Values.localStorage.priorityClassName }}
@@ -184,6 +187,10 @@ spec:
           path: /root/.ssh
           type: DirectoryOrCreate
         name: ssh-dir
+      - hostPath:
+          path: /mnt
+          type: DirectoryOrCreate
+        name: host-mnt
   updateStrategy:
     rollingUpdate:
       maxUnavailable: 1

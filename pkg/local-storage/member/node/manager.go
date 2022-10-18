@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
@@ -61,7 +62,7 @@ type manager struct {
 
 	volumeTaskQueue *common.TaskQueue
 
-	volumeBlockMountTaskQueue *common.TaskQueue
+	rcloneVolumeMountTaskQueue *common.TaskQueue
 
 	volumeReplicaTaskQueue *common.TaskQueue
 
@@ -90,16 +91,16 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 		return nil, err
 	}
 	return &manager{
-		name:                      name,
-		namespace:                 namespace,
-		apiClient:                 cli,
-		informersCache:            informersCache,
-		replicaRecords:            map[string]string{},
-		volumeTaskQueue:           common.NewTaskQueue("VolumeTask", maxRetries),
-		volumeBlockMountTaskQueue: common.NewTaskQueue("volumeBlockMount", maxRetries),
-		volumeReplicaTaskQueue:    common.NewTaskQueue("VolumeReplicaTask", maxRetries),
-		localDiskClaimTaskQueue:   common.NewTaskQueue("LocalDiskClaim", maxRetries),
-		localDiskTaskQueue:        common.NewTaskQueue("LocalDisk", maxRetries),
+		name:                       name,
+		namespace:                  namespace,
+		apiClient:                  cli,
+		informersCache:             informersCache,
+		replicaRecords:             map[string]string{},
+		volumeTaskQueue:            common.NewTaskQueue("VolumeTask", maxRetries),
+		rcloneVolumeMountTaskQueue: common.NewTaskQueue("RcloneVolumeMount", maxRetries),
+		volumeReplicaTaskQueue:     common.NewTaskQueue("VolumeReplicaTask", maxRetries),
+		localDiskClaimTaskQueue:    common.NewTaskQueue("LocalDiskClaim", maxRetries),
+		localDiskTaskQueue:         common.NewTaskQueue("LocalDisk", maxRetries),
 		// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 		diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 		configManager:  configManager,
@@ -122,8 +123,6 @@ func (m *manager) Run(stopCh <-chan struct{}) {
 
 	go m.startVolumeTaskWorker(stopCh)
 
-	go m.startVolumeBlockMountTaskWorker(stopCh)
-
 	go m.startVolumeReplicaTaskWorker(stopCh)
 
 	go m.startLocalDiskClaimTaskWorker(stopCh)
@@ -131,6 +130,8 @@ func (m *manager) Run(stopCh <-chan struct{}) {
 	go m.startLocalDiskTaskWorker(stopCh)
 
 	go m.startDiskEventWorker(stopCh)
+
+	go m.startRcloneVolumeMountTaskWorker(stopCh)
 
 	go diskmonitor.New(m.diskEventQueue).Run(stopCh)
 
@@ -235,14 +236,14 @@ func (m *manager) setupInformers() {
 		UpdateFunc: m.handleLocalDiskUpdate,
 	})
 
-	k8sCMInformer, err := m.informersCache.GetInformer(context.TODO(), &k8scorev1.ConfigMap{})
+	cmInformer, err := m.informersCache.GetInformer(context.TODO(), &k8scorev1.ConfigMap{})
 	if err != nil {
 		// error happens, crash the node
 		m.logger.WithError(err).Fatal("Failed to get informer for k8s cm")
 	}
-	k8sCMInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		UpdateFunc: m.handleK8sCMUpdatedEvent,
-		AddFunc:    m.handleK8sCMAddEvent,
+	cmInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		UpdateFunc: m.handleConfigMapUpdatedEvent,
+		AddFunc:    m.handleConfigMapAddEvent,
 	})
 }
 
@@ -437,20 +438,18 @@ func (m *manager) handleNodeDelete(obj interface{}) {
 	}
 }
 
-func (m *manager) handleK8sCMAddEvent(newObj interface{}) {
-	newCM, _ := newObj.(*k8scorev1.ConfigMap)
-	if newCM.Namespace != m.namespace {
+func (m *manager) handleConfigMapAddEvent(newObj interface{}) {
+	cm, _ := newObj.(*k8scorev1.ConfigMap)
+	if cm.Namespace != m.namespace {
 		return
 	}
-	if newCM.Name == datacopy.RCloneConfigMapName {
-		if newCM.Data["lvname"] != "" {
-			lvNameData := newCM.Data["lvname"]
-			m.volumeBlockMountTaskQueue.Add(newCM.Namespace + "/" + lvNameData)
+	if strings.HasPrefix(cm.Name, datacopy.RCloneConfigMapName) {
+		if lvName, exist := cm.Data[datacopy.RCloneConfigVolumeNameKey]; exist && len(lvName) > 0 {
+			m.rcloneVolumeMountTaskQueue.Add(lvName)
 		}
 	}
-	if newCM.Name == datacopy.RCloneKeyConfigMapName {
-		if newCM.Data[datacopy.RClonePubKeyFileName] != "" {
-			pubKeyData := newCM.Data[datacopy.RClonePubKeyFileName]
+	if cm.Name == datacopy.RCloneKeyConfigMapName {
+		if pubKeyData, exist := cm.Data[datacopy.RClonePubKeyFileName]; exist && len(pubKeyData) > 0 {
 			if err := utils.AddPubKeyIntoAuthorizedKeys(pubKeyData); err != nil {
 				m.logger.WithError(err).Error("Failed to write public key into authorized keys file")
 			}
@@ -458,8 +457,8 @@ func (m *manager) handleK8sCMAddEvent(newObj interface{}) {
 	}
 }
 
-func (m *manager) handleK8sCMUpdatedEvent(oldObj, newObj interface{}) {
-	m.handleK8sCMAddEvent(newObj)
+func (m *manager) handleConfigMapUpdatedEvent(oldObj, newObj interface{}) {
+	m.handleConfigMapAddEvent(newObj)
 }
 
 func isStringInArray(str string, strs []string) bool {

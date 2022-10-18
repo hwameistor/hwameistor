@@ -15,14 +15,14 @@ import (
 
 var _ csi.NodeServer = (*plugin)(nil)
 
-//NodeGetCapabilities - it will query node's capabilities
+// NodeGetCapabilities - it will query node's capabilities
 func (p *plugin) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
 	p.logger.Debug("NodeGetCapabilities")
 
 	return &csi.NodeGetCapabilitiesResponse{Capabilities: p.nsCaps}, nil
 }
 
-//NodeGetInfo - it will query node's info
+// NodeGetInfo - it will query node's info
 func (p *plugin) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
 	p.logger.Debug("NodeGetInfo")
 
@@ -36,7 +36,7 @@ func (p *plugin) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (
 	}, nil
 }
 
-//NodeStageVolume - it will mount the volume to a global mountpoint which can be shared by multi-pods
+// NodeStageVolume - it will mount the volume to a global mountpoint which can be shared by multi-pods
 func (p *plugin) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (*csi.NodeStageVolumeResponse, error) {
 	p.logger.WithFields(log.Fields{"volume": req.VolumeId}).Debug("NodeStageVolume")
 
@@ -45,7 +45,7 @@ func (p *plugin) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 	return nil, fmt.Errorf("not supported")
 }
 
-//NodeUnstageVolume - it will umount the volume from a global mountpoint
+// NodeUnstageVolume - it will umount the volume from a global mountpoint
 func (p *plugin) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolumeRequest) (*csi.NodeUnstageVolumeResponse, error) {
 	p.logger.WithFields(log.Fields{"volume": req.VolumeId}).Debug("NodeUnstageVolume")
 
@@ -54,7 +54,7 @@ func (p *plugin) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolu
 	return nil, fmt.Errorf("not supported")
 }
 
-//NodePublishVolume - it will mount the volume from a global mountpoint to the pod's mountpoint (bind mount)
+// NodePublishVolume - it will mount the volume from a global mountpoint to the pod's mountpoint (bind mount)
 func (p *plugin) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
 	p.logger.WithFields(log.Fields{
 		"volume":         req.VolumeId,
@@ -120,7 +120,7 @@ func (p *plugin) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 
 }
 
-//NodeUnpublishVolume -  it will umount the volume from the pod's mountpoint
+// NodeUnpublishVolume -  it will umount the volume from the pod's mountpoint
 func (p *plugin) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
 	p.logger.WithFields(log.Fields{
 		"volume":     req.VolumeId,
@@ -143,7 +143,7 @@ func (p *plugin) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublish
 	return resp, p.mounter.Unmount(req.TargetPath)
 }
 
-//NodeGetVolumeStats - it will query volume status
+// NodeGetVolumeStats - it will query volume status
 func (p *plugin) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeStatsRequest) (*csi.NodeGetVolumeStatsResponse, error) {
 	logCtx := p.logger.WithFields(log.Fields{
 		"volume":     req.VolumeId,
@@ -201,7 +201,7 @@ func (p *plugin) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeS
 	return resp, nil
 }
 
-//NodeExpandVolume - it will expand a volume by rescanning block and resizing fs
+// NodeExpandVolume - it will expand a volume by rescanning block and resizing fs
 func (p *plugin) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse, error) {
 	p.logger.WithFields(log.Fields{
 		"volume":                 req.VolumeId,

@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
@@ -268,7 +269,7 @@ func (m *manager) volumeMigrateSyncReplica(migrate *apisv1alpha1.LocalVolumeMigr
 	}
 
 	migrate.Status.State = apisv1alpha1.OperationStateMigratePruneReplica
-	return m.apiClient.Status().Update(context.TODO(), migrate)
+	return m.apiClient.Status().Update(ctx, migrate)
 
 }
 
@@ -283,20 +284,30 @@ func (m *manager) syncReplicaByRclone(migrate *apisv1alpha1.LocalVolumeMigrate, 
 
 	ctx := context.TODO()
 
+	cmName := datacopy.GetConfigMapName(datacopy.RCloneConfigMapName, vol.Name)
+	cm := &corev1.ConfigMap{}
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: cmName}, cm); err != nil {
+		logCtx.WithField("configmap", cmName).Error("Not found the rclone configmap")
+		return err
+	}
+
+	logCtx.WithField("configmap", cm.Name).WithField("data", cm.Data).Debug("Show rclone config")
+
+	if ready := cm.Data[datacopy.RCloneConfigSourceNodeReadyKey]; ready != datacopy.RCloneTrue {
+		logCtx.WithField(datacopy.RCloneConfigSourceNodeReadyKey, ready).Debug("Waiting for source mountpoint to be ready ...")
+		return fmt.Errorf("source mountpoint is not ready")
+	}
+	if ready := cm.Data[datacopy.RCloneConfigRemoteNodeReadyKey]; ready != datacopy.RCloneTrue {
+		logCtx.WithField(datacopy.RCloneConfigRemoteNodeReadyKey, ready).Debug("Waiting for remote mountpoint to be ready ...")
+		return fmt.Errorf("remote mountpoint is not ready")
+	}
+
 	jobName := generateJobName(migrate.Name, vol.Spec.PersistentVolumeClaimName)
 	syncJob := &batchv1.Job{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: jobName}, syncJob); err != nil {
 		if errors.IsNotFound(err) {
 			logCtx.WithField("Job", jobName).Info("No job is created to sync replicas, create one ...")
-			if err := rcl.SrcMountPointToRemoteMountPoint(
-				jobName,
-				m.namespace,
-				vol.Spec.PoolName,
-				vol.Name, migrate.Spec.SourceNode,
-				migrate.Status.TargetNode,
-				true,
-				0,
-			); err != nil {
+			if err := rcl.StartRCloneJob(jobName, vol.Name, migrate.Spec.SourceNode, true, 0); err != nil {
 				logCtx.WithField("LocalVolume", vol.Name).WithError(err).Error("Failed to start a job to sync replicas")
 				return fmt.Errorf("failed to start a job to sync replicas for volume %s", vol.Name)
 			}
@@ -305,6 +316,7 @@ func (m *manager) syncReplicaByRclone(migrate *apisv1alpha1.LocalVolumeMigrate, 
 		logCtx.WithError(err).Error("Failed to get MigrateJob from cache")
 		return err
 	}
+
 	// found the job, check the status
 	isJobCompleted := false
 	for _, cond := range syncJob.Status.Conditions {
@@ -315,8 +327,31 @@ func (m *manager) syncReplicaByRclone(migrate *apisv1alpha1.LocalVolumeMigrate, 
 				"StartTime":    syncJob.Status.StartTime.String(),
 				"CompleteTime": syncJob.Status.CompletionTime.String(),
 			}).Debug("The replicas have already been synchronized successfully")
-			if err := m.apiClient.Delete(ctx, syncJob); err != nil {
+
+			cm.Data[datacopy.RCloneConfigSyncDoneKey] = datacopy.RCloneTrue
+			if err := m.apiClient.Update(ctx, cm, &client.UpdateOptions{Raw: &metav1.UpdateOptions{}}); err != nil {
+				logCtx.WithField("configmap", cmName).WithError(err).Error("Failed to update rclone configmap")
 				return err
+			}
+			// remove the finalizer will release the job
+			syncJob.Finalizers = []string{}
+			if err := m.apiClient.Update(ctx, syncJob); err != nil {
+				logCtx.WithField("Job", syncJob).WithError(err).Error("Failed to remove finalizer")
+				return err
+			}
+			if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: jobName}, syncJob); err != nil {
+				if !errors.IsNotFound(err) {
+					logCtx.WithField("Job", syncJob).WithError(err).Error("Failed to fetch the job")
+					return err
+				}
+			} else {
+				if err := m.apiClient.Delete(ctx, syncJob); err != nil {
+					logCtx.WithField("Job", syncJob).WithError(err).Error("Failed to cleanup the job")
+					return err
+				}
+			}
+			if err := m.apiClient.Delete(ctx, cm); err != nil {
+				logCtx.WithField("configmap", cm.Name).WithError(err).Warning("Failed to cleanup the rclone configmap, just leak it")
 			}
 			isJobCompleted = true
 			break
@@ -336,33 +371,28 @@ func (m *manager) prepareForRClone(migrate *apisv1alpha1.LocalVolumeMigrate, vol
 
 	ctx := context.TODO()
 
-	// prepare the resources for rclone to execute
 	rcl := m.dataCopyManager.UseRclone(rcloneImageName, m.namespace)
-	if err := rcl.EnsureRcloneConfigMapToTargetNamespace(m.namespace); err != nil {
-		logCtx.WithError(err).Error("Failed to ensure configmap")
-		return nil, err
-	}
-	tmpRcloneKeyConfigMap := &corev1.ConfigMap{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: datacopy.RCloneKeyConfigMapName}, tmpRcloneKeyConfigMap); err == nil {
-		if delErr := m.apiClient.Delete(ctx, tmpRcloneKeyConfigMap); delErr != nil {
-			m.logger.WithError(err).Error("Failed to delete Configmap")
-			return nil, delErr
+	// Prepare the public/private ssh keys for rclone to execute. The keys should be shared by all the rclone executions.
+	// Don't update once it exists
+	cm := &corev1.ConfigMap{}
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: datacopy.RCloneKeyConfigMapName}, cm); err != nil {
+		if !errors.IsNotFound(err) {
+			logCtx.WithField("configmap", datacopy.RCloneKeyConfigMapName).WithError(err).Error("Failed to fetch configmap")
+			return nil, err
 		}
-	}
-	rcloneKeyCM := rcl.GenerateRcloneKeyConfigMap(m.namespace)
-	if err := m.apiClient.Create(ctx, rcloneKeyCM); err != nil {
-		if errors.IsAlreadyExists(err) {
-			logCtx.Warning("RcloneKeyConfigmap already exists")
-		} else {
-			logCtx.WithError(err).Error("Failed to create RcloneKeyConfigmap")
+		cm = rcl.GenerateRcloneKeyConfigMap()
+		if err := m.apiClient.Create(ctx, cm); err != nil {
+			logCtx.WithField("configmap", datacopy.RCloneKeyConfigMapName).WithError(err).Error("Failed to create RcloneKeyConfigmap")
 			return nil, err
 		}
 	}
-	if err := m.makeMigrateRcloneConfigmap(migrate.Status.TargetNode, migrate.Spec.SourceNode, m.namespace, vol.Name); err != nil {
+
+	// Prepare the rclone's configuration, which should be created unique for each volume data copy
+	if err := m.makeConfigForRClone(migrate.Status.TargetNode, migrate.Spec.SourceNode, vol.Name); err != nil {
 		if errors.IsAlreadyExists(err) {
-			logCtx.Warning("MigrateRcloneConfigmap already exists")
+			logCtx.Warning("The rclone's config already exists")
 		} else {
-			logCtx.WithError(err).Error("Failed to makeMigrateRcloneConfigmap")
+			logCtx.WithError(err).Error("Failed to create rclone's config")
 			return nil, err
 		}
 	}
@@ -517,13 +547,14 @@ func (m *manager) getAllVolumesInGroup(lvg *apisv1alpha1.LocalVolumeGroup) ([]*a
 	return vols, nil
 }
 
-func (m *manager) makeMigrateRcloneConfigmap(targetNodeName, sourceNodeName, ns, lvname string) error {
+func (m *manager) makeConfigForRClone(targetNodeName, sourceNodeName, lvName string) error {
 	ctx := context.TODO()
 
-	tmpConfigMap := &corev1.ConfigMap{}
-	err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: ns, Name: datacopy.RCloneConfigMapName}, tmpConfigMap)
-	if err == nil {
-		if delErr := m.apiClient.Delete(context.TODO(), tmpConfigMap); delErr != nil {
+	cmName := datacopy.GetConfigMapName(datacopy.RCloneConfigMapName, lvName)
+
+	cm := &corev1.ConfigMap{}
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: m.namespace, Name: cmName}, cm); err == nil {
+		if delErr := m.apiClient.Delete(context.TODO(), cm); delErr != nil {
 			m.logger.WithError(err).Error("Failed to delete Configmap")
 			return delErr
 		}
@@ -534,22 +565,26 @@ func (m *manager) makeMigrateRcloneConfigmap(targetNodeName, sourceNodeName, ns,
 	typeData := "type = sftp" + "\n"
 	remoteHostData := "host = " + targetNodeName + "\n"
 	sourceHostData := "host = " + sourceNodeName + "\n"
-	keyFileData := "key_file = /config/rclone/rclonemerged" + "\n"
+	keyFileData := "key_file = /config/rclone/" + datacopy.RCloneCertKey + "\n"
 	shellTypeData := "shell_type = unix" + "\n"
 	md5sumCommandData := "md5sum_command = md5sum" + "\n"
 	sha1sumCommandData := "sha1sum_command = sha1sum" + "\n"
 
+	remoteConfig := remoteNameData + typeData + remoteHostData + keyFileData + shellTypeData + md5sumCommandData + sha1sumCommandData
+	sourceConfig := sourceNameData + typeData + sourceHostData + keyFileData + shellTypeData + md5sumCommandData + sha1sumCommandData
 	data := map[string]string{
-		datacopy.RCloneConfigMapKey: remoteNameData + typeData + remoteHostData + keyFileData + shellTypeData + md5sumCommandData + sha1sumCommandData +
-			sourceNameData + typeData + sourceHostData + keyFileData + shellTypeData + md5sumCommandData + sha1sumCommandData,
-		"lvname":         lvname,
-		"targetNodeName": targetNodeName,
-		"sourceNodeName": sourceNodeName,
+		datacopy.RCloneConfigMapKey:             remoteConfig + sourceConfig,
+		datacopy.RCloneConfigVolumeNameKey:      lvName,
+		datacopy.RCloneConfigDstNodeNameKey:     targetNodeName,
+		datacopy.RCloneConfigSrcNodeNameKey:     sourceNodeName,
+		datacopy.RCloneConfigSourceNodeReadyKey: datacopy.RCloneFalse,
+		datacopy.RCloneConfigRemoteNodeReadyKey: datacopy.RCloneFalse,
+		datacopy.RCloneConfigSyncDoneKey:        datacopy.RCloneFalse,
 	}
-	cm := &corev1.ConfigMap{
+	cm = &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      datacopy.RCloneConfigMapName,
-			Namespace: ns,
+			Name:      cmName,
+			Namespace: m.namespace,
 			Labels:    map[string]string{},
 		},
 		Data: data,
