@@ -2,6 +2,7 @@ package datacopy
 
 import (
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/hwameistor/hwameistor/pkg/local-storage/exechelper"
@@ -10,33 +11,42 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	RcloneSrcName          = "source"
-	RcloneRemoteName       = "remote"
-	rcloneKeyDir           = "~/.ssh"
-	rcloneKeyFilePath      = "~/.ssh/rclone"
-	rcloneAllKeyFilePath   = "~/.ssh/rclone-merged"
-	rcloneKeyName          = "rclonekey"
-	sshkeygenCmd           = "ssh-keygen"
-	srcMountPoint          = "/mnt/src/"
-	dstMountPoint          = "/mnt/dst/"
-	rclonePubKeyFilePath   = "~/.ssh/rclone.pub"
-	rcloneKeyConfigMapName = "rclone-key-config"
-	rcloneJobAffinityKey   = "kubernetes.io/hostname"
+	RcloneSrcName            = "source"
+	RcloneRemoteName         = "remote"
+	RCloneKeyDir             = "/root/.ssh"
+	RCloneKeyComment         = "RClonePubKey"
+	sshkeygenCmd             = "ssh-keygen"
+	RCloneSrcMountPoint      = "/mnt/hwameistor/src/"
+	RCloneDstMountPoint      = "/mnt/hwameistor/dst/"
+	RClonePubKeyFileName     = "rclone.pub"
+	RClonePrivateKeyFileName = "rclone"
+	RCloneKeyConfigMapName   = "rclone-key-config"
+	RCloneConfigMapName      = "rclone-config"
+	RCloneConfigMapKey       = "rclone.conf"
+	RCloneCertKey            = "rclone-ssh-keys"
+	rcloneJobAffinityKey     = "kubernetes.io/hostname"
+	rcloneJobLabelApp        = "migrate-rclone"
+
+	RCloneConfigSrcNodeNameKey     = "sourceNode"
+	RCloneConfigDstNodeNameKey     = "targetNode"
+	RCloneConfigVolumeNameKey      = "localVolume"
+	RCloneConfigSourceNodeReadyKey = "sourceReady"
+	RCloneConfigRemoteNodeReadyKey = "targetReady"
+	RCloneConfigSyncDoneKey        = "completed"
+
+	RCloneTrue  string = "yes"
+	RCloneFalse string = "no"
+
+	RCloneJobFinalizer = "hwameistor.io/rclone-job-protect"
 )
 
 type Rclone struct {
 	rcloneImage              string
 	rcloneMountContainerName string
-	rcloneConfigMapName      string
-	rcloneKeyConfigMapName   string
 	rcloneConfigMapNamespace string
-	rcloneConfigMapKey       string
-	rcloneCertKey            string
-	skipRcloneConfiguration  bool
 	dcm                      *DataCopyManager
 	cmdExec                  exechelper.Executor
 }
@@ -46,62 +56,52 @@ func (rcl *Rclone) generateSSHPubAndPrivateKeyCM() (string, string, error) {
 
 	paramsRemove := exechelper.ExecParams{
 		CmdName: "rm",
-		CmdArgs: []string{"-rf", rcloneKeyFilePath},
+		CmdArgs: []string{"-rf", filepath.Join(RCloneKeyDir, RClonePrivateKeyFileName)},
 		Timeout: 0,
 	}
 	resultRemove := rcl.cmdExec.RunCommand(paramsRemove)
 	if resultRemove.ExitCode != 0 {
-		return "", "", fmt.Errorf("rm -rf %s err: %d, %s", rcloneKeyFilePath, resultRemove.ExitCode, resultRemove.ErrBuf.String())
-	}
-
-	paramsRemoveAll := exechelper.ExecParams{
-		CmdName: "rm",
-		CmdArgs: []string{"-rf", rcloneAllKeyFilePath},
-		Timeout: 0,
-	}
-	resultRemoveAll := rcl.cmdExec.RunCommand(paramsRemoveAll)
-	if resultRemoveAll.ExitCode != 0 {
-		return "", "", fmt.Errorf("rm -rf %s err: %d, %s", rcloneAllKeyFilePath, resultRemoveAll.ExitCode, resultRemoveAll.ErrBuf.String())
+		return "", "", fmt.Errorf("rm -rf %s err: %d, %s", filepath.Join(RCloneKeyDir, RClonePrivateKeyFileName), resultRemove.ExitCode, resultRemove.ErrBuf.String())
 	}
 
 	paramsMkdir := exechelper.ExecParams{
 		CmdName: "mkdir",
-		CmdArgs: []string{"-p", rcloneKeyDir},
+		CmdArgs: []string{"-p", RCloneKeyDir},
 		Timeout: 0,
 	}
 	resultMkdir := rcl.cmdExec.RunCommand(paramsMkdir)
 	if resultMkdir.ExitCode != 0 {
-		return "", "", fmt.Errorf("mkdir -p %s err: %d, %s", rcloneKeyDir, resultMkdir.ExitCode, resultMkdir.ErrBuf.String())
+		return "", "", fmt.Errorf("mkdir -p %s err: %d, %s", RCloneKeyDir, resultMkdir.ExitCode, resultMkdir.ErrBuf.String())
 	}
 
 	params := exechelper.ExecParams{
 		CmdName: sshkeygenCmd,
-		CmdArgs: []string{"-q", "-b 4096", "-CrcloneKey", "-f", rcloneKeyFilePath},
+		CmdArgs: []string{"-q", "-b 4096", "-C" + RCloneKeyComment, "-f", filepath.Join(RCloneKeyDir, RClonePrivateKeyFileName)},
 		Timeout: 0,
 	}
 	result := rcl.cmdExec.RunCommand(params)
 	if result.ExitCode != 0 {
-		return "", "", fmt.Errorf("ssh-keygen %s err: %d, %s", rcloneKeyName, result.ExitCode, result.ErrBuf.String())
+		return "", "", fmt.Errorf("ssh-keygen %s err: %d, %s", RCloneKeyComment, result.ExitCode, result.ErrBuf.String())
 	}
 
 	paramsCatRclone := exechelper.ExecParams{
 		CmdName: "cat",
-		CmdArgs: []string{rcloneKeyFilePath},
+		CmdArgs: []string{filepath.Join(RCloneKeyDir, RClonePrivateKeyFileName)},
 		Timeout: 0,
 	}
 	resultCatRclone := rcl.cmdExec.RunCommand(paramsCatRclone)
 	if resultCatRclone.ExitCode != 0 {
-		return "", "", fmt.Errorf("cat %s err: %d, %s", rcloneKeyFilePath, resultCatRclone.ExitCode, resultCatRclone.ErrBuf.String())
+		return "", "", fmt.Errorf("cat %s err: %d, %s", filepath.Join(RCloneKeyDir, RClonePrivateKeyFileName), resultCatRclone.ExitCode, resultCatRclone.ErrBuf.String())
 	}
 
 	paramsCatRclonePub := exechelper.ExecParams{
 		CmdName: "cat",
-		CmdArgs: []string{rclonePubKeyFilePath},
+		CmdArgs: []string{filepath.Join(RCloneKeyDir, RClonePubKeyFileName)},
 		Timeout: 0,
 	}
 	resultCatRclonePub := rcl.cmdExec.RunCommand(paramsCatRclonePub)
 	if resultCatRclonePub.ExitCode != 0 {
-		return "", "", fmt.Errorf("cat %s err: %d, %s", rclonePubKeyFilePath, resultCatRclonePub.ExitCode, resultCatRclonePub.ErrBuf.String())
+		return "", "", fmt.Errorf("cat %s err: %d, %s", filepath.Join(RCloneKeyDir, RClonePubKeyFileName), resultCatRclonePub.ExitCode, resultCatRclonePub.ErrBuf.String())
 	}
 	rclonePubKeyData := resultCatRclonePub.OutBuf.String()
 	rclonePrivateKeyData := resultCatRclone.OutBuf.String()
@@ -109,7 +109,7 @@ func (rcl *Rclone) generateSSHPubAndPrivateKeyCM() (string, string, error) {
 	return rclonePubKeyData, rclonePrivateKeyData, nil
 }
 
-func (rcl *Rclone) GenerateRcloneKeyConfigMap(ns string) *corev1.ConfigMap {
+func (rcl *Rclone) GenerateRcloneKeyConfigMap() *corev1.ConfigMap {
 
 	var rcloneCM = &corev1.ConfigMap{}
 	rclonePubKeyData, rclonePrivateKeyData, err := rcl.generateSSHPubAndPrivateKeyCM()
@@ -120,15 +120,15 @@ func (rcl *Rclone) GenerateRcloneKeyConfigMap(ns string) *corev1.ConfigMap {
 	}
 
 	configData := map[string]string{
-		"rclone.pub":   rclonePubKeyData,
-		"rclone":       rclonePrivateKeyData,
-		"rclonemerged": rclonePrivateKeyData + "\n" + rclonePubKeyData,
+		RClonePubKeyFileName:     rclonePubKeyData,
+		RClonePrivateKeyFileName: rclonePrivateKeyData,
+		RCloneCertKey:            rclonePrivateKeyData + "\n" + rclonePubKeyData,
 	}
 
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      rcloneKeyConfigMapName,
-			Namespace: ns,
+			Name:      RCloneKeyConfigMapName,
+			Namespace: rcl.rcloneConfigMapNamespace,
 		},
 		Data: configData,
 	}
@@ -136,8 +136,8 @@ func (rcl *Rclone) GenerateRcloneKeyConfigMap(ns string) *corev1.ConfigMap {
 	return configMap
 }
 
-func (rcl *Rclone) SrcMountPointToRemoteMountPoint(jobName, namespace, lvPoolName, lvName, srcNodeName, dstNodeName string, waitUntilSuccess bool, timeout time.Duration) error {
-	jobStruct := rcl.getBaseJobStruct(jobName, namespace)
+func (rcl *Rclone) StartRCloneJob(jobName, lvName, srcNodeName string, waitUntilSuccess bool, timeout time.Duration) error {
+	job := rcl.getBaseJobStruct(jobName, lvName)
 
 	affinity := &corev1.Affinity{
 		NodeAffinity: &corev1.NodeAffinity{
@@ -158,20 +158,17 @@ func (rcl *Rclone) SrcMountPointToRemoteMountPoint(jobName, namespace, lvPoolNam
 			},
 		},
 	}
-	jobStruct.Spec.Template.Spec.Affinity = affinity
+	job.Spec.Template.Spec.Affinity = affinity
 
-	tmpDstMountPoint := dstMountPoint + lvName
-	tmpSrcMountPoint := srcMountPoint + lvName
+	tmpDstMountPoint := RCloneDstMountPoint + lvName
+	tmpSrcMountPoint := RCloneSrcMountPoint + lvName
 
-	logger.Debugf("DstMountPointBind  rclone sync  %s:%s %s:%s", RcloneSrcName, tmpSrcMountPoint, RcloneRemoteName, tmpDstMountPoint)
-	//rcloneCommand := fmt.Sprintf("rclone mkdir %s; rclone mkdir %s; rclone mount --allow-non-empty --allow-other --daemon %s:%s %s; "+
-	//	"rclone mount --allow-non-empty --allow-other --daemon %s:%s %s; rclone sync %s %s --progress; sleep 1800s;",
-	rcloneCommand := fmt.Sprintf("sleep 18s; rclone sync %s:%s %s:%s --progress;", RcloneSrcName, tmpSrcMountPoint, RcloneRemoteName, tmpDstMountPoint)
-	jobStruct.Spec.Template.Spec.Containers[0].Command = []string{"sh", "-c", rcloneCommand}
+	rcloneCommand := fmt.Sprintf("rclone sync %s:%s %s:%s --progress;", RcloneSrcName, tmpSrcMountPoint, RcloneRemoteName, tmpDstMountPoint)
+	job.Spec.Template.Spec.Containers[0].Command = []string{"sh", "-c", rcloneCommand}
 
-	if err := rcl.dcm.k8sControllerClient.Create(rcl.dcm.ctx, jobStruct); err != nil {
+	if err := rcl.dcm.k8sControllerClient.Create(rcl.dcm.ctx, job); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
-			return fmt.Errorf("failed to create MigrateJob, Job already exists")
+			return fmt.Errorf("failed to create rclone job, already exists")
 		}
 		return err
 	}
@@ -179,43 +176,44 @@ func (rcl *Rclone) SrcMountPointToRemoteMountPoint(jobName, namespace, lvPoolNam
 	return nil
 }
 
-func (rcl *Rclone) WaitMigrateJobTaskDone(jobName, lvName string, waitUntilSuccess bool, timeout time.Duration) error {
+// func (rcl *Rclone) WaitMigrateJobTaskDone(jobName, lvName string, waitUntilSuccess bool, timeout time.Duration) error {
 
-	resCh := make(chan *DataCopyStatus)
-	rcl.dcm.RegisterRelatedJob(jobName, resCh)
-	defer rcl.dcm.DeregisterRelatedJob(jobName)
+// 	resCh := make(chan *DataCopyStatus)
+// 	rcl.dcm.RegisterRelatedJob(jobName, resCh)
+// 	defer rcl.dcm.DeregisterRelatedJob(jobName)
 
-	if waitUntilSuccess {
-		if timeout == 0 {
-			timeout = DefaultCopyTimeout
-		}
+// 	if waitUntilSuccess {
+// 		if timeout == 0 {
+// 			timeout = DefaultCopyTimeout
+// 		}
 
-		select {
-		case res := <-resCh:
-			if res.Phase == DataCopyStatusFailed {
-				return fmt.Errorf("failed to run job %s, message is [TODO] %s", res.JobName, res.Message)
-			} else {
-				return nil
-			}
-		case <-time.After(timeout):
-			return fmt.Errorf("failed to copy data from srcMountPointName: %s to dstMountPointName: %s, timeout after %s", srcMountPoint+lvName, dstMountPoint+lvName, timeout)
-		}
-	}
+// 		select {
+// 		case res := <-resCh:
+// 			if res.Phase == DataCopyStatusFailed {
+// 				return fmt.Errorf("failed to run job %s, message is [TODO] %s", res.JobName, res.Message)
+// 			} else {
+// 				return nil
+// 			}
+// 		case <-time.After(timeout):
+// 			return fmt.Errorf("failed to copy data from srcMountPointName: %s to dstMountPointName: %s, timeout after %s", RCloneSrcMountPoint+lvName, RCloneDstMountPoint+lvName, timeout)
+// 		}
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // User should fill up with Spec.Template.Spec.Containers[0].Command
-func (rcl *Rclone) getBaseJobStruct(jobName, namespace string) *batchv1.Job {
+func (rcl *Rclone) getBaseJobStruct(jobName, volName string) *batchv1.Job {
 	var privileged = true
 	baseStruct := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      jobName,
-			Namespace: namespace,
+			Namespace: rcl.rcloneConfigMapNamespace,
 			//Annotations: annotations,
 			Labels: map[string]string{
-				"app": "migrate-rclone",
+				"app": rcloneJobLabelApp,
 			},
+			Finalizers: []string{RCloneJobFinalizer},
 		},
 		Spec: batchv1.JobSpec{
 			// Require feature gate
@@ -223,7 +221,7 @@ func (rcl *Rclone) getBaseJobStruct(jobName, namespace string) *batchv1.Job {
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": "migrate-rclone",
+						"app": rcloneJobLabelApp,
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -242,21 +240,16 @@ func (rcl *Rclone) getBaseJobStruct(jobName, namespace string) *batchv1.Job {
 		},
 	}
 
-	// Return without config
-	if rcl.skipRcloneConfiguration {
-		return baseStruct
-	}
-
 	rcloneConfigVolumeMount := corev1.VolumeMount{
 		Name:      "rclone-config",
-		MountPath: "/config/rclone/rclone.conf",
-		SubPath:   "rclone.conf",
+		MountPath: filepath.Join("/config/rclone", RCloneConfigMapKey),
+		SubPath:   RCloneConfigMapKey,
 	}
 
 	rcloneKeyConfigVolumeMount := corev1.VolumeMount{
 		Name:      "rclone-key-config",
-		MountPath: "/config/rclone/rclonemerged",
-		SubPath:   "rclonemerged",
+		MountPath: filepath.Join("/config/rclone", RCloneCertKey),
+		SubPath:   RCloneCertKey,
 	}
 
 	// Container volume mount declare
@@ -271,11 +264,11 @@ func (rcl *Rclone) getBaseJobStruct(jobName, namespace string) *batchv1.Job {
 			Name: "rclone-config",
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
-					LocalObjectReference: corev1.LocalObjectReference{Name: rcl.rcloneConfigMapName},
+					LocalObjectReference: corev1.LocalObjectReference{Name: GetConfigMapName(RCloneConfigMapName, volName)},
 					Items: []corev1.KeyToPath{
 						{
-							Key:  rcl.rcloneConfigMapKey,
-							Path: "rclone.conf",
+							Key:  RCloneConfigMapKey,
+							Path: RCloneConfigMapKey,
 						},
 					},
 				},
@@ -285,11 +278,11 @@ func (rcl *Rclone) getBaseJobStruct(jobName, namespace string) *batchv1.Job {
 			Name: "rclone-key-config",
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
-					LocalObjectReference: corev1.LocalObjectReference{Name: rcl.rcloneKeyConfigMapName},
+					LocalObjectReference: corev1.LocalObjectReference{Name: RCloneKeyConfigMapName},
 					Items: []corev1.KeyToPath{
 						{
-							Key:  rcl.rcloneCertKey,
-							Path: "rclonemerged",
+							Key:  RCloneCertKey,
+							Path: RCloneCertKey,
 						},
 					},
 				},
@@ -309,6 +302,18 @@ func (rcl *Rclone) getBaseJobStruct(jobName, namespace string) *batchv1.Job {
 		},
 	}
 
+	etchostsVolume := corev1.Volume{
+		Name: "etc-hosts",
+		VolumeSource: corev1.VolumeSource{
+			HostPath: &corev1.HostPathVolumeSource{
+				Path: "/etc/hosts",
+			},
+		},
+	}
+	etchostsVolumeMount := corev1.VolumeMount{
+		Name: "etc-hosts", MountPath: "/etc/hosts",
+	}
+
 	hostCopyVolumeMountMnt := corev1.VolumeMount{
 		Name: "host-mnt", MountPath: "/mnt/",
 	}
@@ -326,60 +331,17 @@ func (rcl *Rclone) getBaseJobStruct(jobName, namespace string) *batchv1.Job {
 	baseStruct.Spec.Template.Spec.Containers[0].VolumeMounts = append(baseStruct.Spec.Template.Spec.Containers[0].VolumeMounts, hostCopyVolumeMountMnt)
 	baseStruct.Spec.Template.Spec.Volumes = append(baseStruct.Spec.Template.Spec.Volumes, hostVolumeMnt)
 
+	baseStruct.Spec.Template.Spec.Containers[0].VolumeMounts = append(baseStruct.Spec.Template.Spec.Containers[0].VolumeMounts, etchostsVolumeMount)
+	baseStruct.Spec.Template.Spec.Volumes = append(baseStruct.Spec.Template.Spec.Volumes, etchostsVolume)
+
 	return baseStruct
-}
-
-func (rcl *Rclone) EnsureRcloneConfigMapToTargetNamespace(targetNamespace string) error {
-	// Do not copy when origin cm can be used
-	if rcl.rcloneConfigMapNamespace != targetNamespace {
-		keyToFindStaleCM := k8sclient.ObjectKey{
-			Name:      rcl.rcloneConfigMapName,
-			Namespace: targetNamespace,
-		}
-
-		staleCM := &corev1.ConfigMap{}
-		if err := rcl.dcm.k8sControllerClient.Get(rcl.dcm.ctx, keyToFindStaleCM, staleCM); err != nil {
-			if !k8serrors.IsNotFound(err) {
-				logger.WithError(err).Errorf("Failed to check stale configmap name: %s namespace: %s", rcl.rcloneConfigMapName, targetNamespace)
-				return err
-			}
-		} else {
-			if err := rcl.dcm.k8sControllerClient.Delete(rcl.dcm.ctx, staleCM); err != nil {
-				logger.WithError(err).Errorf("Failed to delete stale configmap name: %s namespace: %s", rcl.rcloneConfigMapName, targetNamespace)
-				return err
-			}
-		}
-
-		keyToFindOriginCM := k8sclient.ObjectKey{
-			Name:      rcl.rcloneConfigMapName,
-			Namespace: rcl.rcloneConfigMapNamespace,
-		}
-
-		originCM := &corev1.ConfigMap{}
-		if err := rcl.dcm.k8sControllerClient.Get(rcl.dcm.ctx, keyToFindOriginCM, originCM); err != nil {
-			logger.WithError(err).Errorf("Failed to get origin configmap name: %s namespace: %s", rcl.rcloneConfigMapName, rcl.rcloneConfigMapNamespace)
-			return err
-		}
-
-		originCMCopyed := originCM.DeepCopy()
-		cmForTargetNamespace := &corev1.ConfigMap{}
-		cmForTargetNamespace.Name = originCMCopyed.Name
-		cmForTargetNamespace.Immutable = originCMCopyed.Immutable
-		cmForTargetNamespace.Data = originCMCopyed.Data
-		cmForTargetNamespace.BinaryData = originCMCopyed.BinaryData
-		cmForTargetNamespace.Namespace = targetNamespace
-
-		if err := rcl.dcm.k8sControllerClient.Create(rcl.dcm.ctx, cmForTargetNamespace); err != nil {
-			logger.WithError(err).Errorf("Failed to copy configmap name: %s namespace: %s to target namespace: %s", rcl.rcloneConfigMapName, rcl.rcloneConfigMapNamespace, targetNamespace)
-			return err
-		}
-	}
-	rcl.skipRcloneConfiguration = false
-
-	return nil
 }
 
 // TODO
 func (rcl *Rclone) progressWatchingFunc() *Progress {
 	return nil
+}
+
+func GetConfigMapName(str1, str2 string) string {
+	return fmt.Sprintf("%s-%s", str1, str2)
 }

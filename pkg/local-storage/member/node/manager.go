@@ -3,10 +3,14 @@ package node
 import (
 	"context"
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	"net"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
+
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils/datacopy"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -19,7 +23,7 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
 	log "github.com/sirupsen/logrus"
 
-	k8scorev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -33,13 +37,7 @@ import (
 //
 // Infinitely retry
 const (
-	maxRetries              = 0
-	rcloneKeyConfigMapName  = "rclone-key-config"
-	rcloneConfigMapName     = "migrate-rclone-config"
-	rclonePubKey            = "rclone.pub"
-	rcloneTmpPubKeyFilePath = "rclone.pub.tmp"
-	srcMountPoint           = "/mnt/src/"
-	dstMountPoint           = "/mnt/dst/"
+	maxRetries = 0
 )
 
 type manager struct {
@@ -64,7 +62,7 @@ type manager struct {
 
 	volumeTaskQueue *common.TaskQueue
 
-	volumeBlockMountTaskQueue *common.TaskQueue
+	rcloneVolumeMountTaskQueue *common.TaskQueue
 
 	volumeReplicaTaskQueue *common.TaskQueue
 
@@ -93,16 +91,16 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 		return nil, err
 	}
 	return &manager{
-		name:                      name,
-		namespace:                 namespace,
-		apiClient:                 cli,
-		informersCache:            informersCache,
-		replicaRecords:            map[string]string{},
-		volumeTaskQueue:           common.NewTaskQueue("VolumeTask", maxRetries),
-		volumeBlockMountTaskQueue: common.NewTaskQueue("volumeBlockMount", maxRetries),
-		volumeReplicaTaskQueue:    common.NewTaskQueue("VolumeReplicaTask", maxRetries),
-		localDiskClaimTaskQueue:   common.NewTaskQueue("LocalDiskClaim", maxRetries),
-		localDiskTaskQueue:        common.NewTaskQueue("LocalDisk", maxRetries),
+		name:                       name,
+		namespace:                  namespace,
+		apiClient:                  cli,
+		informersCache:             informersCache,
+		replicaRecords:             map[string]string{},
+		volumeTaskQueue:            common.NewTaskQueue("VolumeTask", maxRetries),
+		rcloneVolumeMountTaskQueue: common.NewTaskQueue("RcloneVolumeMount", maxRetries),
+		volumeReplicaTaskQueue:     common.NewTaskQueue("VolumeReplicaTask", maxRetries),
+		localDiskClaimTaskQueue:    common.NewTaskQueue("LocalDiskClaim", maxRetries),
+		localDiskTaskQueue:         common.NewTaskQueue("LocalDisk", maxRetries),
 		// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 		diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 		configManager:  configManager,
@@ -114,6 +112,9 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 }
 
 func (m *manager) Run(stopCh <-chan struct{}) {
+
+	m.initForRClone()
+
 	m.initCache()
 
 	m.register()
@@ -122,8 +123,6 @@ func (m *manager) Run(stopCh <-chan struct{}) {
 
 	go m.startVolumeTaskWorker(stopCh)
 
-	go m.startVolumeBlockMountTaskWorker(stopCh)
-
 	go m.startVolumeReplicaTaskWorker(stopCh)
 
 	go m.startLocalDiskClaimTaskWorker(stopCh)
@@ -131,6 +130,8 @@ func (m *manager) Run(stopCh <-chan struct{}) {
 	go m.startLocalDiskTaskWorker(stopCh)
 
 	go m.startDiskEventWorker(stopCh)
+
+	go m.startRcloneVolumeMountTaskWorker(stopCh)
 
 	go diskmonitor.New(m.diskEventQueue).Run(stopCh)
 
@@ -165,6 +166,13 @@ func (m *manager) isPhysicalNode() bool {
 	return true
 }
 */
+
+func (m *manager) initForRClone() {
+	if err := utils.TouchFile(filepath.Join(datacopy.RCloneKeyDir, "authorized_keys")); err != nil {
+		m.logger.WithField("file", filepath.Join(datacopy.RCloneKeyDir, "authorized_keys")).WithError(err).Panic("Failed to create a rclone file")
+	}
+
+}
 
 func (m *manager) initCache() {
 	// initialize replica records
@@ -223,14 +231,14 @@ func (m *manager) setupInformers() {
 		UpdateFunc: m.handleLocalDiskUpdate,
 	})
 
-	k8sCMInformer, err := m.informersCache.GetInformer(context.TODO(), &k8scorev1.ConfigMap{})
+	cmInformer, err := m.informersCache.GetInformer(context.TODO(), &corev1.ConfigMap{})
 	if err != nil {
 		// error happens, crash the node
-		m.logger.WithError(err).Fatal("Failed to get informer for k8s cm")
+		m.logger.WithError(err).Fatal("Failed to get informer for ConfigMap")
 	}
-	k8sCMInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		UpdateFunc: m.handleK8sCMUpdatedEvent,
-		AddFunc:    m.handleK8sCMAddEvent,
+	cmInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		UpdateFunc: m.handleConfigMapUpdatedEvent,
+		AddFunc:    m.handleConfigMapAddEvent,
 	})
 }
 
@@ -254,7 +262,7 @@ func (m *manager) register() {
 	var nodeConfig *apisv1alpha1.NodeConfig
 	logCtx := m.logger.WithFields(log.Fields{"node": m.name})
 	logCtx.Debug("Registering node into cluster")
-	k8sNode := &k8scorev1.Node{}
+	k8sNode := &corev1.Node{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: m.name}, k8sNode); err != nil {
 		logCtx.WithError(err).Fatal("Can't find K8S node")
 	}
@@ -313,7 +321,7 @@ func (m *manager) configNode(config *apisv1alpha1.NodeConfig, node *apisv1alpha1
 	return nil
 }
 
-func (m *manager) getConfByK8SNodeOrDefault(k8sNode *k8scorev1.Node) (*apisv1alpha1.NodeConfig, error) {
+func (m *manager) getConfByK8SNodeOrDefault(k8sNode *corev1.Node) (*apisv1alpha1.NodeConfig, error) {
 	ipAddr, err := m.getStorageIPv4Address(k8sNode)
 	if err != nil {
 		return nil, err
@@ -322,7 +330,7 @@ func (m *manager) getConfByK8SNodeOrDefault(k8sNode *k8scorev1.Node) (*apisv1alp
 
 }
 
-func (m *manager) getStorageIPv4Address(k8sNode *k8scorev1.Node) (string, error) {
+func (m *manager) getStorageIPv4Address(k8sNode *corev1.Node) (string, error) {
 	logCtx := m.logger.WithField("node", k8sNode.Name)
 	// lookup from k8s node's annotation firstly
 	annotationKey := os.Getenv(apisv1alpha1.StorageIPv4AddressAnnotationKeyEnv)
@@ -340,7 +348,7 @@ func (m *manager) getStorageIPv4Address(k8sNode *k8scorev1.Node) (string, error)
 
 	// lookup from k8s node's addresses
 	for _, addr := range k8sNode.Status.Addresses {
-		if addr.Type == k8scorev1.NodeInternalIP {
+		if addr.Type == corev1.NodeInternalIP {
 			return addr.Address, nil
 		}
 	}
@@ -425,38 +433,27 @@ func (m *manager) handleNodeDelete(obj interface{}) {
 	}
 }
 
-func (m *manager) handleK8sCMUpdatedEvent(oldObj, newObj interface{}) {
-	newCM, _ := newObj.(*k8scorev1.ConfigMap)
-	if newCM.Name == rcloneConfigMapName {
-		if newCM.Data["lvname"] != "" {
-			lvNameData := newCM.Data["lvname"]
-			m.volumeBlockMountTaskQueue.Add(newCM.Namespace + "/" + lvNameData)
+func (m *manager) handleConfigMapAddEvent(newObj interface{}) {
+	cm, _ := newObj.(*corev1.ConfigMap)
+	if cm.Namespace != m.namespace {
+		return
+	}
+	if strings.HasPrefix(cm.Name, datacopy.RCloneConfigMapName) {
+		if lvName, exist := cm.Data[datacopy.RCloneConfigVolumeNameKey]; exist && len(lvName) > 0 {
+			m.rcloneVolumeMountTaskQueue.Add(lvName)
 		}
 	}
-	if newCM.Name == rcloneKeyConfigMapName {
-		if newCM.Data[rclonePubKey] != "" {
-			pubKeyData := newCM.Data[rclonePubKey]
-			pubKeyData = "\n" + pubKeyData
-			utils.WriteDataIntoSysFSFile(pubKeyData, rcloneTmpPubKeyFilePath)
+	if cm.Name == datacopy.RCloneKeyConfigMapName {
+		if pubKeyData, exist := cm.Data[datacopy.RClonePubKeyFileName]; exist && len(pubKeyData) > 0 {
+			if err := utils.AddPubKeyIntoAuthorizedKeys(pubKeyData); err != nil {
+				m.logger.WithError(err).Error("Failed to write public key into authorized keys file")
+			}
 		}
 	}
 }
 
-func (m *manager) handleK8sCMAddEvent(newObj interface{}) {
-	newCM, _ := newObj.(*k8scorev1.ConfigMap)
-	if newCM.Name == rcloneConfigMapName {
-		if newCM.Data["lvname"] != "" {
-			lvNameData := newCM.Data["lvname"]
-			m.volumeBlockMountTaskQueue.Add(newCM.Namespace + "/" + lvNameData)
-		}
-	}
-	if newCM.Name == rcloneKeyConfigMapName {
-		if newCM.Data[rclonePubKey] != "" {
-			pubKeyData := newCM.Data[rclonePubKey]
-			pubKeyData = "\n" + pubKeyData
-			utils.WriteDataIntoSysFSFile(pubKeyData, rcloneTmpPubKeyFilePath)
-		}
-	}
+func (m *manager) handleConfigMapUpdatedEvent(oldObj, newObj interface{}) {
+	m.handleConfigMapAddEvent(newObj)
 }
 
 func isStringInArray(str string, strs []string) bool {

@@ -125,6 +125,7 @@ func (m *localStorageMember) Run(stopCh <-chan struct{}) {
 
 	log.Debug("Starting REST server")
 	m.restServer.Run(stopCh)
+
 }
 
 func (m *localStorageMember) Controller() localapis.ControllerManager {

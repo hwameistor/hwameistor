@@ -122,7 +122,7 @@ func (m *manager) start(stopCh <-chan struct{}) {
 
 		go m.startK8sNodeTaskWorker(stopCh)
 
-		m.setupInformers()
+		m.setupInformers(stopCh)
 
 		<-stopCh
 		m.logger.Info("Stopped cluster controller")
@@ -134,7 +134,7 @@ func (m *manager) start(stopCh <-chan struct{}) {
 	}
 }
 
-func (m *manager) setupInformers() {
+func (m *manager) setupInformers(stopCh <-chan struct{}) {
 	volumeInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolume{})
 	if err != nil {
 		// error happens, crash the node
@@ -170,6 +170,7 @@ func (m *manager) setupInformers() {
 	k8sNodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: m.handleK8sNodeUpdatedEvent,
 	})
+
 }
 
 // VolumeScheduler retrieve the volume scheduler instance

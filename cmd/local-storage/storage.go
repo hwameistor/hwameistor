@@ -15,6 +15,7 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-storage/controller"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"k8s.io/klog"
@@ -107,8 +108,7 @@ func main() {
 	// Get a config to talk to the apiserver
 	cfg, err := config.GetConfig()
 	if err != nil {
-		log.Error(err, "")
-		os.Exit(1)
+		log.Fatalf("Failed to get API server config: %s", err.Error())
 	}
 
 	// Set default manager options
@@ -127,9 +127,14 @@ func main() {
 
 	// Setup Scheme for all resources of Local Storage Member
 	if err := apisv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
-		log.WithError(err).Error("Failed to setup scheme for all resources")
+		log.WithError(err).Error("Failed to setup scheme for all HwameiStor resources")
 		os.Exit(1)
 	}
+
+	// if err := corev1.AddToScheme(mgr.GetScheme()); err != nil {
+	// 	log.WithError(err).Error("Failed to setup scheme for all core resources")
+	// 	os.Exit(1)
+	// }
 
 	// Setup all Controllers for Local Storage Member
 	if err := controller.AddToManager(mgr); err != nil {
