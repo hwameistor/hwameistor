@@ -1,9 +1,7 @@
 package evictor
 
 import (
-	"context"
 	"fmt"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -15,8 +13,6 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/informers"
 	informercorev1 "k8s.io/client-go/informers/core/v1"
 	informerstoragev1 "k8s.io/client-go/informers/storage/v1"
@@ -29,7 +25,12 @@ const (
 	lvmCSIDriverName  = "lvm.hwameistor.io"
 	diskCSIDriverName = "disk.hwameistor.io"
 
-	localVolumeNameIndex = "volumename"
+	volumeNameIndex = "volumename"
+	nodeNameIndex   = "nodename"
+
+	labelKeyForVolumeEviction            = "hwameistor.io/eviction"
+	labelValueForVolumeEvictionStart     = "start"
+	labelValueForVolumeEvictionCompleted = "completed"
 )
 
 // Evictor interface
@@ -38,18 +39,23 @@ type Evictor interface {
 }
 
 type evictor struct {
+	recordManager *evictRecordManager
+
 	clientset *kubernetes.Clientset
 
-	podInformer informercorev1.PodInformer
-	pvcInformer informercorev1.PersistentVolumeClaimInformer
-	scInformer  informerstoragev1.StorageClassInformer
+	nodeInformer informercorev1.NodeInformer
+	podInformer  informercorev1.PodInformer
+	pvcInformer  informercorev1.PersistentVolumeClaimInformer
+	scInformer   informerstoragev1.StorageClassInformer
 
 	lsClientset       *localstorageclientset.Clientset
 	lvInformer        localstorageinformersv1alpha1.LocalVolumeInformer
+	lvrInformer       localstorageinformersv1alpha1.LocalVolumeReplicaInformer
 	lvMigrateInformer localstorageinformersv1alpha1.LocalVolumeMigrateInformer
 
-	evictedPodQueue    *common.TaskQueue
-	migrateVolumeQueue *common.TaskQueue
+	evictNodeQueue   *common.TaskQueue
+	evictPodQueue    *common.TaskQueue
+	evictVolumeQueue *common.TaskQueue
 }
 
 /* steps:
@@ -61,21 +67,31 @@ type evictor struct {
 // New an assistant instance
 func New(clientset *kubernetes.Clientset) Evictor {
 	return &evictor{
-		clientset:          clientset,
-		evictedPodQueue:    common.NewTaskQueue("EvictedPods", 0),
-		migrateVolumeQueue: common.NewTaskQueue("MigrateVolumes", 0),
+		recordManager:    newEvictRecordManager(),
+		clientset:        clientset,
+		evictNodeQueue:   common.NewTaskQueue("EvictNodes", 0),
+		evictPodQueue:    common.NewTaskQueue("EvictPods", 0),
+		evictVolumeQueue: common.NewTaskQueue("EvictVolumes", 0),
 	}
 }
 
 func (ev *evictor) Run(stopCh <-chan struct{}) error {
+	ev.recordManager.run(stopCh)
+
 	log.Debug("start informer factory")
 	factory := informers.NewSharedInformerFactory(ev.clientset, 0)
 	factory.Start(stopCh)
 
+	ev.nodeInformer = factory.Core().V1().Nodes()
+	ev.nodeInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    ev.onNodeAdd,
+		UpdateFunc: ev.onNodeUpdate,
+	})
+	go ev.nodeInformer.Informer().Run(stopCh)
+
 	ev.podInformer = factory.Core().V1().Pods()
 	ev.podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		// UpdateFunc: ev.watchForEvictedPodOnUpdate,
-		DeleteFunc: ev.watchForEvictedPodOnDelete,
+		UpdateFunc: ev.onPodUpdate,
 	})
 	go ev.podInformer.Informer().Run(stopCh)
 
@@ -99,6 +115,18 @@ func (ev *evictor) Run(stopCh <-chan struct{}) error {
 	ev.lvInformer = lsFactory.Hwameistor().V1alpha1().LocalVolumes()
 	go ev.lvInformer.Informer().Run(stopCh)
 
+	// index: lvr.spec.nodename
+	lvrNodeNameIndexFunc := func(obj interface{}) ([]string, error) {
+		lvr, ok := obj.(*localstorageapis.LocalVolumeReplica)
+		if !ok || lvr == nil {
+			return []string{}, fmt.Errorf("wrong LocalStorageReplica resource")
+		}
+		return []string{lvr.Spec.NodeName}, nil
+	}
+	ev.lvrInformer = lsFactory.Hwameistor().V1alpha1().LocalVolumeReplicas()
+	ev.lvrInformer.Informer().AddIndexers(cache.Indexers{nodeNameIndex: lvrNodeNameIndexFunc})
+	go ev.lvrInformer.Informer().Run(stopCh)
+
 	// index: lvmigrate.spec.volumename
 	lvMigrateVolumeNameIndexFunc := func(obj interface{}) ([]string, error) {
 		lvm, ok := obj.(*localstorageapis.LocalVolumeMigrate)
@@ -108,190 +136,41 @@ func (ev *evictor) Run(stopCh <-chan struct{}) error {
 		return []string{lvm.Spec.VolumeName}, nil
 	}
 	ev.lvMigrateInformer = lsFactory.Hwameistor().V1alpha1().LocalVolumeMigrates()
-	ev.lvMigrateInformer.Informer().AddIndexers(cache.Indexers{localVolumeNameIndex: lvMigrateVolumeNameIndexFunc})
+	ev.lvMigrateInformer.Informer().AddIndexers(cache.Indexers{volumeNameIndex: lvMigrateVolumeNameIndexFunc})
 	go ev.lvMigrateInformer.Informer().Run(stopCh)
 
-	log.Debug("starting migrate volume worker")
-	go ev.startMigrateVolumeWorker(stopCh)
+	go ev.startVolumeWorker(stopCh)
+	go ev.startNodeWorker(stopCh)
+	go ev.startPodWorker(stopCh)
 
 	<-stopCh
 	return nil
 }
 
-func (ev *evictor) watchForEvictedPodOnDelete(obj interface{}) {
-	pod, _ := obj.(*corev1.Pod)
-	log.WithFields(log.Fields{
-		"namespace": pod.Namespace,
-		"pod":       pod.Name,
-		"message":   pod.Status.Conditions[0].Type,
-		"reason":    pod.Status.Reason,
-		"phase":     pod.Status.Phase,
-	}).Debug("Watching for a Pod delete event ...")
-	if isPodEvicted(pod) {
-		log.WithFields(log.Fields{
-			"namespace": pod.Namespace,
-			"pod":       pod.Name,
-			"phase":     pod.Status.Phase,
-			"reason":    pod.Status.Reason,
-		}).Debug("Got an evicted Pod to process")
-		go ev.filterForHwameiVolume(pod)
+func (ev *evictor) onNodeAdd(obj interface{}) {
+	node, _ := obj.(*corev1.Node)
+	if node.Labels[labelKeyForVolumeEviction] == labelValueForVolumeEvictionStart {
+		ev.addEvictNode(node.Name)
 	}
+}
+
+func (ev *evictor) onNodeUpdate(oldObj, newObj interface{}) {
+	ev.onNodeAdd(newObj)
+}
+
+func (ev *evictor) onPodAdd(obj interface{}) {
+	pod, _ := obj.(*corev1.Pod)
+	if isPodEvicted(pod) || pod.Labels[labelKeyForVolumeEviction] == labelValueForVolumeEvictionStart {
+		ev.addEvictPod(pod.Namespace, pod.Name)
+	}
+}
+
+func (ev *evictor) onPodUpdate(oldObj, newObj interface{}) {
+	ev.onPodAdd(newObj)
 }
 
 func isPodEvicted(pod *corev1.Pod) bool {
-
-	//pod.Status.Conditions[0]
-	// ??? should add the function to check for evicted pod ???
-	return false
-	// podFailed := pod.Status.Phase == corev1.PodFailed
-	// podEvicted := pod.Status.Reason == "Evicted"
-	// return podFailed && podEvicted
-}
-
-func (ev *evictor) filterForHwameiVolume(pod *corev1.Pod) error {
-	logCtx := log.WithFields(log.Fields{"pod": pod.Name, "namespace": pod.Namespace})
-	logCtx.Debug("Start to process an evicted pod")
-	for _, vol := range pod.Spec.Volumes {
-		if vol.PersistentVolumeClaim == nil {
-			continue
-		}
-		pvc, err := ev.pvcInformer.Lister().PersistentVolumeClaims(pod.Namespace).Get(vol.PersistentVolumeClaim.ClaimName)
-		if err != nil {
-			// if pvc can't be found in the cluster, the pod should not be able to be scheduled
-			logCtx.WithFields(log.Fields{
-				"namespace": pod.Namespace,
-				"pvc":       vol.PersistentVolumeClaim.ClaimName,
-			}).WithError(err).Error("Failed to get the pvc from the cluster")
-			return err
-		}
-		if pvc.Spec.StorageClassName == nil {
-			// should not be the CSI pvc, ignore
-			continue
-		}
-		sc, err := ev.scInformer.Lister().Get(*pvc.Spec.StorageClassName)
-		if err != nil {
-			// can't found storageclass in the cluster, the pod should not be able to be scheduled
-			logCtx.WithFields(log.Fields{
-				"pvc": pvc.Name,
-				"sc":  *pvc.Spec.StorageClassName,
-			}).WithError(err).Error("Failed to get the pvc from the cluster")
-			return err
-		}
-		if sc.Provisioner == lvmCSIDriverName || sc.Provisioner == diskCSIDriverName {
-			logCtx.WithFields(log.Fields{
-				"pvc":    pvc.Name,
-				"sc":     sc.Name,
-				"volume": pvc.Spec.VolumeName,
-				"node":   pod.Spec.NodeName,
-			}).Debug("Got a LocalVolume to migrate")
-
-			ev.migrateVolumeQueue.Add(constructMigrateVolumeTask(pvc.Spec.VolumeName, pod.Spec.NodeName))
-		}
-	}
-
-	return nil
-}
-
-func (ev *evictor) startMigrateVolumeWorker(stopCh <-chan struct{}) {
-	log.Debug("Migrate Volume Worker is working now")
-	go func() {
-		for {
-			task, shutdown := ev.migrateVolumeQueue.Get()
-			if shutdown {
-				log.WithFields(log.Fields{"task": task}).Debug("Stop the Migrate Volume worker")
-				break
-			}
-			if err := ev.evictVolume(task); err != nil {
-				log.WithFields(log.Fields{"task": task, "error": err.Error()}).Error("Failed to process Migrate Volume, retry later")
-				ev.migrateVolumeQueue.AddRateLimited(task)
-			} else {
-				log.WithFields(log.Fields{"task": task}).Debug("Completed a task for Migrating Volume.")
-				ev.migrateVolumeQueue.Forget(task)
-			}
-			ev.migrateVolumeQueue.Done(task)
-		}
-	}()
-
-	<-stopCh
-	ev.migrateVolumeQueue.Shutdown()
-}
-
-func (ev *evictor) evictVolume(migrateTask string) error {
-	logCtx := log.WithField("task", migrateTask)
-	logCtx.Debug("Start to process an local volume migrate task")
-
-	lvName, nodeName := parseMigrateVolumeTask(migrateTask)
-	lv, err := ev.lvInformer.Lister().Get(lvName)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			logCtx.Debug("Not found the LocalVolume in the system, ignore it")
-			return nil
-		}
-		logCtx.WithError(err).Error("Failed to get the LocalVolume from the system, try it later")
-		return err
-	}
-	// if LV is still in use, waiting for it to be released
-	if len(lv.Status.PublishedNodeName) > 0 {
-		logCtx.WithField("PublishedNode", lv.Status.PublishedNodeName).Warning("LocalVolume is still in use, try it later")
-		return fmt.Errorf("not released")
-	}
-
-	for _, replica := range lv.Spec.Config.Replicas {
-		if replica.Hostname == nodeName {
-			// check if there is a Migrate CR submitted for it
-			lvMigrates, err := ev.lvMigrateInformer.Informer().GetIndexer().ByIndex(localVolumeNameIndex, lvName)
-			if err != nil {
-				logCtx.WithError(err).Error("Failed to get the migration task for the LocalVolume")
-				return err
-			}
-			if len(lvMigrates) == 0 {
-				// no migrate task, submit a new one
-				logCtx.Debug("There is no Migrate job running against the LocalVolume, submit a new one")
-				lvm := &localstorageapis.LocalVolumeMigrate{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: lvName,
-						//Namespace: "hwameistor",
-					},
-					Spec: localstorageapis.LocalVolumeMigrateSpec{
-						VolumeName: lvName,
-						SourceNode: nodeName,
-						// don't specify the target nodes, so the scheduler will select from the avaliables
-						TargetNodesSuggested: []string{},
-						MigrateAllVols:       true,
-					},
-				}
-				if _, err := ev.lsClientset.HwameistorV1alpha1().LocalVolumeMigrates().Create(context.Background(), lvm, metav1.CreateOptions{}); err != nil {
-					log.WithField("LocalVolumeMigrate", lvm).WithError(err).Error("Failed to submit a migrate job")
-					return err
-				}
-				logCtx.WithField("LocalVolumeMigrate", lvm).Debug("Waiting for the migration job to complete ...")
-				return fmt.Errorf("waiting for complete")
-			}
-
-			migrateJobs := []string{}
-			for i := range lvMigrates {
-				lvm, _ := lvMigrates[i].(*localstorageapis.LocalVolumeMigrate)
-				migrateJobs = append(migrateJobs, lvm.Name)
-			}
-
-			logCtx.WithField("jobs", migrateJobs).Debug("Still waiting for the migration job to complete ...")
-			return fmt.Errorf("not completed")
-		}
-	}
-
-	logCtx.Debug("The migration job has already completed")
-	return nil
-}
-
-func constructMigrateVolumeTask(lvName string, nodeName string) string {
-	return fmt.Sprintf("%s/%s", lvName, nodeName)
-}
-
-// output: lvName, nodeName
-func parseMigrateVolumeTask(task string) (string, string) {
-	items := strings.Split(task, "/")
-	if len(items) < 2 {
-		return items[0], ""
-	}
-	return items[0], items[1]
+	podFailed := pod.Status.Phase == corev1.PodFailed
+	podEvicted := pod.Status.Reason == "Evicted"
+	return podFailed && podEvicted
 }
