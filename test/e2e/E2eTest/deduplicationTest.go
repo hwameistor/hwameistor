@@ -21,7 +21,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("test"), func() {
+var _ = ginkgo.Describe("Deduplication test ", ginkgo.Label("test"), func() {
 
 	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
 	client := f.GetClient()
