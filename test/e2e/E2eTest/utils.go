@@ -95,8 +95,6 @@ func installHwameiStorByHelm() {
 }
 
 func configureEnvironment(ctx context.Context) error {
-	logrus.Info("start rollback")
-	_ = runInLinux("sh rollback.sh")
 	err := wait.PollImmediate(10*time.Second, 20*time.Minute, func() (done bool, err error) {
 		output := runInLinux("kubectl get pod -A  |grep -v Running |wc -l")
 		if output != "1\n" {
