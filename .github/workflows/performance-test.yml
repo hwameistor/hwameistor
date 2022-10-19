@@ -1,4 +1,4 @@
-name: performancetest
+name: performance test
 on:
   workflow_dispatch:
 
