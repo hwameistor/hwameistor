@@ -139,6 +139,8 @@ func (ev *evictor) watchForEvictedPodOnDelete(obj interface{}) {
 }
 
 func isPodEvicted(pod *corev1.Pod) bool {
+
+	//pod.Status.Conditions[0]
 	// ??? should add the function to check for evicted pod ???
 	return false
 	// podFailed := pod.Status.Phase == corev1.PodFailed

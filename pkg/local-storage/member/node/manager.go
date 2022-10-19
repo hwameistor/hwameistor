@@ -23,7 +23,7 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
 	log "github.com/sirupsen/logrus"
 
-	k8scorev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -168,11 +168,6 @@ func (m *manager) isPhysicalNode() bool {
 */
 
 func (m *manager) initForRClone() {
-	// make sure the following directories and files exist
-	// rcloneKeyDir = "/root/.ssh"
-	// if err := os.MkdirAll(datacopy.RCloneKeyDir, 0755); err != nil {
-	// 	m.logger.WithField("directory", datacopy.RCloneKeyDir).WithError(err).Panic("Failed to create a rclone directory")
-	// }
 	if err := utils.TouchFile(filepath.Join(datacopy.RCloneKeyDir, "authorized_keys")); err != nil {
 		m.logger.WithField("file", filepath.Join(datacopy.RCloneKeyDir, "authorized_keys")).WithError(err).Panic("Failed to create a rclone file")
 	}
@@ -236,10 +231,10 @@ func (m *manager) setupInformers() {
 		UpdateFunc: m.handleLocalDiskUpdate,
 	})
 
-	cmInformer, err := m.informersCache.GetInformer(context.TODO(), &k8scorev1.ConfigMap{})
+	cmInformer, err := m.informersCache.GetInformer(context.TODO(), &corev1.ConfigMap{})
 	if err != nil {
 		// error happens, crash the node
-		m.logger.WithError(err).Fatal("Failed to get informer for k8s cm")
+		m.logger.WithError(err).Fatal("Failed to get informer for ConfigMap")
 	}
 	cmInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: m.handleConfigMapUpdatedEvent,
@@ -267,7 +262,7 @@ func (m *manager) register() {
 	var nodeConfig *apisv1alpha1.NodeConfig
 	logCtx := m.logger.WithFields(log.Fields{"node": m.name})
 	logCtx.Debug("Registering node into cluster")
-	k8sNode := &k8scorev1.Node{}
+	k8sNode := &corev1.Node{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: m.name}, k8sNode); err != nil {
 		logCtx.WithError(err).Fatal("Can't find K8S node")
 	}
@@ -326,7 +321,7 @@ func (m *manager) configNode(config *apisv1alpha1.NodeConfig, node *apisv1alpha1
 	return nil
 }
 
-func (m *manager) getConfByK8SNodeOrDefault(k8sNode *k8scorev1.Node) (*apisv1alpha1.NodeConfig, error) {
+func (m *manager) getConfByK8SNodeOrDefault(k8sNode *corev1.Node) (*apisv1alpha1.NodeConfig, error) {
 	ipAddr, err := m.getStorageIPv4Address(k8sNode)
 	if err != nil {
 		return nil, err
@@ -335,7 +330,7 @@ func (m *manager) getConfByK8SNodeOrDefault(k8sNode *k8scorev1.Node) (*apisv1alp
 
 }
 
-func (m *manager) getStorageIPv4Address(k8sNode *k8scorev1.Node) (string, error) {
+func (m *manager) getStorageIPv4Address(k8sNode *corev1.Node) (string, error) {
 	logCtx := m.logger.WithField("node", k8sNode.Name)
 	// lookup from k8s node's annotation firstly
 	annotationKey := os.Getenv(apisv1alpha1.StorageIPv4AddressAnnotationKeyEnv)
@@ -353,7 +348,7 @@ func (m *manager) getStorageIPv4Address(k8sNode *k8scorev1.Node) (string, error)
 
 	// lookup from k8s node's addresses
 	for _, addr := range k8sNode.Status.Addresses {
-		if addr.Type == k8scorev1.NodeInternalIP {
+		if addr.Type == corev1.NodeInternalIP {
 			return addr.Address, nil
 		}
 	}
@@ -439,7 +434,7 @@ func (m *manager) handleNodeDelete(obj interface{}) {
 }
 
 func (m *manager) handleConfigMapAddEvent(newObj interface{}) {
-	cm, _ := newObj.(*k8scorev1.ConfigMap)
+	cm, _ := newObj.(*corev1.ConfigMap)
 	if cm.Namespace != m.namespace {
 		return
 	}

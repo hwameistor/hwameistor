@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	corev1 "k8s.io/api/core/v1"
-
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils/datacopy"
+
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -63,8 +63,8 @@ func (m *manager) processRcloneVolumeMount(lvName string) error {
 
 	cmName := datacopy.GetConfigMapName(datacopy.RCloneConfigMapName, lvName)
 	cm := &corev1.ConfigMap{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: cmName}, cm); err != nil {
-		m.logger.WithField("configmap", cmName).WithError(err).Error("Failed to get configmap")
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: m.namespace, Name: cmName}, cm); err != nil {
+		logCtx.WithField("configmap", cmName).Error("Not found the rclone configmap")
 		return err
 	}
 

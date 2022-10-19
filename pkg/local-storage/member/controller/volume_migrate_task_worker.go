@@ -286,12 +286,10 @@ func (m *manager) syncReplicaByRclone(migrate *apisv1alpha1.LocalVolumeMigrate, 
 
 	cmName := datacopy.GetConfigMapName(datacopy.RCloneConfigMapName, vol.Name)
 	cm := &corev1.ConfigMap{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: cmName}, cm); err != nil {
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: m.namespace, Name: cmName}, cm); err != nil {
 		logCtx.WithField("configmap", cmName).Error("Not found the rclone configmap")
 		return err
 	}
-
-	logCtx.WithField("configmap", cm.Name).WithField("data", cm.Data).Debug("Show rclone config")
 
 	if ready := cm.Data[datacopy.RCloneConfigSourceNodeReadyKey]; ready != datacopy.RCloneTrue {
 		logCtx.WithField(datacopy.RCloneConfigSourceNodeReadyKey, ready).Debug("Waiting for source mountpoint to be ready ...")
@@ -369,32 +367,16 @@ func (m *manager) prepareForRClone(migrate *apisv1alpha1.LocalVolumeMigrate, vol
 	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "volume": vol.Name})
 	logCtx.Debug("Preparing the resources for rclone to execute")
 
-	ctx := context.TODO()
-
 	rcl := m.dataCopyManager.UseRclone(rcloneImageName, m.namespace)
-	// Prepare the public/private ssh keys for rclone to execute. The keys should be shared by all the rclone executions.
-	// Don't update once it exists
-	cm := &corev1.ConfigMap{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: datacopy.RCloneKeyConfigMapName}, cm); err != nil {
-		if !errors.IsNotFound(err) {
-			logCtx.WithField("configmap", datacopy.RCloneKeyConfigMapName).WithError(err).Error("Failed to fetch configmap")
-			return nil, err
-		}
-		cm = rcl.GenerateRcloneKeyConfigMap()
-		if err := m.apiClient.Create(ctx, cm); err != nil {
-			logCtx.WithField("configmap", datacopy.RCloneKeyConfigMapName).WithError(err).Error("Failed to create RcloneKeyConfigmap")
-			return nil, err
-		}
+	if err := m.makeSSHKeysForRClone(rcl); err != nil {
+		logCtx.WithError(err).Error("Failed to create ssh keys for rclone")
+		return nil, err
 	}
 
 	// Prepare the rclone's configuration, which should be created unique for each volume data copy
 	if err := m.makeConfigForRClone(migrate.Status.TargetNode, migrate.Spec.SourceNode, vol.Name); err != nil {
-		if errors.IsAlreadyExists(err) {
-			logCtx.Warning("The rclone's config already exists")
-		} else {
-			logCtx.WithError(err).Error("Failed to create rclone's config")
-			return nil, err
-		}
+		logCtx.WithError(err).Error("Failed to create rclone's config")
+		return nil, err
 	}
 
 	logCtx.Debug("RClone is ready to execute")
@@ -547,6 +529,23 @@ func (m *manager) getAllVolumesInGroup(lvg *apisv1alpha1.LocalVolumeGroup) ([]*a
 	return vols, nil
 }
 
+func (m *manager) makeSSHKeysForRClone(rcl *datacopy.Rclone) error {
+	ctx := context.TODO()
+	// Prepare the public/private ssh keys for rclone to execute. The keys should be shared by all the rclone executions.
+	// Don't update once it exists
+	cm := &corev1.ConfigMap{}
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: datacopy.RCloneKeyConfigMapName}, cm); err != nil {
+		if !errors.IsNotFound(err) {
+			return err
+		}
+		cm = rcl.GenerateRcloneKeyConfigMap()
+		if err := m.apiClient.Create(ctx, cm); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (m *manager) makeConfigForRClone(targetNodeName, sourceNodeName, lvName string) error {
 	ctx := context.TODO()
 
@@ -554,10 +553,8 @@ func (m *manager) makeConfigForRClone(targetNodeName, sourceNodeName, lvName str
 
 	cm := &corev1.ConfigMap{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: m.namespace, Name: cmName}, cm); err == nil {
-		if delErr := m.apiClient.Delete(context.TODO(), cm); delErr != nil {
-			m.logger.WithError(err).Error("Failed to delete Configmap")
-			return delErr
-		}
+		m.logger.WithField("configmap", cmName).Debug("The config of rclone already exists")
+		return nil
 	}
 
 	remoteNameData := "[remote]" + "\n"
@@ -573,13 +570,10 @@ func (m *manager) makeConfigForRClone(targetNodeName, sourceNodeName, lvName str
 	remoteConfig := remoteNameData + typeData + remoteHostData + keyFileData + shellTypeData + md5sumCommandData + sha1sumCommandData
 	sourceConfig := sourceNameData + typeData + sourceHostData + keyFileData + shellTypeData + md5sumCommandData + sha1sumCommandData
 	data := map[string]string{
-		datacopy.RCloneConfigMapKey:             remoteConfig + sourceConfig,
-		datacopy.RCloneConfigVolumeNameKey:      lvName,
-		datacopy.RCloneConfigDstNodeNameKey:     targetNodeName,
-		datacopy.RCloneConfigSrcNodeNameKey:     sourceNodeName,
-		datacopy.RCloneConfigSourceNodeReadyKey: datacopy.RCloneFalse,
-		datacopy.RCloneConfigRemoteNodeReadyKey: datacopy.RCloneFalse,
-		datacopy.RCloneConfigSyncDoneKey:        datacopy.RCloneFalse,
+		datacopy.RCloneConfigMapKey:         remoteConfig + sourceConfig,
+		datacopy.RCloneConfigVolumeNameKey:  lvName,
+		datacopy.RCloneConfigDstNodeNameKey: targetNodeName,
+		datacopy.RCloneConfigSrcNodeNameKey: sourceNodeName,
 	}
 	cm = &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{

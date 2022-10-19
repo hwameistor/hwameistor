@@ -137,7 +137,7 @@ func (rcl *Rclone) GenerateRcloneKeyConfigMap() *corev1.ConfigMap {
 }
 
 func (rcl *Rclone) StartRCloneJob(jobName, lvName, srcNodeName string, waitUntilSuccess bool, timeout time.Duration) error {
-	jobStruct := rcl.getBaseJobStruct(jobName, lvName)
+	job := rcl.getBaseJobStruct(jobName, lvName)
 
 	affinity := &corev1.Affinity{
 		NodeAffinity: &corev1.NodeAffinity{
@@ -158,18 +158,15 @@ func (rcl *Rclone) StartRCloneJob(jobName, lvName, srcNodeName string, waitUntil
 			},
 		},
 	}
-	jobStruct.Spec.Template.Spec.Affinity = affinity
+	job.Spec.Template.Spec.Affinity = affinity
 
 	tmpDstMountPoint := RCloneDstMountPoint + lvName
 	tmpSrcMountPoint := RCloneSrcMountPoint + lvName
 
-	logger.Debugf("DstMountPointBind  rclone sync  %s:%s %s:%s", RcloneSrcName, tmpSrcMountPoint, RcloneRemoteName, tmpDstMountPoint)
-	//rcloneCommand := fmt.Sprintf("rclone mkdir %s; rclone mkdir %s; rclone mount --allow-non-empty --allow-other --daemon %s:%s %s; "+
-	//	"rclone mount --allow-non-empty --allow-other --daemon %s:%s %s; rclone sync %s %s --progress; sleep 1800s;",
 	rcloneCommand := fmt.Sprintf("rclone sync %s:%s %s:%s --progress;", RcloneSrcName, tmpSrcMountPoint, RcloneRemoteName, tmpDstMountPoint)
-	jobStruct.Spec.Template.Spec.Containers[0].Command = []string{"sh", "-c", rcloneCommand}
+	job.Spec.Template.Spec.Containers[0].Command = []string{"sh", "-c", rcloneCommand}
 
-	if err := rcl.dcm.k8sControllerClient.Create(rcl.dcm.ctx, jobStruct); err != nil {
+	if err := rcl.dcm.k8sControllerClient.Create(rcl.dcm.ctx, job); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create rclone job, already exists")
 		}
@@ -179,31 +176,31 @@ func (rcl *Rclone) StartRCloneJob(jobName, lvName, srcNodeName string, waitUntil
 	return nil
 }
 
-func (rcl *Rclone) WaitMigrateJobTaskDone(jobName, lvName string, waitUntilSuccess bool, timeout time.Duration) error {
+// func (rcl *Rclone) WaitMigrateJobTaskDone(jobName, lvName string, waitUntilSuccess bool, timeout time.Duration) error {
 
-	resCh := make(chan *DataCopyStatus)
-	rcl.dcm.RegisterRelatedJob(jobName, resCh)
-	defer rcl.dcm.DeregisterRelatedJob(jobName)
+// 	resCh := make(chan *DataCopyStatus)
+// 	rcl.dcm.RegisterRelatedJob(jobName, resCh)
+// 	defer rcl.dcm.DeregisterRelatedJob(jobName)
 
-	if waitUntilSuccess {
-		if timeout == 0 {
-			timeout = DefaultCopyTimeout
-		}
+// 	if waitUntilSuccess {
+// 		if timeout == 0 {
+// 			timeout = DefaultCopyTimeout
+// 		}
 
-		select {
-		case res := <-resCh:
-			if res.Phase == DataCopyStatusFailed {
-				return fmt.Errorf("failed to run job %s, message is [TODO] %s", res.JobName, res.Message)
-			} else {
-				return nil
-			}
-		case <-time.After(timeout):
-			return fmt.Errorf("failed to copy data from srcMountPointName: %s to dstMountPointName: %s, timeout after %s", RCloneSrcMountPoint+lvName, RCloneDstMountPoint+lvName, timeout)
-		}
-	}
+// 		select {
+// 		case res := <-resCh:
+// 			if res.Phase == DataCopyStatusFailed {
+// 				return fmt.Errorf("failed to run job %s, message is [TODO] %s", res.JobName, res.Message)
+// 			} else {
+// 				return nil
+// 			}
+// 		case <-time.After(timeout):
+// 			return fmt.Errorf("failed to copy data from srcMountPointName: %s to dstMountPointName: %s, timeout after %s", RCloneSrcMountPoint+lvName, RCloneDstMountPoint+lvName, timeout)
+// 		}
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // User should fill up with Spec.Template.Spec.Containers[0].Command
 func (rcl *Rclone) getBaseJobStruct(jobName, volName string) *batchv1.Job {
