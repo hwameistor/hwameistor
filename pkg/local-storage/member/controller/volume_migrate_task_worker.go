@@ -130,6 +130,12 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "spec": migrate.Spec})
 	logCtx.Debug("Submit a VolumeMigrate")
 
+	// if LV is still in use, waiting for it to be released
+	if vol.Status.PublishedNodeName == migrate.Spec.SourceNode {
+		logCtx.WithField("PublishedNode", vol.Status.PublishedNodeName).Warning("LocalVolume is still in use by source node, try it later")
+		return fmt.Errorf("not released")
+	}
+
 	ctx := context.TODO()
 
 	if len(migrate.Status.TargetNode) == 0 {
@@ -463,9 +469,9 @@ func (m *manager) checkReplicasForVolume(vol *apisv1alpha1.LocalVolume) error {
 	if vol.Spec.Config == nil {
 		return fmt.Errorf("invalid volume configuration")
 	}
-	if len(vol.Status.PublishedNodeName) > 0 {
-		return fmt.Errorf("volume still in use")
-	}
+	// if len(vol.Status.PublishedNodeName) > 0 {
+	// 	return fmt.Errorf("volume still in use")
+	// }
 
 	replicas, err := m.getReplicasForVolume(vol.Name)
 	if err != nil {
