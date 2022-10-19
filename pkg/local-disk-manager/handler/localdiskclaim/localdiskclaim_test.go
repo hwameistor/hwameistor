@@ -156,6 +156,81 @@ func TestLocalDiskClaimHandler_AssignDisk(t *testing.T) {
 
 }
 
+func TestLocalDiskClaimHandler_ListUnboundDiskClaim(t *testing.T) {
+	cli, _ := CreateFakeClient()
+
+	claimHandler := NewLocalDiskClaimHandler(cli, fakeRecorder)
+
+	testCases := []struct {
+		Name        string
+		Description string
+		DiskClaim   *v1alpha1.LocalDiskClaim
+		WantResult  int
+
+		setProperty        func(diskClaim *v1alpha1.LocalDiskClaim)
+		createNewDiskClaim func(cli client.Client, disk *v1alpha1.LocalDiskClaim) error
+		deleteDiskClaim    func(cli client.Client, disk *v1alpha1.LocalDiskClaim) error
+	}{
+		{
+			Name:        "OneUnboundDiskClaim",
+			Description: "Should return 1 Unbound disk claim",
+			WantResult:  1,
+			DiskClaim:   GenFakeLocalDiskClaimObject(),
+
+			setProperty: func(diskClaim *v1alpha1.LocalDiskClaim) {
+				// By default, FakeLocalDiskClaim's status is empty
+				// Do nothing here
+				return
+			},
+			createNewDiskClaim: createLocalDiskClaim,
+			deleteDiskClaim:    deleteLocalDiskClaim,
+		},
+		// *** NOTE: fakeClient doesn't support option.FieldSelector ***
+		// so we can't use `status.status == ""` as a filter here to filter Unbound DiskClaims.
+
+		//{
+		//	Name:        "NoUnboundDiskClaim",
+		//	Description: "Should return 0 Unbound disk claim",
+		//	WantResult:  0,
+		//	DiskClaim:   GenFakeLocalDiskClaimObject(),
+		//
+		//	setProperty: func(diskClaim *v1alpha1.LocalDiskClaim) {
+		//		diskClaim.Status.Status = v1alpha1.LocalDiskClaimStatusBound
+		//		return
+		//	},
+		//	createNewDiskClaim: createLocalDiskClaim,
+		//	deleteDiskClaim:    deleteLocalDiskClaim,
+		//},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+
+			// Update DiskClaim first
+			testCase.setProperty(testCase.DiskClaim)
+
+			// Create LocalDiskClaim
+			if err := testCase.createNewDiskClaim(cli, testCase.DiskClaim); err != nil {
+				t.Fatalf("Failed to create LocalDiskClaim %v", err)
+			}
+
+			// List Unbound DiskClaim
+			claimList, err := claimHandler.ListUnboundLocalDiskClaim()
+			if err != nil {
+				t.Fatalf("Failed to list DiskClaims %v", err)
+			}
+
+			if len(claimList.Items) != testCase.WantResult {
+				t.Fatalf("Want Unbound DiskClaim %d, But got %d", testCase.WantResult, len(claimList.Items))
+			}
+
+			if err := testCase.deleteDiskClaim(cli, testCase.DiskClaim); err != nil {
+				t.Fatalf("Failed to delete diskclaim %v", err)
+			}
+		})
+	}
+}
+
 // CreateFakeClient Create LocalDisk and LocalDiskNode resource
 func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s := scheme.Scheme
@@ -241,7 +316,7 @@ func GenFakeLocalDiskClaimObject() *v1alpha1.LocalDiskClaim {
 	ldc.ObjectMeta = ObjectMata
 	ldc.TypeMeta = TypeMeta
 	ldc.Spec = Spec
-	ldc.Status.Status = v1alpha1.LocalDiskClaimStatusPending
+	ldc.Status.Status = v1alpha1.DiskClaimStatusEmpty
 	return ldc
 }
 
