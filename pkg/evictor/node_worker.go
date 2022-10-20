@@ -38,35 +38,31 @@ func (ev *evictor) evictNode(nodeName string) error {
 	logCtx := log.WithField("node", nodeName)
 	logCtx.Debug("Start to process a node eviction")
 
-	if !ev.recordManager.hasNodeEvictionRecord(nodeName) {
-		lvrs, err := ev.lvrInformer.Informer().GetIndexer().ByIndex(nodeNameIndex, nodeName)
+	lvrs, err := ev.lvrInformer.Informer().GetIndexer().ByIndex(nodeNameIndex, nodeName)
+	if err != nil {
+		logCtx.WithError(err).Error("Failed to get LocalVolumeReplicas on the node")
+		return err
+	}
+	if len(lvrs) == 0 {
+		node, err := ev.nodeInformer.Lister().Get(nodeName)
 		if err != nil {
-			logCtx.WithError(err).Error("Failed to get LocalVolumeReplicas on the node")
+			logCtx.WithError(err).Error("Failed to get node from cache")
 			return err
 		}
-
-		for i := range lvrs {
-			lvr, _ := lvrs[i].(*localstorageapis.LocalVolumeReplica)
-			ev.addEvictVolume(lvr.Spec.VolumeName, nodeName)
+		node.Labels[labelKeyForVolumeEviction] = labelValueForVolumeEvictionCompleted
+		if _, err := ev.clientset.CoreV1().Nodes().Update(context.TODO(), node, metav1.UpdateOptions{}); err != nil {
+			logCtx.WithError(err).Error("Failed to update node")
+			return err
 		}
+		return nil
 	}
 
-	if !ev.recordManager.isNodeEvictionCompleted(nodeName) {
-		logCtx.Debug("Node eviction is still in progress")
-		return fmt.Errorf("in progress")
+	for i := range lvrs {
+		lvr, _ := lvrs[i].(*localstorageapis.LocalVolumeReplica)
+		logCtx.WithFields(log.Fields{"volume": lvr.Spec.VolumeName, "sourceNode": nodeName}).Debug("Add a volume migrate task")
+		ev.addEvictVolume(lvr.Spec.VolumeName, nodeName)
 	}
-
-	node, err := ev.nodeInformer.Lister().Get(nodeName)
-	if err != nil {
-		logCtx.WithError(err).Error("Failed to get node from cache")
-		return err
-	}
-	node.Labels[labelKeyForVolumeEviction] = labelValueForVolumeEvictionCompleted
-	if _, err := ev.clientset.CoreV1().Nodes().Update(context.TODO(), node, metav1.UpdateOptions{}); err != nil {
-		logCtx.WithError(err).Error("Failed to update node")
-		return err
-	}
-	return nil
+	return fmt.Errorf("waiting for volumes migration complete")
 }
 
 func (ev *evictor) addEvictNode(nodeName string) {

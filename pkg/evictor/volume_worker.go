@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	migrateFinalizer = "hwameistor.io/eviction-protect"
+	evictionFinalizer = "hwameistor.io/eviction-protect"
 )
 
 func (ev *evictor) startVolumeWorker(stopCh <-chan struct{}) {
@@ -44,27 +44,6 @@ func (ev *evictor) evictVolume(task string) error {
 	volName, srcNodeName := parseEvictVolumeTask(task)
 	logCtx := log.WithFields(log.Fields{"volume": volName, "sourceNode": srcNodeName})
 	logCtx.Debug("Start to process a volume eviction")
-
-	ev.recordManager.submitVolumeEviction(volName, srcNodeName)
-
-	if ev.recordManager.isVolumeEvictionCompleted(volName) {
-		return nil
-	}
-
-	if err := ev.completeVolumeMigration(volName, srcNodeName); err != nil {
-		logCtx.WithField("message", err.Error()).Debug("Volume migration is still in progress")
-		return fmt.Errorf("volume migration in progress")
-	}
-
-	ev.recordManager.completeVolumeEviction(volName)
-
-	logCtx.Debug("The migration job has already completed")
-	return nil
-}
-
-func (ev *evictor) completeVolumeMigration(volName string, srcNodeName string) error {
-	logCtx := log.WithFields(log.Fields{"volume": volName, "sourceNode": srcNodeName})
-	logCtx.Debug("Migrate a volume")
 
 	lvmName := fmt.Sprintf("evictor-%s", volName)
 	lvm, err := ev.lvMigrateInformer.Lister().Get(lvmName)
@@ -102,7 +81,7 @@ func (ev *evictor) completeVolumeMigration(volName string, srcNodeName string) e
 			lvm := &localstorageapis.LocalVolumeMigrate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       lvmName,
-					Finalizers: []string{migrateFinalizer},
+					Finalizers: []string{evictionFinalizer},
 				},
 				Spec: localstorageapis.LocalVolumeMigrateSpec{
 					VolumeName: volName,

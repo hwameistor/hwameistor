@@ -130,13 +130,14 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "spec": migrate.Spec})
 	logCtx.Debug("Submit a VolumeMigrate")
 
+	ctx := context.TODO()
 	// if LV is still in use, waiting for it to be released
 	if vol.Status.PublishedNodeName == migrate.Spec.SourceNode {
 		logCtx.WithField("PublishedNode", vol.Status.PublishedNodeName).Warning("LocalVolume is still in use by source node, try it later")
-		return fmt.Errorf("not released")
+		migrate.Status.Message = "Volume is still in use"
+		m.apiClient.Status().Update(ctx, migrate)
+		return fmt.Errorf("volume still in use")
 	}
-
-	ctx := context.TODO()
 
 	if len(migrate.Status.TargetNode) == 0 {
 		logCtx.Debug("Selecting the target node for the migration")

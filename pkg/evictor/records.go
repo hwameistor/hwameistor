@@ -110,13 +110,14 @@ func (rm *evictRecordManager) _updateNodeRecordState(nodeName string) {
 }
 
 func (rm *evictRecordManager) cleanup(stopCh <-chan struct{}) {
-	ticker := time.NewTicker(time.Duration(10) * time.Second)
+	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-stopCh:
 			log.Debug("Terminated cleanup processor")
+			return
 		case <-ticker.C:
 			rm._cleanupRecords()
 		}

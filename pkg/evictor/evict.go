@@ -39,7 +39,7 @@ type Evictor interface {
 }
 
 type evictor struct {
-	recordManager *evictRecordManager
+	//recordManager *evictRecordManager
 
 	clientset *kubernetes.Clientset
 
@@ -67,7 +67,7 @@ type evictor struct {
 // New an assistant instance
 func New(clientset *kubernetes.Clientset) Evictor {
 	return &evictor{
-		recordManager:    newEvictRecordManager(),
+		//recordManager:    newEvictRecordManager(),
 		clientset:        clientset,
 		evictNodeQueue:   common.NewTaskQueue("EvictNodes", 0),
 		evictPodQueue:    common.NewTaskQueue("EvictPods", 0),
@@ -76,7 +76,7 @@ func New(clientset *kubernetes.Clientset) Evictor {
 }
 
 func (ev *evictor) Run(stopCh <-chan struct{}) error {
-	ev.recordManager.run(stopCh)
+	//ev.recordManager.run(stopCh)
 
 	log.Debug("start informer factory")
 	factory := informers.NewSharedInformerFactory(ev.clientset, 0)
