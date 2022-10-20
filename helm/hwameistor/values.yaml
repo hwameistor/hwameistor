@@ -97,8 +97,9 @@ localStorage:
     resources: {}
   migrate:
     rclone:
-      imageRepository: daocloud.io/daocloud/hwameistor-migrate-rclone
-      tag: v1.1.2
+      # can use daocloud.io/daocloud/hwameistor-migrate-rclone:v1.1.2 which is exactly same as the following
+      imageRepository: rclone/rclone
+      tag: 1.53.2
 
 localStorageCSIController:
   replicas: 1
