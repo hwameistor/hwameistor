@@ -20,7 +20,7 @@ type TaskQueue struct {
 func NewTaskQueue(taskName string, maxRetries int) *TaskQueue {
 	return &TaskQueue{
 		queue: workqueue.NewNamedRateLimitingQueue(
-			workqueue.NewItemExponentialFailureRateLimiter(time.Second, time.Minute),
+			workqueue.NewItemExponentialFailureRateLimiter(time.Second, 16*time.Second),
 			taskName,
 		),
 		maxRetries: maxRetries,
