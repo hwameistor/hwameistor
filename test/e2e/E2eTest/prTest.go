@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Ordered, ginkgo.Label("1"), func() {
+var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), func() {
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
@@ -328,10 +328,6 @@ var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Ordered, ginkgo.Labe
 				}
 			}
 		})
-	})
-	ginkgo.AfterAll(func() {
-		logrus.Info("start rollback")
-		_ = runInLinux("sh rollback.sh")
 	})
 
 })
