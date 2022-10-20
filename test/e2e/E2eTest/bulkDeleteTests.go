@@ -21,7 +21,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("test"), func() {
+var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("stress-test"), func() {
 
 	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
 	client := f.GetClient()

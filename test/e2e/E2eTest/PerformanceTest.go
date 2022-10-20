@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-var _ = ginkgo.Describe("performance testing ", ginkgo.Label("pr-e2e"), ginkgo.Label("performance-test"), func() {
+var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test"), func() {
 
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()

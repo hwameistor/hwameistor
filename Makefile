@@ -205,3 +205,7 @@ _enable_buildx:
 .PHONY: e2e-test
 e2e-test:
 	bash test/e2e-test.sh
+
+.PHONY: pr-test
+pr-test:
+	bash test/pr-test.sh
