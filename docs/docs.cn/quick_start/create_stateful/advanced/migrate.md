@@ -62,8 +62,10 @@ spec:
 EOF
 ```
 
-注意：在迁移时，
-1）如果指定了targetNodesSuggested，系统会从指定的节点中，选择一个适合的进行迁移。如果都不合适，迁移操作失败；
+在迁移时，
+
+1）如果指定了targetNodesSuggested，系统会从指定的节点中，选择一个适合的进行迁移。如果都不合适，迁移操作失败;
+
 2）如果不指定 targetNodesSuggested，系统会根据容量平衡原则自动选择一个适合的节点进行迁移。
 
 ```console

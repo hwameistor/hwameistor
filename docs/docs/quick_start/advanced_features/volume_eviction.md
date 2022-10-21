@@ -12,17 +12,17 @@ Once a Kubernetes node or pod is evicted by the system for any reason, HwameiSto
 
 ## Node Eviction
 
-In a Kubernetes cluster, a node can be drained by using the following procedure. So that, all the pods and volume replicas on this node will be evicted, and then continue the services on other avaliable node.
+In a Kubernetes cluster, a node can be drained by using the following procedure. So that, all the pods and volume replicas on this node will be evicted, and then continue the services on other avaliable nodes.
 
 ```console
 $ kubectl label k8s-node-1 hwameistor.io/eviction=start
 $ kubectl drain k8s-node-1 --ignore-daemonsets=true
 ```
 
-Check if all the volumes' migrations complete or not by following:
+Check if all the volumes' migration complete or not by:
 
 ```console
-$ kubectl  get node k8s-node-1 -o yaml
+$ kubectl get node k8s-node-1 -o yaml
 apiVersion: v1
 kind: Node
 metadata:
@@ -38,7 +38,7 @@ status:
   ...
 ```
 
-Check if there is any volume replica still located in the evicted node by following:
+Check if there is any volume replica still located in the evicted node by:
 
 ```console
 $ kubectl get localvolumereplica
@@ -52,9 +52,9 @@ pvc-f8f017f9-eb09-4fbe-9795-a6e2d6873148-5t782b   1073741824   k8s-node-2   Read
 
 ## Pod Eviction
 
-When a Kubernetes node is overloaded, it will evicted some low-priority pods to recycle system's resources to keep other pods safy. HwameiStor will detect the evicted pod and migrate the associated volumes to another available node. So that, the pod can continue to run on it.
+When a Kubernetes node is overloaded, it will evict some low-priority pods to recycle system's resources to keep other pods safe. HwameiStor will detect the evicted pod and migrate the associated volumes to another available node. So that, the pod can continue to run on it.
 
-## 迁移 Pod
+## Pod Migration
 
 The migration can be pro-actively triggered on the pod and associated HwameiStor volume by using either one of following methods.
 

@@ -15,4 +15,4 @@ sidebar_label: "驱逐器"
 
 **安装（Helm Chart）**
 
-Evictor must work with Local Storage and Local Disk Manager. It's suggested to install by [Helm Chart](../../quick_start/install/deploy.md).
+驱逐器依赖 HwameiStor 的本地存储和本地磁盘管理器，建议通过 [Helm Chart](../../quick_start/install/deploy.md) 进行安装.

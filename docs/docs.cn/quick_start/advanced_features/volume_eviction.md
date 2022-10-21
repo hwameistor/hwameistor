@@ -7,12 +7,12 @@ sidebar_label: "数据卷驱逐"
 
 数据卷迁移和驱逐是 HwameiStor 系统的重要功能，保障 HwameiStor 在生产环境中持续正常运行。
 HwameiStor 会将数据卷从一个节点迁移到另一个节点，同时保证数据仍然可用。
-当 Kubernetes 节点或者应用 Pod 由于各种原因发生被驱逐事件时，系统会自动发现节点或者 Pod 所关联的 HwameiStor 数据卷，并自动将其迁移到其他节点，从而保证被驱逐的 Pod 可以调度到其他节点并正常运行。
+当 Kubernetes 节点或者应用 Pod 由于某种原因被驱逐时，系统会自动发现节点或者 Pod 所关联的 HwameiStor 数据卷，并自动将其迁移到其他节点，从而保证被驱逐的 Pod 可以调度到其他节点并正常运行。
 此外，运维人员也可以主动迁移数据卷，从而平衡系统资源，保证系统平稳运行。
 
 **驱逐节点**
 
-在 Kubernetes 系统中，可以使用下列命令驱逐节点，将正在该节点上运行的 Pod 删除，并迁移到其他节点上。
+在 Kubernetes 系统中，可以使用下列命令驱逐节点，将正在该节点上运行的 Pod 移除并迁移到其他节点上。
 同时，也将 Pod 使用的 HwameiStor 数据卷从该节点迁移到其他节点，保证 Pod 可以在其他节点上正常运行。
 
 ```console
@@ -20,10 +20,10 @@ $ kubectl label k8s-node-1 hwameistor.io/eviction=start
 $ kubectl drain k8s-node-1 --ignore-daemonsets=true
 ```
 
-可以使用下列命令查看所关联的 HwameiStor 数据卷的迁移是否完成。
+可以使用下列命令查看所关联的 HwameiStor 数据卷是否迁移成功。
 
 ```console
-$ kubectl  get node k8s-node-1 -o yaml
+$ kubectl get node k8s-node-1 -o yaml
 apiVersion: v1
 kind: Node
 metadata:
@@ -54,7 +54,7 @@ pvc-f8f017f9-eb09-4fbe-9795-a6e2d6873148-5t782b   1073741824   k8s-node-2   Read
 **驱逐 Pod**
 
 当 Kubernetes 节点负载过重时，系统会选择性地驱逐一些 Pod，从而释放一些系统资源，保证其他 Pod 正常运行。
-如果被驱逐的 Pod 使用了 HwameiStor 数据卷，系统会捕捉到了这个被驱逐的 Pod，自动将相关的 HwameiStor 数据卷迁移到其他节点，从而保证该 Pod 能正常运行。
+如果被驱逐的 Pod 使用了 HwameiStor 数据卷，系统会捕捉到这个被驱逐的 Pod，自动将相关的 HwameiStor 数据卷迁移到其他节点，从而保证该 Pod 能正常运行。
 
 **迁移 Pod**
 
