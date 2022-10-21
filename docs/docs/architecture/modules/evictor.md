@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 6
 sidebar_label: "Evictor"
 ---
 
@@ -9,6 +9,6 @@ The Evictor is used to automatically migrate HwameiStor volumes in case of node 
 
 The Evictor should be deployed with the HA mode in the cluster, which is a best practice for production.
 
-**Install by Helm Chart**
+## Install by Helm Chart
 
 Evictor must work with Local Storage and Local Disk Manager. It's suggested to install by [Helm Chart](../../quick_start/install/deploy.md).
