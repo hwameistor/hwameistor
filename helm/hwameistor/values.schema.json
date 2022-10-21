@@ -1,0 +1,510 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "type": "object",
+    "properties": {
+        "admission": {
+            "title": "admission Setting",
+            "type": "object",
+            "default": {},
+            "required": [
+                "replicas",
+                "imageRepository",
+                "failurePolicy",
+                "selfSigned"
+            ],
+            "properties": {
+                "failurePolicy": {
+                    "title": "failurePolicy",
+                    "type": "string",
+                    "default": ""
+                },
+                "imageRepository": {
+                    "title": "imageRepository",
+                    "type": "string",
+                    "default": "hwameistor/admission"
+                },
+                "replicas": {
+                    "title": "replicas",
+                    "type": "integer",
+                    "default": 1
+                },
+                "selfSigned": {
+                    "title": "selfSigned Setting",
+                    "type": "object",
+                    "default": {},
+                    "required": [
+                        "imageRepository",
+                        "tag"
+                    ],
+                    "properties": {
+                        "imageRepository": {
+                            "title": "imageRepository",
+                            "type": "string",
+                            "default": "hwameistor/self-signed"
+                        },
+                        "tag": {
+                            "title": "tag",
+                            "type": "string",
+                            "default": "v1"
+                        }
+                    }
+                }
+            }
+        },
+        "evictor": {
+            "title": "evictor Setting",
+            "type": "object",
+            "default": {},
+            "required": [
+                "replicas",
+                "imageRepository"
+            ],
+            "properties": {
+                "imageRepository": {
+                    "title": "imageRepository",
+                    "type": "string",
+                    "default": "hwameistor/evictor"
+                },
+                "replicas": {
+                    "title": "replicas",
+                    "type": "integer",
+                    "default": 1
+                }
+            }
+        },
+        "global": {
+            "title": "Global Setting",
+            "type": "object",
+            "default": {},
+            "required": [
+                "hwameistorImageRegistry",
+                "k8sImageRegistry",
+                "kubeletRootDir"
+            ],
+            "properties": {
+                "hwameistorImageRegistry": {
+                    "title": "hwameistor image Registry",
+                    "type": "string",
+                    "default": "ghcr.io",
+                    "examples": [
+                        "ghcr.io"
+                    ]
+                },
+                "k8sImageRegistry": {
+                    "title": "k8s image Registry",
+                    "type": "string",
+                    "default": "k8s.gcr.io",
+                    "examples": [
+                        "k8s.gcr.io"
+                    ]
+                },
+                "kubeletRootDir": {
+                    "title": "kubelet root Dir",
+                    "type": "string",
+                    "default": "/var/lib/kubelet",
+                    "examples": [
+                        "/var/lib/kubelet"
+                    ]
+                }
+            }
+        },
+        "localDiskManager": {
+            "title": "LocalDiskManager Setting",
+            "type": "object",
+            "default": {},
+            "required": [
+                "tolerationsOnMaster",
+                "enableCSI",
+                "registrar",
+                "manager"
+            ],
+            "properties": {
+                "enableCSI": {
+                    "title": "enableCSI",
+                    "type": "boolean",
+                    "default": true
+                },
+                "manager": {
+                    "title": "manager Setting",
+                    "type": "object",
+                    "default": {},
+                    "required": [
+                        "imageRepository"
+                    ],
+                    "properties": {
+                        "imageRepository": {
+                            "title": "imageRepository",
+                            "type": "string",
+                            "default": "hwameistor/local-disk-manager"
+                        }
+                    }
+                },
+                "registrar": {
+                    "title": "registrar Setting",
+                    "type": "object",
+                    "default": {},
+                    "required": [
+                        "imageRepository",
+                        "tag"
+                    ],
+                    "properties": {
+                        "imageRepository": {
+                            "title": "imageRepository",
+                            "type": "string",
+                            "default": "sig-storage/csi-node-driver-registrar"
+                        },
+                        "tag": {
+                            "title": "tag",
+                            "type": "string",
+                            "default": "v2.5.0"
+                        }
+                    }
+                },
+                "tolerationsOnMaster": {
+                    "title": "tolerationsOnMaster",
+                    "type": "boolean",
+                    "default": true
+                }
+            }
+        },
+        "localDiskManagerCSIController": {
+            "title": "localDiskManagerCSIController Setting",
+            "type": "object",
+            "default": {},
+            "required": [
+                "replicas",
+                "provisioner",
+                "attacher"
+            ],
+            "properties": {
+                "attacher": {
+                    "title": "attacher Setting",
+                    "type": "object",
+                    "default": {},
+                    "required": [
+                        "imageRepository",
+                        "tag"
+                    ],
+                    "properties": {
+                        "imageRepository": {
+                            "title": "imageRepository",
+                            "type": "string",
+                            "default": "sig-storage/csi-attacher"
+                        },
+                        "tag": {
+                            "title": "tag",
+                            "type": "string",
+                            "default": "v3.0.1"
+                        }
+                    }
+                },
+                "provisioner": {
+                    "title": "provisioner Setting",
+                    "type": "object",
+                    "default": {},
+                    "required": [
+                        "imageRepository",
+                        "tag"
+                    ],
+                    "properties": {
+                        "imageRepository": {
+                            "title": "imageRepository",
+                            "type": "string",
+                            "default": "sig-storage/csi-provisioner"
+                        },
+                        "tag": {
+                            "title": "tag",
+                            "type": "string",
+                            "default": "v2.0.3"
+                        }
+                    }
+                },
+                "replicas": {
+                    "title": "replicas",
+                    "type": "integer",
+                    "default": 1
+                }
+            }
+        },
+        "localStorage": {
+            "title": "LocalStorage Setting",
+            "type": "object",
+            "default": {},
+            "required": [
+                "tolerationsOnMaster",
+                "registrar",
+                "member",
+                "migrate"
+            ],
+            "properties": {
+                "member": {
+                    "title": "member Setting",
+                    "type": "object",
+                    "default": {},
+                    "required": [
+                        "config",
+                        "imageRepository"
+                    ],
+                    "properties": {
+                        "config": {
+                            "title": "config Setting",
+                            "type": "object",
+                            "default": {},
+                            "required": [
+                                "drbdStartPort",
+                                "maxHAVolumeCount"
+                            ],
+                            "properties": {
+                                "drbdStartPort": {
+                                    "title": "drbdStartPort",
+                                    "type": "integer",
+                                    "default": 43001
+                                },
+                                "maxHAVolumeCount": {
+                                    "title": "maxHAVolumeCount",
+                                    "type": "integer",
+                                    "default": 1000
+                                }
+                            }
+                        },
+                        "imageRepository": {
+                            "title": "imageRepository",
+                            "type": "string",
+                            "default": "hwameistor/local-storage"
+                        }
+                    }
+                },
+                "migrate": {
+                    "title": "migrate Setting",
+                    "type": "object",
+                    "default": {},
+                    "required": [
+                        "rclone"
+                    ],
+                    "properties": {
+                        "rclone": {
+                            "title": "rclone Setting",
+                            "type": "object",
+                            "default": {},
+                            "required": [
+                                "imageRepository",
+                                "tag"
+                            ],
+                            "properties": {
+                                "imageRepository": {
+                                    "title": "imageRepository",
+                                    "type": "string",
+                                    "default": "rclone/rclone"
+                                },
+                                "tag": {
+                                    "title": "tag",
+                                    "type": "string",
+                                    "default": "1.53.2"
+                                }
+                            }
+                        }
+                    }
+                },
+                "registrar": {
+                    "title": "registrar Setting",
+                    "type": "object",
+                    "default": {},
+                    "required": [
+                        "imageRepository",
+                        "tag"
+                    ],
+                    "properties": {
+                        "imageRepository": {
+                            "title": "imageRepository",
+                            "type": "string",
+                            "default": "sig-storage/csi-node-driver-registrar"
+                        },
+                        "tag": {
+                            "title": "tag",
+                            "type": "string",
+                            "default": "v2.5.0"
+                        }
+                    }
+                },
+                "tolerationsOnMaster": {
+                    "title": "tolerationsOnMaster",
+                    "type": "boolean",
+                    "default": true
+                }
+            }
+        },
+        "localStorageCSIController": {
+            "title": "LocalStorageCSIController Setting",
+            "type": "object",
+            "default": {},
+            "required": [
+                "replicas",
+                "provisioner",
+                "attacher",
+                "resizer"
+            ],
+            "properties": {
+                "attacher": {
+                    "title": "attacher Setting",
+                    "type": "object",
+                    "default": {},
+                    "required": [
+                        "imageRepository",
+                        "tag"
+                    ],
+                    "properties": {
+                        "imageRepository": {
+                            "title": "imageRepository",
+                            "type": "string",
+                            "default": "sig-storage/csi-attacher"
+                        },
+                        "tag": {
+                            "title": "tag",
+                            "type": "string",
+                            "default": "v3.0.1"
+                        }
+                    }
+                },
+                "provisioner": {
+                    "title": "provisioner Setting",
+                    "type": "object",
+                    "default": {},
+                    "required": [
+                        "imageRepository",
+                        "tag"
+                    ],
+                    "properties": {
+                        "imageRepository": {
+                            "title": "imageRepository",
+                            "type": "string",
+                            "default": "sig-storage/csi-provisioner"
+                        },
+                        "tag": {
+                            "title": "tag",
+                            "type": "string",
+                            "default": "v2.0.3"
+                        }
+                    }
+                },
+                "replicas": {
+                    "title": "replicas",
+                    "type": "integer",
+                    "default": 1
+                },
+                "resizer": {
+                    "title": "resizer Setting",
+                    "type": "object",
+                    "default": {},
+                    "required": [
+                        "imageRepository",
+                        "tag"
+                    ],
+                    "properties": {
+                        "imageRepository": {
+                            "title": "imageRepository",
+                            "type": "string",
+                            "default": "sig-storage/csi-resizer"
+                        },
+                        "tag": {
+                            "title": "tag",
+                            "type": "string",
+                            "default": "v1.0.1"
+                        }
+                    }
+                }
+            }
+        },
+        "scheduler": {
+            "title": "Scheduler Setting",
+            "type": "object",
+            "default": {},
+            "required": [
+                "imageRepository",
+                "kubeApiServerConfigFilePath",
+                "replicas"
+            ],
+            "properties": {
+                "imageRepository": {
+                    "title": "imageRepository",
+                    "type": "string",
+                    "default": "hwameistor/scheduler"
+                },
+                "kubeApiServerConfigFilePath": {
+                    "title": "kubeApiServerConfigFilePath",
+                    "type": "string",
+                    "default": "/etc/kubernetes/admin.conf"
+                },
+                "replicas": {
+                    "title": "replicas",
+                    "type": "integer",
+                    "default": "1"
+                }
+            }
+        },
+        "storageClass": {
+            "title": "storageClass Setting",
+            "type": "object",
+            "default": {},
+            "required": [
+                "allowVolumeExpansion",
+                "convertible",
+                "default",
+                "diskType",
+                "enableHA",
+                "enabled",
+                "fsType",
+                "reclaimPolicy"
+            ],
+            "properties": {
+                "allowVolumeExpansion": {
+                    "title": "allow Volume Expansion",
+                    "type": "boolean",
+                    "description": "If allowed, volume can be expanded by modify pvc related field",
+                    "default": true
+                },
+                "convertible": {
+                    "title": "hwameistor Volume Convertible",
+                    "type": "boolean",
+                    "description": "allow hwameistor volume supports volume Convertible",
+                    "default": false
+                },
+                "default": {
+                    "title": "default storageclass Setting",
+                    "type": "boolean",
+                    "description": "If enabled, hwameistor storageclass will be a default storageclass in system",
+                    "default": false
+                },
+                "diskType": {
+                    "title": "diskType",
+                    "type": "string",
+                    "description": "Represent which kind disk will be used to provision volume",
+                    "default": "HDD"
+                },
+                "enableHA": {
+                    "title": "enableHA",
+                    "type": "boolean",
+                    "description": "If enabled, you need install drbd kernel module on each node first",
+                    "default": "false"
+                },
+                "enabled": {
+                    "title": "enabled",
+                    "type": "boolean",
+                    "description": "If enabled, a hwameistor storageclass will be created in your system",
+                    "default": "true"
+                },
+                "fsType": {
+                    "title": "fsType",
+                    "type": "string",
+                    "description": "Represent which kind fstype will be used to partition disk",
+                    "default": "xfs"
+                },
+                "reclaimPolicy": {
+                    "title": "reclaimPolicy",
+                    "type": "string",
+                    "description": "Represent which kind reclaimPolicy will be used to reclaim volume",
+                    "default": "Delete"
+                }
+            }
+        }
+    }
+}
