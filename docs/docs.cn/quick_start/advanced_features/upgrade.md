@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
 sidebar_label: "升级"
 ---
 
@@ -13,6 +13,6 @@ $ helm upgrade -n hwameistor hwameistor -f new.values.yaml
 
 升级过程中将以滚动的方式重启每个 HwameiStor Pod。
 
-:::caution
+```
 在升级 HwameiStor 期间，这些卷将继续不间断地为 Pod 服务。
-:::
+```

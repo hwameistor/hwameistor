@@ -16,7 +16,6 @@ sidebar_label:  "卷的迁移"
 LocalVolumeMigrate 需要部署在 Kubernetes 系统中，需要部署应用满足下列条件：
 
 * 支持 lvm 类型的卷
-* 所有类型数据卷（convertible、non-convertible）
   * 基于 LocalVolume 粒度迁移时，默认所属相同 LocalVolumeGroup 的数据卷不会一并迁移（若一并迁移，需要配置开关 MigrateAllVols：true）
 
 ## 步骤 1: 创建 `StorageClass`
@@ -62,6 +61,10 @@ spec:
   migrateAllVols: <true/false>
 EOF
 ```
+
+注意：在迁移时，
+1）如果指定了targetNodesSuggested，系统会从指定的节点中，选择一个适合的进行迁移。如果都不合适，迁移操作失败；
+2）如果不指定 targetNodesSuggested，系统会根据容量平衡原则自动选择一个适合的节点进行迁移。
 
 ```console
 $ kubectl apply -f ./migrate_lv.yaml
