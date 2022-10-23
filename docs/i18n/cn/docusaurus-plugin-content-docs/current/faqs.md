@@ -5,7 +5,7 @@ sidebar_label: "常见问题"
 
 # 常见问题
 
-### 问题 1：HwameiStor 本地存储调度器 scheduler 在 kubernetes 平台中是如何工作的？ 
+## 问题 1：HwameiStor 本地存储调度器 scheduler 在 kubernetes 平台中是如何工作的？ 
 
 HwameiStor 的调度器是以 Pod 的形式部署在 HwameiStor 的命名空间。
 
@@ -13,7 +13,7 @@ HwameiStor 的调度器是以 Pod 的形式部署在 HwameiStor 的命名空间�
 
 当应用（Deployment 或 StatefulSet ）被创建后，应用的 Pod 会被自动部署到已配置好具备 HwameiStor 本地存储能力的 Worker 节点上。
 
-### 问题 2: HwameiStor 如何应对应用多副本工作负载的调度？与传统通用型共享存储有什么不同？
+## 问题 2: HwameiStor 如何应对应用多副本工作负载的调度？与传统通用型共享存储有什么不同？
 
 HwameiStor 建议使用有状态的 StatefulSet 用于多副本的工作负载。
 
@@ -23,7 +23,7 @@ HwameiStor 建议使用有状态的 StatefulSet 用于多副本的工作负载�
 
 由于无状态应用 deployment 不能共享 block 数据卷，所以建议使用单副本。
 
-对于传统通用型共享存储：
+### 对于传统通用型共享存储
 
 有状态应用 statefulSet 会将复制的副本优先部署到其他节点以分散 workload，但会为每一个 Pod 副本创建一个对应的 PV 数据卷。只有当副本数超过 Worker 节点数的时候会出现多个副本在同一个节点。
 
