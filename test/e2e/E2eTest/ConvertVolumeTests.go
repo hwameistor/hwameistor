@@ -122,7 +122,7 @@ var _ = ginkgo.Describe("test convertible localstorage volume ", ginkgo.Label("p
 							Containers: []apiv1.Container{
 								{
 									Name:  "web",
-									Image: "daocloud.io/daocloud/dao-2048:latest",
+									Image: "ghcr.m.daocloud.io/daocloud/dao-2048:v1.2.0",
 									Ports: []apiv1.ContainerPort{
 										{
 											Name:          "http",
