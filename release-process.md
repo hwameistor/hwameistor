@@ -4,9 +4,10 @@ This is the process to follow to make a new release. Similar to [Semantic](https
 The project refers to the respective components of this triple as < major >.< minor >.< patch >.
 
 The Hwameistor Project's release process is as follows:
-- [Minor Release Process](#Minor Release Process)
-- [Patch Release Process](#Patch Release Process)
+- [Minor Release Process](#Minor)
+- [Patch Release Process](#Patch)
 
+<span id="Minor"> </span>
 ## Minor Release Process
 
 A minor release is e.g. v0.1.0.
@@ -36,6 +37,7 @@ A minor release requires 3 steps are as follows:
 1. Checkout release packages(includes helm packages, images) are generated correctly.
 2. Write release notes to explain the changes of this release corresponding to the changelog.
 
+<span id="Patch"> </span>
 ## Patch Release Process
 
 A minor release is e.g. v0.1.1.
