@@ -139,7 +139,7 @@ var _ = ginkgo.Describe("Deduplication test ", ginkgo.Label("stress-test"), func
 								Containers: []apiv1.Container{
 									{
 										Name:  "web",
-										Image: "daocloud.io/daocloud/dao-2048:latest",
+										Image: "ghcr.m.daocloud.io/daocloud/dao-2048:v1.2.0",
 										Ports: []apiv1.ContainerPort{
 											{
 												Name:          "http",
