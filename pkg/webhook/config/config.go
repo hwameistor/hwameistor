@@ -18,16 +18,15 @@ import (
 
 var (
 	// webhook config
-	webhookNamespace, _ = os.LookupEnv("WEBHOOK_NAMESPACE")
-	mutationCfgName, _  = os.LookupEnv("MUTATE_CONFIG")
-	validateCfgName, _  = os.LookupEnv("VALIDATE_CONFIG")
-	webhookService, _   = os.LookupEnv("WEBHOOK_SERVICE")
-	validatePath, _     = os.LookupEnv("VALIDATE_PATH")
-	mutationPath, _     = os.LookupEnv("MUTATE_PATH")
-	failurePolicy, _    = os.LookupEnv("FAILURE_POLICY")
-	dnsNames            = []string{webhookService, webhookService + "." + webhookNamespace, webhookService + "." + webhookNamespace + "." + "svc"}
-	commonName          = webhookService + "." + webhookNamespace + "." + "svc"
-	excludeNameSpaceKey = "name"
+	webhookNamespace, _  = os.LookupEnv("WEBHOOK_NAMESPACE")
+	mutationCfgName, _   = os.LookupEnv("MUTATE_CONFIG")
+	webhookService, _    = os.LookupEnv("WEBHOOK_SERVICE")
+	mutationPath, _      = os.LookupEnv("MUTATE_PATH")
+	failurePolicy, _     = os.LookupEnv("FAILURE_POLICY")
+	dnsNames             = []string{webhookService, webhookService + "." + webhookNamespace, webhookService + "." + webhookNamespace + "." + "svc"}
+	commonName           = webhookService + "." + webhookNamespace + "." + "svc"
+	ignoreNameSpaceKey   = "hwameistor.io/webhook"
+	ignoreNameSpaceValue = "ignore"
 
 	// certs
 	certsDir          = "/etc/webhook/certs"
@@ -35,6 +34,8 @@ var (
 	certFile          = "tls.crt"
 	Organization      = "hwameistor.io"
 	DefaultEffecttime = 10
+
+	kubeSystemNameSpace = "kube-system"
 )
 
 // CreateOrUpdateWebHookConfig create or update webhook config
@@ -126,10 +127,10 @@ func CreateAdmissionConfig(caCert *bytes.Buffer) error {
 				NamespaceSelector: &metav1.LabelSelector{
 					MatchExpressions: []metav1.LabelSelectorRequirement{
 						{
-							Key:      excludeNameSpaceKey,
+							Key:      ignoreNameSpaceKey,
 							Operator: metav1.LabelSelectorOpNotIn,
 							Values: []string{
-								webhookNamespace,
+								ignoreNameSpaceValue,
 							},
 						},
 					},
@@ -165,27 +166,32 @@ func CreateAdmissionConfig(caCert *bytes.Buffer) error {
 }
 
 func ensureNameSpaceKeyExist(clientset *k8s.Clientset) error {
-	ns, err := clientset.CoreV1().Namespaces().Get(context.Background(), webhookNamespace, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
+	// By default, kube-system and hwameistor release namespace are ignored to call admission webhook
+	excludeNameSpaces := []string{kubeSystemNameSpace, webhookNamespace}
 
-	existLabels := ns.GetObjectMeta().GetLabels()
-	if v, ok := existLabels[excludeNameSpaceKey]; ok && v == webhookNamespace {
-		log.WithField(excludeNameSpaceKey, v).Debug("namespace selector is exited")
-		return nil
-	}
-	existLabels[excludeNameSpaceKey] = webhookNamespace
-	ns.ObjectMeta.Labels = existLabels
+	for _, excludeNS := range excludeNameSpaces {
+		ns, err := clientset.CoreV1().Namespaces().Get(context.Background(), excludeNS, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
 
-	// update namespace labels
-	_, err = clientset.CoreV1().Namespaces().Update(context.Background(), ns, metav1.UpdateOptions{})
-	if err != nil {
-		log.WithError(err).WithFields(log.Fields{
-			"namespace": ns.Name,
-			"labels":    existLabels,
-		}).Error("failed to update namespace labels")
-		return err
+		existLabels := ns.GetObjectMeta().GetLabels()
+		if v, ok := existLabels[ignoreNameSpaceKey]; ok && v == ignoreNameSpaceValue {
+			log.WithFields(log.Fields{ignoreNameSpaceKey: v, "namespace": ns.Name}).Debug("webhook ignore label is exist in namespace")
+			continue
+		}
+		existLabels[ignoreNameSpaceKey] = ignoreNameSpaceValue
+		ns.ObjectMeta.Labels = existLabels
+
+		// update namespace labels
+		_, err = clientset.CoreV1().Namespaces().Update(context.Background(), ns, metav1.UpdateOptions{})
+		if err != nil {
+			log.WithError(err).WithFields(log.Fields{
+				"namespace": ns.Name,
+				"labels":    existLabels,
+			}).Error("failed to update namespace ignore labels")
+			return err
+		}
 	}
 
 	return nil
