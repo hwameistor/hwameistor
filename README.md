@@ -48,18 +48,18 @@ For full documentation, please see our website [hwameistor.io](https://hwameisto
 | CSI for LVM volume                       	| Completed 	| v0.3.2  	| Provision volume with lvm                        	|
 | CSI for disk volume                      	| Completed 	| v0.3.2  	| Provision volume with disk                       	|
 | HA LVM Volume                            	| Completed 	| v0.3.2  	| Volume with HA                                   	|
-| HA LVM Volume expansion                  	| Completed 	| v0.3.2  	| Expand LVM volume capacity online                	|
-| LVM Volume migration                     	| Completed 	| v0.3.2  	| Migrate a LVM volume replica to a different node 	|
+| LVM Volume expansion                  	| Completed 	| v0.3.2  	| Expand LVM volume capacity online                	|
 | LVM Volume conversion                    	| Completed 	| v0.3.2  	| Convert a non-HA LVM volume to the HA            	|
+| LVM Volume migration                     	| Completed 	| v0.4.0  	| Migrate a LVM volume replica to a different node 	|
 | Volume Group                             	| Completed 	| v0.3.2  	| Support volume group allocation                  	|
-| Observability                            	| Planed    	|         	| Observability                                    	|
-| non-HA LVM volume mirror                 	| Planed    	|         	| Mirror LVM volume                                	|
-| non-HA LVM volume clone                  	| Planed    	|         	| Clone LVM volume                                 	|
-| non-HA LVM volume snapshot               	| Planed    	|         	| Snapshot of LVM volume                           	|
-| non-HA LVM volume thin provision support 	| Planed    	|         	| non-HA LVM volume thin provision support         	|
-| non-HA LVM volume stripe writing support 	| Planed    	|         	| non-HA LVM volume stripe writing support         	|
-| data encryption                          	| Planed    	|         	| Data encryption                                  	|
-| Disk health check                        	| Planed    	|         	| Fault prediction, status information reporting   	|
+| Observability                            	| Planed    	|         	| Observability, such as metrics, logs, ...         |
+| Disk health check                        	| Planed    	|         	| Disk fault prediction, status reporting   	    |
+| Disk replacement                        	| Planed    	|         	| Replace disk which fails or will fail soon   	    |
+| LVM volume clone                       	| Planed    	|         	| Clone LVM volume                                 	|
+| LVM volume snapshot                     	| Planed    	|         	| Snapshot of LVM volume                           	|
+| LVM volume thin provision support     	| Unplaned    	|         	| LVM volume thin provision support         	    |
+| LVM volume stripe writing support     	| Unplaned    	|         	| LVM volume stripe writing support         	    |
+| Data encryption                          	| Unplaned    	|         	| Data encryption                                  	|
 
 
 ## Community
