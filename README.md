@@ -55,8 +55,9 @@ For full documentation, please see our website [hwameistor.io](https://hwameisto
 | Observability                            	| Planed    	|         	| Observability, such as metrics, logs, ...         |
 | Disk health check                        	| Planed    	|         	| Disk fault prediction, status reporting   	    |
 | Disk replacement                        	| Planed    	|         	| Replace disk which fails or will fail soon   	    |
-| LVM volume clone                       	| Planed    	|         	| Clone LVM volume                                 	|
+| LVM volume auto-expansion                	| Planed    	|         	| Expand LVM volume automatically                   |
 | LVM volume snapshot                     	| Planed    	|         	| Snapshot of LVM volume                           	|
+| LVM volume clone                       	| Unplaned    	|         	| Clone LVM volume                                 	|
 | LVM volume thin provision support     	| Unplaned    	|         	| LVM volume thin provision support         	    |
 | LVM volume stripe writing support     	| Unplaned    	|         	| LVM volume stripe writing support         	    |
 | Data encryption                          	| Unplaned    	|         	| Data encryption                                  	|
