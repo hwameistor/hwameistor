@@ -52,7 +52,8 @@ For full documentation, please see our website [hwameistor.io](https://hwameisto
 | LVM Volume conversion                    	| Completed 	| v0.3.2  	| Convert a non-HA LVM volume to the HA            	|
 | LVM Volume migration                     	| Completed 	| v0.4.0  	| Migrate a LVM volume replica to a different node 	|
 | Volume Group                             	| Completed 	| v0.3.2  	| Support volume group allocation                  	|
-| Observability                            	| Planed    	|         	| Observability, such as metrics, logs, ...         |
+| HwameiStor Operator                      	| Planed    	|         	| Operator for HwameiStor install, maintain, etc..  |
+| Observability                            	| Planed    	|         	| Observability, such as metrics, logs, etc..       |
 | Failover                              	| Planed    	|         	| Fail over the pod with HwameiStor volume          |
 | IO throttling                            	| Planed    	|         	| Limit IO bandwith to access the HwameiStor volume |
 | Disk health check                        	| Planed    	|         	| Disk fault prediction, status reporting   	    |
