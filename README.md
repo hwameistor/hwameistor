@@ -53,13 +53,15 @@ For full documentation, please see our website [hwameistor.io](https://hwameisto
 | LVM Volume migration                     	| Completed 	| v0.4.0  	| Migrate a LVM volume replica to a different node 	|
 | Volume Group                             	| Completed 	| v0.3.2  	| Support volume group allocation                  	|
 | Observability                            	| Planed    	|         	| Observability, such as metrics, logs, ...         |
+| Failover                              	| Planed    	|         	| Fail over the pod with HwameiStor volume          |
+| IO throttling                            	| Planed    	|         	| Limit IO bandwith to access the HwameiStor volume |
 | Disk health check                        	| Planed    	|         	| Disk fault prediction, status reporting   	    |
 | Disk replacement                        	| Planed    	|         	| Replace disk which fails or will fail soon   	    |
 | LVM volume auto-expansion                	| Planed    	|         	| Expand LVM volume automatically                   |
 | LVM volume snapshot                     	| Planed    	|         	| Snapshot of LVM volume                           	|
 | LVM volume clone                       	| Unplaned    	|         	| Clone LVM volume                                 	|
-| LVM volume thin provision support     	| Unplaned    	|         	| LVM volume thin provision support         	    |
-| LVM volume stripe writing support     	| Unplaned    	|         	| LVM volume stripe writing support         	    |
+| LVM volume thin provision              	| Unplaned    	|         	| LVM volume thin provision                 	    |
+| LVM volume stripe mode                    | Unplaned    	|         	| LVM volume stripe read/write               	    |
 | Data encryption                          	| Unplaned    	|         	| Data encryption                                  	|
 
 
