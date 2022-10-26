@@ -27,8 +27,8 @@ const (
 	RCloneConfigMapName      = "rclone-config"
 	RCloneConfigMapKey       = "rclone.conf"
 	RCloneCertKey            = "rclone-ssh-keys"
+	RcloneJobLabelApp        = "hwameistor-datasync-rclone"
 	rcloneJobAffinityKey     = "kubernetes.io/hostname"
-	rcloneJobLabelApp        = "migrate-rclone"
 
 	RCloneConfigSrcNodeNameKey     = "sourceNode"
 	RCloneConfigDstNodeNameKey     = "targetNode"
@@ -211,7 +211,7 @@ func (rcl *Rclone) getBaseJobStruct(jobName, volName string) *batchv1.Job {
 			Namespace: rcl.rcloneConfigMapNamespace,
 			//Annotations: annotations,
 			Labels: map[string]string{
-				"app": rcloneJobLabelApp,
+				"app": RcloneJobLabelApp,
 			},
 			Finalizers: []string{RCloneJobFinalizer},
 		},
@@ -221,7 +221,7 @@ func (rcl *Rclone) getBaseJobStruct(jobName, volName string) *batchv1.Job {
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": rcloneJobLabelApp,
+						"app": RcloneJobLabelApp,
 					},
 				},
 				Spec: corev1.PodSpec{
