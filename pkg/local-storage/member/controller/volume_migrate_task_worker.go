@@ -608,3 +608,10 @@ func generateJobName(mName string, pvcName string) string {
 	}
 	return fmt.Sprintf("%s-datacopy-%s", mName, pvcName)
 }
+
+func (m *manager) rclonePodGC(pod *corev1.Pod) error {
+	if pod.Namespace == m.namespace && pod.Labels["app"] == datacopy.RcloneJobLabelApp && len(pod.OwnerReferences) == 0 && pod.Status.Phase == corev1.PodSucceeded {
+		return m.apiClient.Delete(context.TODO(), pod)
+	}
+	return nil
+}

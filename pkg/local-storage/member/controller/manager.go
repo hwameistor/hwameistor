@@ -171,6 +171,14 @@ func (m *manager) setupInformers(stopCh <-chan struct{}) {
 		UpdateFunc: m.handleK8sNodeUpdatedEvent,
 	})
 
+	podInformer, err := m.informersCache.GetInformer(context.TODO(), &corev1.Pod{})
+	if err != nil {
+		m.logger.WithError(err).Fatal("Failed to get informer for k8s Pod")
+	}
+	podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.handlePodAddEvent,
+		UpdateFunc: m.handlePodUpdateEvent,
+	})
 }
 
 // VolumeScheduler retrieve the volume scheduler instance
@@ -279,4 +287,16 @@ func (m *manager) handleVolumeMigrateCRDDeletedEvent(obj interface{}) {
 			m.logger.WithError(err).Error("Failed to rebuild VolumeMigrate")
 		}
 	}
+}
+
+func (m *manager) handlePodUpdateEvent(oObj, nObj interface{}) {
+	pod, _ := nObj.(*corev1.Pod)
+
+	// this is for the pod orphan pod which is abandoned by migration rclone job
+	m.rclonePodGC(pod)
+}
+
+func (m *manager) handlePodAddEvent(obj interface{}) {
+	pod, _ := obj.(*corev1.Pod)
+	m.rclonePodGC(pod)
 }
