@@ -7,7 +7,7 @@ tags: [hello, HwameiStor]
 
 ![HwameiStor](img/hwameistor.png)
 > 今日播报：
-> 独属于程序员们的、自由演化的 “元宇宙” 新土地 — HwameiStor 云原生本地存储系统，等你来开垦。
+> 独属于程序员们的、自由演化的 “元宇宙” 新土地 — HwameiStor 云原生本地存储系统，等您来开垦。
 
 **「DaoCloud  道客」正式开源「云原生本地储存系统HwameiStor」**。HwameiStor 将 HDD、SSD 和 NVMe 磁盘形成本地存储资源池进行统一管理，使用 CSI 架构提供分布式的本地数据卷服务，为有状态的云原生应用或组件提供数据持久化能力，**欢迎广大技术开发者和爱好者前去试用**。
 
