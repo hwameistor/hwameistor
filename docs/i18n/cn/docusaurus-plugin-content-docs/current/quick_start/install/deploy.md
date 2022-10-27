@@ -59,7 +59,7 @@ $ helm install hwameistor ./hwameistor \
 :::caution
 
 默认的 `kubelet` 目录为 `/var/lib/kubelet`。
-如果你的 Kubernetes 发行版使用不同的 `kubelet` 目录，必须设置参数 `kubeletRootDir`。
+如果您的 Kubernetes 发行版使用不同的 `kubelet` 目录，必须设置参数 `kubeletRootDir`。
 
 :::
 
