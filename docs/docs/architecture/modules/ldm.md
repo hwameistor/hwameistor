@@ -45,17 +45,17 @@ If you just want to deploy LDM separately, refer to the following installation p
 
 3. Deploy CRDs and run local-disk-manager.
 
-    3.1 Deploy LD and LDC CRDs.
+    1. Deploy LD and LDC CRDs.
 
-    ```bash
-    kubectl apply -f deploy/crds/
-    ```
+        ```bash
+        kubectl apply -f deploy/crds/
+        ```
 
-    3.2. Deploy RBAC CRs and operators.
+    2. Deploy RBAC CRs and operators.
 
-    ```bash
-    kubectl apply -f deploy/
-    ```
+        ```bash
+        kubectl apply -f deploy/
+        ```
 
 4. Get the LocalDisk information.
 
@@ -65,38 +65,38 @@ If you just want to deploy LDM separately, refer to the following installation p
     10-6-118-11-sdb    10-6-118-11                             Unclaimed
     ```
 
-Get locally discovered disk resource information with four columns displayed.
+    Get locally discovered disk resource information with four columns displayed.
 
-- **NAME:** represents how this disk is displayed in the cluster resources.
-- **NODEMATCH:** indicates which host this disk is on.
-- **CLAIM:** indicates which `Claim` statement this disk is used by.
-- **PHASE:** represents the current state of the disk.
+    - **NAME:** represents how this disk is displayed in the cluster resources.
+    - **NODEMATCH:** indicates which host this disk is on.
+    - **CLAIM:** indicates which `Claim` statement this disk is used by.
+    - **PHASE:** represents the current state of the disk.
 
-Use `kuebctl get localdisk <name> -o yaml` to view more information about disks.
+    Use `kuebctl get localdisk <name> -o yaml` to view more information about disks.
 
 5. Claim available disks.
 
-    5.1 Apply a LocalDiskClaim.
+    1. Apply a LocalDiskClaim.
 
-    ```bash
-    kubectl apply -f deploy/samples/hwameistor.io_v1alpha1_localdiskclaim_cr.yaml
-    ```
+        ```bash
+        kubectl apply -f deploy/samples/hwameistor.io_v1alpha1_localdiskclaim_cr.yaml
+        ```
 
-    Allocate available disks by issuing a disk usage request. In the request description, you can add more requirements about the disk, such as disk type and capacity.
+        Allocate available disks by issuing a disk usage request. In the request description, you can add more requirements about the disk, such as disk type and capacity.
 
-    5.2 Get the LocalDiskClaim infomation.
+    2. Get the LocalDiskClaim infomation.
 
-    ```bash
-    kubectl get localdiskclaim <name>
-    ```
+        ```bash
+        kubectl get localdiskclaim <name>
+        ```
 
-    Check the status of `Claim`. If a disk is available, you will find that the status is changed to `Bound`, the localdisk status will be Claimed, and it points to the claim that references the disk.
+        Check the status of `Claim`. If a disk is available, you will find that the status is changed to `Bound`, the localdisk status will be Claimed, and it points to the claim that references the disk.
 
 ## Roadmap
 
 | Feature| Status| Release| Description
 |:----------|----------|----------|----------
-| CSI for disk volume| Planed| | `CSI` driver for provisioning Local PVs with bare `Disk`
-| Disk management| Planed| | Disk management, disk allocation, disk event aware processing
-| Disk health management| Planed| | Disk health management
-| HA disk Volume| Planed| | HA disk Volume
+| CSI for disk volume| Planned| | `CSI` driver for provisioning Local PVs with bare `Disk`
+| Disk management| Planned| | Disk management, disk allocation, disk event aware processing
+| Disk health management| Planned| | Disk health management
+| HA disk Volume| Planned| | HA disk Volume

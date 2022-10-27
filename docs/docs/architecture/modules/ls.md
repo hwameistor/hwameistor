@@ -11,7 +11,7 @@ Supported volume managers: `LVM`.
 
 Supported storage medium: `HDD`, `SSD`, `NVMe`.
 
-![本地存储架构图.png](../../img/localstor.png)
+![local storage architecture](../../img/localstor.png)
 
 ## Applicable scenarios
 
@@ -27,16 +27,16 @@ For the non-HA local LVM volume, it's the best solution for data persistency in 
 For the HA local LVM volume, it's the best solution for data persistency in the following use cases:
 
 - **Database**, such as MySQL, PostgreSQL, etc.
-- Other applications which requires the data with HA features.
+- Other applications which require the data with HA features.
 
 ## Usage with Helm Chart
 
-Local Storage is a component of HwameiStor and must work with [Local Disk Manager](./ldm.md) module. It's suggested to [install by helm-charts](../../quick_start/install/deploy.md).
+Local Storage is a component of HwameiStor and must work with the [Local Disk Manager](./ldm.md) module. It's suggested to [install by helm-charts](../../quick_start/install/deploy.md).
 
 ## Usage with Independent Installation
 
-Developer can start using local-storage with [helm chart](../../quick_start/install/deploy.md). This is for dev or test, and will deploy local-storage from github repo. In this case, you should first install the Local Disk Manager.
+Developer can start using local-storage with [helm chart](../../quick_start/install/deploy.md). This is for dev or test, and will deploy local-storage from the github repo. In this case, you should first install the Local Disk Manager.
 
 ## Roadmap
 
-[Roadmap] (https://github.com/hwameistor/local-storage/blob/main/doc/roadmap.md) provides a release plan about local storage and its features.
+[Roadmap](https://github.com/hwameistor/local-storage/blob/main/doc/roadmap.md) provides a release plan about local storage and its features.
