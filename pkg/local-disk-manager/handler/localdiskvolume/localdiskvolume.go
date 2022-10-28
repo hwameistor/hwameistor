@@ -180,7 +180,7 @@ func (v *DiskVolumeHandler) AddFinalizers(finalizer []string) {
 	//return
 }
 
-func (v *DiskVolumeHandler) GetMountPoints() []v1alpha1.MountPoint {
+func (v *DiskVolumeHandler) GetMountPoints() []*v1alpha1.MountPoint {
 	return v.Ldv.Status.MountPoints
 }
 
@@ -268,7 +268,7 @@ func (v *DiskVolumeHandler) ExistMountPoint(targetPath string) bool {
 }
 
 func (v *DiskVolumeHandler) AppendMountPoint(targetPath string, volCap *csi.VolumeCapability) {
-	mountPoint := v1alpha1.MountPoint{TargetPath: targetPath, Phase: v1alpha1.MountPointToBeMounted}
+	mountPoint := &v1alpha1.MountPoint{TargetPath: targetPath, Phase: v1alpha1.MountPointToBeMounted}
 	switch volCap.AccessType.(type) {
 	case *csi.VolumeCapability_Block:
 		mountPoint.VolumeCap = v1alpha1.VolumeCapability{AccessType: v1alpha1.VolumeCapability_AccessType_Block}

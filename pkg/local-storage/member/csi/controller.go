@@ -159,14 +159,14 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 		},
 		Spec: apisv1alpha1.LocalVolumeGroupSpec{
 			Namespace: params.pvcNamespace,
-			Volumes:   []apisv1alpha1.VolumeInfo{},
+			Volumes:   []*apisv1alpha1.VolumeInfo{},
 			Accessibility: apisv1alpha1.AccessibilityTopology{
 				Nodes: selectedNodes,
 			},
 		},
 	}
 	for _, lv := range lvs {
-		lvg.Spec.Volumes = append(lvg.Spec.Volumes, apisv1alpha1.VolumeInfo{PersistentVolumeClaimName: lv.Spec.PersistentVolumeClaimName})
+		lvg.Spec.Volumes = append(lvg.Spec.Volumes, &apisv1alpha1.VolumeInfo{PersistentVolumeClaimName: lv.Spec.PersistentVolumeClaimName})
 	}
 	log.WithFields(log.Fields{"lvg": lvg.Name}).Debug("Creating a new LVG ...")
 	if err := p.apiClient.Create(context.Background(), lvg, &client.CreateOptions{}); err != nil {

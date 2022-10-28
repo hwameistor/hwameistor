@@ -424,8 +424,14 @@ func (in *LocalDiskSpec) DeepCopyInto(out *LocalDiskSpec) {
 	*out = *in
 	if in.PartitionInfo != nil {
 		in, out := &in.PartitionInfo, &out.PartitionInfo
-		*out = make([]PartitionInfo, len(*in))
-		copy(*out, *in)
+		*out = make([]*PartitionInfo, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(PartitionInfo)
+				**out = **in
+			}
+		}
 	}
 	out.RAIDInfo = in.RAIDInfo
 	out.SmartInfo = in.SmartInfo
@@ -547,9 +553,13 @@ func (in *LocalDiskVolumeStatus) DeepCopyInto(out *LocalDiskVolumeStatus) {
 	*out = *in
 	if in.MountPoints != nil {
 		in, out := &in.MountPoints, &out.MountPoints
-		*out = make([]MountPoint, len(*in))
+		*out = make([]*MountPoint, len(*in))
 		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(MountPoint)
+				(*in).DeepCopyInto(*out)
+			}
 		}
 	}
 	return
@@ -1002,8 +1012,14 @@ func (in *LocalVolumeGroupSpec) DeepCopyInto(out *LocalVolumeGroupSpec) {
 	*out = *in
 	if in.Volumes != nil {
 		in, out := &in.Volumes, &out.Volumes
-		*out = make([]VolumeInfo, len(*in))
-		copy(*out, *in)
+		*out = make([]*VolumeInfo, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(VolumeInfo)
+				**out = **in
+			}
+		}
 	}
 	in.Accessibility.DeepCopyInto(&out.Accessibility)
 	if in.Pods != nil {

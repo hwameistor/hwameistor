@@ -145,7 +145,7 @@ type LocalDiskSpec struct {
 
 	// PartitionInfo contains partition information
 	// +optional
-	PartitionInfo []PartitionInfo `json:"partitionInfo,omitempty"`
+	PartitionInfo []*PartitionInfo `json:"partitionInfo,omitempty"`
 
 	// HasRAID identifies if the disk is a raid disk or not
 	HasRAID bool `json:"isRaid,omitempty"`
