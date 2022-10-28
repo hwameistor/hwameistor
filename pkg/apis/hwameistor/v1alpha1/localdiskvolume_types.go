@@ -86,7 +86,7 @@ type LocalDiskVolumeStatus struct {
 	AllocatedCapacityBytes int64 `json:"allocatedCapacityBytes,omitempty"`
 
 	// MountPoints
-	MountPoints []MountPoint `json:"mountPoints,omitempty"`
+	MountPoints []*MountPoint `json:"mountPoints,omitempty"`
 
 	// State is the phase of volume replica, e.g. Creating, Ready, NotReady, ToBeDeleted, Deleted
 	State State `json:"state,omitempty"`

@@ -35,7 +35,7 @@ var (
 	// fakeSourceNodenames                   = []string{"10-6-118-10"}
 	// fakeTargetNodenames                   = []string{"10-6-118-11"}
 	fakePersistentPvcName = "pvc-test"
-	fakeVolumes           = []apisv1alpha1.VolumeInfo{{LocalVolumeName: fakeLocalVolumeName, PersistentVolumeClaimName: fakePersistentPvcName}}
+	fakeVolumes           = []*apisv1alpha1.VolumeInfo{{LocalVolumeName: fakeLocalVolumeName, PersistentVolumeClaimName: fakePersistentPvcName}}
 	fakeStorageIp         = "10.6.118.11"
 	fakeZone              = "zone-test"
 	fakeRegion            = "region-test"

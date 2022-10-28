@@ -558,7 +558,7 @@ func (m *manager) deleteLocalVolume(lvName string) error {
 	}
 
 	modified := false
-	associatedVolumes := []apisv1alpha1.VolumeInfo{}
+	associatedVolumes := []*apisv1alpha1.VolumeInfo{}
 	for i := range lvg.Spec.Volumes {
 		if lvg.Spec.Volumes[i].LocalVolumeName != lvName {
 			associatedVolumes = append(associatedVolumes, lvg.Spec.Volumes[i])
@@ -566,7 +566,7 @@ func (m *manager) deleteLocalVolume(lvName string) error {
 		}
 		if len(lvg.Spec.Volumes[i].PersistentVolumeClaimName) > 0 {
 			associatedVolumes = append(associatedVolumes,
-				apisv1alpha1.VolumeInfo{
+				&apisv1alpha1.VolumeInfo{
 					PersistentVolumeClaimName: lvg.Spec.Volumes[i].PersistentVolumeClaimName,
 				})
 		}
@@ -628,14 +628,14 @@ func (m *manager) deletePVC(namespace string, name string) error {
 	}
 
 	modified := false
-	associatedVolumes := []apisv1alpha1.VolumeInfo{}
+	associatedVolumes := []*apisv1alpha1.VolumeInfo{}
 	for i := range lvg.Spec.Volumes {
 		if lvg.Spec.Volumes[i].PersistentVolumeClaimName != name || lvg.Spec.Namespace != namespace {
 			associatedVolumes = append(associatedVolumes, lvg.Spec.Volumes[i])
 			continue
 		}
 		if len(lvg.Spec.Volumes[i].LocalVolumeName) > 0 {
-			associatedVolumes = append(associatedVolumes, apisv1alpha1.VolumeInfo{LocalVolumeName: lvg.Spec.Volumes[i].LocalVolumeName})
+			associatedVolumes = append(associatedVolumes, &apisv1alpha1.VolumeInfo{LocalVolumeName: lvg.Spec.Volumes[i].LocalVolumeName})
 		}
 		modified = true
 	}

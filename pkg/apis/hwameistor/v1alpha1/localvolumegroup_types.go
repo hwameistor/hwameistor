@@ -14,7 +14,7 @@ type LocalVolumeGroupSpec struct {
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
 
 	// Volumes is the collection of the volumes in the group
-	Volumes []VolumeInfo `json:"volumes,omitempty"`
+	Volumes []*VolumeInfo `json:"volumes,omitempty"`
 
 	// Accessibility is the topology requirement of the volume. It describes how to locate and distribute the volume replicas
 	Accessibility AccessibilityTopology `json:"accessibility,omitempty"`

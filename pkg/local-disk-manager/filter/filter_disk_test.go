@@ -152,7 +152,7 @@ func TestLocalDiskFilter(t *testing.T) {
 			WantDiskNoPartition: true,
 			disk:                GenFakeLocalDiskObject(),
 			setProperty: func(disk *v1alpha1.LocalDisk) {
-				disk.Spec.PartitionInfo = append(disk.Spec.PartitionInfo, v1alpha1.PartitionInfo{
+				disk.Spec.PartitionInfo = append(disk.Spec.PartitionInfo, &v1alpha1.PartitionInfo{
 					Path:          "",
 					HasFileSystem: false,
 					FileSystem:    v1alpha1.FileSystemInfo{},

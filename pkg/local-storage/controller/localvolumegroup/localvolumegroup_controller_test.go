@@ -48,7 +48,7 @@ var (
 	fakePods                             = []string{"pod-test1"}
 	fakeAcesscibility                    = apisv1alpha1.AccessibilityTopology{Nodes: []string{"test-node1"}}
 	fakeLocalVolumeName                  = "local-volume-test1"
-	fakeVolumes                          = []apisv1alpha1.VolumeInfo{{LocalVolumeName: fakeLocalVolumeName, PersistentVolumeClaimName: fakePersistentPvcName}}
+	fakeVolumes                          = []*apisv1alpha1.VolumeInfo{{LocalVolumeName: fakeLocalVolumeName, PersistentVolumeClaimName: fakePersistentPvcName}}
 	apiversion                           = "hwameistor.io/v1alpha1"
 	LocalVolumeGroupKind                 = "LocalVolumeGroup"
 	fakeRecorder                         = record.NewFakeRecorder(100)
