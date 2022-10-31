@@ -20,6 +20,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/kubernetes/pkg/scheduler/framework"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/helper"
 )
 
@@ -37,11 +38,11 @@ type topologySpreadConstraint struct {
 	Selector    labels.Selector
 }
 
-// defaultConstraints builds the constraints for a pod using
+// buildDefaultConstraints builds the constraints for a pod using
 // .DefaultConstraints and the selectors from the services, replication
 // controllers, replica sets and stateful sets that match the pod.
-func (pl *PodTopologySpread) defaultConstraints(p *v1.Pod, action v1.UnsatisfiableConstraintAction) ([]topologySpreadConstraint, error) {
-	constraints, err := filterTopologySpreadConstraints(pl.DefaultConstraints, action)
+func (pl *PodTopologySpread) buildDefaultConstraints(p *v1.Pod, action v1.UnsatisfiableConstraintAction) ([]topologySpreadConstraint, error) {
+	constraints, err := filterTopologySpreadConstraints(pl.defaultConstraints, action)
 	if err != nil || len(constraints) == 0 {
 		return nil, err
 	}
@@ -81,4 +82,18 @@ func filterTopologySpreadConstraints(constraints []v1.TopologySpreadConstraint, 
 		}
 	}
 	return result, nil
+}
+
+func countPodsMatchSelector(podInfos []*framework.PodInfo, selector labels.Selector, ns string) int {
+	count := 0
+	for _, p := range podInfos {
+		// Bypass terminating Pod (see #87621).
+		if p.Pod.DeletionTimestamp != nil || p.Pod.Namespace != ns {
+			continue
+		}
+		if selector.Matches(labels.Set(p.Pod.Labels)) {
+			count++
+		}
+	}
+	return count
 }

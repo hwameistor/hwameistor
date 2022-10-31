@@ -17,15 +17,14 @@ limitations under the License.
 package algorithmprovider
 
 import (
-	"sort"
-	"strings"
+	"fmt"
 
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/pkg/features"
 	schedulerapi "k8s.io/kubernetes/pkg/scheduler/apis/config"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/defaultbinder"
-	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/defaultpodtopologyspread"
+	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/defaultpreemption"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/imagelocality"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/interpodaffinity"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/nodeaffinity"
@@ -37,6 +36,7 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/nodevolumelimits"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/podtopologyspread"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/queuesort"
+	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/selectorspread"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/tainttoleration"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/volumebinding"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/volumerestrictions"
@@ -65,55 +65,59 @@ func NewRegistry() Registry {
 
 // ListAlgorithmProviders lists registered algorithm providers.
 func ListAlgorithmProviders() string {
-	r := NewRegistry()
-	var providers []string
-	for k := range r {
-		providers = append(providers, k)
-	}
-	sort.Strings(providers)
-	return strings.Join(providers, " | ")
+	return fmt.Sprintf("%s | %s", ClusterAutoscalerProvider, schedulerapi.SchedulerDefaultProviderName)
 }
 
 func getDefaultConfig() *schedulerapi.Plugins {
-	return &schedulerapi.Plugins{
-		QueueSort: &schedulerapi.PluginSet{
+	plugins := &schedulerapi.Plugins{
+		QueueSort: schedulerapi.PluginSet{
 			Enabled: []schedulerapi.Plugin{
 				{Name: queuesort.Name},
 			},
 		},
-		PreFilter: &schedulerapi.PluginSet{
+		PreFilter: schedulerapi.PluginSet{
 			Enabled: []schedulerapi.Plugin{
 				{Name: noderesources.FitName},
 				{Name: nodeports.Name},
+				{Name: podtopologyspread.Name},
 				{Name: interpodaffinity.Name},
+				{Name: volumebinding.Name},
+				{Name: nodeaffinity.Name},
 			},
 		},
-		Filter: &schedulerapi.PluginSet{
+		Filter: schedulerapi.PluginSet{
 			Enabled: []schedulerapi.Plugin{
 				{Name: nodeunschedulable.Name},
-				{Name: noderesources.FitName},
 				{Name: nodename.Name},
-				{Name: nodeports.Name},
-				{Name: nodeaffinity.Name},
-				{Name: volumerestrictions.Name},
 				{Name: tainttoleration.Name},
+				{Name: nodeaffinity.Name},
+				{Name: nodeports.Name},
+				{Name: noderesources.FitName},
+				{Name: volumerestrictions.Name},
 				{Name: nodevolumelimits.EBSName},
 				{Name: nodevolumelimits.GCEPDName},
 				{Name: nodevolumelimits.CSIName},
 				{Name: nodevolumelimits.AzureDiskName},
 				{Name: volumebinding.Name},
 				{Name: volumezone.Name},
+				{Name: podtopologyspread.Name},
 				{Name: interpodaffinity.Name},
 			},
 		},
-		PreScore: &schedulerapi.PluginSet{
+		PostFilter: schedulerapi.PluginSet{
+			Enabled: []schedulerapi.Plugin{
+				{Name: defaultpreemption.Name},
+			},
+		},
+		PreScore: schedulerapi.PluginSet{
 			Enabled: []schedulerapi.Plugin{
 				{Name: interpodaffinity.Name},
-				{Name: defaultpodtopologyspread.Name},
+				{Name: podtopologyspread.Name},
 				{Name: tainttoleration.Name},
+				{Name: nodeaffinity.Name},
 			},
 		},
-		Score: &schedulerapi.PluginSet{
+		Score: schedulerapi.PluginSet{
 			Enabled: []schedulerapi.Plugin{
 				{Name: noderesources.BalancedAllocationName, Weight: 1},
 				{Name: imagelocality.Name, Weight: 1},
@@ -121,16 +125,33 @@ func getDefaultConfig() *schedulerapi.Plugins {
 				{Name: noderesources.LeastAllocatedName, Weight: 1},
 				{Name: nodeaffinity.Name, Weight: 1},
 				{Name: nodepreferavoidpods.Name, Weight: 10000},
-				{Name: defaultpodtopologyspread.Name, Weight: 1},
+				// Weight is doubled because:
+				// - This is a score coming from user preference.
+				// - It makes its signal comparable to NodeResourcesLeastAllocated.
+				{Name: podtopologyspread.Name, Weight: 2},
 				{Name: tainttoleration.Name, Weight: 1},
 			},
 		},
-		Bind: &schedulerapi.PluginSet{
+		Reserve: schedulerapi.PluginSet{
+			Enabled: []schedulerapi.Plugin{
+				{Name: volumebinding.Name},
+			},
+		},
+		PreBind: schedulerapi.PluginSet{
+			Enabled: []schedulerapi.Plugin{
+				{Name: volumebinding.Name},
+			},
+		},
+		Bind: schedulerapi.PluginSet{
 			Enabled: []schedulerapi.Plugin{
 				{Name: defaultbinder.Name},
 			},
 		},
 	}
+	if utilfeature.DefaultFeatureGate.Enabled(features.VolumeCapacityPriority) {
+		plugins.Score.Enabled = append(plugins.Score.Enabled, schedulerapi.Plugin{Name: volumebinding.Name, Weight: 1})
+	}
+	return plugins
 }
 
 func getClusterAutoscalerConfig() *schedulerapi.Plugins {
@@ -145,23 +166,13 @@ func getClusterAutoscalerConfig() *schedulerapi.Plugins {
 }
 
 func applyFeatureGates(config *schedulerapi.Plugins) {
-	// Only add EvenPodsSpread if the feature is enabled.
-	if utilfeature.DefaultFeatureGate.Enabled(features.EvenPodsSpread) {
-		klog.Infof("Registering EvenPodsSpread predicate and priority function")
-		f := schedulerapi.Plugin{Name: podtopologyspread.Name}
-		config.PreFilter.Enabled = append(config.PreFilter.Enabled, f)
-		config.Filter.Enabled = append(config.Filter.Enabled, f)
-		config.PreScore.Enabled = append(config.PreScore.Enabled, f)
-		s := schedulerapi.Plugin{Name: podtopologyspread.Name, Weight: 1}
-		config.Score.Enabled = append(config.Score.Enabled, s)
-	}
-
-	// Prioritizes nodes that satisfy pod's resource limits
-	if utilfeature.DefaultFeatureGate.Enabled(features.ResourceLimitsPriorityFunction) {
-		klog.Infof("Registering resourcelimits priority function")
-		s := schedulerapi.Plugin{Name: noderesources.ResourceLimitsName}
+	if !utilfeature.DefaultFeatureGate.Enabled(features.DefaultPodTopologySpread) {
+		// When feature is enabled, the default spreading is done by
+		// PodTopologySpread plugin, which is enabled by default.
+		klog.Infof("Registering SelectorSpread plugin")
+		s := schedulerapi.Plugin{Name: selectorspread.Name}
 		config.PreScore.Enabled = append(config.PreScore.Enabled, s)
-		s = schedulerapi.Plugin{Name: noderesources.ResourceLimitsName, Weight: 1}
+		s.Weight = 1
 		config.Score.Enabled = append(config.Score.Enabled, s)
 	}
 }

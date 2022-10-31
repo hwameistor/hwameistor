@@ -21,8 +21,8 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	framework "k8s.io/kubernetes/pkg/scheduler/framework/v1alpha1"
-	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/kubernetes/pkg/scheduler/framework"
 )
 
 // VolumeRestrictions is a plugin that checks volume restrictions.
@@ -43,12 +43,7 @@ func (pl *VolumeRestrictions) Name() string {
 	return Name
 }
 
-func isVolumeConflict(volume v1.Volume, pod *v1.Pod) bool {
-	// fast path if there is no conflict checking targets.
-	if volume.GCEPersistentDisk == nil && volume.AWSElasticBlockStore == nil && volume.RBD == nil && volume.ISCSI == nil {
-		return false
-	}
-
+func isVolumeConflict(volume *v1.Volume, pod *v1.Pod) bool {
 	for _, existingVolume := range pod.Spec.Volumes {
 		// Same GCE disk mounted by multiple pods conflicts unless all pods mount it read-only.
 		if volume.GCEPersistentDisk != nil && existingVolume.GCEPersistentDisk != nil {
@@ -95,10 +90,10 @@ func haveOverlap(a1, a2 []string) bool {
 	if len(a1) > len(a2) {
 		a1, a2 = a2, a1
 	}
-	m := map[string]bool{}
+	m := make(sets.String)
 
 	for _, val := range a1 {
-		m[val] = true
+		m.Insert(val)
 	}
 	for _, val := range a2 {
 		if _, ok := m[val]; ok {
@@ -118,10 +113,16 @@ func haveOverlap(a1, a2 []string) bool {
 // - AWS EBS forbids any two pods mounting the same volume ID
 // - Ceph RBD forbids if any two pods share at least same monitor, and match pool and image, and the image is read-only
 // - ISCSI forbids if any two pods share at least same IQN and ISCSI volume is read-only
-func (pl *VolumeRestrictions) Filter(ctx context.Context, _ *framework.CycleState, pod *v1.Pod, nodeInfo *nodeinfo.NodeInfo) *framework.Status {
-	for _, v := range pod.Spec.Volumes {
-		for _, ev := range nodeInfo.Pods() {
-			if isVolumeConflict(v, ev) {
+func (pl *VolumeRestrictions) Filter(ctx context.Context, _ *framework.CycleState, pod *v1.Pod, nodeInfo *framework.NodeInfo) *framework.Status {
+	for i := range pod.Spec.Volumes {
+		v := &pod.Spec.Volumes[i]
+		// fast path if there is no conflict checking targets.
+		if v.GCEPersistentDisk == nil && v.AWSElasticBlockStore == nil && v.RBD == nil && v.ISCSI == nil {
+			continue
+		}
+
+		for _, ev := range nodeInfo.Pods {
+			if isVolumeConflict(v, ev.Pod) {
 				return framework.NewStatus(framework.Unschedulable, ErrReasonDiskConflict)
 			}
 		}
@@ -130,6 +131,6 @@ func (pl *VolumeRestrictions) Filter(ctx context.Context, _ *framework.CycleStat
 }
 
 // New initializes a new plugin and returns it.
-func New(_ *runtime.Unknown, _ framework.FrameworkHandle) (framework.Plugin, error) {
+func New(_ runtime.Object, _ framework.Handle) (framework.Plugin, error) {
 	return &VolumeRestrictions{}, nil
 }

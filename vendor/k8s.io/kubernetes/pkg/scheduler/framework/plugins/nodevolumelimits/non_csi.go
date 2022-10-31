@@ -27,16 +27,15 @@ import (
 	storage "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/apimachinery/pkg/util/sets"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/informers"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	storagelisters "k8s.io/client-go/listers/storage/v1"
 	csilibplugins "k8s.io/csi-translation-lib/plugins"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/pkg/features"
-	kubefeatures "k8s.io/kubernetes/pkg/features"
-	framework "k8s.io/kubernetes/pkg/scheduler/framework/v1alpha1"
-	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
+	"k8s.io/kubernetes/pkg/scheduler/framework"
 	volumeutil "k8s.io/kubernetes/pkg/volume/util"
 )
 
@@ -69,7 +68,7 @@ const (
 const AzureDiskName = "AzureDiskLimits"
 
 // NewAzureDisk returns function that initializes a new plugin and returns it.
-func NewAzureDisk(_ *runtime.Unknown, handle framework.FrameworkHandle) (framework.Plugin, error) {
+func NewAzureDisk(_ runtime.Object, handle framework.Handle) (framework.Plugin, error) {
 	informerFactory := handle.SharedInformerFactory()
 	return newNonCSILimitsWithInformerFactory(azureDiskVolumeFilterType, informerFactory), nil
 }
@@ -78,7 +77,7 @@ func NewAzureDisk(_ *runtime.Unknown, handle framework.FrameworkHandle) (framewo
 const CinderName = "CinderLimits"
 
 // NewCinder returns function that initializes a new plugin and returns it.
-func NewCinder(_ *runtime.Unknown, handle framework.FrameworkHandle) (framework.Plugin, error) {
+func NewCinder(_ runtime.Object, handle framework.Handle) (framework.Plugin, error) {
 	informerFactory := handle.SharedInformerFactory()
 	return newNonCSILimitsWithInformerFactory(cinderVolumeFilterType, informerFactory), nil
 }
@@ -87,7 +86,7 @@ func NewCinder(_ *runtime.Unknown, handle framework.FrameworkHandle) (framework.
 const EBSName = "EBSLimits"
 
 // NewEBS returns function that initializes a new plugin and returns it.
-func NewEBS(_ *runtime.Unknown, handle framework.FrameworkHandle) (framework.Plugin, error) {
+func NewEBS(_ runtime.Object, handle framework.Handle) (framework.Plugin, error) {
 	informerFactory := handle.SharedInformerFactory()
 	return newNonCSILimitsWithInformerFactory(ebsVolumeFilterType, informerFactory), nil
 }
@@ -96,7 +95,7 @@ func NewEBS(_ *runtime.Unknown, handle framework.FrameworkHandle) (framework.Plu
 const GCEPDName = "GCEPDLimits"
 
 // NewGCEPD returns function that initializes a new plugin and returns it.
-func NewGCEPD(_ *runtime.Unknown, handle framework.FrameworkHandle) (framework.Plugin, error) {
+func NewGCEPD(_ runtime.Object, handle framework.Handle) (framework.Plugin, error) {
 	informerFactory := handle.SharedInformerFactory()
 	return newNonCSILimitsWithInformerFactory(gcePDVolumeFilterType, informerFactory), nil
 }
@@ -127,9 +126,10 @@ func newNonCSILimitsWithInformerFactory(
 ) framework.Plugin {
 	pvLister := informerFactory.Core().V1().PersistentVolumes().Lister()
 	pvcLister := informerFactory.Core().V1().PersistentVolumeClaims().Lister()
+	csiNodesLister := informerFactory.Storage().V1().CSINodes().Lister()
 	scLister := informerFactory.Storage().V1().StorageClasses().Lister()
 
-	return newNonCSILimits(filterName, getCSINodeListerIfEnabled(informerFactory), scLister, pvLister, pvcLister)
+	return newNonCSILimits(filterName, csiNodesLister, scLister, pvLister, pvcLister)
 }
 
 // newNonCSILimits creates a plugin which evaluates whether a pod can fit based on the
@@ -196,16 +196,16 @@ func (pl *nonCSILimits) Name() string {
 }
 
 // Filter invoked at the filter extension point.
-func (pl *nonCSILimits) Filter(ctx context.Context, _ *framework.CycleState, pod *v1.Pod, nodeInfo *nodeinfo.NodeInfo) *framework.Status {
+func (pl *nonCSILimits) Filter(ctx context.Context, _ *framework.CycleState, pod *v1.Pod, nodeInfo *framework.NodeInfo) *framework.Status {
 	// If a pod doesn't have any volume attached to it, the predicate will always be true.
 	// Thus we make a fast path for it, to avoid unnecessary computations in this case.
 	if len(pod.Spec.Volumes) == 0 {
 		return nil
 	}
 
-	newVolumes := make(map[string]bool)
+	newVolumes := make(sets.String)
 	if err := pl.filterVolumes(pod.Spec.Volumes, pod.Namespace, newVolumes); err != nil {
-		return framework.NewStatus(framework.Error, err.Error())
+		return framework.AsStatus(err)
 	}
 
 	// quick return
@@ -235,30 +235,27 @@ func (pl *nonCSILimits) Filter(ctx context.Context, _ *framework.CycleState, pod
 	}
 
 	// count unique volumes
-	existingVolumes := make(map[string]bool)
-	for _, existingPod := range nodeInfo.Pods() {
-		if err := pl.filterVolumes(existingPod.Spec.Volumes, existingPod.Namespace, existingVolumes); err != nil {
-			return framework.NewStatus(framework.Error, err.Error())
+	existingVolumes := make(sets.String)
+	for _, existingPod := range nodeInfo.Pods {
+		if err := pl.filterVolumes(existingPod.Pod.Spec.Volumes, existingPod.Pod.Namespace, existingVolumes); err != nil {
+			return framework.AsStatus(err)
 		}
 	}
 	numExistingVolumes := len(existingVolumes)
 
 	// filter out already-mounted volumes
 	for k := range existingVolumes {
-		if _, ok := newVolumes[k]; ok {
-			delete(newVolumes, k)
-		}
+		delete(newVolumes, k)
 	}
 
 	numNewVolumes := len(newVolumes)
 	maxAttachLimit := pl.maxVolumeFunc(node)
-	volumeLimits := nodeInfo.VolumeLimits()
+	volumeLimits := volumeLimits(nodeInfo)
 	if maxAttachLimitFromAllocatable, ok := volumeLimits[pl.volumeLimitKey]; ok {
 		maxAttachLimit = int(maxAttachLimitFromAllocatable)
 	}
 
 	if numExistingVolumes+numNewVolumes > maxAttachLimit {
-		// violates MaxEBSVolumeCount or MaxGCEPDVolumeCount
 		return framework.NewStatus(framework.Unschedulable, ErrReasonMaxVolumeCountExceeded)
 	}
 	if nodeInfo != nil && nodeInfo.TransientInfo != nil && utilfeature.DefaultFeatureGate.Enabled(features.BalanceAttachedNodeVolumes) {
@@ -270,11 +267,11 @@ func (pl *nonCSILimits) Filter(ctx context.Context, _ *framework.CycleState, pod
 	return nil
 }
 
-func (pl *nonCSILimits) filterVolumes(volumes []v1.Volume, namespace string, filteredVolumes map[string]bool) error {
+func (pl *nonCSILimits) filterVolumes(volumes []v1.Volume, namespace string, filteredVolumes sets.String) error {
 	for i := range volumes {
 		vol := &volumes[i]
 		if id, ok := pl.filter.FilterVolume(vol); ok {
-			filteredVolumes[id] = true
+			filteredVolumes.Insert(id)
 		} else if vol.PersistentVolumeClaim != nil {
 			pvcName := vol.PersistentVolumeClaim.ClaimName
 			if pvcName == "" {
@@ -302,7 +299,7 @@ func (pl *nonCSILimits) filterVolumes(volumes []v1.Volume, namespace string, fil
 				// it belongs to the running predicate.
 				if pl.matchProvisioner(pvc) {
 					klog.V(4).Infof("PVC %s/%s is not bound, assuming PVC matches predicate when counting limits", namespace, pvcName)
-					filteredVolumes[pvID] = true
+					filteredVolumes.Insert(pvID)
 				}
 				continue
 			}
@@ -313,13 +310,13 @@ func (pl *nonCSILimits) filterVolumes(volumes []v1.Volume, namespace string, fil
 				// log the error and count the PV towards the PV limit.
 				if pl.matchProvisioner(pvc) {
 					klog.V(4).Infof("Unable to look up PV info for %s/%s/%s, assuming PV matches predicate when counting limits: %v", namespace, pvcName, pvName, err)
-					filteredVolumes[pvID] = true
+					filteredVolumes.Insert(pvID)
 				}
 				continue
 			}
 
 			if id, ok := pl.filter.FilterPersistentVolume(pv); ok {
-				filteredVolumes[id] = true
+				filteredVolumes.Insert(id)
 			}
 		}
 	}
@@ -514,12 +511,4 @@ func getMaxEBSVolume(nodeInstanceType string) int {
 		return volumeutil.DefaultMaxEBSNitroVolumeLimit
 	}
 	return volumeutil.DefaultMaxEBSVolumes
-}
-
-// getCSINodeListerIfEnabled returns the CSINode lister or nil if the feature is disabled
-func getCSINodeListerIfEnabled(factory informers.SharedInformerFactory) storagelisters.CSINodeLister {
-	if !utilfeature.DefaultFeatureGate.Enabled(kubefeatures.CSINodeInfo) {
-		return nil
-	}
-	return factory.Storage().V1().CSINodes().Lister()
 }
