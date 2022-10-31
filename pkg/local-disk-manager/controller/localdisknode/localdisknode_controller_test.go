@@ -188,7 +188,7 @@ func TestReconcileLocalDiskNode_Reconcile(t *testing.T) {
 
 			// create reconcile request for LocalDiskNode
 			request := reconcile.Request{NamespacedName: types.NamespacedName{Namespace: testcase.freeNode.GetNamespace(), Name: testcase.freeNode.GetName()}}
-			_, err = r.Reconcile(request)
+			_, err = r.Reconcile(context.TODO(), request)
 			if err != nil {
 				t.Errorf("failed to reconcile, err: %v", err)
 			}

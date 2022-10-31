@@ -101,7 +101,7 @@ func TestReconcileLocalDisk_Reconcile(t *testing.T) {
 			request := reconcile.Request{NamespacedName: types.NamespacedName{Namespace: testCase.ld.GetNamespace(), Name: testCase.ld.GetName()}}
 
 			// reconcile for LocalDisk
-			if _, err = r.Reconcile(request); err != nil {
+			if _, err = r.Reconcile(context.TODO(), request); err != nil {
 				t.Error(err)
 			}
 
