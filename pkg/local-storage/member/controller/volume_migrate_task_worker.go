@@ -203,6 +203,14 @@ func (m *manager) volumeMigrateAddReplica(migrate *apisv1alpha1.LocalVolumeMigra
 
 	ctx := context.TODO()
 
+	lsNode := &apisv1alpha1.LocalStorageNode{}
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: migrate.Status.TargetNode}, lsNode); err != nil {
+		logCtx.WithError(err).Error("Failed to fetch LocalStorageNode")
+		migrate.Status.Message = "Failed to get LocalStorageNode"
+		m.apiClient.Status().Update(ctx, migrate)
+		return err
+	}
+
 	volList := []*apisv1alpha1.LocalVolume{vol}
 	if migrate.Spec.MigrateAllVols {
 		vols, err := m.getAllVolumesInGroup(lvg)
@@ -227,6 +235,14 @@ func (m *manager) volumeMigrateAddReplica(migrate *apisv1alpha1.LocalVolumeMigra
 			continue
 		}
 		volList[i].Spec.ReplicaNumber++
+		conf, err := m.volumeScheduler.ConfigureVolumeOnAdditionalNodes(volList[i], []*apisv1alpha1.LocalStorageNode{lsNode})
+		if err != nil {
+			logCtx.WithField("volume", volList[i].Name).WithError(err).Error("Failed to configure LocalVolume")
+			migrate.Status.Message = fmt.Sprintf("Failed to configure LocalVolume %s", volList[i].Name)
+			m.apiClient.Status().Update(ctx, migrate)
+			return err
+		}
+		volList[i].Spec.Config = conf
 		if err := m.apiClient.Update(ctx, volList[i]); err != nil {
 			logCtx.WithField("LocalVolume", volList[i].Name).WithError(err).Error("Failed to add a new replica to the volume")
 			migrate.Status.Message = fmt.Sprintf("Failed to migrate volume %s", volList[i].Name)
