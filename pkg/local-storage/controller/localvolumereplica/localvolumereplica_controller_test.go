@@ -85,7 +85,7 @@ func TestNewLocalVolumeReplicaController(t *testing.T) {
 
 	// Mock LocalVolumeReplica request
 	req := reconcile.Request{NamespacedName: types.NamespacedName{Namespace: lv.GetNamespace(), Name: lv.GetName()}}
-	_, err = r.Reconcile(req)
+	_, err = r.Reconcile(context.TODO(), req)
 	if err != nil {
 		t.Errorf("Reconcile fail %v", err)
 	}

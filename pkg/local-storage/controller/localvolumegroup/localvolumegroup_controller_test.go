@@ -92,7 +92,7 @@ func TestNewLocalVolumeGroupController(t *testing.T) {
 
 	// Mock LocalVolumeGroup request
 	req := reconcile.Request{NamespacedName: types.NamespacedName{Namespace: lvg.GetNamespace(), Name: lvg.GetName()}}
-	_, err = r.Reconcile(req)
+	_, err = r.Reconcile(context.TODO(), req)
 	if err != nil {
 		t.Errorf("Reconcile fail %v", err)
 	}

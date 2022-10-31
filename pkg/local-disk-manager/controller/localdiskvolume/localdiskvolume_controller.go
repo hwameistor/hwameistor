@@ -1,6 +1,7 @@
 package localdiskvolume
 
 import (
+	"context"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskvolume"
 
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
@@ -101,7 +102,7 @@ type ReconcileLocalDiskVolume struct {
 }
 
 // Reconcile
-func (r *ReconcileLocalDiskVolume) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileLocalDiskVolume) Reconcile(_ context.Context, request reconcile.Request) (reconcile.Result, error) {
 	log.WithField("LocalDiskVolume", request.Name).Info("Reconciling LocalDiskVolume")
 	var result reconcile.Result
 	v, err := r.reconcileForVolume(request.NamespacedName)

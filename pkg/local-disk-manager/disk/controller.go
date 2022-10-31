@@ -1,6 +1,7 @@
 package disk
 
 import (
+	"context"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/localdisk"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/lsblk"
@@ -33,7 +34,7 @@ func NewController(mgr crmanager.Manager) *Controller {
 // StartMonitor
 func (ctr *Controller) StartMonitor() {
 	// Wait cache synced
-	ctr.localDiskController.Mgr.GetCache().WaitForCacheSync(make(chan struct{}))
+	ctr.localDiskController.Mgr.GetCache().WaitForCacheSync(context.TODO())
 
 	// Start event handler
 	go ctr.HandleEvent()

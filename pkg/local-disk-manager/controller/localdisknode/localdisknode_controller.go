@@ -1,6 +1,7 @@
 package localdisknode
 
 import (
+	"context"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisknode"
 	"k8s.io/apimachinery/pkg/api/errors"
 
@@ -54,9 +55,9 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	localDiskToLocalDiskNodeRequestFunc := handler.ToRequestsFunc(
-		func(a handler.MapObject) []reconcile.Request {
-			ld, ok := a.Object.(*v1alpha1.LocalDisk)
+	localDiskToLocalDiskNodeRequestFunc := handler.EnqueueRequestsFromMapFunc(
+		func(a client.Object) []reconcile.Request {
+			ld, ok := a.(*v1alpha1.LocalDisk)
 			if !ok || ld.Spec.NodeName != utils.GetNodeName() {
 				return []reconcile.Request{}
 			}
@@ -69,8 +70,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		})
 
 	// Watch for changes for resource LocalDisk on this node
-	err = c.Watch(&source.Kind{Type: &v1alpha1.LocalDisk{}}, &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: localDiskToLocalDiskNodeRequestFunc})
+	err = c.Watch(&source.Kind{Type: &v1alpha1.LocalDisk{}}, localDiskToLocalDiskNodeRequestFunc)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func withCurrentNode() predicate.Predicate {
 		UpdateFunc: func(updateEvent event.UpdateEvent) bool {
 			node, _ := updateEvent.ObjectNew.DeepCopyObject().(*v1alpha1.LocalDiskNode)
 			return node.Spec.AttachNode == utils.GetNodeName() &&
-				updateEvent.MetaNew.GetGeneration() != updateEvent.MetaOld.GetGeneration()
+				updateEvent.ObjectNew.GetGeneration() != updateEvent.ObjectOld.GetGeneration()
 		},
 		GenericFunc: func(genericEvent event.GenericEvent) bool {
 			node, _ := genericEvent.Object.DeepCopyObject().(*v1alpha1.LocalDiskNode)
@@ -114,7 +114,7 @@ type ReconcileLocalDiskNode struct {
 }
 
 // Reconcile reads that state of the cluster for a LocalDiskNode object and makes changes based on the state read
-func (r *ReconcileLocalDiskNode) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileLocalDiskNode) Reconcile(_ context.Context, request reconcile.Request) (reconcile.Result, error) {
 	log.WithField("LocalDiskNode", request.NamespacedName).Info("Reconciling LocalDiskNode")
 	ldnHandler := localdisknode.NewDiskNodeHelper(r.client, r.Recorder)
 	err := ldnHandler.For(request.NamespacedName)

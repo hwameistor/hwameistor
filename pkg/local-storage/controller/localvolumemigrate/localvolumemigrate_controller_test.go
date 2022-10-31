@@ -103,7 +103,7 @@ func TestNewLocalVolumeMigrateController(t *testing.T) {
 
 	// Mock LocalVolumeMigrate request
 	req := reconcile.Request{NamespacedName: types.NamespacedName{Namespace: lvm.GetNamespace(), Name: lvm.GetName()}}
-	_, err = r.Reconcile(req)
+	_, err = r.Reconcile(context.TODO(), req)
 	if err != nil {
 		t.Logf("Reconcile fail %v", err)
 	}
