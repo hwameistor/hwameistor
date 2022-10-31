@@ -29,25 +29,31 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"k8s.io/apimachinery/pkg/runtime"
+	kscheme "k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/internal/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/internal/metrics"
 )
 
 // DefaultPort is the default port that the webhook server serves.
-var DefaultPort = 443
+var DefaultPort = 9443
 
 // Server is an admission webhook server that can serve traffic and
 // generates related k8s resources for deploying.
+//
+// TLS is required for a webhook to be accessed by kubernetes, so
+// you must provide a CertName and KeyName or have valid cert/key
+// at the default locations (tls.crt and tls.key). If you do not
+// want to configure TLS (i.e for testing purposes) run an
+// admission.StandaloneWebhook in your own server.
 type Server struct {
 	// Host is the address that the server will listen on.
 	// Defaults to "" - all addresses.
 	Host string
 
 	// Port is the port number that the server will serve.
-	// It will be defaulted to 443 if unspecified.
+	// It will be defaulted to 9443 if unspecified.
 	Port int
 
 	// CertDir is the directory that contains the server key and certificate. The
@@ -76,6 +82,9 @@ type Server struct {
 
 	// defaultingOnce ensures that the default fields are only ever set once.
 	defaultingOnce sync.Once
+
+	// mu protects access to the webhook map & setFields for Start, Register, etc
+	mu sync.Mutex
 }
 
 // setDefaults does defaulting for the Server.
@@ -111,6 +120,9 @@ func (*Server) NeedLeaderElection() bool {
 // Register marks the given webhook as being served at the given path.
 // It panics if two hooks are registered on the same path.
 func (s *Server) Register(path string, hook http.Handler) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.defaultingOnce.Do(s.setDefaults)
 	_, found := s.webhooks[path]
 	if found {
@@ -118,53 +130,58 @@ func (s *Server) Register(path string, hook http.Handler) {
 	}
 	// TODO(directxman12): call setfields if we've already started the server
 	s.webhooks[path] = hook
-	s.WebhookMux.Handle(path, instrumentedHook(path, hook))
-	log.Info("registering webhook", "path", path)
-}
+	s.WebhookMux.Handle(path, metrics.InstrumentedHook(path, hook))
 
-// instrumentedHook adds some instrumentation on top of the given webhook.
-func instrumentedHook(path string, hookRaw http.Handler) http.Handler {
-	lbl := prometheus.Labels{"webhook": path}
+	regLog := log.WithValues("path", path)
+	regLog.Info("registering webhook")
 
-	lat := metrics.RequestLatency.MustCurryWith(lbl)
-	cnt := metrics.RequestTotal.MustCurryWith(lbl)
-	gge := metrics.RequestInFlight.With(lbl)
-
-	// Initialize the most likely HTTP status codes.
-	cnt.WithLabelValues("200")
-	cnt.WithLabelValues("500")
-
-	return promhttp.InstrumentHandlerDuration(
-		lat,
-		promhttp.InstrumentHandlerCounter(
-			cnt,
-			promhttp.InstrumentHandlerInFlight(gge, hookRaw),
-		),
-	)
-}
-
-// Start runs the server.
-// It will install the webhook related resources depend on the server configuration.
-func (s *Server) Start(stop <-chan struct{}) error {
-	s.defaultingOnce.Do(s.setDefaults)
-
-	baseHookLog := log.WithName("webhooks")
-	baseHookLog.Info("starting webhook server")
-
-	// inject fields here as opposed to in Register so that we're certain to have our setFields
-	// function available.
-	for hookPath, webhook := range s.webhooks {
-		if err := s.setFields(webhook); err != nil {
-			return err
+	// we've already been "started", inject dependencies here.
+	// Otherwise, InjectFunc will do this for us later.
+	if s.setFields != nil {
+		if err := s.setFields(hook); err != nil {
+			// TODO(directxman12): swallowing this error isn't great, but we'd have to
+			// change the signature to fix that
+			regLog.Error(err, "unable to inject fields into webhook during registration")
 		}
+
+		baseHookLog := log.WithName("webhooks")
 
 		// NB(directxman12): we don't propagate this further by wrapping setFields because it's
 		// unclear if this is how we want to deal with log propagation.  In this specific instance,
 		// we want to be able to pass a logger to webhooks because they don't know their own path.
-		if _, err := inject.LoggerInto(baseHookLog.WithValues("webhook", hookPath), webhook); err != nil {
-			return err
+		if _, err := inject.LoggerInto(baseHookLog.WithValues("webhook", path), hook); err != nil {
+			regLog.Error(err, "unable to logger into webhook during registration")
 		}
 	}
+}
+
+// StartStandalone runs a webhook server without
+// a controller manager.
+func (s *Server) StartStandalone(ctx context.Context, scheme *runtime.Scheme) error {
+	// Use the Kubernetes client-go scheme if none is specified
+	if scheme == nil {
+		scheme = kscheme.Scheme
+	}
+
+	if err := s.InjectFunc(func(i interface{}) error {
+		if _, err := inject.SchemeInto(scheme, i); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return s.Start(ctx)
+}
+
+// Start runs the server.
+// It will install the webhook related resources depend on the server configuration.
+func (s *Server) Start(ctx context.Context) error {
+	s.defaultingOnce.Do(s.setDefaults)
+
+	baseHookLog := log.WithName("webhooks")
+	baseHookLog.Info("starting webhook server")
 
 	certPath := filepath.Join(s.CertDir, s.CertName)
 	keyPath := filepath.Join(s.CertDir, s.KeyName)
@@ -175,7 +192,7 @@ func (s *Server) Start(stop <-chan struct{}) error {
 	}
 
 	go func() {
-		if err := certWatcher.Start(stop); err != nil {
+		if err := certWatcher.Start(ctx); err != nil {
 			log.Error(err, "certificate watcher error")
 		}
 	}()
@@ -215,7 +232,7 @@ func (s *Server) Start(stop <-chan struct{}) error {
 
 	idleConnsClosed := make(chan struct{})
 	go func() {
-		<-stop
+		<-ctx.Done()
 		log.Info("shutting down webhook server")
 
 		// TODO: use a context with reasonable timeout
@@ -226,8 +243,7 @@ func (s *Server) Start(stop <-chan struct{}) error {
 		close(idleConnsClosed)
 	}()
 
-	err = srv.Serve(listener)
-	if err != nil && err != http.ErrServerClosed {
+	if err := srv.Serve(listener); err != nil && err != http.ErrServerClosed {
 		return err
 	}
 
@@ -238,5 +254,20 @@ func (s *Server) Start(stop <-chan struct{}) error {
 // InjectFunc injects the field setter into the server.
 func (s *Server) InjectFunc(f inject.Func) error {
 	s.setFields = f
+
+	// inject fields here that weren't injected in Register because we didn't have setFields yet.
+	baseHookLog := log.WithName("webhooks")
+	for hookPath, webhook := range s.webhooks {
+		if err := s.setFields(webhook); err != nil {
+			return err
+		}
+
+		// NB(directxman12): we don't propagate this further by wrapping setFields because it's
+		// unclear if this is how we want to deal with log propagation.  In this specific instance,
+		// we want to be able to pass a logger to webhooks because they don't know their own path.
+		if _, err := inject.LoggerInto(baseHookLog.WithValues("webhook", hookPath), webhook); err != nil {
+			return err
+		}
+	}
 	return nil
 }

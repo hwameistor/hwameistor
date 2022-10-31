@@ -24,7 +24,7 @@ const (
 )
 
 // New initializes a new plugin and returns it.
-func New(_ *runtime.Unknown, f framework.Handle) (framework.Plugin, error) {
+func New(_ runtime.Object, f framework.Handle) (framework.Plugin, error) {
 	time.Sleep(time.Second) // wait for scheduleLabelMgr to be created
 	log.SetLevel(log.DebugLevel)
 
