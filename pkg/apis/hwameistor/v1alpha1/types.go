@@ -236,4 +236,6 @@ type VolumeScheduler interface {
 	Allocate(vol *LocalVolume) (*VolumeConfig, error)
 
 	GetNodeCandidates(vols []*LocalVolume) []*LocalStorageNode
+
+	ConfigureVolumeOnAdditionalNodes(vol *LocalVolume, nodes []*LocalStorageNode) (*VolumeConfig, error)
 }

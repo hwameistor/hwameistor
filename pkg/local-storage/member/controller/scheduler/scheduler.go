@@ -131,7 +131,6 @@ func lvString(vols []*apisv1alpha1.LocalVolume) (vs []string) {
 
 // Allocate schedule right nodes and generate volume config
 func (s *scheduler) Allocate(vol *apisv1alpha1.LocalVolume) (*apisv1alpha1.VolumeConfig, error) {
-	//logCtx := s.logger.WithFields(log.Fields{"volume": vol.Name, "spec": vol.Spec})
 	logCtx := s.logger.WithFields(log.Fields{"volume": vol.Name, "spec": vol.Spec})
 	logCtx.Debug("Allocating resources for LocalVolume")
 
@@ -161,17 +160,20 @@ func (s *scheduler) Allocate(vol *apisv1alpha1.LocalVolume) (*apisv1alpha1.Volum
 		selectedNodes = nodes
 	}
 
+	return s.ConfigureVolumeOnAdditionalNodes(vol, selectedNodes)
+}
+
+func (s *scheduler) ConfigureVolumeOnAdditionalNodes(vol *apisv1alpha1.LocalVolume, nodes []*apisv1alpha1.LocalStorageNode) (*apisv1alpha1.VolumeConfig, error) {
 	// for the same volume, will always get the same ID
 	resID, err := s.resourceCollections.getResourceIDForVolume(vol)
 	if err != nil {
-		logCtx.WithError(err).Error("Failed to allocated a resource ID")
 		return nil, err
 	}
 
-	return s.generateConfig(vol, selectedNodes, resID), nil
-}
+	if len(nodes) == 0 && vol.Spec.Config != nil {
+		return vol.Spec.Config, nil
+	}
 
-func (s *scheduler) generateConfig(vol *apisv1alpha1.LocalVolume, nodes []*apisv1alpha1.LocalStorageNode, resID int) *apisv1alpha1.VolumeConfig {
 	conf := &apisv1alpha1.VolumeConfig{
 		Version:     1,
 		VolumeName:  vol.Name,
@@ -180,6 +182,7 @@ func (s *scheduler) generateConfig(vol *apisv1alpha1.LocalVolume, nodes []*apisv
 	}
 	if vol.Spec.Config != nil {
 		conf = vol.Spec.Config.DeepCopy()
+		conf.Version++
 	}
 	conf.ResourceID = resID
 	conf.RequiredCapacityBytes = vol.Spec.RequiredCapacityBytes
@@ -217,10 +220,10 @@ func (s *scheduler) generateConfig(vol *apisv1alpha1.LocalVolume, nodes []*apisv
 	if len(vol.Spec.Accessibility.Nodes) == 0 && len(conf.Replicas) > 0 {
 		conf.Replicas[0].Primary = true
 	}
-	if len(conf.Replicas) < 2 {
+	if !vol.Spec.Convertible {
 		// always set to false for non-HA volume
 		conf.Initialized = false
 	}
 
-	return conf
+	return conf, nil
 }

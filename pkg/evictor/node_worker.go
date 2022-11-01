@@ -1,13 +1,11 @@
 package evictor
 
 import (
-	"context"
 	"fmt"
 
 	localstorageapis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 
 	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (ev *evictor) startNodeWorker(stopCh <-chan struct{}) {
@@ -44,19 +42,11 @@ func (ev *evictor) evictNode(nodeName string) error {
 		return err
 	}
 	if len(lvrs) == 0 {
-		node, err := ev.nodeInformer.Lister().Get(nodeName)
-		if err != nil {
-			logCtx.WithError(err).Error("Failed to get node from cache")
-			return err
-		}
-		node.Labels[labelKeyForVolumeEviction] = labelValueForVolumeEvictionCompleted
-		if _, err := ev.clientset.CoreV1().Nodes().Update(context.TODO(), node, metav1.UpdateOptions{}); err != nil {
-			logCtx.WithError(err).Error("Failed to update node")
-			return err
-		}
+		logCtx.Debug("No volume replica resides on this node")
 		return nil
 	}
 
+	logCtx.Debug("Start to evict the volume replicas of this node")
 	for i := range lvrs {
 		lvr, _ := lvrs[i].(*localstorageapis.LocalVolumeReplica)
 		logCtx.WithFields(log.Fields{"volume": lvr.Spec.VolumeName, "sourceNode": nodeName}).Debug("Add a volume migrate task")

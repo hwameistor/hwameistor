@@ -65,8 +65,6 @@ type manager struct {
 	lock sync.Mutex
 
 	dataCopyManager *datacopyutil.DataCopyManager
-
-	//rclone *datacopyutil.Rclone
 }
 
 // New cluster manager
