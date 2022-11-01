@@ -715,20 +715,19 @@ metadata:
   namespace: hwameistor-system
 data:
   hwameistor-scheduler-config.yaml: |
-    apiVersion: kubescheduler.config.k8s.io/v1alpha1
+    apiVersion: kubescheduler.config.k8s.io/v1beta1
     kind: KubeSchedulerConfiguration
-    schedulerName: hwameistor-scheduler
+    profiles:
+      - schedulerName: hwameistor-scheduler
+        plugins:
+          filter:
+            enabled:
+              - name: hwameistor-scheduler-plugin
+          reserve:
+            enabled:
+              - name: hwameistor-scheduler-plugin
     leaderElection:
       leaderElect: true
-      lockObjectName: hwameistor-scheduler
-      resourceLock: leases
-    plugins:
-      filter:
-        enabled:
-          - name: hwameistor-scheduler-plugin
-      reserve:
-        enabled:
-          - name: hwameistor-scheduler-plugin
-      unreserve:
-        enabled:
-          - name: hwameistor-scheduler-plugin
+      resourceName: hwameistor-scheduler
+    clientConnection:
+      kubeconfig: /etc/kubernetes/scheduler.conf
