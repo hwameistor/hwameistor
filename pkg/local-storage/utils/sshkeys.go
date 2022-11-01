@@ -12,9 +12,30 @@ const (
 )
 
 func AddPubKeyIntoAuthorizedKeys(pubkey string) error {
-	txt, err := os.ReadFile(sshAuthorizedKeysFilePath)
+	newTxt, err := grepNonRcloneKeys(sshAuthorizedKeysFilePath)
 	if err != nil {
 		return err
+	}
+
+	// add the rclone pub key at the end of keys file
+	newTxt += pubkey + "\n"
+
+	return os.WriteFile(sshAuthorizedKeysFilePath, []byte(newTxt), 0644)
+}
+
+func RemovePubKeyFromAuthorizedKeys() error {
+	newTxt, err := grepNonRcloneKeys(sshAuthorizedKeysFilePath)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(sshAuthorizedKeysFilePath, []byte(newTxt), 0644)
+}
+
+func grepNonRcloneKeys(keyFilePath string) (string, error) {
+	txt, err := os.ReadFile(sshAuthorizedKeysFilePath)
+	if err != nil {
+		return "", err
 	}
 
 	newTxt := ""
@@ -26,8 +47,5 @@ func AddPubKeyIntoAuthorizedKeys(pubkey string) error {
 			newTxt += line + "\n"
 		}
 	}
-	// add the rclone pub key at the end of keys file
-	newTxt += pubkey + "\n"
-
-	return os.WriteFile(sshAuthorizedKeysFilePath, []byte(newTxt), 0644)
+	return newTxt, nil
 }

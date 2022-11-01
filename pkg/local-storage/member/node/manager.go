@@ -239,6 +239,7 @@ func (m *manager) setupInformers() {
 	cmInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: m.handleConfigMapUpdatedEvent,
 		AddFunc:    m.handleConfigMapAddEvent,
+		DeleteFunc: m.handleConfigMapDeleteEvent,
 	})
 }
 
@@ -364,6 +365,34 @@ func (m *manager) handleVolumeReplicaUpdate(oldObj, newObj interface{}) {
 	m.storageMgr.UpdateNodeForVolumeReplica(replica)
 }
 
+func (m *manager) handleVolumeReplicaDelete(obj interface{}) {
+	replica, _ := obj.(*apisv1alpha1.LocalVolumeReplica)
+	if replica.Spec.NodeName != m.name {
+		return
+	}
+
+	m.logger.WithFields(log.Fields{"replica": replica.Name}).Info("Observed a VolumeReplica CRD deletion...")
+	if replica.Status.State != apisv1alpha1.VolumeReplicaStateDeleted {
+		// must be deleted by a mistake, rebuild it
+		m.logger.WithFields(log.Fields{"replica": replica.Name, "spec": replica.Spec, "status": replica.Status}).Warning("Rebuilding VolumeReplica CRD ...")
+		// TODO: need retry considering the case of creating failure??
+		newReplica := &apisv1alpha1.LocalVolumeReplica{}
+		newReplica.Name = replica.Name
+		newReplica.Spec = replica.Spec
+		newReplica.Status = replica.Status
+
+		if err := m.apiClient.Create(context.TODO(), newReplica); err != nil {
+			m.logger.WithFields(log.Fields{"replica": replica.Name}).WithError(err).Error("Failed to rebuild VolumeReplica")
+		}
+		if err := m.apiClient.Status().Update(context.TODO(), newReplica); err != nil {
+			m.logger.WithFields(log.Fields{"replica": replica.Name}).WithError(err).Error("Failed to rebuild VolumeReplica's statis")
+		}
+	} else {
+		delete(m.replicaRecords, replica.Spec.VolumeName)
+		m.storageMgr.UpdateNodeForVolumeReplica(replica)
+	}
+}
+
 func (m *manager) handleLocalDiskClaimUpdate(oldObj, newObj interface{}) {
 	localDiskClaim, _ := newObj.(*apisv1alpha1.LocalDiskClaim)
 	if localDiskClaim.Spec.NodeName != m.name {
@@ -388,29 +417,6 @@ func (m *manager) handleLocalDiskUpdate(oldObj, newObj interface{}) {
 	m.localDiskTaskQueue.Add(localDisk.Namespace + "/" + localDisk.Name)
 }
 
-func (m *manager) handleVolumeReplicaDelete(obj interface{}) {
-	replica, _ := obj.(*apisv1alpha1.LocalVolumeReplica)
-	if replica.Spec.NodeName != m.name {
-		return
-	}
-
-	m.logger.WithFields(log.Fields{"replica": replica.Name}).Info("Observed a VolumeReplica CRD deletion...")
-	if replica.Status.State != apisv1alpha1.VolumeReplicaStateDeleted {
-		// must be deleted by a mistake, rebuild it
-		m.logger.WithFields(log.Fields{"replica": replica.Name, "spec": replica.Spec, "status": replica.Status}).Warning("Rebuilding VolumeReplica CRD ...")
-		// TODO: need retry considering the case of creating failure??
-		newReplica := &apisv1alpha1.LocalVolumeReplica{}
-		newReplica.Name = replica.Name
-		newReplica.Spec = replica.Spec
-
-		if err := m.apiClient.Create(context.TODO(), newReplica); err != nil {
-			m.logger.WithFields(log.Fields{"replica": replica.Name}).WithError(err).Error("Failed to rebuild VolumeReplica")
-		}
-	} else {
-		delete(m.replicaRecords, replica.Spec.VolumeName)
-	}
-}
-
 func (m *manager) handleNodeDelete(obj interface{}) {
 	node, _ := obj.(*apisv1alpha1.LocalStorageNode)
 	if node.Name != m.name {
@@ -426,10 +432,10 @@ func (m *manager) handleNodeDelete(obj interface{}) {
 	nodeToRecovery.Spec = node.Spec
 	nodeToRecovery.Status = node.Status
 	if err := m.apiClient.Create(context.TODO(), nodeToRecovery); err != nil {
-		m.logger.WithFields(log.Fields{"node": nodeToRecovery.GetName()}).WithError(err).Error("Failed to rebuild VolumeReplica")
+		m.logger.WithFields(log.Fields{"node": nodeToRecovery.GetName()}).WithError(err).Error("Failed to rebuild LocalStorageNode")
 	}
 	if err := m.apiClient.Status().Update(context.TODO(), nodeToRecovery); err != nil {
-		m.logger.WithFields(log.Fields{"node": nodeToRecovery.GetName()}).WithError(err).Error("Failed to rebuild VolumeReplica")
+		m.logger.WithFields(log.Fields{"node": nodeToRecovery.GetName()}).WithError(err).Error("Failed to rebuild LocalStorageNode's status")
 	}
 }
 
@@ -454,6 +460,26 @@ func (m *manager) handleConfigMapAddEvent(newObj interface{}) {
 
 func (m *manager) handleConfigMapUpdatedEvent(oldObj, newObj interface{}) {
 	m.handleConfigMapAddEvent(newObj)
+}
+
+func (m *manager) handleConfigMapDeleteEvent(newObj interface{}) {
+	cm, _ := newObj.(*corev1.ConfigMap)
+	if cm.Namespace != m.namespace {
+		return
+	}
+	if strings.HasPrefix(cm.Name, datacopy.RCloneConfigMapName) {
+		if lvName, exist := cm.Data[datacopy.RCloneConfigVolumeNameKey]; exist && len(lvName) > 0 {
+			m.rcloneVolumeMountTaskQueue.Forget(lvName)
+			m.rcloneVolumeMountTaskQueue.Done(lvName)
+		}
+	}
+	if cm.Name == datacopy.RCloneKeyConfigMapName {
+		if pubKeyData, exist := cm.Data[datacopy.RClonePubKeyFileName]; exist && len(pubKeyData) > 0 {
+			if err := utils.RemovePubKeyFromAuthorizedKeys(); err != nil {
+				m.logger.WithError(err).Error("Failed to cleanup the public key from authorized keys file")
+			}
+		}
+	}
 }
 
 func isStringInArray(str string, strs []string) bool {
