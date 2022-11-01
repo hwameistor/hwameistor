@@ -15,27 +15,49 @@ Once a Kubernetes node or pod is evicted by the system for any reason, HwameiSto
 In a Kubernetes cluster, a node can be drained by using the following procedure. So that, all the pods and volume replicas on this node will be evicted, and then continue the services on other avaliable nodes.
 
 ```console
-$ kubectl label k8s-node-1 hwameistor.io/eviction=start
 $ kubectl drain k8s-node-1 --ignore-daemonsets=true
 ```
 
 Check if all the volumes' migration complete or not by:
 
 ```console
-$ kubectl get node k8s-node-1 -o yaml
-apiVersion: v1
-kind: Node
+$ kubectl get LocalStorageNode k8s-node-1 -o yaml
+apiVersion: hwameistor.io/v1alpha1
+kind: LocalStorageNode
 metadata:
+  creationTimestamp: "2022-10-11T07:41:58Z"
+  generation: 1
   name: k8s-node-1
-  labels:
-    ...
-    hwameistor.io/eviction: completed
-    ...
-  name: k8s-node-1
+  resourceVersion: "6402198"
+  uid: c71cc6ac-566a-4e0b-8687-69679b07471f
 spec:
-  ...
+  hostname: k8s-node-1
+  storageIP: 10.6.113.22
+  topogoly:
+    region: default
+    zone: default
 status:
   ...
+  pools:
+    LocalStorage_PoolHDD:
+      class: HDD
+      disks:
+      - capacityBytes: 17175674880
+        devPath: /dev/sdb
+        state: InUse
+        type: HDD
+      freeCapacityBytes: 16101933056
+      freeVolumeCount: 999
+      name: LocalStorage_PoolHDD
+      totalCapacityBytes: 17175674880
+      totalVolumeCount: 1000
+      type: REGULAR
+      usedCapacityBytes: 1073741824
+      usedVolumeCount: 1
+      volumeCapacityBytesLimit: 17175674880
+      # ** make sure volumes is empty ** #
+      volumes:  
+  state: Ready  
 ```
 
 Check if there is any volume replica still located in the evicted node by:
