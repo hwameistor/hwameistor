@@ -151,6 +151,15 @@ func (m *manager) setupInformers(stopCh <-chan struct{}) {
 		DeleteFunc: m.handleVolumeExpandCRDDeletedEvent,
 	})
 
+	convertInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolumeConvert{})
+	if err != nil {
+		// error happens, crash the node
+		m.logger.WithError(err).Fatal("Failed to get informer for VolumeConvert")
+	}
+	convertInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		DeleteFunc: m.handleVolumeConvertCRDDeletedEvent,
+	})
+
 	migrateInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolumeMigrate{})
 	if err != nil {
 		// error happens, crash the node
@@ -243,15 +252,18 @@ func (m *manager) handleVolumeCRDDeletedEvent(obj interface{}) {
 		newInstance := &apisv1alpha1.LocalVolume{}
 		newInstance.Name = instance.Name
 		newInstance.Spec = instance.Spec
+		newInstance.Status = instance.Status
 
 		m.logger.WithFields(log.Fields{"volume": instance.Name, "spec": instance.Spec, "status": instance.Status}).Info("Rebuilding a Volume CRD ...")
 		if err := m.apiClient.Create(context.TODO(), newInstance); err != nil {
 			m.logger.WithError(err).Error("Failed to rebuild Volume")
 		}
+		if err := m.apiClient.Status().Update(context.TODO(), newInstance); err != nil {
+			m.logger.WithError(err).Error("Failed to rebuild Volume's status")
+		}
 	}
 }
 
-// ReconcileVolume reconciles Volume CRD for any volume resource change
 func (m *manager) handleVolumeExpandCRDDeletedEvent(obj interface{}) {
 	instance, _ := obj.(*apisv1alpha1.LocalVolumeExpand)
 	m.logger.WithFields(log.Fields{"expand": instance.Name, "spec": instance.Spec, "status": instance.Status}).Info("Observed a VolumeExpand CRD deletion...")
@@ -261,15 +273,39 @@ func (m *manager) handleVolumeExpandCRDDeletedEvent(obj interface{}) {
 		newInstance := &apisv1alpha1.LocalVolumeExpand{}
 		newInstance.Name = instance.Name
 		newInstance.Spec = instance.Spec
+		newInstance.Status = instance.Status
 
 		m.logger.WithFields(log.Fields{"expand": instance.Name, "spec": instance.Spec, "status": instance.Status}).Info("Rebuilding a VolumeExpand CRD ...")
 		if err := m.apiClient.Create(context.TODO(), newInstance); err != nil {
 			m.logger.WithError(err).Error("Failed to rebuild VolumeExpand")
 		}
+		if err := m.apiClient.Status().Update(context.TODO(), newInstance); err != nil {
+			m.logger.WithError(err).Error("Failed to rebuild VolumeExpand's status")
+		}
 	}
 }
 
-// ReconcileVolume reconciles Volume CRD for any volume resource change
+func (m *manager) handleVolumeConvertCRDDeletedEvent(obj interface{}) {
+	instance, _ := obj.(*apisv1alpha1.LocalVolumeConvert)
+	m.logger.WithFields(log.Fields{"expand": instance.Name, "spec": instance.Spec, "status": instance.Status}).Info("Observed a VolumeConvert CRD deletion...")
+	if instance.Status.State != apisv1alpha1.OperationStateCompleted && instance.Status.State != apisv1alpha1.OperationStateAborted {
+		// must be deleted by a mistake, rebuild it
+		// TODO: need retry considering the case of creating failure
+		newInstance := &apisv1alpha1.LocalVolumeConvert{}
+		newInstance.Name = instance.Name
+		newInstance.Spec = instance.Spec
+		newInstance.Status = instance.Status
+
+		m.logger.WithFields(log.Fields{"expand": instance.Name, "spec": instance.Spec, "status": instance.Status}).Info("Rebuilding a VolumeConvert CRD ...")
+		if err := m.apiClient.Create(context.TODO(), newInstance); err != nil {
+			m.logger.WithError(err).Error("Failed to rebuild VolumeConvert")
+		}
+		if err := m.apiClient.Status().Update(context.TODO(), newInstance); err != nil {
+			m.logger.WithError(err).Error("Failed to rebuild VolumeConvert's status")
+		}
+	}
+}
+
 func (m *manager) handleVolumeMigrateCRDDeletedEvent(obj interface{}) {
 	instance, _ := obj.(*apisv1alpha1.LocalVolumeMigrate)
 	m.logger.WithFields(log.Fields{"migrate": instance.Name, "spec": instance.Spec, "status": instance.Status}).Info("Observed a VolumeMigrate CRD deletion...")
@@ -279,10 +315,14 @@ func (m *manager) handleVolumeMigrateCRDDeletedEvent(obj interface{}) {
 		newInstance := &apisv1alpha1.LocalVolumeMigrate{}
 		newInstance.Name = instance.Name
 		newInstance.Spec = instance.Spec
+		newInstance.Status = instance.Status
 
 		m.logger.WithFields(log.Fields{"volume": instance.Name, "spec": instance.Spec, "status": instance.Status}).Info("Rebuilding a VolumeMigrate CRD ...")
 		if err := m.apiClient.Create(context.TODO(), newInstance); err != nil {
 			m.logger.WithError(err).Error("Failed to rebuild VolumeMigrate")
+		}
+		if err := m.apiClient.Status().Update(context.TODO(), newInstance); err != nil {
+			m.logger.WithError(err).Error("Failed to rebuild VolumeMigrate's status")
 		}
 	}
 }
