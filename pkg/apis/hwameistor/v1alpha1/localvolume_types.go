@@ -164,6 +164,8 @@ type LocalVolumeStatus struct {
 	// PublishedNodeName is the node where the volume is published and used by pod
 	PublishedNodeName string `json:"publishedNode,omitempty"`
 
+	// PublishFSType is the fstype on this volume
+	PublishFSType string `json:"fsType,omitempty"`
 	// Synced is the sync state of the volume replica, which is important in HA volume
 	// +kubebuilder:default:=false
 	//Synced bool `json:"synced,omitempty"`
@@ -179,10 +181,10 @@ type LocalVolumeStatus struct {
 // +kubebuilder:printcolumn:name="pool",type=string,JSONPath=`.spec.poolName`,description="Name of storage pool"
 // +kubebuilder:printcolumn:name="replicas",type=integer,JSONPath=`.spec.replicaNumber`,description="Number of volume replica"
 // +kubebuilder:printcolumn:name="capacity",type=integer,JSONPath=`.spec.requiredCapacityBytes`,description="Required capacity of the volume"
-// +kubebuilder:printcolumn:name="accessibility",type=string,JSONPath=`.spec.accessibility.node`,description="Accessibility of volume"
 // +kubebuilder:printcolumn:name="state",type=string,JSONPath=`.status.state`,description="State of the volume"
 // +kubebuilder:printcolumn:name="resource",type=integer,JSONPath=`.spec.config.resourceID`,description="Allocated resource ID for the volume"
 // +kubebuilder:printcolumn:name="published",type=string,JSONPath=`.status.publishedNode`,description="Name of the node where the volume is in-use"
+// +kubebuilder:printcolumn:name="fstype",type=string,JSONPath=`.status.fsType`,description="Filesystem type of this volume"
 // +kubebuilder:printcolumn:name="age",type=date,JSONPath=`.metadata.creationTimestamp`
 type LocalVolume struct {
 	metav1.TypeMeta   `json:",inline"`

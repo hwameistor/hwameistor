@@ -26,10 +26,6 @@ spec:
       jsonPath: .spec.requiredCapacityBytes
       name: capacity
       type: integer
-    - description: Accessibility of volume
-      jsonPath: .spec.accessibility.node
-      name: accessibility
-      type: string
     - description: State of the volume
       jsonPath: .status.state
       name: state
@@ -41,6 +37,10 @@ spec:
     - description: Name of the node where the volume is in-use
       jsonPath: .status.publishedNode
       name: published
+      type: string
+    - description: Filesystem type of this volume
+      jsonPath: .status.fsType
+      name: fstype
       type: string
     - jsonPath: .metadata.creationTimestamp
       name: age
@@ -193,6 +193,9 @@ spec:
                   replicas, the value is equal to the one of a replica's size
                 format: int64
                 type: integer
+              fsType:
+                description: PublishFSType is the fstype on this volume
+                type: string
               publishedNode:
                 description: PublishedNodeName is the node where the volume is published
                   and used by pod

@@ -96,11 +96,9 @@ func (m *manager) processRcloneVolumeMount(lvName string) error {
 	newLvName := strings.Replace(lvName, "-", "--", -1)
 	devPath := fmt.Sprintf("/dev/mapper/%s-%s", vol.Spec.PoolName, newLvName)
 
-	// ??? filesystem type should be checked from the replicas
-	fsType := "xfs"
 	// return directly if device has already mounted at TargetPath
 	if !isStringInArray(mountPoint, m.mounter.GetDeviceMountPoints(devPath)) {
-		if err := m.mounter.FormatAndMount(devPath, mountPoint, fsType, []string{}); err != nil {
+		if err := m.mounter.FormatAndMount(devPath, mountPoint, vol.Status.PublishFSType, []string{}); err != nil {
 			m.logger.WithField("mountpoint", mountPoint).WithError(err).Error("Failed to FormatAndMount volume")
 			return err
 		}

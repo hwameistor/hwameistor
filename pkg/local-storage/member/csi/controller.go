@@ -445,6 +445,9 @@ func (p *plugin) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 			return resp, fmt.Errorf("invalid device path of volume replica")
 
 		}
+		if req.VolumeCapability.GetBlock() == nil && req.VolumeCapability.GetMount() != nil {
+			vol.Status.PublishFSType = req.VolumeCapability.GetMount().FsType
+		}
 		vol.Status.PublishedNodeName = req.NodeId
 		if err := p.apiClient.Status().Update(ctx, vol); err != nil {
 			p.logger.WithFields(log.Fields{"volume": vol.Name, "node": req.NodeId}).Error("Failed to update volume with published node info")
