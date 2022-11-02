@@ -82,22 +82,6 @@ func (m *manager) processVolumeSubmit(vol *apisv1alpha1.LocalVolume) error {
 	return m.apiClient.Status().Update(context.TODO(), vol)
 }
 
-func (m *manager) getReplicasForVolume(volName string) ([]*apisv1alpha1.LocalVolumeReplica, error) {
-	// todo
-	replicaList := &apisv1alpha1.LocalVolumeReplicaList{}
-	if err := m.apiClient.List(context.TODO(), replicaList); err != nil {
-		return nil, err
-	}
-
-	var replicas []*apisv1alpha1.LocalVolumeReplica
-	for i := range replicaList.Items {
-		if replicaList.Items[i].Spec.VolumeName == volName {
-			replicas = append(replicas, &replicaList.Items[i])
-		}
-	}
-	return replicas, nil
-}
-
 func (m *manager) processVolumeCreate(vol *apisv1alpha1.LocalVolume) error {
 	logCtx := m.logger.WithFields(log.Fields{"volume": vol.Name})
 	logCtx.Debug("Configuring a LocalVolume")
@@ -205,20 +189,6 @@ func (m *manager) processVolumeReadyAndNotReady(vol *apisv1alpha1.LocalVolume) e
 	return m.apiClient.Status().Update(context.TODO(), vol)
 }
 
-// isVolumeReplicaUp check if HA volume replica already up
-func isVolumeReplicaUp(replica *apisv1alpha1.LocalVolumeReplica) bool {
-	if replica.Status.HAState == nil {
-		return false
-	}
-
-	switch replica.Status.HAState.State {
-	case apisv1alpha1.HAVolumeReplicaStateUp, apisv1alpha1.HAVolumeReplicaStateConsistent, apisv1alpha1.HAVolumeReplicaStateInconsistent:
-		return true
-	}
-
-	return false
-}
-
 func (m *manager) processVolumeDelete(vol *apisv1alpha1.LocalVolume) error {
 	logCtx := m.logger.WithFields(log.Fields{"volume": vol.Name, "spec": vol.Spec, "state": vol.Status.State})
 	logCtx.Debug("Deleting a Volume")
@@ -257,4 +227,34 @@ func (m *manager) processVolumeCleanup(vol *apisv1alpha1.LocalVolume) error {
 	logCtx.Debug("Cleanup a Volume")
 
 	return m.apiClient.Delete(context.TODO(), vol)
+}
+
+func (m *manager) getReplicasForVolume(volName string) ([]*apisv1alpha1.LocalVolumeReplica, error) {
+	// todo
+	replicaList := &apisv1alpha1.LocalVolumeReplicaList{}
+	if err := m.apiClient.List(context.TODO(), replicaList); err != nil {
+		return nil, err
+	}
+
+	var replicas []*apisv1alpha1.LocalVolumeReplica
+	for i := range replicaList.Items {
+		if replicaList.Items[i].Spec.VolumeName == volName {
+			replicas = append(replicas, &replicaList.Items[i])
+		}
+	}
+	return replicas, nil
+}
+
+// isVolumeReplicaUp check if HA volume replica already up
+func isVolumeReplicaUp(replica *apisv1alpha1.LocalVolumeReplica) bool {
+	if replica.Status.HAState == nil {
+		return false
+	}
+
+	switch replica.Status.HAState.State {
+	case apisv1alpha1.HAVolumeReplicaStateUp, apisv1alpha1.HAVolumeReplicaStateConsistent, apisv1alpha1.HAVolumeReplicaStateInconsistent:
+		return true
+	}
+
+	return false
 }
