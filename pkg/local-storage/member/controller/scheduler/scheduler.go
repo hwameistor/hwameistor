@@ -83,52 +83,6 @@ func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) (qualifi
 	return qualifiedNodes
 }
 
-func isLocalVolumeSameClass(lv1 *apisv1alpha1.LocalVolume, lv2 *apisv1alpha1.LocalVolume) bool {
-	if lv1 == nil || lv2 == nil {
-		return true
-	}
-	if lv1.Spec.PoolName != lv2.Spec.PoolName {
-		return false
-	}
-	if lv1.Spec.ReplicaNumber != lv2.Spec.ReplicaNumber {
-		return false
-	}
-	if lv1.Spec.Convertible != lv2.Spec.Convertible {
-		return false
-	}
-	return true
-}
-
-func appendLocalVolume(bigLv *apisv1alpha1.LocalVolume, lv *apisv1alpha1.LocalVolume) *apisv1alpha1.LocalVolume {
-	if bigLv == nil {
-		return lv
-	}
-	if lv == nil {
-		return bigLv
-	}
-	bigLv.Spec.RequiredCapacityBytes += lv.Spec.RequiredCapacityBytes
-	return bigLv
-}
-
-func unionSet(strs1 []*apisv1alpha1.LocalStorageNode, strs2 []*apisv1alpha1.LocalStorageNode) []*apisv1alpha1.LocalStorageNode {
-	strs := []*apisv1alpha1.LocalStorageNode{}
-	for _, s1 := range strs1 {
-		for _, s2 := range strs2 {
-			if s1.Name == s2.Name {
-				strs = append(strs, s1)
-			}
-		}
-	}
-	return strs
-}
-
-func lvString(vols []*apisv1alpha1.LocalVolume) (vs []string) {
-	for _, vol := range vols {
-		strings.Join(vs, vol.Name)
-	}
-	return
-}
-
 // Allocate schedule right nodes and generate volume config
 func (s *scheduler) Allocate(vol *apisv1alpha1.LocalVolume) (*apisv1alpha1.VolumeConfig, error) {
 	logCtx := s.logger.WithFields(log.Fields{"volume": vol.Name, "spec": vol.Spec})
@@ -164,14 +118,16 @@ func (s *scheduler) Allocate(vol *apisv1alpha1.LocalVolume) (*apisv1alpha1.Volum
 }
 
 func (s *scheduler) ConfigureVolumeOnAdditionalNodes(vol *apisv1alpha1.LocalVolume, nodes []*apisv1alpha1.LocalStorageNode) (*apisv1alpha1.VolumeConfig, error) {
+	if len(nodes) == 0 && vol.Spec.Config != nil {
+		// in case of capacity expansion
+		vol.Spec.Config.RequiredCapacityBytes = vol.Spec.RequiredCapacityBytes
+		return vol.Spec.Config, nil
+	}
+
 	// for the same volume, will always get the same ID
 	resID, err := s.resourceCollections.getResourceIDForVolume(vol)
 	if err != nil {
 		return nil, err
-	}
-
-	if len(nodes) == 0 && vol.Spec.Config != nil {
-		return vol.Spec.Config, nil
 	}
 
 	conf := &apisv1alpha1.VolumeConfig{
@@ -226,4 +182,50 @@ func (s *scheduler) ConfigureVolumeOnAdditionalNodes(vol *apisv1alpha1.LocalVolu
 	}
 
 	return conf, nil
+}
+
+func isLocalVolumeSameClass(lv1 *apisv1alpha1.LocalVolume, lv2 *apisv1alpha1.LocalVolume) bool {
+	if lv1 == nil || lv2 == nil {
+		return true
+	}
+	if lv1.Spec.PoolName != lv2.Spec.PoolName {
+		return false
+	}
+	if lv1.Spec.ReplicaNumber != lv2.Spec.ReplicaNumber {
+		return false
+	}
+	if lv1.Spec.Convertible != lv2.Spec.Convertible {
+		return false
+	}
+	return true
+}
+
+func appendLocalVolume(bigLv *apisv1alpha1.LocalVolume, lv *apisv1alpha1.LocalVolume) *apisv1alpha1.LocalVolume {
+	if bigLv == nil {
+		return lv
+	}
+	if lv == nil {
+		return bigLv
+	}
+	bigLv.Spec.RequiredCapacityBytes += lv.Spec.RequiredCapacityBytes
+	return bigLv
+}
+
+func unionSet(strs1 []*apisv1alpha1.LocalStorageNode, strs2 []*apisv1alpha1.LocalStorageNode) []*apisv1alpha1.LocalStorageNode {
+	strs := []*apisv1alpha1.LocalStorageNode{}
+	for _, s1 := range strs1 {
+		for _, s2 := range strs2 {
+			if s1.Name == s2.Name {
+				strs = append(strs, s1)
+			}
+		}
+	}
+	return strs
+}
+
+func lvString(vols []*apisv1alpha1.LocalVolume) (vs []string) {
+	for _, vol := range vols {
+		strings.Join(vs, vol.Name)
+	}
+	return
 }
