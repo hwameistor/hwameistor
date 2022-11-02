@@ -119,8 +119,11 @@ func (s *scheduler) Allocate(vol *apisv1alpha1.LocalVolume) (*apisv1alpha1.Volum
 
 func (s *scheduler) ConfigureVolumeOnAdditionalNodes(vol *apisv1alpha1.LocalVolume, nodes []*apisv1alpha1.LocalStorageNode) (*apisv1alpha1.VolumeConfig, error) {
 	if len(nodes) == 0 && vol.Spec.Config != nil {
-		// in case of capacity expansion
-		vol.Spec.Config.RequiredCapacityBytes = vol.Spec.RequiredCapacityBytes
+		if vol.Spec.Config.RequiredCapacityBytes < vol.Spec.RequiredCapacityBytes {
+			newConfig := vol.Spec.Config.DeepCopy()
+			newConfig.RequiredCapacityBytes = vol.Spec.RequiredCapacityBytes
+			return newConfig, nil
+		}
 		return vol.Spec.Config, nil
 	}
 
