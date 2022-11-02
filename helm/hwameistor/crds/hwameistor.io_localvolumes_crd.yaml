@@ -139,9 +139,11 @@ spec:
                   volumeName:
                     type: string
                 required:
+                - convertible
                 - initialized
                 - readyToInitialize
                 - replicas
+                - requiredCapacityBytes
                 - resourceID
                 - version
                 - volumeName
@@ -194,12 +196,16 @@ spec:
                 format: int64
                 type: integer
               fsType:
-                description: PublishFSType is the fstype on this volume
+                description: PublishedFSType is the fstype on this volume
                 type: string
               publishedNode:
                 description: PublishedNodeName is the node where the volume is published
                   and used by pod
                 type: string
+              rawblock:
+                default: false
+                description: PublishedRawBlock is for raw block
+                type: boolean
               replicas:
                 description: Volume is a logical concept and composed by one or many
                   replicas which will be located at different node.
@@ -210,6 +216,8 @@ spec:
                 description: State is the phase of volume replica, e.g. Creating,
                   Ready, NotReady, ToBeDeleted, Deleted
                 type: string
+            required:
+            - rawblock
             type: object
         type: object
     served: true

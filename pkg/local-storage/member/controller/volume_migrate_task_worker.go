@@ -139,13 +139,12 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 		return fmt.Errorf("volume still in use")
 	}
 
-	// consider the localvolume version after the upgrade, comment out the fstype check.
-	// if !vol.Spec.Convertible && len(vol.Status.PublishFSType) == 0 {
-	// 	logCtx.WithField("fstype", vol.Status.PublishFSType).Warning("Can't identify the filesystem type on the LocalVolume")
-	// 	migrate.Status.Message = "can't identify the filesystem"
-	// 	m.apiClient.Status().Update(ctx, migrate)
-	// 	return fmt.Errorf("can't identify the filesystem")
-	// }
+	if !vol.Spec.Convertible && vol.Status.PublishedRawBlock {
+		logCtx.Warning("Can't migrate the unconvertable raw block volume")
+		migrate.Status.Message = "Can't migrate the unconvertable raw block volume"
+		m.apiClient.Status().Update(ctx, migrate)
+		return fmt.Errorf("can't migrate the unconvertable raw block volume")
+	}
 
 	if len(migrate.Status.TargetNode) == 0 {
 		logCtx.Debug("Selecting the target node for the migration")

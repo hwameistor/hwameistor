@@ -69,10 +69,10 @@ type VolumeConfig struct {
 	// Version of config, start from 0, plus 1 every time config update
 	Version               int    `json:"version"`
 	VolumeName            string `json:"volumeName"`
-	RequiredCapacityBytes int64  `json:"requiredCapacityBytes,omitempty"`
+	RequiredCapacityBytes int64  `json:"requiredCapacityBytes"`
 
 	// Convertible is to indicate if the non-HA volume can be transitted to HA volume or not
-	Convertible bool `json:"convertible,omitempty"`
+	Convertible bool `json:"convertible"`
 
 	// ResourceID is for HA volume, set to '-1' for non-HA volume
 	ResourceID        int             `json:"resourceID"`
@@ -164,8 +164,12 @@ type LocalVolumeStatus struct {
 	// PublishedNodeName is the node where the volume is published and used by pod
 	PublishedNodeName string `json:"publishedNode,omitempty"`
 
-	// PublishFSType is the fstype on this volume
-	PublishFSType string `json:"fsType,omitempty"`
+	// PublishedFSType is the fstype on this volume
+	PublishedFSType string `json:"fsType,omitempty"`
+
+	// PublishedRawBlock is for raw block
+	// +kubebuilder:default:=false
+	PublishedRawBlock bool `json:"rawblock"`
 	// Synced is the sync state of the volume replica, which is important in HA volume
 	// +kubebuilder:default:=false
 	//Synced bool `json:"synced,omitempty"`

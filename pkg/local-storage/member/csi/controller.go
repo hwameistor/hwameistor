@@ -445,8 +445,14 @@ func (p *plugin) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 			return resp, fmt.Errorf("invalid device path of volume replica")
 
 		}
-		if req.VolumeCapability.GetBlock() == nil && req.VolumeCapability.GetMount() != nil {
-			vol.Status.PublishFSType = req.VolumeCapability.GetMount().FsType
+		if req.VolumeCapability.GetBlock() != nil {
+			vol.Status.PublishedRawBlock = true
+		} else if req.VolumeCapability.GetMount() != nil {
+			if len(req.VolumeCapability.GetMount().FsType) == 0 {
+				vol.Status.PublishedFSType = "ext4"
+			} else {
+				vol.Status.PublishedFSType = req.VolumeCapability.GetMount().FsType
+			}
 		}
 		vol.Status.PublishedNodeName = req.NodeId
 		if err := p.apiClient.Status().Update(ctx, vol); err != nil {
