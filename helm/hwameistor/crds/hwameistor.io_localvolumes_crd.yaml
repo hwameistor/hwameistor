@@ -26,10 +26,6 @@ spec:
       jsonPath: .spec.requiredCapacityBytes
       name: capacity
       type: integer
-    - description: Accessibility of volume
-      jsonPath: .spec.accessibility.node
-      name: accessibility
-      type: string
     - description: State of the volume
       jsonPath: .status.state
       name: state
@@ -41,6 +37,10 @@ spec:
     - description: Name of the node where the volume is in-use
       jsonPath: .status.publishedNode
       name: published
+      type: string
+    - description: Filesystem type of this volume
+      jsonPath: .status.fsType
+      name: fstype
       type: string
     - jsonPath: .metadata.creationTimestamp
       name: age
@@ -139,9 +139,11 @@ spec:
                   volumeName:
                     type: string
                 required:
+                - convertible
                 - initialized
                 - readyToInitialize
                 - replicas
+                - requiredCapacityBytes
                 - resourceID
                 - version
                 - volumeName
@@ -193,10 +195,17 @@ spec:
                   replicas, the value is equal to the one of a replica's size
                 format: int64
                 type: integer
+              fsType:
+                description: PublishedFSType is the fstype on this volume
+                type: string
               publishedNode:
                 description: PublishedNodeName is the node where the volume is published
                   and used by pod
                 type: string
+              rawblock:
+                default: false
+                description: PublishedRawBlock is for raw block
+                type: boolean
               replicas:
                 description: Volume is a logical concept and composed by one or many
                   replicas which will be located at different node.
@@ -207,6 +216,8 @@ spec:
                 description: State is the phase of volume replica, e.g. Creating,
                   Ready, NotReady, ToBeDeleted, Deleted
                 type: string
+            required:
+            - rawblock
             type: object
         type: object
     served: true

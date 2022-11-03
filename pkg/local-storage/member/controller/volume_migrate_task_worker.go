@@ -139,6 +139,13 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 		return fmt.Errorf("volume still in use")
 	}
 
+	if !vol.Spec.Convertible && vol.Status.PublishedRawBlock {
+		logCtx.Warning("Can't migrate the unconvertable raw block volume")
+		migrate.Status.Message = "Can't migrate the unconvertable raw block volume"
+		m.apiClient.Status().Update(ctx, migrate)
+		return fmt.Errorf("can't migrate the unconvertable raw block volume")
+	}
+
 	if len(migrate.Status.TargetNode) == 0 {
 		logCtx.Debug("Selecting the target node for the migration")
 		tgtNodeName, err := m.selectMigrateTargetNode(migrate, lvg)
