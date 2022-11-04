@@ -20,7 +20,6 @@ type volumeParameters struct {
 	poolName      string
 	replicaNumber int64
 	convertible   bool
-	fsType        string
 	pvcName       string
 	pvcNamespace  string
 }
@@ -62,11 +61,6 @@ func parseParameters(req RequestParameterHandler) (*volumeParameters, error) {
 		}
 	}
 
-	fsType, ok := params[apisv1alpha1.VolumeParameterFSTypeKey]
-	if !ok {
-		return nil, fmt.Errorf("not found fstype")
-	}
-
 	pvcNamespace, ok := params[pvcNamespaceKey]
 	if !ok {
 		return nil, fmt.Errorf("not found pvc namespace")
@@ -82,7 +76,6 @@ func parseParameters(req RequestParameterHandler) (*volumeParameters, error) {
 		poolName:      poolName,
 		replicaNumber: int64(replicaNumber),
 		convertible:   convertible,
-		fsType:        fsType,
 		pvcNamespace:  pvcNamespace,
 		pvcName:       pvcName,
 	}, nil
