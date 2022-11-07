@@ -180,6 +180,9 @@ func ensureNameSpaceKeyExist(clientset *k8s.Clientset) error {
 			log.WithFields(log.Fields{ignoreNameSpaceKey: v, "namespace": ns.Name}).Debug("webhook ignore label is exist in namespace")
 			continue
 		}
+		if existLabels == nil {
+			existLabels = make(map[string]string)
+		}
 		existLabels[ignoreNameSpaceKey] = ignoreNameSpaceValue
 		ns.ObjectMeta.Labels = existLabels
 
