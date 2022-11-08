@@ -19,7 +19,7 @@ jobs:
       - name: unit-test
         run: make unit-test
   e2e-test:
-    runs-on: ["self-hosted"]
+    runs-on: ["vsphere"]
     timeout-minutes: 180
     steps:
       - name: delete
