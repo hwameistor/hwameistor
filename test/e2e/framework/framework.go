@@ -3,11 +3,13 @@ package framework
 import (
 	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"time"
 )
 
 // Framework supports common operations used by e2e tests; it will keep a client for you.
@@ -88,6 +90,14 @@ func (f *Framework) defaultConfig() {
 
 		// Create the mapper provider
 		mapper, err := apiutil.NewDynamicRESTMapper(cfg)
+		err = wait.PollImmediate(5*time.Second, 3*time.Minute, func() (done bool, err error) {
+			_, err = apiutil.NewDynamicRESTMapper(cfg)
+			if err != nil {
+				return false, nil
+			}
+			return true, nil
+		})
+		mapper, err = apiutil.NewDynamicRESTMapper(cfg)
 		if err != nil {
 			f.ExpectNoError(err)
 		}
