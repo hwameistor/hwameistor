@@ -1,12 +1,18 @@
 # HwameiStor
 
-Hwameistor is an HA local storage system for cloud-native stateful workloads. It creates a local storage resource pool for centrally managing all disks such as HDD, SSD, and NVMe. It uses the CSI architecture to provide distributed services with local volumes and provides data persistence capabilities for stateful cloud-native workloads or components.
+HwameiStor is an HA local storage system for cloud-native stateful workloads.
+It creates a local storage resource pool for centrally managing all disks such as HDD, SSD, and NVMe.
+It uses the CSI architecture to provide distributed services with local volumes and provides data
+persistence capabilities for stateful cloud-native workloads or components.
 
 ![System architecture](docs/docs/img/architecture.png)
 
 ## Current Status
 
->At present, HwameiStor is still in the alpha stage.
+HwameiStor is a cloud-native storage project listed in [CNCF Landscape](https://landscape.cncf.io/?selected=hwamei-stor),
+with capabilities to support for your production environment.
+
+> At present, HwameiStor is still in the alpha stage.
 
 The latest release of HwameiStor is [![hwameistor-releases](https://img.shields.io/github/v/release/hwameistor/hwameistor.svg?include_prereleases)](https://github.com/hwameistor/hwameistor/releases)
 
@@ -18,33 +24,58 @@ The latest release of HwameiStor is [![hwameistor-releases](https://img.shields.
 
 | Release  | Version | Type   |
 |----------|---------|--------|
-| v0.4     | v0.4.1  | latest |
+| v0.4     | v0.4.2  | latest |
+
+See [current releases](https://github.com/hwameistor/hwameistor/releases).
 
 ## Modules and Code
 
-HwameiStor contains 4 modules:
+HwameiStor contains several modules:
 
-* local-disk-manager
-* local-storage
-* scheduler
-* admission-controller
+* [local-disk-manager](#local-disk-manager)
+* [local-storage](#local-storage)
+* [scheduler](#scheduler)
+* [admission-controller](#admission-controller)
+* [Evictor](#evictor)
+* [DRDB installer](#drbd-installer)
 
-### Local-Disk-Manager
+### local-disk-manager
 
 local-disk-manager (LDM) is designed to hold the management of disks on nodes.
 Other modules such as local-storage can take advantage of the disk management feature provided by LDM.
+[Learn more](docs/docs/architecture/modules/ldm.md)
 
-### Local-Storage
+### local-storage
 
-Local-Storage (LS) provides a cloud-native local storage system. It aims to provision high-performance persistent LVM volume with local access to applications.
+local-storage (LS) provides a cloud-native local storage system.
+It aims to provision high-performance persistent LVM volume with local access to applications.
+[Learn more](docs/docs/architecture/modules/ls.md)
 
 ### Scheduler
 
 Scheduler is to automatically schedule a pod to a correct node which has the associated HwameiStor volumes.
+[Learn more](docs/docs/architecture/modules/scheduler.md)
 
 ### admission-controller
 
-admission-controller is a webhook that can automatically determine which pod uses the HwameiStor volume and, help to modify the schedulerName to hwameistor-scheduler.
+admission-controller is a webhook that can automatically determine which pod uses the HwameiStor volume and,
+help to modify the schedulerName to hwameistor-scheduler.
+[Learn more](docs/docs/architecture/modules/admission_controller.md)
+
+### Evictor
+
+Evictor is used to automatically migrate HwameiStor volumes in case of node or pod eviction.
+When a node or pod is evicted as either Planned or Unplanned, the associated HwameiStor volumes,
+which have a replica on the node, will be detected and migrated out this node automatically.
+[Learn more](docs/docs/architecture/modules/evictor.md)
+
+## DRBD installer
+
+DRBD (Distributed Replicated Block Device) is composed of Linux kernel modules and related scripts
+to build high available clusters. It is implemented by mirroring the entire device over the network,
+which can be thought of as a kind of network RAID. This installer can directly install DRBD to a
+container cluster. Currently this module is only for testing purposes.
+[Learn more](docs/docs/architecture/modules/drbd.md)
 
 ## Documentation
 
@@ -99,11 +130,15 @@ Welcome to follow our roadmap discussions [here](https://github.com/hwameistor/h
 
 Please feel free to raise requests on chats or by a PR.  
 
-We will try our best to respond to every issue reported on community channels, but the issues reported [here](https://github.com/hwameistor/hwameistor/discussions) on this repo will be addressed first.
+We will try our best to respond to every issue reported on community channels,
+but the issues reported [here](https://github.com/hwameistor/hwameistor/discussions)
+on this repo will be addressed first.
 
 ## License
 
 Copyright (c) 2014-2021 The HwameiStor Authors
 
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 <http://www.apache.org/licenses/LICENSE-2.0>
