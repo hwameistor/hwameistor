@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("ad-test"), func() {
+var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("k8s1.25"), func() {
 
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
