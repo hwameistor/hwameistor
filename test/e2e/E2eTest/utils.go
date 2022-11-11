@@ -94,6 +94,124 @@ func installHwameiStorByHelm() {
 	_ = runInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace --set global.k8sImageRegistry=k8s-gcr.m.daocloud.io")
 }
 
+func configureadEnvironment(ctx context.Context) error {
+	logrus.Info("start ad_rollback")
+	_ = runInLinux("sh ad_rollback.sh")
+	err := wait.PollImmediate(10*time.Second, 20*time.Minute, func() (done bool, err error) {
+		output := runInLinux("kubectl get pod -A  |grep -v Running |wc -l")
+		if output != "1\n" {
+			return false, nil
+		} else {
+			logrus.Info("k8s ready")
+			return true, nil
+		}
+
+	})
+	if err != nil {
+		logrus.Error(err)
+	}
+	installHwameiStorByHelm()
+	installDrbd()
+	if err != nil {
+		logrus.Error(err)
+	}
+	addLabels()
+	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
+	client := f.GetClient()
+
+	drbd1 := &b1.Job{}
+	drbdKey1 := k8sclient.ObjectKey{
+		Name:      "drbd-adapter-k8s-node1-rhel7",
+		Namespace: "hwameistor",
+	}
+	drbd2 := &b1.Job{}
+	drbdKey2 := k8sclient.ObjectKey{
+		Name:      "drbd-adapter-k8s-node2-rhel7",
+		Namespace: "hwameistor",
+	}
+
+	localStorage := &appsv1.DaemonSet{}
+	localStorageKey := k8sclient.ObjectKey{
+		Name:      "hwameistor-local-storage",
+		Namespace: "hwameistor",
+	}
+	err = client.Get(ctx, localStorageKey, localStorage)
+
+	controller := &appsv1.Deployment{}
+	controllerKey := k8sclient.ObjectKey{
+		Name:      "hwameistor-local-storage-csi-controller",
+		Namespace: "hwameistor",
+	}
+	err = client.Get(ctx, controllerKey, controller)
+
+	webhook := &appsv1.Deployment{}
+	webhookKey := k8sclient.ObjectKey{
+		Name:      "hwameistor-admission-controller",
+		Namespace: "hwameistor",
+	}
+
+	scheduler := &appsv1.Deployment{}
+	schedulerKey := k8sclient.ObjectKey{
+		Name:      "hwameistor-scheduler",
+		Namespace: "hwameistor",
+	}
+
+	localDiskManager := &appsv1.DaemonSet{}
+	localDiskManagerKey := k8sclient.ObjectKey{
+		Name:      "hwameistor-local-disk-manager",
+		Namespace: "hwameistor",
+	}
+
+	logrus.Infof("waiting for drbd ready")
+
+	err = wait.PollImmediate(3*time.Second, 15*time.Minute, func() (done bool, err error) {
+		err1 := client.Get(ctx, drbdKey1, drbd1)
+		err2 := client.Get(ctx, drbdKey2, drbd2)
+
+		if k8serror.IsNotFound(err1) && k8serror.IsNotFound(err2) {
+			return true, nil
+		}
+		return false, nil
+	})
+
+	logrus.Infof("waiting for hwamei ready")
+
+	err = wait.PollImmediate(3*time.Second, 20*time.Minute, func() (done bool, err error) {
+		err = client.Get(ctx, localStorageKey, localStorage)
+		if err != nil {
+			logrus.Error(" localStorage error ", err)
+			f.ExpectNoError(err)
+		}
+		err = client.Get(ctx, controllerKey, controller)
+		if err != nil {
+			logrus.Error("controller error ", err)
+			f.ExpectNoError(err)
+		}
+		err = client.Get(ctx, schedulerKey, scheduler)
+		if err != nil {
+			logrus.Error("scheduler error ", err)
+			f.ExpectNoError(err)
+		}
+		err = client.Get(ctx, localDiskManagerKey, localDiskManager)
+		if err != nil {
+			logrus.Error("localDiskManager error ", err)
+			f.ExpectNoError(err)
+		}
+		err = client.Get(ctx, webhookKey, webhook)
+		if err != nil {
+			logrus.Error("admission-controller error ", err)
+			f.ExpectNoError(err)
+		}
+
+		if localStorage.Status.DesiredNumberScheduled == localStorage.Status.NumberAvailable && controller.Status.AvailableReplicas == int32(1) && scheduler.Status.AvailableReplicas == int32(1) && localDiskManager.Status.DesiredNumberScheduled == localDiskManager.Status.NumberAvailable && webhook.Status.AvailableReplicas == int32(1) {
+			return true, nil
+		}
+		return false, nil
+	})
+
+	return err
+}
+
 func configureEnvironment(ctx context.Context) error {
 	logrus.Info("start rollback")
 	_ = runInLinux("sh rollback.sh")
