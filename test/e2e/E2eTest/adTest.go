@@ -30,7 +30,7 @@ var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("k8s1.25"), fu
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
-		result := configureadEnvironment(ctx)
+		result := configureadEnvironment(ctx, "k8s1.25")
 		gomega.Expect(result).To(gomega.BeNil())
 		createLdc(ctx)
 
