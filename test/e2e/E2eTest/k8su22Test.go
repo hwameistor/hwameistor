@@ -24,13 +24,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.25"), func() {
+var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("k8su2204"), func() {
 
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
-		result := configureadEnvironment(ctx, "k8s1.25")
+		result := configureadEnvironment(ctx, "k8su2204")
 		gomega.Expect(result).To(gomega.BeNil())
 		createLdc(ctx)
 
@@ -117,7 +117,6 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.25"), fun
 							},
 						},
 						Spec: apiv1.PodSpec{
-							SchedulerName: "hwameistor-scheduler",
 							Containers: []apiv1.Container{
 								{
 									Name:  "web",
