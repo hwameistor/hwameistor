@@ -26,15 +26,16 @@ import (
 
 var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("k8sc81"), func() {
 
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
+	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
-		result := configureadEnvironment("k8sc81")
+		result := configureadEnvironment(ctx, "k8sc81")
 		gomega.Expect(result).To(gomega.BeNil())
 		createLdc(ctx)
 
 	})
-	f := framework.NewDefaultFramework(clientset.AddToScheme)
-	client := f.GetClient()
+
 	ginkgo.Context("create a StorageClass", func() {
 		ginkgo.It("create a sc", func() {
 			//create sc

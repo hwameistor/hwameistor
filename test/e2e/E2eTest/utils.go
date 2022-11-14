@@ -94,9 +94,8 @@ func installHwameiStorByHelm() {
 	_ = runInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace --set global.k8sImageRegistry=k8s-gcr.m.daocloud.io")
 }
 
-func configureadEnvironment(k8s string) error {
+func configureadEnvironment(ctx context.Context, k8s string) error {
 
-	ctx := context.TODO()
 	logrus.Info("start ad_rollback")
 	run := "sh ad_rollback.sh " + k8s
 	_ = runInLinux(run)
