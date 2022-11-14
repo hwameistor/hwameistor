@@ -45,4 +45,4 @@ build_image
 prepare_install_params
 
 # Step3: go e2e test
-ginkgo -timeout=10h --fail-fast  --label-filter=${E2E_TESTING_LEVEL} test/e2e
+ginkgo -timeout=10h --fail-fast  --label-filter=${E2E_TESTING_LEVEL} test/e2e  -- --kubeSystemID="${E2E_TESTING_LEVEL}"
