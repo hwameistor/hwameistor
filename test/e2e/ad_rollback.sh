@@ -1,9 +1,11 @@
 #! /usr/bin/env bash
 # simple scripts mng machine
 # link hosts
+if [ $1 == "k8s1.25" ]; then
+  export GOVC_RESOURCE_POOL="fupan-k8s-1.25"
+  export hosts="adaptation-master adaptation-node1 adaptation-node2"
+fi
 export GOVC_INSECURE=1
-export GOVC_RESOURCE_POOL="fupan-k8s-1.25"
-export hosts="adaptation-master adaptation-node1 adaptation-node2"
 export snapshot="k8s125"
 # for h in hosts; do govc vm.power -off -force $h; done
 # for h in hosts; do govc snapshot.revert -vm $h "机器配置2"; done

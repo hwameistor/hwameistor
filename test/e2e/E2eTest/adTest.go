@@ -2,7 +2,6 @@ package E2eTest
 
 import (
 	"context"
-	"flag"
 	"time"
 
 	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
@@ -26,14 +25,12 @@ import (
 )
 
 var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("k8s1.25"), func() {
-	var KubeSystemID string
-	flag.StringVar(&KubeSystemID, "kubeSystemID", "", "global kubeSystemID")
-	logrus.Printf(KubeSystemID)
+
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
-		result := configureadEnvironment(ctx)
+		result := configureadEnvironment(ctx, "k8s1.25")
 		gomega.Expect(result).To(gomega.BeNil())
 		createLdc(ctx)
 

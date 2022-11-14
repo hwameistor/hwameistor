@@ -94,9 +94,11 @@ func installHwameiStorByHelm() {
 	_ = runInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace --set global.k8sImageRegistry=k8s-gcr.m.daocloud.io")
 }
 
-func configureadEnvironment(ctx context.Context) error {
+func configureadEnvironment(ctx context.Context, k8s string) error {
+
 	logrus.Info("start ad_rollback")
-	_ = runInLinux("sh ad_rollback.sh")
+	run := "sh ad_rollback.sh " + k8s
+	_ = runInLinux(run)
 	err := wait.PollImmediate(10*time.Second, 20*time.Minute, func() (done bool, err error) {
 		output := runInLinux("kubectl get pod -A  |grep -v Running |wc -l")
 		if output != "1\n" {
