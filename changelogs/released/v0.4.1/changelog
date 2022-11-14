@@ -1,0 +1,10 @@
+# Feature / Major changes
+## LocalStorage
+* Reduce conditions in LocalStorageNode (#435 @SSmallMonster)
+* Fix error when VolumeExpand (#433 @sun7927 )
+
+## Evictor
+* Refactor the configuration for VolumeMigrate (#429 @sun7927 )
+
+# Others
+* Update Roadmap (#414, #416 @sun7927 )
