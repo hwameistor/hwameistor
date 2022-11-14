@@ -5,15 +5,23 @@ if [ $1 == "k8s1.25" ]; then
   export GOVC_RESOURCE_POOL="fupan-k8s-1.25"
   export hosts="adaptation-master adaptation-node1 adaptation-node2"
   export snapshot="k8s125"
-  kubectl config use-contexts k8s1.25
+  kubectl config use-context k8s1.25
 fi
 
-if [ $1 == "k8s1.25" ]; then
+if [ $1 == "k8sc81" ]; then
   export GOVC_RESOURCE_POOL="fupan-k8s-1.25"
   export hosts="fupan-ad-c81"
   export snapshot="ad"
-  kubectl config use-contexts k8sc81
+  kubectl config use-context k8sc81
 fi
+
+if [ $1 == "k8su2204" ]; then
+  export GOVC_RESOURCE_POOL="fupan-k8s-1.25"
+  export hosts="fupan-ad-u2204"
+  export snapshot="ad"
+  kubectl config use-context k8su2204
+fi
+
 export GOVC_INSECURE=1
 
 # for h in hosts; do govc vm.power -off -force $h; done
