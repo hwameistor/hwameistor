@@ -52,7 +52,7 @@ jobs:
         env:
           E2E_TESTING_LEVEL: ${{ inputs.k8s-version }}
         run: make e2e-test
-  c81:
+  c81-test:
     if: ${{ inputs.k8s-version == 'centos8.1' }}
     runs-on: ["e2e"]
     timeout-minutes: 180
