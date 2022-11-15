@@ -84,7 +84,7 @@ type LocalDiskClaimState string
 const (
 	// LocalDiskUnclaimed represents that the disk is not bound to any LDC,
 	// and is available for claiming.
-	LocalDiskUnclaimed LocalDiskClaimState = "Unclaimed"
+	LocalDiskUnclaimed LocalDiskClaimState = "Available"
 
 	// LocalDiskReleased represents that the disk is released from the LDC,
 	LocalDiskReleased LocalDiskClaimState = "Released"
@@ -94,9 +94,32 @@ const (
 
 	// LocalDiskInUse represents that the disk is in use but not claimed by a LDC
 	LocalDiskInUse LocalDiskClaimState = "Inuse"
+)
 
+// LocalDiskState defines the observed state of the local disk
+type LocalDiskState string
+
+// NOTE: The follow-up state represent disk health status detected by
+// system or health check tools(e.g., smartctl)
+const (
+	// LocalDiskActive is the state for the disk that is connected
+	LocalDiskActive LocalDiskState = "Active"
+
+	// LocalDiskInactive is the state for the disk that is disconnected
+	LocalDiskInactive LocalDiskState = "Inactive"
+
+	// LocalDiskUnknown is the state for the disk that cannot be determined
+	// at this time(whether attached or detached)
+	LocalDiskUnknown LocalDiskState = "Unknown"
+)
+
+// NOTE: The follow-up state represent LocalDisk instance status
+const (
 	// LocalDiskReserved represents that the disk will be used in the feature
-	LocalDiskReserved LocalDiskClaimState = "Reserved"
+	LocalDiskReserved LocalDiskState = "Reserved"
+
+	// LocalDiskEmpty is temporary status, it can be updated to Available or Bound
+	LocalDiskEmpty LocalDiskState = ""
 
 	// LocalDiskAvailable represents the disk can be used which means:
 	// 1) there is no filesystem or partitions exist
@@ -109,21 +132,6 @@ const (
 	// 2) used by a LocalDiskClaim object
 	// 3) there is already a filesystem or partition exist
 	LocalDiskBound LocalDiskState = "Bound"
-)
-
-// LocalDiskState defines the observed state of the local disk
-type LocalDiskState string
-
-const (
-	// LocalDiskActive is the state for the disk that is connected
-	LocalDiskActive LocalDiskState = "Active"
-
-	// LocalDiskInactive is the state for the disk that is disconnected
-	LocalDiskInactive LocalDiskState = "Inactive"
-
-	// LocalDiskUnknown is the state for the disk that cannot be determined
-	// at this time(whether attached or detached)
-	LocalDiskUnknown LocalDiskState = "Unknown"
 )
 
 // SmartAssessResult defines the result of self-assessment test
@@ -183,13 +191,17 @@ type LocalDiskSpec struct {
 	// ClaimRef is the reference to the LDC which has claimed this LD
 	// +optional
 	ClaimRef *v1.ObjectReference `json:"claimRef,omitempty"`
+
+	// Reserved represents the disk will be used in the future
+	// NOTE: a disk only be reserved when it's state is Available
+	Reserved bool `json:"reserved,omitempty"`
 }
 
 // LocalDiskStatus defines the observed state of LocalDisk
 type LocalDiskStatus struct {
 	// State represents the claim state of the disk
 	// +kubebuilder:validation:Enum:=Bound;Reserved;Available
-	State LocalDiskClaimState `json:"claimState,omitempty"`
+	State LocalDiskState `json:"claimState,omitempty"`
 }
 
 // +genclient

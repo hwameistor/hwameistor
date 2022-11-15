@@ -29,7 +29,7 @@ var (
 	vendorVMware                 = "VMware"
 	proSCSI                      = "scsi"
 	apiversion                   = "hwameistor.io/v1alpha1"
-	localDiskKind                = "LocalDisk"
+	localDiskKind                = "localDisk"
 	localDiskClaimKind           = "LocalDiskClaim"
 	cap100G                int64 = 100 * 1024 * 1024 * 1024
 	cap10G                 int64 = 10 * 1024 * 1024 * 1024
@@ -108,11 +108,11 @@ func TestReconcileLocalDiskClaim_Reconcile(t *testing.T) {
 		Recorder: fakeRecorder,
 	}
 
-	// Create LocalDisk
+	// Create localDisk
 	disk := GenFakeLocalDiskObject()
 	err := r.Create(context.Background(), disk)
 	if err != nil {
-		t.Errorf("Create LocalDisk fail %v", err)
+		t.Errorf("Create localDisk fail %v", err)
 	}
 	defer r.DeleteFakeLocalDisk(t, disk)
 
@@ -150,11 +150,11 @@ func TestReconcileDiskClaim_Reconcile_WhenDiskBoundAlready(t *testing.T) {
 		Recorder: fakeRecorder,
 	}
 
-	// Create LocalDisk
+	// Create localDisk
 	disk := GenFakeLocalDiskObject()
 	err := r.Create(context.Background(), disk)
 	if err != nil {
-		t.Errorf("Create LocalDisk fail %v", err)
+		t.Errorf("Create localDisk fail %v", err)
 	}
 	defer r.DeleteFakeLocalDisk(t, disk)
 
@@ -228,10 +228,10 @@ func (r *ReconcileLocalDiskClaim) CheckLocalDiskClaimIsBound(t *testing.T,
 func (r *ReconcileLocalDiskClaim) ClaimLocalDisk(t *testing.T,
 	disk *v1alpha1.LocalDisk, claim *v1alpha1.LocalDiskClaim) {
 
-	// Create LocalDisk
+	// Create localDisk
 	err := r.Create(context.Background(), disk)
 	if err != nil {
-		t.Errorf("Create LocalDisk fail %v", err)
+		t.Errorf("Create localDisk fail %v", err)
 	}
 	defer r.DeleteFakeLocalDisk(t, disk)
 
@@ -276,13 +276,13 @@ func (r *ReconcileLocalDiskClaim) CheckDiskBound(t *testing.T, disk *v1alpha1.Lo
 		t.Fatalf("LocalDiskClaim %v has not bound disk: %v", claim.GetName(), claim.GetName())
 	}
 
-	t.Logf("LocalDisk %v has bound with LocalDiskClaim %v", claim.GetName(), claim.GetName())
+	t.Logf("localDisk %v has bound with LocalDiskClaim %v", claim.GetName(), claim.GetName())
 }
 
 // DeleteFakeLocalDisk
 func (r *ReconcileLocalDiskClaim) DeleteFakeLocalDisk(t *testing.T, ld *v1alpha1.LocalDisk) {
 	if err := r.Delete(context.Background(), ld); err != nil {
-		t.Errorf("Delete LocalDisk %v fail %v", ld.GetName(), err)
+		t.Errorf("Delete localDisk %v fail %v", ld.GetName(), err)
 	}
 }
 
@@ -370,7 +370,7 @@ func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 	return ld
 }
 
-// CreateFakeClient Create LocalDisk and LocalDiskClaim resource
+// CreateFakeClient Create localDisk and LocalDiskClaim resource
 func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	disk := GenFakeLocalDiskObject()
 	diskList := &v1alpha1.LocalDiskList{

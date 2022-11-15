@@ -6,7 +6,7 @@ const (
 	DiskStatusInUse     DiskStatus = "InUse"
 	DiskStatusFree      DiskStatus = "Free"
 	DiskStatusReserved  DiskStatus = "Reserved"
-	DiskStatusUnclaimed DiskStatus = "Unclaimed"
+	DiskStatusUnclaimed DiskStatus = "Available"
 	DiskStatusReleased  DiskStatus = "Released"
 )
 

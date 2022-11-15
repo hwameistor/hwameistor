@@ -68,7 +68,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 			}
 		})
 
-	// Watch for changes for resource LocalDisk on this node
+	// Watch for changes for resource localDisk on this node
 	err = c.Watch(&source.Kind{Type: &v1alpha1.LocalDisk{}}, &handler.EnqueueRequestsFromMapFunc{
 		ToRequests: localDiskToLocalDiskNodeRequestFunc})
 	if err != nil {
@@ -127,7 +127,7 @@ func (r *ReconcileLocalDiskNode) Reconcile(request reconcile.Request) (reconcile
 	}
 
 	// The main task here is to update the resource status of
-	// the LocalDisk of this node to the latest status.
+	// the localDisk of this node to the latest status.
 	newDisks, err := ldnHandler.ListNodeDisks()
 	if err != nil {
 		log.WithError(err).Errorf("failed to list disks on node %s", request.Name)

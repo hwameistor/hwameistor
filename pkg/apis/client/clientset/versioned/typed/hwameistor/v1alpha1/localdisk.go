@@ -20,7 +20,7 @@ type LocalDisksGetter interface {
 	LocalDisks() LocalDiskInterface
 }
 
-// LocalDiskInterface has methods to work with LocalDisk resources.
+// LocalDiskInterface has methods to work with localDisk resources.
 type LocalDiskInterface interface {
 	Create(ctx context.Context, localDisk *v1alpha1.LocalDisk, opts v1.CreateOptions) (*v1alpha1.LocalDisk, error)
 	Update(ctx context.Context, localDisk *v1alpha1.LocalDisk, opts v1.UpdateOptions) (*v1alpha1.LocalDisk, error)

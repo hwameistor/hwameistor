@@ -100,7 +100,7 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 		rcloneVolumeMountTaskQueue: common.NewTaskQueue("RcloneVolumeMount", maxRetries),
 		volumeReplicaTaskQueue:     common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 		localDiskClaimTaskQueue:    common.NewTaskQueue("LocalDiskClaim", maxRetries),
-		localDiskTaskQueue:         common.NewTaskQueue("LocalDisk", maxRetries),
+		localDiskTaskQueue:         common.NewTaskQueue("localDisk", maxRetries),
 		// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 		diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 		configManager:  configManager,
@@ -225,7 +225,7 @@ func (m *manager) setupInformers() {
 	localDiskInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalDisk{})
 	if err != nil {
 		// error happens, crash the node
-		m.logger.WithError(err).Fatal("Failed to get informer for LocalDisk")
+		m.logger.WithError(err).Fatal("Failed to get informer for localDisk")
 	}
 	localDiskInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: m.handleLocalDiskUpdate,

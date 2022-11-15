@@ -21,7 +21,7 @@ type FakeLocalDisks struct {
 
 var localdisksResource = schema.GroupVersionResource{Group: "hwameistor.io", Version: "v1alpha1", Resource: "localdisks"}
 
-var localdisksKind = schema.GroupVersionKind{Group: "hwameistor.io", Version: "v1alpha1", Kind: "LocalDisk"}
+var localdisksKind = schema.GroupVersionKind{Group: "hwameistor.io", Version: "v1alpha1", Kind: "localDisk"}
 
 // Get takes name of the localDisk, and returns the corresponding localDisk object, and an error if there is any.
 func (c *FakeLocalDisks) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.LocalDisk, err error) {

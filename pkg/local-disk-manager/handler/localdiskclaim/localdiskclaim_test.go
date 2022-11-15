@@ -29,7 +29,7 @@ var (
 	vendorVMware                 = "VMware"
 	proSCSI                      = "scsi"
 	apiversion                   = "hwameistor.io/v1alpha1"
-	localDiskKind                = "LocalDisk"
+	localDiskKind                = "localDisk"
 	localDiskNodeKind            = "LocalDiskNode"
 	localDiskClaimKind           = "LocalDiskClaim"
 	cap100G                int64 = 100 * 1024 * 1024 * 1024
@@ -141,7 +141,7 @@ func TestLocalDiskClaimHandler_AssignDisk(t *testing.T) {
 				t.Fatalf("Want assign: %v, got assign: %v", testCase.WantAssign, err == nil)
 			}
 
-			// Delete LocalDisk
+			// Delete localDisk
 			if err := testCase.deleteDisk(cli, testCase.FreeDisk); err != nil {
 				t.Fatalf("Failed to delete Disk %v", err)
 			}
@@ -231,7 +231,7 @@ func TestLocalDiskClaimHandler_ListUnboundDiskClaim(t *testing.T) {
 	}
 }
 
-// CreateFakeClient Create LocalDisk and LocalDiskNode resource
+// CreateFakeClient Create localDisk and LocalDiskNode resource
 func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s := scheme.Scheme
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.LocalDisk{})

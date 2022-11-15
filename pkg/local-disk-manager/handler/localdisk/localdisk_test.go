@@ -31,7 +31,7 @@ var (
 	vendorVMware                 = "VMware"
 	proSCSI                      = "scsi"
 	apiversion                   = "hwameistor.io/v1alpha1"
-	localDiskKind                = "LocalDisk"
+	localDiskKind                = "localDisk"
 	localDiskNodeKind            = "LocalDiskNode"
 	localDiskClaimKind           = "LocalDiskClaim"
 	cap100G                int64 = 100 * 1024 * 1024 * 1024
@@ -122,7 +122,7 @@ func TestLocalDiskHandler_BoundTo(t *testing.T) {
 	}
 }
 
-// CreateFakeClient Create LocalDisk and LocalDiskNode resource
+// CreateFakeClient Create localDisk and LocalDiskNode resource
 func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s := scheme.Scheme
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.LocalDisk{})

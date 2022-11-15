@@ -90,7 +90,7 @@ func (ldcHandler *LocalDiskClaimHandler) AssignFreeDisk() error {
 
 	var assignedDisks []string
 	for _, ld := range ldList.Items {
-		ldHandler.For(ld)
+		ldHandler.For(&ld)
 		if !ldHandler.FilterDisk(ldc) {
 			continue
 		}

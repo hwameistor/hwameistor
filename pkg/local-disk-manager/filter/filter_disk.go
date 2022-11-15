@@ -14,14 +14,14 @@ const (
 )
 
 type LocalDiskFilter struct {
-	LocalDisk v1alpha1.LocalDisk
+	localDisk *v1alpha1.LocalDisk
 	Result    Bool
 }
 
 // NewLocalDiskFilter
-func NewLocalDiskFilter(ld v1alpha1.LocalDisk) LocalDiskFilter {
+func NewLocalDiskFilter(ld *v1alpha1.LocalDisk) LocalDiskFilter {
 	return LocalDiskFilter{
-		LocalDisk: ld,
+		localDisk: ld,
 		Result:    TRUE,
 	}
 }
@@ -32,9 +32,9 @@ func (ld *LocalDiskFilter) Init() *LocalDiskFilter {
 	return ld
 }
 
-// Unclaimed
-func (ld *LocalDiskFilter) Unclaimed() *LocalDiskFilter {
-	if ld.LocalDisk.Status.State == v1alpha1.LocalDiskUnclaimed {
+// Available
+func (ld *LocalDiskFilter) Available() *LocalDiskFilter {
+	if ld.localDisk.Status.State == v1alpha1.LocalDiskAvailable {
 		ld.setResult(TRUE)
 	} else {
 		ld.setResult(FALSE)
@@ -45,7 +45,7 @@ func (ld *LocalDiskFilter) Unclaimed() *LocalDiskFilter {
 
 // NodeMatch
 func (ld *LocalDiskFilter) NodeMatch(wantNode string) *LocalDiskFilter {
-	if wantNode == ld.LocalDisk.Spec.NodeName {
+	if wantNode == ld.localDisk.Spec.NodeName {
 		ld.setResult(TRUE)
 	} else {
 		ld.setResult(FALSE)
@@ -56,7 +56,7 @@ func (ld *LocalDiskFilter) NodeMatch(wantNode string) *LocalDiskFilter {
 // Unique
 func (ld *LocalDiskFilter) Unique(diskRefs []*v1.ObjectReference) *LocalDiskFilter {
 	for _, disk := range diskRefs {
-		if disk.Name == ld.LocalDisk.Name {
+		if disk.Name == ld.localDisk.Name {
 			ld.setResult(FALSE)
 			return ld
 		}
@@ -68,7 +68,7 @@ func (ld *LocalDiskFilter) Unique(diskRefs []*v1.ObjectReference) *LocalDiskFilt
 
 // Capacity
 func (ld *LocalDiskFilter) Capacity(cap int64) *LocalDiskFilter {
-	if ld.LocalDisk.Spec.Capacity >= cap {
+	if ld.localDisk.Spec.Capacity >= cap {
 		ld.setResult(TRUE)
 	} else {
 		ld.setResult(FALSE)
@@ -79,7 +79,7 @@ func (ld *LocalDiskFilter) Capacity(cap int64) *LocalDiskFilter {
 
 // DiskType
 func (ld *LocalDiskFilter) DiskType(diskType string) *LocalDiskFilter {
-	if ld.LocalDisk.Spec.DiskAttributes.Type == diskType {
+	if ld.localDisk.Spec.DiskAttributes.Type == diskType {
 		ld.setResult(TRUE)
 	} else {
 		ld.setResult(FALSE)
@@ -90,7 +90,7 @@ func (ld *LocalDiskFilter) DiskType(diskType string) *LocalDiskFilter {
 
 // DevType
 func (ld *LocalDiskFilter) DevType() *LocalDiskFilter {
-	if ld.LocalDisk.Spec.DiskAttributes.DevType == sys.BlockDeviceTypeDisk {
+	if ld.localDisk.Spec.DiskAttributes.DevType == sys.BlockDeviceTypeDisk {
 		ld.setResult(TRUE)
 	} else {
 		ld.setResult(FALSE)
@@ -101,7 +101,7 @@ func (ld *LocalDiskFilter) DevType() *LocalDiskFilter {
 
 // NoPartition
 func (ld *LocalDiskFilter) NoPartition() *LocalDiskFilter {
-	if len(ld.LocalDisk.Spec.PartitionInfo) > 0 {
+	if len(ld.localDisk.Spec.PartitionInfo) > 0 {
 		ld.setResult(FALSE)
 	} else {
 		ld.setResult(TRUE)
@@ -113,8 +113,8 @@ func (ld *LocalDiskFilter) NoPartition() *LocalDiskFilter {
 // HasBoundWith indicates disk has already bound with the claim
 // https://github.com/hwameistor/hwameistor/issues/315
 func (ld *LocalDiskFilter) HasBoundWith(claimName string) bool {
-	if ld.LocalDisk.Spec.ClaimRef != nil {
-		if ld.LocalDisk.Spec.ClaimRef.Name == claimName {
+	if ld.localDisk.Spec.ClaimRef != nil {
+		if ld.localDisk.Spec.ClaimRef.Name == claimName {
 			return true
 		}
 	}

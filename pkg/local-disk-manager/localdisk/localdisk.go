@@ -38,7 +38,7 @@ func NewController(mgr crmanager.Manager) Controller {
 
 // CreateLocalDisk
 func (ctr Controller) CreateLocalDisk(ld v1alpha1.LocalDisk) error {
-	log.Debugf("Create LocalDisk for %+v", ld)
+	log.Debugf("Create localDisk for %+v", ld)
 	return ctr.Mgr.GetClient().Create(context.Background(), &ld)
 }
 
@@ -89,7 +89,6 @@ func (ctr Controller) ConvertDiskToLocalDisk(disk manager.DiskInfo) (ld v1alpha1
 		SetupAttribute(disk.Attribute).
 		SetupPartitionInfo(disk.Partitions).
 		SetupNodeName(utils.ConvertNodeName(ctr.NodeName)).
-		GenerateStatus().
 		Build()
 	return
 }

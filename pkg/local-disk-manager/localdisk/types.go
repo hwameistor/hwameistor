@@ -2,6 +2,6 @@ package localdisk
 
 const (
 	APIVersion          = "v1alpha1"
-	LocalDiskKind       = "LocalDisk"
+	LocalDiskKind       = "localDisk"
 	LocalDiskAPIVersion = "localdiskmanager.hwameistor" + "/" + APIVersion
 )

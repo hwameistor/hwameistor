@@ -1,14 +1,15 @@
 package localdisk
 
 import (
+	"fmt"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
+	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -20,12 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-/**
-* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
-* business logic.  Delete these comments after modifying this file.*
- */
-
-// Add creates a new LocalDisk Controller and adds it to the Manager. The Manager will set fields on the Controller
+// Add creates a new localDisk Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
@@ -34,9 +30,10 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileLocalDisk{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("localdisk-controller"),
+		Client:      mgr.GetClient(),
+		Scheme:      mgr.GetScheme(),
+		Recorder:    mgr.GetEventRecorderFor("localdisk-controller"),
+		diskHandler: localdisk.NewLocalDiskHandler(mgr.GetClient(), mgr.GetEventRecorderFor("localdisk-controller")),
 	}
 }
 
@@ -62,7 +59,7 @@ func withCurrentNode() predicate.Predicate {
 	}
 }
 
-// add adds a new Controller to mgr with r as the reconcile.Reconciler
+// add a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
 	c, err := controller.New("localdisk-controller", mgr, controller.Options{Reconciler: r})
@@ -70,7 +67,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for changes to primary resource LocalDisk
+	// Watch for changes to primary resource localDisk
 	err = c.Watch(&source.Kind{Type: &v1alpha1.LocalDisk{}}, &handler.EnqueueRequestForObject{}, withCurrentNode())
 	if err != nil {
 		return err
@@ -82,27 +79,21 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 // blank assignment to verify that ReconcileLocalDisk implements reconcile.Reconciler
 var _ reconcile.Reconciler = &ReconcileLocalDisk{}
 
-// ReconcileLocalDisk reconciles a LocalDisk object
+// ReconcileLocalDisk reconciles a localDisk object
 type ReconcileLocalDisk struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client.Client
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	Scheme      *runtime.Scheme
+	Recorder    record.EventRecorder
+	diskHandler *localdisk.LocalDiskHandler
 }
 
-// Reconcile reads that state of the cluster for a LocalDisk object and makes changes based on the state read
-// and what is in the LocalDisk.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
-// a Pod as an example
-// Note:
-// The Controller will requeue the Request to be processed again if the returned error is non-nil or
-// Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
+// Reconcile localDisk instance according to disk status
 func (r *ReconcileLocalDisk) Reconcile(req reconcile.Request) (reconcile.Result, error) {
-	log.Infof("Reconcile LocalDisk %s", req.Name)
+	log.Infof("Reconcile localDisk %s", req.Name)
 
-	ldHandler := localdisk.NewLocalDiskHandler(r.Client, r.Recorder)
-	ld, err := ldHandler.GetLocalDisk(req.NamespacedName)
+	localDisk, err := r.diskHandler.GetLocalDisk(req.NamespacedName)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return reconcile.Result{}, nil
@@ -110,30 +101,122 @@ func (r *ReconcileLocalDisk) Reconcile(req reconcile.Request) (reconcile.Result,
 		log.WithError(err).Errorf("Failed to get localdisk")
 		return reconcile.Result{}, err
 	}
+	r.diskHandler.For(localDisk)
 
-	if ld != nil {
-		ldHandler.For(*ld.DeepCopy())
-	} else {
-		// Not found
-		return reconcile.Result{}, nil
+	// reconcile localdisk according disk status
+	switch localDisk.Status.State {
+	case v1alpha1.LocalDiskEmpty:
+		err = r.processDiskEmpty(localDisk)
+	case v1alpha1.LocalDiskAvailable:
+		err = r.processDiskAvailable(localDisk)
+	case v1alpha1.LocalDiskBound:
+		err = r.processDiskBound(localDisk)
+	case v1alpha1.LocalDiskReserved:
+		err = r.processDiskReserved(localDisk)
+	default:
+		err = fmt.Errorf("invalid disk state: %v", localDisk.Status.State)
 	}
 
-	// NOTE: The control logic of localdisk should only respond to the update events of the disk itself.
-	// For example, if the disk smart check fails, it should update its health status at this time.
-	// As for the upper layer resources that depend on it, such as LDC, what it should do is to monitor
-	// the event changes of LD and adjust the changed contents accordingly.
-	// The connection between them should only be related to the state.
+	if err != nil {
+		log.WithError(err).WithField("name", localDisk.Name).Error("Failed to reconcile disk, retry later")
+	}
 
-	// Update status
-	if ldHandler.ClaimRef() != nil && ldHandler.UnClaimed() {
-		ldHandler.SetupStatus(v1alpha1.LocalDiskClaimed)
-		if err := ldHandler.UpdateStatus(); err != nil {
-			r.Recorder.Eventf(&ldHandler.Ld, v1.EventTypeWarning, "UpdateStatusFail", "Update status fail, due to error: %v", err)
-			log.WithError(err).Errorf("Update LocalDisk %v status fail", ldHandler.Ld.Name)
-			return reconcile.Result{}, err
+	return reconcile.Result{}, err
+}
+
+// processDiskEmpty update disk status to Bound or Available
+// according attributes, partitions, filesystem on it
+func (r *ReconcileLocalDisk) processDiskEmpty(disk *v1alpha1.LocalDisk) error {
+	logCtx := log.Fields{"name": disk.Name}
+	log.WithFields(logCtx).Info("Start to processing Empty localdisk")
+
+	if disk.Spec.HasPartition {
+		r.diskHandler.SetupStatus(v1alpha1.LocalDiskBound)
+	} else {
+		r.diskHandler.SetupStatus(v1alpha1.LocalDiskAvailable)
+	}
+	return r.diskHandler.UpdateStatus()
+}
+
+// processDiskEmpty update disk status to Bound or Reserved
+func (r *ReconcileLocalDisk) processDiskAvailable(disk *v1alpha1.LocalDisk) error {
+	logCtx := log.Fields{"name": disk.Name}
+	log.WithFields(logCtx).Info("Start to processing Available localdisk")
+
+	var (
+		diskUsed = false
+		err      error
+	)
+
+	if disk.Spec.ClaimRef != nil || disk.Spec.HasPartition {
+		diskUsed = true
+	}
+
+	// Check if disk has been used and reserved
+	if diskUsed && disk.Spec.Reserved {
+		err = fmt.Errorf("disk can't be reserved because disk has been used")
+		return err
+	}
+
+	if diskUsed {
+		r.diskHandler.SetupStatus(v1alpha1.LocalDiskBound)
+		err = r.diskHandler.UpdateStatus()
+	} else if disk.Spec.Reserved {
+		r.diskHandler.SetupStatus(v1alpha1.LocalDiskReserved)
+		err = r.diskHandler.UpdateStatus()
+	}
+
+	if err != nil {
+		r.Recorder.Eventf(disk, v1.EventTypeWarning, "UpdateStatusFail",
+			"Update status fail, due to error: %v", err)
+		log.WithError(err).WithFields(logCtx).Error("Update localDisk status fail")
+	}
+
+	return err
+}
+
+// processDiskEmpty update disk status to Available
+func (r *ReconcileLocalDisk) processDiskReserved(disk *v1alpha1.LocalDisk) error {
+	logCtx := log.Fields{"name": disk.Name}
+	log.WithFields(logCtx).Info("Start to processing Reserved localdisk")
+
+	var (
+		err error
+	)
+
+	// Update to Bound if detect already be in used
+	if disk.Spec.HasPartition {
+		r.diskHandler.SetupStatus(v1alpha1.LocalDiskBound)
+		if err = r.diskHandler.UpdateStatus(); err == nil {
+			log.WithFields(logCtx).Info("Update a Reserved disk state to Bound")
+			r.Recorder.Eventf(disk, v1.EventTypeNormal, "Update disk %v state from Reserved to Bound, due to detect partition or filesystem on it", disk.Name)
 		}
 	}
 
-	// At this stage, we have no relevant inspection data, so we won't do any processing for the time being
-	return reconcile.Result{}, nil
+	return err
+}
+
+// processDiskEmpty update disk status to Available
+func (r *ReconcileLocalDisk) processDiskBound(disk *v1alpha1.LocalDisk) error {
+	logCtx := log.Fields{"name": disk.Name}
+	log.WithFields(logCtx).Info("Start to processing Bound localdisk")
+
+	var (
+		err error
+	)
+
+	// Check if disk can be released
+	if disk.Spec.ClaimRef != nil && disk.Spec.HasPartition {
+		r.diskHandler.SetupStatus(v1alpha1.LocalDiskAvailable)
+		if err = r.diskHandler.UpdateStatus(); err != nil {
+			log.WithError(err).WithFields(logCtx).Error("Failed to release disk")
+			r.Recorder.Eventf(disk, v1.EventTypeWarning, "Failed to release disk %v, "+
+				"due to error: %v", disk.Name, err)
+		} else {
+			log.WithFields(logCtx).Info("Succeed to release disk")
+			r.Recorder.Eventf(disk, v1.EventTypeNormal, "Succeed to release disk %v", disk.Name)
+		}
+	}
+
+	return err
 }

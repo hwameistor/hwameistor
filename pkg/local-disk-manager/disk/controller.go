@@ -66,7 +66,7 @@ func (ctr *Controller) HandleEvent() {
 			// Get disk basic info
 			newDisk := DiskParser.ParseDisk()
 			log.Infof("Disk %v basicinfo: %v", event.DevPath, newDisk)
-			// Convert disk resource to LocalDisk
+			// Convert disk resource to localDisk
 			ld := ctr.localDiskController.ConvertDiskToLocalDisk(newDisk)
 
 			// Judge whether the disk is completely new
@@ -74,14 +74,14 @@ func (ctr *Controller) HandleEvent() {
 				log.Debugf("Disk %+v has been already exist", newDisk)
 				// If the disk already exists, try to update
 				if err := ctr.localDiskController.UpdateLocalDisk(ld); err != nil {
-					log.WithError(err).Errorf("Update LocalDisk fail for disk %v", newDisk)
+					log.WithError(err).Errorf("Update localDisk fail for disk %v", newDisk)
 				}
 				continue
 			}
 
 			// Create disk resource
 			if err := ctr.localDiskController.CreateLocalDisk(ld); err != nil {
-				log.WithError(err).Errorf("Create LocalDisk fail for disk %v", newDisk)
+				log.WithError(err).Errorf("Create localDisk fail for disk %v", newDisk)
 				continue
 			}
 

@@ -33,7 +33,7 @@ func Test_manager_processLocalDisk(t *testing.T) {
 	}
 
 	client, _ := CreateFakeClient()
-	// Create LocalDisk
+	// Create localDisk
 	ld := GenFakeLocalDiskObject()
 	ld.Name = fakeLocalDiskName
 	err := client.Create(context.Background(), ld)
@@ -73,7 +73,7 @@ func Test_manager_processLocalDisk(t *testing.T) {
 				volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
 				volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 				localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-				localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+				localDiskTaskQueue:      common.NewTaskQueue("localDisk", maxRetries),
 				// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),

@@ -24,7 +24,7 @@ var (
 	vendorVMware                 = "VMware"
 	proSCSI                      = "scsi"
 	apiversion                   = "hwameistor.io/v1alpha1"
-	localDiskKind                = "LocalDisk"
+	localDiskKind                = "localDisk"
 	localDiskClaimKind           = "LocalDiskClaim"
 	cap100G                int64 = 100 * 1024 * 1024 * 1024
 	cap10G                 int64 = 10 * 1024 * 1024 * 1024
@@ -84,7 +84,7 @@ func TestLocalDiskFilter(t *testing.T) {
 			},
 		},
 		{
-			Description:       "Should return true, Has Unclaimed Disk",
+			Description:       "Should return true, Has Available Disk",
 			WantFilterResult:  true,
 			WantDiskUnclaimed: true,
 			disk:              GenFakeLocalDiskObject(),
@@ -187,7 +187,7 @@ func TestLocalDiskFilter(t *testing.T) {
 			}
 
 			if testCase.WantDiskUnclaimed {
-				filter.Unclaimed()
+				filter.Available()
 			}
 
 			if testCase.WantDiskType != "" {
