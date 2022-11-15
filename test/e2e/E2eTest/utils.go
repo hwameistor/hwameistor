@@ -94,6 +94,11 @@ func installHwameiStorByHelm() {
 	_ = runInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace --set global.k8sImageRegistry=k8s-gcr.m.daocloud.io")
 }
 
+func installHwameiStorByHelm_offline() {
+	logrus.Infof("helm install hwameistor")
+	_ = runInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace --set global.k8sImageRegistry=172.30.45.210")
+}
+
 func configureadEnvironment(ctx context.Context, k8s string) error {
 
 	logrus.Info("start ad_rollback")
@@ -112,7 +117,11 @@ func configureadEnvironment(ctx context.Context, k8s string) error {
 	if err != nil {
 		logrus.Error(err)
 	}
-	installHwameiStorByHelm()
+	if k8s == "centos7.9_offline" {
+		installHwameiStorByHelm_offline()
+	} else {
+		installHwameiStorByHelm()
+	}
 	installDrbd()
 	if err != nil {
 		logrus.Error(err)
