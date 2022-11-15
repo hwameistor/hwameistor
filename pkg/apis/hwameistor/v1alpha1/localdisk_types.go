@@ -97,6 +97,18 @@ const (
 
 	// LocalDiskReserved represents that the disk will be used in the feature
 	LocalDiskReserved LocalDiskClaimState = "Reserved"
+
+	// LocalDiskAvailable represents the disk can be used which means:
+	// 1) there is no filesystem or partitions exist
+	// 2) the disk is not bound to any LocalDiskClaim object
+	LocalDiskAvailable LocalDiskState = "Available"
+
+	// LocalDiskBound represents the disk is used already.
+	// There are follow-up use cases:
+	// 1) used by system (e.g., rootfs)
+	// 2) used by a LocalDiskClaim object
+	// 3) there is already a filesystem or partition exist
+	LocalDiskBound LocalDiskState = "Bound"
 )
 
 // LocalDiskState defines the observed state of the local disk
@@ -118,7 +130,7 @@ const (
 type SmartAssessResult string
 
 const (
-	// // AssessPassed indicates the disk is healthy
+	// AssessPassed indicates the disk is healthy
 	AssessPassed SmartAssessResult = "Passed"
 
 	// AssessFailed indicates the disk is unhealthy
@@ -176,7 +188,7 @@ type LocalDiskSpec struct {
 // LocalDiskStatus defines the observed state of LocalDisk
 type LocalDiskStatus struct {
 	// State represents the claim state of the disk
-	// +kubebuilder:validation:Enum:=Claimed;Unclaimed;Released;Reserved;Inuse
+	// +kubebuilder:validation:Enum:=Bound;Reserved;Available
 	State LocalDiskClaimState `json:"claimState,omitempty"`
 }
 
@@ -186,6 +198,7 @@ type LocalDiskStatus struct {
 
 // LocalDisk is the Schema for the localdisks API
 //+kubebuilder:resource:scope=Cluster,shortName=ld
+//+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
 //+kubebuilder:printcolumn:JSONPath=".spec.claimRef.name",name=Claim,type=string
 //+kubebuilder:printcolumn:JSONPath=".status.claimState",name=Phase,type=string
