@@ -22,6 +22,20 @@ if [ $1 == "k8su2204" ]; then
   kubectl config use-context k8su2204
 fi
 
+if [ $1 == "kylin10arm" ]; then
+  export GOVC_RESOURCE_POOL="kylin10arm"
+  export hosts="fupan-ad-u2204"
+  export snapshot="ad"
+  kubectl config use-context kylin10arm
+fi
+
+if [ $1 == "centos7.6offline" ]; then
+  export GOVC_RESOURCE_POOL="kylin10arm"
+  export hosts="fupan-ad-offline"
+  export snapshot="ad"
+  kubectl config use-context k8soffline
+fi
+
 export GOVC_INSECURE=1
 
 # for h in hosts; do govc vm.power -off -force $h; done
