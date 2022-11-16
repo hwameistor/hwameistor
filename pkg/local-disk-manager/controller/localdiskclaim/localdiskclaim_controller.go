@@ -2,13 +2,13 @@ package localdiskclaim
 
 import (
 	"context"
+	v1 "k8s.io/api/core/v1"
 	"time"
 
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskclaim"
 
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -19,17 +19,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-/**
-* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
-* business logic.  Delete these comments after modifying this file.*
- */
-
-// Add creates a new LocalDiskClaim Controller and adds it to the Manager. The Manager will set fields on the Controller
-// and Start it when the Manager is Started.
-
 const (
 	// RequeueInterval Requeue every 5 seconds
-	RequeueInterval = time.Second * 5
+	RequeueInterval = time.Second * 1
 )
 
 func Add(mgr manager.Manager) error {
@@ -42,10 +34,12 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("localdiskclaim-controller"),
+		diskClaimHandler: localdiskclaim.NewLocalDiskClaimHandler(mgr.GetClient(),
+			mgr.GetEventRecorderFor("localdiskclaim-controller")),
 	}
 }
 
-// add adds a new Controller to mgr with r as the reconcile.Reconciler
+// add a new Controller to mgr with r as reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
 	c, err := controller.New("localdiskclaim-controller", mgr, controller.Options{Reconciler: r})
@@ -70,50 +64,86 @@ type ReconcileLocalDiskClaim struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client.Client
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	diskClaimHandler *localdiskclaim.Handler
+	Scheme           *runtime.Scheme
+	Recorder         record.EventRecorder
 }
 
-// Reconcile reads that state of the cluster for a LocalDiskClaim object and makes changes based on the state read
-// and what is in the LocalDiskClaim.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
-// a Pod as an example
-// Note:
-// The Controller will requeue the Request to be processed again if the returned error is non-nil or
-// Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
+// Reconcile for localdiskclaim instance according to request params
 func (r *ReconcileLocalDiskClaim) Reconcile(_ context.Context, req reconcile.Request) (reconcile.Result, error) {
 	log.Infof("Reconcile LocalDiskClaim %s", req.Name)
-	ldcHandler := localdiskclaim.NewLocalDiskClaimHandler(r.Client, r.Recorder)
+	var (
+		err       error
+		result    reconcile.Result
+		diskClaim *v1alpha1.LocalDiskClaim
+	)
 
-	ldc, err := ldcHandler.GetLocalDiskClaim(req.NamespacedName)
+	diskClaim, err = r.diskClaimHandler.GetLocalDiskClaim(req.NamespacedName)
 	if err != nil {
 		log.WithError(err).Errorf("Get localdiskclaim fail, due to error: %v", err)
-		return reconcile.Result{}, err
-	}
-
-	if ldc != nil {
-		ldcHandler = ldcHandler.For(*ldc.DeepCopy())
-	} else {
-		// Not found
+		return result, err
+	} else if diskClaim == nil {
 		return reconcile.Result{}, nil
 	}
 
-	switch ldcHandler.Phase() {
-	case v1alpha1.DiskClaimStatusEmpty:
-		fallthrough
-	case v1alpha1.LocalDiskClaimStatusPending:
-		if err = ldcHandler.AssignFreeDisk(); err != nil {
-			r.Recorder.Eventf(ldc, v1.EventTypeWarning, "LocalDiskClaimFail", "Assign free disk fail, due to error: %v", err)
-			log.WithError(err).Errorf("Assign free disk for locadiskclaim %v/%v fail, will try after %v", ldc.GetNamespace(), ldc.GetName(), RequeueInterval)
-			return reconcile.Result{RequeueAfter: RequeueInterval}, nil
-		}
-
+	r.diskClaimHandler.For(diskClaim)
+	switch diskClaim.Status.Status {
+	case v1alpha1.DiskClaimStatusEmpty, v1alpha1.LocalDiskClaimStatusPending:
+		err = r.processDiskClaimPending(diskClaim)
 	case v1alpha1.LocalDiskClaimStatusBound:
-		// TODO: handle delete events
+		err = r.processDiskClaimBound(diskClaim)
 	default:
-		log.Warningf("LocalDiskClaim %s status %v is UNKNOWN", ldc.Name, ldcHandler.Phase())
-		return reconcile.Result{}, nil
+		log.Warningf("LocalDiskClaim %s status %v is UNKNOWN", diskClaim.Name, diskClaim.Status.Status)
 	}
 
-	return reconcile.Result{}, nil
+	if err != nil {
+		log.WithError(err).Errorf("Failed to reconcile localdiskclaim %v", diskClaim.GetName())
+		result.RequeueAfter = RequeueInterval
+	}
+
+	return result, err
+}
+
+// processDiskClaimPending assign free disks for this request according claim.spec.description
+func (r *ReconcileLocalDiskClaim) processDiskClaimPending(diskClaim *v1alpha1.LocalDiskClaim) error {
+	logCtx := log.Fields{"name": diskClaim.Name}
+	log.WithFields(logCtx).Info("Start to processing Pending localdiskclaim")
+	var (
+		err error
+	)
+
+	// Assign free disks first
+	if !diskClaim.Spec.DiskAssignCompleted {
+		if err = r.diskClaimHandler.AssignFreeDisk(); err != nil {
+			r.Recorder.Eventf(diskClaim, v1.EventTypeWarning, v1alpha1.LocalDiskClaimEventReasonAssignFail,
+				"Assign free disk fail, due to error: %v", err)
+			log.WithError(err).WithFields(logCtx).Errorf("Assign free disk for locadiskclaim %v/%v fail, "+
+				"will try after %v", diskClaim.GetNamespace(), diskClaim.GetName(), RequeueInterval)
+		}
+		return err
+	}
+
+	// Update claim.spec.diskRefs according to disk status
+	if err = r.diskClaimHandler.UpdateBoundDiskRef(); err != nil {
+		r.Recorder.Eventf(diskClaim, v1.EventTypeWarning, v1alpha1.LocalDiskClaimEventReasonBoundFail,
+			"Bound disk fail, due to error: %v", err)
+		log.WithError(err).Errorf("Bound disk for locadiskclaim %v/%v fail, will try after %v",
+			diskClaim.GetNamespace(), diskClaim.GetName(), RequeueInterval)
+	}
+
+	r.diskClaimHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusBound)
+	return r.diskClaimHandler.UpdateClaimStatus()
+}
+
+// processDiskClaimBound check need to assign new disk or not
+func (r *ReconcileLocalDiskClaim) processDiskClaimBound(diskClaim *v1alpha1.LocalDiskClaim) error {
+	logCtx := log.Fields{"name": diskClaim.Name}
+	log.WithFields(logCtx).Info("Start to processing Bound localdiskclaim")
+
+	if !diskClaim.Spec.DiskAssignCompleted {
+		r.diskClaimHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusPending)
+		return r.diskClaimHandler.UpdateClaimStatus()
+	}
+
+	return nil
 }

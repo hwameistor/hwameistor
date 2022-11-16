@@ -19,7 +19,13 @@ type LocalDiskClaimSpec struct {
 	Description DiskClaimDescription `json:"description,omitempty"`
 
 	// DiskRefs represents which disks are assigned to the LocalDiskClaim
+	// +optional
 	DiskRefs []*v1.ObjectReference `json:"diskRefs,omitempty"`
+
+	// DiskAssignCompleted represents that if the disk allocation has been completed,
+	// if set true means there is no need to search for available disks in the cluster
+	// +optional
+	DiskAssignCompleted bool `json:"diskAssignCompleted,omitempty"`
 }
 
 // LocalDiskClaimStatus defines the observed state of LocalDiskClaim
@@ -34,6 +40,7 @@ type LocalDiskClaimStatus struct {
 
 // LocalDiskClaim is the Schema for the localdiskclaims API
 //+kubebuilder:validation:Required
+//+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
 //+kubebuilder:printcolumn:JSONPath=".status.status",name=Phase,type=string
 //+kubebuilder:resource:scope=Cluster,shortName=ldc

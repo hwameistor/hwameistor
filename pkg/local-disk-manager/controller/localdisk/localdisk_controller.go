@@ -31,10 +31,11 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileLocalDisk{
-		Client:      mgr.GetClient(),
-		Scheme:      mgr.GetScheme(),
-		Recorder:    mgr.GetEventRecorderFor("localdisk-controller"),
-		diskHandler: localdisk.NewLocalDiskHandler(mgr.GetClient(), mgr.GetEventRecorderFor("localdisk-controller")),
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor("localdisk-controller"),
+		diskHandler: localdisk.NewLocalDiskHandler(mgr.GetClient(),
+			mgr.GetEventRecorderFor("localdisk-controller")),
 	}
 }
 
@@ -87,7 +88,7 @@ type ReconcileLocalDisk struct {
 	client.Client
 	Scheme      *runtime.Scheme
 	Recorder    record.EventRecorder
-	diskHandler *localdisk.LocalDiskHandler
+	diskHandler *localdisk.Handler
 }
 
 // Reconcile localDisk instance according to disk status
@@ -102,8 +103,8 @@ func (r *ReconcileLocalDisk) Reconcile(_ context.Context, req reconcile.Request)
 		log.WithError(err).Errorf("Failed to get localdisk")
 		return reconcile.Result{}, err
 	}
-	r.diskHandler.For(localDisk)
 
+	r.diskHandler.For(localDisk)
 	// reconcile localdisk according disk status
 	switch localDisk.Status.State {
 	case v1alpha1.LocalDiskEmpty:
@@ -145,34 +146,66 @@ func (r *ReconcileLocalDisk) processDiskAvailable(disk *v1alpha1.LocalDisk) erro
 	log.WithFields(logCtx).Info("Start to processing Available localdisk")
 
 	var (
-		diskUsed = false
-		err      error
+		diskBound = false
+		err       error
 	)
 
 	if disk.Spec.ClaimRef != nil || disk.Spec.HasPartition {
-		diskUsed = true
+		diskBound = true
 	}
 
-	// Check if disk has been used and reserved
-	if diskUsed && disk.Spec.Reserved {
+	// Check if disk has been used and reserved at the same time
+	if diskBound && disk.Spec.Reserved {
 		err = fmt.Errorf("disk can't be reserved because disk has been used")
 		return err
 	}
 
-	if diskUsed {
-		r.diskHandler.SetupStatus(v1alpha1.LocalDiskBound)
-		err = r.diskHandler.UpdateStatus()
+	if diskBound {
+		err = r.updateDiskStatusBound(disk)
 	} else if disk.Spec.Reserved {
-		r.diskHandler.SetupStatus(v1alpha1.LocalDiskReserved)
-		err = r.diskHandler.UpdateStatus()
+		err = r.updateDiskStatusReserved(disk)
 	}
 
+	return err
+}
+
+// reservedDisk update disk status to Reserved
+func (r *ReconcileLocalDisk) updateDiskStatusReserved(disk *v1alpha1.LocalDisk) error {
+	var (
+		eventReason  = v1alpha1.LocalDiskEventReasonReserved
+		eventType    = v1.EventTypeNormal
+		eventMessage = fmt.Sprintf("Reserve Disk %v succeed", disk.GetName())
+	)
+
+	r.diskHandler.SetupStatus(v1alpha1.LocalDiskReserved)
+	err := r.diskHandler.UpdateStatus()
 	if err != nil {
-		r.Recorder.Eventf(disk, v1.EventTypeWarning, "UpdateStatusFail",
-			"Update status fail, due to error: %v", err)
-		log.WithError(err).WithFields(logCtx).Error("Update localDisk status fail")
+		eventReason = v1alpha1.LocalDiskEventReasonReservedFail
+		eventType = v1.EventTypeWarning
+		eventMessage = fmt.Sprintf("Reserve Disk %v failed", disk.GetName())
 	}
 
+	r.Recorder.Eventf(disk, eventType, eventReason, eventMessage)
+	return err
+}
+
+// reservedDisk update disk status to Bound
+func (r *ReconcileLocalDisk) updateDiskStatusBound(disk *v1alpha1.LocalDisk) error {
+	var (
+		eventReason  = v1alpha1.LocalDiskEventReasonBound
+		eventType    = v1.EventTypeNormal
+		eventMessage = fmt.Sprintf("Bound Disk %v succeed", disk.GetName())
+	)
+
+	r.diskHandler.SetupStatus(v1alpha1.LocalDiskBound)
+	err := r.diskHandler.UpdateStatus()
+	if err != nil {
+		eventReason = v1alpha1.LocalDiskEventReasonBoundFail
+		eventType = v1.EventTypeWarning
+		eventMessage = fmt.Sprintf("Bound Disk %v failed", disk.GetName())
+	}
+
+	r.Recorder.Eventf(disk, eventType, eventReason, eventMessage)
 	return err
 }
 
@@ -190,7 +223,8 @@ func (r *ReconcileLocalDisk) processDiskReserved(disk *v1alpha1.LocalDisk) error
 		r.diskHandler.SetupStatus(v1alpha1.LocalDiskBound)
 		if err = r.diskHandler.UpdateStatus(); err == nil {
 			log.WithFields(logCtx).Info("Update a Reserved disk state to Bound")
-			r.Recorder.Eventf(disk, v1.EventTypeNormal, "Update disk %v state from Reserved to Bound, due to detect partition or filesystem on it", disk.Name)
+			r.Recorder.Eventf(disk, v1.EventTypeNormal, "Update disk %v state from Reserved to Bound, "+
+				"due to detect partition or filesystem on it", disk.Name)
 		}
 	}
 

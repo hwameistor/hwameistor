@@ -6,6 +6,23 @@ type State string
 // Phase is the phase of an operation
 type Phase string
 
+type LocalDiskEventReason = string
+
+const (
+	LocalDiskEventReasonBound        LocalDiskEventReason = "LocalDiskBound"
+	LocalDiskEventReasonBoundFail    LocalDiskEventReason = "LocalDiskBoundFail"
+	LocalDiskEventReasonReserved     LocalDiskEventReason = "LocalDiskReserved"
+	LocalDiskEventReasonReservedFail LocalDiskEventReason = "LocalDiskReservedFail"
+)
+
+type LocalDiskClaimEventReason = string
+
+const (
+	LocalDiskClaimEventReasonBound      LocalDiskClaimEventReason = "LocalDiskClaimBound"
+	LocalDiskClaimEventReasonBoundFail  LocalDiskClaimEventReason = "LocalDiskClaimBoundFail"
+	LocalDiskClaimEventReasonAssignFail LocalDiskClaimEventReason = "LocalDiskClaimAssignFail"
+)
+
 // states
 const (
 	NodeStateReady    State = "Ready"

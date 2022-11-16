@@ -37,7 +37,7 @@ type LocalDiskNodesManager struct {
 	mutex sync.Mutex
 
 	// DiskHandler manage LD resources in cluster
-	DiskHandler *localdisk2.LocalDiskHandler
+	DiskHandler *localdisk2.Handler
 }
 
 func (ldn *LocalDiskNodesManager) ReleaseDisk(disk string) error {

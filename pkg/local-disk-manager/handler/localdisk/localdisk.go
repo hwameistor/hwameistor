@@ -13,21 +13,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type LocalDiskHandler struct {
+type Handler struct {
 	client.Client
 	record.EventRecorder
 	localDisk *v1alpha1.LocalDisk
 	filter    filter.LocalDiskFilter
 }
 
-func NewLocalDiskHandler(client client.Client, recorder record.EventRecorder) *LocalDiskHandler {
-	return &LocalDiskHandler{
+func NewLocalDiskHandler(client client.Client, recorder record.EventRecorder) *Handler {
+	return &Handler{
 		Client:        client,
 		EventRecorder: recorder,
 	}
 }
 
-func (ldHandler *LocalDiskHandler) GetLocalDisk(key client.ObjectKey) (*v1alpha1.LocalDisk, error) {
+func (ldHandler *Handler) GetLocalDisk(key client.ObjectKey) (*v1alpha1.LocalDisk, error) {
 	ld := v1alpha1.LocalDisk{}
 	if err := ldHandler.Get(context.Background(), key, &ld); err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func (ldHandler *LocalDiskHandler) GetLocalDisk(key client.ObjectKey) (*v1alpha1
 	return &ld, nil
 }
 
-func (ldHandler *LocalDiskHandler) GetLocalDiskWithLabels(labels labels.Set) (*v1alpha1.LocalDiskList, error) {
+func (ldHandler *Handler) GetLocalDiskWithLabels(labels labels.Set) (*v1alpha1.LocalDiskList, error) {
 	list := &v1alpha1.LocalDiskList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "localDisk",
@@ -46,7 +46,7 @@ func (ldHandler *LocalDiskHandler) GetLocalDiskWithLabels(labels labels.Set) (*v
 	return list, ldHandler.List(context.TODO(), list, &client.ListOptions{LabelSelector: labels.AsSelector()})
 }
 
-func (ldHandler *LocalDiskHandler) ListLocalDisk() (*v1alpha1.LocalDiskList, error) {
+func (ldHandler *Handler) ListLocalDisk() (*v1alpha1.LocalDiskList, error) {
 	list := &v1alpha1.LocalDiskList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "localDisk",
@@ -58,7 +58,7 @@ func (ldHandler *LocalDiskHandler) ListLocalDisk() (*v1alpha1.LocalDiskList, err
 	return list, err
 }
 
-func (ldHandler *LocalDiskHandler) ListNodeLocalDisk(node string) (*v1alpha1.LocalDiskList, error) {
+func (ldHandler *Handler) ListNodeLocalDisk(node string) (*v1alpha1.LocalDiskList, error) {
 	list := &v1alpha1.LocalDiskList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "localDisk",
@@ -70,14 +70,14 @@ func (ldHandler *LocalDiskHandler) ListNodeLocalDisk(node string) (*v1alpha1.Loc
 	return list, err
 }
 
-func (ldHandler *LocalDiskHandler) For(ld *v1alpha1.LocalDisk) *LocalDiskHandler {
+func (ldHandler *Handler) For(ld *v1alpha1.LocalDisk) *Handler {
 	ldHandler.localDisk = ld
 	ldHandler.filter = filter.NewLocalDiskFilter(ld)
 	return ldHandler
 }
 
 // UnClaimed Bounded
-func (ldHandler *LocalDiskHandler) UnClaimed() bool {
+func (ldHandler *Handler) UnClaimed() bool {
 	return ldHandler.filter.
 		Init().
 		Available().
@@ -85,27 +85,23 @@ func (ldHandler *LocalDiskHandler) UnClaimed() bool {
 }
 
 // BoundTo assign disk to ldc
-func (ldHandler *LocalDiskHandler) BoundTo(ldc v1alpha1.LocalDiskClaim) error {
-	ldcRef, err := reference.GetReference(nil, &ldc)
-	if err != nil {
-		return err
+func (ldHandler *Handler) BoundTo(ldc *v1alpha1.LocalDiskClaim) error {
+	if ldc.GetName() == ldHandler.localDisk.Spec.ClaimRef.Name {
+		return nil
 	}
 
+	ldcRef, _ := reference.GetReference(nil, ldc)
+	// Update the disk.spec.ClaimRef field to indicate that the disk is claimed
 	ldHandler.localDisk.Spec.ClaimRef = ldcRef
-	ldHandler.localDisk.Status.State = v1alpha1.LocalDiskBound
 
-	if err = ldHandler.UpdateStatus(); err != nil {
-		return err
-	}
-	ldHandler.EventRecorder.Eventf(ldHandler.localDisk, v1.EventTypeNormal, "LocalDiskClaimed", "Claimed by %v/%v", ldc.Namespace, ldc.Name)
-	return nil
+	return ldHandler.Update()
 }
 
-func (ldHandler *LocalDiskHandler) SetupStatus(status v1alpha1.LocalDiskState) {
+func (ldHandler *Handler) SetupStatus(status v1alpha1.LocalDiskState) {
 	ldHandler.localDisk.Status.State = status
 }
 
-func (ldHandler *LocalDiskHandler) SetupLabel(labels labels.Set) {
+func (ldHandler *Handler) SetupLabel(labels labels.Set) {
 	if ldHandler.localDisk.ObjectMeta.Labels == nil {
 		ldHandler.localDisk.ObjectMeta.Labels = make(map[string]string)
 	}
@@ -114,29 +110,29 @@ func (ldHandler *LocalDiskHandler) SetupLabel(labels labels.Set) {
 	}
 }
 
-func (ldHandler *LocalDiskHandler) RemoveLabel(labels labels.Set) {
+func (ldHandler *Handler) RemoveLabel(labels labels.Set) {
 	for k := range labels {
 		delete(ldHandler.localDisk.ObjectMeta.Labels, k)
 	}
 }
 
-func (ldHandler *LocalDiskHandler) UpdateStatus() error {
+func (ldHandler *Handler) UpdateStatus() error {
 	return ldHandler.Status().Update(context.TODO(), ldHandler.localDisk)
 }
 
-func (ldHandler *LocalDiskHandler) Update() error {
+func (ldHandler *Handler) Update() error {
 	return ldHandler.Client.Update(context.TODO(), ldHandler.localDisk)
 }
 
-func (ldHandler *LocalDiskHandler) ClaimRef() *v1.ObjectReference {
+func (ldHandler *Handler) ClaimRef() *v1.ObjectReference {
 	return ldHandler.localDisk.Spec.ClaimRef
 }
 
-func (ldHandler *LocalDiskHandler) ReserveDisk() {
+func (ldHandler *Handler) ReserveDisk() {
 	ldHandler.localDisk.Spec.Reserved = true
 }
 
-func (ldHandler *LocalDiskHandler) FilterDisk(ldc v1alpha1.LocalDiskClaim) bool {
+func (ldHandler *Handler) FilterDisk(ldc *v1alpha1.LocalDiskClaim) bool {
 	// Bounded disk
 	if ldHandler.filter.HasBoundWith(ldc.GetName()) {
 		return true
@@ -155,6 +151,6 @@ func (ldHandler *LocalDiskHandler) FilterDisk(ldc v1alpha1.LocalDiskClaim) bool 
 		GetTotalResult()
 }
 
-func (ldHandler *LocalDiskHandler) IsEmpty() bool {
+func (ldHandler *Handler) IsEmpty() bool {
 	return !ldHandler.localDisk.Spec.HasPartition
 }

@@ -17,7 +17,7 @@ type DiskNodeHandler struct {
 	client.Client
 	record.EventRecorder
 	diskNode    *v1alpha1.LocalDiskNode
-	diskHandler *localdisk2.LocalDiskHandler
+	diskHandler *localdisk2.Handler
 }
 
 func NewDiskNodeHelper(cli client.Client, recorder record.EventRecorder) *DiskNodeHandler {
