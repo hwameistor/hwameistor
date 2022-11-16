@@ -1,3 +1,16 @@
+v0.4.3 / 2022-11-14
+========================
+## Admission
+* Fix panic error when label is empty on Namespace (#447 @SSmallMonster )
+
+## Scheduler,LocalStorage,LocalDiskManager,Evictor
+N/A
+
+## Other
+* Improve the docs style of README(#446 @windsonsea )
+* Update e2e test (#459 @FloatXD )
+* Add CHANGELOG.md & release/v0.4.{0,1,2}/changelog (#461 @SSmallMonster )
+
 v0.4.2 / 2022-11-02
 ========================
 ## LocalStorage
