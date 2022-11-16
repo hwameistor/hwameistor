@@ -152,11 +152,20 @@ func main() {
 		ConfigureRESTServer(*httpPort)
 
 	runFunc := func(ctx context.Context) {
-		stopCh := signals.SetupSignalHandler()
+		stopCtx := signals.SetupSignalHandler()
+		stopCh := make(chan struct{}, 1)
+
+		// NOTE: Adapter for controller-runtime from 0.6.9 to 0.9.0
+		// Convert context.Cancel signal to chan event
+		go func() {
+			<-stopCtx.Done()
+			stopCh <- struct{}{}
+		}()
+
 		// Start the resource controllers manager
 		go func() {
 			log.Info("Starting the manager of all local storage resources.")
-			if err := mgr.Start(stopCh); err != nil {
+			if err := mgr.Start(stopCtx); err != nil {
 				log.WithError(err).Error("Failed to run resources manager")
 				os.Exit(1)
 			}

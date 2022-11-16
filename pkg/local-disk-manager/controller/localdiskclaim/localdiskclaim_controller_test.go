@@ -126,7 +126,7 @@ func TestReconcileLocalDiskClaim_Reconcile(t *testing.T) {
 
 	// Mock LocalDiskClaim request
 	req := reconcile.Request{NamespacedName: types.NamespacedName{Namespace: claim.GetNamespace(), Name: claim.GetName()}}
-	_, err = r.Reconcile(req)
+	_, err = r.Reconcile(context.TODO(), req)
 	if err != nil {
 		t.Errorf("Reconcile fail %v", err)
 	}
@@ -168,7 +168,7 @@ func TestReconcileDiskClaim_Reconcile_WhenDiskBoundAlready(t *testing.T) {
 
 	// Mock LocalDiskClaim request
 	req := reconcile.Request{NamespacedName: types.NamespacedName{Namespace: claim.GetNamespace(), Name: claim.GetName()}}
-	_, err = r.Reconcile(req)
+	_, err = r.Reconcile(context.TODO(), req)
 	if err != nil {
 		t.Errorf("Reconcile fail %v", err)
 	}
@@ -191,7 +191,7 @@ func TestReconcileDiskClaim_Reconcile_WhenDiskBoundAlready(t *testing.T) {
 	}
 
 	// Mock LocalDiskClaim request again
-	_, err = r.Reconcile(req)
+	_, err = r.Reconcile(context.TODO(), req)
 	if err != nil {
 		t.Errorf("Reconcile fail %v", err)
 	}
@@ -250,7 +250,7 @@ func (r *ReconcileLocalDiskClaim) ClaimLocalDisk(t *testing.T,
 	}
 
 	// Reconcile request
-	_, err = r.Reconcile(req)
+	_, err = r.Reconcile(context.TODO(), req)
 	if err != nil {
 		t.Errorf("Reconcile fail %v", err)
 	}

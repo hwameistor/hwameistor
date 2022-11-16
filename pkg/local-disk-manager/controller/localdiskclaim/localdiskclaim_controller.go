@@ -1,6 +1,7 @@
 package localdiskclaim
 
 import (
+	"context"
 	"time"
 
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskclaim"
@@ -80,7 +81,7 @@ type ReconcileLocalDiskClaim struct {
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileLocalDiskClaim) Reconcile(req reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileLocalDiskClaim) Reconcile(_ context.Context, req reconcile.Request) (reconcile.Result, error) {
 	log.Infof("Reconcile LocalDiskClaim %s", req.Name)
 	ldcHandler := localdiskclaim.NewLocalDiskClaimHandler(r.Client, r.Recorder)
 

@@ -1,6 +1,7 @@
 package localdisk
 
 import (
+	"context"
 	"fmt"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
@@ -90,8 +91,8 @@ type ReconcileLocalDisk struct {
 }
 
 // Reconcile localDisk instance according to disk status
-func (r *ReconcileLocalDisk) Reconcile(req reconcile.Request) (reconcile.Result, error) {
-	log.Infof("Reconcile localDisk %s", req.Name)
+func (r *ReconcileLocalDisk) Reconcile(_ context.Context, req reconcile.Request) (reconcile.Result, error) {
+	log.Infof("Reconcile LocalDisk %s", req.Name)
 
 	localDisk, err := r.diskHandler.GetLocalDisk(req.NamespacedName)
 	if err != nil {

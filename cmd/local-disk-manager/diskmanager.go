@@ -8,14 +8,13 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	runtime2 "k8s.io/apimachinery/pkg/runtime"
-
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/controller"
 	csidriver "github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/driver"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk"
@@ -111,24 +110,23 @@ func main() {
 		go csidriver.NewDiskDriver(csiCfg).Run()
 	}
 
-	ctx := context.TODO()
 	// Add the Metrics Service
-	addMetrics(ctx, cfg)
+	addMetrics(stopCh, cfg)
 
 	// Start Cluster Controller
-	go startClusterController(ctx, clusterMgr, stopCh)
+	go startClusterController(stopCh, clusterMgr)
 
 	// Start Node Controller
-	go startNodeController(ctx, nodeMgr, stopCh)
+	go startNodeController(stopCh, nodeMgr)
 	select {
-	case <-stopCh:
+	case <-stopCh.Done():
 		log.Info("Receive exit signal.")
 		time.Sleep(3 * time.Second)
 		os.Exit(1)
 	}
 }
 
-func startClusterController(ctx context.Context, mgr manager.Manager, c <-chan struct{}) {
+func startClusterController(ctx context.Context, mgr manager.Manager) {
 	// Become the leader before proceeding
 	err := leader.Become(ctx, "local-disk-manager-lock")
 	if err != nil {
@@ -138,16 +136,16 @@ func startClusterController(ctx context.Context, mgr manager.Manager, c <-chan s
 
 	log.Info("Starting the Cluster Cmd.")
 	// Start the Cmd
-	if err := mgr.Start(c); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		log.Error(err, "Failed to start Cluster Cmd")
 		os.Exit(1)
 	}
 }
 
-func startNodeController(ctx context.Context, mgr manager.Manager, stopCh <-chan struct{}) {
+func startNodeController(ctx context.Context, mgr manager.Manager) {
 	log.Info("Starting the Node Cmd.")
 	// Start the Cmd
-	if err := mgr.Start(stopCh); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		log.Error(err, "Failed to start Node Cmd")
 	}
 
@@ -304,11 +302,11 @@ func newNodeManager(cfg *rest.Config) (manager.Manager, error) {
 func setIndexField(cache cache.Cache) {
 	indexes := []struct {
 		field string
-		Func  func(runtime2.Object) []string
+		Func  func(client.Object) []string
 	}{
 		{
 			field: "spec.nodeName",
-			Func: func(obj runtime2.Object) []string {
+			Func: func(obj client.Object) []string {
 				return []string{obj.(*v1alpha1.LocalDisk).Spec.NodeName}
 			},
 		},

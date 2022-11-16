@@ -74,7 +74,7 @@ type ReconcileLocalVolumeGroup struct {
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileLocalVolumeGroup) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileLocalVolumeGroup) Reconcile(_ context.Context, request reconcile.Request) (reconcile.Result, error) {
 	instance := &apisv1alpha1.LocalVolumeGroup{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {

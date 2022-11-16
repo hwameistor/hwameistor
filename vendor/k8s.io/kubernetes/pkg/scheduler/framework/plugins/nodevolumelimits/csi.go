@@ -26,14 +26,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	storagelisters "k8s.io/client-go/listers/storage/v1"
+	storagehelpers "k8s.io/component-helpers/storage/volume"
 	csitrans "k8s.io/csi-translation-lib"
-	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
-	framework "k8s.io/kubernetes/pkg/scheduler/framework/v1alpha1"
-	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
-	schedulernodeinfo "k8s.io/kubernetes/pkg/scheduler/nodeinfo"
+	"k8s.io/kubernetes/pkg/scheduler/framework"
 	volumeutil "k8s.io/kubernetes/pkg/volume/util"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // InTreeToCSITranslator contains methods required to check migratable status
@@ -69,7 +67,7 @@ func (pl *CSILimits) Name() string {
 }
 
 // Filter invoked at the filter extension point.
-func (pl *CSILimits) Filter(ctx context.Context, _ *framework.CycleState, pod *v1.Pod, nodeInfo *nodeinfo.NodeInfo) *framework.Status {
+func (pl *CSILimits) Filter(ctx context.Context, _ *framework.CycleState, pod *v1.Pod, nodeInfo *framework.NodeInfo) *framework.Status {
 	// If the new pod doesn't have any volume attached to it, the predicate will always be true
 	if len(pod.Spec.Volumes) == 0 {
 		return nil
@@ -89,7 +87,7 @@ func (pl *CSILimits) Filter(ctx context.Context, _ *framework.CycleState, pod *v
 
 	newVolumes := make(map[string]string)
 	if err := pl.filterAttachableVolumes(csiNode, pod.Spec.Volumes, pod.Namespace, newVolumes); err != nil {
-		return framework.NewStatus(framework.Error, err.Error())
+		return framework.AsStatus(err)
 	}
 
 	// If the pod doesn't have any new CSI volumes, the predicate will always be true
@@ -104,18 +102,16 @@ func (pl *CSILimits) Filter(ctx context.Context, _ *framework.CycleState, pod *v
 	}
 
 	attachedVolumes := make(map[string]string)
-	for _, existingPod := range nodeInfo.Pods() {
-		if err := pl.filterAttachableVolumes(csiNode, existingPod.Spec.Volumes, existingPod.Namespace, attachedVolumes); err != nil {
-			return framework.NewStatus(framework.Error, err.Error())
+	for _, existingPod := range nodeInfo.Pods {
+		if err := pl.filterAttachableVolumes(csiNode, existingPod.Pod.Spec.Volumes, existingPod.Pod.Namespace, attachedVolumes); err != nil {
+			return framework.AsStatus(err)
 		}
 	}
 
 	attachedVolumeCount := map[string]int{}
 	for volumeUniqueName, volumeLimitKey := range attachedVolumes {
-		if _, ok := newVolumes[volumeUniqueName]; ok {
-			// Don't count single volume used in multiple pods more than once
-			delete(newVolumes, volumeUniqueName)
-		}
+		// Don't count single volume used in multiple pods more than once
+		delete(newVolumes, volumeUniqueName)
 		attachedVolumeCount[volumeLimitKey]++
 	}
 
@@ -231,7 +227,7 @@ func (pl *CSILimits) getCSIDriverInfo(csiNode *storagev1.CSINode, pvc *v1.Persis
 func (pl *CSILimits) getCSIDriverInfoFromSC(csiNode *storagev1.CSINode, pvc *v1.PersistentVolumeClaim) (string, string) {
 	namespace := pvc.Namespace
 	pvcName := pvc.Name
-	scName := v1helper.GetPersistentVolumeClaimClass(pvc)
+	scName := storagehelpers.GetPersistentVolumeClaimClass(pvc)
 
 	// If StorageClass is not set or not found, then PVC must be using immediate binding mode
 	// and hence it must be bound before scheduling. So it is safe to not count it.
@@ -270,14 +266,15 @@ func (pl *CSILimits) getCSIDriverInfoFromSC(csiNode *storagev1.CSINode, pvc *v1.
 }
 
 // NewCSI initializes a new plugin and returns it.
-func NewCSI(_ *runtime.Unknown, handle framework.FrameworkHandle) (framework.Plugin, error) {
+func NewCSI(_ runtime.Object, handle framework.Handle) (framework.Plugin, error) {
 	informerFactory := handle.SharedInformerFactory()
 	pvLister := informerFactory.Core().V1().PersistentVolumes().Lister()
 	pvcLister := informerFactory.Core().V1().PersistentVolumeClaims().Lister()
+	csiNodesLister := informerFactory.Storage().V1().CSINodes().Lister()
 	scLister := informerFactory.Storage().V1().StorageClasses().Lister()
 
 	return &CSILimits{
-		csiNodeLister:        getCSINodeListerIfEnabled(informerFactory),
+		csiNodeLister:        csiNodesLister,
 		pvLister:             pvLister,
 		pvcLister:            pvcLister,
 		scLister:             scLister,
@@ -286,9 +283,9 @@ func NewCSI(_ *runtime.Unknown, handle framework.FrameworkHandle) (framework.Plu
 	}, nil
 }
 
-func getVolumeLimits(nodeInfo *schedulernodeinfo.NodeInfo, csiNode *storagev1.CSINode) map[v1.ResourceName]int64 {
+func getVolumeLimits(nodeInfo *framework.NodeInfo, csiNode *storagev1.CSINode) map[v1.ResourceName]int64 {
 	// TODO: stop getting values from Node object in v1.18
-	nodeVolumeLimits := nodeInfo.VolumeLimits()
+	nodeVolumeLimits := volumeLimits(nodeInfo)
 	if csiNode != nil {
 		for i := range csiNode.Spec.Drivers {
 			d := csiNode.Spec.Drivers[i]
