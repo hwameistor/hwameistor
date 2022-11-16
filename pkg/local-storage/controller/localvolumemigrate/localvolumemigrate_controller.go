@@ -78,7 +78,7 @@ type ReconcileLocalVolumeMigrate struct {
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileLocalVolumeMigrate) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileLocalVolumeMigrate) Reconcile(_ context.Context, request reconcile.Request) (reconcile.Result, error) {
 	instance := &apisv1alpha1.LocalVolumeMigrate{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {

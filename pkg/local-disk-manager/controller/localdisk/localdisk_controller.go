@@ -1,6 +1,7 @@
 package localdisk
 
 import (
+	"context"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -98,7 +99,7 @@ type ReconcileLocalDisk struct {
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileLocalDisk) Reconcile(req reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileLocalDisk) Reconcile(_ context.Context, req reconcile.Request) (reconcile.Result, error) {
 	log.Infof("Reconcile LocalDisk %s", req.Name)
 
 	ldHandler := localdisk.NewLocalDiskHandler(r.Client, r.Recorder)

@@ -8,7 +8,6 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	k8sruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	k8sinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -251,7 +250,7 @@ func calculateJobRunningStatus(job *batchv1.Job) (string, string) {
 	return DataCopyStatusPending, ""
 }
 
-func (statusGenerator *statusGenerator) delObject(name, namespace string, obj k8sruntime.Object) error {
+func (statusGenerator *statusGenerator) delObject(name, namespace string, obj k8sruntimeclient.Object) error {
 	objectKey := k8sruntimeclient.ObjectKey{
 		Namespace: namespace,
 		Name:      name,

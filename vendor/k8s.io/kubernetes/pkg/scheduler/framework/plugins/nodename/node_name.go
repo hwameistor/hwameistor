@@ -21,8 +21,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	framework "k8s.io/kubernetes/pkg/scheduler/framework/v1alpha1"
-	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
+	"k8s.io/kubernetes/pkg/scheduler/framework"
 )
 
 // NodeName is a plugin that checks if a pod spec node name matches the current node.
@@ -35,7 +34,7 @@ const (
 	Name = "NodeName"
 
 	// ErrReason returned when node name doesn't match.
-	ErrReason = "node(s) didn't match the requested hostname"
+	ErrReason = "node(s) didn't match the requested node name"
 )
 
 // Name returns name of the plugin. It is used in logs, etc.
@@ -44,7 +43,7 @@ func (pl *NodeName) Name() string {
 }
 
 // Filter invoked at the filter extension point.
-func (pl *NodeName) Filter(ctx context.Context, _ *framework.CycleState, pod *v1.Pod, nodeInfo *nodeinfo.NodeInfo) *framework.Status {
+func (pl *NodeName) Filter(ctx context.Context, _ *framework.CycleState, pod *v1.Pod, nodeInfo *framework.NodeInfo) *framework.Status {
 	if nodeInfo.Node() == nil {
 		return framework.NewStatus(framework.Error, "node not found")
 	}
@@ -55,11 +54,11 @@ func (pl *NodeName) Filter(ctx context.Context, _ *framework.CycleState, pod *v1
 }
 
 // Fits actually checks if the pod fits the node.
-func Fits(pod *v1.Pod, nodeInfo *nodeinfo.NodeInfo) bool {
+func Fits(pod *v1.Pod, nodeInfo *framework.NodeInfo) bool {
 	return len(pod.Spec.NodeName) == 0 || pod.Spec.NodeName == nodeInfo.Node().Name
 }
 
 // New initializes a new plugin and returns it.
-func New(_ *runtime.Unknown, _ framework.FrameworkHandle) (framework.Plugin, error) {
+func New(_ runtime.Object, _ framework.Handle) (framework.Plugin, error) {
 	return &NodeName{}, nil
 }

@@ -75,7 +75,7 @@ type ReconcileLocalVolumeReplica struct {
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileLocalVolumeReplica) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileLocalVolumeReplica) Reconcile(_ context.Context, request reconcile.Request) (reconcile.Result, error) {
 
 	// Fetch the LocalVolumeReplica instance
 	instance := &apisv1alpha1.LocalVolumeReplica{}

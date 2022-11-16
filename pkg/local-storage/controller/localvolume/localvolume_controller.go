@@ -41,9 +41,9 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
-	replicaToVolumeRequestFunc := handler.ToRequestsFunc(
-		func(a handler.MapObject) []reconcile.Request {
-			replica, ok := a.Object.(*apisv1alpha1.LocalVolumeReplica)
+	replicaToVolumeRequestFunc := handler.EnqueueRequestsFromMapFunc(
+		func(a client.Object) []reconcile.Request {
+			replica, ok := a.(*apisv1alpha1.LocalVolumeReplica)
 			if !ok {
 				return []reconcile.Request{}
 			}
@@ -67,7 +67,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &apisv1alpha1.LocalVolumeReplica{}}, &handler.EnqueueRequestsFromMapFunc{ToRequests: replicaToVolumeRequestFunc})
+	err = c.Watch(&source.Kind{Type: &apisv1alpha1.LocalVolumeReplica{}}, replicaToVolumeRequestFunc)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ type ReconcileLocalVolume struct {
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileLocalVolume) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileLocalVolume) Reconcile(_ context.Context, request reconcile.Request) (reconcile.Result, error) {
 
 	// Fetch the LocalVolume instance
 	instance := &apisv1alpha1.LocalVolume{}

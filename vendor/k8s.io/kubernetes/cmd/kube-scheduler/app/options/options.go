@@ -28,29 +28,27 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	apiserveroptions "k8s.io/apiserver/pkg/server/options"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
-	"k8s.io/client-go/informers"
 	clientset "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/client-go/tools/events"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
 	cliflag "k8s.io/component-base/cli/flag"
 	componentbaseconfig "k8s.io/component-base/config"
+	"k8s.io/component-base/config/options"
 	configv1alpha1 "k8s.io/component-base/config/v1alpha1"
+	"k8s.io/component-base/logs"
 	"k8s.io/component-base/metrics"
-	"k8s.io/klog"
-	kubeschedulerconfigv1alpha2 "k8s.io/kube-scheduler/config/v1alpha2"
+	"k8s.io/klog/v2"
+	kubeschedulerconfigv1beta1 "k8s.io/kube-scheduler/config/v1beta1"
 	schedulerappconfig "k8s.io/kubernetes/cmd/kube-scheduler/app/config"
-	"k8s.io/kubernetes/pkg/client/leaderelectionconfig"
-	"k8s.io/kubernetes/pkg/master/ports"
 	"k8s.io/kubernetes/pkg/scheduler"
 	kubeschedulerconfig "k8s.io/kubernetes/pkg/scheduler/apis/config"
 	kubeschedulerscheme "k8s.io/kubernetes/pkg/scheduler/apis/config/scheme"
 	"k8s.io/kubernetes/pkg/scheduler/apis/config/validation"
-	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/interpodaffinity"
 )
 
 // Options has all the params needed to run a Scheduler
@@ -62,6 +60,8 @@ type Options struct {
 	CombinedInsecureServing *CombinedInsecureServingOptions
 	Authentication          *apiserveroptions.DelegatingAuthenticationOptions
 	Authorization           *apiserveroptions.DelegatingAuthorizationOptions
+	Metrics                 *metrics.Options
+	Logs                    *logs.Options
 	Deprecated              *DeprecatedOptions
 
 	// ConfigFile is the location of the scheduler server's configuration file.
@@ -71,8 +71,6 @@ type Options struct {
 	WriteConfigTo string
 
 	Master string
-
-	ShowHiddenMetricsForVersion string
 }
 
 // NewOptions returns default scheduler app options.
@@ -106,19 +104,20 @@ func NewOptions() (*Options, error) {
 			UseLegacyPolicyConfig:          false,
 			PolicyConfigMapNamespace:       metav1.NamespaceSystem,
 			SchedulerName:                  corev1.DefaultSchedulerName,
-			HardPodAffinitySymmetricWeight: interpodaffinity.DefaultHardPodAffinityWeight,
+			HardPodAffinitySymmetricWeight: 1,
 		},
+		Metrics: metrics.NewOptions(),
+		Logs:    logs.NewOptions(),
 	}
 
 	o.Authentication.TolerateInClusterLookupFailure = true
 	o.Authentication.RemoteKubeConfigFileOptional = true
 	o.Authorization.RemoteKubeConfigFileOptional = true
-	o.Authorization.AlwaysAllowPaths = []string{"/healthz"}
 
 	// Set the PairName but leave certificate directory blank to generate in-memory by default
 	o.SecureServing.ServerCert.CertDirectory = ""
 	o.SecureServing.ServerCert.PairName = "kube-scheduler"
-	o.SecureServing.BindPort = ports.KubeSchedulerPort
+	o.SecureServing.BindPort = kubeschedulerconfig.DefaultKubeSchedulerPort
 
 	return o, nil
 }
@@ -136,7 +135,7 @@ func splitHostIntPort(s string) (string, int, error) {
 }
 
 func newDefaultComponentConfig() (*kubeschedulerconfig.KubeSchedulerConfiguration, error) {
-	versionedCfg := kubeschedulerconfigv1alpha2.KubeSchedulerConfiguration{}
+	versionedCfg := kubeschedulerconfigv1beta1.KubeSchedulerConfiguration{}
 	versionedCfg.DebuggingConfiguration = *configv1alpha1.NewRecommendedDebuggingConfiguration()
 
 	kubeschedulerscheme.Scheme.Default(&versionedCfg)
@@ -150,7 +149,11 @@ func newDefaultComponentConfig() (*kubeschedulerconfig.KubeSchedulerConfiguratio
 // Flags returns flags for a specific scheduler by section name
 func (o *Options) Flags() (nfs cliflag.NamedFlagSets) {
 	fs := nfs.FlagSet("misc")
-	fs.StringVar(&o.ConfigFile, "config", o.ConfigFile, "The path to the configuration file. Flags override values in this file.")
+	fs.StringVar(&o.ConfigFile, "config", o.ConfigFile, `The path to the configuration file. The following flags can overwrite fields in this file:
+  --algorithm-provider
+  --policy-config-file
+  --policy-configmap
+  --policy-configmap-namespace`)
 	fs.StringVar(&o.WriteConfigTo, "write-config-to", o.WriteConfigTo, "If set, write the configuration values to this file and exit.")
 	fs.StringVar(&o.Master, "master", o.Master, "The address of the Kubernetes API server (overrides any value in kubeconfig)")
 
@@ -160,17 +163,10 @@ func (o *Options) Flags() (nfs cliflag.NamedFlagSets) {
 	o.Authorization.AddFlags(nfs.FlagSet("authorization"))
 	o.Deprecated.AddFlags(nfs.FlagSet("deprecated"), &o.ComponentConfig)
 
-	leaderelectionconfig.BindFlags(&o.ComponentConfig.LeaderElection.LeaderElectionConfiguration, nfs.FlagSet("leader election"))
+	options.BindLeaderElectionFlags(&o.ComponentConfig.LeaderElection, nfs.FlagSet("leader election"))
 	utilfeature.DefaultMutableFeatureGate.AddFlag(nfs.FlagSet("feature gate"))
-
-	// TODO(RainbowMango): move it to genericoptions before next flag comes.
-	mfs := nfs.FlagSet("metrics")
-	mfs.StringVar(&o.ShowHiddenMetricsForVersion, "show-hidden-metrics-for-version", o.ShowHiddenMetricsForVersion,
-		"The previous version for which you want to show hidden metrics. "+
-			"Only the previous minor version is meaningful, other values will not be allowed. "+
-			"Accepted format of version is <major>.<minor>, e.g.: '1.16'. "+
-			"The purpose of this format is make sure you have the opportunity to notice if the next release hides additional metrics, "+
-			"rather than being surprised when they are permanently removed in the release after that.")
+	o.Metrics.AddFlags(nfs.FlagSet("metrics"))
+	o.Logs.AddFlags(nfs.FlagSet("logs"))
 
 	return nfs
 }
@@ -180,10 +176,8 @@ func (o *Options) ApplyTo(c *schedulerappconfig.Config) error {
 	if len(o.ConfigFile) == 0 {
 		c.ComponentConfig = o.ComponentConfig
 
-		// only apply deprecated flags if no config file is loaded (this is the old behaviour).
-		if err := o.Deprecated.ApplyTo(&c.ComponentConfig); err != nil {
-			return err
-		}
+		// apply deprecated flags if no config file is loaded (this is the old behaviour).
+		o.Deprecated.ApplyTo(&c.ComponentConfig)
 		if err := o.CombinedInsecureServing.ApplyTo(c, &c.ComponentConfig); err != nil {
 			return err
 		}
@@ -196,11 +190,18 @@ func (o *Options) ApplyTo(c *schedulerappconfig.Config) error {
 			return err
 		}
 
-		// use the loaded config file only, with the exception of --address and --port. This means that
-		// none of the deprecated flags in o.Deprecated are taken into consideration. This is the old
-		// behaviour of the flags we have to keep.
 		c.ComponentConfig = *cfg
 
+		// apply any deprecated Policy flags, if applicable
+		o.Deprecated.ApplyAlgorithmSourceTo(&c.ComponentConfig)
+
+		// if the user has set CC profiles and is trying to use a Policy config, error out
+		// these configs are no longer merged and they should not be used simultaneously
+		if !emptySchedulerProfileConfig(c.ComponentConfig.Profiles) && c.ComponentConfig.AlgorithmSource.Policy != nil {
+			return fmt.Errorf("cannot set a Plugin config and Policy config")
+		}
+
+		// use the loaded config file only, with the exception of --address and --port.
 		if err := o.CombinedInsecureServing.ApplyToFromLoadedConfig(c, &c.ComponentConfig); err != nil {
 			return err
 		}
@@ -217,11 +218,18 @@ func (o *Options) ApplyTo(c *schedulerappconfig.Config) error {
 			return err
 		}
 	}
-	if len(o.ShowHiddenMetricsForVersion) > 0 {
-		metrics.SetShowHidden()
-	}
-
+	o.Metrics.Apply()
+	o.Logs.Apply()
 	return nil
+}
+
+// emptySchedulerProfileConfig returns true if the list of profiles passed to it contains only
+// the "default-scheduler" profile with no plugins or pluginconfigs registered
+// (this is the default empty profile initialized by defaults.go)
+func emptySchedulerProfileConfig(profiles []kubeschedulerconfig.KubeSchedulerProfile) bool {
+	return len(profiles) == 1 &&
+		len(profiles[0].PluginConfig) == 0 &&
+		profiles[0].Plugins == nil
 }
 
 // Validate validates all the required options.
@@ -236,7 +244,8 @@ func (o *Options) Validate() []error {
 	errs = append(errs, o.Authentication.Validate()...)
 	errs = append(errs, o.Authorization.Validate()...)
 	errs = append(errs, o.Deprecated.Validate()...)
-	errs = append(errs, metrics.ValidateShowHiddenMetricsVersion(o.ShowHiddenMetricsForVersion)...)
+	errs = append(errs, o.Metrics.Validate()...)
+	errs = append(errs, o.Logs.Validate()...)
 
 	return errs
 }
@@ -254,31 +263,33 @@ func (o *Options) Config() (*schedulerappconfig.Config, error) {
 		return nil, err
 	}
 
-	// Prepare kube clients.
-	client, leaderElectionClient, eventClient, err := createClients(c.ComponentConfig.ClientConnection, o.Master, c.ComponentConfig.LeaderElection.RenewDeadline.Duration)
+	// Prepare kube config.
+	kubeConfig, err := createKubeConfig(c.ComponentConfig.ClientConnection, o.Master)
 	if err != nil {
 		return nil, err
 	}
 
-	coreBroadcaster := record.NewBroadcaster()
+	// Prepare kube clients.
+	client, eventClient, err := createClients(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	c.EventBroadcaster = events.NewEventBroadcasterAdapter(eventClient)
 
 	// Set up leader election if enabled.
 	var leaderElectionConfig *leaderelection.LeaderElectionConfig
 	if c.ComponentConfig.LeaderElection.LeaderElect {
 		// Use the scheduler name in the first profile to record leader election.
-		coreRecorder := coreBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: c.ComponentConfig.Profiles[0].SchedulerName})
-		leaderElectionConfig, err = makeLeaderElectionConfig(c.ComponentConfig.LeaderElection, leaderElectionClient, coreRecorder)
+		coreRecorder := c.EventBroadcaster.DeprecatedNewLegacyRecorder(c.ComponentConfig.Profiles[0].SchedulerName)
+		leaderElectionConfig, err = makeLeaderElectionConfig(c.ComponentConfig.LeaderElection, kubeConfig, coreRecorder)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	c.Client = client
-	c.InformerFactory = informers.NewSharedInformerFactory(client, 0)
-	c.PodInformer = scheduler.NewPodInformer(client, 0)
-	c.EventClient = eventClient.EventsV1beta1()
-	c.CoreEventClient = eventClient.CoreV1()
-	c.CoreBroadcaster = coreBroadcaster
+	c.InformerFactory = scheduler.NewInformerFactory(client, 0)
 	c.LeaderElection = leaderElectionConfig
 
 	return c, nil
@@ -286,7 +297,7 @@ func (o *Options) Config() (*schedulerappconfig.Config, error) {
 
 // makeLeaderElectionConfig builds a leader election configuration. It will
 // create a new resource lock associated with the configuration.
-func makeLeaderElectionConfig(config kubeschedulerconfig.KubeSchedulerLeaderElectionConfiguration, client clientset.Interface, recorder record.EventRecorder) (*leaderelection.LeaderElectionConfig, error) {
+func makeLeaderElectionConfig(config componentbaseconfig.LeaderElectionConfiguration, kubeConfig *restclient.Config, recorder record.EventRecorder) (*leaderelection.LeaderElectionConfig, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, fmt.Errorf("unable to get hostname: %v", err)
@@ -294,15 +305,15 @@ func makeLeaderElectionConfig(config kubeschedulerconfig.KubeSchedulerLeaderElec
 	// add a uniquifier so that two processes on the same host don't accidentally both become active
 	id := hostname + "_" + string(uuid.NewUUID())
 
-	rl, err := resourcelock.New(config.ResourceLock,
+	rl, err := resourcelock.NewFromKubeconfig(config.ResourceLock,
 		config.ResourceNamespace,
 		config.ResourceName,
-		client.CoreV1(),
-		client.CoordinationV1(),
 		resourcelock.ResourceLockConfig{
 			Identity:      id,
 			EventRecorder: recorder,
-		})
+		},
+		kubeConfig,
+		config.RenewDeadline.Duration)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create resource lock: %v", err)
 	}
@@ -317,11 +328,11 @@ func makeLeaderElectionConfig(config kubeschedulerconfig.KubeSchedulerLeaderElec
 	}, nil
 }
 
-// createClients creates a kube client and an event client from the given config and masterOverride.
+// createKubeConfig creates a kubeConfig from the given config and masterOverride.
 // TODO remove masterOverride when CLI flags are removed.
-func createClients(config componentbaseconfig.ClientConnectionConfiguration, masterOverride string, timeout time.Duration) (clientset.Interface, clientset.Interface, clientset.Interface, error) {
+func createKubeConfig(config componentbaseconfig.ClientConnectionConfiguration, masterOverride string) (*restclient.Config, error) {
 	if len(config.Kubeconfig) == 0 && len(masterOverride) == 0 {
-		klog.Warningf("Neither --kubeconfig nor --master was specified. Using default API client. This might not work.")
+		klog.Warning("Neither --kubeconfig nor --master was specified. Using default API client. This might not work.")
 	}
 
 	// This creates a client, first loading any specified kubeconfig
@@ -330,33 +341,29 @@ func createClients(config componentbaseconfig.ClientConnectionConfiguration, mas
 		&clientcmd.ClientConfigLoadingRules{ExplicitPath: config.Kubeconfig},
 		&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: masterOverride}}).ClientConfig()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
 	kubeConfig.DisableCompression = true
 	kubeConfig.AcceptContentTypes = config.AcceptContentTypes
 	kubeConfig.ContentType = config.ContentType
 	kubeConfig.QPS = config.QPS
-	//TODO make config struct use int instead of int32?
 	kubeConfig.Burst = int(config.Burst)
 
+	return kubeConfig, nil
+}
+
+// createClients creates a kube client and an event client from the given kubeConfig
+func createClients(kubeConfig *restclient.Config) (clientset.Interface, clientset.Interface, error) {
 	client, err := clientset.NewForConfig(restclient.AddUserAgent(kubeConfig, "scheduler"))
 	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	// shallow copy, do not modify the kubeConfig.Timeout.
-	restConfig := *kubeConfig
-	restConfig.Timeout = timeout
-	leaderElectionClient, err := clientset.NewForConfig(restclient.AddUserAgent(&restConfig, "leader-election"))
-	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	eventClient, err := clientset.NewForConfig(kubeConfig)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
-	return client, leaderElectionClient, eventClient, nil
+	return client, eventClient, nil
 }
