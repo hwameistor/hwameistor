@@ -20,6 +20,16 @@ function build_image(){
 	done
 }
 
+function build_image_arm64(){
+	echo "Build hwameistor image"
+	export IMAGE_TAG=${IMAGE_TAG} && make arm-image
+
+	for module in ${MODULES[@]}
+	do
+		docker push ${IMAGE_REGISTRY}/${module}:${IMAGE_TAG}
+	done
+}
+
 function prepare_install_params() {
 	# FIXME: image tags should be passed by helm install params
 	sed -i '/.*ghcr.io*/c\ \ hwameistorImageRegistry: '$ImageRegistry'' helm/hwameistor/values.yaml
@@ -39,7 +49,13 @@ function prepare_install_params() {
 }
 
 # Step1: build all images tagged with <image_registry>/<module>:<date>
-build_image
+if [ ${E2E_VERSION} == "ARM" ]; then
+  build_image_arm64
+else
+  build_image
+fi
+
+
 
 # Step2: prepare install params included image tag or other install options
 prepare_install_params
