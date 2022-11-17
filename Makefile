@@ -29,6 +29,11 @@ compile: compile_ldm compile_ls compile_scheduler compile_admission compile_evic
 .PHONY: image
 image: build_ldm_image build_ls_image build_scheduler_image build_admission_image build_evictor_image
 
+
+.PHONY: arm-image
+image: build_ldm_image_arm64 build_ls_image_arm64 build_scheduler_image_arm64 build_admission_image_arm64 build_evictor_image_arm64
+
+
 .PHONY: release
 release: release_ldm release_ls release_scheduler release_admission release_evictor
 
@@ -126,6 +131,39 @@ build_evictor_image:
 	@echo "Build evictor image ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG}"
 	${DOCKER_MAKE_CMD} make compile_evictor
 	docker build -t ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG} -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+
+.PHONY: build_ldm_image_arm64
+build_ldm_image:
+	@echo "Build local-disk-manager image ${LDM_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_ldm_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${LDM_IMAGE_NAME}:${RELEASE_TAG} -f ${LDM_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_ls_image_arm64
+build_ls_image:
+	@echo "Build local-storage image ${LS_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_ls_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${LS_IMAGE_NAME}:${RELEASE_TAG} -f ${LS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_scheduler_image_arm64
+build_scheduler_image:
+	@echo "Build scheduler image ${SCHEDULER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_scheduler_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${SCHEDULER_IMAGE_NAME}:${RELEASE_TAG} -f ${SCHEDULER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_admission_image_arm64
+build_admission_image:
+	@echo "Build admission image ${ADMISSION_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_admission_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${ADMISSION_IMAGE_NAME}:${RELEASE_TAG} -f ${ADMISSION_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_evictor_image_arm64
+build_evictor_image:
+	@echo "Build evictor image ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_evictor_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${EVICTOR_IMAGE_NAME}:${RELEASE_TAG} -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+
 
 .PHONY: apis
 apis:
