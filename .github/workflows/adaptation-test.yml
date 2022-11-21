@@ -9,6 +9,7 @@ on:
         default: 'warning'
         type: choice
         options:
+          - ALL
           - k8s1.25
           - k8s1.23
           - centos7.6
@@ -19,7 +20,7 @@ on:
 
 jobs:
   k8s1_25-test:
-    if: ${{ inputs.k8s-version == 'k8s1.25' }}
+    if: ${{ inputs.k8s-version == 'k8s1.25' || inputs.k8s-version == 'ALL'  }}
     runs-on: ["e2e"]
     timeout-minutes: 180
     steps:
@@ -37,7 +38,7 @@ jobs:
           E2E_TESTING_LEVEL: ${{ inputs.k8s-version }}
         run: make e2e-test
   k8s1_23-test:
-    if: ${{ inputs.k8s-version == 'k8s1.23' }}
+    if: ${{ inputs.k8s-version == 'k8s1.23'|| inputs.k8s-version == 'ALL'   }}
     runs-on: [ "vsphere" ]
     timeout-minutes: 180
     steps:
@@ -55,7 +56,7 @@ jobs:
           E2E_TESTING_LEVEL: ${{ inputs.k8s-version }}
         run: make e2e-test
   c81-test:
-    if: ${{ inputs.k8s-version == 'centos8.1' }}
+    if: ${{ inputs.k8s-version == 'centos8.1' || inputs.k8s-version == 'ALL'  }}
     runs-on: ["e2e"]
     timeout-minutes: 180
     steps:
@@ -73,7 +74,7 @@ jobs:
           E2E_TESTING_LEVEL: "k8sc81"
         run: make e2e-test
   u2204-test:
-    if: ${{ inputs.k8s-version == 'ubuntu2204' }}
+    if: ${{ inputs.k8s-version == 'ubuntu2204' || inputs.k8s-version == 'ALL'   }}
     runs-on: ["e2e"]
     timeout-minutes: 180
     steps:
@@ -91,7 +92,7 @@ jobs:
           E2E_TESTING_LEVEL: "k8su2204"
         run: make e2e-test
   kylin10_arm-test:
-    if: ${{ inputs.k8s-version == 'kylin10_arm' }}
+    if: ${{ inputs.k8s-version == 'kylin10_arm' || inputs.k8s-version == 'ALL'  }}
     runs-on: ["e2e"]
     timeout-minutes: 180
     steps:
@@ -110,7 +111,7 @@ jobs:
           E2E_VERSION: "ARM"
         run: make e2e-test
   centos7_6_offline-test:
-    if: ${{ inputs.k8s-version == 'centos7.9_offline' }}
+    if: ${{ inputs.k8s-version == 'centos7.9_offline' || inputs.k8s-version == 'ALL'  }}
     runs-on: ["e2e"]
     timeout-minutes: 180
     steps:
