@@ -88,7 +88,9 @@ func (r *ReconcileLocalDiskClaim) Reconcile(_ context.Context, req reconcile.Req
 
 	r.diskClaimHandler.For(diskClaim)
 	switch diskClaim.Status.Status {
-	case v1alpha1.DiskClaimStatusEmpty, v1alpha1.LocalDiskClaimStatusPending:
+	case v1alpha1.DiskClaimStatusEmpty:
+		err = r.processDiskClaimEmpty(diskClaim)
+	case v1alpha1.LocalDiskClaimStatusPending:
 		err = r.processDiskClaimPending(diskClaim)
 	case v1alpha1.LocalDiskClaimStatusBound:
 		err = r.processDiskClaimBound(diskClaim)
@@ -102,6 +104,15 @@ func (r *ReconcileLocalDiskClaim) Reconcile(_ context.Context, req reconcile.Req
 	}
 
 	return result, err
+}
+
+// processDiskClaimBound check need to assign new disk or not
+func (r *ReconcileLocalDiskClaim) processDiskClaimEmpty(diskClaim *v1alpha1.LocalDiskClaim) error {
+	logCtx := log.Fields{"name": diskClaim.Name}
+	log.WithFields(logCtx).Info("Start to processing Empty localdiskclaim")
+
+	r.diskClaimHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusPending)
+	return r.diskClaimHandler.UpdateClaimStatus()
 }
 
 // processDiskClaimPending assign free disks for this request according claim.spec.description

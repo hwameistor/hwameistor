@@ -52,6 +52,11 @@ spec:
                       etc.,
                     type: string
                 type: object
+              diskAssignCompleted:
+                description: DiskAssignCompleted represents that if the disk allocation
+                  has been completed, if set true means there is no need to search
+                  for available disks in the cluster
+                type: boolean
               diskRefs:
                 description: DiskRefs represents which disks are assigned to the LocalDiskClaim
                 items:
@@ -131,4 +136,5 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}
+    subresources:
+      status: {}

@@ -86,12 +86,14 @@ func (ldHandler *Handler) UnClaimed() bool {
 
 // BoundTo assign disk to ldc
 func (ldHandler *Handler) BoundTo(ldc *v1alpha1.LocalDiskClaim) error {
-	if ldc.GetName() == ldHandler.localDisk.Spec.ClaimRef.Name {
+	// If this disk has already bound to the ldc, return directly
+	if ldHandler.localDisk.Spec.ClaimRef != nil &&
+		ldc.GetName() == ldHandler.localDisk.Spec.ClaimRef.Name {
 		return nil
 	}
 
-	ldcRef, _ := reference.GetReference(nil, ldc)
 	// Update the disk.spec.ClaimRef field to indicate that the disk is claimed
+	ldcRef, _ := reference.GetReference(nil, ldc)
 	ldHandler.localDisk.Spec.ClaimRef = ldcRef
 
 	return ldHandler.Update()

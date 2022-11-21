@@ -9,10 +9,14 @@ type Phase string
 type LocalDiskEventReason = string
 
 const (
-	LocalDiskEventReasonBound        LocalDiskEventReason = "LocalDiskBound"
-	LocalDiskEventReasonBoundFail    LocalDiskEventReason = "LocalDiskBoundFail"
-	LocalDiskEventReasonReserved     LocalDiskEventReason = "LocalDiskReserved"
-	LocalDiskEventReasonReservedFail LocalDiskEventReason = "LocalDiskReservedFail"
+	LocalDiskEventReasonAvailable     LocalDiskEventReason = "LocalDiskAvailable"
+	LocalDiskEventReasonAvailableFail LocalDiskEventReason = "LocalDiskAvailableFail"
+	LocalDiskEventReasonRelease       LocalDiskEventReason = "LocalDiskRelease"
+	LocalDiskEventReasonReleaseFail   LocalDiskEventReason = "LocalDiskReleaseFail"
+	LocalDiskEventReasonBound         LocalDiskEventReason = "LocalDiskBound"
+	LocalDiskEventReasonBoundFail     LocalDiskEventReason = "LocalDiskBoundFail"
+	LocalDiskEventReasonReserved      LocalDiskEventReason = "LocalDiskReserved"
+	LocalDiskEventReasonReservedFail  LocalDiskEventReason = "LocalDiskReservedFail"
 )
 
 type LocalDiskClaimEventReason = string

@@ -116,7 +116,8 @@ func (ldcHandler *Handler) UpdateBoundDiskRef() error {
 	}
 
 	for _, disk := range diskList.Items {
-		if disk.Spec.ClaimRef.Name == ldcHandler.diskClaim.GetName() {
+		if disk.Spec.ClaimRef != nil &&
+			disk.Spec.ClaimRef.Name == ldcHandler.diskClaim.GetName() {
 			ldcHandler.AppendDiskRef(&disk)
 		}
 	}
