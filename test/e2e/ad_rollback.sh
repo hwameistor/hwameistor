@@ -24,7 +24,7 @@ fi
 
 
 
-if [ $1 == "centos7.6offline" ]; then
+if [ $1 == "centos7.9offline" ]; then
   export GOVC_RESOURCE_POOL="kylin10arm"
   export hosts="fupan-ad-offline"
   export snapshot="ad"
