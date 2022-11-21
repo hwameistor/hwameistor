@@ -10,10 +10,13 @@ import (
 )
 
 // LocalVolumeConvertLister helps list LocalVolumeConverts.
+// All objects returned here must be treated as read-only.
 type LocalVolumeConvertLister interface {
 	// List lists all LocalVolumeConverts in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.LocalVolumeConvert, err error)
 	// Get retrieves the LocalVolumeConvert from the index for a given name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.LocalVolumeConvert, error)
 	LocalVolumeConvertListerExpansion
 }

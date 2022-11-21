@@ -10,10 +10,13 @@ import (
 )
 
 // LocalDiskNodeLister helps list LocalDiskNodes.
+// All objects returned here must be treated as read-only.
 type LocalDiskNodeLister interface {
 	// List lists all LocalDiskNodes in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.LocalDiskNode, err error)
 	// Get retrieves the LocalDiskNode from the index for a given name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.LocalDiskNode, error)
 	LocalDiskNodeListerExpansion
 }

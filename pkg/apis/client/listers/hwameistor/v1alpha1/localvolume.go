@@ -10,10 +10,13 @@ import (
 )
 
 // LocalVolumeLister helps list LocalVolumes.
+// All objects returned here must be treated as read-only.
 type LocalVolumeLister interface {
 	// List lists all LocalVolumes in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.LocalVolume, err error)
 	// Get retrieves the LocalVolume from the index for a given name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.LocalVolume, error)
 	LocalVolumeListerExpansion
 }

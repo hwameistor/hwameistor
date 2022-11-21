@@ -28,14 +28,14 @@ type localDiskInformer struct {
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 }
 
-// NewLocalDiskInformer constructs a new informer for localDisk type.
+// NewLocalDiskInformer constructs a new informer for LocalDisk type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
 func NewLocalDiskInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	return NewFilteredLocalDiskInformer(client, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredLocalDiskInformer constructs a new informer for localDisk type.
+// NewFilteredLocalDiskInformer constructs a new informer for LocalDisk type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredLocalDiskInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {

@@ -10,10 +10,13 @@ import (
 )
 
 // LocalDiskClaimLister helps list LocalDiskClaims.
+// All objects returned here must be treated as read-only.
 type LocalDiskClaimLister interface {
 	// List lists all LocalDiskClaims in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.LocalDiskClaim, err error)
 	// Get retrieves the LocalDiskClaim from the index for a given name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.LocalDiskClaim, error)
 	LocalDiskClaimListerExpansion
 }

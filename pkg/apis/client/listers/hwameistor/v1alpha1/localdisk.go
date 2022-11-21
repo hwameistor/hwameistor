@@ -10,10 +10,13 @@ import (
 )
 
 // LocalDiskLister helps list LocalDisks.
+// All objects returned here must be treated as read-only.
 type LocalDiskLister interface {
 	// List lists all LocalDisks in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.LocalDisk, err error)
-	// Get retrieves the localDisk from the index for a given name.
+	// Get retrieves the LocalDisk from the index for a given name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.LocalDisk, error)
 	LocalDiskListerExpansion
 }
@@ -36,7 +39,7 @@ func (s *localDiskLister) List(selector labels.Selector) (ret []*v1alpha1.LocalD
 	return ret, err
 }
 
-// Get retrieves the localDisk from the index for a given name.
+// Get retrieves the LocalDisk from the index for a given name.
 func (s *localDiskLister) Get(name string) (*v1alpha1.LocalDisk, error) {
 	obj, exists, err := s.indexer.GetByKey(name)
 	if err != nil {

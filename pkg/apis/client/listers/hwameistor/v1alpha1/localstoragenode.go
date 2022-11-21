@@ -10,10 +10,13 @@ import (
 )
 
 // LocalStorageNodeLister helps list LocalStorageNodes.
+// All objects returned here must be treated as read-only.
 type LocalStorageNodeLister interface {
 	// List lists all LocalStorageNodes in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.LocalStorageNode, err error)
 	// Get retrieves the LocalStorageNode from the index for a given name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.LocalStorageNode, error)
 	LocalStorageNodeListerExpansion
 }
