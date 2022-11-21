@@ -130,8 +130,9 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimPending(diskClaim *v1alpha1.Lo
 				"Assign free disk fail, due to error: %v", err)
 			log.WithError(err).WithFields(logCtx).Errorf("Assign free disk for locadiskclaim %v/%v fail, "+
 				"will try after %v", diskClaim.GetNamespace(), diskClaim.GetName(), RequeueInterval)
+			return err
 		}
-		return err
+		r.diskClaimHandler.SetupDiskClaimCompleted()
 	}
 
 	// Update claim.spec.diskRefs according to disk status

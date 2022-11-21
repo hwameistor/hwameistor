@@ -102,8 +102,7 @@ func (ldcHandler *Handler) AssignFreeDisk() error {
 	}
 
 	log.Infof("Disk %v has been assigned to %v", assignedDisks, ldc.GetName())
-	ldcHandler.SetupDiskClaimCompleted()
-	return ldcHandler.UpdateClaimSpec()
+	return nil
 }
 
 // UpdateBoundDiskRef update all disk bounded by the diskClaim to claim.spec.disks

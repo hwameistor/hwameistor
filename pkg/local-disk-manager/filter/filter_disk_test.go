@@ -89,16 +89,16 @@ func TestLocalDiskFilter(t *testing.T) {
 			WantDiskUnclaimed: true,
 			disk:              GenFakeLocalDiskObject(),
 			setProperty: func(disk *v1alpha1.LocalDisk) {
-				disk.Status.State = v1alpha1.LocalDiskUnclaimed
+				disk.Status.State = v1alpha1.LocalDiskAvailable
 			},
 		},
 		{
-			Description:       "Should return false, Has Claimed Disk",
+			Description:       "Should return false, Has Bound Disk",
 			WantFilterResult:  false,
 			WantDiskUnclaimed: true,
 			disk:              GenFakeLocalDiskObject(),
 			setProperty: func(disk *v1alpha1.LocalDisk) {
-				disk.Status.State = v1alpha1.LocalDiskClaimed
+				disk.Status.State = v1alpha1.LocalDiskBound
 			},
 		},
 		{
@@ -167,7 +167,7 @@ func TestLocalDiskFilter(t *testing.T) {
 			// set test property
 			testCase.setProperty(testCase.disk)
 
-			filter := NewLocalDiskFilter(*testCase.disk)
+			filter := NewLocalDiskFilter(testCase.disk)
 			filter.Init()
 
 			if testCase.WantCapacity > 0 {
@@ -236,7 +236,7 @@ func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 		State: v1alpha1.LocalDiskActive,
 	}
 
-	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskUnclaimed}
+	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskAvailable}
 
 	ld.TypeMeta = TypeMeta
 	ld.ObjectMeta = ObjectMata

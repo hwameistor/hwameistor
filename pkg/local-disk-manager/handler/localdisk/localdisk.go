@@ -39,7 +39,7 @@ func (ldHandler *Handler) GetLocalDisk(key client.ObjectKey) (*v1alpha1.LocalDis
 func (ldHandler *Handler) GetLocalDiskWithLabels(labels labels.Set) (*v1alpha1.LocalDiskList, error) {
 	list := &v1alpha1.LocalDiskList{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "localDisk",
+			Kind:       "LocalDisk",
 			APIVersion: "v1alpha1",
 		},
 	}
@@ -49,7 +49,7 @@ func (ldHandler *Handler) GetLocalDiskWithLabels(labels labels.Set) (*v1alpha1.L
 func (ldHandler *Handler) ListLocalDisk() (*v1alpha1.LocalDiskList, error) {
 	list := &v1alpha1.LocalDiskList{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "localDisk",
+			Kind:       "LocalDisk",
 			APIVersion: "v1alpha1",
 		},
 	}
@@ -61,7 +61,7 @@ func (ldHandler *Handler) ListLocalDisk() (*v1alpha1.LocalDiskList, error) {
 func (ldHandler *Handler) ListNodeLocalDisk(node string) (*v1alpha1.LocalDiskList, error) {
 	list := &v1alpha1.LocalDiskList{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "localDisk",
+			Kind:       "LocalDisk",
 			APIVersion: "v1alpha1",
 		},
 	}

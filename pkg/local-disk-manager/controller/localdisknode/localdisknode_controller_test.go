@@ -34,7 +34,7 @@ var (
 	vendorVMware                 = "VMware"
 	proSCSI                      = "scsi"
 	apiversion                   = "hwameistor.io/v1alpha1"
-	localDiskKind                = "localDisk"
+	localDiskKind                = "LocalDisk"
 	localDiskNodeKind            = "LocalDiskNode"
 	localDiskClaimKind           = "LocalDiskClaim"
 	cap100G                int64 = 100 * 1024 * 1024 * 1024
@@ -55,7 +55,7 @@ func TestReconcileLocalDiskNode_Reconcile(t *testing.T) {
 
 	// create a group disk with same nodeName and same state
 	// fakedevPath is random value
-	generateGroupFreeDisk := func(nodeName string, state v1alpha1.LocalDiskClaimState, count int) []*v1alpha1.LocalDisk {
+	generateGroupFreeDisk := func(nodeName string, state v1alpha1.LocalDiskState, count int) []*v1alpha1.LocalDisk {
 		var fakedisks []*v1alpha1.LocalDisk
 		for i := 0; i < count; i++ {
 			devPath := time.Now().Format(time.RFC3339Nano)
@@ -130,7 +130,7 @@ func TestReconcileLocalDiskNode_Reconcile(t *testing.T) {
 			postReconcile: cleanLocalDiskResource,
 			freeNode:      generateFreeDiskNode("node1"),
 			freeDisks: append(
-				generateGroupFreeDisk("node1", v1alpha1.LocalDiskUnclaimed, 1),
+				generateGroupFreeDisk("node1", v1alpha1.LocalDiskAvailable, 1),
 			),
 			wantFreeDiskCount: 1,
 		},
@@ -140,8 +140,8 @@ func TestReconcileLocalDiskNode_Reconcile(t *testing.T) {
 			postReconcile: cleanLocalDiskResource,
 			freeNode:      generateFreeDiskNode("node2"),
 			freeDisks: append(
-				generateGroupFreeDisk("node1", v1alpha1.LocalDiskUnclaimed, 3),
-				generateGroupFreeDisk("node2", v1alpha1.LocalDiskUnclaimed, 2)...,
+				generateGroupFreeDisk("node1", v1alpha1.LocalDiskAvailable, 3),
+				generateGroupFreeDisk("node2", v1alpha1.LocalDiskAvailable, 2)...,
 			),
 			wantFreeDiskCount: 2,
 		},
@@ -151,8 +151,8 @@ func TestReconcileLocalDiskNode_Reconcile(t *testing.T) {
 			postReconcile: cleanLocalDiskResource,
 			freeNode:      generateFreeDiskNode("node1"),
 			freeDisks: append(
-				generateGroupFreeDisk("node1", v1alpha1.LocalDiskClaimed, 3),
-				generateGroupFreeDisk("node1", v1alpha1.LocalDiskUnclaimed, 2)...,
+				generateGroupFreeDisk("node1", v1alpha1.LocalDiskBound, 3),
+				generateGroupFreeDisk("node1", v1alpha1.LocalDiskAvailable, 2)...,
 			),
 			wantFreeDiskCount: 2,
 		},
@@ -162,8 +162,8 @@ func TestReconcileLocalDiskNode_Reconcile(t *testing.T) {
 			postReconcile: cleanLocalDiskResource,
 			freeNode:      generateFreeDiskNode("node1"),
 			freeDisks: append(
-				generateGroupFreeDisk("node1", v1alpha1.LocalDiskClaimed, 3),
-				generateGroupFreeDisk("node2", v1alpha1.LocalDiskUnclaimed, 2)...,
+				generateGroupFreeDisk("node1", v1alpha1.LocalDiskBound, 3),
+				generateGroupFreeDisk("node2", v1alpha1.LocalDiskAvailable, 2)...,
 			),
 			wantFreeDiskCount: 0,
 		},
@@ -250,7 +250,7 @@ func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 		State: v1alpha1.LocalDiskActive,
 	}
 
-	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskUnclaimed}
+	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskAvailable}
 
 	ld.TypeMeta = TypeMeta
 	ld.ObjectMeta = ObjectMata

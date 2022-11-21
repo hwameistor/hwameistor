@@ -2,6 +2,7 @@ package localdiskclaim
 
 import (
 	"context"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskclaim"
 	"testing"
 	"time"
 
@@ -29,7 +30,7 @@ var (
 	vendorVMware                 = "VMware"
 	proSCSI                      = "scsi"
 	apiversion                   = "hwameistor.io/v1alpha1"
-	localDiskKind                = "localDisk"
+	localDiskKind                = "LocalDisk"
 	localDiskClaimKind           = "LocalDiskClaim"
 	cap100G                int64 = 100 * 1024 * 1024 * 1024
 	cap10G                 int64 = 10 * 1024 * 1024 * 1024
@@ -41,9 +42,10 @@ func TestLocalDiskClaimController_FilterByDiskCapacity(t *testing.T) {
 
 	// Create a Reconcile for LocalDiskClaim
 	r := ReconcileLocalDiskClaim{
-		Client:   cli,
-		Scheme:   s,
-		Recorder: fakeRecorder,
+		Client:           cli,
+		Scheme:           s,
+		Recorder:         fakeRecorder,
+		diskClaimHandler: localdiskclaim.NewLocalDiskClaimHandler(cli, fakeRecorder),
 	}
 
 	testcases := []struct {
@@ -103,9 +105,10 @@ func TestReconcileLocalDiskClaim_Reconcile(t *testing.T) {
 	cli, s := CreateFakeClient()
 	// Create a Reconcile for LocalDiskClaim
 	r := ReconcileLocalDiskClaim{
-		Client:   cli,
-		Scheme:   s,
-		Recorder: fakeRecorder,
+		Client:           cli,
+		Scheme:           s,
+		Recorder:         fakeRecorder,
+		diskClaimHandler: localdiskclaim.NewLocalDiskClaimHandler(cli, fakeRecorder),
 	}
 
 	// Create localDisk
@@ -145,9 +148,10 @@ func TestReconcileDiskClaim_Reconcile_WhenDiskBoundAlready(t *testing.T) {
 	cli, s := CreateFakeClient()
 	// Create a Reconcile for LocalDiskClaim
 	r := ReconcileLocalDiskClaim{
-		Client:   cli,
-		Scheme:   s,
-		Recorder: fakeRecorder,
+		Client:           cli,
+		Scheme:           s,
+		Recorder:         fakeRecorder,
+		diskClaimHandler: localdiskclaim.NewLocalDiskClaimHandler(cli, fakeRecorder),
 	}
 
 	// Create localDisk
@@ -182,8 +186,8 @@ func TestReconcileDiskClaim_Reconcile_WhenDiskBoundAlready(t *testing.T) {
 	// Checkout claim status, it should be bound
 	r.CheckLocalDiskClaimIsBound(t, claim, true)
 
-	// KEY_TEST: Set claim diskRef empty and status empty
-	claim.Status.Status = v1alpha1.DiskClaimStatusEmpty
+	// KEY_TEST: Set claim diskRef empty and status pending
+	claim.Status.Status = v1alpha1.LocalDiskClaimStatusPending
 	claim.Spec.DiskRefs = nil
 	err = r.Update(context.Background(), claim)
 	if err != nil {
@@ -250,15 +254,12 @@ func (r *ReconcileLocalDiskClaim) ClaimLocalDisk(t *testing.T,
 	}
 
 	// Reconcile request
-	_, err = r.Reconcile(context.TODO(), req)
-	if err != nil {
-		t.Errorf("Reconcile fail %v", err)
-	}
+	_, _ = r.Reconcile(context.TODO(), req)
 
 	// Update status
 	err = r.Client.Get(context.Background(), req.NamespacedName, claim)
 	if err != nil {
-		t.Errorf("Get LocalDiskClaim fail %v", err)
+		t.Fatalf("Get LocalDiskClaim fail %v", err)
 	}
 }
 
@@ -327,7 +328,7 @@ func GenFakeLocalDiskClaimObject() *v1alpha1.LocalDiskClaim {
 }
 
 // GenFakeLocalDiskObject Create disk
-// By default, disk can be claimed by the sample calim
+// By default, disk can be claimed by the sample claim
 func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 	ld := &v1alpha1.LocalDisk{}
 
@@ -361,7 +362,7 @@ func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 		State: v1alpha1.LocalDiskActive,
 	}
 
-	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskUnclaimed}
+	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskAvailable}
 
 	ld.TypeMeta = TypeMeta
 	ld.ObjectMeta = ObjectMata

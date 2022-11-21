@@ -2,6 +2,7 @@ package localdisk
 
 import (
 	"context"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
 	"testing"
 	"time"
 
@@ -32,7 +33,7 @@ var (
 	vendorVMware                 = "VMware"
 	proSCSI                      = "scsi"
 	apiversion                   = "hwameistor.io/v1alpha1"
-	localDiskKind                = "localDisk"
+	localDiskKind                = "LocalDisk"
 	localDiskClaimKind           = "LocalDiskClaim"
 	cap100G                int64 = 100 * 1024 * 1024 * 1024
 	cap10G                 int64 = 10 * 1024 * 1024 * 1024
@@ -44,9 +45,10 @@ func TestReconcileLocalDisk_Reconcile(t *testing.T) {
 
 	// reconcile object
 	r := ReconcileLocalDisk{
-		Client:   cli,
-		Scheme:   s,
-		Recorder: fakeRecorder,
+		Client:      cli,
+		Scheme:      s,
+		Recorder:    fakeRecorder,
+		diskHandler: localdisk.NewLocalDiskHandler(cli, fakeRecorder),
 	}
 
 	// set a LocalDiskClaim reference to a localDisk
@@ -63,7 +65,7 @@ func TestReconcileLocalDisk_Reconcile(t *testing.T) {
 		ld          *v1alpha1.LocalDisk
 		ldc         *v1alpha1.LocalDiskClaim
 		pre         func(*v1alpha1.LocalDisk, *v1alpha1.LocalDiskClaim)
-		wantState   v1alpha1.LocalDiskClaimState
+		wantState   v1alpha1.LocalDiskState
 		post        func(client.Client, *v1alpha1.LocalDisk, *v1alpha1.LocalDiskClaim) error
 	}{
 		{
@@ -71,7 +73,7 @@ func TestReconcileLocalDisk_Reconcile(t *testing.T) {
 			ld:          GenFakeLocalDiskObject(),
 			ldc:         GenFakeLocalDiskClaimObject(),
 			pre:         setClaimRef,
-			wantState:   v1alpha1.LocalDiskClaimed,
+			wantState:   v1alpha1.LocalDiskBound,
 			post:        cleanResource,
 		},
 		{
@@ -79,7 +81,7 @@ func TestReconcileLocalDisk_Reconcile(t *testing.T) {
 			ld:          GenFakeLocalDiskObject(),
 			ldc:         GenFakeLocalDiskClaimObject(),
 			pre:         doNothing,
-			wantState:   v1alpha1.LocalDiskUnclaimed,
+			wantState:   v1alpha1.LocalDiskAvailable,
 			post:        cleanResource,
 		},
 	}
@@ -179,7 +181,7 @@ func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 		State: v1alpha1.LocalDiskActive,
 	}
 
-	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskUnclaimed}
+	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskEmpty}
 
 	ld.TypeMeta = TypeMeta
 	ld.ObjectMeta = ObjectMata

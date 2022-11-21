@@ -29,7 +29,7 @@ var (
 	vendorVMware                 = "VMware"
 	proSCSI                      = "scsi"
 	apiversion                   = "hwameistor.io/v1alpha1"
-	localDiskKind                = "localDisk"
+	localDiskKind                = "LocalDisk"
 	localDiskNodeKind            = "LocalDiskNode"
 	localDiskClaimKind           = "LocalDiskClaim"
 	cap100G                int64 = 100 * 1024 * 1024 * 1024
@@ -129,7 +129,7 @@ func TestLocalDiskClaimHandler_AssignDisk(t *testing.T) {
 				t.Fatalf("Failed to create DiskClaim %v", err)
 			}
 
-			claimHandler.For(*testCase.DiskClaim)
+			claimHandler.For(testCase.DiskClaim)
 
 			// Create new free disk
 			if err := testCase.createNewFreeDisk(cli, testCase.FreeDisk); err != nil {
@@ -278,7 +278,7 @@ func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 		State: v1alpha1.LocalDiskActive,
 	}
 
-	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskUnclaimed}
+	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskAvailable}
 
 	ld.TypeMeta = TypeMeta
 	ld.ObjectMeta = ObjectMata
