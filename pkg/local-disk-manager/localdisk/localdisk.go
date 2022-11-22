@@ -27,7 +27,6 @@ type Controller struct {
 	NodeName string
 }
 
-// NewController
 func NewController(mgr crmanager.Manager) Controller {
 	return Controller{
 		Mgr:       mgr,
@@ -36,13 +35,15 @@ func NewController(mgr crmanager.Manager) Controller {
 	}
 }
 
-// CreateLocalDisk
 func (ctr Controller) CreateLocalDisk(ld v1alpha1.LocalDisk) error {
 	log.Debugf("Create localDisk for %+v", ld)
+	// Setup disk.spec.Reserved if found filesystem or partitions on it already
+	if ld.Spec.HasPartition {
+		ld.Spec.Reserved = true
+	}
 	return ctr.Mgr.GetClient().Create(context.Background(), &ld)
 }
 
-// CreateLocalDisk
 func (ctr Controller) UpdateLocalDisk(ld v1alpha1.LocalDisk) error {
 	newLd := ld.DeepCopy()
 	key := client.ObjectKey{Name: ld.GetName(), Namespace: ""}
@@ -57,7 +58,6 @@ func (ctr Controller) UpdateLocalDisk(ld v1alpha1.LocalDisk) error {
 	return ctr.Mgr.GetClient().Update(context.Background(), newLd)
 }
 
-// IsAlreadyExist
 func (ctr Controller) IsAlreadyExist(ld v1alpha1.LocalDisk) bool {
 	key := client.ObjectKey{Name: ld.GetName(), Namespace: ""}
 	if lookLd, err := ctr.GetLocalDisk(key); err != nil {
@@ -67,7 +67,6 @@ func (ctr Controller) IsAlreadyExist(ld v1alpha1.LocalDisk) bool {
 	}
 }
 
-// GetLocalDisk
 func (ctr Controller) GetLocalDisk(key client.ObjectKey) (v1alpha1.LocalDisk, error) {
 	ld := v1alpha1.LocalDisk{}
 	if err := ctr.Mgr.GetClient().Get(context.Background(), key, &ld); err != nil {
@@ -80,7 +79,6 @@ func (ctr Controller) GetLocalDisk(key client.ObjectKey) (v1alpha1.LocalDisk, er
 	return ld, nil
 }
 
-// ConvertDiskToLocalDisk
 func (ctr Controller) ConvertDiskToLocalDisk(disk manager.DiskInfo) (ld v1alpha1.LocalDisk) {
 	ld, _ = localdisk.NewBuilder().WithName(ctr.GenLocalDiskName(disk)).
 		SetupState().

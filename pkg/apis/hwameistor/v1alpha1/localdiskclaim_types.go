@@ -22,15 +22,16 @@ type LocalDiskClaimSpec struct {
 	// +optional
 	DiskRefs []*v1.ObjectReference `json:"diskRefs,omitempty"`
 
-	// DiskAssignCompleted represents that if the disk allocation has been completed,
+	// Completed represents that if the disk allocation has been completed,
 	// if set true means there is no need to search for available disks in the cluster
 	// +optional
-	DiskAssignCompleted bool `json:"diskAssignCompleted,omitempty"`
+	Completed bool `json:"completed,omitempty"`
 }
 
 // LocalDiskClaimStatus defines the observed state of LocalDiskClaim
 type LocalDiskClaimStatus struct {
 	// Status represents the current statue of the claim
+	// +kubebuilder:validation:Enum:=Bound;Pending;Extending
 	Status DiskClaimStatus `json:"status,omitempty"`
 }
 
@@ -82,6 +83,10 @@ const (
 	// LocalDiskClaimStatusPending represents LocalDiskClaim has not been assigned devices yet. Rather
 	// search is going on for matching disks.
 	LocalDiskClaimStatusPending DiskClaimStatus = "Pending"
+
+	// LocalDiskClaimStatusExtending represents LocalDiskClaim has been assigned devices yet, but need more disks.
+	// Rather search is going on for matching disks.
+	LocalDiskClaimStatusExtending DiskClaimStatus = "Extending"
 
 	// LocalDiskClaimStatusBound represents LocalDiskClaim has been assigned backing disk and ready for use.
 	LocalDiskClaimStatusBound DiskClaimStatus = "Bound"

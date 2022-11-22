@@ -181,7 +181,7 @@ func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 		State: v1alpha1.LocalDiskActive,
 	}
 
-	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskEmpty}
+	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskPending}
 
 	ld.TypeMeta = TypeMeta
 	ld.ObjectMeta = ObjectMata

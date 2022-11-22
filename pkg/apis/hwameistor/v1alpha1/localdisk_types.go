@@ -115,11 +115,11 @@ const (
 
 // NOTE: The follow-up state represent LocalDisk instance status
 const (
-	// LocalDiskReserved represents that the disk will be used in the feature
-	LocalDiskReserved LocalDiskState = "Reserved"
-
 	// LocalDiskEmpty is temporary status, it can be updated to Available or Bound
 	LocalDiskEmpty LocalDiskState = ""
+
+	// LocalDiskPending is temporary status, it can be updated to Available or Bound
+	LocalDiskPending LocalDiskState = "Pending"
 
 	// LocalDiskAvailable represents the disk can be used which means:
 	// 1) there is no filesystem or partitions exist
@@ -200,7 +200,7 @@ type LocalDiskSpec struct {
 // LocalDiskStatus defines the observed state of LocalDisk
 type LocalDiskStatus struct {
 	// State represents the claim state of the disk
-	// +kubebuilder:validation:Enum:=Bound;Reserved;Available
+	// +kubebuilder:validation:Enum:=Bound;Reserved;Available;Pending
 	State LocalDiskState `json:"claimState,omitempty"`
 }
 

@@ -98,3 +98,18 @@ func StrFind(slice []string, val string) (int, bool) {
 	}
 	return -1, false
 }
+
+// FoundNewStringElems compare two arrays, find if there is new elem in new array
+func FoundNewStringElems(old, new []string) ([]string, bool) {
+	var om = make(map[string]bool)
+	for _, s := range old {
+		om[s] = true
+	}
+	var ns = make([]string, 0)
+	for _, s := range new {
+		if _, e := om[s]; !e {
+			ns = append(ns, s)
+		}
+	}
+	return ns, len(ns) > 0
+}

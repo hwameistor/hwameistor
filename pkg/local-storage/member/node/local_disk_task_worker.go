@@ -93,9 +93,6 @@ func (m *manager) processLocalDisk(localDiskNameSpacedName string) error {
 		logCtx.Debug("LocalDiskBound ...")
 		return nil
 
-	case apisv1alpha1.LocalDiskReserved:
-		logCtx.Debug("LocalDiskReserved ...")
-		return nil
 	default:
 		logCtx.Error("Invalid localDisk state")
 	}

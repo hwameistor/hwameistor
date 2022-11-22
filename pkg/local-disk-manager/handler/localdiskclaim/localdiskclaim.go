@@ -3,9 +3,9 @@ package localdiskclaim
 import (
 	"context"
 	"fmt"
-
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	diskHandler "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -74,34 +74,42 @@ func (ldcHandler *Handler) For(ldc *v1alpha1.LocalDiskClaim) *Handler {
 }
 
 func (ldcHandler *Handler) AssignFreeDisk() error {
-	ldHandler := diskHandler.NewLocalDiskHandler(ldcHandler.Client, ldcHandler.EventRecorder)
-	ldc := ldcHandler.diskClaim.DeepCopy()
-	ldList, err := ldHandler.ListLocalDisk()
+	localDiskHandler := diskHandler.NewLocalDiskHandler(ldcHandler.Client, ldcHandler.EventRecorder)
+	diskClaim := ldcHandler.diskClaim.DeepCopy()
+	diskList, err := localDiskHandler.ListLocalDisk()
 	if err != nil {
 		return err
 	}
 
-	var assignedDisks []string
+	var assignedDisks, finalAssignedDisks []string
+	for _, disk := range diskClaim.Spec.DiskRefs {
+		assignedDisks = append(assignedDisks, disk.Name)
+	}
 
 	// Find suitable disks
-	for _, ld := range ldList.Items {
-		ldHandler.For(&ld)
-		if !ldHandler.FilterDisk(ldc) {
+	for _, disk := range diskList.Items {
+		localDiskHandler.For(&disk)
+
+		// Disks that already assigned to this diskClaim will also be filtered in
+		if !localDiskHandler.FilterDisk(diskClaim) {
 			continue
 		}
-		if err = ldHandler.BoundTo(ldc); err != nil {
+
+		// Update disk.spec to indicate the disk has been Assigned to this diskClaim
+		if err = localDiskHandler.BoundTo(diskClaim); err != nil {
 			return err
 		}
 
-		assignedDisks = append(assignedDisks, ld.GetName())
+		finalAssignedDisks = append(finalAssignedDisks, disk.GetName())
 	}
 
-	if len(assignedDisks) == 0 {
-		log.Infof("There is no available disk assigned to %v", ldc.GetName())
-		return fmt.Errorf("there is no available disk assigned to %v", ldc.GetName())
+	newAssignedDisks, foundNewDisks := utils.FoundNewStringElems(assignedDisks, finalAssignedDisks)
+	if !foundNewDisks {
+		log.Infof("There is no available disk assigned to %v", diskClaim.GetName())
+		return fmt.Errorf("there is no available disk assigned to %v", diskClaim.GetName())
 	}
 
-	log.Infof("Disk %v has been assigned to %v", assignedDisks, ldc.GetName())
+	log.Infof("Disk %v has been assigned to %v", newAssignedDisks, diskClaim.GetName())
 	return nil
 }
 
@@ -161,7 +169,7 @@ func (ldcHandler *Handler) UpdateClaimStatus() error {
 }
 
 func (ldcHandler *Handler) SetupDiskClaimCompleted() {
-	ldcHandler.diskClaim.Spec.DiskAssignCompleted = true
+	ldcHandler.diskClaim.Spec.Completed = true
 }
 
 func (ldcHandler *Handler) UpdateClaimSpec() error {

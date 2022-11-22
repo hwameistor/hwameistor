@@ -63,7 +63,7 @@ func (ldn *LocalDiskNodesManager) UnReserveDiskForPVC(pvc string) error {
 	}
 
 	for _, disk := range list.Items {
-		if disk.Status.State != v1alpha1.LocalDiskReserved {
+		if !disk.Spec.Reserved {
 			continue
 		}
 		ldn.DiskHandler.For(&disk)

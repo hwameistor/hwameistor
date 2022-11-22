@@ -144,10 +144,10 @@ func (ldHandler *Handler) FilterDisk(ldc *v1alpha1.LocalDiskClaim) bool {
 	return ldHandler.filter.
 		Init().
 		Available().
+		HasNotReserved().
 		NodeMatch(ldc.Spec.NodeName).
 		Capacity(ldc.Spec.Description.Capacity).
 		DiskType(ldc.Spec.Description.DiskType).
-		Unique(ldc.Spec.DiskRefs).
 		DevType().
 		NoPartition().
 		GetTotalResult()

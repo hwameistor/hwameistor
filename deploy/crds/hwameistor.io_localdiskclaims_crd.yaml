@@ -40,6 +40,11 @@ spec:
           spec:
             description: LocalDiskClaimSpec defines the desired state of LocalDiskClaim
             properties:
+              completed:
+                description: Completed represents that if the disk allocation has
+                  been completed, if set true means there is no need to search for
+                  available disks in the cluster
+                type: boolean
               description:
                 description: Description of the disk to be claimed
                 properties:
@@ -52,11 +57,6 @@ spec:
                       etc.,
                     type: string
                 type: object
-              diskAssignCompleted:
-                description: DiskAssignCompleted represents that if the disk allocation
-                  has been completed, if set true means there is no need to search
-                  for available disks in the cluster
-                type: boolean
               diskRefs:
                 description: DiskRefs represents which disks are assigned to the LocalDiskClaim
                 items:
@@ -131,6 +131,10 @@ spec:
             properties:
               status:
                 description: Status represents the current statue of the claim
+                enum:
+                - Bound
+                - Pending
+                - Extending
                 type: string
             type: object
         type: object

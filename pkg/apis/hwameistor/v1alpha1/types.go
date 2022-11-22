@@ -17,6 +17,8 @@ const (
 	LocalDiskEventReasonBoundFail     LocalDiskEventReason = "LocalDiskBoundFail"
 	LocalDiskEventReasonReserved      LocalDiskEventReason = "LocalDiskReserved"
 	LocalDiskEventReasonReservedFail  LocalDiskEventReason = "LocalDiskReservedFail"
+	LocalDiskEventReasonPending       LocalDiskEventReason = "LocalDiskPending"
+	LocalDiskEventReasonPendingFail   LocalDiskEventReason = "LocalDiskPendingFail"
 )
 
 type LocalDiskClaimEventReason = string
@@ -25,6 +27,7 @@ const (
 	LocalDiskClaimEventReasonBound      LocalDiskClaimEventReason = "LocalDiskClaimBound"
 	LocalDiskClaimEventReasonBoundFail  LocalDiskClaimEventReason = "LocalDiskClaimBoundFail"
 	LocalDiskClaimEventReasonAssignFail LocalDiskClaimEventReason = "LocalDiskClaimAssignFail"
+	LocalDiskClaimEventReasonExtend     LocalDiskClaimEventReason = "LocalDiskClaimExtend"
 )
 
 // states

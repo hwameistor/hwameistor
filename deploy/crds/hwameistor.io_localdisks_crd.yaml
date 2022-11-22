@@ -215,6 +215,7 @@ spec:
                 - Bound
                 - Reserved
                 - Available
+                - Pending
                 type: string
             type: object
         type: object

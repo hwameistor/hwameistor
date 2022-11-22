@@ -18,7 +18,6 @@ type LocalDiskFilter struct {
 	Result    Bool
 }
 
-// NewLocalDiskFilter
 func NewLocalDiskFilter(ld *v1alpha1.LocalDisk) LocalDiskFilter {
 	return LocalDiskFilter{
 		localDisk: ld,
@@ -26,13 +25,11 @@ func NewLocalDiskFilter(ld *v1alpha1.LocalDisk) LocalDiskFilter {
 	}
 }
 
-// Init
 func (ld *LocalDiskFilter) Init() *LocalDiskFilter {
 	ld.Result = TRUE
 	return ld
 }
 
-// Available
 func (ld *LocalDiskFilter) Available() *LocalDiskFilter {
 	if ld.localDisk.Status.State == v1alpha1.LocalDiskAvailable {
 		ld.setResult(TRUE)
@@ -43,7 +40,16 @@ func (ld *LocalDiskFilter) Available() *LocalDiskFilter {
 	return ld
 }
 
-// NodeMatch
+func (ld *LocalDiskFilter) HasNotReserved() *LocalDiskFilter {
+	if !ld.localDisk.Spec.Reserved {
+		ld.setResult(TRUE)
+	} else {
+		ld.setResult(FALSE)
+	}
+
+	return ld
+}
+
 func (ld *LocalDiskFilter) NodeMatch(wantNode string) *LocalDiskFilter {
 	if wantNode == ld.localDisk.Spec.NodeName {
 		ld.setResult(TRUE)
@@ -53,7 +59,6 @@ func (ld *LocalDiskFilter) NodeMatch(wantNode string) *LocalDiskFilter {
 	return ld
 }
 
-// Unique
 func (ld *LocalDiskFilter) Unique(diskRefs []*v1.ObjectReference) *LocalDiskFilter {
 	for _, disk := range diskRefs {
 		if disk.Name == ld.localDisk.Name {
@@ -66,7 +71,6 @@ func (ld *LocalDiskFilter) Unique(diskRefs []*v1.ObjectReference) *LocalDiskFilt
 	return ld
 }
 
-// Capacity
 func (ld *LocalDiskFilter) Capacity(cap int64) *LocalDiskFilter {
 	if ld.localDisk.Spec.Capacity >= cap {
 		ld.setResult(TRUE)
@@ -77,7 +81,6 @@ func (ld *LocalDiskFilter) Capacity(cap int64) *LocalDiskFilter {
 	return ld
 }
 
-// DiskType
 func (ld *LocalDiskFilter) DiskType(diskType string) *LocalDiskFilter {
 	if ld.localDisk.Spec.DiskAttributes.Type == diskType {
 		ld.setResult(TRUE)
@@ -88,7 +91,6 @@ func (ld *LocalDiskFilter) DiskType(diskType string) *LocalDiskFilter {
 	return ld
 }
 
-// DevType
 func (ld *LocalDiskFilter) DevType() *LocalDiskFilter {
 	if ld.localDisk.Spec.DiskAttributes.DevType == sys.BlockDeviceTypeDisk {
 		ld.setResult(TRUE)
@@ -99,7 +101,6 @@ func (ld *LocalDiskFilter) DevType() *LocalDiskFilter {
 	return ld
 }
 
-// NoPartition
 func (ld *LocalDiskFilter) NoPartition() *LocalDiskFilter {
 	if len(ld.localDisk.Spec.PartitionInfo) > 0 {
 		ld.setResult(FALSE)
@@ -122,12 +123,10 @@ func (ld *LocalDiskFilter) HasBoundWith(claimName string) bool {
 	return false
 }
 
-// Capacity
 func (ld *LocalDiskFilter) GetTotalResult() bool {
 	return ld.Result == TRUE
 }
 
-// setResult
 func (ld *LocalDiskFilter) setResult(result Bool) {
 	ld.Result &= result
 }

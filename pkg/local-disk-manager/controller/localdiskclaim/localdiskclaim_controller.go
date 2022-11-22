@@ -90,7 +90,7 @@ func (r *ReconcileLocalDiskClaim) Reconcile(_ context.Context, req reconcile.Req
 	switch diskClaim.Status.Status {
 	case v1alpha1.DiskClaimStatusEmpty:
 		err = r.processDiskClaimEmpty(diskClaim)
-	case v1alpha1.LocalDiskClaimStatusPending:
+	case v1alpha1.LocalDiskClaimStatusPending, v1alpha1.LocalDiskClaimStatusExtending:
 		err = r.processDiskClaimPending(diskClaim)
 	case v1alpha1.LocalDiskClaimStatusBound:
 		err = r.processDiskClaimBound(diskClaim)
@@ -124,7 +124,7 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimPending(diskClaim *v1alpha1.Lo
 	)
 
 	// Assign free disks first
-	if !diskClaim.Spec.DiskAssignCompleted {
+	if !diskClaim.Spec.Completed {
 		if err = r.diskClaimHandler.AssignFreeDisk(); err != nil {
 			r.Recorder.Eventf(diskClaim, v1.EventTypeWarning, v1alpha1.LocalDiskClaimEventReasonAssignFail,
 				"Assign free disk fail, due to error: %v", err)
@@ -142,6 +142,8 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimPending(diskClaim *v1alpha1.Lo
 		log.WithError(err).Errorf("Bound disk for locadiskclaim %v/%v fail, will try after %v",
 			diskClaim.GetNamespace(), diskClaim.GetName(), RequeueInterval)
 	}
+	r.Recorder.Eventf(diskClaim, v1.EventTypeNormal, v1alpha1.LocalDiskClaimEventReasonExtend,
+		"Success to extend for localdiskclaim %v", diskClaim.GetName())
 
 	r.diskClaimHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusBound)
 	return r.diskClaimHandler.UpdateClaimStatus()
@@ -152,8 +154,8 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimBound(diskClaim *v1alpha1.Loca
 	logCtx := log.Fields{"name": diskClaim.Name}
 	log.WithFields(logCtx).Info("Start to processing Bound localdiskclaim")
 
-	if !diskClaim.Spec.DiskAssignCompleted {
-		r.diskClaimHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusPending)
+	if !diskClaim.Spec.Completed {
+		r.diskClaimHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusExtending)
 		return r.diskClaimHandler.UpdateClaimStatus()
 	}
 
