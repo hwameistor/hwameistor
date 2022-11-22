@@ -300,9 +300,39 @@ var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("test"), func(
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
-			logrus.Printf(podlist.Items[0].Spec.NodeName)
-			logrus.Infof("drain" + podlist.Items[0].Spec.NodeName)
+
+			logrus.Infof("drain  " + podlist.Items[0].Spec.NodeName)
 			_ = runInLinux("kubectl drain " + podlist.Items[0].Spec.NodeName + " --ignore-daemonsets=true --delete-emptydir-data")
+
+			deployment = &appsv1.Deployment{}
+			deployKey = k8sclient.ObjectKey{
+				Name:      DeploymentName,
+				Namespace: "default",
+			}
+			err = client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+			logrus.Infof("waiting for the deployment to be ready ")
+			err = wait.PollImmediate(3*time.Second, 5*time.Minute, func() (done bool, err error) {
+				if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(1) {
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				logrus.Infof("deployment ready timeout")
+				logrus.Error(err)
+			}
+			err = client.List(ctx, podlist, &listOption)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			logrus.Infof("after drain " + podlist.Items[0].Spec.NodeName)
+
 		})
 
 	})
