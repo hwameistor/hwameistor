@@ -139,7 +139,7 @@ func (r *ReconcileLocalDisk) processDiskEmpty(disk *v1alpha1.LocalDisk) error {
 	return r.updateDiskStatusAvailable(disk)
 }
 
-// processDiskEmpty update disk status to Bound or Reserved
+// processDiskAvailable update disk status to Bound or Reserved
 func (r *ReconcileLocalDisk) processDiskAvailable(disk *v1alpha1.LocalDisk) error {
 	logCtx := log.Fields{"name": disk.Name}
 	log.WithFields(logCtx).Info("Start to processing Available localdisk")
@@ -155,30 +155,50 @@ func (r *ReconcileLocalDisk) processDiskAvailable(disk *v1alpha1.LocalDisk) erro
 
 	// Update status to Bound immediately, if found filesystem or partitions or claimRef on it
 	if diskBound {
-		err = r.updateDiskStatusBound(disk)
+		if err = r.updateDiskStatusBound(disk); err == nil {
+			log.WithFields(logCtx).Info("Update a Available disk state to Bound")
+			r.Recorder.Eventf(disk, v1.EventTypeNormal, v1alpha1.LocalDiskEventReasonBound,
+				"Update disk %v state from Available to Bound, "+
+					"due to detect partition or filesystem on it", disk.Name)
+		}
 	} else if disk.Spec.Reserved {
-		err = r.updateDiskStatusReserved(disk)
+		if err = r.updateDiskStatusReserved(disk); err != nil {
+			log.WithFields(logCtx).Info("Update a Available disk state to Reserved")
+			r.Recorder.Eventf(disk, v1.EventTypeNormal, v1alpha1.LocalDiskEventReasonReserved,
+				"Update disk %v state from Available to Reserved", disk.Name)
+		}
 	}
 
 	return err
 }
 
-// processDiskEmpty update disk status to Available
+// processDiskReserved update disk status to Bound or Available
 func (r *ReconcileLocalDisk) processDiskReserved(disk *v1alpha1.LocalDisk) error {
 	logCtx := log.Fields{"name": disk.Name}
 	log.WithFields(logCtx).Info("Start to processing Reserved localdisk")
 
 	var (
-		err error
+		diskBound = false
+		err       error
 	)
 
-	// Update to Bound if detect already be in used
 	if disk.Spec.ClaimRef != nil || disk.Spec.HasPartition {
-		r.diskHandler.SetupStatus(v1alpha1.LocalDiskBound)
-		if err = r.diskHandler.UpdateStatus(); err == nil {
+		diskBound = true
+	}
+
+	// Update status to Bound immediately, if found filesystem or partitions or claimRef on it
+	if diskBound {
+		if err = r.updateDiskStatusBound(disk); err == nil {
 			log.WithFields(logCtx).Info("Update a Reserved disk state to Bound")
-			r.Recorder.Eventf(disk, v1.EventTypeNormal, v1alpha1.LocalDiskEventReasonBound, "Update disk %v state from Reserved to Bound, "+
-				"due to detect partition or filesystem on it", disk.Name)
+			r.Recorder.Eventf(disk, v1.EventTypeNormal, v1alpha1.LocalDiskEventReasonBound,
+				"Update disk %v state from Reserved to Bound, "+
+					"due to detect partition or filesystem on it", disk.Name)
+		}
+	} else if !disk.Spec.Reserved {
+		if err = r.updateDiskStatusAvailable(disk); err == nil {
+			log.WithFields(logCtx).Info("Succeed to release disk")
+			r.Recorder.Eventf(disk, v1.EventTypeNormal, v1alpha1.LocalDiskEventReasonRelease,
+				"Succeed to release disk %v", disk.Name)
 		}
 	}
 
@@ -198,18 +218,19 @@ func (r *ReconcileLocalDisk) processDiskBound(disk *v1alpha1.LocalDisk) error {
 	if disk.Spec.ClaimRef == nil && !disk.Spec.HasPartition {
 		if err = r.updateDiskStatusAvailable(disk); err != nil {
 			log.WithError(err).WithFields(logCtx).Error("Failed to release disk")
-			r.Recorder.Eventf(disk, v1.EventTypeWarning, v1alpha1.LocalDiskEventReasonReleaseFail, "Failed to release disk %v, "+
-				"due to error: %v", disk.Name, err)
+			r.Recorder.Eventf(disk, v1.EventTypeWarning, v1alpha1.LocalDiskEventReasonReleaseFail,
+				"Failed to release disk %v due to error: %v", disk.Name, err)
 		} else {
 			log.WithFields(logCtx).Info("Succeed to release disk")
-			r.Recorder.Eventf(disk, v1.EventTypeNormal, v1alpha1.LocalDiskEventReasonRelease, "Succeed to release disk %v", disk.Name)
+			r.Recorder.Eventf(disk, v1.EventTypeNormal, v1alpha1.LocalDiskEventReasonRelease,
+				"Succeed to release disk %v", disk.Name)
 		}
 	}
 
 	return err
 }
 
-// reservedDisk update disk status to Reserved
+// updateDiskStatusReserved update disk status to Reserved
 func (r *ReconcileLocalDisk) updateDiskStatusReserved(disk *v1alpha1.LocalDisk) error {
 	var (
 		eventReason  = v1alpha1.LocalDiskEventReasonReserved
@@ -229,7 +250,7 @@ func (r *ReconcileLocalDisk) updateDiskStatusReserved(disk *v1alpha1.LocalDisk) 
 	return err
 }
 
-// reservedDisk update disk status to Bound
+// updateDiskStatusBound update disk status to Bound
 func (r *ReconcileLocalDisk) updateDiskStatusBound(disk *v1alpha1.LocalDisk) error {
 	var (
 		eventReason  = v1alpha1.LocalDiskEventReasonBound
@@ -249,7 +270,7 @@ func (r *ReconcileLocalDisk) updateDiskStatusBound(disk *v1alpha1.LocalDisk) err
 	return err
 }
 
-// reservedDisk update disk status to Available
+// updateDiskStatusAvailable update disk status to Available
 func (r *ReconcileLocalDisk) updateDiskStatusAvailable(disk *v1alpha1.LocalDisk) error {
 	var (
 		eventReason  = v1alpha1.LocalDiskEventReasonAvailable
