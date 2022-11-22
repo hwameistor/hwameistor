@@ -1,9 +1,6 @@
 name: Release Image
 
 on:
-  create:
-    tags:
-     - '*'
   workflow_dispatch:
     inputs:
       release_tag:
