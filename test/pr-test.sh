@@ -64,6 +64,10 @@ function prepare_install_params() {
 	 sed -i "/hwameistor\/admission/a \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
 
 	 sed -i "/hwameistor\/evictor/a \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
+
+	 sed -i 's/rclone\/rclone/daocloud.io\/daocloud\/hwameistor-migrate-rclone/' helm/hwameistor/values.yaml
+
+	 sed -i 's/tag: 1.53.2/tag: v1.1.2/' helm/hwameistor/values.yaml
 }
 
 # Step1: build all images tagged with <image_registry>/<module>:<date>
