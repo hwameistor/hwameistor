@@ -85,7 +85,7 @@ spec:
         - name: NODE_ANNOTATION_KEY_STORAGE_IPV4
           value: localstorage.hwameistor.io/storage-ipv4
         - name: MIGRAGE_RCLONE_IMAGE
-          value: {{ .Values.localStorage.migrate.rclone.imageRepository }}/{{ .Values.localStorage.migrate.rclone.tag }}
+          value: {{ .Values.localStorage.migrate.rclone.imageRepository }}:{{ .Values.localStorage.migrate.rclone.tag }}
         image: {{ .Values.global.hwameistorImageRegistry}}/{{ .Values.localStorage.member.imageRepository}}:{{ template "hwameistor.localstorageImageTag" . }}
         imagePullPolicy: IfNotPresent
         name: member
