@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	// RequeueInterval Requeue every 5 seconds
+	// RequeueInterval Requeue every 1 seconds
 	RequeueInterval = time.Second * 1
 )
 
@@ -106,7 +106,7 @@ func (r *ReconcileLocalDiskClaim) Reconcile(_ context.Context, req reconcile.Req
 	return result, err
 }
 
-// processDiskClaimBound check need to assign new disk or not
+// processDiskClaimEmpty update status to Pending
 func (r *ReconcileLocalDiskClaim) processDiskClaimEmpty(diskClaim *v1alpha1.LocalDiskClaim) error {
 	logCtx := log.Fields{"name": diskClaim.Name}
 	log.WithFields(logCtx).Info("Start to processing Empty localdiskclaim")
