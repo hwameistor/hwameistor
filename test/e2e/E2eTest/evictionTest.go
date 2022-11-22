@@ -227,8 +227,7 @@ var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("test"), func(
 			}
 
 		})
-		ginkgo.It("write test data", func() {
-
+		ginkgo.It("Write test file", func() {
 			config, err := config.GetConfig()
 			if err != nil {
 				return
@@ -300,9 +299,84 @@ var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("test"), func(
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
-			logrus.Printf(podlist.Items[0].Spec.NodeName)
-			logrus.Infof("drain" + podlist.Items[0].Spec.NodeName)
+
+			logrus.Infof("drain  " + podlist.Items[0].Spec.NodeName)
+			beforeEvictionNode := podlist.Items[0].Spec.NodeName
 			_ = runInLinux("kubectl drain " + podlist.Items[0].Spec.NodeName + " --ignore-daemonsets=true --delete-emptydir-data")
+
+			deployment = &appsv1.Deployment{}
+			deployKey = k8sclient.ObjectKey{
+				Name:      DeploymentName,
+				Namespace: "default",
+			}
+			err = client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+			logrus.Infof("waiting for the deployment to be ready ")
+			err = wait.PollImmediate(3*time.Second, 5*time.Minute, func() (done bool, err error) {
+				if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(1) {
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				logrus.Infof("deployment ready timeout")
+				logrus.Error(err)
+			}
+			err = client.List(ctx, podlist, &listOption)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			logrus.Infof("after drain " + podlist.Items[0].Spec.NodeName)
+			gomega.Expect(beforeEvictionNode).NotTo(gomega.Equal(podlist.Items[0].Spec.NodeName))
+		})
+		ginkgo.It("check test file", func() {
+			config, err := config.GetConfig()
+			if err != nil {
+				return
+			}
+
+			deployment := &appsv1.Deployment{}
+			deployKey := k8sclient.ObjectKey{
+				Name:      DeploymentName,
+				Namespace: "default",
+			}
+			err = client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
+			selector := labels.NewSelector()
+			selector = selector.Add(*apps)
+			listOption := k8sclient.ListOptions{
+				LabelSelector: selector,
+			}
+			podlist := &v1.PodList{}
+			err = client.List(ctx, podlist, &listOption)
+
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			containers := deployment.Spec.Template.Spec.Containers
+			for _, pod := range podlist.Items {
+				for _, container := range containers {
+					logrus.Printf(pod.Name)
+					output, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
+					if err != nil {
+						logrus.Printf("%+v ", err)
+						f.ExpectNoError(err)
+					}
+					gomega.Expect(output).To(gomega.Equal("it-is-a-test"))
+				}
+			}
 		})
 
 	})
