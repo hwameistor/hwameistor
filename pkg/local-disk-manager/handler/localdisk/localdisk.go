@@ -96,7 +96,14 @@ func (ldHandler *Handler) BoundTo(ldc *v1alpha1.LocalDiskClaim) error {
 	ldcRef, _ := reference.GetReference(nil, ldc)
 	ldHandler.localDisk.Spec.ClaimRef = ldcRef
 
-	return ldHandler.Update()
+	err := ldHandler.Update()
+	if err == nil {
+		// Record a Bound Event
+		ldHandler.RecordEvent(v1.EventTypeNormal, v1alpha1.LocalDiskEventReasonBound,
+			"Bounded by LocalDiskClaim: %v", ldc.GetName())
+	}
+
+	return err
 }
 
 func (ldHandler *Handler) SetupStatus(status v1alpha1.LocalDiskState) {
@@ -155,4 +162,8 @@ func (ldHandler *Handler) FilterDisk(ldc *v1alpha1.LocalDiskClaim) bool {
 
 func (ldHandler *Handler) IsEmpty() bool {
 	return !ldHandler.localDisk.Spec.HasPartition
+}
+
+func (ldHandler *Handler) RecordEvent(eventtype, reason, messageFmt string, args ...interface{}) {
+	ldHandler.Eventf(ldHandler.localDisk, eventtype, reason, messageFmt, args)
 }

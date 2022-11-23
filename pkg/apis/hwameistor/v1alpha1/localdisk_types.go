@@ -192,8 +192,8 @@ type LocalDiskSpec struct {
 	// +optional
 	ClaimRef *v1.ObjectReference `json:"claimRef,omitempty"`
 
-	// Reserved represents the disk will be used in the future
-	// NOTE: a disk only be reserved when it's state is Available
+	// Reserved represents the disk won't be used in hwameistor later, until it becomes unreserved
+	// +optional
 	Reserved bool `json:"reserved,omitempty"`
 }
 
@@ -214,6 +214,7 @@ type LocalDiskStatus struct {
 //+kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
 //+kubebuilder:printcolumn:JSONPath=".spec.claimRef.name",name=Claim,type=string
 //+kubebuilder:printcolumn:JSONPath=".status.claimState",name=Phase,type=string
+//+kubebuilder:printcolumn:JSONPath=".spec.reserved",name=Reserved,type=boolean,priority=1
 type LocalDisk struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -134,7 +134,6 @@ func (m *manager) processLocalDiskClaimBound(claim *apisv1alpha1.LocalDiskClaim)
 		return err
 	}
 
-	// 如果lvm扩容失败，就不会执行如下同步资源流程
 	localDisks, err := m.getLocalDisksMapByLocalDiskClaim(claim)
 	if err != nil {
 		log.WithError(err).Error("Failed to getLocalDisksMapByLocalDiskClaim")

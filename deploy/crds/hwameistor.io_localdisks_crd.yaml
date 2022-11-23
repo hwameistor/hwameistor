@@ -23,6 +23,10 @@ spec:
     - jsonPath: .status.claimState
       name: Phase
       type: string
+    - jsonPath: .spec.reserved
+      name: Reserved
+      priority: 1
+      type: boolean
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -176,8 +180,8 @@ spec:
                     type: string
                 type: object
               reserved:
-                description: 'Reserved represents the disk will be used in the future
-                  NOTE: a disk only be reserved when it''s state is Available'
+                description: Reserved represents the disk won't be used in hwameistor
+                  later, until it becomes unreserved
                 type: boolean
               smartInfo:
                 description: SmartInfo contains infos collected by smartctl

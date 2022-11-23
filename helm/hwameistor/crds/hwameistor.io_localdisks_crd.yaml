@@ -23,6 +23,10 @@ spec:
     - jsonPath: .status.claimState
       name: Phase
       type: string
+    - jsonPath: .spec.reserved
+      name: Reserved
+      priority: 1
+      type: boolean
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -175,6 +179,10 @@ spec:
                       for only RAID slave disk, e.g. /dev/bus/0
                     type: string
                 type: object
+              reserved:
+                description: Reserved represents the disk won't be used in hwameistor
+                  later, until it becomes unreserved
+                type: boolean
               smartInfo:
                 description: SmartInfo contains infos collected by smartctl
                 properties:
@@ -208,14 +216,14 @@ spec:
               claimState:
                 description: State represents the claim state of the disk
                 enum:
-                - Claimed
-                - Unclaimed
-                - Released
+                - Bound
                 - Reserved
-                - Inuse
+                - Available
+                - Pending
                 type: string
             type: object
         type: object
     served: true
     storage: true
-    subresources: {}
+    subresources:
+      status: {}

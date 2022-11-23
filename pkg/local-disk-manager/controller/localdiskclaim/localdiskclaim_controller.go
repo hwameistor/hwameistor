@@ -137,10 +137,9 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimPending(diskClaim *v1alpha1.Lo
 
 	// Update claim.spec.diskRefs according to disk status
 	if err = r.diskClaimHandler.UpdateBoundDiskRef(); err != nil {
-		r.Recorder.Eventf(diskClaim, v1.EventTypeWarning, v1alpha1.LocalDiskClaimEventReasonBoundFail,
-			"Bound disk fail, due to error: %v", err)
-		log.WithError(err).Errorf("Bound disk for locadiskclaim %v/%v fail, will try after %v",
-			diskClaim.GetNamespace(), diskClaim.GetName(), RequeueInterval)
+		log.WithError(err).Errorf("Failed to extend for locadiskclaim %v fail, will try after %v",
+			diskClaim.GetName(), RequeueInterval)
+		return err
 	}
 	r.Recorder.Eventf(diskClaim, v1.EventTypeNormal, v1alpha1.LocalDiskClaimEventReasonExtend,
 		"Success to extend for localdiskclaim %v", diskClaim.GetName())
