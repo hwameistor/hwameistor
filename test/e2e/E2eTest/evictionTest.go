@@ -601,61 +601,6 @@ var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("periodCheck")
 
 	})
 	ginkgo.Context("test HA-volumes", func() {
-		//ginkgo.It("create a localvolumemigrate", func() {
-		//
-		//	lvrList := &v1alpha1.LocalVolumeReplicaList{}
-		//	err := client.List(ctx, lvrList)
-		//	if err != nil {
-		//		logrus.Printf("list lvr failed ：%+v ", err)
-		//	}
-		//	lvlist := &v1alpha1.LocalVolumeList{}
-		//	err = client.List(ctx, lvlist)
-		//	if err != nil {
-		//		logrus.Error("%+v ", err)
-		//		f.ExpectNoError(err)
-		//	}
-		//
-		//	lvname := lvlist.Items[0].Name
-		//	for _, lvr := range lvrList.Items {
-		//		if lvr.Spec.NodeName == "k8s-master" {
-		//			suggestNode := ""
-		//			for _, lvr := range lvrList.Items {
-		//				if lvr.Spec.NodeName == "k8s-node1" {
-		//					suggestNode = "k8s-node2"
-		//				}
-		//				if lvr.Spec.NodeName == "k8s-node2" {
-		//					suggestNode = "k8s-node1"
-		//				}
-		//
-		//			}
-		//			exlvm := &v1alpha1.LocalVolumeMigrate{
-		//				ObjectMeta: metav1.ObjectMeta{
-		//					Name:      "localvolumegroupmigrate-1",
-		//					Namespace: "default",
-		//				},
-		//				Spec: v1alpha1.LocalVolumeMigrateSpec{
-		//					TargetNodesSuggested: []string{suggestNode},
-		//					SourceNode:           "k8s-master",
-		//					VolumeName:           lvname,
-		//					MigrateAllVols:       true,
-		//				},
-		//			}
-		//
-		//			err = client.Create(ctx, exlvm)
-		//			logrus.Infof("create lvm")
-		//			if err != nil {
-		//				logrus.Printf("Create lvgm failed ：%+v ", err)
-		//				f.ExpectNoError(err)
-		//			}
-		//			logrus.Infof("wait 3 minutes for migrate lv")
-		//			time.Sleep(3 * time.Minute)
-		//			break
-		//
-		//		}
-		//
-		//	}
-		//
-		//})
 
 		ginkgo.It("Write test file", func() {
 			config, err := config.GetConfig()
