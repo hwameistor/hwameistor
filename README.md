@@ -24,7 +24,7 @@ The latest release of HwameiStor is [![hwameistor-releases](https://img.shields.
 
 | Release  | Version | Type   |
 |----------|---------|--------|
-| v0.4     | v0.4.2  | latest |
+| v0.4     | v0.4.3  | latest |
 
 See [current releases](https://github.com/hwameistor/hwameistor/releases).
 
@@ -33,12 +33,12 @@ See [current releases](https://github.com/hwameistor/hwameistor/releases).
 ### Kubernetes compatiblity
 | kubernetes | v0.4.3     | 
 | ---------- | ---------- |
-| >=1.18&&<=1.20 | support    | 
-| 1.21       | support    | 
-| 1.22       | support    | 
-| 1.23       | support    | 
-| 1.24       | support    | 
-| 1.25       | nonsupport | 
+| >=1.18&&<=1.20 | Yes   | 
+| 1.21       | Yes   | 
+| 1.22       | Yes    | 
+| 1.23       | Yes    | 
+| 1.24       | Yes    | 
+| 1.25       | No | 
 
 ## Modules and Code
 
