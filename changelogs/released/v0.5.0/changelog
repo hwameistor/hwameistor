@@ -1,0 +1,3 @@
+## Other
+* Upgrade version to kubev1.21 to support kube1.25 (#427 @SSmallMonster )
+* Add more e2e tests(#489, #487, #487 @FloatXD )
