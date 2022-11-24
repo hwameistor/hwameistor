@@ -151,7 +151,10 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.25"), fun
 					},
 				},
 			}
+			logrus.Infof("creating deploy")
+
 			err := client.Create(ctx, exampleDeployment)
+
 			if err != nil {
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
