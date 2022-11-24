@@ -1,3 +1,9 @@
+v0.5.0 / 2022-11-24
+========================
+## Other
+* Upgrade version to kubev1.21 to support kube1.25 (#427 @SSmallMonster )
+* Add more e2e tests(#489, #487, #487 @FloatXD )
+
 v0.4.3 / 2022-11-14
 ========================
 ## Admission
