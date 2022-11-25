@@ -72,6 +72,13 @@ pvc-f8f017f9-eb09-4fbe-9795-a6e2d6873148-5t782b   1073741824   k8s-node-2   Read
 
 ```
 
+In some cases, user doesn't want to migrate the volumes when draining a node. User can add a label into the node before draining it.
+
+```
+$ kubectl label node k8s-node-1 hwameistor.io/eviction=disable
+```
+
+
 ## Pod Eviction
 
 When a Kubernetes node is overloaded, it will evict some low-priority pods to recycle system's resources to keep other pods safe. HwameiStor will detect the evicted pod and migrate the associated volumes to another available node. So that, the pod can continue to run on it.
