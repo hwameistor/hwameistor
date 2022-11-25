@@ -40,11 +40,6 @@ spec:
           spec:
             description: LocalDiskClaimSpec defines the desired state of LocalDiskClaim
             properties:
-              completed:
-                description: Completed represents that if the disk allocation has
-                  been completed, if set true means there is no need to search for
-                  available disks in the cluster
-                type: boolean
               description:
                 description: Description of the disk to be claimed
                 properties:
