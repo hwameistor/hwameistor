@@ -31,6 +31,7 @@ const (
 	labelKeyForVolumeEviction            = "hwameistor.io/eviction"
 	labelValueForVolumeEvictionStart     = "start"
 	labelValueForVolumeEvictionCompleted = "completed"
+	labelValueForVolumeEvictionDisable   = "disable"
 )
 
 // Evictor interface
@@ -149,18 +150,14 @@ func (ev *evictor) Run(stopCh <-chan struct{}) error {
 
 func (ev *evictor) onNodeAdd(obj interface{}) {
 	node, _ := obj.(*corev1.Node)
-	// if node.Spec.Unschedulable {
-	// 	ev.addEvictNode(node.Name)
-	// }
 	for _, taint := range node.Spec.Taints {
 		if taint.Key == corev1.TaintNodeUnschedulable && taint.Effect == corev1.TaintEffectNoSchedule {
-			ev.addEvictNode(node.Name)
-			return
+			if node.Labels[labelKeyForVolumeEviction] != labelValueForVolumeEvictionDisable {
+				ev.addEvictNode(node.Name)
+				return
+			}
 		}
 	}
-	// if node.Labels[labelKeyForVolumeEviction] == labelValueForVolumeEvictionStart {
-	// 	ev.addEvictNode(node.Name)
-	// }
 }
 
 func (ev *evictor) onNodeUpdate(oldObj, newObj interface{}) {
