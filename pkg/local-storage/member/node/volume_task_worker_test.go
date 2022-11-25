@@ -613,7 +613,7 @@ func GenFakeLocalDiskObject() *apisv1alpha1.LocalDisk {
 	ld.ObjectMeta = ObjectMata
 	ld.TypeMeta = TypeMeta
 	ld.Spec = Spec
-	ld.Status.State = apisv1alpha1.LocalDiskUnclaimed
+	ld.Status.State = apisv1alpha1.LocalDiskAvailable
 
 	return ld
 }
