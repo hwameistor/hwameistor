@@ -73,6 +73,12 @@ pvc-f8f017f9-eb09-4fbe-9795-a6e2d6873148-5t782b   1073741824   k8s-node-2   Read
 
 ```
 
+在一些情况下，重启节点时，用户希望仍然保留数据卷在该节点上。可以通过在该节点上添加下列标签实现：
+
+```
+$ kubectl label node k8s-node-1 hwameistor.io/eviction=disable
+```
+
 **驱逐 Pod**
 
 当 Kubernetes 节点负载过重时，系统会选择性地驱逐一些 Pod，从而释放一些系统资源，保证其他 Pod 正常运行。

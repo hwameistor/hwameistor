@@ -93,10 +93,25 @@ $ kubectl delete nodes NODE
 
 HwameiStor 可以立即将 Pods 调度到其他数据卷所在的可用节点，并持续运行。对于使用 HwameiStor 多副本数据卷的 Pod，这一过程会非常迅速，大概需要～10秒（受 Kubernetes 的原生调度机制影响）；对于使用单副本数据卷的 Pod，这个过程所需时间依赖于数据卷迁移所需时间，受用户数据量大小影响。
 
-整个重启节点的流程里，第一步和第二步与‘移除节点’部分相同。
+如果用户希望将数据卷保留在该节点上，在节点重启后仍然可以访问，可以在节点上添加下列标签，阻止系统迁移该节点上的数据卷。系统仍然会立即将 Pod 调度到其他有数据卷副本的节点上。
+
+```
+## Step 1 (可选):
+$ kubectl label node NODE hwameistor.io/eviction=disable
+```
+
+```
+## Step 2:
+
+$ kubectl drain NODE --ignore-daemonsets=true. --ignore-daemonsets=true
+```
+
+如果执行了 Step 1，待 Step 2 成功后，用户即可重启节点。
+如果没有执行 Step 1，待 Step 2 成功后，用户察看数据迁移是否完成（方法如同“移除节点”的 Step 2）。待数据迁移完成后，即可重启节点。
+
 在前两步成功之后，用户可以重启节点，并等待节点系统恢复正常。
 
-之后，通过下列步骤将节点恢复至 Kubernetes 的正常状态
+之后，通过下列步骤将节点恢复至 Kubernetes 的正常状态。
 ```
 ## Step 3:
 $ kubectl uncordon NODE

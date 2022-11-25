@@ -96,8 +96,15 @@ It ususally takes a long time (~10mins) to reboot a node. All the Pods and volum
 
 HwameiStor can immediately reschedule the Pod to another available node with associated volume data and bring the Pod back to running in very short time (~ 10 seconds for the Pod using a HA volume, and longer time for the Pod with non-HA volume depends on the data size).
 
+If user doesn't want to migrate the volumes during the node reboots, can add the following label to the node before draining it.
+
+```
+$ kubectl label node NODE hwameistor.io/eviction=disable
+```
+
 To reboot a node, the step 1 and 2 are same as above (in section of `Retire a node`). 
-After the success of step 1 and 2, reboot the node and waiting for the node to be back online. And then
+
+After the node reboots and comes back online, the volumes on this node can still be avaiable for access.
 
 Run step 3 to bring the node back to normal
 ```
