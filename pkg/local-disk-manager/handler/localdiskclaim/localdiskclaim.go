@@ -168,10 +168,6 @@ func (ldcHandler *Handler) UpdateClaimStatus() error {
 	return ldcHandler.Status().Update(context.Background(), ldcHandler.diskClaim)
 }
 
-func (ldcHandler *Handler) SetupDiskClaimCompleted() {
-	ldcHandler.diskClaim.Spec.Completed = true
-}
-
 func (ldcHandler *Handler) UpdateClaimSpec() error {
 	return ldcHandler.Update(context.Background(), ldcHandler.diskClaim)
 }

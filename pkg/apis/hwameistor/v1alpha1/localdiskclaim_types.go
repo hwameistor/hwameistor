@@ -21,11 +21,6 @@ type LocalDiskClaimSpec struct {
 	// DiskRefs represents which disks are assigned to the LocalDiskClaim
 	// +optional
 	DiskRefs []*v1.ObjectReference `json:"diskRefs,omitempty"`
-
-	// Completed represents that if the disk allocation has been completed,
-	// if set true means there is no need to search for available disks in the cluster
-	// +optional
-	Completed bool `json:"completed,omitempty"`
 }
 
 // LocalDiskClaimStatus defines the observed state of LocalDiskClaim
