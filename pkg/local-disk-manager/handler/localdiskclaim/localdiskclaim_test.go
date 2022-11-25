@@ -129,7 +129,7 @@ func TestLocalDiskClaimHandler_AssignDisk(t *testing.T) {
 				t.Fatalf("Failed to create DiskClaim %v", err)
 			}
 
-			claimHandler.For(*testCase.DiskClaim)
+			claimHandler.For(testCase.DiskClaim)
 
 			// Create new free disk
 			if err := testCase.createNewFreeDisk(cli, testCase.FreeDisk); err != nil {
@@ -141,7 +141,7 @@ func TestLocalDiskClaimHandler_AssignDisk(t *testing.T) {
 				t.Fatalf("Want assign: %v, got assign: %v", testCase.WantAssign, err == nil)
 			}
 
-			// Delete LocalDisk
+			// Delete localDisk
 			if err := testCase.deleteDisk(cli, testCase.FreeDisk); err != nil {
 				t.Fatalf("Failed to delete Disk %v", err)
 			}
@@ -231,7 +231,7 @@ func TestLocalDiskClaimHandler_ListUnboundDiskClaim(t *testing.T) {
 	}
 }
 
-// CreateFakeClient Create LocalDisk and LocalDiskNode resource
+// CreateFakeClient Create localDisk and LocalDiskNode resource
 func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s := scheme.Scheme
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.LocalDisk{})
@@ -278,7 +278,7 @@ func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 		State: v1alpha1.LocalDiskActive,
 	}
 
-	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskUnclaimed}
+	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskAvailable}
 
 	ld.TypeMeta = TypeMeta
 	ld.ObjectMeta = ObjectMata

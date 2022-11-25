@@ -10,10 +10,13 @@ import (
 )
 
 // LocalDiskVolumeLister helps list LocalDiskVolumes.
+// All objects returned here must be treated as read-only.
 type LocalDiskVolumeLister interface {
 	// List lists all LocalDiskVolumes in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.LocalDiskVolume, err error)
 	// Get retrieves the LocalDiskVolume from the index for a given name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.LocalDiskVolume, error)
 	LocalDiskVolumeListerExpansion
 }

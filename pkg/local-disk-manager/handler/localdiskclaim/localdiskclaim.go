@@ -3,9 +3,9 @@ package localdiskclaim
 import (
 	"context"
 	"fmt"
-
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	localdisk2 "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
+	diskHandler "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -16,23 +16,20 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// LocalDiskClaimHandler
-type LocalDiskClaimHandler struct {
+type Handler struct {
 	client.Client
 	record.EventRecorder
-	ldc v1alpha1.LocalDiskClaim
+	diskClaim *v1alpha1.LocalDiskClaim
 }
 
-// NewLocalDiskClaimHandler
-func NewLocalDiskClaimHandler(client client.Client, recorder record.EventRecorder) *LocalDiskClaimHandler {
-	return &LocalDiskClaimHandler{
+func NewLocalDiskClaimHandler(client client.Client, recorder record.EventRecorder) *Handler {
+	return &Handler{
 		Client:        client,
 		EventRecorder: recorder,
 	}
 }
 
-// ListLocalDiskClaim
-func (ldcHandler *LocalDiskClaimHandler) ListLocalDiskClaim() (*v1alpha1.LocalDiskClaimList, error) {
+func (ldcHandler *Handler) ListLocalDiskClaim() (*v1alpha1.LocalDiskClaimList, error) {
 	list := &v1alpha1.LocalDiskClaimList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "LocalDiskClaim",
@@ -44,8 +41,7 @@ func (ldcHandler *LocalDiskClaimHandler) ListLocalDiskClaim() (*v1alpha1.LocalDi
 	return list, err
 }
 
-// GetLocalDiskClaim
-func (ldcHandler *LocalDiskClaimHandler) GetLocalDiskClaim(key client.ObjectKey) (*v1alpha1.LocalDiskClaim, error) {
+func (ldcHandler *Handler) GetLocalDiskClaim(key client.ObjectKey) (*v1alpha1.LocalDiskClaim, error) {
 	ldc := &v1alpha1.LocalDiskClaim{}
 	if err := ldcHandler.Get(context.Background(), key, ldc); err != nil {
 		if errors.IsNotFound(err) {
@@ -57,8 +53,7 @@ func (ldcHandler *LocalDiskClaimHandler) GetLocalDiskClaim(key client.ObjectKey)
 	return ldc, nil
 }
 
-// ListLocalDiskClaim
-func (ldcHandler *LocalDiskClaimHandler) ListUnboundLocalDiskClaim() (*v1alpha1.LocalDiskClaimList, error) {
+func (ldcHandler *Handler) ListUnboundLocalDiskClaim() (*v1alpha1.LocalDiskClaimList, error) {
 	list := &v1alpha1.LocalDiskClaimList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "LocalDiskClaim",
@@ -73,106 +68,115 @@ func (ldcHandler *LocalDiskClaimHandler) ListUnboundLocalDiskClaim() (*v1alpha1.
 	return list, err
 }
 
-// For
-func (ldcHandler *LocalDiskClaimHandler) For(ldc v1alpha1.LocalDiskClaim) *LocalDiskClaimHandler {
-	ldcHandler.ldc = ldc
+func (ldcHandler *Handler) For(ldc *v1alpha1.LocalDiskClaim) *Handler {
+	ldcHandler.diskClaim = ldc
 	return ldcHandler
 }
 
-// AssignFreeDisk
-func (ldcHandler *LocalDiskClaimHandler) AssignFreeDisk() error {
-	ldHandler := localdisk2.NewLocalDiskHandler(ldcHandler.Client, ldcHandler.EventRecorder)
-	ldc := *ldcHandler.ldc.DeepCopy()
-	ldList, err := ldHandler.ListLocalDisk()
+func (ldcHandler *Handler) AssignFreeDisk() error {
+	localDiskHandler := diskHandler.NewLocalDiskHandler(ldcHandler.Client, ldcHandler.EventRecorder)
+	diskClaim := ldcHandler.diskClaim.DeepCopy()
+	diskList, err := localDiskHandler.ListLocalDisk()
 	if err != nil {
 		return err
 	}
 
-	var assignedDisks []string
-	for _, ld := range ldList.Items {
-		ldHandler.For(ld)
-		if !ldHandler.FilterDisk(ldc) {
+	var assignedDisks, finalAssignedDisks []string
+	for _, disk := range diskClaim.Spec.DiskRefs {
+		assignedDisks = append(assignedDisks, disk.Name)
+	}
+
+	// Find suitable disks
+	for _, disk := range diskList.Items {
+		localDiskHandler.For(&disk)
+
+		// Disks that already assigned to this diskClaim will also be filtered in
+		if !localDiskHandler.FilterDisk(diskClaim) {
 			continue
 		}
-		if err = ldHandler.BoundTo(ldc); err != nil {
+
+		// Update disk.spec to indicate the disk has been Assigned to this diskClaim
+		if err = localDiskHandler.BoundTo(diskClaim); err != nil {
 			return err
 		}
-		if err = ldcHandler.BoundWith(ld); err != nil {
-			return err
-		}
 
-		assignedDisks = append(assignedDisks, ld.GetName())
+		finalAssignedDisks = append(finalAssignedDisks, disk.GetName())
 	}
 
-	if len(assignedDisks) == 0 {
-		log.Infof("There is no available disk assigned to %v", ldc.GetName())
-		return fmt.Errorf("there is no available disk assigned to %v", ldc.GetName())
+	newAssignedDisks, foundNewDisks := utils.FoundNewStringElems(assignedDisks, finalAssignedDisks)
+	if !foundNewDisks {
+		log.Infof("There is no available disk assigned to %v", diskClaim.GetName())
+		return fmt.Errorf("there is no available disk assigned to %v", diskClaim.GetName())
 	}
 
-	log.Infof("Disk %v has been assigned to %v", assignedDisks, ldc.GetName())
-	return ldcHandler.UpdateClaimStatus()
+	log.Infof("Disk %v has been assigned to %v", newAssignedDisks, diskClaim.GetName())
+	return nil
 }
 
-// Bounded
-func (ldcHandler *LocalDiskClaimHandler) UpdateSpec() error {
-	return ldcHandler.Update(context.Background(), &ldcHandler.ldc)
-}
-
-// Bounded
-func (ldcHandler *LocalDiskClaimHandler) Bounded() bool {
-	return ldcHandler.ldc.Status.Status == v1alpha1.LocalDiskClaimStatusBound
-}
-
-// DiskRefs
-func (ldcHandler *LocalDiskClaimHandler) DiskRefs() []*v1.ObjectReference {
-	return ldcHandler.ldc.Spec.DiskRefs
-}
-
-// DiskRefs
-func (ldcHandler *LocalDiskClaimHandler) Phase() v1alpha1.DiskClaimStatus {
-	return ldcHandler.ldc.Status.Status
-}
-
-// BoundWith
-func (ldcHandler *LocalDiskClaimHandler) BoundWith(ld v1alpha1.LocalDisk) error {
-	ldRef, err := reference.GetReference(nil, &ld)
+// UpdateBoundDiskRef update all disk bounded by the diskClaim to claim.spec.disks
+func (ldcHandler *Handler) UpdateBoundDiskRef() error {
+	diskList, err := diskHandler.
+		NewLocalDiskHandler(ldcHandler.Client, ldcHandler.EventRecorder).
+		ListLocalDisk()
 	if err != nil {
 		return err
 	}
+
+	for _, disk := range diskList.Items {
+		if disk.Spec.ClaimRef != nil &&
+			disk.Spec.ClaimRef.Name == ldcHandler.diskClaim.GetName() {
+			ldcHandler.AppendDiskRef(&disk)
+		}
+	}
+
+	return ldcHandler.UpdateClaimSpec()
+}
+
+func (ldcHandler *Handler) Bounded() bool {
+	return ldcHandler.diskClaim.Status.Status == v1alpha1.LocalDiskClaimStatusBound
+}
+
+func (ldcHandler *Handler) DiskRefs() []*v1.ObjectReference {
+	return ldcHandler.diskClaim.Spec.DiskRefs
+}
+
+func (ldcHandler *Handler) Phase() v1alpha1.DiskClaimStatus {
+	return ldcHandler.diskClaim.Status.Status
+}
+
+func (ldcHandler *Handler) AppendDiskRef(ld *v1alpha1.LocalDisk) {
+	ldRef, _ := reference.GetReference(nil, ld)
 
 	// check if this disk has already bound
 	needBound := true
-	for _, boundDisk := range ldcHandler.ldc.Spec.DiskRefs {
+	for _, boundDisk := range ldcHandler.diskClaim.Spec.DiskRefs {
 		if boundDisk.Name == ld.GetName() {
 			needBound = false
 		}
 	}
+
 	if needBound {
-		ldcHandler.ldc.Spec.DiskRefs = append(ldcHandler.ldc.Spec.DiskRefs, ldRef)
+		ldcHandler.diskClaim.Spec.DiskRefs = append(ldcHandler.diskClaim.Spec.DiskRefs, ldRef)
 	}
-
-	ldcHandler.ldc.Status.Status = v1alpha1.LocalDiskClaimStatusBound
-
-	ldcHandler.EventRecorder.Eventf(&ldcHandler.ldc, v1.EventTypeNormal, "BoundLocalDisk", "Bound disk %v", ld.Name)
-	return nil
 }
 
-// SetupClaimStatus
-func (ldcHandler *LocalDiskClaimHandler) SetupClaimStatus(status v1alpha1.DiskClaimStatus) {
-	ldcHandler.ldc.Status.Status = status
+func (ldcHandler *Handler) SetupClaimStatus(status v1alpha1.DiskClaimStatus) {
+	ldcHandler.diskClaim.Status.Status = status
 }
 
-// UpdateStatus
-func (ldcHandler *LocalDiskClaimHandler) UpdateClaimStatus() error {
-	return ldcHandler.Update(context.Background(), &ldcHandler.ldc)
+func (ldcHandler *Handler) UpdateClaimStatus() error {
+	return ldcHandler.Status().Update(context.Background(), ldcHandler.diskClaim)
 }
 
-// Refresh
-func (ldcHandler *LocalDiskClaimHandler) Refresh() error {
-	ldc, err := ldcHandler.GetLocalDiskClaim(client.ObjectKey{Name: ldcHandler.ldc.GetName(), Namespace: ldcHandler.ldc.GetNamespace()})
+func (ldcHandler *Handler) UpdateClaimSpec() error {
+	return ldcHandler.Update(context.Background(), ldcHandler.diskClaim)
+}
+
+func (ldcHandler *Handler) Refresh() error {
+	ldc, err := ldcHandler.GetLocalDiskClaim(client.ObjectKey{Name: ldcHandler.diskClaim.GetName(), Namespace: ldcHandler.diskClaim.GetNamespace()})
 	if err != nil {
 		return err
 	}
-	ldcHandler.For(*ldc.DeepCopy())
+	ldcHandler.For(ldc.DeepCopy())
 	return nil
 }

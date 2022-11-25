@@ -134,7 +134,6 @@ func (m *manager) processLocalDiskClaimBound(claim *apisv1alpha1.LocalDiskClaim)
 		return err
 	}
 
-	// 如果lvm扩容失败，就不会执行如下同步资源流程
 	localDisks, err := m.getLocalDisksMapByLocalDiskClaim(claim)
 	if err != nil {
 		log.WithError(err).Error("Failed to getLocalDisksMapByLocalDiskClaim")
@@ -284,7 +283,7 @@ func (m *manager) getLocalDisksByDiskRefs(localDiskNames []string, nameSpace str
 				//fmt.Errorf("failed to getLocalDiskByName name = %v, err = %v", name, err)
 				return
 			}
-			if localDisk != nil && localDisk.Status.State == apisv1alpha1.LocalDiskClaimed {
+			if localDisk != nil && localDisk.Status.State == apisv1alpha1.LocalDiskBound {
 				localDiskList = append(localDiskList, localDisk)
 			}
 		}()
@@ -294,15 +293,15 @@ func (m *manager) getLocalDisksByDiskRefs(localDiskNames []string, nameSpace str
 }
 
 func (m *manager) getLocalDiskByName(localDiskName, nameSpace string) (*apisv1alpha1.LocalDisk, error) {
-	logCtx := m.logger.WithFields(log.Fields{"LocalDisk": localDiskName})
+	logCtx := m.logger.WithFields(log.Fields{"localDisk": localDiskName})
 	logCtx.Debug("getLocalDiskByName ...")
 	localDisk := &apisv1alpha1.LocalDisk{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: localDiskName}, localDisk); err != nil {
 		if !errors.IsNotFound(err) {
-			logCtx.WithError(err).Error("Failed to get LocalDisk from cache, retry it later ...")
+			logCtx.WithError(err).Error("Failed to get localDisk from cache, retry it later ...")
 			return nil, err
 		}
-		logCtx.Info("Not found the LocalDisk from cache, should be deleted already.")
+		logCtx.Info("Not found the localDisk from cache, should be deleted already.")
 		return nil, err
 	}
 	return localDisk, nil

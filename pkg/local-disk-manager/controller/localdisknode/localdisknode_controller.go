@@ -127,7 +127,7 @@ func (r *ReconcileLocalDiskNode) Reconcile(_ context.Context, request reconcile.
 	}
 
 	// The main task here is to update the resource status of
-	// the LocalDisk of this node to the latest status.
+	// the localDisk of this node to the latest status.
 	newDisks, err := ldnHandler.ListNodeDisks()
 	if err != nil {
 		log.WithError(err).Errorf("failed to list disks on node %s", request.Name)

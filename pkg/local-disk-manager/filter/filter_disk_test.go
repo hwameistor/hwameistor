@@ -24,7 +24,7 @@ var (
 	vendorVMware                 = "VMware"
 	proSCSI                      = "scsi"
 	apiversion                   = "hwameistor.io/v1alpha1"
-	localDiskKind                = "LocalDisk"
+	localDiskKind                = "localDisk"
 	localDiskClaimKind           = "LocalDiskClaim"
 	cap100G                int64 = 100 * 1024 * 1024 * 1024
 	cap10G                 int64 = 10 * 1024 * 1024 * 1024
@@ -84,21 +84,21 @@ func TestLocalDiskFilter(t *testing.T) {
 			},
 		},
 		{
-			Description:       "Should return true, Has Unclaimed Disk",
+			Description:       "Should return true, Has Available Disk",
 			WantFilterResult:  true,
 			WantDiskUnclaimed: true,
 			disk:              GenFakeLocalDiskObject(),
 			setProperty: func(disk *v1alpha1.LocalDisk) {
-				disk.Status.State = v1alpha1.LocalDiskUnclaimed
+				disk.Status.State = v1alpha1.LocalDiskAvailable
 			},
 		},
 		{
-			Description:       "Should return false, Has Claimed Disk",
+			Description:       "Should return false, Has Bound Disk",
 			WantFilterResult:  false,
 			WantDiskUnclaimed: true,
 			disk:              GenFakeLocalDiskObject(),
 			setProperty: func(disk *v1alpha1.LocalDisk) {
-				disk.Status.State = v1alpha1.LocalDiskClaimed
+				disk.Status.State = v1alpha1.LocalDiskBound
 			},
 		},
 		{
@@ -167,7 +167,7 @@ func TestLocalDiskFilter(t *testing.T) {
 			// set test property
 			testCase.setProperty(testCase.disk)
 
-			filter := NewLocalDiskFilter(*testCase.disk)
+			filter := NewLocalDiskFilter(testCase.disk)
 			filter.Init()
 
 			if testCase.WantCapacity > 0 {
@@ -187,7 +187,7 @@ func TestLocalDiskFilter(t *testing.T) {
 			}
 
 			if testCase.WantDiskUnclaimed {
-				filter.Unclaimed()
+				filter.Available()
 			}
 
 			if testCase.WantDiskType != "" {
@@ -236,7 +236,7 @@ func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 		State: v1alpha1.LocalDiskActive,
 	}
 
-	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskUnclaimed}
+	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskAvailable}
 
 	ld.TypeMeta = TypeMeta
 	ld.ObjectMeta = ObjectMata

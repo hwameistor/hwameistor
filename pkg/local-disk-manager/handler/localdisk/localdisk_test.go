@@ -31,7 +31,7 @@ var (
 	vendorVMware                 = "VMware"
 	proSCSI                      = "scsi"
 	apiversion                   = "hwameistor.io/v1alpha1"
-	localDiskKind                = "LocalDisk"
+	localDiskKind                = "localDisk"
 	localDiskNodeKind            = "LocalDiskNode"
 	localDiskClaimKind           = "LocalDiskClaim"
 	cap100G                int64 = 100 * 1024 * 1024 * 1024
@@ -103,26 +103,28 @@ func TestLocalDiskHandler_BoundTo(t *testing.T) {
 				t.Errorf("failed to create localdisk %v", err)
 			}
 
-			handler.For(*testcase.ld)
-			if err := handler.BoundTo(*testcase.ldc); err != nil {
+			handler.For(testcase.ld)
+			if err := handler.BoundTo(testcase.ldc); err != nil {
 				t.Errorf("failed to bound localdiskclaim")
 			}
 
 			// refresh
-			err = cli.Get(context.Background(), client.ObjectKey{Namespace: testcase.ld.GetNamespace(), Name: testcase.ld.GetName()}, testcase.ld)
+			err = cli.Get(context.Background(), client.ObjectKey{Namespace: testcase.ld.GetNamespace(),
+				Name: testcase.ld.GetName()}, testcase.ld)
 			if err != nil {
 				t.Errorf("failed to refresh localdisk")
 				return
 			}
 
-			if testcase.wantBound && testcase.ld.Status.State != v1alpha1.LocalDiskClaimed {
-				t.Errorf("Expect localdisk state is Claimed but actual got %s", testcase.ld.Status.State)
+			if testcase.wantBound && testcase.ld.Spec.ClaimRef != nil &&
+				testcase.ld.Spec.ClaimRef.Name != testcase.ldc.Name {
+				t.Errorf("Expect localdisk state is Bound but actual got %s", testcase.ld.Status.State)
 			}
 		})
 	}
 }
 
-// CreateFakeClient Create LocalDisk and LocalDiskNode resource
+// CreateFakeClient Create localDisk and LocalDiskNode resource
 func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s := scheme.Scheme
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.LocalDisk{})
@@ -133,7 +135,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 }
 
 // GenFakeLocalDiskObject Create disk
-// By default, disk can be claimed by the sample calim
+// By default, disk can be claimed by the sample claim
 func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 	ld := &v1alpha1.LocalDisk{}
 
@@ -167,7 +169,7 @@ func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 		State: v1alpha1.LocalDiskActive,
 	}
 
-	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskUnclaimed}
+	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskAvailable}
 
 	ld.TypeMeta = TypeMeta
 	ld.ObjectMeta = ObjectMata

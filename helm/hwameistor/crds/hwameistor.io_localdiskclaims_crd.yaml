@@ -126,9 +126,14 @@ spec:
             properties:
               status:
                 description: Status represents the current statue of the claim
+                enum:
+                - Bound
+                - Pending
+                - Extending
                 type: string
             type: object
         type: object
     served: true
     storage: true
-    subresources: {}
+    subresources:
+      status: {}

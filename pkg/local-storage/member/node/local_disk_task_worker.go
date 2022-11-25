@@ -15,19 +15,19 @@ import (
 
 func (m *manager) startLocalDiskTaskWorker(stopCh <-chan struct{}) {
 
-	m.logger.Debug("LocalDisk Worker is working now")
+	m.logger.Debug("localDisk Worker is working now")
 	go func() {
 		for {
 			task, shutdown := m.localDiskTaskQueue.Get()
 			if shutdown {
-				m.logger.WithFields(log.Fields{"task": task}).Debug("Stop the LocalDisk worker")
+				m.logger.WithFields(log.Fields{"task": task}).Debug("Stop the localDisk worker")
 				break
 			}
 			if err := m.processLocalDisk(task); err != nil {
-				m.logger.WithFields(log.Fields{"task": task, "error": err.Error()}).Error("Failed to process LocalDisk task, retry later")
+				m.logger.WithFields(log.Fields{"task": task, "error": err.Error()}).Error("Failed to process localDisk task, retry later")
 				m.localDiskTaskQueue.AddRateLimited(task)
 			} else {
-				m.logger.WithFields(log.Fields{"task": task}).Debug("Completed a LocalDisk task.")
+				m.logger.WithFields(log.Fields{"task": task}).Debug("Completed a localDisk task.")
 				m.localDiskTaskQueue.Forget(task)
 			}
 			m.localDiskTaskQueue.Done(task)
@@ -40,8 +40,8 @@ func (m *manager) startLocalDiskTaskWorker(stopCh <-chan struct{}) {
 
 func (m *manager) processLocalDisk(localDiskNameSpacedName string) error {
 	m.logger.Debug("processLocalDisk start ...")
-	logCtx := m.logger.WithFields(log.Fields{"LocalDisk": localDiskNameSpacedName})
-	logCtx.Debug("Working on a LocalDisk task")
+	logCtx := m.logger.WithFields(log.Fields{"localDisk": localDiskNameSpacedName})
+	logCtx.Debug("Working on a localDisk task")
 	splitRes := strings.Split(localDiskNameSpacedName, "/")
 	var diskName string
 	if len(splitRes) >= 2 {
@@ -52,10 +52,10 @@ func (m *manager) processLocalDisk(localDiskNameSpacedName string) error {
 	localDisk := &apisv1alpha1.LocalDisk{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: diskName}, localDisk); err != nil {
 		if !errors.IsNotFound(err) {
-			logCtx.WithError(err).Error("Failed to get LocalDisk from cache, retry it later ...")
+			logCtx.WithError(err).Error("Failed to get localDisk from cache, retry it later ...")
 			return err
 		}
-		logCtx.Info("Not found the LocalDisk from cache, should be deleted already.")
+		logCtx.Info("Not found the localDisk from cache, should be deleted already.")
 		return nil
 	}
 
@@ -81,29 +81,21 @@ func (m *manager) processLocalDisk(localDiskNameSpacedName string) error {
 		return nil
 
 	default:
-		logCtx.Error("Invalid LocalDisk state")
+		logCtx.Error("Invalid localDisk state")
 	}
 
 	switch localDisk.Status.State {
-	case apisv1alpha1.LocalDiskUnclaimed:
-		logCtx.Debug("LocalDiskUnclaimed ...")
+	case apisv1alpha1.LocalDiskAvailable:
+		logCtx.Debug("LocalDiskAvailable ...")
 		return nil
 
-	case apisv1alpha1.LocalDiskReleased:
-		logCtx.Debug("LocalDiskReleased ...")
+	case apisv1alpha1.LocalDiskBound:
+		logCtx.Debug("LocalDiskBound ...")
 		return nil
 
-	case apisv1alpha1.LocalDiskClaimed:
-		logCtx.Debug("LocalDiskClaimed ...")
-		return nil
 	default:
-		logCtx.Error("Invalid LocalDisk state")
+		logCtx.Error("Invalid localDisk state")
 	}
 
-	return fmt.Errorf("invalid LocalDisk state")
+	return fmt.Errorf("invalid localDisk state")
 }
-
-// func (m *manager) processLocalDiskBound(claim *apisv1alpha1.LocalDisk) error {
-// 	m.logger.Debug("processLocalDiskBound start ...")
-// 	return nil
-// }

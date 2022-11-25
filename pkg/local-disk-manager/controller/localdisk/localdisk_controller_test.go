@@ -2,6 +2,7 @@ package localdisk
 
 import (
 	"context"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
 	"testing"
 	"time"
 
@@ -44,12 +45,13 @@ func TestReconcileLocalDisk_Reconcile(t *testing.T) {
 
 	// reconcile object
 	r := ReconcileLocalDisk{
-		Client:   cli,
-		Scheme:   s,
-		Recorder: fakeRecorder,
+		Client:      cli,
+		Scheme:      s,
+		Recorder:    fakeRecorder,
+		diskHandler: localdisk.NewLocalDiskHandler(cli, fakeRecorder),
 	}
 
-	// set a LocalDiskClaim reference to a LocalDisk
+	// set a LocalDiskClaim reference to a localDisk
 	setClaimRef := func(ld *v1alpha1.LocalDisk, ldc *v1alpha1.LocalDiskClaim) {
 		ld.Spec.ClaimRef, _ = reference.GetReference(nil, ldc)
 	}
@@ -63,7 +65,7 @@ func TestReconcileLocalDisk_Reconcile(t *testing.T) {
 		ld          *v1alpha1.LocalDisk
 		ldc         *v1alpha1.LocalDiskClaim
 		pre         func(*v1alpha1.LocalDisk, *v1alpha1.LocalDiskClaim)
-		wantState   v1alpha1.LocalDiskClaimState
+		wantState   v1alpha1.LocalDiskState
 		post        func(client.Client, *v1alpha1.LocalDisk, *v1alpha1.LocalDiskClaim) error
 	}{
 		{
@@ -71,15 +73,15 @@ func TestReconcileLocalDisk_Reconcile(t *testing.T) {
 			ld:          GenFakeLocalDiskObject(),
 			ldc:         GenFakeLocalDiskClaimObject(),
 			pre:         setClaimRef,
-			wantState:   v1alpha1.LocalDiskClaimed,
+			wantState:   v1alpha1.LocalDiskBound,
 			post:        cleanResource,
 		},
 		{
-			description: "Unclaimed by any LocalDiskClaim",
+			description: "Available by any LocalDiskClaim",
 			ld:          GenFakeLocalDiskObject(),
 			ldc:         GenFakeLocalDiskClaimObject(),
 			pre:         doNothing,
-			wantState:   v1alpha1.LocalDiskUnclaimed,
+			wantState:   v1alpha1.LocalDiskAvailable,
 			post:        cleanResource,
 		},
 	}
@@ -88,16 +90,16 @@ func TestReconcileLocalDisk_Reconcile(t *testing.T) {
 		t.Run(testCase.description, func(t *testing.T) {
 			defer testCase.post(r.Client, testCase.ld, testCase.ldc)
 
-			// do some change on LocalDisk
+			// do some change on localDisk
 			testCase.pre(testCase.ld, testCase.ldc)
 
-			// create LocalDisk
+			// create localDisk
 			err := r.Create(context.Background(), testCase.ld)
 			if err != nil {
 				t.Error(err)
 			}
 
-			// create reconcile request for LocalDisk
+			// create reconcile request for localDisk
 			request := reconcile.Request{NamespacedName: types.NamespacedName{Namespace: testCase.ld.GetNamespace(), Name: testCase.ld.GetName()}}
 
 			// reconcile for LocalDisk
@@ -105,9 +107,9 @@ func TestReconcileLocalDisk_Reconcile(t *testing.T) {
 				t.Error(err)
 			}
 
-			// refresh LocalDisk
+			// refresh localDisk
 			if err = r.Get(context.Background(), request.NamespacedName, testCase.ld); err != nil {
-				t.Errorf("Failed to refresh LocalDisk %s for err %v", request.NamespacedName, err)
+				t.Errorf("Failed to refresh localDisk %s for err %v", request.NamespacedName, err)
 			}
 
 			// check wanted state
@@ -118,7 +120,7 @@ func TestReconcileLocalDisk_Reconcile(t *testing.T) {
 	}
 }
 
-// CreateFakeClient Create LocalDisk and LocalDiskClaim resource
+// CreateFakeClient Create localDisk and LocalDiskClaim resource
 func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	disk := GenFakeLocalDiskObject()
 	diskList := &v1alpha1.LocalDiskList{
@@ -179,7 +181,7 @@ func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 		State: v1alpha1.LocalDiskActive,
 	}
 
-	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskUnclaimed}
+	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskPending}
 
 	ld.TypeMeta = TypeMeta
 	ld.ObjectMeta = ObjectMata

@@ -7,7 +7,7 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
 )
 
-// Builder for LocalDisk resource
+// Builder for localDisk resource
 type Builder struct {
 	disk *v1alpha1.LocalDisk
 	errs []error
@@ -99,9 +99,9 @@ func (builder *Builder) GenerateStatus() *Builder {
 		return builder
 	}
 	if builder.disk.Spec.HasPartition {
-		builder.disk.Status.State = v1alpha1.LocalDiskInUse
+		builder.disk.Status.State = v1alpha1.LocalDiskBound
 	} else {
-		builder.disk.Status.State = v1alpha1.LocalDiskUnclaimed
+		builder.disk.Status.State = v1alpha1.LocalDiskAvailable
 	}
 	return builder
 }

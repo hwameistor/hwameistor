@@ -19,12 +19,14 @@ type LocalDiskClaimSpec struct {
 	Description DiskClaimDescription `json:"description,omitempty"`
 
 	// DiskRefs represents which disks are assigned to the LocalDiskClaim
+	// +optional
 	DiskRefs []*v1.ObjectReference `json:"diskRefs,omitempty"`
 }
 
 // LocalDiskClaimStatus defines the observed state of LocalDiskClaim
 type LocalDiskClaimStatus struct {
 	// Status represents the current statue of the claim
+	// +kubebuilder:validation:Enum:=Bound;Pending;Extending
 	Status DiskClaimStatus `json:"status,omitempty"`
 }
 
@@ -34,6 +36,7 @@ type LocalDiskClaimStatus struct {
 
 // LocalDiskClaim is the Schema for the localdiskclaims API
 //+kubebuilder:validation:Required
+//+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
 //+kubebuilder:printcolumn:JSONPath=".status.status",name=Phase,type=string
 //+kubebuilder:resource:scope=Cluster,shortName=ldc
@@ -75,6 +78,10 @@ const (
 	// LocalDiskClaimStatusPending represents LocalDiskClaim has not been assigned devices yet. Rather
 	// search is going on for matching disks.
 	LocalDiskClaimStatusPending DiskClaimStatus = "Pending"
+
+	// LocalDiskClaimStatusExtending represents LocalDiskClaim has been assigned devices yet, but need more disks.
+	// Rather search is going on for matching disks.
+	LocalDiskClaimStatusExtending DiskClaimStatus = "Extending"
 
 	// LocalDiskClaimStatusBound represents LocalDiskClaim has been assigned backing disk and ready for use.
 	LocalDiskClaimStatusBound DiskClaimStatus = "Bound"

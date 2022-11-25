@@ -55,9 +55,10 @@ func TestReconcileLocalDiskNode_Reconcile(t *testing.T) {
 
 	// create a group disk with same nodeName and same state
 	// fakedevPath is random value
-	generateGroupFreeDisk := func(nodeName string, state v1alpha1.LocalDiskClaimState, count int) []*v1alpha1.LocalDisk {
+	generateGroupFreeDisk := func(nodeName string, state v1alpha1.LocalDiskState, count int) []*v1alpha1.LocalDisk {
 		var fakedisks []*v1alpha1.LocalDisk
 		for i := 0; i < count; i++ {
+			time.Sleep(time.Nanosecond * 10)
 			devPath := time.Now().Format(time.RFC3339Nano)
 
 			disk := GenFakeLocalDiskObject()
@@ -108,7 +109,11 @@ func TestReconcileLocalDiskNode_Reconcile(t *testing.T) {
 			switch resource.(type) {
 			case []*v1alpha1.LocalDisk:
 				for _, obj := range resource.([]*v1alpha1.LocalDisk) {
-					_ = cli.Delete(context.Background(), obj)
+					if err := cli.Delete(context.Background(), obj); err != nil {
+						fmt.Printf("Failed to delete disk %v\n", obj.GetName())
+					} else {
+						fmt.Printf("Succeed to delete disk %v\n", obj.GetName())
+					}
 				}
 			default:
 				_ = cli.Delete(context.Background(), resource.(*v1alpha1.LocalDiskNode))
@@ -130,7 +135,7 @@ func TestReconcileLocalDiskNode_Reconcile(t *testing.T) {
 			postReconcile: cleanLocalDiskResource,
 			freeNode:      generateFreeDiskNode("node1"),
 			freeDisks: append(
-				generateGroupFreeDisk("node1", v1alpha1.LocalDiskUnclaimed, 1),
+				generateGroupFreeDisk("node1", v1alpha1.LocalDiskAvailable, 1),
 			),
 			wantFreeDiskCount: 1,
 		},
@@ -140,8 +145,8 @@ func TestReconcileLocalDiskNode_Reconcile(t *testing.T) {
 			postReconcile: cleanLocalDiskResource,
 			freeNode:      generateFreeDiskNode("node2"),
 			freeDisks: append(
-				generateGroupFreeDisk("node1", v1alpha1.LocalDiskUnclaimed, 3),
-				generateGroupFreeDisk("node2", v1alpha1.LocalDiskUnclaimed, 2)...,
+				generateGroupFreeDisk("node1", v1alpha1.LocalDiskAvailable, 3),
+				generateGroupFreeDisk("node2", v1alpha1.LocalDiskAvailable, 2)...,
 			),
 			wantFreeDiskCount: 2,
 		},
@@ -151,8 +156,8 @@ func TestReconcileLocalDiskNode_Reconcile(t *testing.T) {
 			postReconcile: cleanLocalDiskResource,
 			freeNode:      generateFreeDiskNode("node1"),
 			freeDisks: append(
-				generateGroupFreeDisk("node1", v1alpha1.LocalDiskClaimed, 3),
-				generateGroupFreeDisk("node1", v1alpha1.LocalDiskUnclaimed, 2)...,
+				generateGroupFreeDisk("node1", v1alpha1.LocalDiskBound, 3),
+				generateGroupFreeDisk("node1", v1alpha1.LocalDiskAvailable, 2)...,
 			),
 			wantFreeDiskCount: 2,
 		},
@@ -162,8 +167,8 @@ func TestReconcileLocalDiskNode_Reconcile(t *testing.T) {
 			postReconcile: cleanLocalDiskResource,
 			freeNode:      generateFreeDiskNode("node1"),
 			freeDisks: append(
-				generateGroupFreeDisk("node1", v1alpha1.LocalDiskClaimed, 3),
-				generateGroupFreeDisk("node2", v1alpha1.LocalDiskUnclaimed, 2)...,
+				generateGroupFreeDisk("node1", v1alpha1.LocalDiskBound, 3),
+				generateGroupFreeDisk("node2", v1alpha1.LocalDiskAvailable, 2)...,
 			),
 			wantFreeDiskCount: 0,
 		},
@@ -171,14 +176,14 @@ func TestReconcileLocalDiskNode_Reconcile(t *testing.T) {
 
 	for _, testcase := range testCases {
 		t.Run(testcase.description, func(t *testing.T) {
-			// clean resources
-			defer testcase.postReconcile(r.client, testcase.freeDisks, testcase.freeNode)
-
 			// create free disks
 			err := testcase.preReconcile(r.client, testcase.freeDisks)
 			if err != nil {
 				t.Errorf("failed to create LocalDisks, err: %v", err)
 			}
+
+			// clean resources
+			defer testcase.postReconcile(r.client, testcase.freeDisks, testcase.freeNode)
 
 			// create disk node
 			err = testcase.preReconcile(r.client, testcase.freeNode)
@@ -206,7 +211,7 @@ func TestReconcileLocalDiskNode_Reconcile(t *testing.T) {
 	}
 }
 
-// CreateFakeClient Create LocalDisk and LocalDiskNode resource
+// CreateFakeClient Create localDisk and LocalDiskNode resource
 func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s := scheme.Scheme
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.LocalDisk{})
@@ -250,7 +255,7 @@ func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 		State: v1alpha1.LocalDiskActive,
 	}
 
-	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskUnclaimed}
+	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskAvailable}
 
 	ld.TypeMeta = TypeMeta
 	ld.ObjectMeta = ObjectMata
@@ -276,8 +281,7 @@ func refreshNodeDisks(node *v1alpha1.LocalDiskNode, wantNode string) {
 	for name, disk := range node.Status.Disks {
 		if strings.HasPrefix(name, wantNode) {
 			node.Status.TotalDisk++
-			if disk.Status == string(v1alpha1.LocalDiskUnclaimed) ||
-				disk.Status == string(v1alpha1.LocalDiskReleased) {
+			if disk.Status == string(v1alpha1.LocalDiskAvailable) {
 				node.Status.AllocatableDisk++
 			}
 		}

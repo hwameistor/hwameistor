@@ -1,7 +1,7 @@
 package manager
 
 // DiskParser The information source of the disk may use a variety of methods.
-// For LocalDisk, it only focuses on the basic information of the disk itself.
+// For localDisk, it only focuses on the basic information of the disk itself.
 // Therefore, there is no direct binding between the disk attributes and the specific implementation.
 // The parser will be responsible for docking with various tools to output fixed information
 type DiskParser struct {

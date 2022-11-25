@@ -28,7 +28,7 @@ const (
 	ReservedPVCKey = "disk.hwameistor.io/pvc"
 )
 
-// LocalDiskNodesManager manage all disks in the cluster by interacting with LocalDisk resources
+// LocalDiskNodesManager manage all disks in the cluster by interacting with localDisk resources
 type LocalDiskNodesManager struct {
 	// GetClient for query LocalDiskNode resources from k8s
 	GetClient func() (*localdisknode.Kubeclient, error)
@@ -37,7 +37,7 @@ type LocalDiskNodesManager struct {
 	mutex sync.Mutex
 
 	// DiskHandler manage LD resources in cluster
-	DiskHandler *localdisk2.LocalDiskHandler
+	DiskHandler *localdisk2.Handler
 }
 
 func (ldn *LocalDiskNodesManager) ReleaseDisk(disk string) error {
@@ -49,9 +49,9 @@ func (ldn *LocalDiskNodesManager) ReleaseDisk(disk string) error {
 	if err != nil {
 		return err
 	}
-	ldn.DiskHandler.For(*ld)
+	ldn.DiskHandler.For(ld)
 	ldn.DiskHandler.RemoveLabel(labels.Set{ReservedPVCKey: ""})
-	ldn.DiskHandler.SetupStatus(v1alpha1.LocalDiskReleased)
+	ldn.DiskHandler.SetupStatus(v1alpha1.LocalDiskAvailable)
 	return ldn.DiskHandler.UpdateStatus()
 }
 
@@ -63,12 +63,12 @@ func (ldn *LocalDiskNodesManager) UnReserveDiskForPVC(pvc string) error {
 	}
 
 	for _, disk := range list.Items {
-		if disk.Status.State != v1alpha1.LocalDiskReserved {
+		if !disk.Spec.Reserved {
 			continue
 		}
-		ldn.DiskHandler.For(disk)
+		ldn.DiskHandler.For(&disk)
 		ldn.DiskHandler.RemoveLabel(label)
-		ldn.DiskHandler.SetupStatus(v1alpha1.LocalDiskReleased)
+		ldn.DiskHandler.SetupStatus(v1alpha1.LocalDiskAvailable)
 		if err = ldn.DiskHandler.UpdateStatus(); err != nil {
 			return err
 		}
@@ -194,7 +194,7 @@ func (ldn *LocalDiskNodesManager) GetReservedDiskByPVC(pvc string) (*Disk, error
 	return reservedDisk, nil
 }
 
-// ClaimDisk claim a LocalDisk by update LocalDisk status to InUse
+// ClaimDisk claim a localDisk by update localDisk status to InUse
 func (ldn *LocalDiskNodesManager) ClaimDisk(name string) error {
 	if name == "" {
 		return fmt.Errorf("disk is empty")
@@ -202,11 +202,11 @@ func (ldn *LocalDiskNodesManager) ClaimDisk(name string) error {
 
 	ld, err := ldn.DiskHandler.GetLocalDisk(client.ObjectKey{Name: name})
 	if err != nil {
-		log.Errorf("failed to get LocalDisk %s", err.Error())
+		log.Errorf("failed to get localDisk %s", err.Error())
 		return err
 	}
-	ldn.DiskHandler.For(*ld)
-	ldn.DiskHandler.SetupStatus(v1alpha1.LocalDiskInUse)
+	ldn.DiskHandler.For(ld)
+	ldn.DiskHandler.SetupStatus(v1alpha1.LocalDiskBound)
 
 	return ldn.DiskHandler.UpdateStatus()
 }
@@ -218,17 +218,17 @@ func (ldn *LocalDiskNodesManager) reserve(disk *Disk, pvc string) error {
 
 	ld, err := ldn.DiskHandler.GetLocalDisk(client.ObjectKey{Name: disk.Name})
 	if err != nil {
-		log.Errorf("failed to get LocalDisk %s", err.Error())
+		log.Errorf("failed to get localDisk %s", err.Error())
 		return err
 	}
-	ldn.DiskHandler.For(*ld)
+	ldn.DiskHandler.For(ld)
 	ldn.DiskHandler.SetupLabel(labels.Set{ReservedPVCKey: pvc})
-	ldn.DiskHandler.SetupStatus(v1alpha1.LocalDiskReserved)
+	ldn.DiskHandler.ReserveDisk()
 
-	return ldn.DiskHandler.UpdateStatus()
+	return ldn.DiskHandler.Update()
 }
 
-// ReserveDiskForVolume reserve a LocalDisk by update LocalDisk status to Reserved and label this disk for the volume
+// ReserveDiskForVolume reserve a localDisk by update localDisk status to Reserved and label this disk for the volume
 func (ldn *LocalDiskNodesManager) ReserveDiskForVolume(reqDisk Disk, pvc string) error {
 	ldn.mutex.Lock()
 	defer ldn.mutex.Unlock()

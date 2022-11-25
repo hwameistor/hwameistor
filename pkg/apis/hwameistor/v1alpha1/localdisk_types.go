@@ -84,7 +84,7 @@ type LocalDiskClaimState string
 const (
 	// LocalDiskUnclaimed represents that the disk is not bound to any LDC,
 	// and is available for claiming.
-	LocalDiskUnclaimed LocalDiskClaimState = "Unclaimed"
+	LocalDiskUnclaimed LocalDiskClaimState = "Available"
 
 	// LocalDiskReleased represents that the disk is released from the LDC,
 	LocalDiskReleased LocalDiskClaimState = "Released"
@@ -94,14 +94,13 @@ const (
 
 	// LocalDiskInUse represents that the disk is in use but not claimed by a LDC
 	LocalDiskInUse LocalDiskClaimState = "Inuse"
-
-	// LocalDiskReserved represents that the disk will be used in the feature
-	LocalDiskReserved LocalDiskClaimState = "Reserved"
 )
 
 // LocalDiskState defines the observed state of the local disk
 type LocalDiskState string
 
+// NOTE: The follow-up state represent disk health status detected by
+// system or health check tools(e.g., smartctl)
 const (
 	// LocalDiskActive is the state for the disk that is connected
 	LocalDiskActive LocalDiskState = "Active"
@@ -114,11 +113,32 @@ const (
 	LocalDiskUnknown LocalDiskState = "Unknown"
 )
 
+// NOTE: The follow-up state represent LocalDisk instance status
+const (
+	// LocalDiskEmpty is temporary status, it can be updated to Available or Bound
+	LocalDiskEmpty LocalDiskState = ""
+
+	// LocalDiskPending is temporary status, it can be updated to Available or Bound
+	LocalDiskPending LocalDiskState = "Pending"
+
+	// LocalDiskAvailable represents the disk can be used which means:
+	// 1) there is no filesystem or partitions exist
+	// 2) the disk is not bound to any LocalDiskClaim object
+	LocalDiskAvailable LocalDiskState = "Available"
+
+	// LocalDiskBound represents the disk is used already.
+	// There are follow-up use cases:
+	// 1) used by system (e.g., rootfs)
+	// 2) used by a LocalDiskClaim object
+	// 3) there is already a filesystem or partition exist
+	LocalDiskBound LocalDiskState = "Bound"
+)
+
 // SmartAssessResult defines the result of self-assessment test
 type SmartAssessResult string
 
 const (
-	// // AssessPassed indicates the disk is healthy
+	// AssessPassed indicates the disk is healthy
 	AssessPassed SmartAssessResult = "Passed"
 
 	// AssessFailed indicates the disk is unhealthy
@@ -171,13 +191,17 @@ type LocalDiskSpec struct {
 	// ClaimRef is the reference to the LDC which has claimed this LD
 	// +optional
 	ClaimRef *v1.ObjectReference `json:"claimRef,omitempty"`
+
+	// Reserved represents the disk won't be used in hwameistor later, until it becomes unreserved
+	// +optional
+	Reserved bool `json:"reserved,omitempty"`
 }
 
 // LocalDiskStatus defines the observed state of LocalDisk
 type LocalDiskStatus struct {
 	// State represents the claim state of the disk
-	// +kubebuilder:validation:Enum:=Claimed;Unclaimed;Released;Reserved;Inuse
-	State LocalDiskClaimState `json:"claimState,omitempty"`
+	// +kubebuilder:validation:Enum:=Bound;Reserved;Available;Pending
+	State LocalDiskState `json:"claimState,omitempty"`
 }
 
 // +genclient
@@ -186,9 +210,11 @@ type LocalDiskStatus struct {
 
 // LocalDisk is the Schema for the localdisks API
 //+kubebuilder:resource:scope=Cluster,shortName=ld
+//+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
 //+kubebuilder:printcolumn:JSONPath=".spec.claimRef.name",name=Claim,type=string
 //+kubebuilder:printcolumn:JSONPath=".status.claimState",name=Phase,type=string
+//+kubebuilder:printcolumn:JSONPath=".spec.reserved",name=Reserved,type=boolean,priority=1
 type LocalDisk struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

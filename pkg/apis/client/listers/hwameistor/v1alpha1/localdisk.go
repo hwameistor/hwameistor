@@ -10,10 +10,13 @@ import (
 )
 
 // LocalDiskLister helps list LocalDisks.
+// All objects returned here must be treated as read-only.
 type LocalDiskLister interface {
 	// List lists all LocalDisks in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.LocalDisk, err error)
 	// Get retrieves the LocalDisk from the index for a given name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.LocalDisk, error)
 	LocalDiskListerExpansion
 }

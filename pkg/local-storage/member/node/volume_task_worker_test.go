@@ -72,7 +72,7 @@ var (
 
 	apiversion                  = "hwameistor.io/v1alpha1"
 	LocalVolumeKind             = "LocalVolume"
-	LocalDiskKind               = "LocalDisk"
+	LocalDiskKind               = "localDisk"
 	LocalDiskClaimKind          = "LocalDiskClaim"
 	LocalStorageNodeKind        = "LocalStorageNode"
 	LeaseKind                   = "Lease"
@@ -151,7 +151,7 @@ func Test_manager_cleanupVolumeReplica(t *testing.T) {
 				volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
 				volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 				localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-				localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+				localDiskTaskQueue:      common.NewTaskQueue("localDisk", maxRetries),
 				// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
@@ -226,7 +226,7 @@ func Test_manager_createVolumeReplica(t *testing.T) {
 				volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
 				volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 				localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-				localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+				localDiskTaskQueue:      common.NewTaskQueue("localDisk", maxRetries),
 				// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
@@ -301,7 +301,7 @@ func Test_manager_deleteVolumeReplica(t *testing.T) {
 				volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
 				volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 				localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-				localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+				localDiskTaskQueue:      common.NewTaskQueue("localDisk", maxRetries),
 				// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
@@ -379,7 +379,7 @@ func Test_manager_getMyVolumeReplica(t *testing.T) {
 				volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
 				volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 				localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-				localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+				localDiskTaskQueue:      common.NewTaskQueue("localDisk", maxRetries),
 				// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
@@ -459,7 +459,7 @@ func Test_manager_processVolumeReplicaTaskAssignment(t *testing.T) {
 				volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
 				volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 				localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-				localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+				localDiskTaskQueue:      common.NewTaskQueue("localDisk", maxRetries),
 				// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
@@ -536,7 +536,7 @@ func Test_manager_updateVolumeReplica(t *testing.T) {
 				volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
 				volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 				localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-				localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+				localDiskTaskQueue:      common.NewTaskQueue("localDisk", maxRetries),
 				// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),

@@ -17,7 +17,7 @@ type DiskNodeHandler struct {
 	client.Client
 	record.EventRecorder
 	diskNode    *v1alpha1.LocalDiskNode
-	diskHandler *localdisk2.LocalDiskHandler
+	diskHandler *localdisk2.Handler
 }
 
 func NewDiskNodeHelper(cli client.Client, recorder record.EventRecorder) *DiskNodeHandler {
@@ -108,7 +108,7 @@ func (n *DiskNodeHandler) ListNodeDisks() (map[string]v1alpha1.Disk, error) {
 	return disks, nil
 }
 
-// IsSameDisk judge the disk in LocalDiskNode is same as disk in LocalDisk
+// IsSameDisk judge the disk in LocalDiskNode is same as disk in localDisk
 func (n *DiskNodeHandler) IsSameDisk(name string, newDisk v1alpha1.Disk) bool {
 	oldDisk := n.Disks()[name]
 

@@ -35,7 +35,7 @@ func Test_manager_getLocalDiskByName(t *testing.T) {
 		nameSpace     string
 	}
 	client, _ := CreateFakeClient()
-	// Create LocalDisk
+	// Create localDisk
 	ld := GenFakeLocalDiskObject()
 	ld.Name = fakeLocalDiskName
 	err := client.Create(context.Background(), ld)
@@ -70,7 +70,7 @@ func Test_manager_getLocalDiskByName(t *testing.T) {
 				volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
 				volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 				localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-				localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+				localDiskTaskQueue:      common.NewTaskQueue("localDisk", maxRetries),
 				// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
@@ -109,7 +109,7 @@ func Test_manager_getLocalDisksByDiskRefs(t *testing.T) {
 	}
 
 	client, _ := CreateFakeClient()
-	// Create LocalDisk
+	// Create localDisk
 	ld := GenFakeLocalDiskObject()
 	ld.Name = fakeLocalDiskName
 	err := client.Create(context.Background(), ld)
@@ -145,7 +145,7 @@ func Test_manager_getLocalDisksByDiskRefs(t *testing.T) {
 				volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
 				volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 				localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-				localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+				localDiskTaskQueue:      common.NewTaskQueue("localDisk", maxRetries),
 				// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
@@ -183,7 +183,7 @@ func Test_manager_getLocalDisksByLocalDiskClaim(t *testing.T) {
 	}
 
 	client, _ := CreateFakeClient()
-	// Create LocalDisk
+	// Create localDisk
 	ld := GenFakeLocalDiskObject()
 	ld.Name = fakeLocalDiskName
 	err := client.Create(context.Background(), ld)
@@ -224,7 +224,7 @@ func Test_manager_getLocalDisksByLocalDiskClaim(t *testing.T) {
 				volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
 				volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 				localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-				localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+				localDiskTaskQueue:      common.NewTaskQueue("localDisk", maxRetries),
 				// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
@@ -262,7 +262,7 @@ func Test_manager_getLocalDisksMapByLocalDiskClaim(t *testing.T) {
 	}
 
 	client, _ := CreateFakeClient()
-	// Create LocalDisk
+	// Create localDisk
 	ld := GenFakeLocalDiskObject()
 	ld.Name = fakeLocalDiskName
 	err := client.Create(context.Background(), ld)
@@ -303,7 +303,7 @@ func Test_manager_getLocalDisksMapByLocalDiskClaim(t *testing.T) {
 				volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
 				volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 				localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-				localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+				localDiskTaskQueue:      common.NewTaskQueue("localDisk", maxRetries),
 				// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
@@ -341,7 +341,7 @@ func Test_manager_listAllAvailableLocalDisksByLocalClaimDisk(t *testing.T) {
 	}
 
 	client, _ := CreateFakeClient()
-	// Create LocalDisk
+	// Create localDisk
 	ld := GenFakeLocalDiskObject()
 	ld.Name = fakeLocalDiskName
 	err := client.Create(context.Background(), ld)
@@ -382,7 +382,7 @@ func Test_manager_listAllAvailableLocalDisksByLocalClaimDisk(t *testing.T) {
 				volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
 				volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 				localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-				localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+				localDiskTaskQueue:      common.NewTaskQueue("localDisk", maxRetries),
 				// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
@@ -420,7 +420,7 @@ func Test_manager_listAllInUseLocalDisksByLocalClaimDisk(t *testing.T) {
 	}
 
 	client, _ := CreateFakeClient()
-	// Create LocalDisk
+	// Create localDisk
 	ld := GenFakeLocalDiskObject()
 	ld.Name = fakeLocalDiskName
 	err := client.Create(context.Background(), ld)
@@ -461,7 +461,7 @@ func Test_manager_listAllInUseLocalDisksByLocalClaimDisk(t *testing.T) {
 				volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
 				volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 				localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-				localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+				localDiskTaskQueue:      common.NewTaskQueue("localDisk", maxRetries),
 				// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
@@ -499,7 +499,7 @@ func Test_manager_listLocalDisksByLocalDiskClaim(t *testing.T) {
 	}
 
 	client, _ := CreateFakeClient()
-	// Create LocalDisk
+	// Create localDisk
 	ld := GenFakeLocalDiskObject()
 	ld.Name = fakeLocalDiskName
 	err := client.Create(context.Background(), ld)
@@ -540,7 +540,7 @@ func Test_manager_listLocalDisksByLocalDiskClaim(t *testing.T) {
 				volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
 				volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 				localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-				localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+				localDiskTaskQueue:      common.NewTaskQueue("localDisk", maxRetries),
 				// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
@@ -578,7 +578,7 @@ func Test_manager_processLocalDiskClaim(t *testing.T) {
 	}
 
 	client, _ := CreateFakeClient()
-	// Create LocalDisk
+	// Create localDisk
 	ld := GenFakeLocalDiskObject()
 	ld.Name = fakeLocalDiskName
 	err := client.Create(context.Background(), ld)
@@ -618,7 +618,7 @@ func Test_manager_processLocalDiskClaim(t *testing.T) {
 				volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
 				volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 				localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-				localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+				localDiskTaskQueue:      common.NewTaskQueue("localDisk", maxRetries),
 				// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
@@ -651,7 +651,7 @@ func Test_manager_processLocalDiskClaimBound(t *testing.T) {
 	}
 
 	client, _ := CreateFakeClient()
-	// Create LocalDisk
+	// Create localDisk
 	ld := GenFakeLocalDiskObject()
 	ld.Name = fakeLocalDiskName
 	err := client.Create(context.Background(), ld)
@@ -691,7 +691,7 @@ func Test_manager_processLocalDiskClaimBound(t *testing.T) {
 				volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
 				volumeReplicaTaskQueue:  common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 				localDiskClaimTaskQueue: common.NewTaskQueue("LocalDiskClaim", maxRetries),
-				localDiskTaskQueue:      common.NewTaskQueue("LocalDisk", maxRetries),
+				localDiskTaskQueue:      common.NewTaskQueue("localDisk", maxRetries),
 				// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
