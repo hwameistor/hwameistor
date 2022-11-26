@@ -3,6 +3,7 @@ package smart
 import (
 	"fmt"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
+	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 )
 
@@ -41,11 +42,26 @@ func (c *controller) SupportSmart() (bool, error) {
 		err        error
 	)
 
-	if jsonStatus, err = getSMARTCtl(c.Device.Device, fmt.Sprintf("-i %v", c.Options)); err != nil {
+	if jsonStatus, err = getSMARTCtl(c.Device.Device, append(c.Options, "-i")...); err != nil {
 		return false, err
 	}
 
-	jsonStatus.Get("")
+	return jsonStatus.Get("").Bool(), err
+}
+
+// GetHealthStatus Show device SMART health status
+// true: passed false: not passed
+func (c *controller) GetHealthStatus() (bool, error) {
+	var (
+		jsonStatus gjson.Result
+		err        error
+	)
+
+	if jsonStatus, err = getSMARTCtl(c.Device.Device, append(c.Options, "-H")...); err != nil {
+		return false, err
+	}
+
+	return jsonStatus.Get(_SMARTStatusPassed).Bool(), err
 }
 
 // GetSmartStatus represent overall health status
@@ -55,7 +71,7 @@ func (c *controller) GetSmartStatus() (bool, error) {
 		err        error
 	)
 
-	if jsonStatus, err = getSMARTCtl(c.Device.Device, fmt.Sprintf("/c0 show %v", c.Options)); err != nil {
+	if jsonStatus, err = getSMARTCtl(c.Device.Device, append(c.Options, "/c0", "show")...); err != nil {
 		return false, err
 	}
 
@@ -67,22 +83,29 @@ func getSMARTCtl(device string, options ...string) (gjson.Result, error) {
 	var (
 		result gjson.Result
 	)
-	cmd := fmt.Sprintf("%s %v %s", _SMARTCtl, options, device)
-	out, err := utils.Bash(cmd)
+
+	out, err := utils.BashWithArgs(_SMARTCtl, append(options, device, "--json")...)
 	if err != nil {
+		log.WithError(err).Error(out)
 		return result, err
 	}
-
 	if !gjson.Valid(out) {
+		log.Error("invalid json format: %v", out)
 		return result, fmt.Errorf("invalid json format")
 	}
-	jsonData := gjson.Parse(out)
 
-	if err = resultCodeIsOk(jsonData.Get(_SMARTExitStatus).Int()); err != nil {
+	result = gjson.Parse(out)
+	if err = resultCodeIsOk(result.Get(_SMARTExitStatus).Int()); err != nil {
+		log.WithError(err).Error(out)
 		return result, err
 	}
 
-	return result, jsonIsOk(jsonData)
+	if err = jsonIsOk(result); err != nil {
+		log.WithError(err).Error("got error message")
+		return result, err
+	}
+
+	return result, nil
 }
 
 // Parse smartctl return code

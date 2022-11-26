@@ -23,6 +23,22 @@ func Bash(cmd string) (string, error) {
 	return stdout.String(), err
 }
 
+func BashWithArgs(cmd string, args ...string) (string, error) {
+	var (
+		stdout  bytes.Buffer
+		stderr  bytes.Buffer
+		execCmd *exec.Cmd
+	)
+
+	execCmd = exec.Command(cmd, args...)
+	execCmd.Stderr = &stderr
+	execCmd.Stdout = &stdout
+
+	log.Info(execCmd.String())
+	err := execCmd.Run()
+	return stdout.String(), err
+}
+
 // ConvertShellOutputs
 func ConvertShellOutputs(outputs string) []string {
 	var result []string
