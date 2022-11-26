@@ -61,3 +61,20 @@ func GetAllIndex(s string, substr string) []int {
 
 	return indexes
 }
+
+func ExecCmd(command, args string) (out []byte, err error) {
+	var argArray []string
+	if args != "" {
+		argArray = strings.Split(args, " ")
+	} else {
+		argArray = make([]string, 0)
+	}
+
+	cmd := exec.Command(command, argArray...)
+	buf, err := cmd.Output()
+	if err != nil {
+		return out, err
+	}
+
+	return buf, nil
+}
