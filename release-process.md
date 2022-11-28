@@ -25,6 +25,7 @@ A minor release requires 3 steps are as follows:
 
 1. An issue is proposing a new release with a changelog since the latest release.
 2. Check out master, ensure it's upto date, and ensure you have a clean working directory.
+   1. Update `CHANGELOG.md` and create changelog under `changelogs/released/<version>` directory
 3. Create a new local release branch from master.
 4. Edit file `helm/hwameistor/Chart.yaml`
    1. Modify version field to release version 
@@ -54,6 +55,7 @@ A patch release requires 3 steps are as follows:
 
 1. An issue is proposing a new release with a changelog since the latest release.
 2. Check out master, ensure it's upto date, and ensure you have a clean working directory.
+   1. Update `CHANGELOG.md` and create changelog under `changelogs/released/<version>` directory
 3. Create a new local release branch from master.
 4. Edit file `helm/hwameistor/Chart.yaml`
    1. Modify version field to release version
