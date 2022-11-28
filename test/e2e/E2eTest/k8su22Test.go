@@ -25,7 +25,7 @@ import (
 )
 
 var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("k8su2204"), func() {
-
+	startAdRollback("k8su2204")
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
