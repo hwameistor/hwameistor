@@ -124,9 +124,6 @@ func startAdRollback(k8s string) error {
 		logrus.Error(err)
 	}
 	return err
-	f := framework.NewDefaultFramework(clientset.AddToScheme)
-	logrus.Printf("get framework")
-	client := f.GetClient()
 
 }
 
