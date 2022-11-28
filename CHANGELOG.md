@@ -1,3 +1,20 @@
+v0.6.0 / 2022-11-28
+========================
+## LocalDiskManager
+* Support Health Check By S.M.A.R.T (#496 @SSmallMonster )
+* Optimize the DISK State and reconstruct the state flow process (#464 @SSmallMonster )
+
+## Evictor
+* added an option to disable storage node volume eviction (#493 @sun7927 )
+
+## Scheduler,Admission,LocalStorage
+N/A
+
+## Other
+* [Docs] Add step about changelog (#500 @SSmallMonster )
+* updated CODE_OF_CONDUCT.md @#466 @windsonsea )
+* updated the document for eviction (#494 @sun7927 )
+
 v0.5.0 / 2022-11-24
 ========================
 ## Other
