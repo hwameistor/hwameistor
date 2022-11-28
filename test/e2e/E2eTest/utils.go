@@ -105,7 +105,7 @@ func startAdRollback(k8s string) error {
 		run := "sh arm_rollback.sh "
 		_ = runInLinux(run)
 	} else {
-		logrus.Info("start ad_rollback")
+		logrus.Info("start ad_rollback" + k8s)
 		run := "sh ad_rollback.sh " + k8s
 		_ = runInLinux(run)
 	}
@@ -124,6 +124,10 @@ func startAdRollback(k8s string) error {
 		logrus.Error(err)
 	}
 	return err
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
+	logrus.Printf("get framework")
+	client := f.GetClient()
+
 }
 
 func configureadEnvironment(ctx context.Context, k8s string) error {

@@ -25,11 +25,16 @@ import (
 )
 
 var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.25"), func() {
-
-	startAdRollback("k8s1.25")
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
+	ginkgo.It("Configure the base environment", func() {
+		startAdRollback("k8s1.25")
+		f = framework.NewDefaultFramework(clientset.AddToScheme)
+		client = f.GetClient()
+		ctx = context.TODO()
+	})
+
 	ginkgo.It("Configure the base environment", func() {
 		result := configureadEnvironment(ctx, "k8s1.25")
 		gomega.Expect(result).To(gomega.BeNil())
