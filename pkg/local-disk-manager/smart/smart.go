@@ -2,9 +2,12 @@ package smart
 
 import (
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
+	"path"
+	"strings"
 )
 
 const (
@@ -23,16 +26,41 @@ type Device struct {
 }
 
 type controller struct {
-	Device  Device
+	*manager.DiskIdentify
 	Options []string
 }
 
 // NewSMARTController used to get S.M.A.R.T info
-func NewSMARTController(device Device, options ...string) *controller {
+func NewSMARTController(device *manager.DiskIdentify, options ...string) *controller {
 	return &controller{
-		Device:  device,
-		Options: options,
+		DiskIdentify: device,
+		Options:      options,
 	}
+}
+
+// NewSMARTParser used to get S.M.A.R.T info
+func NewSMARTParser(device *manager.DiskIdentify, options ...string) *manager.SmartInfoParser {
+	return &manager.SmartInfoParser{
+		ISmart: NewSMARTController(device, options...),
+	}
+}
+
+func (c *controller) ParseSmartInfo() manager.SmartInfo {
+	var (
+		healthOK bool
+		err      error
+		result   manager.SmartInfo
+	)
+
+	if healthOK, err = c.GetHealthStatus(); err != nil {
+		log.WithError(err).Error("Failed to get disk status")
+		result.OverallHealthPassed = false
+	} else {
+		result.OverallHealthPassed = healthOK
+	}
+
+	log.WithFields(log.Fields{"disk": c.DevName, "status": healthOK}).Info("Succeed to check disk status")
+	return result
 }
 
 // SupportSmart judge if this device supports SMART or not
@@ -42,7 +70,7 @@ func (c *controller) SupportSmart() (bool, error) {
 		err        error
 	)
 
-	if jsonStatus, err = getSMARTCtl(c.Device.Device, append(c.Options, "-i")...); err != nil {
+	if jsonStatus, err = getSMARTCtlResult(c.FormatDevPath(), append(c.Options, "-i")...); err != nil {
 		return false, err
 	}
 
@@ -57,7 +85,7 @@ func (c *controller) GetHealthStatus() (bool, error) {
 		err        error
 	)
 
-	if jsonStatus, err = getSMARTCtl(c.Device.Device, append(c.Options, "-H")...); err != nil {
+	if jsonStatus, err = getSMARTCtlResult(c.FormatDevPath(), append(c.Options, "-H")...); err != nil {
 		return false, err
 	}
 
@@ -71,15 +99,23 @@ func (c *controller) GetSmartStatus() (bool, error) {
 		err        error
 	)
 
-	if jsonStatus, err = getSMARTCtl(c.Device.Device, append(c.Options, "/c0", "show")...); err != nil {
+	if jsonStatus, err = getSMARTCtlResult(c.FormatDevPath(), append(c.Options, "/c0", "show")...); err != nil {
 		return false, err
 	}
 
 	return jsonStatus.Get(_SMARTStatusPassed).Bool(), err
 }
 
-// getSMARTCtl get smartctl output
-func getSMARTCtl(device string, options ...string) (gjson.Result, error) {
+// FormatDevPath sda => /dev/sda
+func (c *controller) FormatDevPath() string {
+	if strings.HasPrefix(c.DevName, "/dev") {
+		return c.DevName
+	}
+	return path.Join("/dev", c.Name)
+}
+
+// getSMARTCtlResult get smartctl output
+func getSMARTCtlResult(device string, options ...string) (gjson.Result, error) {
 	var (
 		result gjson.Result
 	)
@@ -90,7 +126,7 @@ func getSMARTCtl(device string, options ...string) (gjson.Result, error) {
 		return result, err
 	}
 	if !gjson.Valid(out) {
-		log.Error("invalid json format: %v", out)
+		log.Errorf("invalid json format: %v", out)
 		return result, fmt.Errorf("invalid json format")
 	}
 

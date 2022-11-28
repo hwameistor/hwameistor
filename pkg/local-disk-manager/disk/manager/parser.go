@@ -7,23 +7,26 @@ package manager
 type DiskParser struct {
 	// DiskIdentify
 	*DiskIdentify
-	PartitionParser
-	RaidParser
-	AttributeParser
+	*PartitionParser
+	*RaidParser
+	*AttributeParser
+	*SmartInfoParser
 }
 
 // NewDiskParser
 func NewDiskParser(
 	disk *DiskIdentify,
-	partitionParser PartitionParser,
-	raidParser RaidParser,
-	attrParser AttributeParser,
+	partitionParser *PartitionParser,
+	raidParser *RaidParser,
+	attrParser *AttributeParser,
+	smartParser *SmartInfoParser,
 ) *DiskParser {
 	return &DiskParser{
 		DiskIdentify:    disk,
 		PartitionParser: partitionParser,
 		RaidParser:      raidParser,
 		AttributeParser: attrParser,
+		SmartInfoParser: smartParser,
 	}
 }
 
@@ -38,6 +41,7 @@ func (dp *DiskParser) ParseDisk() DiskInfo {
 	disk := DiskInfo{DiskIdentify: *dp.DiskIdentify}
 	disk.Attribute = dp.AttributeParser.ParseDiskAttr()
 	disk.Partitions = dp.PartitionParser.ParsePartitionInfo()
+	disk.Smart = dp.SmartInfoParser.ParseSmartInfo()
 
 	return disk
 }

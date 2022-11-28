@@ -88,8 +88,8 @@ func (lsb LSBlk) partitionInfo() ([]manager.PartitionInfo, error) {
 }
 
 // NewPartitionParser
-func NewPartitionParser(disk *manager.DiskIdentify) manager.PartitionParser {
-	return manager.PartitionParser{
+func NewPartitionParser(disk *manager.DiskIdentify) *manager.PartitionParser {
+	return &manager.PartitionParser{
 		IPartition: LSBlk{disk},
 	}
 }

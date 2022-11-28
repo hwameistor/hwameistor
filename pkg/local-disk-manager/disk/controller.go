@@ -5,6 +5,7 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/localdisk"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/lsblk"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/smart"
 	_ "github.com/hwameistor/hwameistor/pkg/local-disk-manager/udev"
 	log "github.com/sirupsen/logrus"
 	crmanager "sigs.k8s.io/controller-runtime/pkg/manager"
@@ -68,20 +69,20 @@ func (ctr *Controller) HandleEvent() {
 			newDisk := DiskParser.ParseDisk()
 			log.Infof("Disk %v basicinfo: %v", event.DevPath, newDisk)
 			// Convert disk resource to localDisk
-			ld := ctr.localDiskController.ConvertDiskToLocalDisk(newDisk)
+			localDisk := ctr.localDiskController.ConvertDiskToLocalDisk(newDisk)
 
 			// Judge whether the disk is completely new
-			if ctr.localDiskController.IsAlreadyExist(ld) {
+			if ctr.localDiskController.IsAlreadyExist(localDisk) {
 				log.Debugf("Disk %+v has been already exist", newDisk)
 				// If the disk already exists, try to update
-				if err := ctr.localDiskController.UpdateLocalDisk(ld); err != nil {
+				if err := ctr.localDiskController.UpdateLocalDisk(localDisk); err != nil {
 					log.WithError(err).Errorf("Update localDisk fail for disk %v", newDisk)
 				}
 				continue
 			}
 
 			// Create disk resource
-			if err := ctr.localDiskController.CreateLocalDisk(ld); err != nil {
+			if err := ctr.localDiskController.CreateLocalDisk(localDisk); err != nil {
 				log.WithError(err).Errorf("Create localDisk fail for disk %v", newDisk)
 				continue
 			}
@@ -98,6 +99,7 @@ func defaultDiskParser() *manager.DiskParser {
 	return manager.NewDiskParser(
 		diskBase,
 		lsblk.NewPartitionParser(diskBase),
-		manager.RaidParser{},
-		lsblk.NewAttributeParser(diskBase))
+		&manager.RaidParser{},
+		lsblk.NewAttributeParser(diskBase),
+		smart.NewSMARTParser(diskBase))
 }
