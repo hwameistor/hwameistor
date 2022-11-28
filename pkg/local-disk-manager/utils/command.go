@@ -23,6 +23,22 @@ func Bash(cmd string) (string, error) {
 	return stdout.String(), err
 }
 
+func BashWithArgs(cmd string, args ...string) (string, error) {
+	var (
+		stdout  bytes.Buffer
+		stderr  bytes.Buffer
+		execCmd *exec.Cmd
+	)
+
+	execCmd = exec.Command(cmd, args...)
+	execCmd.Stderr = &stderr
+	execCmd.Stdout = &stdout
+
+	log.Info(execCmd.String())
+	err := execCmd.Run()
+	return stdout.String(), err
+}
+
 // ConvertShellOutputs
 func ConvertShellOutputs(outputs string) []string {
 	var result []string
@@ -60,4 +76,21 @@ func GetAllIndex(s string, substr string) []int {
 	}
 
 	return indexes
+}
+
+func ExecCmd(command, args string) (out []byte, err error) {
+	var argArray []string
+	if args != "" {
+		argArray = strings.Split(args, " ")
+	} else {
+		argArray = make([]string, 0)
+	}
+
+	cmd := exec.Command(command, argArray...)
+	buf, err := cmd.Output()
+	if err != nil {
+		return out, err
+	}
+
+	return buf, nil
 }

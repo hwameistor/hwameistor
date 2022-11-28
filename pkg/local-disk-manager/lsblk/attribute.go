@@ -61,8 +61,8 @@ func (ap AttributeParser) ParseDiskAttr() manager.Attribute {
 }
 
 // NewAttributeParser
-func NewAttributeParser(disk *manager.DiskIdentify) manager.AttributeParser {
-	return manager.AttributeParser{
+func NewAttributeParser(disk *manager.DiskIdentify) *manager.AttributeParser {
+	return &manager.AttributeParser{
 		IDiskAttribute: AttributeParser{disk},
 	}
 }

@@ -83,6 +83,7 @@ func (ctr Controller) ConvertDiskToLocalDisk(disk manager.DiskInfo) (ld v1alpha1
 	ld, _ = localdisk.NewBuilder().WithName(ctr.GenLocalDiskName(disk)).
 		SetupState().
 		SetupRaidInfo(disk.Raid).
+		SetupSmartInfo(disk.Smart).
 		SetupUUID(disk.GenerateUUID()).
 		SetupAttribute(disk.Attribute).
 		SetupPartitionInfo(disk.Partitions).

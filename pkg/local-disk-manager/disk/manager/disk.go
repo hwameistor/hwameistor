@@ -19,6 +19,9 @@ type DiskInfo struct {
 
 	// Raid
 	Raid RaidInfo `json:"raid,omitempty"`
+
+	// Smart
+	Smart SmartInfo `json:"smart"`
 }
 
 // GenerateUUID

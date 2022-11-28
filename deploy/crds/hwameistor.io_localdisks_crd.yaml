@@ -23,6 +23,10 @@ spec:
     - jsonPath: .status.claimState
       name: Phase
       type: string
+    - jsonPath: .spec.smartInfo.overallHealth
+      name: Health
+      priority: 1
+      type: string
     - jsonPath: .spec.reserved
       name: Reserved
       priority: 1

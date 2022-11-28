@@ -62,6 +62,20 @@ func (builder *Builder) SetupRaidInfo(raid manager.RaidInfo) *Builder {
 	return builder
 }
 
+func (builder *Builder) SetupSmartInfo(smart manager.SmartInfo) *Builder {
+	if builder.errs != nil {
+		return builder
+	}
+	
+	if smart.OverallHealthPassed {
+		builder.disk.Spec.SmartInfo.OverallHealth = v1alpha1.AssessPassed
+	} else {
+		builder.disk.Spec.SmartInfo.OverallHealth = v1alpha1.AssessFailed
+	}
+
+	return builder
+}
+
 func (builder *Builder) SetupUUID(uuid string) *Builder {
 	if builder.errs != nil {
 		return builder
