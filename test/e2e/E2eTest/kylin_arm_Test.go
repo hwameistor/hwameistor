@@ -26,11 +26,12 @@ import (
 
 var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("kylin10_arm"), func() {
 
+	startAdRollback("kylin10arm")
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
-		result := configureArmEnvironment(ctx, "kylin10arm")
+		result := configureadEnvironment(ctx, "kylin10arm")
 		gomega.Expect(result).To(gomega.BeNil())
 		createLdc(ctx)
 
