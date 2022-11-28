@@ -22,9 +22,9 @@ The latest release of HwameiStor is [![hwameistor-releases](https://img.shields.
 
 ## Release Status
 
-| Release  | Version | Type   |
-|----------|---------|--------|
-| v0.4     | v0.4.3  | latest |
+| Release | Version | Type   |
+|---------|---------|--------|
+| v0.6    | v0.6.0  | latest |
 
 See [current releases](https://github.com/hwameistor/hwameistor/releases).
 
