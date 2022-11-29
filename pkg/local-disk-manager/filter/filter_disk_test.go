@@ -1,13 +1,15 @@
 package filter
 
 import (
+	"testing"
+	"time"
+
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/sys"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"testing"
-	"time"
 )
 
 var (
@@ -43,6 +45,8 @@ func TestLocalDiskFilter(t *testing.T) {
 		WantDiskNode        string
 		WantDevType         string
 		WantDiskNoPartition bool
+		WantReserved        bool
+		WantBoundWithClaim  string
 
 		disk        *v1alpha1.LocalDisk
 		setProperty func(disk *v1alpha1.LocalDisk)
@@ -160,6 +164,46 @@ func TestLocalDiskFilter(t *testing.T) {
 				disk.Spec.HasPartition = true
 			},
 		},
+		{
+			Description:         "Should return true, Has Reserved",
+			WantFilterResult:    false,
+			WantReserved:        true,
+			disk:                GenFakeLocalDiskObject(),
+			setProperty: func(disk *v1alpha1.LocalDisk) {
+				disk.Spec.Reserved = true
+			},
+		},
+		{
+			Description:         "Should return false, Has Not Reserved",
+			WantFilterResult:    true,
+			WantReserved:        false,
+			disk:                GenFakeLocalDiskObject(),
+			setProperty: func(disk *v1alpha1.LocalDisk) {
+				disk.Spec.Reserved = false
+			},
+		},
+		{
+			Description:      "Should return true, Has Correct ClaimRef Name",
+			WantFilterResult: true,
+			WantBoundWithClaim:  "ClaimFoo",
+			disk:             GenFakeLocalDiskObject(),
+			setProperty: func(disk *v1alpha1.LocalDisk) {
+				disk.Spec.ClaimRef = &v1.ObjectReference{
+					Name: "ClaimFoo",
+				}
+			},
+		},
+		{
+			Description:      "Should return false, Has InCorrect ClaimRef Name",
+			WantFilterResult: true,
+			WantBoundWithClaim: "ClaimFoo",
+			disk:             GenFakeLocalDiskObject(),
+			setProperty: func(disk *v1alpha1.LocalDisk) {
+				disk.Spec.ClaimRef = &v1.ObjectReference{
+					Name: "ClaimBar",
+				}
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -192,6 +236,14 @@ func TestLocalDiskFilter(t *testing.T) {
 
 			if testCase.WantDiskType != "" {
 				filter.DiskType(testCase.WantDiskType)
+			}
+
+			if testCase.WantReserved {
+				filter.HasNotReserved()
+			}
+
+			if testCase.WantBoundWithClaim != "" {
+				filter.HasBoundWith(testCase.WantBoundWithClaim)
 			}
 
 			if filter.GetTotalResult() != testCase.WantFilterResult {
