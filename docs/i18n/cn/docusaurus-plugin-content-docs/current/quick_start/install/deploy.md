@@ -103,9 +103,9 @@ $ helm install hwameistor ./hwameistor \
 :::
 
 ```console
-$ helm pull hwameistor/drbd9-adapter --untar
+$ helm pull hwameistor/drbd-adapter --untar
 
-$ helm install drbd9 ./drbd9-adapter \
+$ helm install drbd-adapter ./drbd-adapter \
     -n hwameistor --create-namespace
 ```
 
