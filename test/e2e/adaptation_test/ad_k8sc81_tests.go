@@ -1,4 +1,4 @@
-package adaptation
+package adaptation_test
 
 import (
 	"context"
