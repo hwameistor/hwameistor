@@ -2,13 +2,9 @@ package E2eTest
 
 import (
 	"context"
-	"github.com/hwameistor/hwameistor/test/e2e/utils"
-	"strconv"
-	"time"
-
 	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
+	"github.com/hwameistor/hwameistor/test/e2e/utils"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
@@ -19,17 +15,22 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"strconv"
+	"time"
 )
 
 var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("stress-test"), func() {
 
-	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
-	client := f.GetClient()
+	var f *framework.Framework
+	var client ctrlclient.Client
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
 		result := utils.ConfigureEnvironment(ctx)
 		gomega.Expect(result).To(gomega.BeNil())
+		f = framework.NewDefaultFramework(clientset.AddToScheme)
+		client = f.GetClient()
 		utils.CreateLdc(ctx)
 	})
 	ginkgo.Context("create a HA-StorageClass", func() {
@@ -279,8 +280,8 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("stress-test"), func()
 		})
 		ginkgo.It("check pv", func() {
 			logrus.Printf("check pv")
-			f := framework.NewDefaultFramework(clientset.AddToScheme)
-			client := f.GetClient()
+			var f *framework.Framework
+			var client ctrlclient.Client
 			pvList := &apiv1.PersistentVolumeList{}
 
 			err := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {

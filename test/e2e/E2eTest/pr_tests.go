@@ -25,14 +25,16 @@ import (
 )
 
 var _ = ginkgo.Describe("pr test ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), func() {
-	f := framework.NewDefaultFramework(clientset.AddToScheme)
+	var f *framework.Framework
 	var client ctrlclient.Client
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
 		result := utils.ConfigureEnvironmentForPrTest(ctx)
 		gomega.Expect(result).To(gomega.Equal(true))
-		utils.CreateLdc(ctx)
+		f = framework.NewDefaultFramework(clientset.AddToScheme)
 		client = f.GetClient()
+		utils.CreateLdc(ctx)
+
 	})
 	ginkgo.Context("create a StorageClass", func() {
 		ginkgo.It("create a sc", func() {

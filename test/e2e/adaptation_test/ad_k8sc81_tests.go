@@ -2,6 +2,7 @@ package adaptation_test
 
 import (
 	"context"
+
 	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
@@ -26,7 +27,7 @@ import (
 )
 
 var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("k8sc81"), func() {
-	f := framework.NewDefaultFramework(clientset.AddToScheme)
+	var f *framework.Framework
 	var client ctrlclient.Client
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
