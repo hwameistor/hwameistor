@@ -1,4 +1,4 @@
-package E2eTest
+package utils
 
 const (
 	DeploymentName             string = "e2e-2048"

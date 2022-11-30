@@ -1,9 +1,11 @@
-package E2eTest
+package adaptation
 
 import (
 	"context"
+	"github.com/hwameistor/hwameistor/test/e2e/utils"
 	"time"
 
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
 	"github.com/onsi/ginkgo/v2"
@@ -23,28 +25,37 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck"), func() {
-
-	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
+var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("k8sc81"), func() {
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
-		result := configureEnvironment(ctx)
-		gomega.Expect(result).To(gomega.BeNil())
-		createLdc(ctx)
+		utils.StartAdRollback("k8sc81")
+		f = framework.NewDefaultFramework(clientset.AddToScheme)
+		client = f.GetClient()
+		ctx = context.TODO()
 	})
-	ginkgo.Context("create a HA-StorageClass", func() {
+	ginkgo.It("Configure the base environment", func() {
+
+		ctx := context.TODO()
+		result := utils.ConfigureadEnvironment(ctx, "k8sc81")
+		gomega.Expect(result).To(gomega.BeNil())
+		utils.CreateLdc(ctx)
+
+	})
+
+	ginkgo.Context("create a StorageClass", func() {
 		ginkgo.It("create a sc", func() {
 			//create sc
 			deleteObj := apiv1.PersistentVolumeReclaimDelete
 			waitForFirstConsumerObj := storagev1.VolumeBindingWaitForFirstConsumer
 			examplesc := &storagev1.StorageClass{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "local-storage-hdd-lvm-ha",
+					Name: "local-storage-hdd-lvm",
 				},
 				Provisioner: "lvm.hwameistor.io",
 				Parameters: map[string]string{
-					"replicaNumber":             "2",
+					"replicaNumber":             "1",
 					"poolClass":                 "HDD",
 					"poolType":                  "REGULAR",
 					"volumeKind":                "LVM",
@@ -52,7 +63,7 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,
-				AllowVolumeExpansion: boolPter(true),
+				AllowVolumeExpansion: utils.BoolPter(true),
 				VolumeBindingMode:    &waitForFirstConsumerObj,
 			}
 			err := client.Create(ctx, examplesc)
@@ -62,13 +73,13 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 			}
 		})
 	})
-	ginkgo.Context("create a HA-PersistentVolumeClaim", func() {
+	ginkgo.Context("create a PVC", func() {
 		ginkgo.It("create PVC", func() {
 			//create PVC
-			storageClassName := "local-storage-hdd-lvm-ha"
+			storageClassName := "local-storage-hdd-lvm"
 			examplePvc := &apiv1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pvc-lvm-ha",
+					Name:      "pvc-lvm",
 					Namespace: "default",
 				},
 				Spec: apiv1.PersistentVolumeClaimSpec{
@@ -76,7 +87,7 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 					StorageClassName: &storageClassName,
 					Resources: apiv1.ResourceRequirements{
 						Requests: apiv1.ResourceList{
-							apiv1.ResourceStorage: resource.MustParse("100Mi"),
+							apiv1.ResourceStorage: resource.MustParse("1Gi"),
 						},
 					},
 				},
@@ -93,18 +104,15 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 	})
 	ginkgo.Context("create a deployment", func() {
 
-		ginkgo.It("create a deployment", func() {
+		ginkgo.It("create deployment", func() {
 			//create deployment
 			exampleDeployment := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      HaDeploymentName,
+					Name:      utils.DeploymentName,
 					Namespace: "default",
 				},
 				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(1),
-					Strategy: appsv1.DeploymentStrategy{
-						Type: appsv1.RecreateDeploymentStrategyType,
-					},
+					Replicas: utils.Int32Ptr(1),
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							"app": "demo",
@@ -117,30 +125,6 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 							},
 						},
 						Spec: apiv1.PodSpec{
-							SchedulerName: "hwameistor-scheduler",
-							Affinity: &apiv1.Affinity{
-								NodeAffinity: &apiv1.NodeAffinity{
-									RequiredDuringSchedulingIgnoredDuringExecution: &apiv1.NodeSelector{
-										NodeSelectorTerms: []apiv1.NodeSelectorTerm{
-											{
-												[]apiv1.NodeSelectorRequirement{
-													{
-														Key:      "kubernetes.io/hostname",
-														Operator: apiv1.NodeSelectorOpIn,
-														Values: []string{
-															"k8s-node1",
-														},
-													},
-												},
-												[]apiv1.NodeSelectorRequirement{},
-											},
-										},
-									},
-									PreferredDuringSchedulingIgnoredDuringExecution: nil,
-								},
-								PodAffinity:     nil,
-								PodAntiAffinity: nil,
-							},
 							Containers: []apiv1.Container{
 								{
 									Name:  "web",
@@ -154,7 +138,7 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 									},
 									VolumeMounts: []apiv1.VolumeMount{
 										{
-											Name:      "2048-volume-lvm-ha",
+											Name:      "2048-volume-lvm",
 											MountPath: "/data",
 										},
 									},
@@ -162,10 +146,10 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 							},
 							Volumes: []apiv1.Volume{
 								{
-									Name: "2048-volume-lvm-ha",
+									Name: "2048-volume-lvm",
 									VolumeSource: apiv1.VolumeSource{
 										PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
-											ClaimName: "pvc-lvm-ha",
+											ClaimName: "pvc-lvm",
 										},
 									},
 								},
@@ -179,14 +163,12 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
-
 			gomega.Expect(err).To(gomega.BeNil())
 		})
 		ginkgo.It("PVC STATUS should be Bound", func() {
-
 			pvc := &apiv1.PersistentVolumeClaim{}
 			pvcKey := k8sclient.ObjectKey{
-				Name:      "pvc-lvm-ha",
+				Name:      "pvc-lvm",
 				Namespace: "default",
 			}
 			err := client.Get(ctx, pvcKey, pvc)
@@ -194,6 +176,7 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
+
 			logrus.Infof("Waiting for the PVC to be bound")
 			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
 				if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Phase != apiv1.ClaimBound {
@@ -210,7 +193,7 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 		ginkgo.It("deploy STATUS should be AVAILABLE", func() {
 			deployment := &appsv1.Deployment{}
 			deployKey := k8sclient.ObjectKey{
-				Name:      HaDeploymentName,
+				Name:      utils.DeploymentName,
 				Namespace: "default",
 			}
 			err := client.Get(ctx, deployKey, deployment)
@@ -230,12 +213,31 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 				logrus.Error(err)
 			}
 			gomega.Expect(err).To(gomega.BeNil())
+
 		})
 
 	})
-	ginkgo.Context("test volumes", func() {
-		ginkgo.It("Write test file", func() {
-			//create a request
+	ginkgo.Context("Test the volume", func() {
+		ginkgo.It("check lvg", func() {
+			lvrList := &v1alpha1.LocalVolumeReplicaList{}
+			err := client.List(ctx, lvrList)
+			if err != nil {
+				logrus.Printf("list lvr failed ：%+v ", err)
+			}
+			lvgList := &v1alpha1.LocalVolumeGroupList{}
+			err = client.List(ctx, lvgList)
+			if err != nil {
+				logrus.Printf("list lvg failed ：%+v ", err)
+			}
+			for _, lvr := range lvrList.Items {
+				for _, lvg := range lvgList.Items {
+					gomega.Expect(lvr.Spec.NodeName).To(gomega.Equal(lvg.Spec.Accessibility.Nodes[0]))
+				}
+			}
+
+		})
+		ginkgo.It("write test data", func() {
+
 			config, err := config.GetConfig()
 			if err != nil {
 				return
@@ -243,7 +245,7 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 
 			deployment := &appsv1.Deployment{}
 			deployKey := k8sclient.ObjectKey{
-				Name:      HaDeploymentName,
+				Name:      utils.DeploymentName,
 				Namespace: "default",
 			}
 			err = client.Get(ctx, deployKey, deployment)
@@ -269,12 +271,12 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 			containers := deployment.Spec.Template.Spec.Containers
 			for _, pod := range podlist.Items {
 				for _, container := range containers {
-					_, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && echo it-is-a-test >test", container.Name)
+					_, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && echo it-is-a-test >test", container.Name)
 					if err != nil {
 						logrus.Printf("%+v ", err)
 						f.ExpectNoError(err)
 					}
-					output, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
+					output, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
 					if err != nil {
 						logrus.Printf("%+v ", err)
 						f.ExpectNoError(err)
@@ -283,7 +285,7 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 				}
 			}
 		})
-		ginkgo.It("Delete test file", func() {
+		ginkgo.It("Delete test data", func() {
 			config, err := config.GetConfig()
 			if err != nil {
 				return
@@ -291,7 +293,7 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 
 			deployment := &appsv1.Deployment{}
 			deployKey := k8sclient.ObjectKey{
-				Name:      HaDeploymentName,
+				Name:      utils.DeploymentName,
 				Namespace: "default",
 			}
 			err = client.Get(ctx, deployKey, deployment)
@@ -317,12 +319,12 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 			containers := deployment.Spec.Template.Spec.Containers
 			for _, pod := range podlist.Items {
 				for _, container := range containers {
-					_, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && rm -rf test", container.Name)
+					_, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && rm -rf test", container.Name)
 					if err != nil {
 						logrus.Printf("%+v ", err)
 						f.ExpectNoError(err)
 					}
-					output, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && ls", container.Name)
+					output, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && ls", container.Name)
 					if err != nil {
 						logrus.Printf("%+v ", err)
 						f.ExpectNoError(err)
@@ -332,204 +334,21 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 			}
 		})
 	})
-	ginkgo.Context("test HA-volumes", func() {
-		ginkgo.It("create a localvolumemigrate", func() {
-
-			lvrList := &v1alpha1.LocalVolumeReplicaList{}
-			err := client.List(ctx, lvrList)
-			if err != nil {
-				logrus.Printf("list lvr failed ：%+v ", err)
-			}
-			lvlist := &v1alpha1.LocalVolumeList{}
-			err = client.List(ctx, lvlist)
-			if err != nil {
-				logrus.Error("%+v ", err)
-				f.ExpectNoError(err)
-			}
-
-			lvname := lvlist.Items[0].Name
-			for _, lvr := range lvrList.Items {
-				if lvr.Spec.NodeName == "k8s-master" {
-					exlvm := &v1alpha1.LocalVolumeMigrate{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "localvolumegroupmigrate-1",
-							Namespace: "default",
-						},
-						Spec: v1alpha1.LocalVolumeMigrateSpec{
-							TargetNodesSuggested: []string{"k8s-node2"},
-							SourceNode:           "k8s-master",
-							VolumeName:           lvname,
-							MigrateAllVols:       true,
-						},
-					}
-
-					err = client.Create(ctx, exlvm)
-					logrus.Infof("create lvm")
-					if err != nil {
-						logrus.Printf("Create lvgm failed ：%+v ", err)
-						f.ExpectNoError(err)
-					}
-					logrus.Infof("wait 3 minutes for migrate lv")
-					time.Sleep(3 * time.Minute)
-					break
-
-				}
-
-			}
-
-		})
-
-		ginkgo.It("Write test file", func() {
-			config, err := config.GetConfig()
-			if err != nil {
-				return
-			}
-
-			deployment := &appsv1.Deployment{}
-			deployKey := k8sclient.ObjectKey{
-				Name:      HaDeploymentName,
-				Namespace: "default",
-			}
-			err = client.Get(ctx, deployKey, deployment)
-			if err != nil {
-				logrus.Printf("%+v ", err)
-				f.ExpectNoError(err)
-			}
-
-			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
-			selector := labels.NewSelector()
-			selector = selector.Add(*apps)
-			listOption := k8sclient.ListOptions{
-				LabelSelector: selector,
-			}
-			podlist := &v1.PodList{}
-			err = client.List(ctx, podlist, &listOption)
-
-			if err != nil {
-				logrus.Printf("%+v ", err)
-				f.ExpectNoError(err)
-			}
-
-			containers := deployment.Spec.Template.Spec.Containers
-			for _, pod := range podlist.Items {
-				for _, container := range containers {
-					_, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && echo it-is-a-test >test", container.Name)
-					if err != nil {
-						logrus.Printf("%+v ", err)
-						f.ExpectNoError(err)
-					}
-					output, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
-					if err != nil {
-						logrus.Printf("%+v ", err)
-						f.ExpectNoError(err)
-					}
-					gomega.Expect(output).To(gomega.Equal("it-is-a-test"))
-				}
-			}
-		})
-		ginkgo.It("update deploy", func() {
-			//delete deploy
-			deployment := &appsv1.Deployment{}
-			deployKey := k8sclient.ObjectKey{
-				Name:      HaDeploymentName,
-				Namespace: "default",
-			}
-			err := client.Get(ctx, deployKey, deployment)
-			if err != nil {
-				f.ExpectNoError(err)
-			}
-
-			newAffinity := []apiv1.NodeSelectorTerm{
-				{
-					[]apiv1.NodeSelectorRequirement{
-						{
-							Key:      "kubernetes.io/hostname",
-							Operator: apiv1.NodeSelectorOpIn,
-							Values: []string{
-								"k8s-node2",
-							},
-						},
-					},
-					[]apiv1.NodeSelectorRequirement{},
-				},
-			}
-			deployment.Spec.Template.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms = newAffinity
-
-			err = client.Update(ctx, deployment)
-			err = client.Get(ctx, deployKey, deployment)
-			if err != nil {
-				logrus.Printf("%+v ", err)
-				f.ExpectNoError(err)
-			}
-			logrus.Infof("waiting for the deployment to be ready ")
-			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
-				if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(1) {
-					return false, nil
-				}
-				return true, nil
-			})
-			if err != nil {
-				logrus.Infof("deployment ready timeout")
-				logrus.Error(err)
-			}
-		})
-		ginkgo.It("check test file", func() {
-			config, err := config.GetConfig()
-			if err != nil {
-				return
-			}
-
-			deployment := &appsv1.Deployment{}
-			deployKey := k8sclient.ObjectKey{
-				Name:      HaDeploymentName,
-				Namespace: "default",
-			}
-			err = client.Get(ctx, deployKey, deployment)
-			if err != nil {
-				logrus.Printf("%+v ", err)
-				f.ExpectNoError(err)
-			}
-
-			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
-			selector := labels.NewSelector()
-			selector = selector.Add(*apps)
-			listOption := k8sclient.ListOptions{
-				LabelSelector: selector,
-			}
-			podlist := &v1.PodList{}
-			err = client.List(ctx, podlist, &listOption)
-
-			if err != nil {
-				logrus.Printf("%+v ", err)
-				f.ExpectNoError(err)
-			}
-
-			containers := deployment.Spec.Template.Spec.Containers
-			for _, pod := range podlist.Items {
-				for _, container := range containers {
-					output, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
-					if err != nil {
-						logrus.Printf("%+v ", err)
-						f.ExpectNoError(err)
-					}
-					gomega.Expect(output).To(gomega.Equal("it-is-a-test"))
-				}
-			}
-		})
-	})
 	ginkgo.Context("Clean up the environment", func() {
 		ginkgo.It("Delete test Deployment", func() {
 			//delete deploy
 			deployment := &appsv1.Deployment{}
 			deployKey := k8sclient.ObjectKey{
-				Name:      HaDeploymentName,
+				Name:      utils.DeploymentName,
 				Namespace: "default",
 			}
 			err := client.Get(ctx, deployKey, deployment)
 			if err != nil {
-				logrus.Printf("%+v ", err)
+				logrus.Error(err)
 				f.ExpectNoError(err)
 			}
+			logrus.Infof("deleting test Deployment ")
+
 			err = client.Delete(ctx, deployment)
 			if err != nil {
 				logrus.Error(err)
@@ -547,19 +366,17 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 			gomega.Expect(err).To(gomega.BeNil())
 
 		})
-		ginkgo.It("delete all pvc", func() {
-			err := deleteAllPVC(ctx)
+		ginkgo.It("delete all pvc ", func() {
+			err := utils.DeleteAllPVC(ctx)
 			gomega.Expect(err).To(gomega.BeNil())
 		})
 		ginkgo.It("delete all sc", func() {
-			err := deleteAllSC(ctx)
+			err := utils.DeleteAllSC(ctx)
 			gomega.Expect(err).To(gomega.BeNil())
 		})
 		ginkgo.It("delete helm", func() {
-			uninstallHelm()
-
+			utils.UninstallHelm()
 		})
-
 	})
 
 })
