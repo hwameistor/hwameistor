@@ -2,10 +2,10 @@ package E2eTest
 
 import (
 	"context"
-	"github.com/hwameistor/hwameistor/test/e2e/utils"
-
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
+	"github.com/hwameistor/hwameistor/test/e2e/utils"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"time"
 
@@ -28,8 +28,8 @@ import (
 
 var _ = ginkgo.Describe("comprehensive test", func() {
 
-	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
-	client := f.GetClient()
+	var f *framework.Framework
+	var client ctrlclient.Client
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
 		result := utils.ConfigureEnvironment(ctx)

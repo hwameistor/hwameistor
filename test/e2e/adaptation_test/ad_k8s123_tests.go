@@ -2,12 +2,9 @@ package adaptation_test
 
 import (
 	"context"
-	"github.com/hwameistor/hwameistor/test/e2e/utils"
-	"time"
-
-	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
+	"github.com/hwameistor/hwameistor/test/e2e/utils"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
@@ -21,14 +18,16 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/wait"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"time"
 )
 
 var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("k8s1.23"), func() {
 
-	f := framework.NewDefaultFramework(clientset.AddToScheme)
-	client := f.GetClient()
+	var f *framework.Framework
+	var client ctrlclient.Client
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
 		result := utils.ConfigureEnvironment(ctx)

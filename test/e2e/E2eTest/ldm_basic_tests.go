@@ -3,9 +3,9 @@ package E2eTest
 import (
 	"context"
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
-	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
 	"github.com/onsi/ginkgo/v2"
@@ -15,13 +15,14 @@ import (
 )
 
 var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("periodCheck"), ginkgo.Ordered, func() {
-	f := framework.NewDefaultFramework(clientset.AddToScheme)
-	client := f.GetClient()
+	var f *framework.Framework
+	var client ctrlclient.Client
 	ctx := context.TODO()
 	ginkgo.Context("test Local Disk", func() {
 		ginkgo.It("Configure the base environment", func() {
 			result := utils.ConfigureEnvironment(ctx)
 			gomega.Expect(result).To(gomega.BeNil())
+			client = f.GetClient()
 
 		})
 		ginkgo.It("Check existed Local Disk", func() {

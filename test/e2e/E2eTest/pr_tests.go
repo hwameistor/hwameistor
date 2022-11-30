@@ -2,7 +2,6 @@ package E2eTest
 
 import (
 	"context"
-	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
@@ -25,7 +24,7 @@ import (
 )
 
 var _ = ginkgo.Describe("pr test ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), func() {
-	f := framework.NewDefaultFramework(clientset.AddToScheme)
+	var f *framework.Framework
 	var client ctrlclient.Client
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
