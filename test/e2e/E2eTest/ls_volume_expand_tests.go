@@ -2,7 +2,6 @@ package E2eTest
 
 import (
 	"context"
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 	"github.com/onsi/ginkgo/v2"
@@ -25,7 +24,7 @@ import (
 )
 
 var _ = ginkgo.Describe("test localstorage expand volume", ginkgo.Label("periodCheck"), func() {
-	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
+	var f *framework.Framework
 	var client ctrlclient.Client
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
