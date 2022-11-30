@@ -1,7 +1,8 @@
-package E2eTest
+package adaptation_test
 
 import (
 	"context"
+	"github.com/hwameistor/hwameistor/test/e2e/utils"
 	"time"
 
 	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
@@ -24,21 +25,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.25"), func() {
+var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("kylin10_arm"), func() {
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
-		startAdRollback("k8s1.25")
+		utils.StartAdRollback("kylin10arm")
 		f = framework.NewDefaultFramework(clientset.AddToScheme)
 		client = f.GetClient()
 		ctx = context.TODO()
 	})
 
 	ginkgo.It("Configure the base environment", func() {
-		result := configureadEnvironment(ctx, "k8s1.25")
+		result := utils.ConfigureadEnvironment(ctx, "kylin10arm")
 		gomega.Expect(result).To(gomega.BeNil())
-		createLdc(ctx)
+		utils.CreateLdc(ctx)
 
 	})
 
@@ -61,7 +62,7 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.25"), fun
 					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,
-				AllowVolumeExpansion: boolPter(true),
+				AllowVolumeExpansion: utils.BoolPter(true),
 				VolumeBindingMode:    &waitForFirstConsumerObj,
 			}
 			err := client.Create(ctx, examplesc)
@@ -106,11 +107,11 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.25"), fun
 			//create deployment
 			exampleDeployment := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      DeploymentName,
+					Name:      utils.DeploymentName,
 					Namespace: "default",
 				},
 				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(1),
+					Replicas: utils.Int32Ptr(1),
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							"app": "demo",
@@ -123,7 +124,6 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.25"), fun
 							},
 						},
 						Spec: apiv1.PodSpec{
-							SchedulerName: "hwameistor-scheduler",
 							Containers: []apiv1.Container{
 								{
 									Name:  "web",
@@ -157,10 +157,7 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.25"), fun
 					},
 				},
 			}
-			logrus.Infof("creating deploy")
-
 			err := client.Create(ctx, exampleDeployment)
-
 			if err != nil {
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
@@ -195,7 +192,7 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.25"), fun
 		ginkgo.It("deploy STATUS should be AVAILABLE", func() {
 			deployment := &appsv1.Deployment{}
 			deployKey := k8sclient.ObjectKey{
-				Name:      DeploymentName,
+				Name:      utils.DeploymentName,
 				Namespace: "default",
 			}
 			err := client.Get(ctx, deployKey, deployment)
@@ -247,7 +244,7 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.25"), fun
 
 			deployment := &appsv1.Deployment{}
 			deployKey := k8sclient.ObjectKey{
-				Name:      DeploymentName,
+				Name:      utils.DeploymentName,
 				Namespace: "default",
 			}
 			err = client.Get(ctx, deployKey, deployment)
@@ -273,12 +270,12 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.25"), fun
 			containers := deployment.Spec.Template.Spec.Containers
 			for _, pod := range podlist.Items {
 				for _, container := range containers {
-					_, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && echo it-is-a-test >test", container.Name)
+					_, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && echo it-is-a-test >test", container.Name)
 					if err != nil {
 						logrus.Printf("%+v ", err)
 						f.ExpectNoError(err)
 					}
-					output, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
+					output, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
 					if err != nil {
 						logrus.Printf("%+v ", err)
 						f.ExpectNoError(err)
@@ -295,7 +292,7 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.25"), fun
 
 			deployment := &appsv1.Deployment{}
 			deployKey := k8sclient.ObjectKey{
-				Name:      DeploymentName,
+				Name:      utils.DeploymentName,
 				Namespace: "default",
 			}
 			err = client.Get(ctx, deployKey, deployment)
@@ -321,12 +318,12 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.25"), fun
 			containers := deployment.Spec.Template.Spec.Containers
 			for _, pod := range podlist.Items {
 				for _, container := range containers {
-					_, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && rm -rf test", container.Name)
+					_, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && rm -rf test", container.Name)
 					if err != nil {
 						logrus.Printf("%+v ", err)
 						f.ExpectNoError(err)
 					}
-					output, _, err := ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && ls", container.Name)
+					output, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && ls", container.Name)
 					if err != nil {
 						logrus.Printf("%+v ", err)
 						f.ExpectNoError(err)
@@ -341,7 +338,7 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.25"), fun
 			//delete deploy
 			deployment := &appsv1.Deployment{}
 			deployKey := k8sclient.ObjectKey{
-				Name:      DeploymentName,
+				Name:      utils.DeploymentName,
 				Namespace: "default",
 			}
 			err := client.Get(ctx, deployKey, deployment)
@@ -369,15 +366,15 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.25"), fun
 
 		})
 		ginkgo.It("delete all pvc ", func() {
-			err := deleteAllPVC(ctx)
+			err := utils.DeleteAllPVC(ctx)
 			gomega.Expect(err).To(gomega.BeNil())
 		})
 		ginkgo.It("delete all sc", func() {
-			err := deleteAllSC(ctx)
+			err := utils.DeleteAllSC(ctx)
 			gomega.Expect(err).To(gomega.BeNil())
 		})
 		ginkgo.It("delete helm", func() {
-			uninstallHelm()
+			utils.UninstallHelm()
 		})
 	})
 

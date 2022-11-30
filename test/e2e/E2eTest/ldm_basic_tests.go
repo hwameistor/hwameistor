@@ -2,6 +2,7 @@ package E2eTest
 
 import (
 	"context"
+	"github.com/hwameistor/hwameistor/test/e2e/utils"
 	"time"
 
 	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
@@ -19,7 +20,7 @@ var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("periodCheck"), 
 	ctx := context.TODO()
 	ginkgo.Context("test Local Disk", func() {
 		ginkgo.It("Configure the base environment", func() {
-			result := configureEnvironment(ctx)
+			result := utils.ConfigureEnvironment(ctx)
 			gomega.Expect(result).To(gomega.BeNil())
 
 		})
@@ -34,7 +35,7 @@ var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("periodCheck"), 
 			gomega.Expect(len(localDiskList.Items)).To(gomega.Equal(9))
 		})
 		ginkgo.It("Manage new disks", func() {
-			output := runInLinux("sh adddisk.sh")
+			output := utils.RunInLinux("sh adddisk.sh")
 			logrus.Info("add  disk :", output)
 			err := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
 				localDiskList := &v1alpha1.LocalDiskList{}
@@ -60,18 +61,18 @@ var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("periodCheck"), 
 	})
 	ginkgo.Context("test LocalDiskClaim", func() {
 		ginkgo.It("Create new LocalDiskClaim", func() {
-			err := createLdc(ctx)
+			err := utils.CreateLdc(ctx)
 			gomega.Expect(err).To(gomega.BeNil())
 
 		})
 	})
 	ginkgo.Context("Clean up the environment", func() {
 		ginkgo.It("Clean helm & crd", func() {
-			uninstallHelm()
+			utils.UninstallHelm()
 		})
 	})
 	ginkgo.AfterAll(func() {
-		output := runInLinux("sh deletedisk.sh")
+		output := utils.RunInLinux("sh deletedisk.sh")
 		logrus.Info("delete disk", output)
 	})
 })
