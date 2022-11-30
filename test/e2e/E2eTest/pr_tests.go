@@ -2,6 +2,7 @@ package E2eTest
 
 import (
 	"context"
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
@@ -30,8 +31,10 @@ var _ = ginkgo.Describe("pr test ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), func
 	ginkgo.It("Configure the base environment", func() {
 		result := utils.ConfigureEnvironmentForPrTest(ctx)
 		gomega.Expect(result).To(gomega.Equal(true))
-		utils.CreateLdc(ctx)
+		f = framework.NewDefaultFramework(clientset.AddToScheme)
 		client = f.GetClient()
+		utils.CreateLdc(ctx)
+
 	})
 	ginkgo.Context("create a StorageClass", func() {
 		ginkgo.It("create a sc", func() {

@@ -3,6 +3,7 @@ package E2eTest
 import (
 	"bufio"
 	"context"
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
@@ -35,6 +36,8 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 	ginkgo.It("Configure the base environment", func() {
 		result := utils.ConfigureEnvironment(ctx)
 		gomega.Expect(result).To(gomega.BeNil())
+		f = framework.NewDefaultFramework(clientset.AddToScheme)
+		client = f.GetClient()
 		utils.CreateLdc(ctx)
 
 	})

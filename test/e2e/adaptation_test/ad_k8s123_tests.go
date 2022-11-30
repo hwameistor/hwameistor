@@ -2,6 +2,7 @@ package adaptation_test
 
 import (
 	"context"
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
@@ -32,6 +33,9 @@ var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("k8s1.23"), fu
 	ginkgo.It("Configure the base environment", func() {
 		result := utils.ConfigureEnvironment(ctx)
 		gomega.Expect(result).To(gomega.BeNil())
+
+		f := framework.NewDefaultFramework(clientset.AddToScheme)
+		client = f.GetClient()
 		utils.CreateLdc(ctx)
 
 	})

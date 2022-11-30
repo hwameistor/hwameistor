@@ -2,6 +2,7 @@ package E2eTest
 
 import (
 	"context"
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
@@ -22,6 +23,7 @@ var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("periodCheck"), 
 		ginkgo.It("Configure the base environment", func() {
 			result := utils.ConfigureEnvironment(ctx)
 			gomega.Expect(result).To(gomega.BeNil())
+			f = framework.NewDefaultFramework(clientset.AddToScheme)
 			client = f.GetClient()
 
 		})
