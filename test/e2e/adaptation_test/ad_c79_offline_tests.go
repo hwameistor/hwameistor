@@ -26,10 +26,16 @@ import (
 )
 
 var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("centos7.9_offline"), func() {
-	utils.StartAdRollback("centos7.9_offline")
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
 	ctx := context.TODO()
+	ginkgo.It("Configure the base environment", func() {
+		utils.StartAdRollback("centos7.9_offline")
+		f = framework.NewDefaultFramework(clientset.AddToScheme)
+		client = f.GetClient()
+		ctx = context.TODO()
+	})
+
 	ginkgo.It("Configure the base environment", func() {
 		result := utils.ConfigureadEnvironment(ctx, "centos7.9_offline")
 		gomega.Expect(result).To(gomega.BeNil())
