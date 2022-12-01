@@ -160,7 +160,6 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimBound(diskClaim *v1alpha1.Loca
 			diskClaim.GetName(), RequeueInterval)
 		return err
 	}
-	
-	r.diskClaimHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusBound)
-	return r.diskClaimHandler.UpdateClaimStatus()
+
+	return nil
 }
