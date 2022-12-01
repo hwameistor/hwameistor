@@ -149,7 +149,18 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimBound(diskClaim *v1alpha1.Loca
 	logCtx := log.Fields{"name": diskClaim.Name}
 	log.WithFields(logCtx).Info("Start to processing Bound localdiskclaim")
 
-	// DO Nothing!
+	var (
+		err error
+	)
 
-	return nil
+	// issue: https://github.com/hwameistor/hwameistor/issues/517
+	// Update claim.spec.diskRefs according to disk status
+	if err = r.diskClaimHandler.UpdateBoundDiskRef(); err != nil {
+		log.WithError(err).Errorf("Failed to extend for locadiskclaim %v fail, will try after %v",
+			diskClaim.GetName(), RequeueInterval)
+		return err
+	}
+	
+	r.diskClaimHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusBound)
+	return r.diskClaimHandler.UpdateClaimStatus()
 }
