@@ -25,5 +25,3 @@ data:
     leaderElection:
       leaderElect: true
       resourceName: hwameistor-scheduler
-    clientConnection:
-      kubeconfig: /etc/kubernetes/scheduler.conf
