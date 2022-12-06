@@ -25,3 +25,4 @@ data:
     leaderElection:
       leaderElect: true
       resourceName: hwameistor-scheduler
+      
