@@ -29,7 +29,6 @@ spec:
       - args:
         - -v=2
         - --bind-address=0.0.0.0
-        - --kubeconfig=/etc/kubernetes/scheduler.conf
         - --leader-elect=false
         - --leader-elect-resource-name=hwameistor-scheduler
         - --leader-elect-resource-namespace={{ .Release.Namespace}}
@@ -42,17 +41,10 @@ spec:
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         volumeMounts:
-        - mountPath: /etc/kubernetes/scheduler.conf
-          name: kubeconfig
-          readOnly: true
         - mountPath: /etc/hwameistor/
           name: hwameistor-scheduler-config
           readOnly: true
       volumes:
-      - hostPath:
-          path: {{ .Values.scheduler.kubeApiServerConfigFilePath}}
-          type: FileOrCreate
-        name: kubeconfig
       - configMap:
           name: hwameistor-scheduler-config 
           items:
