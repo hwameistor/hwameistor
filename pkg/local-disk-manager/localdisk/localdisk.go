@@ -87,7 +87,7 @@ func (ctr Controller) ConvertDiskToLocalDisk(disk manager.DiskInfo) (ld v1alpha1
 		SetupUUID(disk.GenerateUUID()).
 		SetupAttribute(disk.Attribute).
 		SetupPartitionInfo(disk.Partitions).
-		SetupNodeName(utils.ConvertNodeName(ctr.NodeName)).
+		SetupNodeName(ctr.NodeName).
 		Build()
 	return
 }
