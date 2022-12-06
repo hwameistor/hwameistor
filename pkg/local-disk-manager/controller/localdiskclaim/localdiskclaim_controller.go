@@ -2,6 +2,7 @@ package localdiskclaim
 
 import (
 	"context"
+	"fmt"
 	v1 "k8s.io/api/core/v1"
 	"time"
 
@@ -137,6 +138,20 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimPending(diskClaim *v1alpha1.Lo
 			diskClaim.GetName(), RequeueInterval)
 		return err
 	}
+
+	if err = r.diskClaimHandler.Refresh(); err != nil {
+		log.WithError(err).Errorf("Failed to refresh localdiskclaim %v", diskClaim.GetName())
+		return err
+	}
+
+	// Check if any disk(s) have already bounded to the claim
+	// Return error if not found any bound disk(s)
+	if len(r.diskClaimHandler.DiskRefs()) <= 0 {
+		err = fmt.Errorf("no disks bounded by the claim, need to reconcile the diskclaim %v again",
+			diskClaim.GetName())
+		return err
+	}
+
 	r.Recorder.Eventf(diskClaim, v1.EventTypeNormal, v1alpha1.LocalDiskClaimEventReasonExtend,
 		"Success to extend for localdiskclaim %v", diskClaim.GetName())
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	diskHandler "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -81,10 +80,7 @@ func (ldcHandler *Handler) AssignFreeDisk() error {
 		return err
 	}
 
-	var assignedDisks, finalAssignedDisks []string
-	for _, disk := range diskClaim.Spec.DiskRefs {
-		assignedDisks = append(assignedDisks, disk.Name)
-	}
+	var finalAssignedDisks []string
 
 	// Find suitable disks
 	for _, disk := range diskList.Items {
@@ -103,13 +99,13 @@ func (ldcHandler *Handler) AssignFreeDisk() error {
 		finalAssignedDisks = append(finalAssignedDisks, disk.GetName())
 	}
 
-	newAssignedDisks, foundNewDisks := utils.FoundNewStringElems(assignedDisks, finalAssignedDisks)
-	if !foundNewDisks {
+	// NOTE: Once found disk(s) already bound to this claim, return true directly
+	if len(finalAssignedDisks) <= 0 {
 		log.Infof("There is no available disk assigned to %v", diskClaim.GetName())
 		return fmt.Errorf("there is no available disk assigned to %v", diskClaim.GetName())
 	}
 
-	log.Infof("Disk %v has been assigned to %v", newAssignedDisks, diskClaim.GetName())
+	log.Infof("Disk %v has been assigned to %v", finalAssignedDisks, diskClaim.GetName())
 	return nil
 }
 
@@ -129,6 +125,11 @@ func (ldcHandler *Handler) UpdateBoundDiskRef() error {
 		}
 	}
 
+	log.Infof("Found %d localdisk(s) bounded by claim %v",
+		len(ldcHandler.diskClaim.Spec.DiskRefs), ldcHandler.diskClaim.GetName())
+	for _, disk := range ldcHandler.diskClaim.Spec.DiskRefs {
+		log.Infof("Bound localdisk %v to claim %v", disk.Name, ldcHandler.diskClaim.GetName())
+	}
 	return ldcHandler.UpdateClaimSpec()
 }
 
