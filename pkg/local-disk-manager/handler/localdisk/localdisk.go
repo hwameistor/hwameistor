@@ -2,9 +2,9 @@ package localdisk
 
 import (
 	"context"
-
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/filter"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/kubernetes"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -20,9 +20,9 @@ type Handler struct {
 	filter    filter.LocalDiskFilter
 }
 
-func NewLocalDiskHandler(client client.Client, recorder record.EventRecorder) *Handler {
+func NewLocalDiskHandler(cli client.Client, recorder record.EventRecorder) *Handler {
 	return &Handler{
-		Client:        client,
+		Client:        cli,
 		EventRecorder: recorder,
 	}
 }
@@ -54,7 +54,7 @@ func (ldHandler *Handler) ListLocalDisk() (*v1alpha1.LocalDiskList, error) {
 		},
 	}
 
-	err := ldHandler.List(context.TODO(), list)
+	err := ldHandler.List(context.TODO(), list, &client.ListOptions{})
 	return list, err
 }
 
@@ -67,6 +67,25 @@ func (ldHandler *Handler) ListNodeLocalDisk(node string) (*v1alpha1.LocalDiskLis
 	}
 	nodeMatcher := client.MatchingFields{"spec.nodeName": node}
 	err := ldHandler.List(context.TODO(), list, nodeMatcher)
+	return list, err
+}
+
+// ListLocalDiskDirectly query localdisk list from API Server directly
+// NOTE: The performance is relatively slow and may cause relatively high latency
+func (ldHandler *Handler) ListLocalDiskDirectly() (*v1alpha1.LocalDiskList, error) {
+	list := &v1alpha1.LocalDiskList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "LocalDisk",
+			APIVersion: "v1alpha1",
+		},
+	}
+
+	cli, err := kubernetes.NewClient()
+	if err != nil {
+		return nil, err
+	}
+
+	err = cli.List(context.TODO(), list)
 	return list, err
 }
 

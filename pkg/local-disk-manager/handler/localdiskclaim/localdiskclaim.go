@@ -109,15 +109,18 @@ func (ldcHandler *Handler) AssignFreeDisk() error {
 	return nil
 }
 
-// UpdateBoundDiskRef update all disk bounded by the diskClaim to claim.spec.disks
-func (ldcHandler *Handler) UpdateBoundDiskRef() error {
+// PatchBoundDiskRef update all disk bounded by the diskClaim to claim.spec.disks
+func (ldcHandler *Handler) PatchBoundDiskRef() error {
 	diskList, err := diskHandler.
 		NewLocalDiskHandler(ldcHandler.Client, ldcHandler.EventRecorder).
-		ListLocalDisk()
+		ListLocalDiskDirectly()
 	if err != nil {
 		return err
 	}
 
+	oldDiskClaim := ldcHandler.diskClaim.DeepCopy()
+	log.WithFields(log.Fields{"diskClaim": ldcHandler.diskClaim.GetName()}).
+		Infof("Found %d localdisk(s) in cluster", len(diskList.Items))
 	for _, disk := range diskList.Items {
 		if disk.Spec.ClaimRef != nil &&
 			disk.Spec.ClaimRef.Name == ldcHandler.diskClaim.GetName() {
@@ -128,9 +131,10 @@ func (ldcHandler *Handler) UpdateBoundDiskRef() error {
 	log.Infof("Found %d localdisk(s) bounded by claim %v",
 		len(ldcHandler.diskClaim.Spec.DiskRefs), ldcHandler.diskClaim.GetName())
 	for _, disk := range ldcHandler.diskClaim.Spec.DiskRefs {
-		log.Infof("Bound localdisk %v to claim %v", disk.Name, ldcHandler.diskClaim.GetName())
+		log.WithField("diskClaim", ldcHandler.diskClaim.GetName()).
+			Infof("Bounded localdisk: %s", disk.Name)
 	}
-	return ldcHandler.UpdateClaimSpec()
+	return ldcHandler.PatchClaimSpec(client.MergeFrom(oldDiskClaim))
 }
 
 func (ldcHandler *Handler) Bounded() bool {
@@ -169,8 +173,30 @@ func (ldcHandler *Handler) UpdateClaimStatus() error {
 	return ldcHandler.Status().Update(context.Background(), ldcHandler.diskClaim)
 }
 
+func (ldcHandler *Handler) UpdateClaimStatusToBound() error {
+	var err error
+
+	// Check if any disk(s) have already bounded to the claim
+	// Return error if not found any bound disk(s)
+	if len(ldcHandler.DiskRefs()) <= 0 {
+		err = fmt.Errorf("no disks bounded by the claim, need to reconcile the diskclaim %v again",
+			ldcHandler.diskClaim.GetName())
+		return err
+	}
+
+	ldcHandler.EventRecorder.Eventf(ldcHandler.diskClaim, v1.EventTypeNormal, v1alpha1.LocalDiskClaimEventReasonExtend,
+		"Success to extend for localdiskclaim %v", ldcHandler.diskClaim.GetName())
+
+	ldcHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusBound)
+	return ldcHandler.UpdateClaimStatus()
+}
+
 func (ldcHandler *Handler) UpdateClaimSpec() error {
 	return ldcHandler.Update(context.Background(), ldcHandler.diskClaim)
+}
+
+func (ldcHandler *Handler) PatchClaimSpec(patch client.Patch) error {
+	return ldcHandler.Patch(context.Background(), ldcHandler.diskClaim, patch)
 }
 
 func (ldcHandler *Handler) Refresh() error {
@@ -180,4 +206,14 @@ func (ldcHandler *Handler) Refresh() error {
 	}
 	ldcHandler.For(ldc.DeepCopy())
 	return nil
+}
+
+func (ldcHandler *Handler) ShowObjectInfo(msg string) {
+	log.WithFields(log.Fields{
+		"diskClaim":       ldcHandler.diskClaim.GetName(),
+		"generation":      ldcHandler.diskClaim.GetGeneration(),
+		"resourceVersion": ldcHandler.diskClaim.ResourceVersion,
+		"Status":          ldcHandler.diskClaim.Status.Status,
+		"diskRef":         ldcHandler.diskClaim.Spec.DiskRefs,
+	}).Info(msg)
 }
