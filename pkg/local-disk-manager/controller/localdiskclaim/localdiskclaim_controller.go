@@ -109,7 +109,7 @@ func (r *ReconcileLocalDiskClaim) Reconcile(_ context.Context, req reconcile.Req
 // processDiskClaimEmpty update status to Pending
 func (r *ReconcileLocalDiskClaim) processDiskClaimEmpty(diskClaim *v1alpha1.LocalDiskClaim) error {
 	logCtx := log.Fields{"name": diskClaim.Name}
-	log.WithFields(logCtx).Info("Start to processing Empty localdiskclaim")
+	log.WithFields(logCtx).Info("Start processing Empty localdiskclaim")
 
 	r.diskClaimHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusPending)
 	return r.diskClaimHandler.UpdateClaimStatus()
@@ -118,7 +118,7 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimEmpty(diskClaim *v1alpha1.Loca
 // processDiskClaimPending assign free disks for this request according claim.spec.description
 func (r *ReconcileLocalDiskClaim) processDiskClaimPending(diskClaim *v1alpha1.LocalDiskClaim) error {
 	logCtx := log.Fields{"name": diskClaim.Name}
-	log.WithFields(logCtx).Info("Start to processing Pending localdiskclaim")
+	log.WithFields(logCtx).Info("Start processing Pending localdiskclaim")
 	var (
 		err error
 	)
@@ -132,34 +132,20 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimPending(diskClaim *v1alpha1.Lo
 	}
 
 	// Update claim.spec.diskRefs according to disk status
-	if err = r.diskClaimHandler.UpdateBoundDiskRef(); err != nil {
+	if err = r.diskClaimHandler.PatchBoundDiskRef(); err != nil {
 		log.WithError(err).Errorf("Failed to extend for locadiskclaim %v fail, will try after %v",
 			diskClaim.GetName(), RequeueInterval)
 		return err
 	}
-	r.Recorder.Eventf(diskClaim, v1.EventTypeNormal, v1alpha1.LocalDiskClaimEventReasonExtend,
-		"Success to extend for localdiskclaim %v", diskClaim.GetName())
 
-	r.diskClaimHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusBound)
-	return r.diskClaimHandler.UpdateClaimStatus()
+	return r.diskClaimHandler.UpdateClaimStatusToBound()
 }
 
 // processDiskClaimBound check need to assign new disk or not
 func (r *ReconcileLocalDiskClaim) processDiskClaimBound(diskClaim *v1alpha1.LocalDiskClaim) error {
 	logCtx := log.Fields{"name": diskClaim.Name}
-	log.WithFields(logCtx).Info("Start to processing Bound localdiskclaim")
+	log.WithFields(logCtx).Info("Start processing Bound localdiskclaim")
 
-	var (
-		err error
-	)
-
-	// issue: https://github.com/hwameistor/hwameistor/issues/517
-	// Update claim.spec.diskRefs according to disk status
-	if err = r.diskClaimHandler.UpdateBoundDiskRef(); err != nil {
-		log.WithError(err).Errorf("Failed to extend for locadiskclaim %v fail, will try after %v",
-			diskClaim.GetName(), RequeueInterval)
-		return err
-	}
-
+	// DO NOTHING
 	return nil
 }

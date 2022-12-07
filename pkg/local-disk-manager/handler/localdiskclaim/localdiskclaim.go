@@ -5,7 +5,6 @@ import (
 	"fmt"
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	diskHandler "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -14,6 +13,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"time"
 )
 
 type Handler struct {
@@ -81,10 +81,7 @@ func (ldcHandler *Handler) AssignFreeDisk() error {
 		return err
 	}
 
-	var assignedDisks, finalAssignedDisks []string
-	for _, disk := range diskClaim.Spec.DiskRefs {
-		assignedDisks = append(assignedDisks, disk.Name)
-	}
+	var finalAssignedDisks []string
 
 	// Find suitable disks
 	for _, disk := range diskList.Items {
@@ -103,25 +100,29 @@ func (ldcHandler *Handler) AssignFreeDisk() error {
 		finalAssignedDisks = append(finalAssignedDisks, disk.GetName())
 	}
 
-	newAssignedDisks, foundNewDisks := utils.FoundNewStringElems(assignedDisks, finalAssignedDisks)
-	if !foundNewDisks {
+	// NOTE: Once found disk(s) already bound to this claim, return true directly
+	if len(finalAssignedDisks) <= 0 {
 		log.Infof("There is no available disk assigned to %v", diskClaim.GetName())
 		return fmt.Errorf("there is no available disk assigned to %v", diskClaim.GetName())
 	}
 
-	log.Infof("Disk %v has been assigned to %v", newAssignedDisks, diskClaim.GetName())
+	log.Infof("Disk %v has been assigned to %v", finalAssignedDisks, diskClaim.GetName())
 	return nil
 }
 
-// UpdateBoundDiskRef update all disk bounded by the diskClaim to claim.spec.disks
-func (ldcHandler *Handler) UpdateBoundDiskRef() error {
+// PatchBoundDiskRef update all disk bounded by the diskClaim to claim.spec.disks
+func (ldcHandler *Handler) PatchBoundDiskRef() error {
+	time.Sleep(time.Second)
 	diskList, err := diskHandler.
 		NewLocalDiskHandler(ldcHandler.Client, ldcHandler.EventRecorder).
-		ListLocalDisk()
+		ListNodeLocalDisk(ldcHandler.diskClaim.Spec.NodeName)
 	if err != nil {
 		return err
 	}
 
+	oldDiskClaim := ldcHandler.diskClaim.DeepCopy()
+	log.WithFields(log.Fields{"diskClaim": ldcHandler.diskClaim.GetName()}).
+		Infof("Found %d localdisk(s) in cluster", len(diskList.Items))
 	for _, disk := range diskList.Items {
 		if disk.Spec.ClaimRef != nil &&
 			disk.Spec.ClaimRef.Name == ldcHandler.diskClaim.GetName() {
@@ -129,7 +130,13 @@ func (ldcHandler *Handler) UpdateBoundDiskRef() error {
 		}
 	}
 
-	return ldcHandler.UpdateClaimSpec()
+	log.Infof("Found %d localdisk(s) bounded by claim %v",
+		len(ldcHandler.diskClaim.Spec.DiskRefs), ldcHandler.diskClaim.GetName())
+	for _, disk := range ldcHandler.diskClaim.Spec.DiskRefs {
+		log.WithField("diskClaim", ldcHandler.diskClaim.GetName()).
+			Infof("Bounded localdisk: %s", disk.Name)
+	}
+	return ldcHandler.PatchClaimSpec(client.MergeFrom(oldDiskClaim))
 }
 
 func (ldcHandler *Handler) Bounded() bool {
@@ -168,8 +175,30 @@ func (ldcHandler *Handler) UpdateClaimStatus() error {
 	return ldcHandler.Status().Update(context.Background(), ldcHandler.diskClaim)
 }
 
+func (ldcHandler *Handler) UpdateClaimStatusToBound() error {
+	var err error
+
+	// Check if any disk(s) have already bounded to the claim
+	// Return error if not found any bound disk(s)
+	if len(ldcHandler.DiskRefs()) <= 0 {
+		err = fmt.Errorf("no disks bounded by the claim, need to reconcile the diskclaim %v again",
+			ldcHandler.diskClaim.GetName())
+		return err
+	}
+
+	ldcHandler.EventRecorder.Eventf(ldcHandler.diskClaim, v1.EventTypeNormal, v1alpha1.LocalDiskClaimEventReasonExtend,
+		"Success to extend for localdiskclaim %v", ldcHandler.diskClaim.GetName())
+
+	ldcHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusBound)
+	return ldcHandler.UpdateClaimStatus()
+}
+
 func (ldcHandler *Handler) UpdateClaimSpec() error {
 	return ldcHandler.Update(context.Background(), ldcHandler.diskClaim)
+}
+
+func (ldcHandler *Handler) PatchClaimSpec(patch client.Patch) error {
+	return ldcHandler.Patch(context.Background(), ldcHandler.diskClaim, patch)
 }
 
 func (ldcHandler *Handler) Refresh() error {
@@ -179,4 +208,14 @@ func (ldcHandler *Handler) Refresh() error {
 	}
 	ldcHandler.For(ldc.DeepCopy())
 	return nil
+}
+
+func (ldcHandler *Handler) ShowObjectInfo(msg string) {
+	log.WithFields(log.Fields{
+		"diskClaim":       ldcHandler.diskClaim.GetName(),
+		"generation":      ldcHandler.diskClaim.GetGeneration(),
+		"resourceVersion": ldcHandler.diskClaim.ResourceVersion,
+		"Status":          ldcHandler.diskClaim.Status.Status,
+		"diskRef":         ldcHandler.diskClaim.Spec.DiskRefs,
+	}).Info(msg)
 }

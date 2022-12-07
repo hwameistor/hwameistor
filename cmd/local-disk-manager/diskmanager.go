@@ -261,6 +261,9 @@ func newClusterManager(cfg *rest.Config) (manager.Manager, error) {
 		return nil, err
 	}
 
+	// Setup Cache for field index
+	setIndexField(mgr.GetCache())
+
 	// Setup all Controllers
 	if err := controller.AddToManager(mgr); err != nil {
 		return nil, err
