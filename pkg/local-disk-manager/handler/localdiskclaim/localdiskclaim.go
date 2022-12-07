@@ -13,6 +13,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"time"
 )
 
 type Handler struct {
@@ -111,9 +112,10 @@ func (ldcHandler *Handler) AssignFreeDisk() error {
 
 // PatchBoundDiskRef update all disk bounded by the diskClaim to claim.spec.disks
 func (ldcHandler *Handler) PatchBoundDiskRef() error {
+	time.Sleep(time.Second)
 	diskList, err := diskHandler.
 		NewLocalDiskHandler(ldcHandler.Client, ldcHandler.EventRecorder).
-		ListLocalDiskDirectly()
+		ListNodeLocalDisk(ldcHandler.diskClaim.Spec.NodeName)
 	if err != nil {
 		return err
 	}
