@@ -146,6 +146,12 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimBound(diskClaim *v1alpha1.Loca
 	logCtx := log.Fields{"name": diskClaim.Name}
 	log.WithFields(logCtx).Info("Start processing Bound localdiskclaim")
 
-	// DO NOTHING
+	if len(r.diskClaimHandler.DiskRefs()) == 0 {
+		log.WithField("diskClaim", diskClaim.GetName()).
+			Info("No disk(s) bound, change status to Pending and try to reclaim")
+		r.diskClaimHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusPending)
+		return r.diskClaimHandler.UpdateClaimStatus()
+	}
+
 	return nil
 }
