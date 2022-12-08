@@ -1,0 +1,19 @@
+v0.6.1 / 2022-12-08
+========================
+
+## LocalDiskManager
+* Reconcile localdiskclaim when no disks found in Bound status  #530 ( @SSmallMonster )
+* Query LocalDiskClaim Directly After Updating LocalDisk  #529 ( @SSmallMonster )
+* Setup attachnode in localdisk without dot  #525 ( @SSmallMonster )
+* Optimize logic when localdiskclaim Bound  #519 ( @SSmallMonster )
+* Check localdisk twice when Bound already  #518 ( @SSmallMonster )
+
+## Scheduler
+* Remove kubeconfig in scheduler config  #520 ( @SSmallMonster )
+
+## Other
+* Add more e2e tests  ( #516 #515 #514 @FloatXD )
+* Add more unit tests (#510 #509 #512 #513 @buffalo1024 )
+* fix Chinese document  #511 ( @FloatXD )
+* update readme  #508 ( @FloatXD )
+
