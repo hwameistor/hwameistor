@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("periodCheck"), func() {
+var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("periodCheck"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client

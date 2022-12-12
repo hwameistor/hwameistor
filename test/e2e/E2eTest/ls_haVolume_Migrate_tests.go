@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("migrate test", ginkgo.Label("periodCheck"), func() {
+var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
