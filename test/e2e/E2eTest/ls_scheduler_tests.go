@@ -24,7 +24,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("test scheduler", ginkgo.Label("periodCheck"), func() {
+var _ = ginkgo.Describe("scheduler test", ginkgo.Label("periodCheck"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client

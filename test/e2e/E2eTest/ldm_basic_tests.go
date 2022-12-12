@@ -15,7 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-var _ = ginkgo.Describe("test Local Disk Manager", ginkgo.Label("periodCheck"), ginkgo.Ordered, func() {
+var _ = ginkgo.Describe("Local Disk Manager basic tests", ginkgo.Label("periodCheck"), ginkgo.Ordered, func() {
 	var f *framework.Framework
 	var client ctrlclient.Client
 	ctx := context.TODO()
