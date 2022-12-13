@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -46,7 +47,6 @@ func TestLocalDiskFilter(t *testing.T) {
 		WantDevType         string
 		WantDiskNoPartition bool
 		WantReserved        bool
-		WantBoundWithClaim  string
 
 		disk        *v1alpha1.LocalDisk
 		setProperty func(disk *v1alpha1.LocalDisk)
@@ -182,28 +182,6 @@ func TestLocalDiskFilter(t *testing.T) {
 				disk.Spec.Reserved = false
 			},
 		},
-		{
-			Description:      "Should return true, Has Correct ClaimRef Name",
-			WantFilterResult: true,
-			WantBoundWithClaim:  "ClaimFoo",
-			disk:             GenFakeLocalDiskObject(),
-			setProperty: func(disk *v1alpha1.LocalDisk) {
-				disk.Spec.ClaimRef = &v1.ObjectReference{
-					Name: "ClaimFoo",
-				}
-			},
-		},
-		{
-			Description:      "Should return false, Has InCorrect ClaimRef Name",
-			WantFilterResult: true,
-			WantBoundWithClaim: "ClaimFoo",
-			disk:             GenFakeLocalDiskObject(),
-			setProperty: func(disk *v1alpha1.LocalDisk) {
-				disk.Spec.ClaimRef = &v1.ObjectReference{
-					Name: "ClaimBar",
-				}
-			},
-		},
 	}
 
 	for _, testCase := range testCases {
@@ -242,12 +220,52 @@ func TestLocalDiskFilter(t *testing.T) {
 				filter.HasNotReserved()
 			}
 
-			if testCase.WantBoundWithClaim != "" {
-				filter.HasBoundWith(testCase.WantBoundWithClaim)
+			if got := filter.GetTotalResult(); got != testCase.WantFilterResult {
+				t.Fatalf("Filter disk fail,want result: %v, got: %v", testCase.WantFilterResult, got)
 			}
+		})
+	}
+}
 
-			if filter.GetTotalResult() != testCase.WantFilterResult {
-				t.Fatalf("Filter disk fail,want result: %v, got: %v", testCase.WantFilterResult, !testCase.WantFilterResult)
+func TestHasBoundWith(t *testing.T) {
+	testCases := []struct {
+		Description      string
+		WantFilterResult bool
+		WantBoundWithClaim  string
+		disk        *v1alpha1.LocalDisk
+		setProperty func(disk *v1alpha1.LocalDisk)
+	}{
+		{
+			Description:      "Should return true, Has Correct ClaimRef Name",
+			WantFilterResult: true,
+			WantBoundWithClaim:  "ClaimFoo",
+			disk:             GenFakeLocalDiskObject(),
+			setProperty: func(disk *v1alpha1.LocalDisk) {
+				disk.Spec.ClaimRef = &v1.ObjectReference{
+					Name: "ClaimFoo",
+				}
+			},
+		},
+		{
+			Description:      "Should return false, Has InCorrect ClaimRef Name",
+			WantFilterResult: false,
+			WantBoundWithClaim: "ClaimFoo",
+			disk:             GenFakeLocalDiskObject(),
+			setProperty: func(disk *v1alpha1.LocalDisk) {
+				disk.Spec.ClaimRef = &v1.ObjectReference{
+					Name: "ClaimBar",
+				}
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Description, func(t *testing.T) {
+			testCase.setProperty(testCase.disk)
+			filter := NewLocalDiskFilter(testCase.disk)
+			filter.Init()
+			if got := filter.HasBoundWith(testCase.WantBoundWithClaim); !reflect.DeepEqual(got, testCase.WantFilterResult) {
+				t.Fatalf("HasBoundWith fail, want %v, got %v", testCase.WantFilterResult, got)
 			}
 		})
 	}
