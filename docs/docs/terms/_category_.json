@@ -1,7 +1,7 @@
 {
   "label": "Terminologies",
   "position": 6,
-  "link" : {
+  "link": {
     "type": "generated-index",
     "description": "In this section, we will introduce the following concepts:"
   }

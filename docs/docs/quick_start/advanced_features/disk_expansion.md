@@ -5,11 +5,10 @@ sidebar_label: "Disk Expansion"
 
 # Disk Expansion
 
-A storage system is usually expected to expand its capacity by adding a new disk into a storage node. In HwameiStor, it can be done with the following steps.
+A storage system is usually expected to expand its capacity by adding a new disk
+into a storage node. In HwameiStor, it can be done with the following steps.
 
-## Steps
-
-### 1. Prepare a new storage disk
+## Prepare a new storage disk
 
 Select a storage node from the HwameiStor system, and add a new disk into it.
 
@@ -19,23 +18,37 @@ For example, the storage node and new disk information are as follows:
 - devPath: /dev/sdc
 - diskType: SSD
 
-After the new disk is added into the storage node `k8s-worker-4`, you can check the disk status as below:
+After the new disk is added into the storage node `k8s-worker-4`, you can check the disk status as below.
 
-```console
-# 1. Check if the new disk is added into the node successfully
-$ ssh root@k8s-worker-4
-$ lsblk | grep sdc
-sdc        8:32     0     20G  1 disk
+1. Check if the new disk is added into the node successfully
 
+    ```bash
+    ssh root@k8s-worker-4
+    lsblk | grep sdc
+    ```
 
-# 2. Check if the LocalDisk CR already exists for the new disk and the status is "Unclaimed"
-$ kubectl get localdisk | grep k8s-worker-4 | grep sdc
-k8s-worker-4-sdc   k8s-worker-4       Unclaimed 
-```
+    The output may look like:
 
-### 2. Add the new disk into the node's storage pool
+    ```none
+    sdc        8:32     0     20G  1 disk
+    ```
 
-The new disk should be added into the existing SSD storage pool of the node. If the storage pool doesn't exist, it will be constructed automatically and the new disk should be added into it.
+1. Check if the LocalDisk CR already exists for the new disk and the status is "Unclaimed"
+
+    ```bash
+    kubectl get localdisk | grep k8s-worker-4 | grep sdc
+    ```
+
+    The output may look like:
+
+    ```none
+    k8s-worker-4-sdc   k8s-worker-4       Unclaimed 
+    ```
+
+## Add the new disk into the node's storage pool
+
+The new disk should be added into the existing SSD storage pool of the node.
+If the storage pool doesn't exist, it will be constructed automatically and the new disk should be added into it.
 
 ```console
 $ kubectl apply -f - <<EOF
@@ -50,11 +63,11 @@ spec:
 EOF
 ```
 
-### 3. Post check
+## Post check
 
 Finally, check if the new disk has been added into the node's storage pool successfully by checking the LocalStorageNode CR:
 
-```
+```bash
 kubectl get localstoragenode k8s-worker-4
 ```
 

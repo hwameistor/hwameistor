@@ -5,9 +5,16 @@ sidebar_label: "CSI"
 
 # CSI
 
-CSI is the abbreviation of Container Storage Interface. To have a better understanding of what we're going to do, the first thing we need to know is what the Container Storage Interface is. Currently, there are still some problems for already existing storage subsystem within Kubernetes. Storage driver code is maintained in the Kubernetes core repository which is difficult to test. But beyond that, Kubernetes needs to give permissions to storage vendors to check code into the Kubernetes core repository. Ideally, that should be implemented externally.
+CSI is the abbreviation of Container Storage Interface. To have a better understanding
+of what we're going to do, the first thing we need to know is what the Container
+Storage Interface is. Currently, there are still some problems for already existing
+storage subsystem within Kubernetes. Storage driver code is maintained in the Kubernetes
+core repository which is difficult to test. But beyond that, Kubernetes needs to give
+permissions to storage vendors to check code into the Kubernetes core repository.
+Ideally, that should be implemented externally.
 
-CSI is designed to define an industry standard that will enable storage providers who enable CSI to be available across container orchestration systems that support CSI.
+CSI is designed to define an industry standard that will enable storage providers
+who enable CSI to be available across container orchestration systems that support CSI.
 
 The figure below shows a kind of high-level Kubernetes archetypes integrated with CSI.
 
@@ -19,11 +26,13 @@ The figure below shows a kind of high-level Kubernetes archetypes integrated wit
 
 ## Extend CSI and Kubernetes
 
-In order to enable the feature of expanding volume atop Kubernetes, we should extend several components including CSI specification, “in-tree” volume plugin, external-provisioner and external-attacher.
+In order to enable the feature of expanding volume atop Kubernetes, we should extend several
+components including CSI specification, “in-tree” volume plugin, external-provisioner and external-attacher.
 
 ## Extend CSI spec
 
-The feature of expanding volume is still undefined in latest CSI 0.2.0. The new 3 RPCs, including `RequiresFSResize`, `ControllerResizeVolume` and `NodeResizeVolume`, should be introduced.
+The feature of expanding volume is still undefined in latest CSI 0.2.0. The new 3 RPCs,
+including `RequiresFSResize`, `ControllerResizeVolume` and `NodeResizeVolume`, should be introduced.
 
 ```jade
 service Controller {
@@ -46,7 +55,9 @@ service Node {
 
 ## Extend “In-Tree” Volume Plugin
 
-In addition to the extend CSI specification, the `csiPlugin` interface within Kubernetes should also implement `expandablePlugin`. The `csiPlugin` interface will expand `PersistentVolumeClaim` representing for `ExpanderController`.
+In addition to the extend CSI specification, the `csiPlugin` interface within Kubernetes
+should also implement `expandablePlugin`. The `csiPlugin` interface will expand
+`PersistentVolumeClaim` representing for `ExpanderController`.
 
 ```jade
 type ExpandableVolumePlugin interface {
@@ -58,7 +69,8 @@ RequiresFSResize() bool
 
 ### Implement Volume Driver
 
-Finally, to abstract complexity of the implementation, we should hard code the separate storage provider management logic into the following functions which is well-defined in the CSI specification:
+Finally, to abstract complexity of the implementation, we should hard code the separate
+storage provider management logic into the following functions which is well-defined in the CSI specification:
 
 - CreateVolume
 - DeleteVolume

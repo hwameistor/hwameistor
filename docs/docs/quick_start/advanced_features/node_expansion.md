@@ -5,13 +5,13 @@ sidebar_label: "Node Expansion"
 
 # Node Expansion
 
-A storage system is usually expected to expand its capacity by adding a new storage node. In HwameiStor, it can be done with the following steps.
+A storage system is usually expected to expand its capacity by adding a new storage node.
+In HwameiStor, it can be done with the following steps.
 
-## Steps
+## Prepare a new storage node
 
-### 1. Prepare a new storage node
-
-Add the node into the Kubernetes cluster, or select a Kubernetes node. The node should have all the required items described in [Prerequisites](../install/prereq.md).
+Add the node into the Kubernetes cluster, or select a Kubernetes node.
+The node should have all the required items described in [Prerequisites](../install/prereq.md).
 
 For example, the new node and disk information are as follows:
 
@@ -19,9 +19,10 @@ For example, the new node and disk information are as follows:
 - devPath: /dev/sdb
 - diskType: SSD disk
 
-After the new node is already added into the Kubernetes cluster, make sure the following HwameiStor pods are already running on this node.
+After the new node is already added into the Kubernetes cluster,
+make sure the following HwameiStor pods are already running on this node.
 
-```console
+```bash
 $ kubectl get node
 NAME           STATUS   ROLES            AGE     VERSION
 k8s-master-1   Ready    master           96d     v1.24.3-2+63243a96d1c393
@@ -40,7 +41,7 @@ NAME                 IP           ZONE      REGION    STATUS   AGE
 k8s-worker-4   10.6.182.103       default   default   Ready    8d
 ```
 
-### 2. Add the storage node into HwameiStor
+## Add the storage node into HwameiStor
 
 Construct the storage pool of the node by adding a LocalStorageClaim CR as below:
 
@@ -57,12 +58,17 @@ spec:
 EOF
 ```
 
-### 3. Post check
+## Post check
 
-Finally, check if the node has constructed the storage pool by checking the LocalStorageNode CR:
+Finally, check if the node has constructed the storage pool by checking the LocalStorageNode CR.
 
-```console
-$ kubectl get localstoragenode k8s-worker-4
+```bash
+kubectl get localstoragenode k8s-worker-4
+```
+
+The output may look like:
+
+```yaml
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalStorageNode
 metadata:
