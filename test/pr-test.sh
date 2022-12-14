@@ -80,3 +80,6 @@ prepare_install_params
 
 # Step3: go e2e test
 ginkgo -timeout=10h --fail-fast  --label-filter=${E2E_TESTING_LEVEL} test/e2e
+
+echo "Delete outdated images"
+docker rmi -f $(docker images -qa)
