@@ -3,8 +3,6 @@
 set -x
 set -e
 # git clone https://github.com/hwameistor/hwameistor.git test/hwameistor
-echo "Delete outdated images"
-docker rmi -f $(docker images -qa)
 
 # common defines
 date=$(date +%Y%m%d%H%M)
