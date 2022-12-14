@@ -377,6 +377,10 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("centos7.9_offl
 		ginkgo.It("delete helm", func() {
 			utils.UninstallHelm()
 		})
+		ginkgo.It("delete images", func() {
+			run := "docker rmi -f $(docker images -qa) "
+			_ = utils.RunInLinux(run)
+		})
 	})
 
 })

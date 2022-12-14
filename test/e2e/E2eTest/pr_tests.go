@@ -330,5 +330,11 @@ var _ = ginkgo.Describe("pr test ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), func
 			}
 		})
 	})
+	ginkgo.Context("delete images", func() {
+		ginkgo.It("delete images", func() {
+			run := "docker rmi -f $(docker images -qa) "
+			_ = utils.RunInLinux(run)
+		})
+	})
 
 })
