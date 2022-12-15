@@ -16,6 +16,7 @@ const (
 	// json path in smartctl result
 	_SMARTExitStatus   = "smartctl.exit_status"
 	_SMARTMessages     = "smartctl.messages"
+	_SMARTDevices      = "devices"
 	_SMARTStatusPassed = "smart_status.passed"
 )
 
@@ -114,17 +115,26 @@ func (c *controller) FormatDevPath() string {
 	return path.Join("/dev", c.Name)
 }
 
+// GetAllStats get all stats collect by smartctl
+func (c *controller) GetAllStats() (gjson.Result, error) {
+	return getSMARTCtlResult(c.FormatDevPath(), append(c.Options, "--all")...)
+}
+
 // getSMARTCtlResult get smartctl output
 func getSMARTCtlResult(device string, options ...string) (gjson.Result, error) {
 	var (
 		result gjson.Result
+		args   []string
 	)
 
-	out, err := utils.BashWithArgs(_SMARTCtl, append(options, device, "--json")...)
-	if err != nil {
-		log.WithError(err).Error(out)
-		return result, err
+	if device != "" {
+		args = append(options, device, "--json")
+	} else {
+		args = append(options, "--json")
 	}
+
+	// dismiss error for broken disk will cause non-zero exit_status too
+	out, err := utils.BashWithArgs(_SMARTCtl, args...)
 	if !gjson.Valid(out) {
 		log.Errorf("invalid json format: %v", out)
 		return result, fmt.Errorf("invalid json format")
@@ -132,8 +142,8 @@ func getSMARTCtlResult(device string, options ...string) (gjson.Result, error) {
 
 	result = gjson.Parse(out)
 	if err = resultCodeIsOk(result.Get(_SMARTExitStatus).Int()); err != nil {
-		log.WithError(err).Error(out)
-		return result, err
+		// dismiss exit_status
+		log.Warningf("Abnormal information: %v", err)
 	}
 
 	if err = jsonIsOk(result); err != nil {
@@ -154,15 +164,27 @@ func resultCodeIsOk(SMARTCtlResult int64) error {
 		if (b & 1) != 0 {
 			err = fmt.Errorf("command line did not parse")
 		}
-
+		if (b & (1 << 1)) != 0 {
+			err = fmt.Errorf("device open failed, device did not return an IDENTIFY DEVICE structure, " +
+				"or device is in a low-power mode")
+		}
+		if (b & (1 << 2)) != 0 {
+			err = fmt.Errorf("some SMART or other ATA command to the disk failed, " +
+				"or there was a checksum error in a SMART data structure")
+		}
 		if (b & (1 << 3)) != 0 {
 			err = fmt.Errorf("SMART status check returned 'DISK FAILING'")
+		}
+		if (b & (1 << 4)) != 0 {
+			err = fmt.Errorf("we found prefail Attributes <= threshold")
 		}
 		if (b & (1 << 5)) != 0 {
 			err = fmt.Errorf("SMART status check returned 'DISK OK' but we found that " +
 				"some (usage or prefail) Attributes have been <= threshold at some time in the past")
 		}
-
+		if (b & (1 << 6)) != 0 {
+			err = fmt.Errorf("the device error log contains records of errors")
+		}
 		if (b & (1 << 7)) != 0 {
 			err = fmt.Errorf("the device self-test log contains records of errors. " +
 				"[ATA only] Failed self-tests outdated by a newer successful extended self-test are ignored")
@@ -182,4 +204,36 @@ func jsonIsOk(json gjson.Result) error {
 		}
 	}
 	return nil
+}
+
+// device represent a disk found by smartctl
+type device struct {
+	Name     string `json:"name"`
+	InfoName string `json:"info_name"`
+	Type     string `json:"type"`
+	Protocol string `json:"protocol"`
+}
+
+// DiskScan scan all devices exist on machine
+func DiskScan() ([]device, error) {
+	var (
+		jsonResult gjson.Result
+		err        error
+		devices    []device
+	)
+
+	if jsonResult, err = getSMARTCtlResult("", "--scan"); err != nil {
+		return nil, err
+	}
+
+	for _, result := range jsonResult.Get(_SMARTDevices).Array() {
+		devices = append(devices, device{
+			Name:     result.Get("name").String(),
+			InfoName: result.Get("info_name").String(),
+			Type:     result.Get("type").String(),
+			Protocol: result.Get("protocol").String(),
+		})
+	}
+
+	return devices, nil
 }
