@@ -155,6 +155,9 @@ type LocalVolumeStatus struct {
 	// In case of HA volume with multiple replicas, the value is equal to the one of a replica's size
 	AllocatedCapacityBytes int64 `json:"allocatedCapacityBytes,omitempty"`
 
+	// UsedCapacityBytes is the used capacity in bytes of the volume, which is avaiable only for filesystem
+	UsedCapacityBytes int64 `json:"usedCapacityBytes,omitempty"`
+
 	// Volume is a logical concept and composed by one or many replicas which will be located at different node.
 	Replicas []string `json:"replicas,omitempty"`
 
@@ -185,6 +188,7 @@ type LocalVolumeStatus struct {
 // +kubebuilder:printcolumn:name="pool",type=string,JSONPath=`.spec.poolName`,description="Name of storage pool"
 // +kubebuilder:printcolumn:name="replicas",type=integer,JSONPath=`.spec.replicaNumber`,description="Number of volume replica"
 // +kubebuilder:printcolumn:name="capacity",type=integer,JSONPath=`.spec.requiredCapacityBytes`,description="Required capacity of the volume"
+// +kubebuilder:printcolumn:name="used",type=integer,JSONPath=`.status.usedCapacityBytes`,description="Used capacity of the volume"
 // +kubebuilder:printcolumn:name="state",type=string,JSONPath=`.status.state`,description="State of the volume"
 // +kubebuilder:printcolumn:name="resource",type=integer,JSONPath=`.spec.config.resourceID`,description="Allocated resource ID for the volume"
 // +kubebuilder:printcolumn:name="published",type=string,JSONPath=`.status.publishedNode`,description="Name of the node where the volume is in-use"

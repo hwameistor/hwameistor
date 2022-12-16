@@ -18,24 +18,27 @@ ADMISSION_BUILD_INPUT = ${CMDS_DIR}/${ADMISSION_MODULE_NAME}/admission.go
 EVICTOR_MODULE_NAME = evictor
 EVICTOR_BUILD_INPUT = ${CMDS_DIR}/${EVICTOR_MODULE_NAME}/main.go
 
+METRICS_MODULE_NAME = metrics
+METRICS_BUILD_INPUT = ${CMDS_DIR}/${METRICS_MODULE_NAME}/main.go
+
 
 .PHONY: debug
 debug:
 	${DOCKER_DEBUG_CMD} ash
 
 .PHONY: compile
-compile: compile_ldm compile_ls compile_scheduler compile_admission compile_evictor
+compile: compile_ldm compile_ls compile_scheduler compile_admission compile_evictor compile_metrics
 
 .PHONY: image
-image: build_ldm_image build_ls_image build_scheduler_image build_admission_image build_evictor_image
+image: build_ldm_image build_ls_image build_scheduler_image build_admission_image build_evictor_image build_metrics_image
 
 
 .PHONY: arm-image
-arm-image: build_ldm_image_arm64 build_ls_image_arm64 build_scheduler_image_arm64 build_admission_image_arm64 build_evictor_image_arm64
+arm-image: build_ldm_image_arm64 build_ls_image_arm64 build_scheduler_image_arm64 build_admission_image_arm64 build_evictor_image_arm64 build_metrics_image_arm64
 
 
 .PHONY: release
-release: release_ldm release_ls release_scheduler release_admission release_evictor
+release: release_ldm release_ls release_scheduler release_admission release_evictor release_metrics
 
 .PHONY: unit-test
 unit-test:
@@ -102,6 +105,17 @@ release_evictor:
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${EVICTOR_IMAGE_NAME}:${RELEASE_TAG}
 
+.PHONY: release_metrics
+release_metrics:
+	# build for amd64 version
+	${DOCKER_MAKE_CMD} make compile_metrics
+	${DOCKER_BUILDX_CMD_AMD64} -t ${METRICS_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${METRICS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# build for arm64 version
+	${DOCKER_MAKE_CMD} make compile_metrics_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${METRICS_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${METRICS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# push to a public registry
+	${MUILT_ARCH_PUSH_CMD} -i ${METRICS_IMAGE_NAME}:${RELEASE_TAG}
+
 .PHONY: build_ldm_image
 build_ldm_image:
 	@echo "Build local-disk-manager image ${LDM_IMAGE_NAME}:${IMAGE_TAG}"
@@ -132,6 +146,11 @@ build_evictor_image:
 	${DOCKER_MAKE_CMD} make compile_evictor
 	docker build -t ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG} -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
+.PHONY: build_metrics_image
+build_metrics_image:
+	@echo "Build metrics image ${METRICS_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_metrics
+	docker build -t ${METRICS_IMAGE_NAME}:${IMAGE_TAG} -f ${METRICS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
 .PHONY: build_ldm_image_arm64
 build_ldm_image_arm64:
@@ -163,6 +182,11 @@ build_evictor_image_arm64:
 	${DOCKER_MAKE_CMD} make compile_evictor_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG} -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
+.PHONY: build_metrics_image_arm64
+build_metrics_image_arm64:
+	@echo "Build metrics image ${METRICS_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_metrics_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${METRICS_IMAGE_NAME}:${IMAGE_TAG} -f ${METRICS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
 
 .PHONY: apis
@@ -173,12 +197,6 @@ apis:
 builder:
 	docker build -t ${BUILDER_NAME}:${BUILDER_TAG} -f ${BUILDER_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	docker push ${BUILDER_NAME}:${BUILDER_TAG}
-
-# .PHONY: _gen-apis
-# _gen-apis:
-# 	${OPERATOR_CMD} generate k8s
-# 	${OPERATOR_CMD} generate crds
-# 	bash hack/update-codegen.sh
 
 .PHONY: _gen-apis
 _gen-apis:
@@ -225,6 +243,14 @@ compile_evictor:
 .PHONY: compile_evictor_arm64
 compile_evictor_arm64:
 	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${EVICTOR_BUILD_OUTPUT} ${EVICTOR_BUILD_INPUT}
+
+.PHONY: compile_metrics
+compile_metrics:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${METRICS_BUILD_OUTPUT} ${METRICS_BUILD_INPUT}
+
+.PHONY: compile_metrics_arm64
+compile_metrics_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${METRICS_BUILD_OUTPUT} ${METRICS_BUILD_INPUT}
 
 .PHONY: _enable_buildx
 _enable_buildx:
