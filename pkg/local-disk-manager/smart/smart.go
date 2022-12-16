@@ -137,7 +137,7 @@ func getSMARTCtlResult(device string, options ...string) (gjson.Result, error) {
 	out, err := utils.BashWithArgs(_SMARTCtl, args...)
 	if !gjson.Valid(out) {
 		log.Errorf("invalid json format: %v", out)
-		return result, fmt.Errorf("invalid json format")
+		return result, fmt.Errorf("invalid json format: %v", err)
 	}
 
 	result = gjson.Parse(out)
@@ -214,8 +214,8 @@ type device struct {
 	Protocol string `json:"protocol"`
 }
 
-// DiskScan scan all devices exist on machine
-func DiskScan() ([]device, error) {
+// ScanDevice scan all devices exist on machine
+func ScanDevice() ([]device, error) {
 	var (
 		jsonResult gjson.Result
 		err        error
