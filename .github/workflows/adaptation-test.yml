@@ -2,8 +2,6 @@ name: Adaptation-test
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 18 ? * 5'
     inputs:
       k8s-version:
         description: 'choice'
@@ -18,6 +16,9 @@ on:
           - k8s1.23.3 & centos8.1
           - k8s1.23.3 & ubuntu2204
           - k8s1.23.3 & centos7.9_offline
+  schedule:
+    - cron: '0 18 ? * 5'
+
 
 jobs:
   k8s1_25-test:
