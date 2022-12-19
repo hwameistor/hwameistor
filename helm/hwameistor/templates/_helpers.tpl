@@ -28,6 +28,11 @@
   {{- default .Chart.Version .Values.evictor.tag -}}
 {{- end -}}
 
+{{/* Allow Metrics image tag to be overridden. */}}
+{{- define "hwameistor.metricsImageTag" -}}
+  {{- default .Chart.Version .Values.metrics.tag -}}
+{{- end -}}
+
 {{/* Allow KubeletRootDir to be overridden. */}}
 {{- define "hwameistor.kubeletRootDir" -}}
   {{- default "/var/lib/kubelet" .Values.kubeletRootDir -}}
