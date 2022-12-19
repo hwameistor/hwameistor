@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hwameistor-metrics-collector
+  namespace: {{ .Release.Namespace}}
+  labels:
+    app: hwameistor-metrics-collector
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hwameistor-metrics-collector
+  template:
+    metadata:
+      labels:
+        app: hwameistor-metrics-collector
+    spec:
+      serviceAccountName: hwameistor-admin
+      containers:
+        - name: collector
+          image: {{ .Values.global.hwameistorImageRegistry}}/{{ .Values.metrics.imageRepository}}:{{ template "hwameistor.metricsImageTag" . }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: metrics-apis
+          resources: 
+            {{- toYaml .Values.metrics.resources | nindent 12 }}
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: hwameistor-metrics-collector
+  namespace: {{ .Release.Namespace}}
+spec:
+  selector:
+    app: hwameistor-metrics-collector
+  ports:
+    - port: 8080
+      targetPort: metrics-apis
+
+---
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: hwameistor-metrics-collector
+  namespace: {{ .Release.Namespace}}
+spec:
+  endpoints:
+  - interval: 30s
+    targetPort: 8080
+    path: /metrics
+  namespaceSelector:
+    matchNames:
+    - {{ .Release.Namespace}}
+  selector:
+    matchLabels:
+      app: hwameistor-metrics-collector

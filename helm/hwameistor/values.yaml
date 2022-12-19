@@ -57,6 +57,11 @@ evictor:
   imageRepository: hwameistor/evictor
   resources: {} 
 
+metrics:
+  replicas: 1
+  imageRepository: hwameistor/metrics
+  resources: {} 
+
 localDiskManager:
   tolerationsOnMaster: true
   enableCSI: true
