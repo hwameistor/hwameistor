@@ -2,11 +2,13 @@ name: Adaptation-test
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 18 ? * 5'
     inputs:
       k8s-version:
         description: 'choice'
-        required: true
-        default: 'warning'
+        required: false
+        default: 'ALL'
         type: choice
         options:
           - ALL
