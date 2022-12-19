@@ -66,7 +66,7 @@ function prepare_install_params() {
 
 	 sed -i "/hwameistor\/evictor/a \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
 
-	 sed -i "/hwameistor\/evictor/a \ \ tag: ${metrics}" helm/hwameistor/values.yaml
+	 sed -i "/hwameistor\/metrics/a \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
 
 	 sed -i 's/rclone\/rclone/172.30.45.210\/hwameistor\/hwameistor-migrate-rclone/' helm/hwameistor/values.yaml
 
