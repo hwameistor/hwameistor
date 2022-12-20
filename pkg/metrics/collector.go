@@ -48,6 +48,8 @@ type MetricsCollector struct {
 	// for localvolumeconvert
 	// for localvolumeexpand
 
+	// for S.M.A.R.T
+	smartCollector prometheus.Collector
 	metricsHandler http.Handler
 }
 
@@ -132,6 +134,9 @@ func NewHandler() *MetricsCollector {
 			},
 			[]string{"nodeName", "type", "status"},
 		),
+
+		// for S.M.A.R.T
+		smartCollector: NewSMARTCollector(),
 	}
 }
 
@@ -168,6 +173,8 @@ func (mc *MetricsCollector) registerMetrics() {
 	registry.MustRegister(mc.localDiskStatusMetrics)
 	// for localdiskvolume
 	registry.MustRegister(mc.localDiskVolumeStatusMetrics)
+	// for S.M.A.R.T
+	registry.MustRegister(mc.smartCollector)
 
 	mc.metricsHandler = promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 
