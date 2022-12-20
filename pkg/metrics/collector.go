@@ -239,39 +239,15 @@ func (mc *MetricsCollector) collectForLocalStorageNodes() {
 
 	for _, node := range nodes {
 		nodeCount[string(node.Status.State)]++
-
 		for poolName, pool := range node.Status.Pools {
-			mc.localStorageNodeCapacityMetrics.WithLabelValues(
-				node.Name,
-				unifiedPoolName(poolName),
-				"Total",
-			).Set(float64(pool.TotalCapacityBytes))
-			mc.localStorageNodeCapacityMetrics.WithLabelValues(
-				node.Name,
-				unifiedPoolName(poolName),
-				"Free",
-			).Set(float64(pool.FreeCapacityBytes))
-			mc.localStorageNodeCapacityMetrics.WithLabelValues(
-				node.Name,
-				unifiedPoolName(poolName),
-				"Used",
-			).Set(float64(pool.UsedCapacityBytes))
+			poolName = unifiedPoolName(poolName)
+			mc.localStorageNodeCapacityMetrics.WithLabelValues(node.Name, poolName, "Total").Set(float64(pool.TotalCapacityBytes))
+			mc.localStorageNodeCapacityMetrics.WithLabelValues(node.Name, poolName, "Free").Set(float64(pool.FreeCapacityBytes))
+			mc.localStorageNodeCapacityMetrics.WithLabelValues(node.Name, poolName, "Used").Set(float64(pool.UsedCapacityBytes))
 
-			mc.localStorageNodeVolumeCountMetrics.WithLabelValues(
-				node.Name,
-				unifiedPoolName(poolName),
-				"Total",
-			).Set(float64(pool.TotalVolumeCount))
-			mc.localStorageNodeVolumeCountMetrics.WithLabelValues(
-				node.Name,
-				unifiedPoolName(poolName),
-				"Free",
-			).Set(float64(pool.FreeVolumeCount))
-			mc.localStorageNodeVolumeCountMetrics.WithLabelValues(
-				node.Name,
-				unifiedPoolName(poolName),
-				"Used",
-			).Set(float64(pool.UsedVolumeCount))
+			mc.localStorageNodeVolumeCountMetrics.WithLabelValues(node.Name, poolName, "Total").Set(float64(pool.TotalVolumeCount))
+			mc.localStorageNodeVolumeCountMetrics.WithLabelValues(node.Name, poolName, "Free").Set(float64(pool.FreeVolumeCount))
+			mc.localStorageNodeVolumeCountMetrics.WithLabelValues(node.Name, poolName, "Used").Set(float64(pool.UsedVolumeCount))
 		}
 	}
 

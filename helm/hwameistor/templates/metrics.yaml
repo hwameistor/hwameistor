@@ -42,21 +42,3 @@ spec:
     - port: 8080
       targetPort: metrics-apis
 
----
-
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: hwameistor-metrics-collector
-  namespace: {{ .Release.Namespace}}
-spec:
-  endpoints:
-  - interval: 30s
-    targetPort: 8080
-    path: /metrics
-  namespaceSelector:
-    matchNames:
-    - {{ .Release.Namespace}}
-  selector:
-    matchLabels:
-      app: hwameistor-metrics-collector
