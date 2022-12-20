@@ -3,11 +3,7 @@ package diskmanager
 type DiskStatus = string
 
 const (
-	DiskStatusInUse     DiskStatus = "InUse"
-	DiskStatusFree      DiskStatus = "Free"
-	DiskStatusReserved  DiskStatus = "Reserved"
-	DiskStatusUnclaimed DiskStatus = "Available"
-	DiskStatusReleased  DiskStatus = "Released"
+	DiskStatusAvailable DiskStatus = "Available"
 )
 
 // Disk all disk info about a disk

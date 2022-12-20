@@ -186,3 +186,7 @@ func (ldHandler *Handler) IsEmpty() bool {
 func (ldHandler *Handler) RecordEvent(eventtype, reason, messageFmt string, args ...interface{}) {
 	ldHandler.Eventf(ldHandler.localDisk, eventtype, reason, messageFmt, args)
 }
+
+func (ldHandler *Handler) SetPartition(hasPartition bool) {
+	ldHandler.localDisk.Spec.HasPartition = hasPartition
+}
