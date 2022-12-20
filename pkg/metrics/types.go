@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	VolumeTypeNonHA       = "Non-HA"
+	VolumeTypeNonHA       = "NonHA"
 	VolumeTypeConvertible = "Convertible"
 	VolumeTypeHA          = "HA"
 )
