@@ -48,11 +48,12 @@ func (sc *SMARTCollector) Collect(ch chan<- prometheus.Metric) {
 func (sc *SMARTCollector) collectAtaAttributes() {
 	for _, diskResult := range sc.result {
 		for _, attr := range diskResult.AtaSmartAttributes.Table {
-			if val, ok := smartAttrsMaps.Load(attr.ID); ok {
+			if val, ok := smartAttrsMaps.Load("ata_smart_attributes"); ok {
 				sc.ch <- prometheus.MustNewConstMetric(
 					val.(*prometheus.Desc),
 					prometheus.GaugeValue,
 					float64(attr.Value),
+					diskResult.Device.InfoName,
 					attr.Name,
 					attr.Flags.String,
 					flagsLong(diskResult, attr.Name),
@@ -63,6 +64,7 @@ func (sc *SMARTCollector) collectAtaAttributes() {
 					val.(*prometheus.Desc),
 					prometheus.GaugeValue,
 					float64(attr.Worst),
+					diskResult.Device.InfoName,
 					attr.Name,
 					attr.Flags.String,
 					flagsLong(diskResult, attr.Name),
@@ -73,6 +75,7 @@ func (sc *SMARTCollector) collectAtaAttributes() {
 					val.(*prometheus.Desc),
 					prometheus.GaugeValue,
 					float64(attr.Thresh),
+					diskResult.Device.InfoName,
 					attr.Name,
 					attr.Flags.String,
 					flagsLong(diskResult, attr.Name),
@@ -83,6 +86,7 @@ func (sc *SMARTCollector) collectAtaAttributes() {
 					val.(*prometheus.Desc),
 					prometheus.GaugeValue,
 					float64(attr.Raw.Value),
+					diskResult.Device.InfoName,
 					attr.Name,
 					attr.Flags.String,
 					flagsLong(diskResult, attr.Name),
@@ -135,11 +139,12 @@ func init() {
 }
 
 func setupAttrsMaps() {
-	smartAttrsMaps.Store(5, prometheus.NewDesc(
-		"smartctl_device_attribute_reallocated_ct",
-		"Device Attributes - Reallocated Sector Ct",
+	smartAttrsMaps.Store("ata_smart_attributes", prometheus.NewDesc(
+		"ata_smart_attribute",
+		"device attributes",
 		[]string{
 			"device",
+			"attribute_name",
 			"attribute_flags_short",
 			"attribute_flags_long",
 			"attribute_value_type",
