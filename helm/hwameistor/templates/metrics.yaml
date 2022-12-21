@@ -6,7 +6,7 @@ metadata:
   labels:
     app: hwameistor-metrics-collector
 spec:
-  replicas: 1
+  replicas: {{ .Values.metrics.replicas}}
   strategy:
     type: Recreate
   selector:

@@ -21,24 +21,26 @@ EVICTOR_BUILD_INPUT = ${CMDS_DIR}/${EVICTOR_MODULE_NAME}/main.go
 METRICS_MODULE_NAME = metrics
 METRICS_BUILD_INPUT = ${CMDS_DIR}/${METRICS_MODULE_NAME}/main.go
 
+APISERVER_MODULE_NAME = apiserver
+APISERVER_BUILD_INPUT = ${CMDS_DIR}/${APISERVER_MODULE_NAME}/main.go
 
 .PHONY: debug
 debug:
 	${DOCKER_DEBUG_CMD} ash
 
 .PHONY: compile
-compile: compile_ldm compile_ls compile_scheduler compile_admission compile_evictor compile_metrics
+compile: compile_ldm compile_ls compile_scheduler compile_admission compile_evictor compile_metrics compile_apiserver
 
 .PHONY: image
-image: build_ldm_image build_ls_image build_scheduler_image build_admission_image build_evictor_image build_metrics_image
+image: build_ldm_image build_ls_image build_scheduler_image build_admission_image build_evictor_image build_metrics_image build_apiserver_image
 
 
 .PHONY: arm-image
-arm-image: build_ldm_image_arm64 build_ls_image_arm64 build_scheduler_image_arm64 build_admission_image_arm64 build_evictor_image_arm64 build_metrics_image_arm64
+arm-image: build_ldm_image_arm64 build_ls_image_arm64 build_scheduler_image_arm64 build_admission_image_arm64 build_evictor_image_arm64 build_metrics_image_arm64 build_apiserver_image_arm64
 
 
 .PHONY: release
-release: release_ldm release_ls release_scheduler release_admission release_evictor release_metrics
+release: release_ldm release_ls release_scheduler release_admission release_evictor release_metrics release_apiserver
 
 .PHONY: unit-test
 unit-test:
@@ -47,7 +49,7 @@ unit-test:
 
 .PHONY: vendor
 vendor:
-	go mod tidy -compat=1.17
+	go mod tidy -compat=1.18
 	go mod vendor
 
 .PHONY: release_ldm
@@ -116,6 +118,18 @@ release_metrics:
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${METRICS_IMAGE_NAME}:${RELEASE_TAG}
 
+.PHONY: release_apiserver
+release_apiserver:
+	# build for amd64 version
+	${DOCKER_MAKE_CMD} make compile_apiserver
+	${DOCKER_BUILDX_CMD_AMD64} -t ${APISERVER_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${APISERVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# build for arm64 version
+	${DOCKER_MAKE_CMD} make compile_apiserver_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${APISERVER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${APISERVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# push to a public registry
+	${MUILT_ARCH_PUSH_CMD} -i ${APISERVER_IMAGE_NAME}:${RELEASE_TAG}
+
+
 .PHONY: build_ldm_image
 build_ldm_image:
 	@echo "Build local-disk-manager image ${LDM_IMAGE_NAME}:${IMAGE_TAG}"
@@ -152,6 +166,14 @@ build_metrics_image:
 	${DOCKER_MAKE_CMD} make compile_metrics
 	docker build -t ${METRICS_IMAGE_NAME}:${IMAGE_TAG} -f ${METRICS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
+
+.PHONY: build_apiserver_image
+build_apiserver_image:
+	@echo "Build hwameistor apiserver image ${APISERVER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_apiserver
+	docker build -t ${APISERVER_IMAGE_NAME}:${IMAGE_TAG} -f ${APISERVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+
 .PHONY: build_ldm_image_arm64
 build_ldm_image_arm64:
 	@echo "Build local-disk-manager image ${LDM_IMAGE_NAME}:${IMAGE_TAG}"
@@ -187,6 +209,12 @@ build_metrics_image_arm64:
 	@echo "Build metrics image ${METRICS_IMAGE_NAME}:${IMAGE_TAG}"
 	${DOCKER_MAKE_CMD} make compile_metrics_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${METRICS_IMAGE_NAME}:${IMAGE_TAG} -f ${METRICS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_apiserver_image_arm64
+build_apiserver_image_arm64:
+	@echo "Build hwameistor apiserver image ${APISERVER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_apiserver_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${APISERVER_IMAGE_NAME}:${IMAGE_TAG} -f ${APISERVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
 
 .PHONY: apis
@@ -251,6 +279,14 @@ compile_metrics:
 .PHONY: compile_metrics_arm64
 compile_metrics_arm64:
 	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${METRICS_BUILD_OUTPUT} ${METRICS_BUILD_INPUT}
+
+.PHONY: compile_apiserver
+compile_apiserver:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${APISERVER_BUILD_OUTPUT} ${APISERVER_BUILD_INPUT}
+
+.PHONY: compile_apiserver_arm64
+compile_apiserver_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${APISERVER_BUILD_OUTPUT} ${APISERVER_BUILD_INPUT}
 
 .PHONY: _enable_buildx
 _enable_buildx:

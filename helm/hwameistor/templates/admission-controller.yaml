@@ -6,7 +6,7 @@ metadata:
   labels:
     app: hwameistor-admission-controller
 spec:
-  replicas: 1
+  replicas: {{ .Values.admission.replicas}}
   strategy:
     type: Recreate
   selector:
