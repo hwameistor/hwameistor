@@ -6,30 +6,32 @@ import (
 
 // StorageNode
 type StorageNode struct {
-	// name 节点名字
-	Name string `json:"name,omitempty"`
-	// ip 节点IP
-	IP string `json:"ip,omitempty"`
-	// node state 节点状态 运行中（Ready）,未就绪（NotReady）,未知（Unknown）
-	NodeState State `json:"nodeState,omitempty"`
+	apisv1alpha1.LocalStorageNode
+
+	// // name 节点名字
+	// Name string `json:"name,omitempty"`
+	// // ip 节点IP
+	// IP string `json:"ip,omitempty"`
+	// // node state 节点状态 运行中（Ready）,未就绪（NotReady）,未知（Unknown）
+	// NodeState State `json:"nodeState,omitempty"`
 	// driver status 驱动状态  运行中（Ready）,维护中（Maintain）, 离线（Offline）
 	DriverStatus State `json:"driverStatus,omitempty"`
-	// totalDiskCount 总磁盘数
-	TotalDiskCount int64 `json:"totalDiskCount,omitempty"`
-	// usedDiskCount 已绑定磁盘数
-	UsedDiskCount int64 `json:"usedDiskCount,omitempty"`
-	//// freeCapacityBytes LSN可分配存储容量
-	//FreeCapacityBytes int64 `json:"freeCapacityBytes,omitempty"`
-	// totalHDDCapacityBytes HDD存储总容量
-	TotalHDDCapacityBytes int64 `json:"totalHDDCapacityBytes,omitempty"`
-	// totalSSDCapacityBytes SSD存储总容量
-	TotalSSDCapacityBytes int64 `json:"totalSSDCapacityBytes,omitempty"`
-	// allocatedHDDCapacityBytes HDD已经分配存储量
-	AllocatedHDDCapacityBytes int64 `json:"allocatedHDDCapacityBytes,omitempty"`
-	// allocatedSSDCapacityBytes SSD已经分配存储量
-	AllocatedSSDCapacityBytes int64 `json:"allocatedSSDCapacityBytes,omitempty"`
-	// IsRAID 是否Raid
-	IsRAID bool `json:"isRaid,omitempty"`
+	// // totalDiskCount 总磁盘数
+	// TotalDiskCount int64 `json:"totalDiskCount,omitempty"`
+	// // usedDiskCount 已绑定磁盘数
+	// UsedDiskCount int64 `json:"usedDiskCount,omitempty"`
+	// //// freeCapacityBytes LSN可分配存储容量
+	// //FreeCapacityBytes int64 `json:"freeCapacityBytes,omitempty"`
+	// // totalHDDCapacityBytes HDD存储总容量
+	// TotalHDDCapacityBytes int64 `json:"totalHDDCapacityBytes,omitempty"`
+	// // totalSSDCapacityBytes SSD存储总容量
+	// TotalSSDCapacityBytes int64 `json:"totalSSDCapacityBytes,omitempty"`
+	// // allocatedHDDCapacityBytes HDD已经分配存储量
+	// AllocatedHDDCapacityBytes int64 `json:"allocatedHDDCapacityBytes,omitempty"`
+	// // allocatedSSDCapacityBytes SSD已经分配存储量
+	// AllocatedSSDCapacityBytes int64 `json:"allocatedSSDCapacityBytes,omitempty"`
+	// // IsRAID 是否Raid
+	// IsRAID bool `json:"isRaid,omitempty"`
 }
 
 type LocalDisksItemsList struct {

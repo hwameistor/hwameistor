@@ -11,7 +11,6 @@ import (
 	utils "github.com/hwameistor/hwameistor/pkg/apiserver/util"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/client-go/kubernetes"
@@ -92,48 +91,34 @@ func (lsnController *LocalStorageNodeController) ListLocalStorageNode(queryPage 
 
 	var sns []*hwameistorapi.StorageNode
 	for i := range lsnList.Items {
-		claimedLocaldisks, err := lsnController.listClaimedLocalDiskByNode(lsnList.Items[i].Name)
-		if err != nil {
-			log.WithError(err).Error("Failed to list listClaimedLocalDiskByNode")
-			return nil, err
-		}
-
 		var queryPage hwameistorapi.QueryPage
 		queryPage.Name = lsnList.Items[i].Name
-		localdisks, err := lsnController.ListStorageNodeDisks(queryPage)
-		if err != nil {
-			log.WithError(err).Error("Failed to ListStorageNodeDisks")
-			return nil, err
-		}
 		sn := lsnController.convertStorageNode(lsnList.Items[i])
-		sn.TotalDiskCount = int64(len(localdisks))
-		sn.UsedDiskCount = int64(len(claimedLocaldisks))
-		sn.NodeState = lsnController.getK8SNodeStatus(lsnList.Items[i].Name)
 
 		fmt.Println("ListLocalStorageNode queryPage.Name = %v, queryPage.DriverState = %v, queryPage.NodeState = %v", queryPage.Name, queryPage.DriverState, queryPage.NodeState)
 		if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState == hwameistorapi.NodeStateEmpty) {
 			sns = append(sns, sn)
 		} else if (queryPage.Name != "" && strings.Contains(sn.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState == hwameistorapi.NodeStateEmpty) {
 			sns = append(sns, sn)
-		} else if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (sn.NodeState == hwameistorapi.NodeStateReady || sn.NodeState == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState == hwameistorapi.DriverStateEmpty) {
+		} else if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (hwameistorapi.State(sn.Status.State) == hwameistorapi.NodeStateReady || hwameistorapi.State(sn.Status.State) == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState == hwameistorapi.DriverStateEmpty) {
 			sns = append(sns, sn)
 		} else if (queryPage.Name == "") && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.DriverState == sn.DriverStatus) && (queryPage.DriverState == hwameistorapi.DriverStateEmpty) {
 			sns = append(sns, sn)
 		} else if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState != hwameistorapi.DriverStateUnknown && queryPage.DriverState == sn.DriverStatus) {
 			sns = append(sns, sn)
-		} else if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (sn.NodeState == hwameistorapi.NodeStateReady || sn.NodeState == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState != hwameistorapi.DriverStateUnknown && queryPage.DriverState == sn.DriverStatus) {
+		} else if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (hwameistorapi.State(sn.Status.State) == hwameistorapi.NodeStateReady || hwameistorapi.State(sn.Status.State) == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState != hwameistorapi.DriverStateUnknown && queryPage.DriverState == sn.DriverStatus) {
 			sns = append(sns, sn)
-		} else if (queryPage.Name == "") && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.DriverState == sn.DriverStatus) && (queryPage.DriverState != hwameistorapi.DriverStateUnknown && queryPage.DriverState == sn.DriverStatus) {
+		} else if (queryPage.Name == "") && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.DriverState != hwameistorapi.DriverStateUnknown && queryPage.DriverState == sn.DriverStatus) {
 			sns = append(sns, sn)
 		} else if (queryPage.Name != "" && strings.Contains(sn.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState != hwameistorapi.DriverStateUnknown && queryPage.DriverState == sn.DriverStatus) {
 			sns = append(sns, sn)
-		} else if (queryPage.Name != "" && strings.Contains(sn.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (sn.NodeState == hwameistorapi.NodeStateReady || sn.NodeState == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState == hwameistorapi.DriverStateEmpty) {
+		} else if (queryPage.Name != "" && strings.Contains(sn.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (hwameistorapi.State(sn.Status.State) == hwameistorapi.NodeStateReady || hwameistorapi.State(sn.Status.State) == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState == hwameistorapi.DriverStateEmpty) {
 			sns = append(sns, sn)
-		} else if (queryPage.Name != "" && strings.Contains(sn.Name, queryPage.Name)) && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.NodeState == sn.NodeState) && (queryPage.DriverState == hwameistorapi.DriverStateEmpty) {
+		} else if (queryPage.Name != "" && strings.Contains(sn.Name, queryPage.Name)) && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.NodeState == hwameistorapi.State(sn.Status.State)) && (queryPage.DriverState == hwameistorapi.DriverStateEmpty) {
 			sns = append(sns, sn)
-		} else if (queryPage.Name != "" && strings.Contains(sn.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (sn.NodeState == hwameistorapi.NodeStateReady || sn.NodeState == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState != hwameistorapi.DriverStateUnknown && queryPage.DriverState == sn.DriverStatus) {
+		} else if (queryPage.Name != "" && strings.Contains(sn.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (hwameistorapi.State(sn.Status.State) == hwameistorapi.NodeStateReady || hwameistorapi.State(sn.Status.State) == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState != hwameistorapi.DriverStateUnknown && queryPage.DriverState == sn.DriverStatus) {
 			sns = append(sns, sn)
-		} else if (queryPage.Name != "" && strings.Contains(sn.Name, queryPage.Name)) && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.NodeState == sn.NodeState) && (queryPage.DriverState != hwameistorapi.DriverStateUnknown && queryPage.DriverState == sn.DriverStatus) {
+		} else if (queryPage.Name != "" && strings.Contains(sn.Name, queryPage.Name)) && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.NodeState == hwameistorapi.State(sn.Status.State)) && (queryPage.DriverState != hwameistorapi.DriverStateUnknown && queryPage.DriverState == sn.DriverStatus) {
 			sns = append(sns, sn)
 		}
 	}
@@ -141,42 +126,26 @@ func (lsnController *LocalStorageNodeController) ListLocalStorageNode(queryPage 
 	return sns, nil
 }
 
-// getK8SNodeStatus
-func (lsnController *LocalStorageNodeController) getK8SNodeStatus(nodeName string) hwameistorapi.State {
-	// list K8S nodes
-	nodes, err := lsnController.clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		log.WithError(err).Error("Failed to list k8s nodes")
-		return hwameistorapi.NodeStateNotReady
-	}
-	for _, node := range nodes.Items {
-		if node.Name == nodeName {
-			return hwameistorapi.State(node.Status.Conditions[len(node.Status.Conditions)-1].Type)
-		}
-	}
-	return ""
-}
-
 // convertStorageNode
 func (lsnController *LocalStorageNodeController) convertStorageNode(lsn apisv1alpha1.LocalStorageNode) *hwameistorapi.StorageNode {
-	sn := &hwameistorapi.StorageNode{}
-	sn.Name = lsn.Name
-	sn.IP = lsn.Spec.StorageIP
-	sn.DriverStatus = lsnController.convertDriverStatus(lsn.Status.State)
+	sn := &hwameistorapi.StorageNode{LocalStorageNode: lsn}
+	// sn.Name = lsn.Name
+	// sn.IP = lsn.Spec.StorageIP
+	// sn.DriverStatus = lsnController.convertDriverStatus(lsn.Status.State)
 
-	if lsn.Status.State == apisv1alpha1.NodeStateReady {
-		for _, pool := range lsn.Status.Pools {
-			if pool.Class == hwameistorapi.DiskClassNameHDD {
-				sn.TotalHDDCapacityBytes = pool.TotalCapacityBytes
-				sn.AllocatedHDDCapacityBytes = pool.UsedCapacityBytes
-				//sn.FreeCapacityBytes += pool.FreeCapacityBytes
-			} else if pool.Class == hwameistorapi.DiskClassNameSSD {
-				sn.TotalSSDCapacityBytes = pool.TotalCapacityBytes
-				sn.AllocatedSSDCapacityBytes = pool.UsedCapacityBytes
-				//sn.FreeCapacityBytes += pool.FreeCapacityBytes
-			}
-		}
-	}
+	// if lsn.Status.State == apisv1alpha1.NodeStateReady {
+	// 	for _, pool := range lsn.Status.Pools {
+	// 		if pool.Class == hwameistorapi.DiskClassNameHDD {
+	// 			sn.TotalHDDCapacityBytes = pool.TotalCapacityBytes
+	// 			sn.AllocatedHDDCapacityBytes = pool.UsedCapacityBytes
+	// 			//sn.FreeCapacityBytes += pool.FreeCapacityBytes
+	// 		} else if pool.Class == hwameistorapi.DiskClassNameSSD {
+	// 			sn.TotalSSDCapacityBytes = pool.TotalCapacityBytes
+	// 			sn.AllocatedSSDCapacityBytes = pool.UsedCapacityBytes
+	// 			//sn.FreeCapacityBytes += pool.FreeCapacityBytes
+	// 		}
+	// 	}
+	// }
 
 	return sn
 }
