@@ -1,0 +1,1986 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/metrics/basemetric": {
+            "get": {
+                "description": "get baseMetric",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metric"
+                ],
+                "summary": "摘要 获取基础监控指标",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.BaseMetric"
+                        }
+                    }
+                }
+            }
+        },
+        "/metrics/modulestatusmetric": {
+            "get": {
+                "description": "ModuleStatusMetric Running (运行中) / NotReady (未就绪)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metric"
+                ],
+                "summary": "摘要 获取组件状态监控指标",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.ModuleStatusMetric"
+                        }
+                    }
+                }
+            }
+        },
+        "/metrics/nodestorageusemetric/{storagePoolClass}": {
+            "get": {
+                "description": "NodeStorageUseMetric",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metric"
+                ],
+                "summary": "摘要 获取指定存储池类型节点存储TOP5使用率监控指标",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "storagePoolClass",
+                        "name": "storagePoolClass",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.NodeStorageUseMetric"
+                        }
+                    },
+                    "404": {
+                        "description": "失败",
+                        "schema": {
+                            "$ref": "#/definitions/api.NodeStorageUseMetric"
+                        }
+                    }
+                }
+            }
+        },
+        "/metrics/operations": {
+            "get": {
+                "description": "OperationList 状态枚举 （Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metric"
+                ],
+                "summary": "摘要 获取操作记录列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pageSize",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.OperationMetric"
+                        }
+                    }
+                }
+            }
+        },
+        "/metrics/storagepoolusemetric": {
+            "get": {
+                "description": "StoragePoolMetric",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metric"
+                ],
+                "summary": "摘要 获取存储池资源监控指标",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.StoragePoolUseMetric"
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/storagenode/{nodeName}/disks": {
+            "get": {
+                "description": "list StorageNodeDisks",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Node"
+                ],
+                "summary": "摘要 获取指定存储节点磁盘列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "nodeName",
+                        "name": "nodeName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pageSize",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "state",
+                        "name": "state",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LocalDiskListByNode"
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/storagenode/{nodeName}/disks/{diskName}/removereserve": {
+            "post": {
+                "description": "post RemoveReserveStorageNodeDisk",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Node"
+                ],
+                "summary": "摘要 解除磁盘预留",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "nodeName",
+                        "name": "nodeName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "diskName",
+                        "name": "diskName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.DiskRemoveReservedRspBody"
+                        }
+                    },
+                    "500": {
+                        "description": "失败",
+                        "schema": {
+                            "$ref": "#/definitions/api.RspFailBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/storagenode/{nodeName}/disks/{diskName}/reserve": {
+            "post": {
+                "description": "post ReserveStorageNodeDisk diskname i.g sdb sdc ...",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Node"
+                ],
+                "summary": "摘要 预留磁盘",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "nodeName",
+                        "name": "nodeName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "diskName",
+                        "name": "diskName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.DiskReservedRspBody"
+                        }
+                    },
+                    "500": {
+                        "description": "失败",
+                        "schema": {
+                            "$ref": "#/definitions/api.RspFailBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/storagenode/{nodeName}/migrates": {
+            "get": {
+                "description": "get StorageNodeMigrate",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Node"
+                ],
+                "summary": "摘要 获取指定节点数据卷迁移任务列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "nodeName",
+                        "name": "nodeName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pageSize",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.VolumeOperationListByNode"
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/storagenodeoperations/{migrateOperationName}/yaml": {
+            "get": {
+                "description": "get StorageNodeVolumeOperationYamlGet",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Node"
+                ],
+                "summary": "摘要 获取节点数据卷操作记录yaml信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "migrateOperationName",
+                        "name": "migrateOperationName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.YamlData"
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/storagenodes": {
+            "get": {
+                "description": "list StorageNode  驱动状态 [运行中（Ready）,维护中（Maintain）, 离线（Offline)] , 节点状态 [运行中（Ready）,未就绪（NotReady）,未知（Unknown)]",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Node"
+                ],
+                "summary": "摘要 获取存储节点列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pageSize",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "nodeState",
+                        "name": "nodeState",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "driverState",
+                        "name": "driverState",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.StorageNodeList"
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/storagenodes/{name}": {
+            "get": {
+                "description": "get StorageNode 驱动状态 [运行中（Ready）,维护中（Maintain）, 离线（Offline)] , 节点状态 [运行中（Ready）,未就绪（NotReady）,未知（Unknown)]",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Node"
+                ],
+                "summary": "摘要 获取指定存储节点",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.StorageNode"
+                        }
+                    }
+                }
+            }
+        },
+        "/pools/storagepool/{storagePoolName}/nodes": {
+            "get": {
+                "description": "get StorageNodesGetByPoolName",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pool"
+                ],
+                "summary": "摘要 获取指定存储池存储节点列表信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "storagePoolName",
+                        "name": "storagePoolName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pageSize",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.StorageNodeListByPool"
+                        }
+                    }
+                }
+            }
+        },
+        "/pools/storagepool/{storagePoolName}/nodes/{nodeName}/disks": {
+            "get": {
+                "description": "get StorageNodeDisksGetByPoolName",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pool"
+                ],
+                "summary": "摘要 获取指定存储池指定存储节点磁盘列表信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "nodeName",
+                        "name": "nodeName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "storagePoolName",
+                        "name": "storagePoolName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pageSize",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.NodeDiskListByPool"
+                        }
+                    }
+                }
+            }
+        },
+        "/pools/storagepools": {
+            "get": {
+                "description": "list StoragePools",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pool"
+                ],
+                "summary": "摘要 获取存储池列表信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pageSize",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.StoragePoolList"
+                        }
+                    }
+                }
+            }
+        },
+        "/pools/storagepools/{name}": {
+            "get": {
+                "description": "get Pool",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pool"
+                ],
+                "summary": "摘要 获取指定存储池基本信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.StoragePool"
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/highavailabilitysetting": {
+            "get": {
+                "description": "get DRBDSettingGet",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Setting"
+                ],
+                "summary": "摘要 获取高可用设置",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "enabledrbd",
+                        "name": "enabledrbd",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.DrbdEnableSetting"
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/highavailabilitysetting/{enabledrbd}": {
+            "post": {
+                "description": "post EnableDRBDSetting",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Setting"
+                ],
+                "summary": "摘要 高可用设置",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "enabledrbd",
+                        "name": "enabledrbd",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.DrbdEnableSettingRspBody"
+                        }
+                    },
+                    "500": {
+                        "description": "失败",
+                        "schema": {
+                            "$ref": "#/definitions/api.RspFailBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/volumegroups/volumegroups/{name}": {
+            "get": {
+                "description": "get VolumeListByVolumeGroup",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "VolumeGroup"
+                ],
+                "summary": "摘要 获取指定数据卷组中包含数据卷名称列表基本信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.VolumeGroup"
+                        }
+                    }
+                }
+            }
+        },
+        "/volumes/volume/{name}/yaml": {
+            "get": {
+                "description": "get VolumeYamlGet",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Volume"
+                ],
+                "summary": "摘要 获取数据卷yaml信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.YamlData"
+                        }
+                    }
+                }
+            }
+        },
+        "/volumes/volumemigrateoperation/{targetNodeType}/targetNodes": {
+            "get": {
+                "description": "get GetTargetNodesByTargetNodeType  targetNodeType \"AutoSelect\" \"ManualSelect\"",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Volume"
+                ],
+                "summary": "摘要 获取指定目标节点类型节点列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "targetNodeType",
+                        "name": "targetNodeType",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sourceNodeName",
+                        "name": "sourceNodeName",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.TargetNodeList"
+                        }
+                    }
+                }
+            }
+        },
+        "/volumes/volumeoperation/{volumeName}/convert": {
+            "post": {
+                "description": "post VolumeConvertOperation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Volume"
+                ],
+                "summary": "摘要 指定数据卷转换操作",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "volumeName",
+                        "name": "volumeName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.VolumeConvertRspBody"
+                        }
+                    },
+                    "500": {
+                        "description": "失败",
+                        "schema": {
+                            "$ref": "#/definitions/api.RspFailBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/volumes/volumeoperation/{volumeName}/migrate": {
+            "post": {
+                "description": "post VolumeMigrateOperation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Volume"
+                ],
+                "summary": "摘要 指定数据卷迁移操作",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "volumeName",
+                        "name": "volumeName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sourceNodeName",
+                        "name": "sourceNodeName",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "targetNodeName",
+                        "name": "targetNodeName",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.VolumeMigrateRspBody"
+                        }
+                    },
+                    "500": {
+                        "description": "失败",
+                        "schema": {
+                            "$ref": "#/definitions/api.RspFailBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/volumes/volumeoperation/{volumeOperationName}/yaml": {
+            "get": {
+                "description": "get VolumeOperationYamlGet",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Volume"
+                ],
+                "summary": "摘要 获取数据卷操作记录yaml信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "volumeOperationName",
+                        "name": "volumeOperationName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.YamlData"
+                        }
+                    }
+                }
+            }
+        },
+        "/volumes/volumeoperations/{volumeName}": {
+            "get": {
+                "description": "get VolumeOperation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Volume"
+                ],
+                "summary": "摘要 获取指定数据卷操作记录信息（目前仅包含迁移运维操作）",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "volumeName",
+                        "name": "volumeName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "volumeMigrateName",
+                        "name": "volumeMigrateName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "state",
+                        "name": "state",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.VolumeOperationByVolume"
+                        }
+                    }
+                }
+            }
+        },
+        "/volumes/volumereplica/{volumeReplicaName}/yaml": {
+            "get": {
+                "description": "get VolumeReplicaYaml",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Volume"
+                ],
+                "summary": "摘要 查看指定数据卷副本yaml信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "volumeReplicaName",
+                        "name": "volumeReplicaName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.YamlData"
+                        }
+                    }
+                }
+            }
+        },
+        "/volumes/volumereplicas/{volumeName}": {
+            "get": {
+                "description": "list volumes",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Volume"
+                ],
+                "summary": "摘要 获取指定数据卷的副本列表信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "volumeName",
+                        "name": "volumeName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "volumeReplicaName",
+                        "name": "volumeReplicaName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "state",
+                        "name": "state",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "synced",
+                        "name": "synced",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.VolumeReplicaList"
+                        }
+                    }
+                }
+            }
+        },
+        "/volumes/volumes": {
+            "get": {
+                "description": "list Volume",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Volume"
+                ],
+                "summary": "摘要 获取数据卷列表信息",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pageSize",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "volumeName",
+                        "name": "volumeName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "state",
+                        "name": "state",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "namespace",
+                        "name": "namespace",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.VolumeList"
+                        }
+                    }
+                }
+            }
+        },
+        "/volumes/volumes/{name}": {
+            "get": {
+                "description": "get Volume",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Volume"
+                ],
+                "summary": "摘要 获取指定数据卷基本信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Volume"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "api.BaseMetric": {
+            "type": "object",
+            "properties": {
+                "allocatedCapacityBytes": {
+                    "description": "已分配容量",
+                    "type": "integer"
+                },
+                "boundedDiskNum": {
+                    "description": "绑定磁盘",
+                    "type": "integer"
+                },
+                "claimedNodeNum": {
+                    "description": "纳管节点数",
+                    "type": "integer"
+                },
+                "freeCapacityBytes": {
+                    "description": "可分配容量",
+                    "type": "integer"
+                },
+                "healthyDiskNum": {
+                    "description": "健康磁盘",
+                    "type": "integer"
+                },
+                "highAvailableVolumeNum": {
+                    "description": "高可用卷数目",
+                    "type": "integer"
+                },
+                "localVolumeNum": {
+                    "description": "本地卷总数",
+                    "type": "integer"
+                },
+                "nonHighAvailableVolumeNum": {
+                    "description": "非高可用卷数目",
+                    "type": "integer"
+                },
+                "reservedCapacityBytes": {
+                    "description": "已预留容量",
+                    "type": "integer"
+                },
+                "totalCapacityBytes": {
+                    "description": "总容量",
+                    "type": "integer"
+                },
+                "totalDiskNum": {
+                    "description": "总磁盘数",
+                    "type": "integer"
+                },
+                "totalNodeNum": {
+                    "description": "总节点数",
+                    "type": "integer"
+                },
+                "unHealthyDiskNum": {
+                    "description": "错误磁盘",
+                    "type": "integer"
+                }
+            }
+        },
+        "api.DiskRemoveReservedRsp": {
+            "type": "object",
+            "properties": {
+                "diskName": {
+                    "description": "DiskName",
+                    "type": "string"
+                },
+                "removeReservedRsp": {
+                    "description": "RemoveReservedRsp",
+                    "type": "string"
+                }
+            }
+        },
+        "api.DiskRemoveReservedRspBody": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/api.DiskRemoveReservedRsp"
+                }
+            }
+        },
+        "api.DiskReservedRsp": {
+            "type": "object",
+            "properties": {
+                "diskName": {
+                    "description": "DiskName",
+                    "type": "string"
+                },
+                "reservedRsp": {
+                    "description": "ReservedRsp",
+                    "type": "string"
+                }
+            }
+        },
+        "api.DiskReservedRspBody": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/api.DiskReservedRsp"
+                }
+            }
+        },
+        "api.DrbdEnableSetting": {
+            "type": "object",
+            "properties": {
+                "enabledrbd": {
+                    "type": "boolean"
+                },
+                "state": {
+                    "description": "RemoveReservedRsp",
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.DrbdEnableSettingRspBody": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/api.DrbdEnableSetting"
+                }
+            }
+        },
+        "api.LocalDisk": {
+            "type": "object",
+            "properties": {
+                "availableCapacityBytes": {
+                    "description": "AvailableCapacityBytes 可用容量",
+                    "type": "integer"
+                },
+                "devPath": {
+                    "description": "e.g. /dev/sdb 磁盘路径",
+                    "type": "string"
+                },
+                "hasRaid": {
+                    "description": "HasRAID 是否Raid",
+                    "type": "boolean"
+                },
+                "localStoragePooLName": {
+                    "description": "LocalStoragePooLName 存储池名称",
+                    "type": "string"
+                },
+                "state": {
+                    "description": "Possible state: Claimed, UnClaimed, Inuse, Released, Reserved 状态",
+                    "type": "string"
+                },
+                "totalCapacityBytes": {
+                    "description": "TotalCapacityBytes 总容量",
+                    "type": "integer"
+                },
+                "type": {
+                    "description": "Supported: HDD, SSD, NVMe, RAM 磁盘类型",
+                    "type": "string"
+                }
+            }
+        },
+        "api.LocalDiskListByNode": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "description": "// localDisks 节点磁盘列表\nLocalDisks []*LocalDisk `json:\"items,omitempty\"`\nlocalDisks 节点磁盘列表",
+                    "$ref": "#/definitions/api.LocalDisksItemsList"
+                },
+                "nodeName": {
+                    "description": "nodeName 节点名称",
+                    "type": "string"
+                },
+                "pagination": {
+                    "description": "page 信息",
+                    "$ref": "#/definitions/api.Pagination"
+                }
+            }
+        },
+        "api.LocalDisksItemsList": {
+            "type": "object",
+            "properties": {
+                "localDisks": {
+                    "description": "localDisks 节点磁盘列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.LocalDisk"
+                    }
+                }
+            }
+        },
+        "api.ModuleStatus": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "组件名称",
+                    "type": "string"
+                },
+                "state": {
+                    "description": "组件状态 运行中 未就绪",
+                    "type": "string"
+                }
+            }
+        },
+        "api.ModuleStatusMetric": {
+            "type": "object",
+            "properties": {
+                "modulesStatus": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ModuleStatus"
+                    }
+                }
+            }
+        },
+        "api.NodeDiskListByPool": {
+            "type": "object",
+            "properties": {
+                "localDisks": {
+                    "description": "localDisks 节点磁盘列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.LocalDisk"
+                    }
+                },
+                "nodeName": {
+                    "description": "nodeName 节点名称",
+                    "type": "string"
+                },
+                "page": {
+                    "description": "page 信息",
+                    "$ref": "#/definitions/api.Pagination"
+                },
+                "storagePoolName": {
+                    "description": "StoragePoolName 存储池名称",
+                    "type": "string"
+                }
+            }
+        },
+        "api.NodeStorageUse": {
+            "type": "object",
+            "properties": {
+                "allocatedCapacityBytes": {
+                    "description": "已分配容量",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "存储节点名字",
+                    "type": "string"
+                },
+                "totalCapacityBytes": {
+                    "description": "总容量",
+                    "type": "integer"
+                }
+            }
+        },
+        "api.NodeStorageUseMetric": {
+            "type": "object",
+            "properties": {
+                "nodeStoragesUse": {
+                    "description": "节点存储TOP5 使用率列表 5条列表上限",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.NodeStorageUse"
+                    }
+                },
+                "storagePoolClass": {
+                    "description": "存储池类型 SSD HDD",
+                    "type": "string"
+                }
+            }
+        },
+        "api.Operation": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "详细描述",
+                    "type": "string"
+                },
+                "endTime": {
+                    "description": "结束时间",
+                    "type": "string"
+                },
+                "eventName": {
+                    "description": "事件名称",
+                    "type": "string"
+                },
+                "eventType": {
+                    "description": "事件类型",
+                    "type": "string"
+                },
+                "startTime": {
+                    "description": "开始时间",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "状态",
+                    "type": "string"
+                }
+            }
+        },
+        "api.OperationMetric": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Operation"
+                    }
+                },
+                "pagination": {
+                    "description": "page 信息",
+                    "$ref": "#/definitions/api.Pagination"
+                }
+            }
+        },
+        "api.Pagination": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "description": "当前页索引，从 1 开始，为 0 时，会自动重置为默认值 constants.DefaultPage",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "description": "每页数据量，为 -1 时表示查询全部，为 0 时会重置为默认值\nconstants.DefaultPageSize",
+                    "type": "integer"
+                },
+                "pages": {
+                    "description": "总页数",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "总共有多少条目，请求时可以不用传递",
+                    "type": "integer"
+                }
+            }
+        },
+        "api.RspFailBody": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "errcode": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.StorageNode": {
+            "type": "object",
+            "properties": {
+                "allocatedHDDCapacityBytes": {
+                    "description": "allocatedHDDCapacityBytes HDD已经分配存储量",
+                    "type": "integer"
+                },
+                "allocatedSSDCapacityBytes": {
+                    "description": "allocatedSSDCapacityBytes SSD已经分配存储量",
+                    "type": "integer"
+                },
+                "driverStatus": {
+                    "description": "driver status 驱动状态  运行中（Ready）,维护中（Maintain）, 离线（Offline）",
+                    "type": "string"
+                },
+                "ip": {
+                    "description": "ip 节点IP",
+                    "type": "string"
+                },
+                "isRaid": {
+                    "description": "IsRAID 是否Raid",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "name 节点名字",
+                    "type": "string"
+                },
+                "nodeState": {
+                    "description": "node state 节点状态 运行中（Ready）,未就绪（NotReady）,未知（Unknown）",
+                    "type": "string"
+                },
+                "totalDiskCount": {
+                    "description": "totalDiskCount 总磁盘数",
+                    "type": "integer"
+                },
+                "totalHDDCapacityBytes": {
+                    "description": "// freeCapacityBytes LSN可分配存储容量\nFreeCapacityBytes int64 `json:\"freeCapacityBytes,omitempty\"`\ntotalHDDCapacityBytes HDD存储总容量",
+                    "type": "integer"
+                },
+                "totalSSDCapacityBytes": {
+                    "description": "totalSSDCapacityBytes SSD存储总容量",
+                    "type": "integer"
+                },
+                "usedDiskCount": {
+                    "description": "usedDiskCount 已绑定磁盘数",
+                    "type": "integer"
+                }
+            }
+        },
+        "api.StorageNodeList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "description": "// StorageNodes\nStorageNodes []*StorageNode `json:\"items,omitempty\"`\nStorageNodesItemsList",
+                    "$ref": "#/definitions/api.StorageNodesItemsList"
+                },
+                "pagination": {
+                    "description": "page 信息",
+                    "$ref": "#/definitions/api.Pagination"
+                }
+            }
+        },
+        "api.StorageNodeListByPool": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "description": "page 信息",
+                    "$ref": "#/definitions/api.Pagination"
+                },
+                "storageNodes": {
+                    "description": "StorageNodes",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.StorageNode"
+                    }
+                },
+                "storagePoolName": {
+                    "description": "StoragePoolName 存储池名称",
+                    "type": "string"
+                }
+            }
+        },
+        "api.StorageNodesItemsList": {
+            "type": "object",
+            "properties": {
+                "storageNodes": {
+                    "description": "localDisks 节点磁盘列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.StorageNode"
+                    }
+                }
+            }
+        },
+        "api.StoragePool": {
+            "type": "object",
+            "properties": {
+                "allocatedCapacityBytes": {
+                    "description": "AllocatedCapacityBytes 存储池已经分配存储容量",
+                    "type": "integer"
+                },
+                "class": {
+                    "description": "Supported class: HDD, SSD, NVMe 磁盘类型",
+                    "type": "string"
+                },
+                "createTime": {
+                    "description": "createTime 创建时间",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL 存储池名称",
+                    "type": "string"
+                },
+                "nodesNum": {
+                    "description": "NodesNum 节点数",
+                    "type": "integer"
+                },
+                "totalCapacityBytes": {
+                    "description": "TotalCapacityBytes 存储池对应存储总容量",
+                    "type": "integer"
+                }
+            }
+        },
+        "api.StoragePoolList": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "description": "page 信息",
+                    "$ref": "#/definitions/api.Pagination"
+                },
+                "storagePools": {
+                    "description": "storagePools",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.StoragePool"
+                    }
+                }
+            }
+        },
+        "api.StoragePoolUse": {
+            "type": "object",
+            "properties": {
+                "allocatedCapacityBytes": {
+                    "description": "已分配容量",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "存储池名字",
+                    "type": "string"
+                },
+                "totalCapacityBytes": {
+                    "description": "总容量",
+                    "type": "integer"
+                }
+            }
+        },
+        "api.StoragePoolUseMetric": {
+            "type": "object",
+            "properties": {
+                "storagePoolsUse": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.StoragePoolUse"
+                    }
+                }
+            }
+        },
+        "api.TargetNodeList": {
+            "type": "object",
+            "properties": {
+                "targetNodeType": {
+                    "description": "TargetNodeType",
+                    "type": "string"
+                },
+                "targetNodes": {
+                    "description": "TargetNodes",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.Volume": {
+            "type": "object",
+            "properties": {
+                "convertible": {
+                    "description": "Convertible 转换高可用模式",
+                    "type": "boolean"
+                },
+                "createTime": {
+                    "description": "createTime 创建时间",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "local volume name 名称",
+                    "type": "string"
+                },
+                "pvcName": {
+                    "description": "PersistentVolumeClaimName is the name of the associated PVC 绑定PVC",
+                    "type": "string"
+                },
+                "pvcNamespace": {
+                    "description": "PersistentVolumeClaimNamespace is the namespace of the associated PVC 命名空间",
+                    "type": "string"
+                },
+                "replicaNumber": {
+                    "description": "replica number 副本数",
+                    "type": "integer"
+                },
+                "requiredCapacityBytes": {
+                    "description": "size 容量",
+                    "type": "integer"
+                },
+                "state": {
+                    "description": "local volume state 状态",
+                    "type": "string"
+                },
+                "volumeGroup": {
+                    "description": "VolumeGroup is the group name of the local volumes. It is designed for the scheduling and allocating. 磁盘组",
+                    "type": "string"
+                }
+            }
+        },
+        "api.VolumeConvertInfo": {
+            "type": "object",
+            "properties": {
+                "replicaNum": {
+                    "type": "integer"
+                },
+                "volumeName": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.VolumeConvertRspBody": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/api.VolumeConvertInfo"
+                }
+            }
+        },
+        "api.VolumeGroup": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "Name",
+                    "type": "string"
+                },
+                "nodeNames": {
+                    "description": "NodeNames",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "volumeGroupVolumeInfos": {
+                    "description": "VolumeGroupVolumeInfo",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.VolumeGroupVolumeInfo"
+                    }
+                }
+            }
+        },
+        "api.VolumeGroupVolumeInfo": {
+            "type": "object",
+            "properties": {
+                "nodeNames": {
+                    "description": "NodeNames",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "state": {
+                    "description": "State",
+                    "type": "string"
+                },
+                "volumeName": {
+                    "description": "VolumeName",
+                    "type": "string"
+                }
+            }
+        },
+        "api.VolumeItemsList": {
+            "type": "object",
+            "properties": {
+                "volumes": {
+                    "description": "volumes",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Volume"
+                    }
+                }
+            }
+        },
+        "api.VolumeList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "description": "volumes",
+                    "$ref": "#/definitions/api.VolumeItemsList"
+                },
+                "pagination": {
+                    "description": "page 信息",
+                    "$ref": "#/definitions/api.Pagination"
+                }
+            }
+        },
+        "api.VolumeMigrateInfo": {
+            "type": "object",
+            "properties": {
+                "selectedNode": {
+                    "type": "string"
+                },
+                "srcNode": {
+                    "type": "string"
+                },
+                "volumeName": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.VolumeMigrateOperation": {
+            "type": "object",
+            "properties": {
+                "endTime": {
+                    "description": "EndTime 迁移结束时间",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "VolumeMigrateName 迁移CRD名称",
+                    "type": "string"
+                },
+                "sourceNode": {
+                    "description": "SourceNode 迁移源节点",
+                    "type": "string"
+                },
+                "startTime": {
+                    "description": "StartTime 迁移开始时间",
+                    "type": "string"
+                },
+                "state": {
+                    "description": "State 迁移状态",
+                    "type": "string"
+                },
+                "targetNode": {
+                    "description": "TargetNode 迁移目的节点",
+                    "type": "string"
+                },
+                "volumeName": {
+                    "description": "VolumeName 迁移卷名称",
+                    "type": "string"
+                }
+            }
+        },
+        "api.VolumeMigrateOperationItemsList": {
+            "type": "object",
+            "properties": {
+                "volumeMigrateOperations": {
+                    "description": "VolumeMigrateOperations",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.VolumeMigrateOperation"
+                    }
+                }
+            }
+        },
+        "api.VolumeMigrateRspBody": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/api.VolumeMigrateInfo"
+                }
+            }
+        },
+        "api.VolumeOperationByVolume": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "description": "VolumeMigrateOperationItemsList",
+                    "$ref": "#/definitions/api.VolumeMigrateOperationItemsList"
+                },
+                "volumeName": {
+                    "description": "VolumeName",
+                    "type": "string"
+                }
+            }
+        },
+        "api.VolumeOperationListByNode": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "description": "// VolumeOperations\nVolumeMigrateOperations []*VolumeMigrateOperation `json:\"items,omitempty\"`\nVolumeMigrateOperationItemsList",
+                    "$ref": "#/definitions/api.VolumeMigrateOperationItemsList"
+                },
+                "nodeName": {
+                    "description": "node name",
+                    "type": "string"
+                },
+                "pagination": {
+                    "description": "page 信息",
+                    "$ref": "#/definitions/api.Pagination"
+                }
+            }
+        },
+        "api.VolumeReplica": {
+            "type": "object",
+            "properties": {
+                "devicePath": {
+                    "description": "DevicePath is a link path of the StoragePath of the volume replica,\ne.g. /dev/LocalStorage_PoolHDD/pvc-fbf3ffc3-66db-4dae-9032-bda3c61b8f85",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "replica name",
+                    "type": "string"
+                },
+                "nodeName": {
+                    "description": "NodeName is the assigned node where the volume replica is located 节点",
+                    "type": "string"
+                },
+                "requiredCapacityBytes": {
+                    "description": "RequiredCapacityBytes 容量",
+                    "type": "integer"
+                },
+                "state": {
+                    "description": "replica state",
+                    "type": "string"
+                },
+                "storagePath": {
+                    "description": "StoragePath is a real path of the volume replica, like /dev/sdg.",
+                    "type": "string"
+                },
+                "synced": {
+                    "description": "Synced is the sync state of the volume replica, which is important in HA volume 同步状态",
+                    "type": "boolean"
+                }
+            }
+        },
+        "api.VolumeReplicaList": {
+            "type": "object",
+            "properties": {
+                "volumeName": {
+                    "description": "volume name",
+                    "type": "string"
+                },
+                "volumeReplicas": {
+                    "description": "VolumeReplicas",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.VolumeReplica"
+                    }
+                }
+            }
+        },
+        "api.YamlData": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "yaml data",
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

@@ -5,15 +5,16 @@ import (
 	"os"
 	"strings"
 
-	"github.com/hwameistor/hwameistor/pkg/local-storage/exechelper"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/exechelper/nsexecutor"
+	"github.com/hwameistor/hwameistor/pkg/exechelper"
+	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
 	log "github.com/sirupsen/logrus"
 	utilexec "k8s.io/utils/exec"
 	"k8s.io/utils/mount"
 )
 
-//go:generate mockgen -source=mounter.go -destination=../../member/csi/mounter_mock.go  -package=csi
 // Mounter interface
+//
+//go:generate mockgen -source=mounter.go -destination=../../member/csi/mounter_mock.go  -package=csi
 type Mounter interface {
 	MountRawBlock(devPath string, mountpoint string) error
 	BindMount(devPath string, mountpoint string) error

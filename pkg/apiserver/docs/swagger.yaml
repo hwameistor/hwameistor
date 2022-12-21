@@ -1,0 +1,1367 @@
+definitions:
+  api.BaseMetric:
+    properties:
+      allocatedCapacityBytes:
+        description: 已分配容量
+        type: integer
+      boundedDiskNum:
+        description: 绑定磁盘
+        type: integer
+      claimedNodeNum:
+        description: 纳管节点数
+        type: integer
+      freeCapacityBytes:
+        description: 可分配容量
+        type: integer
+      healthyDiskNum:
+        description: 健康磁盘
+        type: integer
+      highAvailableVolumeNum:
+        description: 高可用卷数目
+        type: integer
+      localVolumeNum:
+        description: 本地卷总数
+        type: integer
+      nonHighAvailableVolumeNum:
+        description: 非高可用卷数目
+        type: integer
+      reservedCapacityBytes:
+        description: 已预留容量
+        type: integer
+      totalCapacityBytes:
+        description: 总容量
+        type: integer
+      totalDiskNum:
+        description: 总磁盘数
+        type: integer
+      totalNodeNum:
+        description: 总节点数
+        type: integer
+      unHealthyDiskNum:
+        description: 错误磁盘
+        type: integer
+    type: object
+  api.DiskRemoveReservedRsp:
+    properties:
+      diskName:
+        description: DiskName
+        type: string
+      removeReservedRsp:
+        description: RemoveReservedRsp
+        type: string
+    type: object
+  api.DiskRemoveReservedRspBody:
+    properties:
+      data:
+        $ref: '#/definitions/api.DiskRemoveReservedRsp'
+    type: object
+  api.DiskReservedRsp:
+    properties:
+      diskName:
+        description: DiskName
+        type: string
+      reservedRsp:
+        description: ReservedRsp
+        type: string
+    type: object
+  api.DiskReservedRspBody:
+    properties:
+      data:
+        $ref: '#/definitions/api.DiskReservedRsp'
+    type: object
+  api.DrbdEnableSetting:
+    properties:
+      enabledrbd:
+        type: boolean
+      state:
+        description: RemoveReservedRsp
+        type: string
+      version:
+        type: string
+    type: object
+  api.DrbdEnableSettingRspBody:
+    properties:
+      data:
+        $ref: '#/definitions/api.DrbdEnableSetting'
+    type: object
+  api.LocalDisk:
+    properties:
+      availableCapacityBytes:
+        description: AvailableCapacityBytes 可用容量
+        type: integer
+      devPath:
+        description: e.g. /dev/sdb 磁盘路径
+        type: string
+      hasRaid:
+        description: HasRAID 是否Raid
+        type: boolean
+      localStoragePooLName:
+        description: LocalStoragePooLName 存储池名称
+        type: string
+      state:
+        description: 'Possible state: Claimed, UnClaimed, Inuse, Released, Reserved
+          状态'
+        type: string
+      totalCapacityBytes:
+        description: TotalCapacityBytes 总容量
+        type: integer
+      type:
+        description: 'Supported: HDD, SSD, NVMe, RAM 磁盘类型'
+        type: string
+    type: object
+  api.LocalDiskListByNode:
+    properties:
+      items:
+        $ref: '#/definitions/api.LocalDisksItemsList'
+        description: |-
+          // localDisks 节点磁盘列表
+          LocalDisks []*LocalDisk `json:"items,omitempty"`
+          localDisks 节点磁盘列表
+      nodeName:
+        description: nodeName 节点名称
+        type: string
+      pagination:
+        $ref: '#/definitions/api.Pagination'
+        description: page 信息
+    type: object
+  api.LocalDisksItemsList:
+    properties:
+      localDisks:
+        description: localDisks 节点磁盘列表
+        items:
+          $ref: '#/definitions/api.LocalDisk'
+        type: array
+    type: object
+  api.ModuleStatus:
+    properties:
+      name:
+        description: 组件名称
+        type: string
+      state:
+        description: 组件状态 运行中 未就绪
+        type: string
+    type: object
+  api.ModuleStatusMetric:
+    properties:
+      modulesStatus:
+        items:
+          $ref: '#/definitions/api.ModuleStatus'
+        type: array
+    type: object
+  api.NodeDiskListByPool:
+    properties:
+      localDisks:
+        description: localDisks 节点磁盘列表
+        items:
+          $ref: '#/definitions/api.LocalDisk'
+        type: array
+      nodeName:
+        description: nodeName 节点名称
+        type: string
+      page:
+        $ref: '#/definitions/api.Pagination'
+        description: page 信息
+      storagePoolName:
+        description: StoragePoolName 存储池名称
+        type: string
+    type: object
+  api.NodeStorageUse:
+    properties:
+      allocatedCapacityBytes:
+        description: 已分配容量
+        type: integer
+      name:
+        description: 存储节点名字
+        type: string
+      totalCapacityBytes:
+        description: 总容量
+        type: integer
+    type: object
+  api.NodeStorageUseMetric:
+    properties:
+      nodeStoragesUse:
+        description: 节点存储TOP5 使用率列表 5条列表上限
+        items:
+          $ref: '#/definitions/api.NodeStorageUse'
+        type: array
+      storagePoolClass:
+        description: 存储池类型 SSD HDD
+        type: string
+    type: object
+  api.Operation:
+    properties:
+      description:
+        description: 详细描述
+        type: string
+      endTime:
+        description: 结束时间
+        type: string
+      eventName:
+        description: 事件名称
+        type: string
+      eventType:
+        description: 事件类型
+        type: string
+      startTime:
+        description: 开始时间
+        type: string
+      status:
+        description: 状态
+        type: string
+    type: object
+  api.OperationMetric:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/api.Operation'
+        type: array
+      pagination:
+        $ref: '#/definitions/api.Pagination'
+        description: page 信息
+    type: object
+  api.Pagination:
+    properties:
+      page:
+        description: 当前页索引，从 1 开始，为 0 时，会自动重置为默认值 constants.DefaultPage
+        type: integer
+      pageSize:
+        description: |-
+          每页数据量，为 -1 时表示查询全部，为 0 时会重置为默认值
+          constants.DefaultPageSize
+        type: integer
+      pages:
+        description: 总页数
+        type: integer
+      total:
+        description: 总共有多少条目，请求时可以不用传递
+        type: integer
+    type: object
+  api.RspFailBody:
+    properties:
+      description:
+        type: string
+      errcode:
+        type: integer
+    type: object
+  api.StorageNode:
+    properties:
+      allocatedHDDCapacityBytes:
+        description: allocatedHDDCapacityBytes HDD已经分配存储量
+        type: integer
+      allocatedSSDCapacityBytes:
+        description: allocatedSSDCapacityBytes SSD已经分配存储量
+        type: integer
+      driverStatus:
+        description: driver status 驱动状态  运行中（Ready）,维护中（Maintain）, 离线（Offline）
+        type: string
+      ip:
+        description: ip 节点IP
+        type: string
+      isRaid:
+        description: IsRAID 是否Raid
+        type: boolean
+      name:
+        description: name 节点名字
+        type: string
+      nodeState:
+        description: node state 节点状态 运行中（Ready）,未就绪（NotReady）,未知（Unknown）
+        type: string
+      totalDiskCount:
+        description: totalDiskCount 总磁盘数
+        type: integer
+      totalHDDCapacityBytes:
+        description: |-
+          // freeCapacityBytes LSN可分配存储容量
+          FreeCapacityBytes int64 `json:"freeCapacityBytes,omitempty"`
+          totalHDDCapacityBytes HDD存储总容量
+        type: integer
+      totalSSDCapacityBytes:
+        description: totalSSDCapacityBytes SSD存储总容量
+        type: integer
+      usedDiskCount:
+        description: usedDiskCount 已绑定磁盘数
+        type: integer
+    type: object
+  api.StorageNodeList:
+    properties:
+      items:
+        $ref: '#/definitions/api.StorageNodesItemsList'
+        description: |-
+          // StorageNodes
+          StorageNodes []*StorageNode `json:"items,omitempty"`
+          StorageNodesItemsList
+      pagination:
+        $ref: '#/definitions/api.Pagination'
+        description: page 信息
+    type: object
+  api.StorageNodeListByPool:
+    properties:
+      page:
+        $ref: '#/definitions/api.Pagination'
+        description: page 信息
+      storageNodes:
+        description: StorageNodes
+        items:
+          $ref: '#/definitions/api.StorageNode'
+        type: array
+      storagePoolName:
+        description: StoragePoolName 存储池名称
+        type: string
+    type: object
+  api.StorageNodesItemsList:
+    properties:
+      storageNodes:
+        description: localDisks 节点磁盘列表
+        items:
+          $ref: '#/definitions/api.StorageNode'
+        type: array
+    type: object
+  api.StoragePool:
+    properties:
+      allocatedCapacityBytes:
+        description: AllocatedCapacityBytes 存储池已经分配存储容量
+        type: integer
+      class:
+        description: 'Supported class: HDD, SSD, NVMe 磁盘类型'
+        type: string
+      createTime:
+        description: createTime 创建时间
+        type: string
+      name:
+        description: 'Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL 存储池名称'
+        type: string
+      nodesNum:
+        description: NodesNum 节点数
+        type: integer
+      totalCapacityBytes:
+        description: TotalCapacityBytes 存储池对应存储总容量
+        type: integer
+    type: object
+  api.StoragePoolList:
+    properties:
+      page:
+        $ref: '#/definitions/api.Pagination'
+        description: page 信息
+      storagePools:
+        description: storagePools
+        items:
+          $ref: '#/definitions/api.StoragePool'
+        type: array
+    type: object
+  api.StoragePoolUse:
+    properties:
+      allocatedCapacityBytes:
+        description: 已分配容量
+        type: integer
+      name:
+        description: 存储池名字
+        type: string
+      totalCapacityBytes:
+        description: 总容量
+        type: integer
+    type: object
+  api.StoragePoolUseMetric:
+    properties:
+      storagePoolsUse:
+        items:
+          $ref: '#/definitions/api.StoragePoolUse'
+        type: array
+    type: object
+  api.TargetNodeList:
+    properties:
+      targetNodeType:
+        description: TargetNodeType
+        type: string
+      targetNodes:
+        description: TargetNodes
+        items:
+          type: string
+        type: array
+    type: object
+  api.Volume:
+    properties:
+      convertible:
+        description: Convertible 转换高可用模式
+        type: boolean
+      createTime:
+        description: createTime 创建时间
+        type: string
+      name:
+        description: local volume name 名称
+        type: string
+      pvcName:
+        description: PersistentVolumeClaimName is the name of the associated PVC 绑定PVC
+        type: string
+      pvcNamespace:
+        description: PersistentVolumeClaimNamespace is the namespace of the associated
+          PVC 命名空间
+        type: string
+      replicaNumber:
+        description: replica number 副本数
+        type: integer
+      requiredCapacityBytes:
+        description: size 容量
+        type: integer
+      state:
+        description: local volume state 状态
+        type: string
+      volumeGroup:
+        description: VolumeGroup is the group name of the local volumes. It is designed
+          for the scheduling and allocating. 磁盘组
+        type: string
+    type: object
+  api.VolumeConvertInfo:
+    properties:
+      replicaNum:
+        type: integer
+      volumeName:
+        type: string
+    type: object
+  api.VolumeConvertRspBody:
+    properties:
+      data:
+        $ref: '#/definitions/api.VolumeConvertInfo'
+    type: object
+  api.VolumeGroup:
+    properties:
+      name:
+        description: Name
+        type: string
+      nodeNames:
+        description: NodeNames
+        items:
+          type: string
+        type: array
+      volumeGroupVolumeInfos:
+        description: VolumeGroupVolumeInfo
+        items:
+          $ref: '#/definitions/api.VolumeGroupVolumeInfo'
+        type: array
+    type: object
+  api.VolumeGroupVolumeInfo:
+    properties:
+      nodeNames:
+        description: NodeNames
+        items:
+          type: string
+        type: array
+      state:
+        description: State
+        type: string
+      volumeName:
+        description: VolumeName
+        type: string
+    type: object
+  api.VolumeItemsList:
+    properties:
+      volumes:
+        description: volumes
+        items:
+          $ref: '#/definitions/api.Volume'
+        type: array
+    type: object
+  api.VolumeList:
+    properties:
+      items:
+        $ref: '#/definitions/api.VolumeItemsList'
+        description: volumes
+      pagination:
+        $ref: '#/definitions/api.Pagination'
+        description: page 信息
+    type: object
+  api.VolumeMigrateInfo:
+    properties:
+      selectedNode:
+        type: string
+      srcNode:
+        type: string
+      volumeName:
+        type: string
+    type: object
+  api.VolumeMigrateOperation:
+    properties:
+      endTime:
+        description: EndTime 迁移结束时间
+        type: string
+      name:
+        description: VolumeMigrateName 迁移CRD名称
+        type: string
+      sourceNode:
+        description: SourceNode 迁移源节点
+        type: string
+      startTime:
+        description: StartTime 迁移开始时间
+        type: string
+      state:
+        description: State 迁移状态
+        type: string
+      targetNode:
+        description: TargetNode 迁移目的节点
+        type: string
+      volumeName:
+        description: VolumeName 迁移卷名称
+        type: string
+    type: object
+  api.VolumeMigrateOperationItemsList:
+    properties:
+      volumeMigrateOperations:
+        description: VolumeMigrateOperations
+        items:
+          $ref: '#/definitions/api.VolumeMigrateOperation'
+        type: array
+    type: object
+  api.VolumeMigrateRspBody:
+    properties:
+      data:
+        $ref: '#/definitions/api.VolumeMigrateInfo'
+    type: object
+  api.VolumeOperationByVolume:
+    properties:
+      items:
+        $ref: '#/definitions/api.VolumeMigrateOperationItemsList'
+        description: VolumeMigrateOperationItemsList
+      volumeName:
+        description: VolumeName
+        type: string
+    type: object
+  api.VolumeOperationListByNode:
+    properties:
+      items:
+        $ref: '#/definitions/api.VolumeMigrateOperationItemsList'
+        description: |-
+          // VolumeOperations
+          VolumeMigrateOperations []*VolumeMigrateOperation `json:"items,omitempty"`
+          VolumeMigrateOperationItemsList
+      nodeName:
+        description: node name
+        type: string
+      pagination:
+        $ref: '#/definitions/api.Pagination'
+        description: page 信息
+    type: object
+  api.VolumeReplica:
+    properties:
+      devicePath:
+        description: |-
+          DevicePath is a link path of the StoragePath of the volume replica,
+          e.g. /dev/LocalStorage_PoolHDD/pvc-fbf3ffc3-66db-4dae-9032-bda3c61b8f85
+        type: string
+      name:
+        description: replica name
+        type: string
+      nodeName:
+        description: NodeName is the assigned node where the volume replica is located
+          节点
+        type: string
+      requiredCapacityBytes:
+        description: RequiredCapacityBytes 容量
+        type: integer
+      state:
+        description: replica state
+        type: string
+      storagePath:
+        description: StoragePath is a real path of the volume replica, like /dev/sdg.
+        type: string
+      synced:
+        description: Synced is the sync state of the volume replica, which is important
+          in HA volume 同步状态
+        type: boolean
+    type: object
+  api.VolumeReplicaList:
+    properties:
+      volumeName:
+        description: volume name
+        type: string
+      volumeReplicas:
+        description: VolumeReplicas
+        items:
+          $ref: '#/definitions/api.VolumeReplica'
+        type: array
+    type: object
+  api.YamlData:
+    properties:
+      data:
+        description: yaml data
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /metrics/basemetric:
+    get:
+      consumes:
+      - application/json
+      description: get baseMetric
+      parameters:
+      - description: name
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.BaseMetric'
+      summary: 摘要 获取基础监控指标
+      tags:
+      - Metric
+  /metrics/modulestatusmetric:
+    get:
+      consumes:
+      - application/json
+      description: ModuleStatusMetric Running (运行中) / NotReady (未就绪)
+      parameters:
+      - description: name
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.ModuleStatusMetric'
+      summary: 摘要 获取组件状态监控指标
+      tags:
+      - Metric
+  /metrics/nodestorageusemetric/{storagePoolClass}:
+    get:
+      consumes:
+      - application/json
+      description: NodeStorageUseMetric
+      parameters:
+      - description: storagePoolClass
+        in: path
+        name: storagePoolClass
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.NodeStorageUseMetric'
+        "404":
+          description: 失败
+          schema:
+            $ref: '#/definitions/api.NodeStorageUseMetric'
+      summary: 摘要 获取指定存储池类型节点存储TOP5使用率监控指标
+      tags:
+      - Metric
+  /metrics/operations:
+    get:
+      consumes:
+      - application/json
+      description: OperationList 状态枚举 （Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed）
+      parameters:
+      - description: name
+        in: query
+        name: name
+        type: string
+      - description: page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.OperationMetric'
+      summary: 摘要 获取操作记录列表
+      tags:
+      - Metric
+  /metrics/storagepoolusemetric:
+    get:
+      consumes:
+      - application/json
+      description: StoragePoolMetric
+      parameters:
+      - description: name
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.StoragePoolUseMetric'
+      summary: 摘要 获取存储池资源监控指标
+      tags:
+      - Metric
+  /nodes/storagenode/{nodeName}/disks:
+    get:
+      consumes:
+      - application/json
+      description: list StorageNodeDisks
+      parameters:
+      - description: nodeName
+        in: path
+        name: nodeName
+        required: true
+        type: string
+      - description: page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      - description: state
+        in: query
+        name: state
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.LocalDiskListByNode'
+      summary: 摘要 获取指定存储节点磁盘列表
+      tags:
+      - Node
+  /nodes/storagenode/{nodeName}/disks/{diskName}/removereserve:
+    post:
+      consumes:
+      - application/json
+      description: post RemoveReserveStorageNodeDisk
+      parameters:
+      - description: nodeName
+        in: path
+        name: nodeName
+        required: true
+        type: string
+      - description: diskName
+        in: path
+        name: diskName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.DiskRemoveReservedRspBody'
+        "500":
+          description: 失败
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 解除磁盘预留
+      tags:
+      - Node
+  /nodes/storagenode/{nodeName}/disks/{diskName}/reserve:
+    post:
+      consumes:
+      - application/json
+      description: post ReserveStorageNodeDisk diskname i.g sdb sdc ...
+      parameters:
+      - description: nodeName
+        in: path
+        name: nodeName
+        required: true
+        type: string
+      - description: diskName
+        in: path
+        name: diskName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.DiskReservedRspBody'
+        "500":
+          description: 失败
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 预留磁盘
+      tags:
+      - Node
+  /nodes/storagenode/{nodeName}/migrates:
+    get:
+      consumes:
+      - application/json
+      description: get StorageNodeMigrate
+      parameters:
+      - description: nodeName
+        in: path
+        name: nodeName
+        required: true
+        type: string
+      - description: page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.VolumeOperationListByNode'
+      summary: 摘要 获取指定节点数据卷迁移任务列表
+      tags:
+      - Node
+  /nodes/storagenodeoperations/{migrateOperationName}/yaml:
+    get:
+      consumes:
+      - application/json
+      description: get StorageNodeVolumeOperationYamlGet
+      parameters:
+      - description: migrateOperationName
+        in: path
+        name: migrateOperationName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.YamlData'
+      summary: 摘要 获取节点数据卷操作记录yaml信息
+      tags:
+      - Node
+  /nodes/storagenodes:
+    get:
+      consumes:
+      - application/json
+      description: list StorageNode  驱动状态 [运行中（Ready）,维护中（Maintain）, 离线（Offline)]
+        , 节点状态 [运行中（Ready）,未就绪（NotReady）,未知（Unknown)]
+      parameters:
+      - description: name
+        in: query
+        name: name
+        type: string
+      - description: page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      - description: nodeState
+        in: query
+        name: nodeState
+        type: string
+      - description: driverState
+        in: query
+        name: driverState
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.StorageNodeList'
+      summary: 摘要 获取存储节点列表
+      tags:
+      - Node
+  /nodes/storagenodes/{name}:
+    get:
+      consumes:
+      - application/json
+      description: get StorageNode 驱动状态 [运行中（Ready）,维护中（Maintain）, 离线（Offline)] ,
+        节点状态 [运行中（Ready）,未就绪（NotReady）,未知（Unknown)]
+      parameters:
+      - description: name
+        in: path
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.StorageNode'
+      summary: 摘要 获取指定存储节点
+      tags:
+      - Node
+  /pools/storagepool/{storagePoolName}/nodes:
+    get:
+      consumes:
+      - application/json
+      description: get StorageNodesGetByPoolName
+      parameters:
+      - description: storagePoolName
+        in: path
+        name: storagePoolName
+        required: true
+        type: string
+      - description: page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.StorageNodeListByPool'
+      summary: 摘要 获取指定存储池存储节点列表信息
+      tags:
+      - Pool
+  /pools/storagepool/{storagePoolName}/nodes/{nodeName}/disks:
+    get:
+      consumes:
+      - application/json
+      description: get StorageNodeDisksGetByPoolName
+      parameters:
+      - description: nodeName
+        in: path
+        name: nodeName
+        required: true
+        type: string
+      - description: storagePoolName
+        in: path
+        name: storagePoolName
+        required: true
+        type: string
+      - description: page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.NodeDiskListByPool'
+      summary: 摘要 获取指定存储池指定存储节点磁盘列表信息
+      tags:
+      - Pool
+  /pools/storagepools:
+    get:
+      consumes:
+      - application/json
+      description: list StoragePools
+      parameters:
+      - description: name
+        in: query
+        name: name
+        type: string
+      - description: page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.StoragePoolList'
+      summary: 摘要 获取存储池列表信息
+      tags:
+      - Pool
+  /pools/storagepools/{name}:
+    get:
+      consumes:
+      - application/json
+      description: get Pool
+      parameters:
+      - description: name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.StoragePool'
+      summary: 摘要 获取指定存储池基本信息
+      tags:
+      - Pool
+  /settings/highavailabilitysetting:
+    get:
+      consumes:
+      - application/json
+      description: get DRBDSettingGet
+      parameters:
+      - description: enabledrbd
+        in: path
+        name: enabledrbd
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.DrbdEnableSetting'
+      summary: 摘要 获取高可用设置
+      tags:
+      - Setting
+  /settings/highavailabilitysetting/{enabledrbd}:
+    post:
+      consumes:
+      - application/json
+      description: post EnableDRBDSetting
+      parameters:
+      - description: enabledrbd
+        in: path
+        name: enabledrbd
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.DrbdEnableSettingRspBody'
+        "500":
+          description: 失败
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 高可用设置
+      tags:
+      - Setting
+  /volumegroups/volumegroups/{name}:
+    get:
+      consumes:
+      - application/json
+      description: get VolumeListByVolumeGroup
+      parameters:
+      - description: name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.VolumeGroup'
+      summary: 摘要 获取指定数据卷组中包含数据卷名称列表基本信息
+      tags:
+      - VolumeGroup
+  /volumes/volume/{name}/yaml:
+    get:
+      consumes:
+      - application/json
+      description: get VolumeYamlGet
+      parameters:
+      - description: name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.YamlData'
+      summary: 摘要 获取数据卷yaml信息
+      tags:
+      - Volume
+  /volumes/volumemigrateoperation/{targetNodeType}/targetNodes:
+    get:
+      consumes:
+      - application/json
+      description: get GetTargetNodesByTargetNodeType  targetNodeType "AutoSelect"
+        "ManualSelect"
+      parameters:
+      - description: targetNodeType
+        in: path
+        name: targetNodeType
+        required: true
+        type: string
+      - description: sourceNodeName
+        in: query
+        name: sourceNodeName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.TargetNodeList'
+      summary: 摘要 获取指定目标节点类型节点列表
+      tags:
+      - Volume
+  /volumes/volumeoperation/{volumeName}/convert:
+    post:
+      consumes:
+      - application/json
+      description: post VolumeConvertOperation
+      parameters:
+      - description: volumeName
+        in: path
+        name: volumeName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.VolumeConvertRspBody'
+        "500":
+          description: 失败
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 指定数据卷转换操作
+      tags:
+      - Volume
+  /volumes/volumeoperation/{volumeName}/migrate:
+    post:
+      consumes:
+      - application/json
+      description: post VolumeMigrateOperation
+      parameters:
+      - description: volumeName
+        in: path
+        name: volumeName
+        required: true
+        type: string
+      - description: sourceNodeName
+        in: query
+        name: sourceNodeName
+        required: true
+        type: string
+      - description: targetNodeName
+        in: query
+        name: targetNodeName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.VolumeMigrateRspBody'
+        "500":
+          description: 失败
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 指定数据卷迁移操作
+      tags:
+      - Volume
+  /volumes/volumeoperation/{volumeOperationName}/yaml:
+    get:
+      consumes:
+      - application/json
+      description: get VolumeOperationYamlGet
+      parameters:
+      - description: volumeOperationName
+        in: path
+        name: volumeOperationName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.YamlData'
+      summary: 摘要 获取数据卷操作记录yaml信息
+      tags:
+      - Volume
+  /volumes/volumeoperations/{volumeName}:
+    get:
+      consumes:
+      - application/json
+      description: get VolumeOperation
+      parameters:
+      - description: volumeName
+        in: path
+        name: volumeName
+        required: true
+        type: string
+      - description: volumeMigrateName
+        in: query
+        name: volumeMigrateName
+        type: string
+      - description: state
+        in: query
+        name: state
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.VolumeOperationByVolume'
+      summary: 摘要 获取指定数据卷操作记录信息（目前仅包含迁移运维操作）
+      tags:
+      - Volume
+  /volumes/volumereplica/{volumeReplicaName}/yaml:
+    get:
+      consumes:
+      - application/json
+      description: get VolumeReplicaYaml
+      parameters:
+      - description: volumeReplicaName
+        in: path
+        name: volumeReplicaName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.YamlData'
+      summary: 摘要 查看指定数据卷副本yaml信息
+      tags:
+      - Volume
+  /volumes/volumereplicas/{volumeName}:
+    get:
+      consumes:
+      - application/json
+      description: list volumes
+      parameters:
+      - description: volumeName
+        in: path
+        name: volumeName
+        required: true
+        type: string
+      - description: volumeReplicaName
+        in: query
+        name: volumeReplicaName
+        type: string
+      - description: state
+        in: query
+        name: state
+        type: string
+      - description: synced
+        in: query
+        name: synced
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.VolumeReplicaList'
+      summary: 摘要 获取指定数据卷的副本列表信息
+      tags:
+      - Volume
+  /volumes/volumes:
+    get:
+      consumes:
+      - application/json
+      description: list Volume
+      parameters:
+      - description: page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      - description: volumeName
+        in: query
+        name: volumeName
+        type: string
+      - description: state
+        in: query
+        name: state
+        type: string
+      - description: namespace
+        in: query
+        name: namespace
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.VolumeList'
+      summary: 摘要 获取数据卷列表信息
+      tags:
+      - Volume
+  /volumes/volumes/{name}:
+    get:
+      consumes:
+      - application/json
+      description: get Volume
+      parameters:
+      - description: name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Volume'
+      summary: 摘要 获取指定数据卷基本信息
+      tags:
+      - Volume
+swagger: "2.0"

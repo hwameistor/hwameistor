@@ -6,7 +6,7 @@ metadata:
   labels:
     app: hwameistor-volume-evictor
 spec:
-  replicas: 1
+  replicas: {{ .Values.evictor.replicas}}
   strategy:
     type: Recreate
   selector:

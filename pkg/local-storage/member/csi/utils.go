@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hwameistor/hwameistor/pkg/local-storage/exechelper"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/exechelper/nsexecutor"
+	"github.com/hwameistor/hwameistor/pkg/exechelper"
+	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/gofrs/uuid"
@@ -43,7 +43,7 @@ func newPluginCapability(cap csi.PluginCapability_Service_Type) *csi.PluginCapab
 	}
 }
 
-//parseEndpoint parse socket endpoint
+// parseEndpoint parse socket endpoint
 func parseEndpoint(ep string) (string, string, error) {
 	if strings.HasPrefix(strings.ToLower(ep), "unix://") || strings.HasPrefix(strings.ToLower(ep), "tcp://") {
 		s := strings.SplitN(ep, "://", 2)

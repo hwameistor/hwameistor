@@ -3,8 +3,8 @@ package csi
 import (
 	"sync"
 
-	"github.com/hwameistor/hwameistor/pkg/local-storage/exechelper"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/exechelper/nsexecutor"
+	"github.com/hwameistor/hwameistor/pkg/exechelper"
+	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
@@ -16,13 +16,14 @@ const (
 	driverVersion = "1.0"
 )
 
-//go:generate mockgen -source=plugin.go -destination=../../member/csi/plugin_mock.go  -package=csi
 // Driver interface
+//
+//go:generate mockgen -source=plugin.go -destination=../../member/csi/plugin_mock.go  -package=csi
 type Driver interface {
 	Run(stopCh <-chan struct{})
 }
 
-//plugin - local storage system CSI plugin struct including controller, node, identity
+// plugin - local storage system CSI plugin struct including controller, node, identity
 type plugin struct {
 	name    string
 	version string
@@ -47,7 +48,7 @@ type plugin struct {
 	vCaps  []*csi.VolumeCapability
 }
 
-//New - create a new plugin instance
+// New - create a new plugin instance
 func New(nodeName string, namespace string, driverName string, sockAddr string, storageMember apis.LocalStorageMember, cli client.Client) Driver {
 
 	logger := log.WithField("Module", "CSIPlugin")
@@ -67,7 +68,7 @@ func New(nodeName string, namespace string, driverName string, sockAddr string, 
 	}
 }
 
-//Run - run the plugin
+// Run - run the plugin
 func (p *plugin) Run(stopCh <-chan struct{}) {
 
 	p.logger.Debug("Initialize CSI plugin ...")

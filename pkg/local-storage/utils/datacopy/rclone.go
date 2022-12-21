@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/hwameistor/hwameistor/pkg/local-storage/exechelper"
+	"github.com/hwameistor/hwameistor/pkg/exechelper"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
