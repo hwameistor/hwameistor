@@ -1519,49 +1519,102 @@
         "api.StorageNode": {
             "type": "object",
             "properties": {
-                "allocatedHDDCapacityBytes": {
-                    "description": "allocatedHDDCapacityBytes HDD已经分配存储量",
+                "annotations": {
+                    "description": "Annotations is an unstructured key value map stored with a resource that may be\nset by external tools to store and retrieve arbitrary metadata. They are not\nqueryable and should be preserved when modifying objects.\nMore info: http://kubernetes.io/docs/user-guide/annotations\n+optional",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "apiVersion": {
+                    "description": "APIVersion defines the versioned schema of this representation of an object.\nServers should convert recognized schemas to the latest internal value, and\nmay reject unrecognized values.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources\n+optional",
+                    "type": "string"
+                },
+                "clusterName": {
+                    "description": "The name of the cluster which the object belongs to.\nThis is used to distinguish resources with same name and namespace in different clusters.\nThis field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.\n+optional",
+                    "type": "string"
+                },
+                "creationTimestamp": {
+                    "description": "CreationTimestamp is a timestamp representing the server time when this object was\ncreated. It is not guaranteed to be set in happens-before order across separate operations.\nClients may not set this value. It is represented in RFC3339 form and is in UTC.\n\nPopulated by the system.\nRead-only.\nNull for lists.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional",
+                    "type": "string"
+                },
+                "deletionGracePeriodSeconds": {
+                    "description": "Number of seconds allowed for this object to gracefully terminate before\nit will be removed from the system. Only set when deletionTimestamp is also set.\nMay only be shortened.\nRead-only.\n+optional",
                     "type": "integer"
                 },
-                "allocatedSSDCapacityBytes": {
-                    "description": "allocatedSSDCapacityBytes SSD已经分配存储量",
-                    "type": "integer"
+                "deletionTimestamp": {
+                    "description": "DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This\nfield is set by the server when a graceful deletion is requested by the user, and is not\ndirectly settable by a client. The resource is expected to be deleted (no longer visible\nfrom resource lists, and not reachable by name) after the time in this field, once the\nfinalizers list is empty. As long as the finalizers list contains items, deletion is blocked.\nOnce the deletionTimestamp is set, this value may not be unset or be set further into the\nfuture, although it may be shortened or the resource may be deleted prior to this time.\nFor example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react\nby sending a graceful termination signal to the containers in the pod. After that 30 seconds,\nthe Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,\nremove the pod from the API. In the presence of network partitions, this object may still\nexist after this timestamp, until an administrator or automated process can determine the\nresource is fully terminated.\nIf not set, graceful deletion of the object has not been requested.\n\nPopulated by the system when a graceful deletion is requested.\nRead-only.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional",
+                    "type": "string"
                 },
                 "driverStatus": {
-                    "description": "driver status 驱动状态  运行中（Ready）,维护中（Maintain）, 离线（Offline）",
+                    "description": "// name 节点名字\nName string `json:\"name,omitempty\"`\n// ip 节点IP\nIP string `json:\"ip,omitempty\"`\n// node state 节点状态 运行中（Ready）,未就绪（NotReady）,未知（Unknown）\nNodeState State `json:\"nodeState,omitempty\"`\ndriver status 驱动状态  运行中（Ready）,维护中（Maintain）, 离线（Offline）",
                     "type": "string"
                 },
-                "ip": {
-                    "description": "ip 节点IP",
+                "finalizers": {
+                    "description": "Must be empty before the object is deleted from the registry. Each entry\nis an identifier for the responsible component that will remove the entry\nfrom the list. If the deletionTimestamp of the object is non-nil, entries\nin this list can only be removed.\nFinalizers may be processed and removed in any order.  Order is NOT enforced\nbecause it introduces significant risk of stuck finalizers.\nfinalizers is a shared field, any actor with permission can reorder it.\nIf the finalizer list is processed in order, then this can lead to a situation\nin which the component responsible for the first finalizer in the list is\nwaiting for a signal (field value, external system, or other) produced by a\ncomponent responsible for a finalizer later in the list, resulting in a deadlock.\nWithout enforced ordering finalizers are free to order amongst themselves and\nare not vulnerable to ordering changes in the list.\n+optional\n+patchStrategy=merge",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "generateName": {
+                    "description": "GenerateName is an optional prefix, used by the server, to generate a unique\nname ONLY IF the Name field has not been provided.\nIf this field is used, the name returned to the client will be different\nthan the name passed. This value will also be combined with a unique suffix.\nThe provided value has the same validation rules as the Name field,\nand may be truncated by the length of the suffix required to make the value\nunique on the server.\n\nIf this field is specified and the generated name exists, the server will\nNOT return a 409 - instead, it will either return 201 Created or 500 with Reason\nServerTimeout indicating a unique name could not be found in the time allotted, and the client\nshould retry (optionally after the time indicated in the Retry-After header).\n\nApplied only if Name is not specified.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency\n+optional",
                     "type": "string"
                 },
-                "isRaid": {
-                    "description": "IsRAID 是否Raid",
-                    "type": "boolean"
+                "generation": {
+                    "description": "A sequence number representing a specific generation of the desired state.\nPopulated by the system. Read-only.\n+optional",
+                    "type": "integer"
+                },
+                "kind": {
+                    "description": "Kind is a string value representing the REST resource this object represents.\nServers may infer this from the endpoint the client submits requests to.\nCannot be updated.\nIn CamelCase.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds\n+optional",
+                    "type": "string"
+                },
+                "labels": {
+                    "description": "Map of string keys and values that can be used to organize and categorize\n(scope and select) objects. May match selectors of replication controllers\nand services.\nMore info: http://kubernetes.io/docs/user-guide/labels\n+optional",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "managedFields": {
+                    "description": "ManagedFields maps workflow-id and version to the set of fields\nthat are managed by that workflow. This is mostly for internal\nhousekeeping, and users typically shouldn't need to set or\nunderstand this field. A workflow can be the user's name, a\ncontroller's name, or the name of a specific apply path like\n\"ci-cd\". The set of fields is always in the version that the\nworkflow used when modifying the object.\n\n+optional",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ManagedFieldsEntry"
+                    }
                 },
                 "name": {
-                    "description": "name 节点名字",
+                    "description": "Name must be unique within a namespace. Is required when creating resources, although\nsome resources may allow a client to request the generation of an appropriate name\nautomatically. Name is primarily intended for creation idempotence and configuration\ndefinition.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#names\n+optional",
                     "type": "string"
                 },
-                "nodeState": {
-                    "description": "node state 节点状态 运行中（Ready）,未就绪（NotReady）,未知（Unknown）",
+                "namespace": {
+                    "description": "Namespace defines the space within which each name must be unique. An empty namespace is\nequivalent to the \"default\" namespace, but \"default\" is the canonical representation.\nNot all objects are required to be scoped to a namespace - the value of this field for\nthose objects will be empty.\n\nMust be a DNS_LABEL.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/namespaces\n+optional",
                     "type": "string"
                 },
-                "totalDiskCount": {
-                    "description": "totalDiskCount 总磁盘数",
-                    "type": "integer"
+                "ownerReferences": {
+                    "description": "List of objects depended by this object. If ALL objects in the list have\nbeen deleted, this object will be garbage collected. If this object is managed by a controller,\nthen an entry in this list will point to this controller, with the controller field set to true.\nThere cannot be more than one managing controller.\n+optional\n+patchMergeKey=uid\n+patchStrategy=merge",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.OwnerReference"
+                    }
                 },
-                "totalHDDCapacityBytes": {
-                    "description": "// freeCapacityBytes LSN可分配存储容量\nFreeCapacityBytes int64 `json:\"freeCapacityBytes,omitempty\"`\ntotalHDDCapacityBytes HDD存储总容量",
-                    "type": "integer"
+                "resourceVersion": {
+                    "description": "An opaque value that represents the internal version of this object that can\nbe used by clients to determine when objects have changed. May be used for optimistic\nconcurrency, change detection, and the watch operation on a resource or set of resources.\nClients must treat these values as opaque and passed unmodified back to the server.\nThey may only be valid for a particular resource or set of resources.\n\nPopulated by the system.\nRead-only.\nValue must be treated as opaque by clients and .\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency\n+optional",
+                    "type": "string"
                 },
-                "totalSSDCapacityBytes": {
-                    "description": "totalSSDCapacityBytes SSD存储总容量",
-                    "type": "integer"
+                "selfLink": {
+                    "description": "SelfLink is a URL representing this object.\nPopulated by the system.\nRead-only.\n\nDEPRECATED\nKubernetes will stop propagating this field in 1.20 release and the field is planned\nto be removed in 1.21 release.\n+optional",
+                    "type": "string"
                 },
-                "usedDiskCount": {
-                    "description": "usedDiskCount 已绑定磁盘数",
-                    "type": "integer"
+                "spec": {
+                    "$ref": "#/definitions/v1alpha1.LocalStorageNodeSpec"
+                },
+                "status": {
+                    "$ref": "#/definitions/v1alpha1.LocalStorageNodeStatus"
+                },
+                "uid": {
+                    "description": "UID is the unique in time and space value for this object. It is typically generated by\nthe server on successful creation of a resource and is not allowed to change on PUT\noperations.\n\nPopulated by the system.\nRead-only.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#uids\n+optional",
+                    "type": "string"
                 }
             }
         },
@@ -1978,6 +2031,222 @@
             "properties": {
                 "data": {
                     "description": "yaml data",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.FieldsV1": {
+            "type": "object"
+        },
+        "v1.ManagedFieldsEntry": {
+            "type": "object",
+            "properties": {
+                "apiVersion": {
+                    "description": "APIVersion defines the version of this resource that this field set\napplies to. The format is \"group/version\" just like the top-level\nAPIVersion field. It is necessary to track the version of a field\nset because it cannot be automatically converted.",
+                    "type": "string"
+                },
+                "fieldsType": {
+                    "description": "FieldsType is the discriminator for the different fields format and version.\nThere is currently only one possible value: \"FieldsV1\"",
+                    "type": "string"
+                },
+                "fieldsV1": {
+                    "description": "FieldsV1 holds the first JSON version format as described in the \"FieldsV1\" type.\n+optional",
+                    "$ref": "#/definitions/v1.FieldsV1"
+                },
+                "manager": {
+                    "description": "Manager is an identifier of the workflow managing these fields.",
+                    "type": "string"
+                },
+                "operation": {
+                    "description": "Operation is the type of operation which lead to this ManagedFieldsEntry being created.\nThe only valid values for this field are 'Apply' and 'Update'.",
+                    "type": "string"
+                },
+                "time": {
+                    "description": "Time is timestamp of when these fields were set. It should always be empty if Operation is 'Apply'\n+optional",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.OwnerReference": {
+            "type": "object",
+            "properties": {
+                "apiVersion": {
+                    "description": "API version of the referent.",
+                    "type": "string"
+                },
+                "blockOwnerDeletion": {
+                    "description": "If true, AND if the owner has the \"foregroundDeletion\" finalizer, then\nthe owner cannot be deleted from the key-value store until this\nreference is removed.\nDefaults to false.\nTo set this field, a user needs \"delete\" permission of the owner,\notherwise 422 (Unprocessable Entity) will be returned.\n+optional",
+                    "type": "boolean"
+                },
+                "controller": {
+                    "description": "If true, this reference points to the managing controller.\n+optional",
+                    "type": "boolean"
+                },
+                "kind": {
+                    "description": "Kind of the referent.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name of the referent.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#names",
+                    "type": "string"
+                },
+                "uid": {
+                    "description": "UID of the referent.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#uids",
+                    "type": "string"
+                }
+            }
+        },
+        "v1alpha1.LocalDevice": {
+            "type": "object",
+            "properties": {
+                "capacityBytes": {
+                    "description": "disk capacity",
+                    "type": "integer"
+                },
+                "devPath": {
+                    "description": "e.g. /dev/sdb",
+                    "type": "string"
+                },
+                "state": {
+                    "description": "Possible state: Available, Inuse, Offline",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "Supported: HDD, SSD, NVMe, RAM",
+                    "type": "string"
+                }
+            }
+        },
+        "v1alpha1.LocalPool": {
+            "type": "object",
+            "properties": {
+                "class": {
+                    "description": "Supported class: HDD, SSD, NVMe\n+kubebuilder:validation:Enum:=HDD;SSD;NVMe",
+                    "type": "string"
+                },
+                "disks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha1.LocalDevice"
+                    }
+                },
+                "freeCapacityBytes": {
+                    "type": "integer"
+                },
+                "freeVolumeCount": {
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL",
+                    "type": "string"
+                },
+                "path": {
+                    "description": "VG path",
+                    "type": "string"
+                },
+                "totalCapacityBytes": {
+                    "type": "integer"
+                },
+                "totalVolumeCount": {
+                    "type": "integer"
+                },
+                "type": {
+                    "description": "Supported type: REGULAR\n+kubebuilder:validation:Enum:=REGULAR\n+kubebuilder:default:=REGULAR",
+                    "type": "string"
+                },
+                "usedCapacityBytes": {
+                    "type": "integer"
+                },
+                "usedVolumeCount": {
+                    "type": "integer"
+                },
+                "volumeCapacityBytesLimit": {
+                    "type": "integer"
+                },
+                "volumes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "v1alpha1.LocalStorageNodeCondition": {
+            "type": "object",
+            "properties": {
+                "lastTransitionTime": {
+                    "description": "Last time the condition transitioned from one status to another.",
+                    "type": "string"
+                },
+                "lastUpdateTime": {
+                    "description": "The last time this condition was updated.",
+                    "type": "string"
+                },
+                "message": {
+                    "description": "A human-readable message indicating details about the transition.",
+                    "type": "string"
+                },
+                "reason": {
+                    "description": "The reason for the condition's last transition.",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Status of the condition, one of True, False, Unknown.",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "Type of localstoragenode condition.",
+                    "type": "string"
+                }
+            }
+        },
+        "v1alpha1.LocalStorageNodeSpec": {
+            "type": "object",
+            "properties": {
+                "hostname": {
+                    "type": "string"
+                },
+                "storageIP": {
+                    "description": "IPv4 address is for HA replication traffic",
+                    "type": "string"
+                },
+                "topogoly": {
+                    "$ref": "#/definitions/v1alpha1.Topology"
+                }
+            }
+        },
+        "v1alpha1.LocalStorageNodeStatus": {
+            "type": "object",
+            "properties": {
+                "conditions": {
+                    "description": "Represents the latest available observations of a localstoragenode's current state.\n+optional",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha1.LocalStorageNodeCondition"
+                    }
+                },
+                "pools": {
+                    "description": "There may have multiple storage pools in a node.\ne.g. HDD_POOL, SSD_POOL, NVMe_POOL\nPools: poolName -\u003e LocalPool",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/v1alpha1.LocalPool"
+                    }
+                },
+                "state": {
+                    "description": "State of the Local Storage Node/Member: New, Active, Inactive, Failed",
+                    "type": "string"
+                }
+            }
+        },
+        "v1alpha1.Topology": {
+            "type": "object",
+            "properties": {
+                "region": {
+                    "description": "Region is a collection of Zones\n+kubebuilder:default:=default",
+                    "type": "string"
+                },
+                "zone": {
+                    "description": "Zone is a collection of Local Storage Nodes\n+kubebuilder:default:=default",
                     "type": "string"
                 }
             }

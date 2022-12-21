@@ -30,7 +30,7 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 
 	sm, m := BuildServerMgr()
 
-	v1 := r.Group("/apis/hwameistor.io/v1alpha1")
+	v1 := r.Group("/apis/v1alpha1")
 	metricsController := controller.NewMetricsController(sm)
 	metricsRoutes := v1.Group("/metrics")
 	metricsRoutes.GET("/basemetric", metricsController.BaseMetric)
