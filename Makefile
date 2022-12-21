@@ -28,6 +28,10 @@ APISERVER_BUILD_INPUT = ${CMDS_DIR}/${APISERVER_MODULE_NAME}/main.go
 debug:
 	${DOCKER_DEBUG_CMD} ash
 
+.PHONY: apiserver_swag
+apiserver_swag:
+	swag init --dir ${CMDS_DIR}/${APISERVER_MODULE_NAME},./pkg/${APISERVER_MODULE_NAME},./pkg/apis --output ./pkg/${APISERVER_MODULE_NAME}/docs
+
 .PHONY: compile
 compile: compile_ldm compile_ls compile_scheduler compile_admission compile_evictor compile_metrics compile_apiserver
 
