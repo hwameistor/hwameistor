@@ -19,9 +19,12 @@ type INodeController interface {
 	StorageNodeList(ctx *gin.Context)
 	StorageNodeMigrateGet(ctx *gin.Context)
 	StorageNodeDisksList(ctx *gin.Context)
-	StorageNodeVolumeOperationYamlGet(ctx *gin.Context)
-	ReserveStorageNodeDisk(ctx *gin.Context)
-	RemoveReserveStorageNodeDisk(ctx *gin.Context)
+	UpdateStorageNodeDisk(ctx *gin.Context)
+	GetStorageNodeDisk(ctx *gin.Context)
+	StorageNodePoolsList(ctx *gin.Context)
+	StorageNodePoolGet(ctx *gin.Context)
+	StorageNodePoolDisksList(ctx *gin.Context)
+	StorageNodePoolDiskGet(ctx *gin.Context)
 }
 
 // NodeController
@@ -42,14 +45,14 @@ func NewNodeController(m *manager.ServerManager, mgr mgrpkg.Manager) INodeContro
 // @Summary 摘要 获取指定存储节点
 // @Description get StorageNode 驱动状态 [运行中（Ready）,维护中（Maintain）, 离线（Offline)] , 节点状态 [运行中（Ready）,未就绪（NotReady）,未知（Unknown)]
 // @Tags        Node
-// @Param       name path string false "name"
+// @Param       nodeName path string false "nodeName"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.StorageNode
-// @Router      /nodes/storagenodes/{name} [get]
+// @Router      /cluster/nodes/{nodeName} [get]
 func (n *NodeController) StorageNodeGet(ctx *gin.Context) {
 	// 获取path中的name
-	nodeName := ctx.Param("name")
+	nodeName := ctx.Param("nodeName")
 
 	if nodeName == "" {
 		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
@@ -73,10 +76,12 @@ func (n *NodeController) StorageNodeGet(ctx *gin.Context) {
 // @Param       pageSize query int32 true "pageSize"
 // @Param       nodeState query string false "nodeState"
 // @Param       driverState query string false "driverState"
+// @Param       fuzzy query bool false "fuzzy"
+// @Param       sort query bool false "sort"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object} api.StorageNodeList
-// @Router      /nodes/storagenodes [get]
+// @Router      /cluster/nodes [get]
 func (n *NodeController) StorageNodeList(ctx *gin.Context) {
 
 	// 获取path中的page
@@ -93,7 +98,7 @@ func (n *NodeController) StorageNodeList(ctx *gin.Context) {
 	p, _ := strconv.ParseInt(page, 10, 32)
 	ps, _ := strconv.ParseInt(pageSize, 10, 32)
 
-	fmt.Println("StorageNodeList driverState = %v", driverState)
+	fmt.Println("StorageNodeList driverState = %v, nodeName = %v", driverState, nodeName)
 
 	var queryPage hwameistorapi.QueryPage
 	queryPage.Page = int32(p)
@@ -121,7 +126,7 @@ func (n *NodeController) StorageNodeList(ctx *gin.Context) {
 // @Accept      json
 // @Produce     json
 // @Success     200 {object} api.VolumeOperationListByNode
-// @Router      /nodes/storagenode/{nodeName}/migrates [get]
+// @Router      /cluster/nodes/{nodeName}/migrates [get]
 func (n *NodeController) StorageNodeMigrateGet(ctx *gin.Context) {
 
 	// 获取path中的name
@@ -161,10 +166,12 @@ func (n *NodeController) StorageNodeMigrateGet(ctx *gin.Context) {
 // @Param       page query int32 true "page"
 // @Param       pageSize query int32 true "pageSize"
 // @Param       state query string false "state"
+// @Param       fuzzy query bool false "fuzzy"
+// @Param       sort query bool false "sort"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.LocalDiskListByNode
-// @Router      /nodes/storagenode/{nodeName}/disks [get]
+// @Router      /cluster/nodes/{nodeName}/disks [get]
 func (n *NodeController) StorageNodeDisksList(ctx *gin.Context) {
 	// 获取path中的name
 	nodeName := ctx.Param("nodeName")
@@ -188,7 +195,7 @@ func (n *NodeController) StorageNodeDisksList(ctx *gin.Context) {
 	queryPage.Page = int32(p)
 	queryPage.PageSize = int32(ps)
 	queryPage.DiskState = hwameistorapi.DiskStatefuzzyConvert(state)
-	queryPage.Name = nodeName
+	queryPage.NodeName = nodeName
 
 	lds, err := n.m.StorageNodeController().LocalDiskListByNode(queryPage)
 	if err != nil {
@@ -199,53 +206,33 @@ func (n *NodeController) StorageNodeDisksList(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, lds)
 }
 
-// StorageNodeVolumeOperationYamlGet godoc
-// @Summary 摘要 获取节点数据卷操作记录yaml信息
-// @Description get StorageNodeVolumeOperationYamlGet
-// @Tags        Node
-// @Param       migrateOperationName path string true "migrateOperationName"
-// @Accept      json
-// @Produce     json
-// @Success     200 {object}  api.YamlData  "成功"
-// @Router      /nodes/storagenodeoperations/{migrateOperationName}/yaml [get]
-func (n *NodeController) StorageNodeVolumeOperationYamlGet(ctx *gin.Context) {
-
-	// 获取path中的name
-	name := ctx.Param("migrateOperationName")
-	fmt.Println("StorageNodeVolumeOperationYamlGet name = %v", name)
-
-	if name == "" {
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
-		return
-	}
-	resourceYamlStr, err := n.m.StorageNodeController().GetStorageNodeVolumeMigrateYamlStr(name)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, resourceYamlStr)
-}
-
-// ReserveStorageNodeDisk godoc
-// @Summary 摘要 预留磁盘
-// @Description post ReserveStorageNodeDisk diskname i.g sdb sdc ...
+// UpdateStorageNodeDisk godoc
+// @Summary 摘要 更新磁盘
+// @Description post UpdateStorageNodeDisk diskname i.g sdb sdc ...
 // @Tags        Node
 // @Param       nodeName path string true "nodeName"
 // @Param       diskName path string true "diskName"
+// @Param       body body api.DiskReqBody false "reqBody"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.DiskReservedRspBody  "成功"
+// @Success     200 {object}  api.DiskReqBody  "成功"
 // @Failure     500 {object}  api.RspFailBody "失败"
-// @Router      /nodes/storagenode/{nodeName}/disks/{diskName}/reserve [post]
-func (n *NodeController) ReserveStorageNodeDisk(ctx *gin.Context) {
+// @Router      /cluster/nodes/{nodeName}/disks/{diskName} [post]
+func (n *NodeController) UpdateStorageNodeDisk(ctx *gin.Context) {
 	// 获取path中的nodeName
 	nodeName := ctx.Param("nodeName")
 
 	// 获取path中的diskName
 	diskName := ctx.Param("diskName")
 
-	fmt.Println("ReserveStorageNodeDisk nodeName = %v, diskName = %v", nodeName, diskName)
+	var drb hwameistorapi.DiskReqBody
+	err := ctx.ShouldBind(&drb)
+	if err != nil {
+		fmt.Errorf("Unmarshal err = %v", err)
+		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		return
+	}
+	reserve := drb.Reserve
 
 	if nodeName == "" || diskName == "" {
 		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
@@ -256,30 +243,44 @@ func (n *NodeController) ReserveStorageNodeDisk(ctx *gin.Context) {
 	queryPage.NodeName = nodeName
 	queryPage.DiskName = diskName
 
-	diskReservedRsp, err := n.m.StorageNodeController().ReserveStorageNodeDisk(queryPage, n.diskHandler)
-	if err != nil {
-		var failRsp hwameistorapi.RspFailBody
-		failRsp.ErrCode = 500
-		failRsp.Desc = "ReserveStorageNodeDisk Failed:" + err.Error()
-		ctx.JSON(http.StatusInternalServerError, failRsp)
-		return
-	}
+	if reserve == true {
+		diskReservedRsp, err := n.m.StorageNodeController().ReserveStorageNodeDisk(queryPage, n.diskHandler)
+		if err != nil {
+			var failRsp hwameistorapi.RspFailBody
+			failRsp.ErrCode = 500
+			failRsp.Desc = "ReserveStorageNodeDisk Failed:" + err.Error()
+			ctx.JSON(http.StatusInternalServerError, failRsp)
+			return
+		}
+		ctx.JSON(http.StatusOK, diskReservedRsp)
+	} else {
+		removeDiskReservedRsp, err := n.m.StorageNodeController().ReleaseReserveStorageNodeDisk(queryPage, n.diskHandler)
+		if err != nil {
+			var failRsp hwameistorapi.RspFailBody
+			failRsp.ErrCode = 500
+			failRsp.Desc = "ReserveStorageNodeDisk Failed:" + err.Error()
+			ctx.JSON(http.StatusInternalServerError, failRsp)
+			return
+		}
 
-	ctx.JSON(http.StatusOK, diskReservedRsp)
+		ctx.JSON(http.StatusOK, removeDiskReservedRsp)
+	}
 }
 
-// RemoveReserveStorageNodeDisk godoc
-// @Summary 摘要 解除磁盘预留
-// @Description post RemoveReserveStorageNodeDisk
+// GetStorageNodeDisk godoc
+// @Summary 摘要 获取指定磁盘信息
+// @Description get GetStorageNodeDisk diskname i.g sdb sdc ...
 // @Tags        Node
 // @Param       nodeName path string true "nodeName"
 // @Param       diskName path string true "diskName"
+// @Param       fuzzy query bool false "fuzzy"
+// @Param       sort query bool false "sort"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.DiskRemoveReservedRspBody  "成功"
+// @Success     200 {object}  api.LocalDiskInfo  "成功"
 // @Failure     500 {object}  api.RspFailBody "失败"
-// @Router      /nodes/storagenode/{nodeName}/disks/{diskName}/removereserve [post]
-func (n *NodeController) RemoveReserveStorageNodeDisk(ctx *gin.Context) {
+// @Router      /cluster/nodes/{nodeName}/disks/{diskName} [get]
+func (n *NodeController) GetStorageNodeDisk(ctx *gin.Context) {
 	// 获取path中的nodeName
 	nodeName := ctx.Param("nodeName")
 
@@ -295,14 +296,129 @@ func (n *NodeController) RemoveReserveStorageNodeDisk(ctx *gin.Context) {
 	queryPage.NodeName = nodeName
 	queryPage.DiskName = diskName
 
-	removeDiskReservedRsp, err := n.m.StorageNodeController().RemoveReserveStorageNodeDisk(queryPage, n.diskHandler)
-	if err != nil {
-		var failRsp hwameistorapi.RspFailBody
-		failRsp.ErrCode = 500
-		failRsp.Desc = "ReserveStorageNodeDisk Failed:" + err.Error()
-		ctx.JSON(http.StatusInternalServerError, failRsp)
+	return
+}
+
+// StorageNodePoolsList godoc
+// @Summary 摘要 获取指定节点存储池列表信息
+// @Description get StorageNodePoolsList
+// @Tags        Node
+// @Param       nodeName path string true "nodeName"
+// @Param       fuzzy query bool false "fuzzy"
+// @Param       sort query bool false "sort"
+// @Accept      json
+// @Produce     json
+// @Success     200 {object}  api.StoragePoolList  "成功"
+// @Failure     500 {object}  api.RspFailBody "失败"
+// @Router      /cluster/nodes/{nodeName}/pools [get]
+func (n *NodeController) StorageNodePoolsList(ctx *gin.Context) {
+	// 获取path中的nodeName
+	nodeName := ctx.Param("nodeName")
+
+	// 获取path中的diskName
+	diskName := ctx.Param("diskName")
+
+	if nodeName == "" || diskName == "" {
+		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, removeDiskReservedRsp)
+	var queryPage hwameistorapi.QueryPage
+	queryPage.NodeName = nodeName
+	queryPage.DiskName = diskName
+
+	return
+}
+
+// StorageNodePoolGet godoc
+// @Summary 摘要 获取指定节点指定存储池信息
+// @Description get StorageNodePoolGet
+// @Tags        Node
+// @Param       nodeName path string true "nodeName"
+// @Param       poolName path string true "poolName"
+// @Accept      json
+// @Produce     json
+// @Success     200 {object}  api.StoragePool  "成功"
+// @Failure     500 {object}  api.RspFailBody "失败"
+// @Router      /cluster/nodes/{nodeName}/pools/{poolName} [get]
+func (n *NodeController) StorageNodePoolGet(ctx *gin.Context) {
+	// 获取path中的nodeName
+	nodeName := ctx.Param("nodeName")
+
+	// 获取path中的diskName
+	diskName := ctx.Param("diskName")
+
+	if nodeName == "" || diskName == "" {
+		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		return
+	}
+
+	var queryPage hwameistorapi.QueryPage
+	queryPage.NodeName = nodeName
+	queryPage.DiskName = diskName
+
+	return
+}
+
+// StorageNodePoolDisksList godoc
+// @Summary 摘要 获取指定节点指定存储池磁盘列表信息
+// @Description get StorageNodePoolDisksList
+// @Tags        Node
+// @Param       nodeName path string true "nodeName"
+// @Param       poolName path string true "poolName"
+// @Param       fuzzy query bool false "fuzzy"
+// @Param       sort query bool false "sort"
+// @Accept      json
+// @Produce     json
+// @Success     200 {object}  api.LocalDisksItemsList  "成功"
+// @Failure     500 {object}  api.RspFailBody "失败"
+// @Router      /cluster/nodes/{nodeName}/pools/{poolName}/disks [get]
+func (n *NodeController) StorageNodePoolDisksList(ctx *gin.Context) {
+	// 获取path中的nodeName
+	nodeName := ctx.Param("nodeName")
+
+	// 获取path中的diskName
+	diskName := ctx.Param("diskName")
+
+	if nodeName == "" || diskName == "" {
+		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		return
+	}
+
+	var queryPage hwameistorapi.QueryPage
+	queryPage.NodeName = nodeName
+	queryPage.DiskName = diskName
+
+	return
+}
+
+// StorageNodePoolDiskGet godoc
+// @Summary 摘要 获取指定节点指定存储池指定磁盘信息
+// @Description get StorageNodePoolDiskGet
+// @Tags        Node
+// @Param       nodeName path string true "nodeName"
+// @Param       poolName path string true "poolName"
+// @Param       diskName path string true "diskName"
+// @Accept      json
+// @Produce     json
+// @Success     200 {object}  api.LocalDiskInfo  "成功"
+// @Failure     500 {object}  api.RspFailBody "失败"
+// @Router      /cluster/nodes/{nodeName}/pools/{poolName}/disks/{diskName} [get]
+func (n *NodeController) StorageNodePoolDiskGet(ctx *gin.Context) {
+	// 获取path中的nodeName
+	nodeName := ctx.Param("nodeName")
+
+	// 获取path中的diskName
+	diskName := ctx.Param("diskName")
+
+	if nodeName == "" || diskName == "" {
+		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		return
+	}
+
+	var queryPage hwameistorapi.QueryPage
+	queryPage.NodeName = nodeName
+	queryPage.DiskName = diskName
+
+	return
 }

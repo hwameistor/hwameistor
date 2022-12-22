@@ -1,6 +1,7 @@
 package api
 
 import (
+	apiv1alpha1 "github.com/hwameistor/hwameistor-operator/api/v1alpha1"
 	"time"
 )
 
@@ -76,6 +77,8 @@ type ModuleStatus struct {
 
 // 组件状态监控
 type ModuleStatusMetric struct {
+	apiv1alpha1.ClusterStatus
+
 	ModulesStatus []ModuleStatus `json:"modulesStatus"`
 }
 

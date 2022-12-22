@@ -28,16 +28,16 @@ func NewPoolController(m *manager.ServerManager) IPoolController {
 
 // StoragePoolGet godoc
 // @Summary 摘要 获取指定存储池基本信息
-// @Description get Pool
+// @Description get Pool angel
 // @Tags        Pool
-// @Param       name path string true "name"
+// @Param       poolName path string true "poolName"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.StoragePool
-// @Router      /pools/storagepools/{name} [get]
+// @Router      /cluster/pools/{poolName} [get]
 func (n *PoolController) StoragePoolGet(ctx *gin.Context) {
 	// 获取path中的name
-	poolName := ctx.Param("name")
+	poolName := ctx.Param("poolName")
 
 	if poolName == "" {
 		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
@@ -59,12 +59,16 @@ func (n *PoolController) StoragePoolGet(ctx *gin.Context) {
 // @Param       name query string false "name"
 // @Param       page query int32 true "page"
 // @Param       pageSize query int32 true "pageSize"
+// @Param       fuzzy query bool false "fuzzy"
+// @Param       sort query bool false "sort"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object} api.StoragePoolList
-// @Router      /pools/storagepools [get]
+// @Router      /cluster/pools [get]
 func (n *PoolController) StoragePoolList(ctx *gin.Context) {
 
+	// 获取path中的name
+	name := ctx.Query("name")
 	// 获取path中的page
 	page := ctx.Query("page")
 	// 获取path中的pageSize
@@ -73,7 +77,12 @@ func (n *PoolController) StoragePoolList(ctx *gin.Context) {
 	p, _ := strconv.ParseInt(page, 10, 32)
 	ps, _ := strconv.ParseInt(pageSize, 10, 32)
 
-	lds, err := n.m.StoragePoolController().StoragePoolList(int32(p), int32(ps))
+	var queryPage hwameistorapi.QueryPage
+	queryPage.Page = int32(p)
+	queryPage.PageSize = int32(ps)
+	queryPage.PoolName = name
+
+	lds, err := n.m.StoragePoolController().StoragePoolList(queryPage)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, nil)
 		return
@@ -86,16 +95,20 @@ func (n *PoolController) StoragePoolList(ctx *gin.Context) {
 // @Summary 摘要 获取指定存储池存储节点列表信息
 // @Description get StorageNodesGetByPoolName
 // @Tags        Pool
-// @Param       storagePoolName path string true "storagePoolName"
+// @Param       poolName path string true "poolName"
 // @Param       page query int32 true "page"
 // @Param       pageSize query int32 true "pageSize"
+// @Param       nodeName query string false "nodeName"
+// @Param       state query string false "state"
+// @Param       fuzzy query bool false "fuzzy"
+// @Param       sort query bool false "sort"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.StorageNodeListByPool
-// @Router      /pools/storagepool/{storagePoolName}/nodes [get]
+// @Router      /cluster/pools/{poolName}/nodes [get]
 func (n *PoolController) StorageNodesGetByPoolName(ctx *gin.Context) {
 	// 获取path中的name
-	storagePoolName := ctx.Param("storagePoolName")
+	storagePoolName := ctx.Param("poolName")
 
 	if storagePoolName == "" {
 		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
@@ -107,10 +120,22 @@ func (n *PoolController) StorageNodesGetByPoolName(ctx *gin.Context) {
 	// 获取path中的pageSize
 	pageSize := ctx.Query("pageSize")
 
+	// 获取path中的nodeName
+	nodeName := ctx.Query("nodeName")
+	// 获取path中的pageSize
+	state := ctx.Query("state")
+
 	p, _ := strconv.ParseInt(page, 10, 32)
 	ps, _ := strconv.ParseInt(pageSize, 10, 32)
 
-	sn, err := n.m.StoragePoolController().GetStorageNodeByPoolName(storagePoolName, int32(p), int32(ps))
+	var queryPage hwameistorapi.QueryPage
+	queryPage.NodeName = nodeName
+	queryPage.NodeState = hwameistorapi.NodeStatefuzzyConvert(state)
+	queryPage.PoolName = storagePoolName
+	queryPage.Page = int32(p)
+	queryPage.PageSize = int32(ps)
+
+	sn, err := n.m.StoragePoolController().GetStorageNodeByPoolName(queryPage)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, nil)
 		return
@@ -124,18 +149,20 @@ func (n *PoolController) StorageNodesGetByPoolName(ctx *gin.Context) {
 // @Description get StorageNodeDisksGetByPoolName
 // @Tags        Pool
 // @Param       nodeName path string true "nodeName"
-// @Param       storagePoolName path string true "storagePoolName"
+// @Param       poolName path string true "poolName"
 // @Param       page query int32 true "page"
 // @Param       pageSize query int32 true "pageSize"
+// @Param       fuzzy query bool false "fuzzy"
+// @Param       sort query bool false "sort"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.NodeDiskListByPool
-// @Router      /pools/storagepool/{storagePoolName}/nodes/{nodeName}/disks [get]
+// @Router      /cluster/pools/{poolName}/nodes/{nodeName}/disks [get]
 func (n *PoolController) StorageNodeDisksGetByPoolName(ctx *gin.Context) {
 	// 获取path中的StoragePoolName
-	storagePoolName := ctx.Param("storagePoolName")
+	poolName := ctx.Param("poolName")
 
-	if storagePoolName == "" {
+	if poolName == "" {
 		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
 		return
 	}
@@ -160,7 +187,7 @@ func (n *PoolController) StorageNodeDisksGetByPoolName(ctx *gin.Context) {
 	queryPage.Page = int32(p)
 	queryPage.PageSize = int32(ps)
 	queryPage.NodeName = nodeName
-	queryPage.PoolName = storagePoolName
+	queryPage.PoolName = poolName
 
 	sndisksByPoolName, err := n.m.StoragePoolController().StorageNodeDisksGetByPoolName(queryPage)
 	if err != nil {

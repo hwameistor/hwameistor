@@ -32,7 +32,9 @@ SWAGGER_INCLUDE_DIRS = ${CMDS_DIR}/${APISERVER_MODULE_NAME} \
 	pkg/${APISERVER_MODULE_NAME} \
 	pkg/apis/hwameistor/v1alpha1 \
 	vendor/k8s.io/apimachinery/pkg/apis/meta/v1 \
-	vendor/k8s.io/apimachinery/pkg/types
+	vendor/k8s.io/api/core/v1 \
+	vendor/k8s.io/apimachinery/pkg/types \
+	vendor/github.com/hwameistor/hwameistor-operator/api/v1alpha1
 
 comma:= ,
 empty:=

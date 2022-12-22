@@ -3,17 +3,18 @@ module github.com/hwameistor/hwameistor
 go 1.18
 
 require (
+	github.com/hwameistor/hwameistor-operator v0.0.0-20221222073603-f4c97e21765d
 	github.com/operator-framework/operator-sdk v0.18.2
 	github.com/pilebones/go-udev v0.9.0
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.24.2
-	k8s.io/apiextensions-apiserver v0.21.1
+	k8s.io/apiextensions-apiserver v0.21.2
 	k8s.io/apimachinery v0.24.2
 	k8s.io/apiserver v0.21.0 // indirect
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kubernetes v1.21.0
-	sigs.k8s.io/controller-runtime v0.9.0
+	sigs.k8s.io/controller-runtime v0.9.2
 )
 
 require (
@@ -80,7 +81,7 @@ require (
 	golang.org/x/sync v0.1.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	k8s.io/cloud-provider v0.21.0 // indirect
-	k8s.io/component-base v0.21.1 // indirect
+	k8s.io/component-base v0.21.2 // indirect
 	k8s.io/csi-translation-lib v0.21.0 // indirect
 	k8s.io/kube-scheduler v0.0.0 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.15 // indirect

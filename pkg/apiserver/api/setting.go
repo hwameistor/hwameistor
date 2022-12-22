@@ -1,13 +1,17 @@
 package api
 
 type DrbdEnableSetting struct {
-	Enabledrbd bool   `json:"enabledrbd"`
-	State      State  `json:"state"`
-	Version    string `json:"version"`
+	Enable  bool   `json:"enable"`
+	State   State  `json:"state"`
+	Version string `json:"version"`
 }
 
 type DrbdEnableSettingRspBody struct {
 	DrbdEnableSetting *DrbdEnableSetting `json:"data,omitempty"`
+}
+
+type DrbdEnableSettingReqBody struct {
+	Enable bool `json:"enable,omitempty"`
 }
 
 type RspFailBody struct {
