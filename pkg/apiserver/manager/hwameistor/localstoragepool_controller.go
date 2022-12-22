@@ -2,7 +2,9 @@ package hwameistor
 
 import (
 	"context"
+	"fmt"
 	"math"
+	"strings"
 
 	utils "github.com/hwameistor/hwameistor/pkg/apiserver/util"
 
@@ -33,22 +35,26 @@ func NewLocalStoragePoolController(client client.Client, clientset *kubernetes.C
 }
 
 // StoragePoolList
-func (lspController *LocalStoragePoolController) StoragePoolList(page, pageSize int32) (*hwameistorapi.StoragePoolList, error) {
+func (lspController *LocalStoragePoolController) StoragePoolList(queryPage hwameistorapi.QueryPage) (*hwameistorapi.StoragePoolList, error) {
 
 	var storagePoolList = &hwameistorapi.StoragePoolList{}
-	sps, err := lspController.listLocalStoragePools()
+	sps, err := lspController.listLocalStoragePools(queryPage)
 	if err != nil {
 		log.WithError(err).Error("Failed to listLocalStoragePool")
 		return nil, err
 	}
 
-	storagePoolList.StoragePools = utils.DataPatination(sps, page, pageSize)
+	var storagePools = []*hwameistorapi.StoragePool{}
+	storagePoolList.StoragePools = utils.DataPatination(sps, queryPage.Page, queryPage.PageSize)
+	if len(sps) == 0 {
+		storagePoolList.StoragePools = storagePools
+	}
 
 	var pagination = &hwameistorapi.Pagination{}
-	pagination.Page = page
-	pagination.PageSize = pageSize
+	pagination.Page = queryPage.Page
+	pagination.PageSize = queryPage.PageSize
 	pagination.Total = uint32(len(sps))
-	pagination.Pages = int32(math.Ceil(float64(len(sps)) / float64(pageSize)))
+	pagination.Pages = int32(math.Ceil(float64(len(sps)) / float64(queryPage.PageSize)))
 
 	storagePoolList.Page = pagination
 
@@ -56,7 +62,7 @@ func (lspController *LocalStoragePoolController) StoragePoolList(page, pageSize 
 }
 
 // listLocalStoragePools
-func (lspController *LocalStoragePoolController) listLocalStoragePools() ([]*hwameistorapi.StoragePool, error) {
+func (lspController *LocalStoragePoolController) listLocalStoragePools(queryPage hwameistorapi.QueryPage) ([]*hwameistorapi.StoragePool, error) {
 
 	storagePoolNodesCollectionMap, err := lspController.makeStoragePoolNodesCollectionMap()
 	if err != nil {
@@ -71,8 +77,11 @@ func (lspController *LocalStoragePoolController) listLocalStoragePools() ([]*hwa
 		sp.CreateTime = poolNodeCollection.StoragePool.CreateTime
 		sp.TotalCapacityBytes = poolNodeCollection.StoragePool.TotalCapacityBytes
 		sp.AllocatedCapacityBytes = poolNodeCollection.StoragePool.AllocatedCapacityBytes
-		sp.NodeNum = int64(len(poolNodeCollection.ManagedNodeNames))
-		sps = append(sps, sp)
+		sp.NodeNames = poolNodeCollection.ManagedNodeNames
+
+		if queryPage.PoolName == "" || (queryPage.PoolName != "" && strings.Contains(sp.Name, queryPage.PoolName)) {
+			sps = append(sps, sp)
+		}
 	}
 
 	return sps, nil
@@ -116,7 +125,8 @@ func (lspController *LocalStoragePoolController) makeStoragePoolNodesCollectionM
 
 // GetStoragePool
 func (lspController *LocalStoragePoolController) GetStoragePool(poolName string) (*hwameistorapi.StoragePool, error) {
-	sps, err := lspController.listLocalStoragePools()
+	var queryPage hwameistorapi.QueryPage
+	sps, err := lspController.listLocalStoragePools(queryPage)
 	if err != nil {
 		log.WithError(err).Error("Failed to listLocalStoragePools")
 		return nil, err
@@ -132,30 +142,34 @@ func (lspController *LocalStoragePoolController) GetStoragePool(poolName string)
 }
 
 // GetStorageNodeByPoolName
-func (lspController *LocalStoragePoolController) GetStorageNodeByPoolName(poolName string, page, pageSize int32) (*hwameistorapi.StorageNodeListByPool, error) {
+func (lspController *LocalStoragePoolController) GetStorageNodeByPoolName(queryPage hwameistorapi.QueryPage) (*hwameistorapi.StorageNodeListByPool, error) {
 
-	snlist, err := lspController.getStorageNodeByPoolName(poolName)
+	snlist, err := lspController.getStorageNodeByPoolName(queryPage)
 	if err != nil {
 		log.WithError(err).Error("Failed to getStorageNodeByPoolName")
 		return nil, err
 	}
 	var snlistByPool = &hwameistorapi.StorageNodeListByPool{}
+	var sns = []*hwameistorapi.StorageNode{}
 
-	snlistByPool.StorageNodes = utils.DataPatination(snlist, page, pageSize)
-	snlistByPool.StoragePoolName = poolName
+	snlistByPool.StorageNodes = utils.DataPatination(snlist, queryPage.Page, queryPage.PageSize)
+	snlistByPool.StoragePoolName = queryPage.PoolName
+	if len(snlist) == 0 {
+		snlistByPool.StorageNodes = sns
+	}
 
 	var pagination = &hwameistorapi.Pagination{}
-	pagination.Page = page
-	pagination.PageSize = pageSize
+	pagination.Page = queryPage.Page
+	pagination.PageSize = queryPage.PageSize
 	pagination.Total = uint32(len(snlist))
-	pagination.Pages = int32(math.Ceil(float64(len(snlist)) / float64(pageSize)))
+	pagination.Pages = int32(math.Ceil(float64(len(snlist)) / float64(queryPage.PageSize)))
 	snlistByPool.Page = pagination
 
 	return snlistByPool, nil
 }
 
 // GetStorageNodeByPoolName
-func (lspController *LocalStoragePoolController) getStorageNodeByPoolName(poolName string) ([]*hwameistorapi.StorageNode, error) {
+func (lspController *LocalStoragePoolController) getStorageNodeByPoolName(queryPage hwameistorapi.QueryPage) ([]*hwameistorapi.StorageNode, error) {
 	storagePoolNodesCollectionMap, err := lspController.makeStoragePoolNodesCollectionMap()
 	if err != nil {
 		log.WithError(err).Error("Failed to makeStoragePoolNodesCollectionMap")
@@ -164,14 +178,23 @@ func (lspController *LocalStoragePoolController) getStorageNodeByPoolName(poolNa
 
 	var sns []*hwameistorapi.StorageNode
 	lsnController := NewLocalStorageNodeController(lspController.Client, lspController.clientset, lspController.EventRecorder)
-	if spnc, exists := storagePoolNodesCollectionMap[poolName]; exists {
+	if spnc, exists := storagePoolNodesCollectionMap[queryPage.PoolName]; exists {
 		for _, nodeName := range spnc.ManagedNodeNames {
 			sn, err := lsnController.GetStorageNode(nodeName)
 			if err != nil {
 				log.WithError(err).Error("Failed to GetStorageNode")
 				return nil, err
 			}
-			sns = append(sns, sn)
+			fmt.Println("queryPage.NodeState = %v, sn.NodeState = %v", queryPage.NodeState, sn.K8sNodeState)
+			if queryPage.NodeName == "" && queryPage.NodeState == hwameistorapi.NodeStateEmpty {
+				sns = append(sns, sn)
+			} else if (queryPage.NodeName != "" && strings.Contains(sn.LocalStorageNode.Name, queryPage.NodeName)) && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) {
+				sns = append(sns, sn)
+			} else if (queryPage.NodeName == "") && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.NodeState == sn.K8sNodeState) {
+				sns = append(sns, sn)
+			} else if (queryPage.NodeName != "" && strings.Contains(sn.LocalStorageNode.Name, queryPage.NodeName)) && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.NodeState == sn.K8sNodeState) {
+				sns = append(sns, sn)
+			}
 		}
 	}
 
@@ -187,16 +210,18 @@ func (lspController *LocalStoragePoolController) StorageNodeDisksGetByPoolName(q
 	}
 
 	var nodeDiskListByPool = &hwameistorapi.NodeDiskListByPool{}
-	var lds []*hwameistorapi.LocalDisk
+	var lds = []*hwameistorapi.LocalDiskInfo{}
 	lsnController := NewLocalStorageNodeController(lspController.Client, lspController.clientset, lspController.EventRecorder)
 	if spnc, exists := storagePoolNodesCollectionMap[queryPage.PoolName]; exists {
 		for _, nn := range spnc.ManagedNodeNames {
+			fmt.Println("StorageNodeDisksGetByPoolName queryPage.NodeName = %v, spnc.ManagedNodeNames = %v", queryPage.NodeName, spnc.ManagedNodeNames)
 			if nn == queryPage.NodeName {
 				tmplds, err := lsnController.ListStorageNodeDisks(queryPage)
 				if err != nil {
 					log.WithError(err).Error("Failed to ListStorageNodeDisks")
 					return nil, err
 				}
+				fmt.Println("StorageNodeDisksGetByPoolName tmplds = %v", tmplds)
 				for _, ld := range tmplds {
 					if ld.LocalStoragePooLName == queryPage.PoolName {
 						lds = append(lds, ld)
@@ -205,10 +230,13 @@ func (lspController *LocalStoragePoolController) StorageNodeDisksGetByPoolName(q
 			}
 		}
 	}
-	nodeDiskListByPool.StoragePoolName = queryPage.PoolName
+	nodeDiskListByPool.PoolName = queryPage.PoolName
 	nodeDiskListByPool.NodeName = queryPage.NodeName
 
 	nodeDiskListByPool.LocalDisks = utils.DataPatination(lds, queryPage.Page, queryPage.PageSize)
+	if len(lds) == 0 {
+		nodeDiskListByPool.LocalDisks = lds
+	}
 
 	var pagination = &hwameistorapi.Pagination{}
 	pagination.Page = queryPage.Page

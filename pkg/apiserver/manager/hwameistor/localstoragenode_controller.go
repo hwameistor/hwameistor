@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"math"
 	"strings"
 
@@ -63,7 +64,12 @@ func (lsnController *LocalStorageNodeController) StorageNodeList(queryPage hwame
 		return nil, err
 	}
 
-	storageNodeList.StorageNodesItemsList.StorageNodes = utils.DataPatination(sns, queryPage.Page, queryPage.PageSize)
+	var storagenodes = []*hwameistorapi.StorageNode{}
+
+	storageNodeList.StorageNodes = utils.DataPatination(sns, queryPage.Page, queryPage.PageSize)
+	if len(sns) == 0 {
+		storageNodeList.StorageNodes = storagenodes
+	}
 
 	var pagination = &hwameistorapi.Pagination{}
 	pagination.Page = queryPage.Page
@@ -91,34 +97,44 @@ func (lsnController *LocalStorageNodeController) ListLocalStorageNode(queryPage 
 
 	var sns []*hwameistorapi.StorageNode
 	for i := range lsnList.Items {
-		var queryPage hwameistorapi.QueryPage
-		queryPage.Name = lsnList.Items[i].Name
+		//claimedLocaldisks, err := lsnController.listClaimedLocalDiskByNode(lsnList.Items[i].Name)
+		//if err != nil {
+		//	log.WithError(err).Error("Failed to list listClaimedLocalDiskByNode")
+		//	return nil, err
+		//}
+		//
+		//localdisks, err := lsnController.ListStorageNodeDisks(queryPage)
+		//if err != nil {
+		//	log.WithError(err).Error("Failed to ListStorageNodeDisks")
+		//	return nil, err
+		//}
 		sn := lsnController.convertStorageNode(lsnList.Items[i])
+		sn.K8sNodeState = lsnController.getK8SNodeStatus(lsnList.Items[i].Name)
 
 		fmt.Println("ListLocalStorageNode queryPage.Name = %v, queryPage.DriverState = %v, queryPage.NodeState = %v", queryPage.Name, queryPage.DriverState, queryPage.NodeState)
-		if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState == hwameistorapi.NodeStateEmpty) {
+		if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState == "") {
 			sns = append(sns, sn)
-		} else if (queryPage.Name != "" && strings.Contains(sn.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState == hwameistorapi.NodeStateEmpty) {
+		} else if (queryPage.Name != "" && strings.Contains(sn.LocalStorageNode.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState == "") {
 			sns = append(sns, sn)
-		} else if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (hwameistorapi.State(sn.Status.State) == hwameistorapi.NodeStateReady || hwameistorapi.State(sn.Status.State) == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState == hwameistorapi.DriverStateEmpty) {
+		} else if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (sn.K8sNodeState == hwameistorapi.NodeStateReady || sn.K8sNodeState == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState == "") {
 			sns = append(sns, sn)
-		} else if (queryPage.Name == "") && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.DriverState == sn.DriverStatus) && (queryPage.DriverState == hwameistorapi.DriverStateEmpty) {
+		} else if (queryPage.Name == "") && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.DriverState == sn.LocalStorageNode.Status.State) && (queryPage.DriverState == "") {
 			sns = append(sns, sn)
-		} else if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState != hwameistorapi.DriverStateUnknown && queryPage.DriverState == sn.DriverStatus) {
+		} else if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState != "" && queryPage.DriverState == sn.LocalStorageNode.Status.State) {
 			sns = append(sns, sn)
-		} else if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (hwameistorapi.State(sn.Status.State) == hwameistorapi.NodeStateReady || hwameistorapi.State(sn.Status.State) == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState != hwameistorapi.DriverStateUnknown && queryPage.DriverState == sn.DriverStatus) {
+		} else if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (sn.K8sNodeState == hwameistorapi.NodeStateReady || sn.K8sNodeState == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState != "" && queryPage.DriverState == sn.LocalStorageNode.Status.State) {
 			sns = append(sns, sn)
-		} else if (queryPage.Name == "") && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.DriverState != hwameistorapi.DriverStateUnknown && queryPage.DriverState == sn.DriverStatus) {
+		} else if (queryPage.Name == "") && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.DriverState == sn.LocalStorageNode.Status.State) && (queryPage.DriverState != "" && queryPage.DriverState == sn.LocalStorageNode.Status.State) {
 			sns = append(sns, sn)
-		} else if (queryPage.Name != "" && strings.Contains(sn.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState != hwameistorapi.DriverStateUnknown && queryPage.DriverState == sn.DriverStatus) {
+		} else if (queryPage.Name != "" && strings.Contains(sn.LocalStorageNode.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState != "" && queryPage.DriverState == sn.LocalStorageNode.Status.State) {
 			sns = append(sns, sn)
-		} else if (queryPage.Name != "" && strings.Contains(sn.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (hwameistorapi.State(sn.Status.State) == hwameistorapi.NodeStateReady || hwameistorapi.State(sn.Status.State) == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState == hwameistorapi.DriverStateEmpty) {
+		} else if (queryPage.Name != "" && strings.Contains(sn.LocalStorageNode.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (sn.K8sNodeState == hwameistorapi.NodeStateReady || sn.K8sNodeState == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState == "") {
 			sns = append(sns, sn)
-		} else if (queryPage.Name != "" && strings.Contains(sn.Name, queryPage.Name)) && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.NodeState == hwameistorapi.State(sn.Status.State)) && (queryPage.DriverState == hwameistorapi.DriverStateEmpty) {
+		} else if (queryPage.Name != "" && strings.Contains(sn.LocalStorageNode.Name, queryPage.Name)) && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.NodeState == sn.K8sNodeState) && (queryPage.DriverState == "") {
 			sns = append(sns, sn)
-		} else if (queryPage.Name != "" && strings.Contains(sn.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (hwameistorapi.State(sn.Status.State) == hwameistorapi.NodeStateReady || hwameistorapi.State(sn.Status.State) == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState != hwameistorapi.DriverStateUnknown && queryPage.DriverState == sn.DriverStatus) {
+		} else if (queryPage.Name != "" && strings.Contains(sn.LocalStorageNode.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (sn.K8sNodeState == hwameistorapi.NodeStateReady || sn.K8sNodeState == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState != "" && queryPage.DriverState == sn.LocalStorageNode.Status.State) {
 			sns = append(sns, sn)
-		} else if (queryPage.Name != "" && strings.Contains(sn.Name, queryPage.Name)) && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.NodeState == hwameistorapi.State(sn.Status.State)) && (queryPage.DriverState != hwameistorapi.DriverStateUnknown && queryPage.DriverState == sn.DriverStatus) {
+		} else if (queryPage.Name != "" && strings.Contains(sn.LocalStorageNode.Name, queryPage.Name)) && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.NodeState == sn.K8sNodeState) && (queryPage.DriverState != "" && queryPage.DriverState == sn.LocalStorageNode.Status.State) {
 			sns = append(sns, sn)
 		}
 	}
@@ -126,26 +142,44 @@ func (lsnController *LocalStorageNodeController) ListLocalStorageNode(queryPage 
 	return sns, nil
 }
 
+// getK8SNodeStatus
+func (lsnController *LocalStorageNodeController) getK8SNodeStatus(nodeName string) hwameistorapi.State {
+	// list K8S nodes
+	nodes, err := lsnController.clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		log.WithError(err).Error("Failed to list k8s nodes")
+		return hwameistorapi.NodeStateNotReady
+	}
+	for _, node := range nodes.Items {
+		if node.Name == nodeName {
+			return hwameistorapi.State(node.Status.Conditions[len(node.Status.Conditions)-1].Type)
+		}
+	}
+	return ""
+}
+
 // convertStorageNode
 func (lsnController *LocalStorageNodeController) convertStorageNode(lsn apisv1alpha1.LocalStorageNode) *hwameistorapi.StorageNode {
-	sn := &hwameistorapi.StorageNode{LocalStorageNode: lsn}
-	// sn.Name = lsn.Name
-	// sn.IP = lsn.Spec.StorageIP
-	// sn.DriverStatus = lsnController.convertDriverStatus(lsn.Status.State)
+	sn := &hwameistorapi.StorageNode{}
 
-	// if lsn.Status.State == apisv1alpha1.NodeStateReady {
-	// 	for _, pool := range lsn.Status.Pools {
-	// 		if pool.Class == hwameistorapi.DiskClassNameHDD {
-	// 			sn.TotalHDDCapacityBytes = pool.TotalCapacityBytes
-	// 			sn.AllocatedHDDCapacityBytes = pool.UsedCapacityBytes
-	// 			//sn.FreeCapacityBytes += pool.FreeCapacityBytes
-	// 		} else if pool.Class == hwameistorapi.DiskClassNameSSD {
-	// 			sn.TotalSSDCapacityBytes = pool.TotalCapacityBytes
-	// 			sn.AllocatedSSDCapacityBytes = pool.UsedCapacityBytes
-	// 			//sn.FreeCapacityBytes += pool.FreeCapacityBytes
-	// 		}
-	// 	}
-	// }
+	sn.LocalStorageNode = lsn
+
+	//sn.NodeName = lsn.Name
+	//sn.IP = lsn.Spec.StorageIP
+
+	//if lsn.Status.State == apisv1alpha1.NodeStateReady {
+	//	for _, pool := range lsn.Status.Pools {
+	//		if pool.Class == hwameistorapi.DiskClassNameHDD {
+	//			sn.TotalHDDCapacityBytes = pool.TotalCapacityBytes
+	//			sn.AllocatedHDDCapacityBytes = pool.UsedCapacityBytes
+	//			//sn.FreeCapacityBytes += pool.FreeCapacityBytes
+	//		} else if pool.Class == hwameistorapi.DiskClassNameSSD {
+	//			sn.TotalSSDCapacityBytes = pool.TotalCapacityBytes
+	//			sn.AllocatedSSDCapacityBytes = pool.UsedCapacityBytes
+	//			//sn.FreeCapacityBytes += pool.FreeCapacityBytes
+	//		}
+	//	}
+	//}
 
 	return sn
 }
@@ -153,6 +187,7 @@ func (lsnController *LocalStorageNodeController) convertStorageNode(lsn apisv1al
 // GetStorageNode
 func (lsnController *LocalStorageNodeController) GetStorageNode(nodeName string) (*hwameistorapi.StorageNode, error) {
 	var queryPage hwameistorapi.QueryPage
+	queryPage.NodeName = nodeName
 	sns, err := lsnController.ListLocalStorageNode(queryPage)
 	if err != nil {
 		log.WithError(err).Error("Failed to ListLocalStorageNode")
@@ -160,7 +195,7 @@ func (lsnController *LocalStorageNodeController) GetStorageNode(nodeName string)
 	}
 
 	for _, sn := range sns {
-		if sn.Name == nodeName {
+		if sn.LocalStorageNode.Name == nodeName {
 			return sn, nil
 		}
 	}
@@ -177,7 +212,8 @@ func (lsnController *LocalStorageNodeController) GetStorageNodeMigrate(queryPage
 		return nil, err
 	}
 
-	volumeOperationListByNode.VolumeMigrateOperationItemsList.VolumeMigrateOperations = utils.DataPatination(volumeMigrateOperations, queryPage.Page, queryPage.PageSize)
+	var vmos = []*hwameistorapi.VolumeMigrateOperation{}
+	volumeOperationListByNode.VolumeMigrateOperations = utils.DataPatination(volumeMigrateOperations, queryPage.Page, queryPage.PageSize)
 	volumeOperationListByNode.NodeName = queryPage.NodeName
 
 	var pagination = &hwameistorapi.Pagination{}
@@ -185,6 +221,7 @@ func (lsnController *LocalStorageNodeController) GetStorageNodeMigrate(queryPage
 	pagination.PageSize = queryPage.PageSize
 	if len(volumeMigrateOperations) == 0 {
 		pagination.Pages = 0
+		volumeOperationListByNode.VolumeMigrateOperations = vmos
 	} else {
 		pagination.Pages = int32(math.Ceil(float64(len(volumeMigrateOperations)) / float64(queryPage.PageSize)))
 	}
@@ -207,12 +244,13 @@ func (lsnController *LocalStorageNodeController) getStorageNodeMigrateOperations
 		//if len(lvm.Spec.TargetNodesSuggested) != 0 {
 		//if lvm.Spec.TargetNodesSuggested[0] == nodeName || lvm.Spec.SourceNode == nodeName {
 		var vmo = &hwameistorapi.VolumeMigrateOperation{}
-		vmo.Name = lvm.Name
-		vmo.SourceNode = lvm.Spec.SourceNode
-		//vmo.TargetNode = lvm.Spec.TargetNodesSuggested[0]
-		vmo.VolumeName = lvm.Spec.VolumeName
-		vmo.StartTime = lvm.CreationTimestamp.Time
-		vmo.State = hwameistorapi.StateConvert(lvm.Status.State)
+		vmo.LocalVolumeMigrate = lvm
+		//vmo.Name = lvm.Name
+		//vmo.SourceNode = lvm.Spec.SourceNode
+		////vmo.TargetNode = lvm.Spec.TargetNodesSuggested[0]
+		//vmo.VolumeName = lvm.Spec.VolumeName
+		//vmo.StartTime = lvm.CreationTimestamp.Time
+		//vmo.State = hwameistorapi.StateConvert(lvm.Status.State)
 		vmos = append(vmos, vmo)
 		//}
 		//}
@@ -267,33 +305,56 @@ func (lsnController *LocalStorageNodeController) getAvailableDiskCapacity(nodeNa
 func (lsnController *LocalStorageNodeController) LocalDiskListByNode(queryPage hwameistorapi.QueryPage) (*hwameistorapi.LocalDiskListByNode, error) {
 
 	var localDiskList = &hwameistorapi.LocalDiskListByNode{}
+	var localdisks = []*hwameistorapi.LocalDiskInfo{}
 
 	disks, err := lsnController.ListStorageNodeDisks(queryPage)
 	if err != nil {
 		log.WithError(err).Error("Failed to ListStorageNodeDisks")
 		return nil, err
 	}
+	fmt.Println("LocalDiskListByNode disks = %v", disks)
 
 	var pagination = &hwameistorapi.Pagination{}
 	pagination.Page = queryPage.Page
 	pagination.PageSize = queryPage.PageSize
 	pagination.Total = uint32(len(disks))
 
+	localDiskList.NodeName = queryPage.Name
+
 	if len(disks) == 0 {
+		localDiskList.LocalDisks = localdisks
 		return localDiskList, nil
 	} else {
 		pagination.Pages = int32(math.Ceil(float64(len(disks)) / float64(queryPage.PageSize)))
 	}
 
 	localDiskList.Page = pagination
-	localDiskList.LocalDisksItemsList.LocalDisks = utils.DataPatination(disks, queryPage.Page, queryPage.PageSize)
-	localDiskList.NodeName = queryPage.Name
+	localDiskList.LocalDisks = utils.DataPatination(disks, queryPage.Page, queryPage.PageSize)
 
 	return localDiskList, nil
 }
 
 // ListStorageNodeDisks
-func (lsnController *LocalStorageNodeController) ListStorageNodeDisks(queryPage hwameistorapi.QueryPage) ([]*hwameistorapi.LocalDisk, error) {
+func (lsnController *LocalStorageNodeController) GetcdLocalDiskNodes(nodeName string) (*apisv1alpha1.LocalDiskNode, error) {
+
+	ldnList := &apisv1alpha1.LocalDiskNodeList{}
+	if err := lsnController.Client.List(context.TODO(), ldnList); err != nil {
+		log.WithError(err).Error("Failed to list LocalStorageNodes")
+		return nil, err
+	}
+
+	var ldnVal = apisv1alpha1.LocalDiskNode{}
+	for _, ldn := range ldnList.Items {
+		if ldn.Name == nodeName {
+			ldnVal = ldn
+		}
+	}
+
+	return &ldnVal, nil
+}
+
+// ListStorageNodeDisks
+func (lsnController *LocalStorageNodeController) ListStorageNodeDisks(queryPage hwameistorapi.QueryPage) ([]*hwameistorapi.LocalDiskInfo, error) {
 
 	diskList := &apisv1alpha1.LocalDiskList{}
 	if err := lsnController.Client.List(context.TODO(), diskList); err != nil {
@@ -301,35 +362,26 @@ func (lsnController *LocalStorageNodeController) ListStorageNodeDisks(queryPage 
 		return nil, err
 	}
 
-	var disks []*hwameistorapi.LocalDisk
+	var disks []*hwameistorapi.LocalDiskInfo
 	for i := range diskList.Items {
-		if diskList.Items[i].Spec.NodeName == queryPage.Name {
-			var disk = &hwameistorapi.LocalDisk{}
-			disk.DevPath = diskList.Items[i].Spec.DevicePath
-			if diskList.Items[i].Spec.Reserved == true {
-				disk.State = hwameistorapi.LocalDiskReserved
-			} else {
-				disk.State = lsnController.convertLocalDiskState(diskList.Items[i].Status.State)
-			}
+		if diskList.Items[i].Spec.NodeName == queryPage.NodeName {
+			var disk = &hwameistorapi.LocalDiskInfo{}
+			disk.LocalDisk = diskList.Items[i]
+
 			if diskList.Items[i].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameHDD {
 				disk.LocalStoragePooLName = hwameistorapi.PoolNameForHDD
 			} else if diskList.Items[i].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameSSD {
 				disk.LocalStoragePooLName = hwameistorapi.PoolNameForSSD
 			}
-			disk.Class = diskList.Items[i].Spec.DiskAttributes.Type
-			disk.HasRAID = diskList.Items[i].Spec.HasRAID
+
 			disk.TotalCapacityBytes = diskList.Items[i].Spec.Capacity
-			availableCapacityBytes := lsnController.getAvailableDiskCapacity(queryPage.Name, diskList.Items[i].Spec.DevicePath, diskList.Items[i].Spec.DiskAttributes.Type)
+			availableCapacityBytes := lsnController.getAvailableDiskCapacity(queryPage.NodeName, diskList.Items[i].Spec.DevicePath, diskList.Items[i].Spec.DiskAttributes.Type)
 			disk.AvailableCapacityBytes = availableCapacityBytes
 
-			if queryPage.DiskState == hwameistorapi.LocalDiskClaimedAndUnclaimed && (disk.State == hwameistorapi.LocalDiskClaimed || disk.State == hwameistorapi.LocalDiskUnclaimed) {
-				disks = append(disks, disk)
-			} else if queryPage.DiskState != hwameistorapi.LocalDiskUnknown && (disk.State == queryPage.DiskState) {
-				disks = append(disks, disk)
-			} else if queryPage.DiskState == hwameistorapi.LocalDiskReserved && diskList.Items[i].Spec.Reserved == true {
+			fmt.Println("ListStorageNodeDisks queryPage.DiskState = %v", queryPage.DiskState)
+			if queryPage.DiskState == "" || (queryPage.DiskState != "" && queryPage.DiskState == disk.Status.State) {
 				disks = append(disks, disk)
 			}
-
 		}
 	}
 
@@ -353,7 +405,7 @@ func (lsnController *LocalStorageNodeController) convertLocalDiskState(state api
 
 	}
 
-	return ""
+	return hwameistorapi.LocalDiskUnknown
 }
 
 // convertDriverStatus
@@ -375,15 +427,6 @@ func (lsnController *LocalStorageNodeController) convertDriverStatus(state apisv
 
 // GetLocalVolumeMigrateYamlStr
 func (lsnController *LocalStorageNodeController) GetStorageNodeVolumeMigrateYamlStr(resourceName string) (*hwameistorapi.YamlData, error) {
-	//lvm := &apisv1alpha1.LocalVolumeMigrate{}
-	//if err := lsnController.Client.Get(context.TODO(), client.ObjectKey{Name: resourceName}, lvm); err != nil {
-	//	if !errors.IsNotFound(err) {
-	//		log.WithError(err).Error("Failed to query localvolumemigrate")
-	//	} else {
-	//		log.Info("Not found the localvolumemigrate")
-	//	}
-	//	return "", err
-	//}
 
 	lvmList := apisv1alpha1.LocalVolumeMigrateList{}
 	if err := lsnController.Client.List(context.Background(), &lvmList, &client.ListOptions{}); err != nil {
@@ -464,8 +507,8 @@ func (lsnController *LocalStorageNodeController) ReserveStorageNodeDisk(queryPag
 	return RspBody, nil
 }
 
-// RemoveReserveStorageNodeDisk
-func (lsnController *LocalStorageNodeController) RemoveReserveStorageNodeDisk(queryPage hwameistorapi.QueryPage, diskHandler *localdisk.Handler) (*hwameistorapi.DiskRemoveReservedRspBody, error) {
+// ReleaseReserveStorageNodeDisk
+func (lsnController *LocalStorageNodeController) ReleaseReserveStorageNodeDisk(queryPage hwameistorapi.QueryPage, diskHandler *localdisk.Handler) (*hwameistorapi.DiskRemoveReservedRspBody, error) {
 
 	var RspBody = &hwameistorapi.DiskRemoveReservedRspBody{}
 	var diskRemoveReservedRsp hwameistorapi.DiskRemoveReservedRsp
@@ -489,7 +532,7 @@ func (lsnController *LocalStorageNodeController) RemoveReserveStorageNodeDisk(qu
 		return RspBody, err
 	}
 
-	diskRemoveReservedRsp.RemoveReservedRsp = hwameistorapi.LocalDiskRemoveReserved
+	diskRemoveReservedRsp.RemoveReservedRsp = hwameistorapi.LocalDiskReleaseReserved
 	diskRemoveReservedRsp.DiskName = diskName
 
 	RspBody.DiskRemoveReservedRsp = diskRemoveReservedRsp

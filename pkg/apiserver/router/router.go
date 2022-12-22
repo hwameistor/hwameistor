@@ -30,60 +30,57 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 
 	sm, m := BuildServerMgr()
 
-	v1 := r.Group("/apis/v1alpha1")
+	v1 := r.Group("/apis/hwameistor.io/v1alpha1")
 	metricsController := controller.NewMetricsController(sm)
-	metricsRoutes := v1.Group("/metrics")
-	metricsRoutes.GET("/basemetric", metricsController.BaseMetric)
-	metricsRoutes.GET("/storagepoolusemetric", metricsController.StoragePoolUseMetric)
-	metricsRoutes.GET("/nodestorageusemetric/:storagePoolClass", metricsController.NodeStorageUseMetric)
-	metricsRoutes.GET("/modulestatusmetric", metricsController.ModuleStatusMetric)
-	metricsRoutes.GET("/operations", metricsController.OperationList)
+	v1.GET("/cluster/status", metricsController.ModuleStatus)
 
 	volumeController := controller.NewVolumeController(sm)
 
-	volumeRoutes := v1.Group("/volumes")
-	volumeRoutes.GET("/volumes", volumeController.VolumeList)
-	volumeRoutes.GET("/volumes/:name", volumeController.VolumeGet)
-	volumeRoutes.GET("/volume/:name/yaml", volumeController.VolumeYamlGet)
+	v1.GET("/cluster/volumes", volumeController.VolumeList)
+	v1.GET("/cluster/volumes/:volumeName", volumeController.VolumeGet)
 
-	volumeRoutes.GET("/volumereplicas/:volumeName", volumeController.VolumeReplicasGet)
-	volumeRoutes.GET("/volumereplica/:volumeReplicaName/yaml", volumeController.VolumeReplicaYamlGet)
+	v1.GET("/cluster/volumes/:volumeName/replicas", volumeController.VolumeReplicasGet)
 
-	volumeRoutes.GET("/volumeoperations/:volumeName", volumeController.VolumeOperationGet)
-	volumeRoutes.GET("/volumeoperation/:volumeOperationName/yaml", volumeController.VolumeOperationYamlGet)
+	v1.GET("/cluster/volumes/:volumeName/migrate", volumeController.GetVolumeMigrateOperation)
+	v1.POST("/cluster/volumes/:volumeName/migrate", volumeController.VolumeMigrateOperation)
 
-	volumeRoutes.POST("/volumeoperation/:volumeName/migrate", volumeController.VolumeMigrateOperation)
-	volumeRoutes.POST("/volumeoperation/:volumeName/convert", volumeController.VolumeConvertOperation)
+	v1.GET("/cluster/volumes/:volumeName/convert", volumeController.GetVolumeConvertOperation)
+	v1.POST("/cluster/volumes/:volumeName/convert", volumeController.VolumeConvertOperation)
 
-	volumeRoutes.GET("/volumemigrateoperation/:targetNodeType/targetNodes", volumeController.GetTargetNodesByTargetNodeType)
+	v1.GET("/cluster/volumes/:volumeName/expand", volumeController.GetVolumeExpandOperation)
+	v1.POST("/cluster/volumes/:volumeName/expand", volumeController.VolumeExpandOperation)
 
 	volumeGroupController := controller.NewVolumeGroupController(sm)
-	volumeGroupRoutes := v1.Group("/volumegroups")
-	volumeGroupRoutes.GET("/volumegroups/:name", volumeGroupController.VolumeListByVolumeGroup)
+	v1.GET("/cluster/volumegroups/:vgName", volumeGroupController.VolumeGroupGet)
+	v1.GET("/cluster/volumegroups", volumeGroupController.VolumeGroupList)
 
 	nodeController := controller.NewNodeController(sm, m)
-	nodeRoutes := v1.Group("/nodes")
-	nodeRoutes.GET("/storagenodes", nodeController.StorageNodeList)
-	nodeRoutes.GET("/storagenodes/:name", nodeController.StorageNodeGet)
-	nodeRoutes.GET("/storagenode/:nodeName/migrates", nodeController.StorageNodeMigrateGet)
+	v1.GET("/cluster/nodes", nodeController.StorageNodeList)
+	v1.GET("/cluster/nodes/:nodeName", nodeController.StorageNodeGet)
+	v1.GET("/cluster/nodes/:nodeName/migrates", nodeController.StorageNodeMigrateGet)
 
-	nodeRoutes.GET("/storagenode/:nodeName/disks", nodeController.StorageNodeDisksList)
-	nodeRoutes.GET("/storagenodeoperations/:migrateOperationName/yaml", nodeController.StorageNodeVolumeOperationYamlGet)
+	v1.GET("/cluster/nodes/:nodeName/disks", nodeController.StorageNodeDisksList)
 
-	nodeRoutes.POST("/storagenode/:nodeName/disks/:diskName/reserve", nodeController.ReserveStorageNodeDisk)
-	nodeRoutes.POST("/storagenode/:nodeName/disks/:diskName/removereserve", nodeController.RemoveReserveStorageNodeDisk)
+	v1.GET("/cluster/nodes/:nodeName/disks/:diskName", nodeController.GetStorageNodeDisk)
+
+	v1.POST("/cluster/nodes/:nodeName/disks/:diskName", nodeController.UpdateStorageNodeDisk)
+
+	v1.GET("/cluster/nodes/:nodeName/pools", nodeController.StorageNodePoolsList)
+	v1.GET("/cluster/nodes/:nodeName/pools/:poolName", nodeController.StorageNodePoolGet)
+	v1.GET("/cluster/nodes/:nodeName/pools/:poolName/disks", nodeController.StorageNodePoolDisksList)
+	v1.GET("/cluster/nodes/:nodeName/pools/:poolName/disks/:diskName", nodeController.StorageNodePoolDiskGet)
 
 	poolController := controller.NewPoolController(sm)
-	poolRoutes := v1.Group("/pools")
-	poolRoutes.GET("/storagepools", poolController.StoragePoolList)
-	poolRoutes.GET("/storagepools/:name", poolController.StoragePoolGet)
-	poolRoutes.GET("/storagepool/:storagePoolName/nodes/:nodeName/disks", poolController.StorageNodeDisksGetByPoolName)
-	poolRoutes.GET("/storagepool/:storagePoolName/nodes", poolController.StorageNodesGetByPoolName)
+	//poolRoutes := v1.Group("/pools")
+	v1.GET("/cluster/pools", poolController.StoragePoolList)
+	v1.GET("/cluster/pools/:poolName", poolController.StoragePoolGet)
+	v1.GET("/cluster/pools/:poolName/nodes/:nodeName/disks", poolController.StorageNodeDisksGetByPoolName)
+	v1.GET("/cluster/pools/:poolName/nodes", poolController.StorageNodesGetByPoolName)
 
 	settingController := controller.NewSettingController(sm)
-	settingRoutes := v1.Group("/settings")
-	settingRoutes.POST("/highavailabilitysetting/:enabledrbd", settingController.EnableDRBDSetting)
-	settingRoutes.GET("/highavailabilitysetting", settingController.DRBDSettingGet)
+	//settingRoutes := v1.Group("/settings")
+	v1.POST("/cluster/drbd", settingController.EnableDRBDSetting)
+	v1.GET("/cluster/drbd", settingController.DRBDSettingGet)
 
 	fmt.Println("CollectRoute end ...")
 

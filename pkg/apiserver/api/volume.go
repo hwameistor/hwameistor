@@ -1,7 +1,7 @@
 package api
 
 import (
-	"time"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 // LocalPool is storage pool struct
@@ -12,70 +12,27 @@ type LocalPool struct {
 
 // Volume
 type Volume struct {
-	// local volume name 名称
-	Name string `json:"name,omitempty"`
-
-	// local volume state 状态
-	State State `json:"state,omitempty"`
-
-	// replica number 副本数
-	ReplicaNumber int64 `json:"replicaNumber,omitempty"`
-
-	// VolumeGroup is the group name of the local volumes. It is designed for the scheduling and allocating. 磁盘组
-	VolumeGroup string `json:"volumeGroup,omitempty"`
-
-	// size 容量
-	RequiredCapacityBytes int64 `json:"requiredCapacityBytes,omitempty"`
-
-	// PersistentVolumeClaimNamespace is the namespace of the associated PVC 命名空间
-	PersistentVolumeClaimNamespace string `json:"pvcNamespace,omitempty"`
-
-	// PersistentVolumeClaimName is the name of the associated PVC 绑定PVC
-	PersistentVolumeClaimName string `json:"pvcName,omitempty"`
-
-	// Convertible 转换高可用模式
-	Convertible bool `json:"convertible,omitempty"`
-
-	// createTime 创建时间
-	CreateTime time.Time `json:"createTime,omitempty"`
+	apisv1alpha1.LocalVolume
 }
 
 type VolumeItemsList struct {
 	// volumes
-	Volumes []*Volume `json:"volumes,omitempty"`
+	Volumes []*Volume `json:"items,omitempty"`
 }
 
 // VolumeList
 type VolumeList struct {
-	// volumes
-	VolumeItemsList VolumeItemsList `json:"items,omitempty"`
+	Volumes []*Volume `json:"items"`
 	// page 信息
 	Page *Pagination `json:"pagination,omitempty"`
 }
 
 // VolumeReplica
 type VolumeReplica struct {
-	// replica name
-	Name string `json:"name,omitempty"`
+	apisv1alpha1.LocalVolumeReplica
 
 	// replica state
 	State State `json:"state,omitempty"`
-
-	// Synced is the sync state of the volume replica, which is important in HA volume 同步状态
-	Synced bool `json:"synced,omitempty"`
-
-	// NodeName is the assigned node where the volume replica is located 节点
-	NodeName string `json:"nodeName,omitempty"`
-
-	// RequiredCapacityBytes 容量
-	RequiredCapacityBytes int64 `json:"requiredCapacityBytes,omitempty"`
-
-	// StoragePath is a real path of the volume replica, like /dev/sdg.
-	StoragePath string `json:"storagePath,omitempty"`
-
-	// DevicePath is a link path of the StoragePath of the volume replica,
-	// e.g. /dev/LocalStorage_PoolHDD/pvc-fbf3ffc3-66db-4dae-9032-bda3c61b8f85
-	DevicePath string `json:"devicePath,omitempty"`
 }
 
 // VolumeReplicaList
@@ -90,28 +47,18 @@ type VolumeReplicaList struct {
 type VolumeOperationListByNode struct {
 	// node name
 	NodeName string `json:"nodeName,omitempty"`
-	//// VolumeOperations
-	//VolumeMigrateOperations []*VolumeMigrateOperation `json:"items,omitempty"`
-	// VolumeMigrateOperationItemsList
-	VolumeMigrateOperationItemsList VolumeMigrateOperationItemsList `json:"items,omitempty"`
+	// VolumeOperations
+	VolumeMigrateOperations []*VolumeMigrateOperation `json:"items,omitempty"`
 	// page 信息
 	Page *Pagination `json:"pagination,omitempty"`
-}
-
-// VolumeMigrateOperationItemsList
-type VolumeMigrateOperationItemsList struct {
-	// VolumeMigrateOperations
-	VolumeMigrateOperations []*VolumeMigrateOperation `json:"volumeMigrateOperations,omitempty"`
 }
 
 // VolumeOperationByVolume
 type VolumeOperationByVolume struct {
 	// VolumeName
 	VolumeName string `json:"volumeName,omitempty"`
-	// VolumeMigrateOperationItemsList
-	VolumeMigrateOperationItemsList VolumeMigrateOperationItemsList `json:"items,omitempty"`
-	//// VolumeMigrateOperations
-	//VolumeMigrateOperations []*VolumeMigrateOperation `json:"items,omitempty"`
+	// VolumeMigrateOperations
+	VolumeMigrateOperations []*VolumeMigrateOperation `json:"items,omitempty"`
 }
 
 // VolumeOperationByMigrate
@@ -124,47 +71,17 @@ type VolumeOperationByMigrate struct {
 
 // VolumeMigrateOperation
 type VolumeMigrateOperation struct {
-	// VolumeMigrateName 迁移CRD名称
-	Name string `json:"name"`
-
-	// State 迁移状态
-	State State `json:"state,omitempty"`
-
-	// VolumeName 迁移卷名称
-	VolumeName string `json:"volumeName"`
-
-	// SourceNode 迁移源节点
-	SourceNode string `json:"sourceNode"`
-
-	// TargetNode 迁移目的节点
-	TargetNode string `json:"targetNode"`
-
-	// StartTime 迁移开始时间
-	StartTime time.Time `json:"startTime,omitempty"`
-
-	// EndTime 迁移结束时间
-	EndTime time.Time `json:"endTime,omitempty"`
+	apisv1alpha1.LocalVolumeMigrate
 }
 
 // VolumeConvertOperation
 type VolumeConvertOperation struct {
-	// VolumeConvert Name 转换CRD名称
-	Name string `json:"name"`
+	apisv1alpha1.LocalVolumeConvert
+}
 
-	// State 转换状态
-	State State `json:"state,omitempty"`
-
-	// VolumeName 转换卷名称
-	VolumeName string `json:"volumeName"`
-
-	// ReplicaNumber 副本数
-	ReplicaNumber string `json:"replicaNumber"`
-
-	// StartTime 转换开始时间
-	StartTime time.Time `json:"startTime,omitempty"`
-
-	// EndTime 转换结束时间
-	EndTime time.Time `json:"endTime,omitempty"`
+// VolumeExpandOperation
+type VolumeExpandOperation struct {
+	apisv1alpha1.LocalVolumeExpand
 }
 
 // LocalVolumeMigrateSpec defines the desired state of LocalVolumeMigrate
@@ -274,28 +191,17 @@ type HAState struct {
 	Reason string `json:"reason,omitempty"`
 }
 
-// VolumeGroupVolumeInfo defines the observed volume state of VolumeGroup
-type VolumeGroupVolumeInfo struct {
-	// VolumeName
-	VolumeName string `json:"volumeName,omitempty"`
-	// NodeNames
-	NodeNames []string `json:"nodeNames,omitempty"`
-	// State
-	State State `json:"state,omitempty"`
-}
-
 // VolumeGroup defines the observed state of VolumeGroup
 type VolumeGroup struct {
-	// Name
-	Name string `json:"name"`
-	// NodeNames
-	NodeNames []string `json:"nodeNames,omitempty"`
-	// VolumeGroupVolumeInfo
-	VolumeGroupVolumeInfos []VolumeGroupVolumeInfo `json:"volumeGroupVolumeInfos,omitempty"`
+	apisv1alpha1.LocalVolumeGroup
+	// Volumes
+	Volumes []apisv1alpha1.LocalVolume `json:"volumes,omitempty"`
 }
 
-type VolumeMigrateRspBody struct {
-	VolumeMigrateInfo *VolumeMigrateInfo `json:"data,omitempty"`
+// VolumeGroupList
+type VolumeGroupList struct {
+	// VolumeGroups
+	VolumeGroups []VolumeGroup `json:"items"`
 }
 
 type VolumeMigrateInfo struct {
@@ -304,11 +210,19 @@ type VolumeMigrateInfo struct {
 	SelectedNode string `json:"selectedNode,omitempty"`
 }
 
-//type VolumeMigrateInfo struct {
-//	VolumeName   string `form:"volumeName" json:"volumeName" binding:"required"`
-//	SrcNode      string `form:"srcNode" json:"srcNode" binding:"required"`
-//	SelectedNode string `form:"selectedNode" json:"selectedNode" binding:"required"`
-//}
+type VolumeMigrateRspBody struct {
+	VolumeMigrateInfo *VolumeMigrateInfo `json:"data,omitempty"`
+}
+
+type VolumeMigrateReqBody struct {
+	SrcNode      string `json:"srcNode,omitempty"`
+	SelectedNode string `json:"selectedNode,omitempty"`
+	Abort        bool   `json:"abort,omitempty"`
+}
+
+type VolumeConvertReqBody struct {
+	VolumeName string `json:"volumeName,omitempty"`
+}
 
 type VolumeConvertRspBody struct {
 	VolumeConvertInfo *VolumeConvertInfo `json:"data,omitempty"`
@@ -317,4 +231,17 @@ type VolumeConvertRspBody struct {
 type VolumeConvertInfo struct {
 	VolumeName string `json:"volumeName"`
 	ReplicaNum int64  `json:"replicaNum"`
+}
+
+type VolumeExpandReqBody struct {
+	VolumeName string `json:"volumeName,omitempty"`
+}
+
+type VolumeExpandRspBody struct {
+	VolumeExpandInfo *VolumeExpandInfo `json:"data,omitempty"`
+}
+
+type VolumeExpandInfo struct {
+	VolumeName          string `json:"volumeName"`
+	TargetCapacityBytes int64  `json:"targetCapacityBytes"`
 }

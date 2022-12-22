@@ -1,24 +1,17 @@
 package api
 
 import (
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"time"
 )
 
 type StoragePool struct {
-	// Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL 存储池名称
-	Name string `json:"name,omitempty"`
-
-	// Supported class: HDD, SSD, NVMe 磁盘类型
-	Class string `json:"class"`
-
-	// TotalCapacityBytes 存储池对应存储总容量
-	TotalCapacityBytes int64 `json:"totalCapacityBytes"`
-
+	apisv1alpha1.LocalPool
 	// AllocatedCapacityBytes 存储池已经分配存储容量
 	AllocatedCapacityBytes int64 `json:"allocatedCapacityBytes"`
 
-	// NodesNum 节点数
-	NodeNum int64 `json:"nodesNum"`
+	// NodesNames Pool所在节点列表
+	NodeNames []string `json:"nodeNames"`
 
 	// createTime 创建时间
 	CreateTime time.Time `json:"createTime,omitempty"`
@@ -34,12 +27,12 @@ type StoragePoolList struct {
 
 // NodeDiskListByPool
 type NodeDiskListByPool struct {
-	// StoragePoolName 存储池名称
-	StoragePoolName string `json:"storagePoolName,omitempty"`
+	// PoolName 存储池名称
+	PoolName string `json:"poolName,omitempty"`
 	// nodeName 节点名称
 	NodeName string `json:"nodeName,omitempty"`
 	// localDisks 节点磁盘列表
-	LocalDisks []*LocalDisk `json:"localDisks,omitempty"`
+	LocalDisks []*LocalDiskInfo `json:"localDisks,omitempty"`
 	// page 信息
 	Page *Pagination `json:"page,omitempty"`
 }

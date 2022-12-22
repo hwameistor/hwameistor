@@ -1,6 +1,7 @@
 package api
 
 import (
+	apiv1alpha1 "github.com/hwameistor/hwameistor-operator/api/v1alpha1"
 	"time"
 )
 
@@ -67,7 +68,7 @@ type NodeStorageUseMetric struct {
 }
 
 // 组件状态
-type ModuleStatus struct {
+type ModuleState struct {
 	// 组件名称
 	Name string `json:"name"`
 	// 组件状态 运行中 未就绪
@@ -75,8 +76,10 @@ type ModuleStatus struct {
 }
 
 // 组件状态监控
-type ModuleStatusMetric struct {
-	ModulesStatus []ModuleStatus `json:"modulesStatus"`
+type ModuleStatus struct {
+	apiv1alpha1.ClusterStatus
+
+	ModulesStatus []ModuleState `json:"modulesStatus"`
 }
 
 // 操作记录

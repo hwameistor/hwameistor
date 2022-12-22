@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -91,8 +92,8 @@ func (mController *MetricController) GetBaseMetric() (*hwameistorapi.BaseMetric,
 	return basemetric, nil
 }
 
-// GetModuleStatusMetric
-func (mController *MetricController) GetModuleStatusMetric() (*hwameistorapi.ModuleStatusMetric, error) {
+// GetModuleStatus
+func (mController *MetricController) GetModuleStatus() (*hwameistorapi.ModuleStatus, error) {
 
 	if err := mController.getHwameistorDaemonsetStatusMetric(); err != nil {
 		log.WithError(err).Error("Failed to getHwameistorDaemonsetStatusMetric")
@@ -104,9 +105,9 @@ func (mController *MetricController) GetModuleStatusMetric() (*hwameistorapi.Mod
 		return nil, err
 	}
 
-	moduleStatusMetric := mController.convertModuleStatusMetric()
+	ModuleStatus := mController.convertModuleStatus()
 
-	return moduleStatusMetric, nil
+	return ModuleStatus, nil
 }
 
 // GetStoragePoolUseMetric
@@ -164,7 +165,7 @@ func (mController *MetricController) OperationListMetric(page, pageSize int32) (
 		operation.EventType = item.Kind
 		operation.Status = hwameistorapi.StateConvert(item.Status.State)
 		operation.StartTime = item.CreationTimestamp.Time
-		operation.EndTime = item.DeletionTimestamp.Time
+		operation.EndTime = time.Now()
 		operation.Description = item.Status.Message
 		operationList = append(operationList, operation)
 	}
@@ -180,12 +181,16 @@ func (mController *MetricController) OperationListMetric(page, pageSize int32) (
 		operation.EventType = item.Kind
 		operation.Status = hwameistorapi.StateConvert(item.Status.State)
 		operation.StartTime = item.CreationTimestamp.Time
-		operation.EndTime = item.DeletionTimestamp.Time
+		operation.EndTime = time.Now()
 		operation.Description = item.Status.Message
 		operationList = append(operationList, operation)
 	}
 
+	var operations = []hwameistorapi.Operation{}
 	operationMetric.OperationList = utils.DataPatination(operationList, page, pageSize)
+	if len(operationList) == 0 {
+		operationMetric.OperationList = operations
+	}
 
 	var pagination = &hwameistorapi.Pagination{}
 	pagination.Page = page
@@ -253,10 +258,6 @@ func (mController *MetricController) getBaseDiskMetric() error {
 		log.WithError(err).Error("Failed to list LocalDisks")
 		return err
 	}
-	// 纳管 claimed
-	// 健康 state active
-	// 错误 state inactive
-	// 总数 total num
 
 	for i := range diskList.Items {
 		if diskList.Items[i].Spec.State == apisv1alpha1.LocalDiskActive {
@@ -294,20 +295,20 @@ func (mController *MetricController) convertBaseMetric() *hwameistorapi.BaseMetr
 	return basemetric
 }
 
-// convertModuleStatusMetric
-func (mController *MetricController) convertModuleStatusMetric() *hwameistorapi.ModuleStatusMetric {
-	moduleStatusMetric := &hwameistorapi.ModuleStatusMetric{}
+// convertModuleStatus
+func (mController *MetricController) convertModuleStatus() *hwameistorapi.ModuleStatus {
+	ModuleStatus := &hwameistorapi.ModuleStatus{}
 
 	if mController.moduleStatusCollection != nil {
 		for name, state := range mController.moduleStatusCollection.ModuleStatus {
-			moduleStatus := hwameistorapi.ModuleStatus{}
-			moduleStatus.Name = name
-			moduleStatus.State = state
-			moduleStatusMetric.ModulesStatus = append(moduleStatusMetric.ModulesStatus, moduleStatus)
+			moduleState := hwameistorapi.ModuleState{}
+			moduleState.Name = name
+			moduleState.State = state
+			ModuleStatus.ModulesStatus = append(ModuleStatus.ModulesStatus, moduleState)
 		}
 	}
 
-	return moduleStatusMetric
+	return ModuleStatus
 }
 
 // convertStoragePoolUseMetric
