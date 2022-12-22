@@ -40,5 +40,8 @@ func main() {
 	handler.Run(stopCh)
 
 	http.Handle("/metrics", handler)
-	http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8080", handler)
+	if err != nil {
+		panic(err)
+	}
 }
