@@ -33,9 +33,9 @@ func NewVolumeGroupController(client client.Client, clientset *kubernetes.Client
 
 // ListVolumesByVolumeGroup
 func (vgController *VolumeGroupController) GetVolumeGroupByVolumeGroupName(vgName string) (hwameistorapi.VolumeGroup, error) {
-	var vis = []hwameistorapi.VolumeInfo{}
-
 	var vg = hwameistorapi.VolumeGroup{}
+	var vols = []apisv1alpha1.LocalVolume{}
+
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
 	if err := vgController.Client.Get(context.TODO(), client.ObjectKey{Name: vgName}, lvg); err != nil {
 		if !errors.IsNotFound(err) {
@@ -51,16 +51,11 @@ func (vgController *VolumeGroupController) GetVolumeGroupByVolumeGroupName(vgNam
 	vg.Name = lvg.Name
 
 	for _, volumeinfo := range lvg.Spec.Volumes {
-		var vi = hwameistorapi.VolumeInfo{}
-		var vol = &hwameistorapi.Volume{}
 
-		vol.Name = volumeinfo.LocalVolumeName
-		if vol.Name == "" {
-			vol.Name = volumeinfo.LocalVolumeName
-		}
-		fmt.Println("ListVolumesByVolumeGroup vgvi.VolumeName = %v", vol.Name)
+		volName := volumeinfo.LocalVolumeName
+		fmt.Println("ListVolumesByVolumeGroup volName = %v", volName)
 		lv := &apisv1alpha1.LocalVolume{}
-		if err := vgController.Client.Get(context.TODO(), client.ObjectKey{Name: vol.Name}, lv); err != nil {
+		if err := vgController.Client.Get(context.TODO(), client.ObjectKey{Name: volName}, lv); err != nil {
 			if !errors.IsNotFound(err) {
 				log.WithError(err).Error("Failed to query localvolume")
 			} else {
@@ -68,17 +63,11 @@ func (vgController *VolumeGroupController) GetVolumeGroupByVolumeGroupName(vgNam
 			}
 			return vg, err
 		}
-		vol.LocalVolume = *lv
 
-		for _, replicas := range lv.Spec.Config.Replicas {
-			vi.NodeNames = append(vi.NodeNames, replicas.Hostname)
-		}
-		vi.Volume = vol
-
-		vis = append(vis, vi)
+		vols = append(vols, *lv)
 	}
 
-	vg.Name = vgName
+	vg.Volumes = vols
 
 	return vg, nil
 }
@@ -108,7 +97,6 @@ func (vgController *VolumeGroupController) ListVolumeGroup() (*hwameistorapi.Vol
 			vgs = append(vgs, vg)
 		}
 	}
-	vglist.VolumeGroupNames = vgnames
 	vglist.VolumeGroups = vgs
 
 	return vglist, nil

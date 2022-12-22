@@ -10,12 +10,6 @@ type StorageNode struct {
 	LocalDiskNode    apisv1alpha1.LocalDiskNode    `json:"localDiskNode,omitempty"`
 
 	K8sNodeState State `json:"k8SNodeState,omitempty"`
-	//// driver status 驱动状态  运行中（Ready）,维护中（Maintain）, 离线（Offline）
-	//DriverStatus State `json:"driverStatus,omitempty"`
-	//// totalDiskCount 总磁盘数
-	//TotalDiskCount int64 `json:"totalDiskCount,omitempty"`
-	//// usedDiskCount 已绑定磁盘数
-	//UsedDiskCount int64 `json:"usedDiskCount,omitempty"`
 }
 
 type LocalDisksItemsList struct {

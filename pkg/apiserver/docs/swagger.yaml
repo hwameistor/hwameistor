@@ -1342,11 +1342,6 @@ definitions:
   api.VolumeGroupList:
     properties:
       items:
-        description: VolumeGroupNames
-        items:
-          type: string
-        type: array
-      volumeGroups:
         description: VolumeGroups
         items:
           $ref: '#/definitions/api.VolumeGroup'

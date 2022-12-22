@@ -2131,13 +2131,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "items": {
-                    "description": "VolumeGroupNames",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "volumeGroups": {
                     "description": "VolumeGroups",
                     "type": "array",
                     "items": {

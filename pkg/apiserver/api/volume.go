@@ -13,14 +13,11 @@ type LocalPool struct {
 // Volume
 type Volume struct {
 	apisv1alpha1.LocalVolume
-
-	//// local volume state 状态
-	//State State `json:"state,omitempty"`
 }
 
 type VolumeItemsList struct {
 	// volumes
-	Volumes []*Volume `json:"volumes,omitempty"`
+	Volumes []*Volume `json:"items,omitempty"`
 }
 
 // VolumeList
@@ -56,12 +53,6 @@ type VolumeOperationListByNode struct {
 	Page *Pagination `json:"pagination,omitempty"`
 }
 
-// VolumeMigrateOperationItemsList
-type VolumeMigrateOperationItemsList struct {
-	// VolumeMigrateOperations
-	VolumeMigrateOperations []*VolumeMigrateOperation `json:"volumeMigrateOperations,omitempty"`
-}
-
 // VolumeOperationByVolume
 type VolumeOperationByVolume struct {
 	// VolumeName
@@ -81,30 +72,11 @@ type VolumeOperationByMigrate struct {
 // VolumeMigrateOperation
 type VolumeMigrateOperation struct {
 	apisv1alpha1.LocalVolumeMigrate
-	//// State 迁移状态
-	//State State `json:"state,omitempty"`
 }
 
 // VolumeConvertOperation
 type VolumeConvertOperation struct {
 	apisv1alpha1.LocalVolumeConvert
-	//// VolumeConvert Name 转换CRD名称
-	//Name string `json:"name"`
-	//
-	//// State 转换状态
-	//State State `json:"state,omitempty"`
-	//
-	//// VolumeName 转换卷名称
-	//VolumeName string `json:"volumeName"`
-	//
-	//// ReplicaNumber 副本数
-	//ReplicaNumber string `json:"replicaNumber"`
-	//
-	//// StartTime 转换开始时间
-	//StartTime time.Time `json:"startTime,omitempty"`
-	//
-	//// EndTime 转换结束时间
-	//EndTime time.Time `json:"endTime,omitempty"`
 }
 
 // VolumeExpandOperation
@@ -219,24 +191,6 @@ type HAState struct {
 	Reason string `json:"reason,omitempty"`
 }
 
-// VolumeInfo defines the observed volume state of VolumeGroup
-type VolumeInfo struct {
-	// volumes
-	Volume *Volume `json:"volume,omitempty"`
-	// NodeNames
-	NodeNames []string `json:"nodeNames,omitempty"`
-}
-
-// VolumeGroupVolumeInfo defines the observed volume state of VolumeGroup
-type VolumeGroupVolumeInfo struct {
-	// VolumeName
-	VolumeName string `json:"volumeName,omitempty"`
-	// NodeNames
-	NodeNames []string `json:"nodeNames,omitempty"`
-	// State
-	State State `json:"state,omitempty"`
-}
-
 // VolumeGroup defines the observed state of VolumeGroup
 type VolumeGroup struct {
 	apisv1alpha1.LocalVolumeGroup
@@ -246,11 +200,8 @@ type VolumeGroup struct {
 
 // VolumeGroupList
 type VolumeGroupList struct {
-	// VolumeGroupNames
-	VolumeGroupNames []string `json:"items"`
-
 	// VolumeGroups
-	VolumeGroups []VolumeGroup `json:"volumeGroups"`
+	VolumeGroups []VolumeGroup `json:"items"`
 }
 
 type VolumeMigrateInfo struct {
@@ -268,12 +219,6 @@ type VolumeMigrateReqBody struct {
 	SelectedNode string `json:"selectedNode,omitempty"`
 	Abort        bool   `json:"abort,omitempty"`
 }
-
-//type VolumeMigrateInfo struct {
-//	VolumeName   string `form:"volumeName" json:"volumeName" binding:"required"`
-//	SrcNode      string `form:"srcNode" json:"srcNode" binding:"required"`
-//	SelectedNode string `form:"selectedNode" json:"selectedNode" binding:"required"`
-//}
 
 type VolumeConvertReqBody struct {
 	VolumeName string `json:"volumeName,omitempty"`
