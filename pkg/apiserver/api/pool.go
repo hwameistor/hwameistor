@@ -7,6 +7,7 @@ import (
 
 type StoragePool struct {
 	apisv1alpha1.LocalPool
+
 	// AllocatedCapacityBytes 存储池已经分配存储容量
 	AllocatedCapacityBytes int64 `json:"allocatedCapacityBytes"`
 
