@@ -1,6 +1,7 @@
 package smart
 
 import (
+	"errors"
 	log "github.com/sirupsen/logrus"
 	"testing"
 )
@@ -16,8 +17,8 @@ func TestCollector_Collect(t *testing.T) {
 			"Name":     deviceResult.Device.Name,
 			"InfoName": deviceResult.Device.InfoName,
 		}
-		if deviceResult.Error != nil {
-			log.WithError(deviceResult.Error).WithFields(deviceCtx).Error("Failed to collect SMART stats")
+		if deviceResult.Error != "" {
+			log.WithError(errors.New(deviceResult.Error)).WithFields(deviceCtx).Error("Failed to collect SMART stats")
 		}
 
 		t := map[string]interface{}{}
