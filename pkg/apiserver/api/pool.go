@@ -7,20 +7,12 @@ import (
 
 type StoragePool struct {
 	apisv1alpha1.LocalPool
-	//// Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL 存储池名称
-	//Name string `json:"name,omitempty"`
-	//
-	//// Supported class: HDD, SSD, NVMe 磁盘类型
-	//Class string `json:"class"`
-	//
-	//// TotalCapacityBytes 存储池对应存储总容量
-	//TotalCapacityBytes int64 `json:"totalCapacityBytes"`
-	//
+
 	// AllocatedCapacityBytes 存储池已经分配存储容量
 	AllocatedCapacityBytes int64 `json:"allocatedCapacityBytes"`
 
-	// NodesNum 节点数
-	NodeNum int64 `json:"nodesNum"`
+	// NodesNames Pool所在节点列表
+	NodeNames []string `json:"nodeNames"`
 
 	// createTime 创建时间
 	CreateTime time.Time `json:"createTime,omitempty"`

@@ -64,7 +64,6 @@ func (n *SettingController) EnableDRBDSetting(ctx *gin.Context) {
 // @Summary 摘要 获取高可用设置
 // @Description get DRBDSettingGet
 // @Tags        Setting
-// @Param       enabledrbd path string false "enabledrbd"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.DrbdEnableSetting

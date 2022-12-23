@@ -305,7 +305,6 @@ func (n *NodeController) GetStorageNodeDisk(ctx *gin.Context) {
 // @Tags        Node
 // @Param       nodeName path string true "nodeName"
 // @Param       fuzzy query bool false "fuzzy"
-// @Param       sort query bool false "sort"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.StoragePoolList  "成功"
@@ -367,7 +366,6 @@ func (n *NodeController) StorageNodePoolGet(ctx *gin.Context) {
 // @Param       nodeName path string true "nodeName"
 // @Param       poolName path string true "poolName"
 // @Param       fuzzy query bool false "fuzzy"
-// @Param       sort query bool false "sort"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.LocalDisksItemsList  "成功"

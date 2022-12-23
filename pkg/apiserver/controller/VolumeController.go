@@ -68,7 +68,6 @@ func (v *VolumeController) VolumeGet(ctx *gin.Context) {
 // @Param       pageSize query int32 true "pageSize"
 // @Param       volumeName query string false "volumeName"
 // @Param       state query string false "state"
-// @Param       nameSpace query string false "nameSpace"
 // @Param       fuzzy query bool false "fuzzy"
 // @Param       sort query bool false "sort"
 // @Accept      json
@@ -115,8 +114,6 @@ func (v *VolumeController) VolumeList(ctx *gin.Context) {
 // @Param       volumeName path string true "volumeName"
 // @Param       volumeReplicaName query string false "volumeReplicaName"
 // @Param       state query string false "state"
-// @Param       fuzzy query bool false "fuzzy"
-// @Param       sort query bool false "sort"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.VolumeReplicaList  "成功"

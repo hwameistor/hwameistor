@@ -77,7 +77,7 @@ func (lspController *LocalStoragePoolController) listLocalStoragePools(queryPage
 		sp.CreateTime = poolNodeCollection.StoragePool.CreateTime
 		sp.TotalCapacityBytes = poolNodeCollection.StoragePool.TotalCapacityBytes
 		sp.AllocatedCapacityBytes = poolNodeCollection.StoragePool.AllocatedCapacityBytes
-		sp.NodeNum = int64(len(poolNodeCollection.ManagedNodeNames))
+		sp.NodeNames = poolNodeCollection.ManagedNodeNames
 
 		if queryPage.PoolName == "" || (queryPage.PoolName != "" && strings.Contains(sp.Name, queryPage.PoolName)) {
 			sps = append(sps, sp)

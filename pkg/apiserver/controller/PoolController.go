@@ -153,7 +153,6 @@ func (n *PoolController) StorageNodesGetByPoolName(ctx *gin.Context) {
 // @Param       page query int32 true "page"
 // @Param       pageSize query int32 true "pageSize"
 // @Param       fuzzy query bool false "fuzzy"
-// @Param       sort query bool false "sort"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.NodeDiskListByPool

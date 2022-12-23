@@ -34,7 +34,7 @@ func NewMetricsController(m *manager.ServerManager) IMetricsController {
 // @Router      /cluster/status [get]
 func (v *MetricsController) ModuleStatus(ctx *gin.Context) {
 
-	moduleStatus, err := v.m.MetricController().GetModuleStatusMetric()
+	moduleStatus, err := v.m.MetricController().GetModuleStatus()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, nil)
 		return

@@ -29,14 +29,6 @@ const docTemplate = `{
                     "Setting"
                 ],
                 "summary": "摘要 获取高可用设置",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "enabledrbd",
-                        "name": "enabledrbd",
-                        "in": "path"
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -429,12 +421,6 @@ const docTemplate = `{
                         "description": "fuzzy",
                         "name": "fuzzy",
                         "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "sort",
-                        "name": "sort",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -530,12 +516,6 @@ const docTemplate = `{
                         "type": "boolean",
                         "description": "fuzzy",
                         "name": "fuzzy",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "sort",
-                        "name": "sort",
                         "in": "query"
                     }
                 ],
@@ -813,12 +793,6 @@ const docTemplate = `{
                         "description": "fuzzy",
                         "name": "fuzzy",
                         "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "sort",
-                        "name": "sort",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -974,12 +948,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "state",
                         "name": "state",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "nameSpace",
-                        "name": "nameSpace",
                         "in": "query"
                     },
                     {
@@ -1300,18 +1268,6 @@ const docTemplate = `{
                         "description": "state",
                         "name": "state",
                         "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "fuzzy",
-                        "name": "fuzzy",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "sort",
-                        "name": "sort",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1507,7 +1463,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.ModuleStatus": {
+        "api.ModuleState": {
             "type": "object",
             "properties": {
                 "name": {
@@ -1517,6 +1473,38 @@ const docTemplate = `{
                 "state": {
                     "description": "组件状态 运行中 未就绪",
                     "type": "string"
+                }
+            }
+        },
+        "api.ModuleStatus": {
+            "type": "object",
+            "properties": {
+                "admissionController": {
+                    "$ref": "#/definitions/v1alpha1.AdmissionControllerStatus"
+                },
+                "apiServer": {
+                    "$ref": "#/definitions/v1alpha1.ApiServerStatus"
+                },
+                "evictor": {
+                    "$ref": "#/definitions/v1alpha1.EvictorStatus"
+                },
+                "localDiskManager": {
+                    "$ref": "#/definitions/v1alpha1.LocalDiskManagerStatus"
+                },
+                "localStorage": {
+                    "$ref": "#/definitions/v1alpha1.LocalStorageStatus"
+                },
+                "modulesStatus": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ModuleState"
+                    }
+                },
+                "phase": {
+                    "type": "string"
+                },
+                "scheduler": {
+                    "$ref": "#/definitions/v1alpha1.SchedulerStatus"
                 }
             }
         },
@@ -1631,7 +1619,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "allocatedCapacityBytes": {
-                    "description": "// Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL 存储池名称\nName string ` + "`" + `json:\"name,omitempty\"` + "`" + `\n\n// Supported class: HDD, SSD, NVMe 磁盘类型\nClass string ` + "`" + `json:\"class\"` + "`" + `\n\n// TotalCapacityBytes 存储池对应存储总容量\nTotalCapacityBytes int64 ` + "`" + `json:\"totalCapacityBytes\"` + "`" + `\n\nAllocatedCapacityBytes 存储池已经分配存储容量",
+                    "description": "AllocatedCapacityBytes 存储池已经分配存储容量",
                     "type": "integer"
                 },
                 "class": {
@@ -1658,9 +1646,12 @@ const docTemplate = `{
                     "description": "Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL",
                     "type": "string"
                 },
-                "nodesNum": {
-                    "description": "NodesNum 节点数",
-                    "type": "integer"
+                "nodeNames": {
+                    "description": "NodesNames Pool所在节点列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "path": {
                     "description": "VG path",
@@ -2546,6 +2537,48 @@ const docTemplate = `{
                 }
             }
         },
+        "v1alpha1.AdmissionControllerStatus": {
+            "type": "object",
+            "properties": {
+                "instances": {
+                    "$ref": "#/definitions/v1alpha1.DeployStatus"
+                }
+            }
+        },
+        "v1alpha1.ApiServerStatus": {
+            "type": "object",
+            "properties": {
+                "instances": {
+                    "$ref": "#/definitions/v1alpha1.DeployStatus"
+                }
+            }
+        },
+        "v1alpha1.DeployStatus": {
+            "type": "object",
+            "properties": {
+                "availablePodCount": {
+                    "type": "integer"
+                },
+                "currentPodCount": {
+                    "type": "integer"
+                },
+                "desiredPodCount": {
+                    "type": "integer"
+                },
+                "pods": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha1.PodStatus"
+                    }
+                },
+                "readyPodCount": {
+                    "type": "integer"
+                },
+                "upToDatePodCount": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1alpha1.Disk": {
             "type": "object",
             "properties": {
@@ -2612,6 +2645,14 @@ const docTemplate = `{
                 }
             }
         },
+        "v1alpha1.EvictorStatus": {
+            "type": "object",
+            "properties": {
+                "instances": {
+                    "$ref": "#/definitions/v1alpha1.DeployStatus"
+                }
+            }
+        },
         "v1alpha1.FileSystemInfo": {
             "type": "object",
             "properties": {
@@ -2656,6 +2697,17 @@ const docTemplate = `{
                 "type": {
                     "description": "Supported: HDD, SSD, NVMe, RAM",
                     "type": "string"
+                }
+            }
+        },
+        "v1alpha1.LocalDiskManagerStatus": {
+            "type": "object",
+            "properties": {
+                "csi": {
+                    "$ref": "#/definitions/v1alpha1.DeployStatus"
+                },
+                "instances": {
+                    "$ref": "#/definitions/v1alpha1.DeployStatus"
                 }
             }
         },
@@ -3078,6 +3130,17 @@ const docTemplate = `{
                 }
             }
         },
+        "v1alpha1.LocalStorageStatus": {
+            "type": "object",
+            "properties": {
+                "csi": {
+                    "$ref": "#/definitions/v1alpha1.DeployStatus"
+                },
+                "instances": {
+                    "$ref": "#/definitions/v1alpha1.DeployStatus"
+                }
+            }
+        },
         "v1alpha1.LocalVolume": {
             "type": "object",
             "properties": {
@@ -3481,12 +3544,34 @@ const docTemplate = `{
                 }
             }
         },
+        "v1alpha1.PodStatus": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "node": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "v1alpha1.RAIDInfo": {
             "type": "object",
             "properties": {
                 "raidMaster": {
                     "description": "RAIDMaster is the master of the RAID disk, it works for only RAID slave disk, e.g. /dev/bus/0",
                     "type": "string"
+                }
+            }
+        },
+        "v1alpha1.SchedulerStatus": {
+            "type": "object",
+            "properties": {
+                "instances": {
+                    "$ref": "#/definitions/v1alpha1.DeployStatus"
                 }
             }
         },

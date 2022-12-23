@@ -277,7 +277,7 @@ definitions:
           $ref: '#/definitions/api.LocalDiskInfo'
         type: array
     type: object
-  api.ModuleStatus:
+  api.ModuleState:
     properties:
       name:
         description: 组件名称
@@ -285,6 +285,27 @@ definitions:
       state:
         description: 组件状态 运行中 未就绪
         type: string
+    type: object
+  api.ModuleStatus:
+    properties:
+      admissionController:
+        $ref: '#/definitions/v1alpha1.AdmissionControllerStatus'
+      apiServer:
+        $ref: '#/definitions/v1alpha1.ApiServerStatus'
+      evictor:
+        $ref: '#/definitions/v1alpha1.EvictorStatus'
+      localDiskManager:
+        $ref: '#/definitions/v1alpha1.LocalDiskManagerStatus'
+      localStorage:
+        $ref: '#/definitions/v1alpha1.LocalStorageStatus'
+      modulesStatus:
+        items:
+          $ref: '#/definitions/api.ModuleState'
+        type: array
+      phase:
+        type: string
+      scheduler:
+        $ref: '#/definitions/v1alpha1.SchedulerStatus'
     type: object
   api.NodeDiskListByPool:
     properties:
@@ -365,17 +386,7 @@ definitions:
   api.StoragePool:
     properties:
       allocatedCapacityBytes:
-        description: |-
-          // Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL 存储池名称
-          Name string `json:"name,omitempty"`
-
-          // Supported class: HDD, SSD, NVMe 磁盘类型
-          Class string `json:"class"`
-
-          // TotalCapacityBytes 存储池对应存储总容量
-          TotalCapacityBytes int64 `json:"totalCapacityBytes"`
-
-          AllocatedCapacityBytes 存储池已经分配存储容量
+        description: AllocatedCapacityBytes 存储池已经分配存储容量
         type: integer
       class:
         description: |-
@@ -396,9 +407,11 @@ definitions:
       name:
         description: 'Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL'
         type: string
-      nodesNum:
-        description: NodesNum 节点数
-        type: integer
+      nodeNames:
+        description: NodesNames Pool所在节点列表
+        items:
+          type: string
+        type: array
       path:
         description: VG path
         type: string
@@ -1996,6 +2009,33 @@ definitions:
           type: string
         type: array
     type: object
+  v1alpha1.AdmissionControllerStatus:
+    properties:
+      instances:
+        $ref: '#/definitions/v1alpha1.DeployStatus'
+    type: object
+  v1alpha1.ApiServerStatus:
+    properties:
+      instances:
+        $ref: '#/definitions/v1alpha1.DeployStatus'
+    type: object
+  v1alpha1.DeployStatus:
+    properties:
+      availablePodCount:
+        type: integer
+      currentPodCount:
+        type: integer
+      desiredPodCount:
+        type: integer
+      pods:
+        items:
+          $ref: '#/definitions/v1alpha1.PodStatus'
+        type: array
+      readyPodCount:
+        type: integer
+      upToDatePodCount:
+        type: integer
+    type: object
   v1alpha1.Disk:
     properties:
       capacity:
@@ -2046,6 +2086,11 @@ definitions:
         description: Vendor is who provides the disk
         type: string
     type: object
+  v1alpha1.EvictorStatus:
+    properties:
+      instances:
+        $ref: '#/definitions/v1alpha1.DeployStatus'
+    type: object
   v1alpha1.FileSystemInfo:
     properties:
       fsType:
@@ -2082,6 +2127,13 @@ definitions:
       type:
         description: 'Supported: HDD, SSD, NVMe, RAM'
         type: string
+    type: object
+  v1alpha1.LocalDiskManagerStatus:
+    properties:
+      csi:
+        $ref: '#/definitions/v1alpha1.DeployStatus'
+      instances:
+        $ref: '#/definitions/v1alpha1.DeployStatus'
     type: object
   v1alpha1.LocalDiskNode:
     properties:
@@ -2711,6 +2763,13 @@ definitions:
           Failed'
         type: string
     type: object
+  v1alpha1.LocalStorageStatus:
+    properties:
+      csi:
+        $ref: '#/definitions/v1alpha1.DeployStatus'
+      instances:
+        $ref: '#/definitions/v1alpha1.DeployStatus'
+    type: object
   v1alpha1.LocalVolume:
     properties:
       annotations:
@@ -3195,12 +3254,26 @@ definitions:
         description: Path represents the partition path in the OS
         type: string
     type: object
+  v1alpha1.PodStatus:
+    properties:
+      name:
+        type: string
+      node:
+        type: string
+      status:
+        type: string
+    type: object
   v1alpha1.RAIDInfo:
     properties:
       raidMaster:
         description: RAIDMaster is the master of the RAID disk, it works for only
           RAID slave disk, e.g. /dev/bus/0
         type: string
+    type: object
+  v1alpha1.SchedulerStatus:
+    properties:
+      instances:
+        $ref: '#/definitions/v1alpha1.DeployStatus'
     type: object
   v1alpha1.SmartInfo:
     properties:
@@ -3274,11 +3347,6 @@ paths:
       consumes:
       - application/json
       description: get DRBDSettingGet
-      parameters:
-      - description: enabledrbd
-        in: path
-        name: enabledrbd
-        type: string
       produces:
       - application/json
       responses:
@@ -3543,10 +3611,6 @@ paths:
         in: query
         name: fuzzy
         type: boolean
-      - description: sort
-        in: query
-        name: sort
-        type: boolean
       produces:
       - application/json
       responses:
@@ -3610,10 +3674,6 @@ paths:
       - description: fuzzy
         in: query
         name: fuzzy
-        type: boolean
-      - description: sort
-        in: query
-        name: sort
         type: boolean
       produces:
       - application/json
@@ -3800,10 +3860,6 @@ paths:
         in: query
         name: fuzzy
         type: boolean
-      - description: sort
-        in: query
-        name: sort
-        type: boolean
       produces:
       - application/json
       responses:
@@ -3905,10 +3961,6 @@ paths:
       - description: state
         in: query
         name: state
-        type: string
-      - description: nameSpace
-        in: query
-        name: nameSpace
         type: string
       - description: fuzzy
         in: query
@@ -4122,14 +4174,6 @@ paths:
         in: query
         name: state
         type: string
-      - description: fuzzy
-        in: query
-        name: fuzzy
-        type: boolean
-      - description: sort
-        in: query
-        name: sort
-        type: boolean
       produces:
       - application/json
       responses:
