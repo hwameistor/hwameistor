@@ -66,7 +66,7 @@ const (
 	// LocalDiskReserved represents that the disk will be used in the feature
 	LocalDiskReserved State = "Reserved"
 	// LocalDiskRemoveReserved
-	LocalDiskRemoveReserved State = "RemoveReserved"
+	LocalDiskReleaseReserved State = "ReleaseReserved"
 	// LocalDiskEmpty
 	LocalDiskEmpty State = ""
 	// LocalDiskClaimedAndUnclaimed
@@ -200,33 +200,33 @@ func StateConvert(state apisv1alpha1.State) State {
 }
 
 // VolumeStatefuzzyConvert
-func VolumeStatefuzzyConvert(state string) State {
+func VolumeStatefuzzyConvert(state string) apisv1alpha1.State {
 
 	if state == "" {
-		return VolumeStateEmpty
+		return apisv1alpha1.VolumeStateEmpty
 	}
 	if strings.Contains("ToBeMounted", state) {
-		return VolumeStateToBeUnmount
+		return apisv1alpha1.VolumeStateToBeUnmount
 	}
 	if strings.Contains("Created", state) {
-		return VolumeStateCreated
+		return apisv1alpha1.VolumeStateCreated
 	}
 	if strings.Contains("Creating", state) {
-		return VolumeStateCreating
+		return apisv1alpha1.VolumeStateCreating
 	}
 	if strings.Contains("Ready", state) {
-		return VolumeStateReady
+		return apisv1alpha1.VolumeStateReady
 	}
 	if strings.Contains("NotReady", state) {
-		return VolumeStateNotReady
+		return apisv1alpha1.VolumeStateNotReady
 	}
 	if strings.Contains("ToBeDeleted", state) {
-		return VolumeStateToBeDeleted
+		return apisv1alpha1.VolumeStateToBeDeleted
 	}
 	if strings.Contains("Deleted", state) {
-		return VolumeStateDeleted
+		return apisv1alpha1.VolumeStateDeleted
 	}
-	return VolumeStateUnknown
+	return ""
 }
 
 // NodeStatefuzzyConvert
@@ -234,9 +234,6 @@ func NodeStatefuzzyConvert(state string) State {
 
 	if state == "" {
 		return NodeStateEmpty
-	}
-	if strings.Contains("Offline", state) {
-		return NodeStateOffline
 	}
 	if strings.Contains("Healthy", state) {
 		return NodeStateHealthy
@@ -248,64 +245,43 @@ func NodeStatefuzzyConvert(state string) State {
 	if strings.Contains("NotReady", state) {
 		return NodeStateNotReady
 	}
-	if strings.Contains("Maintain", state) {
-		return NodeStateMaintain
-	}
 
 	return NodeStateUnknown
 }
 
 // DriverStatefuzzyConvert
-func DriverStatefuzzyConvert(state string) State {
+func DriverStatefuzzyConvert(state string) apisv1alpha1.State {
 
-	if state == "" {
-		return DriverStateEmpty
-	}
 	if strings.Contains("Ready", state) {
-		return DriverStateReady
+		return apisv1alpha1.NodeStateReady
 	}
 	if strings.Contains("Offline", state) {
-		return DriverStateOffline
+		return apisv1alpha1.NodeStateOffline
 	}
 	if strings.Contains("Maintain", state) {
-		return DriverStateMaintain
+		return apisv1alpha1.NodeStateMaintain
 	}
-
-	return DriverStateUnknown
+	return ""
 }
 
 // DiskStatefuzzyConvert
-func DiskStatefuzzyConvert(state string) State {
+func DiskStatefuzzyConvert(state string) apisv1alpha1.LocalDiskState {
 
 	if state == "" {
-		return LocalDiskEmpty
-	}
-	if strings.Contains("Claimed", state) {
-		return LocalDiskClaimedAndUnclaimed
-	}
-	if strings.Contains("Unclaimed", state) {
-		return LocalDiskUnclaimed
-	}
-	if strings.Contains("Released", state) {
-		return LocalDiskReleased
-	}
-	if strings.Contains("InUse", state) {
-		return LocalDiskInUse
-	}
-	if strings.Contains("Reserved", state) {
-		return LocalDiskReserved
-	}
-	if strings.Contains("Bound", state) {
-		return LocalDiskBound
-	}
-	if strings.Contains("Available", state) {
-		return LocalDiskAvailable
-	}
-	if strings.Contains("Pending", state) {
-		return LocalDiskPending
+		return apisv1alpha1.LocalDiskEmpty
 	}
 
-	return LocalDiskUnknown
+	if strings.Contains("Bound", state) {
+		return apisv1alpha1.LocalDiskBound
+	}
+	if strings.Contains("Available", state) {
+		return apisv1alpha1.LocalDiskAvailable
+	}
+	if strings.Contains("Pending", state) {
+		return apisv1alpha1.LocalDiskPending
+	}
+
+	return apisv1alpha1.LocalDiskUnknown
 }
 
 type QueryPage struct {
@@ -317,10 +293,10 @@ type QueryPage struct {
 	NodeName          string
 	DiskName          string
 	NameSpace         string
-	VolumeState       State
+	VolumeState       apisv1alpha1.State
 	NodeState         State
-	DriverState       State
-	DiskState         State
+	DriverState       apisv1alpha1.State
+	DiskState         apisv1alpha1.LocalDiskState
 	VolumeName        string
 	VolumeReplicaName string
 	VolumeMigrateName string

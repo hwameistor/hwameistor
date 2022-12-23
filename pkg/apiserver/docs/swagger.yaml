@@ -1,122 +1,267 @@
 definitions:
-  api.BaseMetric:
+  api.DiskReqBody:
     properties:
-      allocatedCapacityBytes:
-        description: 已分配容量
-        type: integer
-      boundedDiskNum:
-        description: 绑定磁盘
-        type: integer
-      claimedNodeNum:
-        description: 纳管节点数
-        type: integer
-      freeCapacityBytes:
-        description: 可分配容量
-        type: integer
-      healthyDiskNum:
-        description: 健康磁盘
-        type: integer
-      highAvailableVolumeNum:
-        description: 高可用卷数目
-        type: integer
-      localVolumeNum:
-        description: 本地卷总数
-        type: integer
-      nonHighAvailableVolumeNum:
-        description: 非高可用卷数目
-        type: integer
-      reservedCapacityBytes:
-        description: 已预留容量
-        type: integer
-      totalCapacityBytes:
-        description: 总容量
-        type: integer
-      totalDiskNum:
-        description: 总磁盘数
-        type: integer
-      totalNodeNum:
-        description: 总节点数
-        type: integer
-      unHealthyDiskNum:
-        description: 错误磁盘
-        type: integer
-    type: object
-  api.DiskRemoveReservedRsp:
-    properties:
-      diskName:
-        description: DiskName
-        type: string
-      removeReservedRsp:
-        description: RemoveReservedRsp
-        type: string
-    type: object
-  api.DiskRemoveReservedRspBody:
-    properties:
-      data:
-        $ref: '#/definitions/api.DiskRemoveReservedRsp'
-    type: object
-  api.DiskReservedRsp:
-    properties:
-      diskName:
-        description: DiskName
-        type: string
-      reservedRsp:
-        description: ReservedRsp
-        type: string
-    type: object
-  api.DiskReservedRspBody:
-    properties:
-      data:
-        $ref: '#/definitions/api.DiskReservedRsp'
+      reserve:
+        type: boolean
     type: object
   api.DrbdEnableSetting:
     properties:
-      enabledrbd:
+      enable:
         type: boolean
       state:
-        description: RemoveReservedRsp
+        description: 组件状态 运行中 未就绪
         type: string
       version:
         type: string
+    type: object
+  api.DrbdEnableSettingReqBody:
+    properties:
+      enable:
+        type: boolean
     type: object
   api.DrbdEnableSettingRspBody:
     properties:
       data:
         $ref: '#/definitions/api.DrbdEnableSetting'
     type: object
-  api.LocalDisk:
+  api.LocalDiskInfo:
     properties:
+      annotations:
+        additionalProperties:
+          type: string
+        description: |-
+          Annotations is an unstructured key value map stored with a resource that may be
+          set by external tools to store and retrieve arbitrary metadata. They are not
+          queryable and should be preserved when modifying objects.
+          More info: http://kubernetes.io/docs/user-guide/annotations
+          +optional
+        type: object
+      apiVersion:
+        description: |-
+          APIVersion defines the versioned schema of this representation of an object.
+          Servers should convert recognized schemas to the latest internal value, and
+          may reject unrecognized values.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+          +optional
+        type: string
       availableCapacityBytes:
         description: AvailableCapacityBytes 可用容量
         type: integer
-      devPath:
-        description: e.g. /dev/sdb 磁盘路径
+      clusterName:
+        description: |-
+          The name of the cluster which the object belongs to.
+          This is used to distinguish resources with same name and namespace in different clusters.
+          This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.
+          +optional
         type: string
-      hasRaid:
-        description: HasRAID 是否Raid
-        type: boolean
+      creationTimestamp:
+        description: |-
+          CreationTimestamp is a timestamp representing the server time when this object was
+          created. It is not guaranteed to be set in happens-before order across separate operations.
+          Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+
+          Populated by the system.
+          Read-only.
+          Null for lists.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      deletionGracePeriodSeconds:
+        description: |-
+          Number of seconds allowed for this object to gracefully terminate before
+          it will be removed from the system. Only set when deletionTimestamp is also set.
+          May only be shortened.
+          Read-only.
+          +optional
+        type: integer
+      deletionTimestamp:
+        description: |-
+          DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This
+          field is set by the server when a graceful deletion is requested by the user, and is not
+          directly settable by a client. The resource is expected to be deleted (no longer visible
+          from resource lists, and not reachable by name) after the time in this field, once the
+          finalizers list is empty. As long as the finalizers list contains items, deletion is blocked.
+          Once the deletionTimestamp is set, this value may not be unset or be set further into the
+          future, although it may be shortened or the resource may be deleted prior to this time.
+          For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react
+          by sending a graceful termination signal to the containers in the pod. After that 30 seconds,
+          the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,
+          remove the pod from the API. In the presence of network partitions, this object may still
+          exist after this timestamp, until an administrator or automated process can determine the
+          resource is fully terminated.
+          If not set, graceful deletion of the object has not been requested.
+
+          Populated by the system when a graceful deletion is requested.
+          Read-only.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      finalizers:
+        description: |-
+          Must be empty before the object is deleted from the registry. Each entry
+          is an identifier for the responsible component that will remove the entry
+          from the list. If the deletionTimestamp of the object is non-nil, entries
+          in this list can only be removed.
+          Finalizers may be processed and removed in any order.  Order is NOT enforced
+          because it introduces significant risk of stuck finalizers.
+          finalizers is a shared field, any actor with permission can reorder it.
+          If the finalizer list is processed in order, then this can lead to a situation
+          in which the component responsible for the first finalizer in the list is
+          waiting for a signal (field value, external system, or other) produced by a
+          component responsible for a finalizer later in the list, resulting in a deadlock.
+          Without enforced ordering finalizers are free to order amongst themselves and
+          are not vulnerable to ordering changes in the list.
+          +optional
+          +patchStrategy=merge
+        items:
+          type: string
+        type: array
+      generateName:
+        description: |-
+          GenerateName is an optional prefix, used by the server, to generate a unique
+          name ONLY IF the Name field has not been provided.
+          If this field is used, the name returned to the client will be different
+          than the name passed. This value will also be combined with a unique suffix.
+          The provided value has the same validation rules as the Name field,
+          and may be truncated by the length of the suffix required to make the value
+          unique on the server.
+
+          If this field is specified and the generated name exists, the server will
+          NOT return a 409 - instead, it will either return 201 Created or 500 with Reason
+          ServerTimeout indicating a unique name could not be found in the time allotted, and the client
+          should retry (optionally after the time indicated in the Retry-After header).
+
+          Applied only if Name is not specified.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency
+          +optional
+        type: string
+      generation:
+        description: |-
+          A sequence number representing a specific generation of the desired state.
+          Populated by the system. Read-only.
+          +optional
+        type: integer
+      kind:
+        description: |-
+          Kind is a string value representing the REST resource this object represents.
+          Servers may infer this from the endpoint the client submits requests to.
+          Cannot be updated.
+          In CamelCase.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+          +optional
+        type: string
+      labels:
+        additionalProperties:
+          type: string
+        description: |-
+          Map of string keys and values that can be used to organize and categorize
+          (scope and select) objects. May match selectors of replication controllers
+          and services.
+          More info: http://kubernetes.io/docs/user-guide/labels
+          +optional
+        type: object
       localStoragePooLName:
         description: LocalStoragePooLName 存储池名称
         type: string
-      state:
-        description: 'Possible state: Claimed, UnClaimed, Inuse, Released, Reserved
-          状态'
+      managedFields:
+        description: |-
+          ManagedFields maps workflow-id and version to the set of fields
+          that are managed by that workflow. This is mostly for internal
+          housekeeping, and users typically shouldn't need to set or
+          understand this field. A workflow can be the user's name, a
+          controller's name, or the name of a specific apply path like
+          "ci-cd". The set of fields is always in the version that the
+          workflow used when modifying the object.
+
+          +optional
+        items:
+          $ref: '#/definitions/v1.ManagedFieldsEntry'
+        type: array
+      name:
+        description: |-
+          Name must be unique within a namespace. Is required when creating resources, although
+          some resources may allow a client to request the generation of an appropriate name
+          automatically. Name is primarily intended for creation idempotence and configuration
+          definition.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#names
+          +optional
         type: string
+      namespace:
+        description: |-
+          Namespace defines the space within which each name must be unique. An empty namespace is
+          equivalent to the "default" namespace, but "default" is the canonical representation.
+          Not all objects are required to be scoped to a namespace - the value of this field for
+          those objects will be empty.
+
+          Must be a DNS_LABEL.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/namespaces
+          +optional
+        type: string
+      ownerReferences:
+        description: |-
+          List of objects depended by this object. If ALL objects in the list have
+          been deleted, this object will be garbage collected. If this object is managed by a controller,
+          then an entry in this list will point to this controller, with the controller field set to true.
+          There cannot be more than one managing controller.
+          +optional
+          +patchMergeKey=uid
+          +patchStrategy=merge
+        items:
+          $ref: '#/definitions/v1.OwnerReference'
+        type: array
+      resourceVersion:
+        description: |-
+          An opaque value that represents the internal version of this object that can
+          be used by clients to determine when objects have changed. May be used for optimistic
+          concurrency, change detection, and the watch operation on a resource or set of resources.
+          Clients must treat these values as opaque and passed unmodified back to the server.
+          They may only be valid for a particular resource or set of resources.
+
+          Populated by the system.
+          Read-only.
+          Value must be treated as opaque by clients and .
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+          +optional
+        type: string
+      selfLink:
+        description: |-
+          SelfLink is a URL representing this object.
+          Populated by the system.
+          Read-only.
+
+          DEPRECATED
+          Kubernetes will stop propagating this field in 1.20 release and the field is planned
+          to be removed in 1.21 release.
+          +optional
+        type: string
+      spec:
+        $ref: '#/definitions/v1alpha1.LocalDiskSpec'
+      status:
+        $ref: '#/definitions/v1alpha1.LocalDiskStatus'
       totalCapacityBytes:
         description: TotalCapacityBytes 总容量
         type: integer
-      type:
-        description: 'Supported: HDD, SSD, NVMe, RAM 磁盘类型'
+      uid:
+        description: |-
+          UID is the unique in time and space value for this object. It is typically generated by
+          the server on successful creation of a resource and is not allowed to change on PUT
+          operations.
+
+          Populated by the system.
+          Read-only.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#uids
+          +optional
         type: string
     type: object
   api.LocalDiskListByNode:
     properties:
       items:
-        $ref: '#/definitions/api.LocalDisksItemsList'
-        description: |-
-          // localDisks 节点磁盘列表
-          LocalDisks []*LocalDisk `json:"items,omitempty"`
-          localDisks 节点磁盘列表
+        description: localDisks 节点磁盘列表
+        items:
+          $ref: '#/definitions/api.LocalDiskInfo'
+        type: array
       nodeName:
         description: nodeName 节点名称
         type: string
@@ -126,10 +271,10 @@ definitions:
     type: object
   api.LocalDisksItemsList:
     properties:
-      localDisks:
+      items:
         description: localDisks 节点磁盘列表
         items:
-          $ref: '#/definitions/api.LocalDisk'
+          $ref: '#/definitions/api.LocalDiskInfo'
         type: array
     type: object
   api.ModuleStatus:
@@ -141,19 +286,12 @@ definitions:
         description: 组件状态 运行中 未就绪
         type: string
     type: object
-  api.ModuleStatusMetric:
-    properties:
-      modulesStatus:
-        items:
-          $ref: '#/definitions/api.ModuleStatus'
-        type: array
-    type: object
   api.NodeDiskListByPool:
     properties:
       localDisks:
         description: localDisks 节点磁盘列表
         items:
-          $ref: '#/definitions/api.LocalDisk'
+          $ref: '#/definitions/api.LocalDiskInfo'
         type: array
       nodeName:
         description: nodeName 节点名称
@@ -161,63 +299,9 @@ definitions:
       page:
         $ref: '#/definitions/api.Pagination'
         description: page 信息
-      storagePoolName:
-        description: StoragePoolName 存储池名称
+      poolName:
+        description: PoolName 存储池名称
         type: string
-    type: object
-  api.NodeStorageUse:
-    properties:
-      allocatedCapacityBytes:
-        description: 已分配容量
-        type: integer
-      name:
-        description: 存储节点名字
-        type: string
-      totalCapacityBytes:
-        description: 总容量
-        type: integer
-    type: object
-  api.NodeStorageUseMetric:
-    properties:
-      nodeStoragesUse:
-        description: 节点存储TOP5 使用率列表 5条列表上限
-        items:
-          $ref: '#/definitions/api.NodeStorageUse'
-        type: array
-      storagePoolClass:
-        description: 存储池类型 SSD HDD
-        type: string
-    type: object
-  api.Operation:
-    properties:
-      description:
-        description: 详细描述
-        type: string
-      endTime:
-        description: 结束时间
-        type: string
-      eventName:
-        description: 事件名称
-        type: string
-      eventType:
-        description: 事件类型
-        type: string
-      startTime:
-        description: 开始时间
-        type: string
-      status:
-        description: 状态
-        type: string
-    type: object
-  api.OperationMetric:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/api.Operation'
-        type: array
-      pagination:
-        $ref: '#/definitions/api.Pagination'
-        description: page 信息
     type: object
   api.Pagination:
     properties:
@@ -244,6 +328,113 @@ definitions:
         type: integer
     type: object
   api.StorageNode:
+    properties:
+      k8SNodeState:
+        description: 组件状态 运行中 未就绪
+        type: string
+      localDiskNode:
+        $ref: '#/definitions/v1alpha1.LocalDiskNode'
+      localStorageNode:
+        $ref: '#/definitions/v1alpha1.LocalStorageNode'
+    type: object
+  api.StorageNodeList:
+    properties:
+      items:
+        description: StorageNodes
+        items:
+          $ref: '#/definitions/api.StorageNode'
+        type: array
+      pagination:
+        $ref: '#/definitions/api.Pagination'
+        description: page 信息
+    type: object
+  api.StorageNodeListByPool:
+    properties:
+      page:
+        $ref: '#/definitions/api.Pagination'
+        description: page 信息
+      storageNodes:
+        description: StorageNodes
+        items:
+          $ref: '#/definitions/api.StorageNode'
+        type: array
+      storagePoolName:
+        description: StoragePoolName 存储池名称
+        type: string
+    type: object
+  api.StoragePool:
+    properties:
+      allocatedCapacityBytes:
+        description: |-
+          // Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL 存储池名称
+          Name string `json:"name,omitempty"`
+
+          // Supported class: HDD, SSD, NVMe 磁盘类型
+          Class string `json:"class"`
+
+          // TotalCapacityBytes 存储池对应存储总容量
+          TotalCapacityBytes int64 `json:"totalCapacityBytes"`
+
+          AllocatedCapacityBytes 存储池已经分配存储容量
+        type: integer
+      class:
+        description: |-
+          Supported class: HDD, SSD, NVMe
+          +kubebuilder:validation:Enum:=HDD;SSD;NVMe
+        type: string
+      createTime:
+        description: createTime 创建时间
+        type: string
+      disks:
+        items:
+          $ref: '#/definitions/v1alpha1.LocalDevice'
+        type: array
+      freeCapacityBytes:
+        type: integer
+      freeVolumeCount:
+        type: integer
+      name:
+        description: 'Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL'
+        type: string
+      nodesNum:
+        description: NodesNum 节点数
+        type: integer
+      path:
+        description: VG path
+        type: string
+      totalCapacityBytes:
+        type: integer
+      totalVolumeCount:
+        type: integer
+      type:
+        description: |-
+          Supported type: REGULAR
+          +kubebuilder:validation:Enum:=REGULAR
+          +kubebuilder:default:=REGULAR
+        type: string
+      usedCapacityBytes:
+        type: integer
+      usedVolumeCount:
+        type: integer
+      volumeCapacityBytesLimit:
+        type: integer
+      volumes:
+        items:
+          type: string
+        type: array
+    type: object
+  api.StoragePoolList:
+    properties:
+      page:
+        $ref: '#/definitions/api.Pagination'
+        description: page 信息
+      storagePools:
+        description: storagePools
+        items:
+          $ref: '#/definitions/api.StoragePool'
+        type: array
+    type: object
+  api.Volume:
     properties:
       annotations:
         additionalProperties:
@@ -312,15 +503,2007 @@ definitions:
           More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
           +optional
         type: string
-      driverStatus:
+      finalizers:
         description: |-
-          // name 节点名字
-          Name string `json:"name,omitempty"`
-          // ip 节点IP
-          IP string `json:"ip,omitempty"`
-          // node state 节点状态 运行中（Ready）,未就绪（NotReady）,未知（Unknown）
-          NodeState State `json:"nodeState,omitempty"`
-          driver status 驱动状态  运行中（Ready）,维护中（Maintain）, 离线（Offline）
+          Must be empty before the object is deleted from the registry. Each entry
+          is an identifier for the responsible component that will remove the entry
+          from the list. If the deletionTimestamp of the object is non-nil, entries
+          in this list can only be removed.
+          Finalizers may be processed and removed in any order.  Order is NOT enforced
+          because it introduces significant risk of stuck finalizers.
+          finalizers is a shared field, any actor with permission can reorder it.
+          If the finalizer list is processed in order, then this can lead to a situation
+          in which the component responsible for the first finalizer in the list is
+          waiting for a signal (field value, external system, or other) produced by a
+          component responsible for a finalizer later in the list, resulting in a deadlock.
+          Without enforced ordering finalizers are free to order amongst themselves and
+          are not vulnerable to ordering changes in the list.
+          +optional
+          +patchStrategy=merge
+        items:
+          type: string
+        type: array
+      generateName:
+        description: |-
+          GenerateName is an optional prefix, used by the server, to generate a unique
+          name ONLY IF the Name field has not been provided.
+          If this field is used, the name returned to the client will be different
+          than the name passed. This value will also be combined with a unique suffix.
+          The provided value has the same validation rules as the Name field,
+          and may be truncated by the length of the suffix required to make the value
+          unique on the server.
+
+          If this field is specified and the generated name exists, the server will
+          NOT return a 409 - instead, it will either return 201 Created or 500 with Reason
+          ServerTimeout indicating a unique name could not be found in the time allotted, and the client
+          should retry (optionally after the time indicated in the Retry-After header).
+
+          Applied only if Name is not specified.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency
+          +optional
+        type: string
+      generation:
+        description: |-
+          A sequence number representing a specific generation of the desired state.
+          Populated by the system. Read-only.
+          +optional
+        type: integer
+      kind:
+        description: |-
+          Kind is a string value representing the REST resource this object represents.
+          Servers may infer this from the endpoint the client submits requests to.
+          Cannot be updated.
+          In CamelCase.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+          +optional
+        type: string
+      labels:
+        additionalProperties:
+          type: string
+        description: |-
+          Map of string keys and values that can be used to organize and categorize
+          (scope and select) objects. May match selectors of replication controllers
+          and services.
+          More info: http://kubernetes.io/docs/user-guide/labels
+          +optional
+        type: object
+      managedFields:
+        description: |-
+          ManagedFields maps workflow-id and version to the set of fields
+          that are managed by that workflow. This is mostly for internal
+          housekeeping, and users typically shouldn't need to set or
+          understand this field. A workflow can be the user's name, a
+          controller's name, or the name of a specific apply path like
+          "ci-cd". The set of fields is always in the version that the
+          workflow used when modifying the object.
+
+          +optional
+        items:
+          $ref: '#/definitions/v1.ManagedFieldsEntry'
+        type: array
+      name:
+        description: |-
+          Name must be unique within a namespace. Is required when creating resources, although
+          some resources may allow a client to request the generation of an appropriate name
+          automatically. Name is primarily intended for creation idempotence and configuration
+          definition.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#names
+          +optional
+        type: string
+      namespace:
+        description: |-
+          Namespace defines the space within which each name must be unique. An empty namespace is
+          equivalent to the "default" namespace, but "default" is the canonical representation.
+          Not all objects are required to be scoped to a namespace - the value of this field for
+          those objects will be empty.
+
+          Must be a DNS_LABEL.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/namespaces
+          +optional
+        type: string
+      ownerReferences:
+        description: |-
+          List of objects depended by this object. If ALL objects in the list have
+          been deleted, this object will be garbage collected. If this object is managed by a controller,
+          then an entry in this list will point to this controller, with the controller field set to true.
+          There cannot be more than one managing controller.
+          +optional
+          +patchMergeKey=uid
+          +patchStrategy=merge
+        items:
+          $ref: '#/definitions/v1.OwnerReference'
+        type: array
+      resourceVersion:
+        description: |-
+          An opaque value that represents the internal version of this object that can
+          be used by clients to determine when objects have changed. May be used for optimistic
+          concurrency, change detection, and the watch operation on a resource or set of resources.
+          Clients must treat these values as opaque and passed unmodified back to the server.
+          They may only be valid for a particular resource or set of resources.
+
+          Populated by the system.
+          Read-only.
+          Value must be treated as opaque by clients and .
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+          +optional
+        type: string
+      selfLink:
+        description: |-
+          SelfLink is a URL representing this object.
+          Populated by the system.
+          Read-only.
+
+          DEPRECATED
+          Kubernetes will stop propagating this field in 1.20 release and the field is planned
+          to be removed in 1.21 release.
+          +optional
+        type: string
+      spec:
+        $ref: '#/definitions/v1alpha1.LocalVolumeSpec'
+      status:
+        $ref: '#/definitions/v1alpha1.LocalVolumeStatus'
+      uid:
+        description: |-
+          UID is the unique in time and space value for this object. It is typically generated by
+          the server on successful creation of a resource and is not allowed to change on PUT
+          operations.
+
+          Populated by the system.
+          Read-only.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#uids
+          +optional
+        type: string
+    type: object
+  api.VolumeConvertInfo:
+    properties:
+      replicaNum:
+        type: integer
+      volumeName:
+        type: string
+    type: object
+  api.VolumeConvertOperation:
+    properties:
+      annotations:
+        additionalProperties:
+          type: string
+        description: |-
+          Annotations is an unstructured key value map stored with a resource that may be
+          set by external tools to store and retrieve arbitrary metadata. They are not
+          queryable and should be preserved when modifying objects.
+          More info: http://kubernetes.io/docs/user-guide/annotations
+          +optional
+        type: object
+      apiVersion:
+        description: |-
+          APIVersion defines the versioned schema of this representation of an object.
+          Servers should convert recognized schemas to the latest internal value, and
+          may reject unrecognized values.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+          +optional
+        type: string
+      clusterName:
+        description: |-
+          The name of the cluster which the object belongs to.
+          This is used to distinguish resources with same name and namespace in different clusters.
+          This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.
+          +optional
+        type: string
+      creationTimestamp:
+        description: |-
+          CreationTimestamp is a timestamp representing the server time when this object was
+          created. It is not guaranteed to be set in happens-before order across separate operations.
+          Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+
+          Populated by the system.
+          Read-only.
+          Null for lists.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      deletionGracePeriodSeconds:
+        description: |-
+          Number of seconds allowed for this object to gracefully terminate before
+          it will be removed from the system. Only set when deletionTimestamp is also set.
+          May only be shortened.
+          Read-only.
+          +optional
+        type: integer
+      deletionTimestamp:
+        description: |-
+          DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This
+          field is set by the server when a graceful deletion is requested by the user, and is not
+          directly settable by a client. The resource is expected to be deleted (no longer visible
+          from resource lists, and not reachable by name) after the time in this field, once the
+          finalizers list is empty. As long as the finalizers list contains items, deletion is blocked.
+          Once the deletionTimestamp is set, this value may not be unset or be set further into the
+          future, although it may be shortened or the resource may be deleted prior to this time.
+          For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react
+          by sending a graceful termination signal to the containers in the pod. After that 30 seconds,
+          the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,
+          remove the pod from the API. In the presence of network partitions, this object may still
+          exist after this timestamp, until an administrator or automated process can determine the
+          resource is fully terminated.
+          If not set, graceful deletion of the object has not been requested.
+
+          Populated by the system when a graceful deletion is requested.
+          Read-only.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      finalizers:
+        description: |-
+          Must be empty before the object is deleted from the registry. Each entry
+          is an identifier for the responsible component that will remove the entry
+          from the list. If the deletionTimestamp of the object is non-nil, entries
+          in this list can only be removed.
+          Finalizers may be processed and removed in any order.  Order is NOT enforced
+          because it introduces significant risk of stuck finalizers.
+          finalizers is a shared field, any actor with permission can reorder it.
+          If the finalizer list is processed in order, then this can lead to a situation
+          in which the component responsible for the first finalizer in the list is
+          waiting for a signal (field value, external system, or other) produced by a
+          component responsible for a finalizer later in the list, resulting in a deadlock.
+          Without enforced ordering finalizers are free to order amongst themselves and
+          are not vulnerable to ordering changes in the list.
+          +optional
+          +patchStrategy=merge
+        items:
+          type: string
+        type: array
+      generateName:
+        description: |-
+          GenerateName is an optional prefix, used by the server, to generate a unique
+          name ONLY IF the Name field has not been provided.
+          If this field is used, the name returned to the client will be different
+          than the name passed. This value will also be combined with a unique suffix.
+          The provided value has the same validation rules as the Name field,
+          and may be truncated by the length of the suffix required to make the value
+          unique on the server.
+
+          If this field is specified and the generated name exists, the server will
+          NOT return a 409 - instead, it will either return 201 Created or 500 with Reason
+          ServerTimeout indicating a unique name could not be found in the time allotted, and the client
+          should retry (optionally after the time indicated in the Retry-After header).
+
+          Applied only if Name is not specified.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency
+          +optional
+        type: string
+      generation:
+        description: |-
+          A sequence number representing a specific generation of the desired state.
+          Populated by the system. Read-only.
+          +optional
+        type: integer
+      kind:
+        description: |-
+          Kind is a string value representing the REST resource this object represents.
+          Servers may infer this from the endpoint the client submits requests to.
+          Cannot be updated.
+          In CamelCase.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+          +optional
+        type: string
+      labels:
+        additionalProperties:
+          type: string
+        description: |-
+          Map of string keys and values that can be used to organize and categorize
+          (scope and select) objects. May match selectors of replication controllers
+          and services.
+          More info: http://kubernetes.io/docs/user-guide/labels
+          +optional
+        type: object
+      managedFields:
+        description: |-
+          ManagedFields maps workflow-id and version to the set of fields
+          that are managed by that workflow. This is mostly for internal
+          housekeeping, and users typically shouldn't need to set or
+          understand this field. A workflow can be the user's name, a
+          controller's name, or the name of a specific apply path like
+          "ci-cd". The set of fields is always in the version that the
+          workflow used when modifying the object.
+
+          +optional
+        items:
+          $ref: '#/definitions/v1.ManagedFieldsEntry'
+        type: array
+      name:
+        description: |-
+          Name must be unique within a namespace. Is required when creating resources, although
+          some resources may allow a client to request the generation of an appropriate name
+          automatically. Name is primarily intended for creation idempotence and configuration
+          definition.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#names
+          +optional
+        type: string
+      namespace:
+        description: |-
+          Namespace defines the space within which each name must be unique. An empty namespace is
+          equivalent to the "default" namespace, but "default" is the canonical representation.
+          Not all objects are required to be scoped to a namespace - the value of this field for
+          those objects will be empty.
+
+          Must be a DNS_LABEL.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/namespaces
+          +optional
+        type: string
+      ownerReferences:
+        description: |-
+          List of objects depended by this object. If ALL objects in the list have
+          been deleted, this object will be garbage collected. If this object is managed by a controller,
+          then an entry in this list will point to this controller, with the controller field set to true.
+          There cannot be more than one managing controller.
+          +optional
+          +patchMergeKey=uid
+          +patchStrategy=merge
+        items:
+          $ref: '#/definitions/v1.OwnerReference'
+        type: array
+      resourceVersion:
+        description: |-
+          An opaque value that represents the internal version of this object that can
+          be used by clients to determine when objects have changed. May be used for optimistic
+          concurrency, change detection, and the watch operation on a resource or set of resources.
+          Clients must treat these values as opaque and passed unmodified back to the server.
+          They may only be valid for a particular resource or set of resources.
+
+          Populated by the system.
+          Read-only.
+          Value must be treated as opaque by clients and .
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+          +optional
+        type: string
+      selfLink:
+        description: |-
+          SelfLink is a URL representing this object.
+          Populated by the system.
+          Read-only.
+
+          DEPRECATED
+          Kubernetes will stop propagating this field in 1.20 release and the field is planned
+          to be removed in 1.21 release.
+          +optional
+        type: string
+      spec:
+        $ref: '#/definitions/v1alpha1.LocalVolumeConvertSpec'
+      status:
+        $ref: '#/definitions/v1alpha1.LocalVolumeConvertStatus'
+      uid:
+        description: |-
+          UID is the unique in time and space value for this object. It is typically generated by
+          the server on successful creation of a resource and is not allowed to change on PUT
+          operations.
+
+          Populated by the system.
+          Read-only.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#uids
+          +optional
+        type: string
+    type: object
+  api.VolumeConvertRspBody:
+    properties:
+      data:
+        $ref: '#/definitions/api.VolumeConvertInfo'
+    type: object
+  api.VolumeExpandOperation:
+    properties:
+      annotations:
+        additionalProperties:
+          type: string
+        description: |-
+          Annotations is an unstructured key value map stored with a resource that may be
+          set by external tools to store and retrieve arbitrary metadata. They are not
+          queryable and should be preserved when modifying objects.
+          More info: http://kubernetes.io/docs/user-guide/annotations
+          +optional
+        type: object
+      apiVersion:
+        description: |-
+          APIVersion defines the versioned schema of this representation of an object.
+          Servers should convert recognized schemas to the latest internal value, and
+          may reject unrecognized values.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+          +optional
+        type: string
+      clusterName:
+        description: |-
+          The name of the cluster which the object belongs to.
+          This is used to distinguish resources with same name and namespace in different clusters.
+          This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.
+          +optional
+        type: string
+      creationTimestamp:
+        description: |-
+          CreationTimestamp is a timestamp representing the server time when this object was
+          created. It is not guaranteed to be set in happens-before order across separate operations.
+          Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+
+          Populated by the system.
+          Read-only.
+          Null for lists.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      deletionGracePeriodSeconds:
+        description: |-
+          Number of seconds allowed for this object to gracefully terminate before
+          it will be removed from the system. Only set when deletionTimestamp is also set.
+          May only be shortened.
+          Read-only.
+          +optional
+        type: integer
+      deletionTimestamp:
+        description: |-
+          DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This
+          field is set by the server when a graceful deletion is requested by the user, and is not
+          directly settable by a client. The resource is expected to be deleted (no longer visible
+          from resource lists, and not reachable by name) after the time in this field, once the
+          finalizers list is empty. As long as the finalizers list contains items, deletion is blocked.
+          Once the deletionTimestamp is set, this value may not be unset or be set further into the
+          future, although it may be shortened or the resource may be deleted prior to this time.
+          For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react
+          by sending a graceful termination signal to the containers in the pod. After that 30 seconds,
+          the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,
+          remove the pod from the API. In the presence of network partitions, this object may still
+          exist after this timestamp, until an administrator or automated process can determine the
+          resource is fully terminated.
+          If not set, graceful deletion of the object has not been requested.
+
+          Populated by the system when a graceful deletion is requested.
+          Read-only.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      finalizers:
+        description: |-
+          Must be empty before the object is deleted from the registry. Each entry
+          is an identifier for the responsible component that will remove the entry
+          from the list. If the deletionTimestamp of the object is non-nil, entries
+          in this list can only be removed.
+          Finalizers may be processed and removed in any order.  Order is NOT enforced
+          because it introduces significant risk of stuck finalizers.
+          finalizers is a shared field, any actor with permission can reorder it.
+          If the finalizer list is processed in order, then this can lead to a situation
+          in which the component responsible for the first finalizer in the list is
+          waiting for a signal (field value, external system, or other) produced by a
+          component responsible for a finalizer later in the list, resulting in a deadlock.
+          Without enforced ordering finalizers are free to order amongst themselves and
+          are not vulnerable to ordering changes in the list.
+          +optional
+          +patchStrategy=merge
+        items:
+          type: string
+        type: array
+      generateName:
+        description: |-
+          GenerateName is an optional prefix, used by the server, to generate a unique
+          name ONLY IF the Name field has not been provided.
+          If this field is used, the name returned to the client will be different
+          than the name passed. This value will also be combined with a unique suffix.
+          The provided value has the same validation rules as the Name field,
+          and may be truncated by the length of the suffix required to make the value
+          unique on the server.
+
+          If this field is specified and the generated name exists, the server will
+          NOT return a 409 - instead, it will either return 201 Created or 500 with Reason
+          ServerTimeout indicating a unique name could not be found in the time allotted, and the client
+          should retry (optionally after the time indicated in the Retry-After header).
+
+          Applied only if Name is not specified.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency
+          +optional
+        type: string
+      generation:
+        description: |-
+          A sequence number representing a specific generation of the desired state.
+          Populated by the system. Read-only.
+          +optional
+        type: integer
+      kind:
+        description: |-
+          Kind is a string value representing the REST resource this object represents.
+          Servers may infer this from the endpoint the client submits requests to.
+          Cannot be updated.
+          In CamelCase.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+          +optional
+        type: string
+      labels:
+        additionalProperties:
+          type: string
+        description: |-
+          Map of string keys and values that can be used to organize and categorize
+          (scope and select) objects. May match selectors of replication controllers
+          and services.
+          More info: http://kubernetes.io/docs/user-guide/labels
+          +optional
+        type: object
+      managedFields:
+        description: |-
+          ManagedFields maps workflow-id and version to the set of fields
+          that are managed by that workflow. This is mostly for internal
+          housekeeping, and users typically shouldn't need to set or
+          understand this field. A workflow can be the user's name, a
+          controller's name, or the name of a specific apply path like
+          "ci-cd". The set of fields is always in the version that the
+          workflow used when modifying the object.
+
+          +optional
+        items:
+          $ref: '#/definitions/v1.ManagedFieldsEntry'
+        type: array
+      name:
+        description: |-
+          Name must be unique within a namespace. Is required when creating resources, although
+          some resources may allow a client to request the generation of an appropriate name
+          automatically. Name is primarily intended for creation idempotence and configuration
+          definition.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#names
+          +optional
+        type: string
+      namespace:
+        description: |-
+          Namespace defines the space within which each name must be unique. An empty namespace is
+          equivalent to the "default" namespace, but "default" is the canonical representation.
+          Not all objects are required to be scoped to a namespace - the value of this field for
+          those objects will be empty.
+
+          Must be a DNS_LABEL.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/namespaces
+          +optional
+        type: string
+      ownerReferences:
+        description: |-
+          List of objects depended by this object. If ALL objects in the list have
+          been deleted, this object will be garbage collected. If this object is managed by a controller,
+          then an entry in this list will point to this controller, with the controller field set to true.
+          There cannot be more than one managing controller.
+          +optional
+          +patchMergeKey=uid
+          +patchStrategy=merge
+        items:
+          $ref: '#/definitions/v1.OwnerReference'
+        type: array
+      resourceVersion:
+        description: |-
+          An opaque value that represents the internal version of this object that can
+          be used by clients to determine when objects have changed. May be used for optimistic
+          concurrency, change detection, and the watch operation on a resource or set of resources.
+          Clients must treat these values as opaque and passed unmodified back to the server.
+          They may only be valid for a particular resource or set of resources.
+
+          Populated by the system.
+          Read-only.
+          Value must be treated as opaque by clients and .
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+          +optional
+        type: string
+      selfLink:
+        description: |-
+          SelfLink is a URL representing this object.
+          Populated by the system.
+          Read-only.
+
+          DEPRECATED
+          Kubernetes will stop propagating this field in 1.20 release and the field is planned
+          to be removed in 1.21 release.
+          +optional
+        type: string
+      spec:
+        $ref: '#/definitions/v1alpha1.LocalVolumeExpandSpec'
+      status:
+        $ref: '#/definitions/v1alpha1.LocalVolumeExpandStatus'
+      uid:
+        description: |-
+          UID is the unique in time and space value for this object. It is typically generated by
+          the server on successful creation of a resource and is not allowed to change on PUT
+          operations.
+
+          Populated by the system.
+          Read-only.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#uids
+          +optional
+        type: string
+    type: object
+  api.VolumeGroup:
+    properties:
+      annotations:
+        additionalProperties:
+          type: string
+        description: |-
+          Annotations is an unstructured key value map stored with a resource that may be
+          set by external tools to store and retrieve arbitrary metadata. They are not
+          queryable and should be preserved when modifying objects.
+          More info: http://kubernetes.io/docs/user-guide/annotations
+          +optional
+        type: object
+      apiVersion:
+        description: |-
+          APIVersion defines the versioned schema of this representation of an object.
+          Servers should convert recognized schemas to the latest internal value, and
+          may reject unrecognized values.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+          +optional
+        type: string
+      clusterName:
+        description: |-
+          The name of the cluster which the object belongs to.
+          This is used to distinguish resources with same name and namespace in different clusters.
+          This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.
+          +optional
+        type: string
+      creationTimestamp:
+        description: |-
+          CreationTimestamp is a timestamp representing the server time when this object was
+          created. It is not guaranteed to be set in happens-before order across separate operations.
+          Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+
+          Populated by the system.
+          Read-only.
+          Null for lists.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      deletionGracePeriodSeconds:
+        description: |-
+          Number of seconds allowed for this object to gracefully terminate before
+          it will be removed from the system. Only set when deletionTimestamp is also set.
+          May only be shortened.
+          Read-only.
+          +optional
+        type: integer
+      deletionTimestamp:
+        description: |-
+          DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This
+          field is set by the server when a graceful deletion is requested by the user, and is not
+          directly settable by a client. The resource is expected to be deleted (no longer visible
+          from resource lists, and not reachable by name) after the time in this field, once the
+          finalizers list is empty. As long as the finalizers list contains items, deletion is blocked.
+          Once the deletionTimestamp is set, this value may not be unset or be set further into the
+          future, although it may be shortened or the resource may be deleted prior to this time.
+          For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react
+          by sending a graceful termination signal to the containers in the pod. After that 30 seconds,
+          the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,
+          remove the pod from the API. In the presence of network partitions, this object may still
+          exist after this timestamp, until an administrator or automated process can determine the
+          resource is fully terminated.
+          If not set, graceful deletion of the object has not been requested.
+
+          Populated by the system when a graceful deletion is requested.
+          Read-only.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      finalizers:
+        description: |-
+          Must be empty before the object is deleted from the registry. Each entry
+          is an identifier for the responsible component that will remove the entry
+          from the list. If the deletionTimestamp of the object is non-nil, entries
+          in this list can only be removed.
+          Finalizers may be processed and removed in any order.  Order is NOT enforced
+          because it introduces significant risk of stuck finalizers.
+          finalizers is a shared field, any actor with permission can reorder it.
+          If the finalizer list is processed in order, then this can lead to a situation
+          in which the component responsible for the first finalizer in the list is
+          waiting for a signal (field value, external system, or other) produced by a
+          component responsible for a finalizer later in the list, resulting in a deadlock.
+          Without enforced ordering finalizers are free to order amongst themselves and
+          are not vulnerable to ordering changes in the list.
+          +optional
+          +patchStrategy=merge
+        items:
+          type: string
+        type: array
+      generateName:
+        description: |-
+          GenerateName is an optional prefix, used by the server, to generate a unique
+          name ONLY IF the Name field has not been provided.
+          If this field is used, the name returned to the client will be different
+          than the name passed. This value will also be combined with a unique suffix.
+          The provided value has the same validation rules as the Name field,
+          and may be truncated by the length of the suffix required to make the value
+          unique on the server.
+
+          If this field is specified and the generated name exists, the server will
+          NOT return a 409 - instead, it will either return 201 Created or 500 with Reason
+          ServerTimeout indicating a unique name could not be found in the time allotted, and the client
+          should retry (optionally after the time indicated in the Retry-After header).
+
+          Applied only if Name is not specified.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency
+          +optional
+        type: string
+      generation:
+        description: |-
+          A sequence number representing a specific generation of the desired state.
+          Populated by the system. Read-only.
+          +optional
+        type: integer
+      kind:
+        description: |-
+          Kind is a string value representing the REST resource this object represents.
+          Servers may infer this from the endpoint the client submits requests to.
+          Cannot be updated.
+          In CamelCase.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+          +optional
+        type: string
+      labels:
+        additionalProperties:
+          type: string
+        description: |-
+          Map of string keys and values that can be used to organize and categorize
+          (scope and select) objects. May match selectors of replication controllers
+          and services.
+          More info: http://kubernetes.io/docs/user-guide/labels
+          +optional
+        type: object
+      managedFields:
+        description: |-
+          ManagedFields maps workflow-id and version to the set of fields
+          that are managed by that workflow. This is mostly for internal
+          housekeeping, and users typically shouldn't need to set or
+          understand this field. A workflow can be the user's name, a
+          controller's name, or the name of a specific apply path like
+          "ci-cd". The set of fields is always in the version that the
+          workflow used when modifying the object.
+
+          +optional
+        items:
+          $ref: '#/definitions/v1.ManagedFieldsEntry'
+        type: array
+      name:
+        description: |-
+          Name must be unique within a namespace. Is required when creating resources, although
+          some resources may allow a client to request the generation of an appropriate name
+          automatically. Name is primarily intended for creation idempotence and configuration
+          definition.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#names
+          +optional
+        type: string
+      namespace:
+        description: |-
+          Namespace defines the space within which each name must be unique. An empty namespace is
+          equivalent to the "default" namespace, but "default" is the canonical representation.
+          Not all objects are required to be scoped to a namespace - the value of this field for
+          those objects will be empty.
+
+          Must be a DNS_LABEL.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/namespaces
+          +optional
+        type: string
+      ownerReferences:
+        description: |-
+          List of objects depended by this object. If ALL objects in the list have
+          been deleted, this object will be garbage collected. If this object is managed by a controller,
+          then an entry in this list will point to this controller, with the controller field set to true.
+          There cannot be more than one managing controller.
+          +optional
+          +patchMergeKey=uid
+          +patchStrategy=merge
+        items:
+          $ref: '#/definitions/v1.OwnerReference'
+        type: array
+      resourceVersion:
+        description: |-
+          An opaque value that represents the internal version of this object that can
+          be used by clients to determine when objects have changed. May be used for optimistic
+          concurrency, change detection, and the watch operation on a resource or set of resources.
+          Clients must treat these values as opaque and passed unmodified back to the server.
+          They may only be valid for a particular resource or set of resources.
+
+          Populated by the system.
+          Read-only.
+          Value must be treated as opaque by clients and .
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+          +optional
+        type: string
+      selfLink:
+        description: |-
+          SelfLink is a URL representing this object.
+          Populated by the system.
+          Read-only.
+
+          DEPRECATED
+          Kubernetes will stop propagating this field in 1.20 release and the field is planned
+          to be removed in 1.21 release.
+          +optional
+        type: string
+      spec:
+        $ref: '#/definitions/v1alpha1.LocalVolumeGroupSpec'
+      status:
+        $ref: '#/definitions/v1alpha1.LocalVolumeGroupStatus'
+      uid:
+        description: |-
+          UID is the unique in time and space value for this object. It is typically generated by
+          the server on successful creation of a resource and is not allowed to change on PUT
+          operations.
+
+          Populated by the system.
+          Read-only.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#uids
+          +optional
+        type: string
+      volumes:
+        description: Volumes
+        items:
+          $ref: '#/definitions/v1alpha1.LocalVolume'
+        type: array
+    type: object
+  api.VolumeGroupList:
+    properties:
+      items:
+        description: VolumeGroups
+        items:
+          $ref: '#/definitions/api.VolumeGroup'
+        type: array
+    type: object
+  api.VolumeList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/api.Volume'
+        type: array
+      pagination:
+        $ref: '#/definitions/api.Pagination'
+        description: page 信息
+    type: object
+  api.VolumeMigrateInfo:
+    properties:
+      selectedNode:
+        type: string
+      srcNode:
+        type: string
+      volumeName:
+        type: string
+    type: object
+  api.VolumeMigrateOperation:
+    properties:
+      annotations:
+        additionalProperties:
+          type: string
+        description: |-
+          Annotations is an unstructured key value map stored with a resource that may be
+          set by external tools to store and retrieve arbitrary metadata. They are not
+          queryable and should be preserved when modifying objects.
+          More info: http://kubernetes.io/docs/user-guide/annotations
+          +optional
+        type: object
+      apiVersion:
+        description: |-
+          APIVersion defines the versioned schema of this representation of an object.
+          Servers should convert recognized schemas to the latest internal value, and
+          may reject unrecognized values.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+          +optional
+        type: string
+      clusterName:
+        description: |-
+          The name of the cluster which the object belongs to.
+          This is used to distinguish resources with same name and namespace in different clusters.
+          This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.
+          +optional
+        type: string
+      creationTimestamp:
+        description: |-
+          CreationTimestamp is a timestamp representing the server time when this object was
+          created. It is not guaranteed to be set in happens-before order across separate operations.
+          Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+
+          Populated by the system.
+          Read-only.
+          Null for lists.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      deletionGracePeriodSeconds:
+        description: |-
+          Number of seconds allowed for this object to gracefully terminate before
+          it will be removed from the system. Only set when deletionTimestamp is also set.
+          May only be shortened.
+          Read-only.
+          +optional
+        type: integer
+      deletionTimestamp:
+        description: |-
+          DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This
+          field is set by the server when a graceful deletion is requested by the user, and is not
+          directly settable by a client. The resource is expected to be deleted (no longer visible
+          from resource lists, and not reachable by name) after the time in this field, once the
+          finalizers list is empty. As long as the finalizers list contains items, deletion is blocked.
+          Once the deletionTimestamp is set, this value may not be unset or be set further into the
+          future, although it may be shortened or the resource may be deleted prior to this time.
+          For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react
+          by sending a graceful termination signal to the containers in the pod. After that 30 seconds,
+          the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,
+          remove the pod from the API. In the presence of network partitions, this object may still
+          exist after this timestamp, until an administrator or automated process can determine the
+          resource is fully terminated.
+          If not set, graceful deletion of the object has not been requested.
+
+          Populated by the system when a graceful deletion is requested.
+          Read-only.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      finalizers:
+        description: |-
+          Must be empty before the object is deleted from the registry. Each entry
+          is an identifier for the responsible component that will remove the entry
+          from the list. If the deletionTimestamp of the object is non-nil, entries
+          in this list can only be removed.
+          Finalizers may be processed and removed in any order.  Order is NOT enforced
+          because it introduces significant risk of stuck finalizers.
+          finalizers is a shared field, any actor with permission can reorder it.
+          If the finalizer list is processed in order, then this can lead to a situation
+          in which the component responsible for the first finalizer in the list is
+          waiting for a signal (field value, external system, or other) produced by a
+          component responsible for a finalizer later in the list, resulting in a deadlock.
+          Without enforced ordering finalizers are free to order amongst themselves and
+          are not vulnerable to ordering changes in the list.
+          +optional
+          +patchStrategy=merge
+        items:
+          type: string
+        type: array
+      generateName:
+        description: |-
+          GenerateName is an optional prefix, used by the server, to generate a unique
+          name ONLY IF the Name field has not been provided.
+          If this field is used, the name returned to the client will be different
+          than the name passed. This value will also be combined with a unique suffix.
+          The provided value has the same validation rules as the Name field,
+          and may be truncated by the length of the suffix required to make the value
+          unique on the server.
+
+          If this field is specified and the generated name exists, the server will
+          NOT return a 409 - instead, it will either return 201 Created or 500 with Reason
+          ServerTimeout indicating a unique name could not be found in the time allotted, and the client
+          should retry (optionally after the time indicated in the Retry-After header).
+
+          Applied only if Name is not specified.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency
+          +optional
+        type: string
+      generation:
+        description: |-
+          A sequence number representing a specific generation of the desired state.
+          Populated by the system. Read-only.
+          +optional
+        type: integer
+      kind:
+        description: |-
+          Kind is a string value representing the REST resource this object represents.
+          Servers may infer this from the endpoint the client submits requests to.
+          Cannot be updated.
+          In CamelCase.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+          +optional
+        type: string
+      labels:
+        additionalProperties:
+          type: string
+        description: |-
+          Map of string keys and values that can be used to organize and categorize
+          (scope and select) objects. May match selectors of replication controllers
+          and services.
+          More info: http://kubernetes.io/docs/user-guide/labels
+          +optional
+        type: object
+      managedFields:
+        description: |-
+          ManagedFields maps workflow-id and version to the set of fields
+          that are managed by that workflow. This is mostly for internal
+          housekeeping, and users typically shouldn't need to set or
+          understand this field. A workflow can be the user's name, a
+          controller's name, or the name of a specific apply path like
+          "ci-cd". The set of fields is always in the version that the
+          workflow used when modifying the object.
+
+          +optional
+        items:
+          $ref: '#/definitions/v1.ManagedFieldsEntry'
+        type: array
+      name:
+        description: |-
+          Name must be unique within a namespace. Is required when creating resources, although
+          some resources may allow a client to request the generation of an appropriate name
+          automatically. Name is primarily intended for creation idempotence and configuration
+          definition.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#names
+          +optional
+        type: string
+      namespace:
+        description: |-
+          Namespace defines the space within which each name must be unique. An empty namespace is
+          equivalent to the "default" namespace, but "default" is the canonical representation.
+          Not all objects are required to be scoped to a namespace - the value of this field for
+          those objects will be empty.
+
+          Must be a DNS_LABEL.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/namespaces
+          +optional
+        type: string
+      ownerReferences:
+        description: |-
+          List of objects depended by this object. If ALL objects in the list have
+          been deleted, this object will be garbage collected. If this object is managed by a controller,
+          then an entry in this list will point to this controller, with the controller field set to true.
+          There cannot be more than one managing controller.
+          +optional
+          +patchMergeKey=uid
+          +patchStrategy=merge
+        items:
+          $ref: '#/definitions/v1.OwnerReference'
+        type: array
+      resourceVersion:
+        description: |-
+          An opaque value that represents the internal version of this object that can
+          be used by clients to determine when objects have changed. May be used for optimistic
+          concurrency, change detection, and the watch operation on a resource or set of resources.
+          Clients must treat these values as opaque and passed unmodified back to the server.
+          They may only be valid for a particular resource or set of resources.
+
+          Populated by the system.
+          Read-only.
+          Value must be treated as opaque by clients and .
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+          +optional
+        type: string
+      selfLink:
+        description: |-
+          SelfLink is a URL representing this object.
+          Populated by the system.
+          Read-only.
+
+          DEPRECATED
+          Kubernetes will stop propagating this field in 1.20 release and the field is planned
+          to be removed in 1.21 release.
+          +optional
+        type: string
+      spec:
+        $ref: '#/definitions/v1alpha1.LocalVolumeMigrateSpec'
+      status:
+        $ref: '#/definitions/v1alpha1.LocalVolumeMigrateStatus'
+      uid:
+        description: |-
+          UID is the unique in time and space value for this object. It is typically generated by
+          the server on successful creation of a resource and is not allowed to change on PUT
+          operations.
+
+          Populated by the system.
+          Read-only.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#uids
+          +optional
+        type: string
+    type: object
+  api.VolumeMigrateReqBody:
+    properties:
+      abort:
+        type: boolean
+      selectedNode:
+        type: string
+      srcNode:
+        type: string
+    type: object
+  api.VolumeMigrateRspBody:
+    properties:
+      data:
+        $ref: '#/definitions/api.VolumeMigrateInfo'
+    type: object
+  api.VolumeOperationListByNode:
+    properties:
+      items:
+        description: VolumeOperations
+        items:
+          $ref: '#/definitions/api.VolumeMigrateOperation'
+        type: array
+      nodeName:
+        description: node name
+        type: string
+      pagination:
+        $ref: '#/definitions/api.Pagination'
+        description: page 信息
+    type: object
+  api.VolumeReplica:
+    properties:
+      annotations:
+        additionalProperties:
+          type: string
+        description: |-
+          Annotations is an unstructured key value map stored with a resource that may be
+          set by external tools to store and retrieve arbitrary metadata. They are not
+          queryable and should be preserved when modifying objects.
+          More info: http://kubernetes.io/docs/user-guide/annotations
+          +optional
+        type: object
+      apiVersion:
+        description: |-
+          APIVersion defines the versioned schema of this representation of an object.
+          Servers should convert recognized schemas to the latest internal value, and
+          may reject unrecognized values.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+          +optional
+        type: string
+      clusterName:
+        description: |-
+          The name of the cluster which the object belongs to.
+          This is used to distinguish resources with same name and namespace in different clusters.
+          This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.
+          +optional
+        type: string
+      creationTimestamp:
+        description: |-
+          CreationTimestamp is a timestamp representing the server time when this object was
+          created. It is not guaranteed to be set in happens-before order across separate operations.
+          Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+
+          Populated by the system.
+          Read-only.
+          Null for lists.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      deletionGracePeriodSeconds:
+        description: |-
+          Number of seconds allowed for this object to gracefully terminate before
+          it will be removed from the system. Only set when deletionTimestamp is also set.
+          May only be shortened.
+          Read-only.
+          +optional
+        type: integer
+      deletionTimestamp:
+        description: |-
+          DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This
+          field is set by the server when a graceful deletion is requested by the user, and is not
+          directly settable by a client. The resource is expected to be deleted (no longer visible
+          from resource lists, and not reachable by name) after the time in this field, once the
+          finalizers list is empty. As long as the finalizers list contains items, deletion is blocked.
+          Once the deletionTimestamp is set, this value may not be unset or be set further into the
+          future, although it may be shortened or the resource may be deleted prior to this time.
+          For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react
+          by sending a graceful termination signal to the containers in the pod. After that 30 seconds,
+          the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,
+          remove the pod from the API. In the presence of network partitions, this object may still
+          exist after this timestamp, until an administrator or automated process can determine the
+          resource is fully terminated.
+          If not set, graceful deletion of the object has not been requested.
+
+          Populated by the system when a graceful deletion is requested.
+          Read-only.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      finalizers:
+        description: |-
+          Must be empty before the object is deleted from the registry. Each entry
+          is an identifier for the responsible component that will remove the entry
+          from the list. If the deletionTimestamp of the object is non-nil, entries
+          in this list can only be removed.
+          Finalizers may be processed and removed in any order.  Order is NOT enforced
+          because it introduces significant risk of stuck finalizers.
+          finalizers is a shared field, any actor with permission can reorder it.
+          If the finalizer list is processed in order, then this can lead to a situation
+          in which the component responsible for the first finalizer in the list is
+          waiting for a signal (field value, external system, or other) produced by a
+          component responsible for a finalizer later in the list, resulting in a deadlock.
+          Without enforced ordering finalizers are free to order amongst themselves and
+          are not vulnerable to ordering changes in the list.
+          +optional
+          +patchStrategy=merge
+        items:
+          type: string
+        type: array
+      generateName:
+        description: |-
+          GenerateName is an optional prefix, used by the server, to generate a unique
+          name ONLY IF the Name field has not been provided.
+          If this field is used, the name returned to the client will be different
+          than the name passed. This value will also be combined with a unique suffix.
+          The provided value has the same validation rules as the Name field,
+          and may be truncated by the length of the suffix required to make the value
+          unique on the server.
+
+          If this field is specified and the generated name exists, the server will
+          NOT return a 409 - instead, it will either return 201 Created or 500 with Reason
+          ServerTimeout indicating a unique name could not be found in the time allotted, and the client
+          should retry (optionally after the time indicated in the Retry-After header).
+
+          Applied only if Name is not specified.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency
+          +optional
+        type: string
+      generation:
+        description: |-
+          A sequence number representing a specific generation of the desired state.
+          Populated by the system. Read-only.
+          +optional
+        type: integer
+      kind:
+        description: |-
+          Kind is a string value representing the REST resource this object represents.
+          Servers may infer this from the endpoint the client submits requests to.
+          Cannot be updated.
+          In CamelCase.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+          +optional
+        type: string
+      labels:
+        additionalProperties:
+          type: string
+        description: |-
+          Map of string keys and values that can be used to organize and categorize
+          (scope and select) objects. May match selectors of replication controllers
+          and services.
+          More info: http://kubernetes.io/docs/user-guide/labels
+          +optional
+        type: object
+      managedFields:
+        description: |-
+          ManagedFields maps workflow-id and version to the set of fields
+          that are managed by that workflow. This is mostly for internal
+          housekeeping, and users typically shouldn't need to set or
+          understand this field. A workflow can be the user's name, a
+          controller's name, or the name of a specific apply path like
+          "ci-cd". The set of fields is always in the version that the
+          workflow used when modifying the object.
+
+          +optional
+        items:
+          $ref: '#/definitions/v1.ManagedFieldsEntry'
+        type: array
+      name:
+        description: |-
+          Name must be unique within a namespace. Is required when creating resources, although
+          some resources may allow a client to request the generation of an appropriate name
+          automatically. Name is primarily intended for creation idempotence and configuration
+          definition.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#names
+          +optional
+        type: string
+      namespace:
+        description: |-
+          Namespace defines the space within which each name must be unique. An empty namespace is
+          equivalent to the "default" namespace, but "default" is the canonical representation.
+          Not all objects are required to be scoped to a namespace - the value of this field for
+          those objects will be empty.
+
+          Must be a DNS_LABEL.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/namespaces
+          +optional
+        type: string
+      ownerReferences:
+        description: |-
+          List of objects depended by this object. If ALL objects in the list have
+          been deleted, this object will be garbage collected. If this object is managed by a controller,
+          then an entry in this list will point to this controller, with the controller field set to true.
+          There cannot be more than one managing controller.
+          +optional
+          +patchMergeKey=uid
+          +patchStrategy=merge
+        items:
+          $ref: '#/definitions/v1.OwnerReference'
+        type: array
+      resourceVersion:
+        description: |-
+          An opaque value that represents the internal version of this object that can
+          be used by clients to determine when objects have changed. May be used for optimistic
+          concurrency, change detection, and the watch operation on a resource or set of resources.
+          Clients must treat these values as opaque and passed unmodified back to the server.
+          They may only be valid for a particular resource or set of resources.
+
+          Populated by the system.
+          Read-only.
+          Value must be treated as opaque by clients and .
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+          +optional
+        type: string
+      selfLink:
+        description: |-
+          SelfLink is a URL representing this object.
+          Populated by the system.
+          Read-only.
+
+          DEPRECATED
+          Kubernetes will stop propagating this field in 1.20 release and the field is planned
+          to be removed in 1.21 release.
+          +optional
+        type: string
+      spec:
+        $ref: '#/definitions/v1alpha1.LocalVolumeReplicaSpec'
+      state:
+        description: replica state
+        type: string
+      status:
+        $ref: '#/definitions/v1alpha1.LocalVolumeReplicaStatus'
+      uid:
+        description: |-
+          UID is the unique in time and space value for this object. It is typically generated by
+          the server on successful creation of a resource and is not allowed to change on PUT
+          operations.
+
+          Populated by the system.
+          Read-only.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#uids
+          +optional
+        type: string
+    type: object
+  api.VolumeReplicaList:
+    properties:
+      volumeName:
+        description: volume name
+        type: string
+      volumeReplicas:
+        description: VolumeReplicas
+        items:
+          $ref: '#/definitions/api.VolumeReplica'
+        type: array
+    type: object
+  v1.FieldsV1:
+    type: object
+  v1.ManagedFieldsEntry:
+    properties:
+      apiVersion:
+        description: |-
+          APIVersion defines the version of this resource that this field set
+          applies to. The format is "group/version" just like the top-level
+          APIVersion field. It is necessary to track the version of a field
+          set because it cannot be automatically converted.
+        type: string
+      fieldsType:
+        description: |-
+          FieldsType is the discriminator for the different fields format and version.
+          There is currently only one possible value: "FieldsV1"
+        type: string
+      fieldsV1:
+        $ref: '#/definitions/v1.FieldsV1'
+        description: |-
+          FieldsV1 holds the first JSON version format as described in the "FieldsV1" type.
+          +optional
+      manager:
+        description: Manager is an identifier of the workflow managing these fields.
+        type: string
+      operation:
+        description: |-
+          Operation is the type of operation which lead to this ManagedFieldsEntry being created.
+          The only valid values for this field are 'Apply' and 'Update'.
+        type: string
+      time:
+        description: |-
+          Time is timestamp of when these fields were set. It should always be empty if Operation is 'Apply'
+          +optional
+        type: string
+    type: object
+  v1.ObjectReference:
+    properties:
+      apiVersion:
+        description: |-
+          API version of the referent.
+          +optional
+        type: string
+      fieldPath:
+        description: |-
+          If referring to a piece of an object instead of an entire object, this string
+          should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
+          For example, if the object reference is to a container within a pod, this would take on a value like:
+          "spec.containers{name}" (where "name" refers to the name of the container that triggered
+          the event) or if no container name is specified "spec.containers[2]" (container with
+          index 2 in this pod). This syntax is chosen only to have some well-defined way of
+          referencing a part of an object.
+          TODO: this design is not final and this field is subject to change in the future.
+          +optional
+        type: string
+      kind:
+        description: |-
+          Kind of the referent.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+          +optional
+        type: string
+      name:
+        description: |-
+          Name of the referent.
+          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+          +optional
+        type: string
+      namespace:
+        description: |-
+          Namespace of the referent.
+          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+          +optional
+        type: string
+      resourceVersion:
+        description: |-
+          Specific resourceVersion to which this reference is made, if any.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+          +optional
+        type: string
+      uid:
+        description: |-
+          UID of the referent.
+          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
+          +optional
+        type: string
+    type: object
+  v1.OwnerReference:
+    properties:
+      apiVersion:
+        description: API version of the referent.
+        type: string
+      blockOwnerDeletion:
+        description: |-
+          If true, AND if the owner has the "foregroundDeletion" finalizer, then
+          the owner cannot be deleted from the key-value store until this
+          reference is removed.
+          Defaults to false.
+          To set this field, a user needs "delete" permission of the owner,
+          otherwise 422 (Unprocessable Entity) will be returned.
+          +optional
+        type: boolean
+      controller:
+        description: |-
+          If true, this reference points to the managing controller.
+          +optional
+        type: boolean
+      kind:
+        description: |-
+          Kind of the referent.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+        type: string
+      name:
+        description: |-
+          Name of the referent.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#names
+        type: string
+      uid:
+        description: |-
+          UID of the referent.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#uids
+        type: string
+    type: object
+  v1alpha1.AccessibilityTopology:
+    properties:
+      nodes:
+        description: Nodes is the collection of storage nodes the volume replicas
+          must locate at
+        items:
+          type: string
+        type: array
+      regions:
+        description: |-
+          regions where the volume replicas should be distributed across, it's Optional
+          +kubebuilder:default:={default}
+        items:
+          type: string
+        type: array
+      zones:
+        description: |-
+          zones where the volume replicas should be distributed across, it's Optional
+          +kubebuilder:default:={default}
+        items:
+          type: string
+        type: array
+    type: object
+  v1alpha1.Disk:
+    properties:
+      capacity:
+        description: Capacity
+        type: integer
+      devPath:
+        description: DevPath
+        type: string
+      diskType:
+        description: DiskType SSD/HDD/NVME...
+        type: string
+      status:
+        description: Status
+        type: string
+    type: object
+  v1alpha1.DiskAttributes:
+    properties:
+      devType:
+        description: |-
+          DeviceType represents the type of device like
+          sparse, disk, partition, lvm, crypt
+        type: string
+      formFactor:
+        description: FormFactor is the disk size, like 2.5 inches
+        type: string
+      modelName:
+        description: ModelName is the name of disk model
+        type: string
+      pciVendorID:
+        description: PCIVendorID is the ID of the PCI vendor, for NVMe disk only
+        type: string
+      product:
+        description: Product is a class of disks the vendor produces
+        type: string
+      protocol:
+        description: Protocol is for data transport, such as ATA, SCSI, NVMe
+        type: string
+      rotationRate:
+        description: RotationRate is the rate of the disk rotation
+        type: integer
+      serialNumber:
+        description: SerialNumber is a unique number assigned to a disk
+        type: string
+      type:
+        description: Type is the disk type, such as ata, scsi, nvme, megaraid,N, ...
+        type: string
+      vendor:
+        description: Vendor is who provides the disk
+        type: string
+    type: object
+  v1alpha1.FileSystemInfo:
+    properties:
+      fsType:
+        description: |-
+          Type represents the FileSystem type of the disk
+          +optional
+        type: string
+      mountPoint:
+        description: |-
+          MountPoint represents the mountpoint of the disk
+          +optional
+        type: string
+    type: object
+  v1alpha1.HAState:
+    properties:
+      reason:
+        description: Reason is why this state happened
+        type: string
+      state:
+        description: Consistent, Inconsistent, replica is ready only when consistent
+        type: string
+    type: object
+  v1alpha1.LocalDevice:
+    properties:
+      capacityBytes:
+        description: disk capacity
+        type: integer
+      devPath:
+        description: e.g. /dev/sdb
+        type: string
+      state:
+        description: 'Possible state: Available, Inuse, Offline'
+        type: string
+      type:
+        description: 'Supported: HDD, SSD, NVMe, RAM'
+        type: string
+    type: object
+  v1alpha1.LocalDiskNode:
+    properties:
+      annotations:
+        additionalProperties:
+          type: string
+        description: |-
+          Annotations is an unstructured key value map stored with a resource that may be
+          set by external tools to store and retrieve arbitrary metadata. They are not
+          queryable and should be preserved when modifying objects.
+          More info: http://kubernetes.io/docs/user-guide/annotations
+          +optional
+        type: object
+      apiVersion:
+        description: |-
+          APIVersion defines the versioned schema of this representation of an object.
+          Servers should convert recognized schemas to the latest internal value, and
+          may reject unrecognized values.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+          +optional
+        type: string
+      clusterName:
+        description: |-
+          The name of the cluster which the object belongs to.
+          This is used to distinguish resources with same name and namespace in different clusters.
+          This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.
+          +optional
+        type: string
+      creationTimestamp:
+        description: |-
+          CreationTimestamp is a timestamp representing the server time when this object was
+          created. It is not guaranteed to be set in happens-before order across separate operations.
+          Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+
+          Populated by the system.
+          Read-only.
+          Null for lists.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      deletionGracePeriodSeconds:
+        description: |-
+          Number of seconds allowed for this object to gracefully terminate before
+          it will be removed from the system. Only set when deletionTimestamp is also set.
+          May only be shortened.
+          Read-only.
+          +optional
+        type: integer
+      deletionTimestamp:
+        description: |-
+          DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This
+          field is set by the server when a graceful deletion is requested by the user, and is not
+          directly settable by a client. The resource is expected to be deleted (no longer visible
+          from resource lists, and not reachable by name) after the time in this field, once the
+          finalizers list is empty. As long as the finalizers list contains items, deletion is blocked.
+          Once the deletionTimestamp is set, this value may not be unset or be set further into the
+          future, although it may be shortened or the resource may be deleted prior to this time.
+          For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react
+          by sending a graceful termination signal to the containers in the pod. After that 30 seconds,
+          the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,
+          remove the pod from the API. In the presence of network partitions, this object may still
+          exist after this timestamp, until an administrator or automated process can determine the
+          resource is fully terminated.
+          If not set, graceful deletion of the object has not been requested.
+
+          Populated by the system when a graceful deletion is requested.
+          Read-only.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      finalizers:
+        description: |-
+          Must be empty before the object is deleted from the registry. Each entry
+          is an identifier for the responsible component that will remove the entry
+          from the list. If the deletionTimestamp of the object is non-nil, entries
+          in this list can only be removed.
+          Finalizers may be processed and removed in any order.  Order is NOT enforced
+          because it introduces significant risk of stuck finalizers.
+          finalizers is a shared field, any actor with permission can reorder it.
+          If the finalizer list is processed in order, then this can lead to a situation
+          in which the component responsible for the first finalizer in the list is
+          waiting for a signal (field value, external system, or other) produced by a
+          component responsible for a finalizer later in the list, resulting in a deadlock.
+          Without enforced ordering finalizers are free to order amongst themselves and
+          are not vulnerable to ordering changes in the list.
+          +optional
+          +patchStrategy=merge
+        items:
+          type: string
+        type: array
+      generateName:
+        description: |-
+          GenerateName is an optional prefix, used by the server, to generate a unique
+          name ONLY IF the Name field has not been provided.
+          If this field is used, the name returned to the client will be different
+          than the name passed. This value will also be combined with a unique suffix.
+          The provided value has the same validation rules as the Name field,
+          and may be truncated by the length of the suffix required to make the value
+          unique on the server.
+
+          If this field is specified and the generated name exists, the server will
+          NOT return a 409 - instead, it will either return 201 Created or 500 with Reason
+          ServerTimeout indicating a unique name could not be found in the time allotted, and the client
+          should retry (optionally after the time indicated in the Retry-After header).
+
+          Applied only if Name is not specified.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency
+          +optional
+        type: string
+      generation:
+        description: |-
+          A sequence number representing a specific generation of the desired state.
+          Populated by the system. Read-only.
+          +optional
+        type: integer
+      kind:
+        description: |-
+          Kind is a string value representing the REST resource this object represents.
+          Servers may infer this from the endpoint the client submits requests to.
+          Cannot be updated.
+          In CamelCase.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+          +optional
+        type: string
+      labels:
+        additionalProperties:
+          type: string
+        description: |-
+          Map of string keys and values that can be used to organize and categorize
+          (scope and select) objects. May match selectors of replication controllers
+          and services.
+          More info: http://kubernetes.io/docs/user-guide/labels
+          +optional
+        type: object
+      managedFields:
+        description: |-
+          ManagedFields maps workflow-id and version to the set of fields
+          that are managed by that workflow. This is mostly for internal
+          housekeeping, and users typically shouldn't need to set or
+          understand this field. A workflow can be the user's name, a
+          controller's name, or the name of a specific apply path like
+          "ci-cd". The set of fields is always in the version that the
+          workflow used when modifying the object.
+
+          +optional
+        items:
+          $ref: '#/definitions/v1.ManagedFieldsEntry'
+        type: array
+      name:
+        description: |-
+          Name must be unique within a namespace. Is required when creating resources, although
+          some resources may allow a client to request the generation of an appropriate name
+          automatically. Name is primarily intended for creation idempotence and configuration
+          definition.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#names
+          +optional
+        type: string
+      namespace:
+        description: |-
+          Namespace defines the space within which each name must be unique. An empty namespace is
+          equivalent to the "default" namespace, but "default" is the canonical representation.
+          Not all objects are required to be scoped to a namespace - the value of this field for
+          those objects will be empty.
+
+          Must be a DNS_LABEL.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/namespaces
+          +optional
+        type: string
+      ownerReferences:
+        description: |-
+          List of objects depended by this object. If ALL objects in the list have
+          been deleted, this object will be garbage collected. If this object is managed by a controller,
+          then an entry in this list will point to this controller, with the controller field set to true.
+          There cannot be more than one managing controller.
+          +optional
+          +patchMergeKey=uid
+          +patchStrategy=merge
+        items:
+          $ref: '#/definitions/v1.OwnerReference'
+        type: array
+      resourceVersion:
+        description: |-
+          An opaque value that represents the internal version of this object that can
+          be used by clients to determine when objects have changed. May be used for optimistic
+          concurrency, change detection, and the watch operation on a resource or set of resources.
+          Clients must treat these values as opaque and passed unmodified back to the server.
+          They may only be valid for a particular resource or set of resources.
+
+          Populated by the system.
+          Read-only.
+          Value must be treated as opaque by clients and .
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+          +optional
+        type: string
+      selfLink:
+        description: |-
+          SelfLink is a URL representing this object.
+          Populated by the system.
+          Read-only.
+
+          DEPRECATED
+          Kubernetes will stop propagating this field in 1.20 release and the field is planned
+          to be removed in 1.21 release.
+          +optional
+        type: string
+      spec:
+        $ref: '#/definitions/v1alpha1.LocalDiskNodeSpec'
+      status:
+        $ref: '#/definitions/v1alpha1.LocalDiskNodeStatus'
+      uid:
+        description: |-
+          UID is the unique in time and space value for this object. It is typically generated by
+          the server on successful creation of a resource and is not allowed to change on PUT
+          operations.
+
+          Populated by the system.
+          Read-only.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#uids
+          +optional
+        type: string
+    type: object
+  v1alpha1.LocalDiskNodeSpec:
+    properties:
+      attachNode:
+        description: AttachNode represent where disk is attached
+        type: string
+    type: object
+  v1alpha1.LocalDiskNodeStatus:
+    properties:
+      allocatableDisk:
+        description: AllocatableDisk
+        type: integer
+      disks:
+        additionalProperties:
+          $ref: '#/definitions/v1alpha1.Disk'
+        description: Disks key is the name of LocalDisk
+        type: object
+      totalDisk:
+        description: TotalDisk
+        type: integer
+    type: object
+  v1alpha1.LocalDiskSpec:
+    properties:
+      capacity:
+        description: Capacity of the disk in bytes
+        type: integer
+      claimRef:
+        $ref: '#/definitions/v1.ObjectReference'
+        description: |-
+          ClaimRef is the reference to the LDC which has claimed this LD
+          +optional
+      devicePath:
+        description: DevicePath is the disk path in the OS
+        type: string
+      diskAttributes:
+        $ref: '#/definitions/v1alpha1.DiskAttributes'
+        description: DiskAttributes has hardware/static attributes of the disk
+      isRaid:
+        description: HasRAID identifies if the disk is a raid disk or not
+        type: boolean
+      nodeName:
+        description: |-
+          NodeName represents the node where the disk is attached
+          +kubebuilder:validation:Required
+        type: string
+      partitionInfo:
+        description: |-
+          PartitionInfo contains partition information
+          +optional
+        items:
+          $ref: '#/definitions/v1alpha1.PartitionInfo'
+        type: array
+      partitioned:
+        description: HasPartition represents if the disk has partitions or not
+        type: boolean
+      raidInfo:
+        $ref: '#/definitions/v1alpha1.RAIDInfo'
+        description: |-
+          RAIDInfo contains RAID information
+          +optional
+      reserved:
+        description: |-
+          Reserved represents the disk won't be used in hwameistor later, until it becomes unreserved
+          +optional
+        type: boolean
+      smartInfo:
+        $ref: '#/definitions/v1alpha1.SmartInfo'
+        description: |-
+          SmartInfo contains infos collected by smartctl
+          +optional
+      state:
+        description: |-
+          State is the current state of the disk (Active/Inactive/Unknown)
+          +kubebuilder:validation:Enum:=Active;Inactive;Unknown
+        type: string
+      supportSmart:
+        description: HasSmartInfo identified if the disk supports SMART or not
+        type: boolean
+      uuid:
+        description: UUID global unique identifier of the disk
+        type: string
+    type: object
+  v1alpha1.LocalDiskStatus:
+    properties:
+      claimState:
+        description: |-
+          State represents the claim state of the disk
+          +kubebuilder:validation:Enum:=Bound;Reserved;Available;Pending
+        type: string
+    type: object
+  v1alpha1.LocalPool:
+    properties:
+      class:
+        description: |-
+          Supported class: HDD, SSD, NVMe
+          +kubebuilder:validation:Enum:=HDD;SSD;NVMe
+        type: string
+      disks:
+        items:
+          $ref: '#/definitions/v1alpha1.LocalDevice'
+        type: array
+      freeCapacityBytes:
+        type: integer
+      freeVolumeCount:
+        type: integer
+      name:
+        description: 'Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL'
+        type: string
+      path:
+        description: VG path
+        type: string
+      totalCapacityBytes:
+        type: integer
+      totalVolumeCount:
+        type: integer
+      type:
+        description: |-
+          Supported type: REGULAR
+          +kubebuilder:validation:Enum:=REGULAR
+          +kubebuilder:default:=REGULAR
+        type: string
+      usedCapacityBytes:
+        type: integer
+      usedVolumeCount:
+        type: integer
+      volumeCapacityBytesLimit:
+        type: integer
+      volumes:
+        items:
+          type: string
+        type: array
+    type: object
+  v1alpha1.LocalStorageNode:
+    properties:
+      annotations:
+        additionalProperties:
+          type: string
+        description: |-
+          Annotations is an unstructured key value map stored with a resource that may be
+          set by external tools to store and retrieve arbitrary metadata. They are not
+          queryable and should be preserved when modifying objects.
+          More info: http://kubernetes.io/docs/user-guide/annotations
+          +optional
+        type: object
+      apiVersion:
+        description: |-
+          APIVersion defines the versioned schema of this representation of an object.
+          Servers should convert recognized schemas to the latest internal value, and
+          may reject unrecognized values.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+          +optional
+        type: string
+      clusterName:
+        description: |-
+          The name of the cluster which the object belongs to.
+          This is used to distinguish resources with same name and namespace in different clusters.
+          This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.
+          +optional
+        type: string
+      creationTimestamp:
+        description: |-
+          CreationTimestamp is a timestamp representing the server time when this object was
+          created. It is not guaranteed to be set in happens-before order across separate operations.
+          Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+
+          Populated by the system.
+          Read-only.
+          Null for lists.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      deletionGracePeriodSeconds:
+        description: |-
+          Number of seconds allowed for this object to gracefully terminate before
+          it will be removed from the system. Only set when deletionTimestamp is also set.
+          May only be shortened.
+          Read-only.
+          +optional
+        type: integer
+      deletionTimestamp:
+        description: |-
+          DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This
+          field is set by the server when a graceful deletion is requested by the user, and is not
+          directly settable by a client. The resource is expected to be deleted (no longer visible
+          from resource lists, and not reachable by name) after the time in this field, once the
+          finalizers list is empty. As long as the finalizers list contains items, deletion is blocked.
+          Once the deletionTimestamp is set, this value may not be unset or be set further into the
+          future, although it may be shortened or the resource may be deleted prior to this time.
+          For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react
+          by sending a graceful termination signal to the containers in the pod. After that 30 seconds,
+          the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,
+          remove the pod from the API. In the presence of network partitions, this object may still
+          exist after this timestamp, until an administrator or automated process can determine the
+          resource is fully terminated.
+          If not set, graceful deletion of the object has not been requested.
+
+          Populated by the system when a graceful deletion is requested.
+          Read-only.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
         type: string
       finalizers:
         description: |-
@@ -475,436 +2658,6 @@ definitions:
           +optional
         type: string
     type: object
-  api.StorageNodeList:
-    properties:
-      items:
-        $ref: '#/definitions/api.StorageNodesItemsList'
-        description: |-
-          // StorageNodes
-          StorageNodes []*StorageNode `json:"items,omitempty"`
-          StorageNodesItemsList
-      pagination:
-        $ref: '#/definitions/api.Pagination'
-        description: page 信息
-    type: object
-  api.StorageNodeListByPool:
-    properties:
-      page:
-        $ref: '#/definitions/api.Pagination'
-        description: page 信息
-      storageNodes:
-        description: StorageNodes
-        items:
-          $ref: '#/definitions/api.StorageNode'
-        type: array
-      storagePoolName:
-        description: StoragePoolName 存储池名称
-        type: string
-    type: object
-  api.StorageNodesItemsList:
-    properties:
-      storageNodes:
-        description: localDisks 节点磁盘列表
-        items:
-          $ref: '#/definitions/api.StorageNode'
-        type: array
-    type: object
-  api.StoragePool:
-    properties:
-      allocatedCapacityBytes:
-        description: AllocatedCapacityBytes 存储池已经分配存储容量
-        type: integer
-      class:
-        description: 'Supported class: HDD, SSD, NVMe 磁盘类型'
-        type: string
-      createTime:
-        description: createTime 创建时间
-        type: string
-      name:
-        description: 'Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL 存储池名称'
-        type: string
-      nodesNum:
-        description: NodesNum 节点数
-        type: integer
-      totalCapacityBytes:
-        description: TotalCapacityBytes 存储池对应存储总容量
-        type: integer
-    type: object
-  api.StoragePoolList:
-    properties:
-      page:
-        $ref: '#/definitions/api.Pagination'
-        description: page 信息
-      storagePools:
-        description: storagePools
-        items:
-          $ref: '#/definitions/api.StoragePool'
-        type: array
-    type: object
-  api.StoragePoolUse:
-    properties:
-      allocatedCapacityBytes:
-        description: 已分配容量
-        type: integer
-      name:
-        description: 存储池名字
-        type: string
-      totalCapacityBytes:
-        description: 总容量
-        type: integer
-    type: object
-  api.StoragePoolUseMetric:
-    properties:
-      storagePoolsUse:
-        items:
-          $ref: '#/definitions/api.StoragePoolUse'
-        type: array
-    type: object
-  api.TargetNodeList:
-    properties:
-      targetNodeType:
-        description: TargetNodeType
-        type: string
-      targetNodes:
-        description: TargetNodes
-        items:
-          type: string
-        type: array
-    type: object
-  api.Volume:
-    properties:
-      convertible:
-        description: Convertible 转换高可用模式
-        type: boolean
-      createTime:
-        description: createTime 创建时间
-        type: string
-      name:
-        description: local volume name 名称
-        type: string
-      pvcName:
-        description: PersistentVolumeClaimName is the name of the associated PVC 绑定PVC
-        type: string
-      pvcNamespace:
-        description: PersistentVolumeClaimNamespace is the namespace of the associated
-          PVC 命名空间
-        type: string
-      replicaNumber:
-        description: replica number 副本数
-        type: integer
-      requiredCapacityBytes:
-        description: size 容量
-        type: integer
-      state:
-        description: local volume state 状态
-        type: string
-      volumeGroup:
-        description: VolumeGroup is the group name of the local volumes. It is designed
-          for the scheduling and allocating. 磁盘组
-        type: string
-    type: object
-  api.VolumeConvertInfo:
-    properties:
-      replicaNum:
-        type: integer
-      volumeName:
-        type: string
-    type: object
-  api.VolumeConvertRspBody:
-    properties:
-      data:
-        $ref: '#/definitions/api.VolumeConvertInfo'
-    type: object
-  api.VolumeGroup:
-    properties:
-      name:
-        description: Name
-        type: string
-      nodeNames:
-        description: NodeNames
-        items:
-          type: string
-        type: array
-      volumeGroupVolumeInfos:
-        description: VolumeGroupVolumeInfo
-        items:
-          $ref: '#/definitions/api.VolumeGroupVolumeInfo'
-        type: array
-    type: object
-  api.VolumeGroupVolumeInfo:
-    properties:
-      nodeNames:
-        description: NodeNames
-        items:
-          type: string
-        type: array
-      state:
-        description: State
-        type: string
-      volumeName:
-        description: VolumeName
-        type: string
-    type: object
-  api.VolumeItemsList:
-    properties:
-      volumes:
-        description: volumes
-        items:
-          $ref: '#/definitions/api.Volume'
-        type: array
-    type: object
-  api.VolumeList:
-    properties:
-      items:
-        $ref: '#/definitions/api.VolumeItemsList'
-        description: volumes
-      pagination:
-        $ref: '#/definitions/api.Pagination'
-        description: page 信息
-    type: object
-  api.VolumeMigrateInfo:
-    properties:
-      selectedNode:
-        type: string
-      srcNode:
-        type: string
-      volumeName:
-        type: string
-    type: object
-  api.VolumeMigrateOperation:
-    properties:
-      endTime:
-        description: EndTime 迁移结束时间
-        type: string
-      name:
-        description: VolumeMigrateName 迁移CRD名称
-        type: string
-      sourceNode:
-        description: SourceNode 迁移源节点
-        type: string
-      startTime:
-        description: StartTime 迁移开始时间
-        type: string
-      state:
-        description: State 迁移状态
-        type: string
-      targetNode:
-        description: TargetNode 迁移目的节点
-        type: string
-      volumeName:
-        description: VolumeName 迁移卷名称
-        type: string
-    type: object
-  api.VolumeMigrateOperationItemsList:
-    properties:
-      volumeMigrateOperations:
-        description: VolumeMigrateOperations
-        items:
-          $ref: '#/definitions/api.VolumeMigrateOperation'
-        type: array
-    type: object
-  api.VolumeMigrateRspBody:
-    properties:
-      data:
-        $ref: '#/definitions/api.VolumeMigrateInfo'
-    type: object
-  api.VolumeOperationByVolume:
-    properties:
-      items:
-        $ref: '#/definitions/api.VolumeMigrateOperationItemsList'
-        description: VolumeMigrateOperationItemsList
-      volumeName:
-        description: VolumeName
-        type: string
-    type: object
-  api.VolumeOperationListByNode:
-    properties:
-      items:
-        $ref: '#/definitions/api.VolumeMigrateOperationItemsList'
-        description: |-
-          // VolumeOperations
-          VolumeMigrateOperations []*VolumeMigrateOperation `json:"items,omitempty"`
-          VolumeMigrateOperationItemsList
-      nodeName:
-        description: node name
-        type: string
-      pagination:
-        $ref: '#/definitions/api.Pagination'
-        description: page 信息
-    type: object
-  api.VolumeReplica:
-    properties:
-      devicePath:
-        description: |-
-          DevicePath is a link path of the StoragePath of the volume replica,
-          e.g. /dev/LocalStorage_PoolHDD/pvc-fbf3ffc3-66db-4dae-9032-bda3c61b8f85
-        type: string
-      name:
-        description: replica name
-        type: string
-      nodeName:
-        description: NodeName is the assigned node where the volume replica is located
-          节点
-        type: string
-      requiredCapacityBytes:
-        description: RequiredCapacityBytes 容量
-        type: integer
-      state:
-        description: replica state
-        type: string
-      storagePath:
-        description: StoragePath is a real path of the volume replica, like /dev/sdg.
-        type: string
-      synced:
-        description: Synced is the sync state of the volume replica, which is important
-          in HA volume 同步状态
-        type: boolean
-    type: object
-  api.VolumeReplicaList:
-    properties:
-      volumeName:
-        description: volume name
-        type: string
-      volumeReplicas:
-        description: VolumeReplicas
-        items:
-          $ref: '#/definitions/api.VolumeReplica'
-        type: array
-    type: object
-  api.YamlData:
-    properties:
-      data:
-        description: yaml data
-        type: string
-    type: object
-  v1.FieldsV1:
-    type: object
-  v1.ManagedFieldsEntry:
-    properties:
-      apiVersion:
-        description: |-
-          APIVersion defines the version of this resource that this field set
-          applies to. The format is "group/version" just like the top-level
-          APIVersion field. It is necessary to track the version of a field
-          set because it cannot be automatically converted.
-        type: string
-      fieldsType:
-        description: |-
-          FieldsType is the discriminator for the different fields format and version.
-          There is currently only one possible value: "FieldsV1"
-        type: string
-      fieldsV1:
-        $ref: '#/definitions/v1.FieldsV1'
-        description: |-
-          FieldsV1 holds the first JSON version format as described in the "FieldsV1" type.
-          +optional
-      manager:
-        description: Manager is an identifier of the workflow managing these fields.
-        type: string
-      operation:
-        description: |-
-          Operation is the type of operation which lead to this ManagedFieldsEntry being created.
-          The only valid values for this field are 'Apply' and 'Update'.
-        type: string
-      time:
-        description: |-
-          Time is timestamp of when these fields were set. It should always be empty if Operation is 'Apply'
-          +optional
-        type: string
-    type: object
-  v1.OwnerReference:
-    properties:
-      apiVersion:
-        description: API version of the referent.
-        type: string
-      blockOwnerDeletion:
-        description: |-
-          If true, AND if the owner has the "foregroundDeletion" finalizer, then
-          the owner cannot be deleted from the key-value store until this
-          reference is removed.
-          Defaults to false.
-          To set this field, a user needs "delete" permission of the owner,
-          otherwise 422 (Unprocessable Entity) will be returned.
-          +optional
-        type: boolean
-      controller:
-        description: |-
-          If true, this reference points to the managing controller.
-          +optional
-        type: boolean
-      kind:
-        description: |-
-          Kind of the referent.
-          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-        type: string
-      name:
-        description: |-
-          Name of the referent.
-          More info: http://kubernetes.io/docs/user-guide/identifiers#names
-        type: string
-      uid:
-        description: |-
-          UID of the referent.
-          More info: http://kubernetes.io/docs/user-guide/identifiers#uids
-        type: string
-    type: object
-  v1alpha1.LocalDevice:
-    properties:
-      capacityBytes:
-        description: disk capacity
-        type: integer
-      devPath:
-        description: e.g. /dev/sdb
-        type: string
-      state:
-        description: 'Possible state: Available, Inuse, Offline'
-        type: string
-      type:
-        description: 'Supported: HDD, SSD, NVMe, RAM'
-        type: string
-    type: object
-  v1alpha1.LocalPool:
-    properties:
-      class:
-        description: |-
-          Supported class: HDD, SSD, NVMe
-          +kubebuilder:validation:Enum:=HDD;SSD;NVMe
-        type: string
-      disks:
-        items:
-          $ref: '#/definitions/v1alpha1.LocalDevice'
-        type: array
-      freeCapacityBytes:
-        type: integer
-      freeVolumeCount:
-        type: integer
-      name:
-        description: 'Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL'
-        type: string
-      path:
-        description: VG path
-        type: string
-      totalCapacityBytes:
-        type: integer
-      totalVolumeCount:
-        type: integer
-      type:
-        description: |-
-          Supported type: REGULAR
-          +kubebuilder:validation:Enum:=REGULAR
-          +kubebuilder:default:=REGULAR
-        type: string
-      usedCapacityBytes:
-        type: integer
-      usedVolumeCount:
-        type: integer
-      volumeCapacityBytesLimit:
-        type: integer
-      volumes:
-        items:
-          type: string
-        type: array
-    type: object
   v1alpha1.LocalStorageNodeCondition:
     properties:
       lastTransitionTime:
@@ -958,6 +2711,503 @@ definitions:
           Failed'
         type: string
     type: object
+  v1alpha1.LocalVolume:
+    properties:
+      annotations:
+        additionalProperties:
+          type: string
+        description: |-
+          Annotations is an unstructured key value map stored with a resource that may be
+          set by external tools to store and retrieve arbitrary metadata. They are not
+          queryable and should be preserved when modifying objects.
+          More info: http://kubernetes.io/docs/user-guide/annotations
+          +optional
+        type: object
+      apiVersion:
+        description: |-
+          APIVersion defines the versioned schema of this representation of an object.
+          Servers should convert recognized schemas to the latest internal value, and
+          may reject unrecognized values.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+          +optional
+        type: string
+      clusterName:
+        description: |-
+          The name of the cluster which the object belongs to.
+          This is used to distinguish resources with same name and namespace in different clusters.
+          This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.
+          +optional
+        type: string
+      creationTimestamp:
+        description: |-
+          CreationTimestamp is a timestamp representing the server time when this object was
+          created. It is not guaranteed to be set in happens-before order across separate operations.
+          Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+
+          Populated by the system.
+          Read-only.
+          Null for lists.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      deletionGracePeriodSeconds:
+        description: |-
+          Number of seconds allowed for this object to gracefully terminate before
+          it will be removed from the system. Only set when deletionTimestamp is also set.
+          May only be shortened.
+          Read-only.
+          +optional
+        type: integer
+      deletionTimestamp:
+        description: |-
+          DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This
+          field is set by the server when a graceful deletion is requested by the user, and is not
+          directly settable by a client. The resource is expected to be deleted (no longer visible
+          from resource lists, and not reachable by name) after the time in this field, once the
+          finalizers list is empty. As long as the finalizers list contains items, deletion is blocked.
+          Once the deletionTimestamp is set, this value may not be unset or be set further into the
+          future, although it may be shortened or the resource may be deleted prior to this time.
+          For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react
+          by sending a graceful termination signal to the containers in the pod. After that 30 seconds,
+          the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,
+          remove the pod from the API. In the presence of network partitions, this object may still
+          exist after this timestamp, until an administrator or automated process can determine the
+          resource is fully terminated.
+          If not set, graceful deletion of the object has not been requested.
+
+          Populated by the system when a graceful deletion is requested.
+          Read-only.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+          +optional
+        type: string
+      finalizers:
+        description: |-
+          Must be empty before the object is deleted from the registry. Each entry
+          is an identifier for the responsible component that will remove the entry
+          from the list. If the deletionTimestamp of the object is non-nil, entries
+          in this list can only be removed.
+          Finalizers may be processed and removed in any order.  Order is NOT enforced
+          because it introduces significant risk of stuck finalizers.
+          finalizers is a shared field, any actor with permission can reorder it.
+          If the finalizer list is processed in order, then this can lead to a situation
+          in which the component responsible for the first finalizer in the list is
+          waiting for a signal (field value, external system, or other) produced by a
+          component responsible for a finalizer later in the list, resulting in a deadlock.
+          Without enforced ordering finalizers are free to order amongst themselves and
+          are not vulnerable to ordering changes in the list.
+          +optional
+          +patchStrategy=merge
+        items:
+          type: string
+        type: array
+      generateName:
+        description: |-
+          GenerateName is an optional prefix, used by the server, to generate a unique
+          name ONLY IF the Name field has not been provided.
+          If this field is used, the name returned to the client will be different
+          than the name passed. This value will also be combined with a unique suffix.
+          The provided value has the same validation rules as the Name field,
+          and may be truncated by the length of the suffix required to make the value
+          unique on the server.
+
+          If this field is specified and the generated name exists, the server will
+          NOT return a 409 - instead, it will either return 201 Created or 500 with Reason
+          ServerTimeout indicating a unique name could not be found in the time allotted, and the client
+          should retry (optionally after the time indicated in the Retry-After header).
+
+          Applied only if Name is not specified.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency
+          +optional
+        type: string
+      generation:
+        description: |-
+          A sequence number representing a specific generation of the desired state.
+          Populated by the system. Read-only.
+          +optional
+        type: integer
+      kind:
+        description: |-
+          Kind is a string value representing the REST resource this object represents.
+          Servers may infer this from the endpoint the client submits requests to.
+          Cannot be updated.
+          In CamelCase.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+          +optional
+        type: string
+      labels:
+        additionalProperties:
+          type: string
+        description: |-
+          Map of string keys and values that can be used to organize and categorize
+          (scope and select) objects. May match selectors of replication controllers
+          and services.
+          More info: http://kubernetes.io/docs/user-guide/labels
+          +optional
+        type: object
+      managedFields:
+        description: |-
+          ManagedFields maps workflow-id and version to the set of fields
+          that are managed by that workflow. This is mostly for internal
+          housekeeping, and users typically shouldn't need to set or
+          understand this field. A workflow can be the user's name, a
+          controller's name, or the name of a specific apply path like
+          "ci-cd". The set of fields is always in the version that the
+          workflow used when modifying the object.
+
+          +optional
+        items:
+          $ref: '#/definitions/v1.ManagedFieldsEntry'
+        type: array
+      name:
+        description: |-
+          Name must be unique within a namespace. Is required when creating resources, although
+          some resources may allow a client to request the generation of an appropriate name
+          automatically. Name is primarily intended for creation idempotence and configuration
+          definition.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#names
+          +optional
+        type: string
+      namespace:
+        description: |-
+          Namespace defines the space within which each name must be unique. An empty namespace is
+          equivalent to the "default" namespace, but "default" is the canonical representation.
+          Not all objects are required to be scoped to a namespace - the value of this field for
+          those objects will be empty.
+
+          Must be a DNS_LABEL.
+          Cannot be updated.
+          More info: http://kubernetes.io/docs/user-guide/namespaces
+          +optional
+        type: string
+      ownerReferences:
+        description: |-
+          List of objects depended by this object. If ALL objects in the list have
+          been deleted, this object will be garbage collected. If this object is managed by a controller,
+          then an entry in this list will point to this controller, with the controller field set to true.
+          There cannot be more than one managing controller.
+          +optional
+          +patchMergeKey=uid
+          +patchStrategy=merge
+        items:
+          $ref: '#/definitions/v1.OwnerReference'
+        type: array
+      resourceVersion:
+        description: |-
+          An opaque value that represents the internal version of this object that can
+          be used by clients to determine when objects have changed. May be used for optimistic
+          concurrency, change detection, and the watch operation on a resource or set of resources.
+          Clients must treat these values as opaque and passed unmodified back to the server.
+          They may only be valid for a particular resource or set of resources.
+
+          Populated by the system.
+          Read-only.
+          Value must be treated as opaque by clients and .
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+          +optional
+        type: string
+      selfLink:
+        description: |-
+          SelfLink is a URL representing this object.
+          Populated by the system.
+          Read-only.
+
+          DEPRECATED
+          Kubernetes will stop propagating this field in 1.20 release and the field is planned
+          to be removed in 1.21 release.
+          +optional
+        type: string
+      spec:
+        $ref: '#/definitions/v1alpha1.LocalVolumeSpec'
+      status:
+        $ref: '#/definitions/v1alpha1.LocalVolumeStatus'
+      uid:
+        description: |-
+          UID is the unique in time and space value for this object. It is typically generated by
+          the server on successful creation of a resource and is not allowed to change on PUT
+          operations.
+
+          Populated by the system.
+          Read-only.
+          More info: http://kubernetes.io/docs/user-guide/identifiers#uids
+          +optional
+        type: string
+    type: object
+  v1alpha1.LocalVolumeConvertSpec:
+    properties:
+      abort:
+        description: +kubebuilder:default:=false
+        type: boolean
+      replicaNumber:
+        description: |-
+          ReplicaNumber is the number of replicas which the volume will be converted to
+          currently, only support the case of converting a non-HA volume to HA
+          +kubebuilder:validation:Minimum:=2
+          +kubebuilder:validation:Maximum:=2
+        type: integer
+      volumeName:
+        type: string
+    type: object
+  v1alpha1.LocalVolumeConvertStatus:
+    properties:
+      message:
+        type: string
+      state:
+        description: Consistent, Inconsistent, replica is ready only when consistent
+        type: string
+    type: object
+  v1alpha1.LocalVolumeExpandSpec:
+    properties:
+      abort:
+        description: +kubebuilder:default:=false
+        type: boolean
+      requiredCapacityBytes:
+        description: +kubebuilder:validation:Minimum:=4194304
+        type: integer
+      volumeName:
+        type: string
+    type: object
+  v1alpha1.LocalVolumeExpandStatus:
+    properties:
+      allocatedCapacityBytes:
+        type: integer
+      message:
+        type: string
+      state:
+        description: Consistent, Inconsistent, replica is ready only when consistent
+        type: string
+      subs:
+        description: sub resources at different node.
+        items:
+          type: string
+        type: array
+    type: object
+  v1alpha1.LocalVolumeGroupSpec:
+    properties:
+      accessibility:
+        $ref: '#/definitions/v1alpha1.AccessibilityTopology'
+        description: Accessibility is the topology requirement of the volume. It describes
+          how to locate and distribute the volume replicas
+      namespace:
+        type: string
+      pods:
+        items:
+          type: string
+        type: array
+      volumes:
+        description: Volumes is the collection of the volumes in the group
+        items:
+          $ref: '#/definitions/v1alpha1.VolumeInfo'
+        type: array
+    type: object
+  v1alpha1.LocalVolumeGroupStatus:
+    type: object
+  v1alpha1.LocalVolumeMigrateSpec:
+    properties:
+      abort:
+        description: +kubebuilder:default:=false
+        type: boolean
+      migrateAllVols:
+        description: +kubebuilder:default:=false
+        type: boolean
+      sourceNode:
+        description: source NodeNames
+        type: string
+      targetNodesSuggested:
+        description: suggested target NodeNames
+        items:
+          type: string
+        type: array
+      volumeName:
+        type: string
+    type: object
+  v1alpha1.LocalVolumeMigrateStatus:
+    properties:
+      message:
+        description: error message to describe some states
+        type: string
+      originalReplicaNumber:
+        description: record the volume's replica number, it will be set internally
+        type: integer
+      state:
+        description: State of the operation, e.g. submitted, started, completed, abort,
+          ...
+        type: string
+      targetNode:
+        description: record the node where the specified replica is migrated to
+        type: string
+    type: object
+  v1alpha1.LocalVolumeReplicaSpec:
+    properties:
+      delete:
+        description: |-
+          Delete is to indicate where the replica should be deleted or not.
+          It's different from the regular resource delete interface in Kubernetes.
+          The purpose is to protect it from any mistakes
+          +kubebuilder:default:=false
+        type: boolean
+      nodeName:
+        description: NodeName is the assigned node where the volume replica is located
+        type: string
+      poolName:
+        description: PoolName is the name of the storage pool, e.g. LocalStorage_PoolHDD,
+          LocalStorage_PoolSSD, etc..
+        type: string
+      requiredCapacityBytes:
+        description: +kubebuilder:validation:Minimum:=4194304
+        type: integer
+      volumeName:
+        description: VolumeName is the name of the volume, e.g. pvc-fbf3ffc3-66db-4dae-9032-bda3c61b8f85
+        type: string
+    type: object
+  v1alpha1.LocalVolumeReplicaStatus:
+    properties:
+      allocatedCapacityBytes:
+        description: AllocatedCapacityBytes is the real allocated capacity in bytes
+        type: integer
+      devPath:
+        description: |-
+          DevicePath is a link path of the StoragePath of the volume replica,
+          e.g. /dev/LocalStorage_PoolHDD/pvc-fbf3ffc3-66db-4dae-9032-bda3c61b8f85
+        type: string
+      disks:
+        description: Disks is a list of physical disks where the volume replica is
+          spread cross, especially for striped LVM volume replica
+        items:
+          type: string
+        type: array
+      haState:
+        $ref: '#/definitions/v1alpha1.HAState'
+        description: HAState is state for ha replica, replica.Status.State == Ready
+          only when HAState is Consistent of nil
+      inuse:
+        description: |-
+          InUse is one of volume replica's states, which indicates the replica is used by a Pod or not
+          +kubebuilder:default:=false
+        type: boolean
+      state:
+        description: State is the phase of volume replica, e.g. Creating, Ready, NotReady,
+          ToBeDeleted, Deleted
+        type: string
+      storagePath:
+        description: StoragePath is a real path of the volume replica, like /dev/sdg.
+        type: string
+      synced:
+        description: |-
+          Synced is the sync state of the volume replica, which is important in HA volume
+          +kubebuilder:default:=false
+        type: boolean
+    type: object
+  v1alpha1.LocalVolumeSpec:
+    properties:
+      accessibility:
+        $ref: '#/definitions/v1alpha1.AccessibilityTopology'
+        description: Accessibility is the topology requirement of the volume. It describes
+          how to locate and distribute the volume replicas
+      config:
+        $ref: '#/definitions/v1alpha1.VolumeConfig'
+        description: |-
+          Config is the configration for the volume replicas
+          It will be managed by the controller, and watched by all the nodes
+          Important: node will manage volume replica according this config
+      convertible:
+        description: |-
+          Convertible is to indicate if the non-HA volume can be transitted to HA volume or not
+          +kubebuilder:default:=false
+        type: boolean
+      delete:
+        description: |-
+          Delete is to indicate where the replica should be deleted or not.
+          It's different from the regular resource delete interface in Kubernetes.
+          The purpose is to protect it from any mistakes
+          +kubebuilder:default:=false
+        type: boolean
+      poolName:
+        description: PoolName is the name of the storage pool, e.g. LocalStorage_PoolHDD,
+          LocalStorage_PoolSSD, etc..
+        type: string
+      pvcName:
+        description: PersistentVolumeClaimName is the name of the associated PVC
+        type: string
+      pvcNamespace:
+        description: PersistentVolumeClaimNamespace is the namespace of the associated
+          PVC
+        type: string
+      replicaNumber:
+        description: |-
+          replica number: 1 - non-HA, 2 - HA, 4 - migration (temp)
+          +kubebuilder:validation:Minimum:=1
+          +kubebuilder:validation:Maximum:=4
+        type: integer
+      requiredCapacityBytes:
+        description: +kubebuilder:validation:Minimum:=4194304
+        type: integer
+      volumegroup:
+        description: VolumeGroup is the group name of the local volumes. It is designed
+          for the scheduling and allocating.
+        type: string
+    type: object
+  v1alpha1.LocalVolumeStatus:
+    properties:
+      allocatedCapacityBytes:
+        description: |-
+          AllocatedCapacityBytes is the real allocated capacity in bytes of the volume replicas.
+          In case of HA volume with multiple replicas, the value is equal to the one of a replica's size
+        type: integer
+      fsType:
+        description: PublishedFSType is the fstype on this volume
+        type: string
+      publishedNode:
+        description: PublishedNodeName is the node where the volume is published and
+          used by pod
+        type: string
+      rawblock:
+        description: |-
+          PublishedRawBlock is for raw block
+          +kubebuilder:default:=false
+        type: boolean
+      replicas:
+        description: Volume is a logical concept and composed by one or many replicas
+          which will be located at different node.
+        items:
+          type: string
+        type: array
+      state:
+        description: State is the phase of volume replica, e.g. Creating, Ready, NotReady,
+          ToBeDeleted, Deleted
+        type: string
+      usedCapacityBytes:
+        description: UsedCapacityBytes is the used capacity in bytes of the volume,
+          which is avaiable only for filesystem
+        type: integer
+    type: object
+  v1alpha1.PartitionInfo:
+    properties:
+      filesystem:
+        $ref: '#/definitions/v1alpha1.FileSystemInfo'
+        description: |-
+          FileSystem contains mount point and filesystem type
+          +optional
+      hasFileSystem:
+        description: HasFileSystem represents whether the filesystem is included
+        type: boolean
+      path:
+        description: Path represents the partition path in the OS
+        type: string
+    type: object
+  v1alpha1.RAIDInfo:
+    properties:
+      raidMaster:
+        description: RAIDMaster is the master of the RAID disk, it works for only
+          RAID slave disk, e.g. /dev/bus/0
+        type: string
+    type: object
+  v1alpha1.SmartInfo:
+    properties:
+      overallHealth:
+        description: OverallHealth identifies if the disk is healthy or not
+        type: string
+    type: object
   v1alpha1.Topology:
     properties:
       region:
@@ -971,79 +3221,105 @@ definitions:
           +kubebuilder:default:=default
         type: string
     type: object
+  v1alpha1.VolumeConfig:
+    properties:
+      convertible:
+        description: Convertible is to indicate if the non-HA volume can be transitted
+          to HA volume or not
+        type: boolean
+      initialized:
+        type: boolean
+      readyToInitialize:
+        type: boolean
+      replicas:
+        items:
+          $ref: '#/definitions/v1alpha1.VolumeReplica'
+        type: array
+      requiredCapacityBytes:
+        type: integer
+      resourceID:
+        description: ResourceID is for HA volume, set to '-1' for non-HA volume
+        type: integer
+      version:
+        description: Version of config, start from 0, plus 1 every time config update
+        type: integer
+      volumeName:
+        type: string
+    type: object
+  v1alpha1.VolumeInfo:
+    properties:
+      localvolume:
+        description: LocalVolumeName is the name of the LocalVolume
+        type: string
+      pvc:
+        description: PersistentVolumeClaimName is the name of the associated PVC
+        type: string
+    type: object
+  v1alpha1.VolumeReplica:
+    properties:
+      hostname:
+        type: string
+      id:
+        type: integer
+      ip:
+        type: string
+      primary:
+        type: boolean
+    type: object
 info:
   contact: {}
 paths:
-  /metrics/basemetric:
+  /cluster/drbd:
     get:
       consumes:
       - application/json
-      description: get baseMetric
+      description: get DRBDSettingGet
       parameters:
-      - description: name
-        in: query
-        name: name
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功
-          schema:
-            $ref: '#/definitions/api.BaseMetric'
-      summary: 摘要 获取基础监控指标
-      tags:
-      - Metric
-  /metrics/modulestatusmetric:
-    get:
-      consumes:
-      - application/json
-      description: ModuleStatusMetric Running (运行中) / NotReady (未就绪)
-      parameters:
-      - description: name
-        in: query
-        name: name
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功
-          schema:
-            $ref: '#/definitions/api.ModuleStatusMetric'
-      summary: 摘要 获取组件状态监控指标
-      tags:
-      - Metric
-  /metrics/nodestorageusemetric/{storagePoolClass}:
-    get:
-      consumes:
-      - application/json
-      description: NodeStorageUseMetric
-      parameters:
-      - description: storagePoolClass
+      - description: enabledrbd
         in: path
-        name: storagePoolClass
-        required: true
+        name: enabledrbd
         type: string
       produces:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
-            $ref: '#/definitions/api.NodeStorageUseMetric'
-        "404":
+            $ref: '#/definitions/api.DrbdEnableSetting'
+      summary: 摘要 获取高可用设置
+      tags:
+      - Setting
+    post:
+      consumes:
+      - application/json
+      description: post EnableDRBDSetting
+      parameters:
+      - description: body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.DrbdEnableSettingReqBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.DrbdEnableSettingRspBody'
+        "500":
           description: 失败
           schema:
-            $ref: '#/definitions/api.NodeStorageUseMetric'
-      summary: 摘要 获取指定存储池类型节点存储TOP5使用率监控指标
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 高可用设置
       tags:
-      - Metric
-  /metrics/operations:
+      - Setting
+  /cluster/nodes:
     get:
       consumes:
       - application/json
-      description: OperationList 状态枚举 （Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed）
+      description: list StorageNode  驱动状态 [运行中（Ready）,维护中（Maintain）, 离线（Offline)]
+        , 节点状态 [运行中（Ready）,未就绪（NotReady）,未知（Unknown)]
       parameters:
       - description: name
         in: query
@@ -1059,37 +3335,54 @@ paths:
         name: pageSize
         required: true
         type: integer
+      - description: nodeState
+        in: query
+        name: nodeState
+        type: string
+      - description: driverState
+        in: query
+        name: driverState
+        type: string
+      - description: fuzzy
+        in: query
+        name: fuzzy
+        type: boolean
+      - description: sort
+        in: query
+        name: sort
+        type: boolean
       produces:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
-            $ref: '#/definitions/api.OperationMetric'
-      summary: 摘要 获取操作记录列表
+            $ref: '#/definitions/api.StorageNodeList'
+      summary: 摘要 获取存储节点列表
       tags:
-      - Metric
-  /metrics/storagepoolusemetric:
+      - Node
+  /cluster/nodes/{nodeName}:
     get:
       consumes:
       - application/json
-      description: StoragePoolMetric
+      description: get StorageNode 驱动状态 [运行中（Ready）,维护中（Maintain）, 离线（Offline)] ,
+        节点状态 [运行中（Ready）,未就绪（NotReady）,未知（Unknown)]
       parameters:
-      - description: name
-        in: query
-        name: name
+      - description: nodeName
+        in: path
+        name: nodeName
         type: string
       produces:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
-            $ref: '#/definitions/api.StoragePoolUseMetric'
-      summary: 摘要 获取存储池资源监控指标
+            $ref: '#/definitions/api.StorageNode'
+      summary: 摘要 获取指定存储节点
       tags:
-      - Metric
-  /nodes/storagenode/{nodeName}/disks:
+      - Node
+  /cluster/nodes/{nodeName}/disks:
     get:
       consumes:
       - application/json
@@ -1114,6 +3407,14 @@ paths:
         in: query
         name: state
         type: string
+      - description: fuzzy
+        in: query
+        name: fuzzy
+        type: boolean
+      - description: sort
+        in: query
+        name: sort
+        type: boolean
       produces:
       - application/json
       responses:
@@ -1124,11 +3425,11 @@ paths:
       summary: 摘要 获取指定存储节点磁盘列表
       tags:
       - Node
-  /nodes/storagenode/{nodeName}/disks/{diskName}/removereserve:
-    post:
+  /cluster/nodes/{nodeName}/disks/{diskName}:
+    get:
       consumes:
       - application/json
-      description: post RemoveReserveStorageNodeDisk
+      description: get GetStorageNodeDisk diskname i.g sdb sdc ...
       parameters:
       - description: nodeName
         in: path
@@ -1140,25 +3441,32 @@ paths:
         name: diskName
         required: true
         type: string
+      - description: fuzzy
+        in: query
+        name: fuzzy
+        type: boolean
+      - description: sort
+        in: query
+        name: sort
+        type: boolean
       produces:
       - application/json
       responses:
         "200":
           description: 成功
           schema:
-            $ref: '#/definitions/api.DiskRemoveReservedRspBody'
+            $ref: '#/definitions/api.LocalDiskInfo'
         "500":
           description: 失败
           schema:
             $ref: '#/definitions/api.RspFailBody'
-      summary: 摘要 解除磁盘预留
+      summary: 摘要 获取指定磁盘信息
       tags:
       - Node
-  /nodes/storagenode/{nodeName}/disks/{diskName}/reserve:
     post:
       consumes:
       - application/json
-      description: post ReserveStorageNodeDisk diskname i.g sdb sdc ...
+      description: post UpdateStorageNodeDisk diskname i.g sdb sdc ...
       parameters:
       - description: nodeName
         in: path
@@ -1170,21 +3478,26 @@ paths:
         name: diskName
         required: true
         type: string
+      - description: reqBody
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/api.DiskReqBody'
       produces:
       - application/json
       responses:
         "200":
           description: 成功
           schema:
-            $ref: '#/definitions/api.DiskReservedRspBody'
+            $ref: '#/definitions/api.DiskReqBody'
         "500":
           description: 失败
           schema:
             $ref: '#/definitions/api.RspFailBody'
-      summary: 摘要 预留磁盘
+      summary: 摘要 更新磁盘
       tags:
       - Node
-  /nodes/storagenode/{nodeName}/migrates:
+  /cluster/nodes/{nodeName}/migrates:
     get:
       consumes:
       - application/json
@@ -1215,15 +3528,53 @@ paths:
       summary: 摘要 获取指定节点数据卷迁移任务列表
       tags:
       - Node
-  /nodes/storagenodeoperations/{migrateOperationName}/yaml:
+  /cluster/nodes/{nodeName}/pools:
     get:
       consumes:
       - application/json
-      description: get StorageNodeVolumeOperationYamlGet
+      description: get StorageNodePoolsList
       parameters:
-      - description: migrateOperationName
+      - description: nodeName
         in: path
-        name: migrateOperationName
+        name: nodeName
+        required: true
+        type: string
+      - description: fuzzy
+        in: query
+        name: fuzzy
+        type: boolean
+      - description: sort
+        in: query
+        name: sort
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.StoragePoolList'
+        "500":
+          description: 失败
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 获取指定节点存储池列表信息
+      tags:
+      - Node
+  /cluster/nodes/{nodeName}/pools/{poolName}:
+    get:
+      consumes:
+      - application/json
+      description: get StorageNodePoolGet
+      parameters:
+      - description: nodeName
+        in: path
+        name: nodeName
+        required: true
+        type: string
+      - description: poolName
+        in: path
+        name: poolName
         required: true
         type: string
       produces:
@@ -1232,138 +3583,88 @@ paths:
         "200":
           description: 成功
           schema:
-            $ref: '#/definitions/api.YamlData'
-      summary: 摘要 获取节点数据卷操作记录yaml信息
+            $ref: '#/definitions/api.StoragePool'
+        "500":
+          description: 失败
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 获取指定节点指定存储池信息
       tags:
       - Node
-  /nodes/storagenodes:
+  /cluster/nodes/{nodeName}/pools/{poolName}/disks:
     get:
       consumes:
       - application/json
-      description: list StorageNode  驱动状态 [运行中（Ready）,维护中（Maintain）, 离线（Offline)]
-        , 节点状态 [运行中（Ready）,未就绪（NotReady）,未知（Unknown)]
-      parameters:
-      - description: name
-        in: query
-        name: name
-        type: string
-      - description: page
-        in: query
-        name: page
-        required: true
-        type: integer
-      - description: pageSize
-        in: query
-        name: pageSize
-        required: true
-        type: integer
-      - description: nodeState
-        in: query
-        name: nodeState
-        type: string
-      - description: driverState
-        in: query
-        name: driverState
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.StorageNodeList'
-      summary: 摘要 获取存储节点列表
-      tags:
-      - Node
-  /nodes/storagenodes/{name}:
-    get:
-      consumes:
-      - application/json
-      description: get StorageNode 驱动状态 [运行中（Ready）,维护中（Maintain）, 离线（Offline)] ,
-        节点状态 [运行中（Ready）,未就绪（NotReady）,未知（Unknown)]
-      parameters:
-      - description: name
-        in: path
-        name: name
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.StorageNode'
-      summary: 摘要 获取指定存储节点
-      tags:
-      - Node
-  /pools/storagepool/{storagePoolName}/nodes:
-    get:
-      consumes:
-      - application/json
-      description: get StorageNodesGetByPoolName
-      parameters:
-      - description: storagePoolName
-        in: path
-        name: storagePoolName
-        required: true
-        type: string
-      - description: page
-        in: query
-        name: page
-        required: true
-        type: integer
-      - description: pageSize
-        in: query
-        name: pageSize
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.StorageNodeListByPool'
-      summary: 摘要 获取指定存储池存储节点列表信息
-      tags:
-      - Pool
-  /pools/storagepool/{storagePoolName}/nodes/{nodeName}/disks:
-    get:
-      consumes:
-      - application/json
-      description: get StorageNodeDisksGetByPoolName
+      description: get StorageNodePoolDisksList
       parameters:
       - description: nodeName
         in: path
         name: nodeName
         required: true
         type: string
-      - description: storagePoolName
+      - description: poolName
         in: path
-        name: storagePoolName
+        name: poolName
         required: true
         type: string
-      - description: page
+      - description: fuzzy
         in: query
-        name: page
-        required: true
-        type: integer
-      - description: pageSize
+        name: fuzzy
+        type: boolean
+      - description: sort
         in: query
-        name: pageSize
-        required: true
-        type: integer
+        name: sort
+        type: boolean
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: 成功
           schema:
-            $ref: '#/definitions/api.NodeDiskListByPool'
-      summary: 摘要 获取指定存储池指定存储节点磁盘列表信息
+            $ref: '#/definitions/api.LocalDisksItemsList'
+        "500":
+          description: 失败
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 获取指定节点指定存储池磁盘列表信息
       tags:
-      - Pool
-  /pools/storagepools:
+      - Node
+  /cluster/nodes/{nodeName}/pools/{poolName}/disks/{diskName}:
+    get:
+      consumes:
+      - application/json
+      description: get StorageNodePoolDiskGet
+      parameters:
+      - description: nodeName
+        in: path
+        name: nodeName
+        required: true
+        type: string
+      - description: poolName
+        in: path
+        name: poolName
+        required: true
+        type: string
+      - description: diskName
+        in: path
+        name: diskName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.LocalDiskInfo'
+        "500":
+          description: 失败
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 获取指定节点指定存储池指定磁盘信息
+      tags:
+      - Node
+  /cluster/pools:
     get:
       consumes:
       - application/json
@@ -1383,6 +3684,14 @@ paths:
         name: pageSize
         required: true
         type: integer
+      - description: fuzzy
+        in: query
+        name: fuzzy
+        type: boolean
+      - description: sort
+        in: query
+        name: sort
+        type: boolean
       produces:
       - application/json
       responses:
@@ -1393,15 +3702,15 @@ paths:
       summary: 摘要 获取存储池列表信息
       tags:
       - Pool
-  /pools/storagepools/{name}:
+  /cluster/pools/{poolName}:
     get:
       consumes:
       - application/json
-      description: get Pool
+      description: get Pool angel
       parameters:
-      - description: name
+      - description: poolName
         in: path
-        name: name
+        name: poolName
         required: true
         type: string
       produces:
@@ -1414,61 +3723,154 @@ paths:
       summary: 摘要 获取指定存储池基本信息
       tags:
       - Pool
-  /settings/highavailabilitysetting:
+  /cluster/pools/{poolName}/nodes:
     get:
       consumes:
       - application/json
-      description: get DRBDSettingGet
+      description: get StorageNodesGetByPoolName
       parameters:
-      - description: enabledrbd
+      - description: poolName
         in: path
-        name: enabledrbd
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.DrbdEnableSetting'
-      summary: 摘要 获取高可用设置
-      tags:
-      - Setting
-  /settings/highavailabilitysetting/{enabledrbd}:
-    post:
-      consumes:
-      - application/json
-      description: post EnableDRBDSetting
-      parameters:
-      - description: enabledrbd
-        in: path
-        name: enabledrbd
+        name: poolName
         required: true
         type: string
+      - description: page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      - description: nodeName
+        in: query
+        name: nodeName
+        type: string
+      - description: state
+        in: query
+        name: state
+        type: string
+      - description: fuzzy
+        in: query
+        name: fuzzy
+        type: boolean
+      - description: sort
+        in: query
+        name: sort
+        type: boolean
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.DrbdEnableSettingRspBody'
-        "500":
-          description: 失败
-          schema:
-            $ref: '#/definitions/api.RspFailBody'
-      summary: 摘要 高可用设置
+            $ref: '#/definitions/api.StorageNodeListByPool'
+      summary: 摘要 获取指定存储池存储节点列表信息
       tags:
-      - Setting
-  /volumegroups/volumegroups/{name}:
+      - Pool
+  /cluster/pools/{poolName}/nodes/{nodeName}/disks:
     get:
       consumes:
       - application/json
-      description: get VolumeListByVolumeGroup
+      description: get StorageNodeDisksGetByPoolName
+      parameters:
+      - description: nodeName
+        in: path
+        name: nodeName
+        required: true
+        type: string
+      - description: poolName
+        in: path
+        name: poolName
+        required: true
+        type: string
+      - description: page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      - description: fuzzy
+        in: query
+        name: fuzzy
+        type: boolean
+      - description: sort
+        in: query
+        name: sort
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.NodeDiskListByPool'
+      summary: 摘要 获取指定存储池指定存储节点磁盘列表信息
+      tags:
+      - Pool
+  /cluster/status:
+    get:
+      consumes:
+      - application/json
+      description: get ModuleStatus
+      parameters:
+      - description: name
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.ModuleStatus'
+      summary: 摘要 获取基础监控指标
+      tags:
+      - Metric
+  /cluster/volumegroups:
+    get:
+      consumes:
+      - application/json
+      description: get VolumeGroupList
       parameters:
       - description: name
         in: path
         name: name
-        required: true
+        type: string
+      - description: fuzzy
+        in: query
+        name: fuzzy
+        type: boolean
+      - description: sort
+        in: query
+        name: sort
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.VolumeGroupList'
+      summary: 摘要 获取数据卷组列表
+      tags:
+      - VolumeGroup
+  /cluster/volumegroups/{vgName}:
+    get:
+      consumes:
+      - application/json
+      description: get VolumeGroupGet
+      parameters:
+      - description: vgName
+        in: path
+        name: vgName
         type: string
       produces:
       - application/json
@@ -1477,45 +3879,85 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/api.VolumeGroup'
-      summary: 摘要 获取指定数据卷组中包含数据卷名称列表基本信息
+      summary: 摘要 查看数据卷组
       tags:
       - VolumeGroup
-  /volumes/volume/{name}/yaml:
+  /cluster/volumes:
     get:
       consumes:
       - application/json
-      description: get VolumeYamlGet
+      description: list Volume
       parameters:
-      - description: name
-        in: path
-        name: name
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功
-          schema:
-            $ref: '#/definitions/api.YamlData'
-      summary: 摘要 获取数据卷yaml信息
-      tags:
-      - Volume
-  /volumes/volumemigrateoperation/{targetNodeType}/targetNodes:
-    get:
-      consumes:
-      - application/json
-      description: get GetTargetNodesByTargetNodeType  targetNodeType "AutoSelect"
-        "ManualSelect"
-      parameters:
-      - description: targetNodeType
-        in: path
-        name: targetNodeType
-        required: true
-        type: string
-      - description: sourceNodeName
+      - description: page
         in: query
-        name: sourceNodeName
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      - description: volumeName
+        in: query
+        name: volumeName
+        type: string
+      - description: state
+        in: query
+        name: state
+        type: string
+      - description: nameSpace
+        in: query
+        name: nameSpace
+        type: string
+      - description: fuzzy
+        in: query
+        name: fuzzy
+        type: boolean
+      - description: sort
+        in: query
+        name: sort
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.VolumeList'
+      summary: 摘要 获取数据卷列表信息
+      tags:
+      - Volume
+  /cluster/volumes/{volumeName}:
+    get:
+      consumes:
+      - application/json
+      description: get Volume angel1
+      parameters:
+      - description: volumeName
+        in: path
+        name: volumeName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Volume'
+      summary: 摘要 获取指定数据卷基本信息
+      tags:
+      - Volume
+  /cluster/volumes/{volumeName}/convert:
+    get:
+      consumes:
+      - application/json
+      description: get GetVolumeConvertOperation
+      parameters:
+      - description: volumeName
+        in: path
+        name: volumeName
         required: true
         type: string
       produces:
@@ -1524,11 +3966,14 @@ paths:
         "200":
           description: 成功
           schema:
-            $ref: '#/definitions/api.TargetNodeList'
-      summary: 摘要 获取指定目标节点类型节点列表
+            $ref: '#/definitions/api.VolumeConvertOperation'
+        "500":
+          description: 失败
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 获取指定数据卷转换操作
       tags:
       - Volume
-  /volumes/volumeoperation/{volumeName}/convert:
     post:
       consumes:
       - application/json
@@ -1553,27 +3998,97 @@ paths:
       summary: 摘要 指定数据卷转换操作
       tags:
       - Volume
-  /volumes/volumeoperation/{volumeName}/migrate:
-    post:
+  /cluster/volumes/{volumeName}/expand:
+    get:
       consumes:
       - application/json
-      description: post VolumeMigrateOperation
+      description: get GetVolumeExpandOperation
       parameters:
       - description: volumeName
         in: path
         name: volumeName
         required: true
         type: string
-      - description: sourceNodeName
-        in: query
-        name: sourceNodeName
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.VolumeExpandOperation'
+        "500":
+          description: 失败
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 获取指定数据卷扩容操作
+      tags:
+      - Volume
+    post:
+      consumes:
+      - application/json
+      description: post VolumeExpandOperation
+      parameters:
+      - description: volumeName
+        in: path
+        name: volumeName
         required: true
         type: string
-      - description: targetNodeName
-        in: query
-        name: targetNodeName
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.VolumeConvertOperation'
+        "500":
+          description: 失败
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 指定数据卷转换
+      tags:
+      - Volume
+  /cluster/volumes/{volumeName}/migrate:
+    get:
+      consumes:
+      - application/json
+      description: get GetVolumeMigrateOperation
+      parameters:
+      - description: volumeName
+        in: path
+        name: volumeName
         required: true
         type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.VolumeMigrateOperation'
+        "500":
+          description: 失败
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 获取指定数据卷迁移操作
+      tags:
+      - Volume
+    post:
+      consumes:
+      - application/json
+      description: post VolumeMigrateOperation body i.g. body { SrcNode string ,SelectedNode
+        string}
+      parameters:
+      - description: volumeName
+        in: path
+        name: volumeName
+        required: true
+        type: string
+      - description: reqBody
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.VolumeMigrateReqBody'
       produces:
       - application/json
       responses:
@@ -1588,78 +4103,7 @@ paths:
       summary: 摘要 指定数据卷迁移操作
       tags:
       - Volume
-  /volumes/volumeoperation/{volumeOperationName}/yaml:
-    get:
-      consumes:
-      - application/json
-      description: get VolumeOperationYamlGet
-      parameters:
-      - description: volumeOperationName
-        in: path
-        name: volumeOperationName
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功
-          schema:
-            $ref: '#/definitions/api.YamlData'
-      summary: 摘要 获取数据卷操作记录yaml信息
-      tags:
-      - Volume
-  /volumes/volumeoperations/{volumeName}:
-    get:
-      consumes:
-      - application/json
-      description: get VolumeOperation
-      parameters:
-      - description: volumeName
-        in: path
-        name: volumeName
-        required: true
-        type: string
-      - description: volumeMigrateName
-        in: query
-        name: volumeMigrateName
-        type: string
-      - description: state
-        in: query
-        name: state
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功
-          schema:
-            $ref: '#/definitions/api.VolumeOperationByVolume'
-      summary: 摘要 获取指定数据卷操作记录信息（目前仅包含迁移运维操作）
-      tags:
-      - Volume
-  /volumes/volumereplica/{volumeReplicaName}/yaml:
-    get:
-      consumes:
-      - application/json
-      description: get VolumeReplicaYaml
-      parameters:
-      - description: volumeReplicaName
-        in: path
-        name: volumeReplicaName
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功
-          schema:
-            $ref: '#/definitions/api.YamlData'
-      summary: 摘要 查看指定数据卷副本yaml信息
-      tags:
-      - Volume
-  /volumes/volumereplicas/{volumeName}:
+  /cluster/volumes/{volumeName}/replicas:
     get:
       consumes:
       - application/json
@@ -1678,10 +4122,14 @@ paths:
         in: query
         name: state
         type: string
-      - description: synced
+      - description: fuzzy
         in: query
-        name: synced
-        type: string
+        name: fuzzy
+        type: boolean
+      - description: sort
+        in: query
+        name: sort
+        type: boolean
       produces:
       - application/json
       responses:
@@ -1690,65 +4138,6 @@ paths:
           schema:
             $ref: '#/definitions/api.VolumeReplicaList'
       summary: 摘要 获取指定数据卷的副本列表信息
-      tags:
-      - Volume
-  /volumes/volumes:
-    get:
-      consumes:
-      - application/json
-      description: list Volume
-      parameters:
-      - description: page
-        in: query
-        name: page
-        required: true
-        type: integer
-      - description: pageSize
-        in: query
-        name: pageSize
-        required: true
-        type: integer
-      - description: volumeName
-        in: query
-        name: volumeName
-        type: string
-      - description: state
-        in: query
-        name: state
-        type: string
-      - description: namespace
-        in: query
-        name: namespace
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功
-          schema:
-            $ref: '#/definitions/api.VolumeList'
-      summary: 摘要 获取数据卷列表信息
-      tags:
-      - Volume
-  /volumes/volumes/{name}:
-    get:
-      consumes:
-      - application/json
-      description: get Volume
-      parameters:
-      - description: name
-        in: path
-        name: name
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.Volume'
-      summary: 摘要 获取指定数据卷基本信息
       tags:
       - Volume
 swagger: "2.0"

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -27,31 +28,36 @@ func NewSettingController(m *manager.ServerManager) ISettingController {
 // @Summary 摘要 高可用设置
 // @Description post EnableDRBDSetting
 // @Tags        Setting
-// @Param       enabledrbd path string true "enabledrbd"
+// @Param       body body api.DrbdEnableSettingReqBody true "body"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.DrbdEnableSettingRspBody
 // @Failure     500 {object}  api.RspFailBody "失败"
-// @Router      /settings/highavailabilitysetting/{enabledrbd} [post]
+// @Router      /cluster/drbd [post]
 func (n *SettingController) EnableDRBDSetting(ctx *gin.Context) {
-	// 获取path中的name
-	enabledrbd := ctx.Param("enabledrbd")
+	//// 获取path中的name
+	//enabledrbd := ctx.Param("enabledrbd")
 
-	if enabledrbd == "" {
+	var desrb api.DrbdEnableSettingReqBody
+	err := ctx.ShouldBind(&desrb)
+	if err != nil {
+		fmt.Errorf("Unmarshal err = %v", err)
 		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
 		return
 	}
+	enabledrbd := desrb.Enable
 
-	setting, err := n.m.SettingController().EnableHighAvailability()
-	if err != nil {
-		var failRsp api.RspFailBody
-		failRsp.ErrCode = 500
-		failRsp.Desc = "EnableDRBDSetting Failed" + err.Error()
-		ctx.JSON(http.StatusInternalServerError, failRsp)
-		return
+	if enabledrbd == true {
+		setting, err := n.m.SettingController().EnableHighAvailability()
+		if err != nil {
+			var failRsp api.RspFailBody
+			failRsp.ErrCode = 500
+			failRsp.Desc = "EnableDRBDSetting Failed" + err.Error()
+			ctx.JSON(http.StatusInternalServerError, failRsp)
+			return
+		}
+		ctx.JSON(http.StatusOK, setting)
 	}
-
-	ctx.JSON(http.StatusOK, setting)
 }
 
 // DRBDSettingGet godoc
@@ -62,7 +68,7 @@ func (n *SettingController) EnableDRBDSetting(ctx *gin.Context) {
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.DrbdEnableSetting
-// @Router      /settings/highavailabilitysetting [get]
+// @Router      /cluster/drbd [get]
 func (n *SettingController) DRBDSettingGet(ctx *gin.Context) {
 
 	setting, err := n.m.SettingController().GetDRBDSetting()

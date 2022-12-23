@@ -40,7 +40,7 @@ func NewSettingController(client client.Client, clientset *kubernetes.Clientset,
 func (settingController *SettingController) EnableHighAvailability() (*hwameistorapi.DrbdEnableSettingRspBody, error) {
 	var RspBody = &hwameistorapi.DrbdEnableSettingRspBody{}
 	var drbdEnableSetting = &hwameistorapi.DrbdEnableSetting{}
-	drbdEnableSetting.Enabledrbd = true
+	drbdEnableSetting.Enable = true
 	drbdEnableSetting.State = hwameistorapi.DrbdModuleStatusEnabled
 	drbdEnableSetting.Version = "v0.0.1"
 	RspBody.DrbdEnableSetting = drbdEnableSetting
@@ -64,10 +64,10 @@ func (settingController *SettingController) GetDRBDSetting() (*hwameistorapi.Drb
 		fmt.Println("job.Status.Succeeded = %v, job.Status.Active = %v", job.Status.Succeeded, job.Status.Active)
 		if job.Status.Succeeded != 0 && (job.Status.Active == job.Status.Succeeded) {
 			drbdSetting.State = hwameistorapi.DrbdModuleStatusEnabled
-			drbdSetting.Enabledrbd = true
+			drbdSetting.Enable = true
 		} else {
 			drbdSetting.State = hwameistorapi.DrbdModuleStatusDisabled
-			drbdSetting.Enabledrbd = false
+			drbdSetting.Enable = false
 		}
 	}
 

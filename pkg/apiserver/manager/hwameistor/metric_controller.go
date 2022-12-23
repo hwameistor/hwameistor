@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -164,7 +165,7 @@ func (mController *MetricController) OperationListMetric(page, pageSize int32) (
 		operation.EventType = item.Kind
 		operation.Status = hwameistorapi.StateConvert(item.Status.State)
 		operation.StartTime = item.CreationTimestamp.Time
-		operation.EndTime = item.DeletionTimestamp.Time
+		operation.EndTime = time.Now()
 		operation.Description = item.Status.Message
 		operationList = append(operationList, operation)
 	}
@@ -180,12 +181,16 @@ func (mController *MetricController) OperationListMetric(page, pageSize int32) (
 		operation.EventType = item.Kind
 		operation.Status = hwameistorapi.StateConvert(item.Status.State)
 		operation.StartTime = item.CreationTimestamp.Time
-		operation.EndTime = item.DeletionTimestamp.Time
+		operation.EndTime = time.Now()
 		operation.Description = item.Status.Message
 		operationList = append(operationList, operation)
 	}
 
+	var operations = []hwameistorapi.Operation{}
 	operationMetric.OperationList = utils.DataPatination(operationList, page, pageSize)
+	if len(operationList) == 0 {
+		operationMetric.OperationList = operations
+	}
 
 	var pagination = &hwameistorapi.Pagination{}
 	pagination.Page = page
@@ -253,10 +258,6 @@ func (mController *MetricController) getBaseDiskMetric() error {
 		log.WithError(err).Error("Failed to list LocalDisks")
 		return err
 	}
-	// 纳管 claimed
-	// 健康 state active
-	// 错误 state inactive
-	// 总数 total num
 
 	for i := range diskList.Items {
 		if diskList.Items[i].Spec.State == apisv1alpha1.LocalDiskActive {
