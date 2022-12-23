@@ -31,7 +31,6 @@ func NewSMARTStorage() (*storage.ConfigMap, error) {
 	if err != nil {
 		log.WithError(err).Error("Failed to create kubeClient")
 		return nil, err
-
 	}
 	defaultConfigMapRW = storage.NewConfigMap(DefaultCMName, utils.GetNamespace()).SetKubeClient(kubeClient)
 	return defaultConfigMapRW, nil
