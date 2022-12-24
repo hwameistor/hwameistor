@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/smart"
 	"os"
 	"path"
 	"runtime"
@@ -104,6 +105,9 @@ func main() {
 
 	log.Info("starting monitor disk")
 	go disk.NewController(nodeMgr).StartMonitor()
+
+	log.Info("starting collect S.M.A.R.T")
+	go smart.NewCollector().WithSyncPeriod(time.Hour * 6).StartTimerCollect(stopCh)
 
 	if csiCfg.Enable {
 		log.Info("starting Disk CSI Driver")
