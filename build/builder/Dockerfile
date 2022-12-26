@@ -10,3 +10,5 @@ RUN chmod +x /usr/bin/operator-sdk
 ENV GO111MODULE=on GOPROXY=https://goproxy.io
 
 RUN git clone -b v0.18.6 --single-branch https://github.com/kubernetes/code-generator && mv code-generator /code-generator
+
+COPY ./third_party/swag /usr/local/bin/

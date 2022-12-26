@@ -30,7 +30,7 @@ debug:
 
 .PHONY: apiserver_swag
 apiserver_swag:
-	swag init -d ${CMDS_DIR}/${APISERVER_MODULE_NAME} -o ./pkg/${APISERVER_MODULE_NAME}/docs --parseVendor --parseDependency --parseInternal --propertyStrategy pascalcase --parseDepth 5
+	${DOCKER_MAKE_CMD} swag init -d ./cmd/${APISERVER_MODULE_NAME} -o ./pkg/${APISERVER_MODULE_NAME}/docs --parseVendor --parseDependency --parseInternal --propertyStrategy pascalcase --parseDepth 5
 
 .PHONY: apiserver_run
 apiserver_run: apiserver_swag

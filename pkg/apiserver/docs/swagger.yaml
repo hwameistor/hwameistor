@@ -1739,11 +1739,6 @@ definitions:
     type: object
   v1alpha1.State:
     enum:
-    - ""
-    - ToBeMounted
-    - ToBeUnMount
-    - Mounted
-    - NotReady
     - Ready
     - Maintain
     - Offline
@@ -1778,13 +1773,13 @@ definitions:
     - Available
     - InUse
     - Offline
+    - ""
+    - ToBeMounted
+    - ToBeUnMount
+    - Mounted
+    - NotReady
     type: string
     x-enum-varnames:
-    - MountPointStateEmpty
-    - MountPointToBeMounted
-    - MountPointToBeUnMount
-    - MountPointMounted
-    - MountPointNotReady
     - NodeStateReady
     - NodeStateMaintain
     - NodeStateOffline
@@ -1819,6 +1814,11 @@ definitions:
     - DiskStateAvailable
     - DiskStateInUse
     - DiskStateOffline
+    - MountPointStateEmpty
+    - MountPointToBeMounted
+    - MountPointToBeUnMount
+    - MountPointMounted
+    - MountPointNotReady
   v1alpha1.Topology:
     properties:
       region:
