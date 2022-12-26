@@ -28,22 +28,9 @@ APISERVER_BUILD_INPUT = ${CMDS_DIR}/${APISERVER_MODULE_NAME}/main.go
 debug:
 	${DOCKER_DEBUG_CMD} ash
 
-SWAGGER_INCLUDE_DIRS = ${CMDS_DIR}/${APISERVER_MODULE_NAME} \
-	pkg/${APISERVER_MODULE_NAME} \
-	pkg/apis/hwameistor/v1alpha1 \
-	vendor/k8s.io/apimachinery/pkg/apis/meta/v1 \
-	vendor/k8s.io/api/core/v1 \
-	vendor/k8s.io/apimachinery/pkg/types \
-	vendor/github.com/hwameistor/hwameistor-operator/api/v1alpha1
-
-comma:= ,
-empty:=
-space:= $(empty) $(empty)
-SWAGGER_INPUT_DIRS = $(subst $(space),$(comma),${SWAGGER_INCLUDE_DIRS})
-
 .PHONY: apiserver_swag
 apiserver_swag:
-	swag init --dir ${SWAGGER_INPUT_DIRS} --output ./pkg/${APISERVER_MODULE_NAME}/docs
+	swag init -d ${CMDS_DIR}/${APISERVER_MODULE_NAME} -o ./pkg/${APISERVER_MODULE_NAME}/docs --parseVendor --parseDependency --parseInternal --propertyStrategy pascalcase --parseDepth 5
 
 .PHONY: apiserver_run
 apiserver_run: apiserver_swag
