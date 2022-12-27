@@ -1,0 +1,33 @@
+v0.7.0 / 2022-12-27
+========================
+
+## LocalDiskManager
+* Feat: Collect S.M.A.R.T metrics #545 (@SSmallMonster )
+* fix disk status bug in diskvolume mode #552 (@SSmallMonster )
+* Feat: Expose S.M.A.R.T metrics #554 (@SSmallMonster )
+* [S.M.A.R.T] Save SMART result to configmap #563 (@SSmallMonster )
+
+## Apiserver
+* added apiserver module #556 ( @sun7927 )
+* add[apiserver]: add apiserver interface refracture #561 ( @angel0507 )
+* add[apiserver]: add apiserver interface param update #562 ( @angel0507 )
+
+## Metrics
+* add metrics feature #546 ( @sun7927 )
+
+## Other
+* Add more e2e tests ( [test]add reliability test #535 [test]Add comprehensive test #537 [test]fix test #541 [test]add auto ad test #549 @FloatXD )
+* [docs] update folders of terms and quickstart #538 ( @windsonsea ）
+* correct testcases that wrong in logic #540 ( @buffalo1024 )
+* removed servicemonitor from Helm #553 ( @sun7927 )
+* added swag make command in Makefile #557 ( @sun7927 )
+* removed apiserver from unit test #558 ( @sun7927 )
+* added apiserver swag and run in Makefile #559 ( @sun7927 )
+* optimized the Makefile for swag init #569 ( @sun7927 )
+* generated metadata field of the swagger json by swag v1.8.9 #570 ( @sun7927 )
+* generate swagger json in builder Docker image #571 ( @sun7927 )
+
+
+## Evictor,Admission,LocalStorage,Scheduler
+N/A
+
