@@ -88,6 +88,8 @@ type Operation struct {
 	EventName string `json:"eventName"`
 	// 事件类型
 	EventType string `json:"eventType"`
+	// 操作对象
+	LocalVolumeName string `json:"localVolumeName"`
 	// 状态
 	Status State `json:"status"`
 	// 详细描述

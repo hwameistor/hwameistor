@@ -21,6 +21,7 @@ type IVolumeController interface {
 	VolumeConvertOperation(ctx *gin.Context)
 	GetVolumeExpandOperation(ctx *gin.Context)
 	VolumeExpandOperation(ctx *gin.Context)
+	VolumeOperationGet(ctx *gin.Context)
 }
 
 // VolumeController
@@ -61,7 +62,7 @@ func (v *VolumeController) VolumeGet(ctx *gin.Context) {
 }
 
 // VolumeList godoc
-// @Summary 摘要 获取数据卷列表信息
+// @Summary 摘要 获取数据卷列表信息 数据卷状态枚举 （ToBeMounted、Created、Creating、Ready、NotReady、ToBeDeleted、Deleted）
 // @Description list Volume
 // @Tags        Volume
 // @Param       page query int32 true "page"
@@ -237,7 +238,7 @@ func (v *VolumeController) VolumeConvertOperation(ctx *gin.Context) {
 
 // GetVolumeMigrateOperation godoc
 // @Summary 摘要 获取指定数据卷迁移操作
-// @Description get GetVolumeMigrateOperation
+// @Description get GetVolumeMigrateOperation 状态枚举 （Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed）
 // @Tags        Volume
 // @Param       volumeName path string true "volumeName"
 // @Accept      json
@@ -270,7 +271,7 @@ func (v *VolumeController) GetVolumeMigrateOperation(ctx *gin.Context) {
 
 // GetVolumeConvertOperation godoc
 // @Summary 摘要 获取指定数据卷转换操作
-// @Description get GetVolumeConvertOperation
+// @Description get GetVolumeConvertOperation 状态枚举 （Submitted、InProgress、Completed、ToBeAborted、Aborted）
 // @Tags        Volume
 // @Param       volumeName path string true "volumeName"
 // @Accept      json
@@ -335,7 +336,7 @@ func (v *VolumeController) GetVolumeExpandOperation(ctx *gin.Context) {
 }
 
 // VolumeExpandOperation godoc
-// @Summary 摘要 指定数据卷转换
+// @Summary 摘要 指定数据卷扩容
 // @Description post VolumeExpandOperation
 // @Tags        Volume
 // @Param       volumeName path string true "volumeName"
@@ -365,4 +366,44 @@ func (v *VolumeController) VolumeExpandOperation(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, volumeConvert)
+}
+
+// VolumeOperationGet godoc
+// @Summary 摘要 获取指定数据卷操作记录信息 状态枚举 （Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed)
+// @Description get VolumeOperation
+// @Tags        Volume
+// @Param       volumeName path string true "volumeName"
+// @Param       volumeEventName query string false "volumeEventName"
+// @Param       state query string false "state"
+// @Accept      json
+// @Produce     json
+// @Success     200 {object}  api.VolumeOperationByVolume      "成功"
+// @Router      /cluster/volumes/{volumeName}/operations [get]
+func (v *VolumeController) VolumeOperationGet(ctx *gin.Context) {
+
+	// 获取path中的name
+	volumeName := ctx.Param("volumeName")
+
+	if volumeName == "" {
+		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		return
+	}
+
+	// 获取path中的volumeEventName
+	volumeEventName := ctx.Query("volumeEventName")
+	// 获取path中的state
+	state := ctx.Query("state")
+
+	var queryPage hwameistorapi.QueryPage
+	queryPage.VolumeEventName = volumeEventName
+	queryPage.VolumeState = hwameistorapi.VolumeStatefuzzyConvert(state)
+	queryPage.VolumeName = volumeName
+
+	volumeOperation, err := v.m.VolumeController().GetVolumeOperation(queryPage)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, volumeOperation)
 }

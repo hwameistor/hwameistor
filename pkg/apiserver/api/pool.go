@@ -8,7 +8,7 @@ import (
 type StoragePool struct {
 	apisv1alpha1.LocalPool
 
-	// AllocatedCapacityBytes 存储池已经分配存储容量
+	// AllocatedCapacityBytes 存储池已经分配存储容量 todo
 	AllocatedCapacityBytes int64 `json:"allocatedCapacityBytes"`
 
 	// NodesNames Pool所在节点列表
@@ -21,9 +21,9 @@ type StoragePool struct {
 // StoragePoolList
 type StoragePoolList struct {
 	// storagePools
-	StoragePools []*StoragePool `json:"storagePools"`
+	StoragePools []*StoragePool `json:"items"`
 	// page 信息
-	Page *Pagination `json:"page,omitempty"`
+	Page *Pagination `json:"pagination,omitempty"`
 }
 
 // NodeDiskListByPool
@@ -33,9 +33,9 @@ type NodeDiskListByPool struct {
 	// nodeName 节点名称
 	NodeName string `json:"nodeName,omitempty"`
 	// localDisks 节点磁盘列表
-	LocalDisks []*LocalDiskInfo `json:"localDisks,omitempty"`
+	LocalDisks []*LocalDiskInfo `json:"items,omitempty"`
 	// page 信息
-	Page *Pagination `json:"page,omitempty"`
+	Page *Pagination `json:"pagination,omitempty"`
 }
 
 // StorageNodeListByPool
@@ -43,9 +43,9 @@ type StorageNodeListByPool struct {
 	// StoragePoolName 存储池名称
 	StoragePoolName string `json:"storagePoolName,omitempty"`
 	// StorageNodes
-	StorageNodes []*StorageNode `json:"storageNodes,omitempty"`
+	StorageNodes []*StorageNode `json:"items,omitempty"`
 	// page 信息
-	Page *Pagination `json:"page,omitempty"`
+	Page *Pagination `json:"pagination,omitempty"`
 }
 
 type StoragePoolNodesCollection struct {

@@ -240,22 +240,77 @@ func (lvController *LocalVolumeController) GetVolumeOperation(queryPage hwameist
 			var volumeMigrateOperation = &hwameistorapi.VolumeMigrateOperation{}
 			volumeMigrateOperation.LocalVolumeMigrate = item
 
-			if queryPage.VolumeMigrateName == "" && queryPage.VolumeState == apisv1alpha1.VolumeStateEmpty {
+			if queryPage.VolumeEventName == "" && queryPage.VolumeState == apisv1alpha1.VolumeStateEmpty {
 				volumeMigrateOperations = append(volumeMigrateOperations, volumeMigrateOperation)
-			} else if (queryPage.VolumeMigrateName != "" && strings.Contains(volumeMigrateOperation.Name, queryPage.VolumeMigrateName)) &&
+			} else if (queryPage.VolumeEventName != "" && strings.Contains(volumeMigrateOperation.Name, queryPage.VolumeEventName)) &&
 				queryPage.VolumeState == apisv1alpha1.VolumeStateEmpty {
 				volumeMigrateOperations = append(volumeMigrateOperations, volumeMigrateOperation)
-			} else if (queryPage.VolumeState != "" && queryPage.VolumeState == volumeMigrateOperation.Status.State) && (queryPage.VolumeMigrateName == "") {
+			} else if (queryPage.VolumeState != "" && queryPage.VolumeState == volumeMigrateOperation.Status.State) && (queryPage.VolumeEventName == "") {
 				volumeMigrateOperations = append(volumeMigrateOperations, volumeMigrateOperation)
-			} else if (queryPage.VolumeMigrateName != "" && strings.Contains(volumeMigrateOperation.Name, queryPage.VolumeMigrateName)) && (queryPage.VolumeState == apisv1alpha1.VolumeStateEmpty) {
+			} else if (queryPage.VolumeEventName != "" && strings.Contains(volumeMigrateOperation.Name, queryPage.VolumeEventName)) && (queryPage.VolumeState == apisv1alpha1.VolumeStateEmpty) {
 				volumeMigrateOperations = append(volumeMigrateOperations, volumeMigrateOperation)
-			} else if (queryPage.VolumeMigrateName != "" && strings.Contains(volumeMigrateOperation.Name, queryPage.VolumeMigrateName)) && (queryPage.VolumeState != "" && queryPage.VolumeState == volumeMigrateOperation.Status.State) {
+			} else if (queryPage.VolumeEventName != "" && strings.Contains(volumeMigrateOperation.Name, queryPage.VolumeEventName)) && (queryPage.VolumeState != "" && queryPage.VolumeState == volumeMigrateOperation.Status.State) {
 				volumeMigrateOperations = append(volumeMigrateOperations, volumeMigrateOperation)
 			}
 		}
 	}
 
+	var volumeConvertOperations = []*hwameistorapi.VolumeConvertOperation{}
+	lvcList := apisv1alpha1.LocalVolumeConvertList{}
+	if err := lvController.Client.List(context.Background(), &lvcList, &client.ListOptions{}); err != nil {
+		return nil, err
+	}
+
+	for _, item := range lvcList.Items {
+		if item.Spec.VolumeName == queryPage.VolumeName {
+			var volumeConvertOperation = &hwameistorapi.VolumeConvertOperation{}
+			volumeConvertOperation.LocalVolumeConvert = item
+
+			if queryPage.VolumeEventName == "" && queryPage.VolumeState == apisv1alpha1.VolumeStateEmpty {
+				volumeConvertOperations = append(volumeConvertOperations, volumeConvertOperation)
+			} else if (queryPage.VolumeEventName != "" && strings.Contains(volumeConvertOperation.Name, queryPage.VolumeEventName)) &&
+				queryPage.VolumeState == apisv1alpha1.VolumeStateEmpty {
+				volumeConvertOperations = append(volumeConvertOperations, volumeConvertOperation)
+			} else if (queryPage.VolumeState != "" && queryPage.VolumeState == volumeConvertOperation.Status.State) && (queryPage.VolumeEventName == "") {
+				volumeConvertOperations = append(volumeConvertOperations, volumeConvertOperation)
+			} else if (queryPage.VolumeEventName != "" && strings.Contains(volumeConvertOperation.Name, queryPage.VolumeEventName)) && (queryPage.VolumeState == apisv1alpha1.VolumeStateEmpty) {
+				volumeConvertOperations = append(volumeConvertOperations, volumeConvertOperation)
+			} else if (queryPage.VolumeEventName != "" && strings.Contains(volumeConvertOperation.Name, queryPage.VolumeEventName)) && (queryPage.VolumeState != "" && queryPage.VolumeState == volumeConvertOperation.Status.State) {
+				volumeConvertOperations = append(volumeConvertOperations, volumeConvertOperation)
+			}
+		}
+	}
+
+	var volumeExpandOperations = []*hwameistorapi.VolumeExpandOperation{}
+	lveList := apisv1alpha1.LocalVolumeExpandList{}
+	if err := lvController.Client.List(context.Background(), &lveList, &client.ListOptions{}); err != nil {
+		return nil, err
+	}
+
+	for _, item := range lveList.Items {
+		if item.Spec.VolumeName == queryPage.VolumeName {
+			var volumeExpandOperation = &hwameistorapi.VolumeExpandOperation{}
+			volumeExpandOperation.LocalVolumeExpand = item
+
+			if queryPage.VolumeEventName == "" && queryPage.VolumeState == apisv1alpha1.VolumeStateEmpty {
+				volumeExpandOperations = append(volumeExpandOperations, volumeExpandOperation)
+			} else if (queryPage.VolumeEventName != "" && strings.Contains(volumeExpandOperation.Name, queryPage.VolumeEventName)) &&
+				queryPage.VolumeState == apisv1alpha1.VolumeStateEmpty {
+				volumeExpandOperations = append(volumeExpandOperations, volumeExpandOperation)
+			} else if (queryPage.VolumeState != "" && queryPage.VolumeState == volumeExpandOperation.Status.State) && (queryPage.VolumeEventName == "") {
+				volumeExpandOperations = append(volumeExpandOperations, volumeExpandOperation)
+			} else if (queryPage.VolumeEventName != "" && strings.Contains(volumeExpandOperation.Name, queryPage.VolumeEventName)) && (queryPage.VolumeState == apisv1alpha1.VolumeStateEmpty) {
+				volumeExpandOperations = append(volumeExpandOperations, volumeExpandOperation)
+			} else if (queryPage.VolumeEventName != "" && strings.Contains(volumeExpandOperation.Name, queryPage.VolumeEventName)) && (queryPage.VolumeState != "" && queryPage.VolumeState == volumeExpandOperation.Status.State) {
+				volumeExpandOperations = append(volumeExpandOperations, volumeExpandOperation)
+			}
+		}
+	}
+
 	volumeOperation.VolumeMigrateOperations = volumeMigrateOperations
+	volumeOperation.VolumeConvertOperations = volumeConvertOperations
+	volumeOperation.VolumeExpandOperations = volumeExpandOperations
+
 	volumeOperation.VolumeName = queryPage.VolumeName
 	return volumeOperation, nil
 }
@@ -490,6 +545,18 @@ func (lvController *LocalVolumeController) GetTargetNodesByManualTargetNodeType(
 func (lvController *LocalVolumeController) GetVolumeConvert(lvname string) (hwameistorapi.VolumeConvertOperation, error) {
 
 	var vcp hwameistorapi.VolumeConvertOperation
+
+	lvcList := apisv1alpha1.LocalVolumeConvertList{}
+	if err := lvController.Client.List(context.Background(), &lvcList, &client.ListOptions{}); err != nil {
+		return vcp, err
+	}
+
+	for _, item := range lvcList.Items {
+		if item.Spec.VolumeName == lvname {
+			vcp.LocalVolumeConvert = item
+			break
+		}
+	}
 	return vcp, nil
 }
 
@@ -497,5 +564,17 @@ func (lvController *LocalVolumeController) GetVolumeConvert(lvname string) (hwam
 func (lvController *LocalVolumeController) GetVolumeMigrate(lvname string) (hwameistorapi.VolumeMigrateOperation, error) {
 
 	var vcp hwameistorapi.VolumeMigrateOperation
+
+	lvmList := apisv1alpha1.LocalVolumeMigrateList{}
+	if err := lvController.Client.List(context.Background(), &lvmList, &client.ListOptions{}); err != nil {
+		return vcp, err
+	}
+
+	for _, item := range lvmList.Items {
+		if item.Spec.VolumeName == lvname {
+			vcp.LocalVolumeMigrate = item
+			break
+		}
+	}
 	return vcp, nil
 }

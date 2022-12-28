@@ -114,7 +114,7 @@ definitions:
     type: object
   api.NodeDiskListByPool:
     properties:
-      localDisks:
+      items:
         description: localDisks 节点磁盘列表
         items:
           $ref: '#/definitions/api.LocalDiskInfo'
@@ -122,13 +122,49 @@ definitions:
       nodeName:
         description: nodeName 节点名称
         type: string
-      page:
+      pagination:
         allOf:
         - $ref: '#/definitions/api.Pagination'
         description: page 信息
       poolName:
         description: PoolName 存储池名称
         type: string
+    type: object
+  api.Operation:
+    properties:
+      description:
+        description: 详细描述
+        type: string
+      endTime:
+        description: 结束时间
+        type: string
+      eventName:
+        description: 事件名称
+        type: string
+      eventType:
+        description: 事件类型
+        type: string
+      localVolumeName:
+        description: 操作对象
+        type: string
+      startTime:
+        description: 开始时间
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/api.State'
+        description: 状态
+    type: object
+  api.OperationMetric:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/api.Operation'
+        type: array
+      pagination:
+        allOf:
+        - $ref: '#/definitions/api.Pagination'
+        description: page 信息
     type: object
   api.Pagination:
     properties:
@@ -297,15 +333,15 @@ definitions:
     type: object
   api.StorageNodeListByPool:
     properties:
-      page:
-        allOf:
-        - $ref: '#/definitions/api.Pagination'
-        description: page 信息
-      storageNodes:
+      items:
         description: StorageNodes
         items:
           $ref: '#/definitions/api.StorageNode'
         type: array
+      pagination:
+        allOf:
+        - $ref: '#/definitions/api.Pagination'
+        description: page 信息
       storagePoolName:
         description: StoragePoolName 存储池名称
         type: string
@@ -313,7 +349,7 @@ definitions:
   api.StoragePool:
     properties:
       allocatedCapacityBytes:
-        description: AllocatedCapacityBytes 存储池已经分配存储容量
+        description: AllocatedCapacityBytes 存储池已经分配存储容量 todo
         type: integer
       class:
         description: |-
@@ -365,15 +401,15 @@ definitions:
     type: object
   api.StoragePoolList:
     properties:
-      page:
-        allOf:
-        - $ref: '#/definitions/api.Pagination'
-        description: page 信息
-      storagePools:
+      items:
         description: storagePools
         items:
           $ref: '#/definitions/api.StoragePool'
         type: array
+      pagination:
+        allOf:
+        - $ref: '#/definitions/api.Pagination'
+        description: page 信息
     type: object
   api.Volume:
     properties:
@@ -475,6 +511,11 @@ definitions:
           More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
           +optional
         type: string
+      items:
+        description: Volumes
+        items:
+          $ref: '#/definitions/v1alpha1.LocalVolume'
+        type: array
       kind:
         description: |-
           Kind is a string value representing the REST resource this object represents.
@@ -490,11 +531,6 @@ definitions:
         $ref: '#/definitions/v1alpha1.LocalVolumeGroupSpec'
       status:
         $ref: '#/definitions/v1alpha1.LocalVolumeGroupStatus'
-      volumes:
-        description: Volumes
-        items:
-          $ref: '#/definitions/v1alpha1.LocalVolume'
-        type: array
     type: object
   api.VolumeGroupList:
     properties:
@@ -564,6 +600,30 @@ definitions:
       data:
         $ref: '#/definitions/api.VolumeMigrateInfo'
     type: object
+  api.VolumeOperationByVolume:
+    properties:
+      VolumeConvertOperations:
+        description: VolumeConvertOperations
+        items:
+          $ref: '#/definitions/api.VolumeConvertOperation'
+        type: array
+      VolumeExpandOperations:
+        description: VolumeExpandOperations
+        items:
+          $ref: '#/definitions/api.VolumeExpandOperation'
+        type: array
+      volumeMigrateOperations:
+        description: |-
+          // OperationList
+          OperationList []Operation `json:"items"`
+          VolumeMigrateOperations
+        items:
+          $ref: '#/definitions/api.VolumeMigrateOperation'
+        type: array
+      volumeName:
+        description: VolumeName
+        type: string
+    type: object
   api.VolumeOperationListByNode:
     properties:
       items:
@@ -602,10 +662,6 @@ definitions:
         $ref: '#/definitions/v1.ObjectMeta'
       spec:
         $ref: '#/definitions/v1alpha1.LocalVolumeReplicaSpec'
-      state:
-        allOf:
-        - $ref: '#/definitions/api.State'
-        description: replica state
       status:
         $ref: '#/definitions/v1alpha1.LocalVolumeReplicaStatus'
     type: object
@@ -1739,6 +1795,11 @@ definitions:
     type: object
   v1alpha1.State:
     enum:
+    - ""
+    - ToBeMounted
+    - ToBeUnMount
+    - Mounted
+    - NotReady
     - Ready
     - Maintain
     - Offline
@@ -1773,13 +1834,13 @@ definitions:
     - Available
     - InUse
     - Offline
-    - ""
-    - ToBeMounted
-    - ToBeUnMount
-    - Mounted
-    - NotReady
     type: string
     x-enum-varnames:
+    - MountPointStateEmpty
+    - MountPointToBeMounted
+    - MountPointToBeUnMount
+    - MountPointMounted
+    - MountPointNotReady
     - NodeStateReady
     - NodeStateMaintain
     - NodeStateOffline
@@ -1814,11 +1875,6 @@ definitions:
     - DiskStateAvailable
     - DiskStateInUse
     - DiskStateOffline
-    - MountPointStateEmpty
-    - MountPointToBeMounted
-    - MountPointToBeUnMount
-    - MountPointMounted
-    - MountPointNotReady
   v1alpha1.Topology:
     properties:
       region:
@@ -1992,7 +2048,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: list StorageNodeDisks
+      description: list StorageNodeDisks 状态枚举 （Active、Inactive、Unknown、Pending、Available、Bound)
       parameters:
       - description: nodeName
         in: path
@@ -2149,6 +2205,16 @@ paths:
         in: query
         name: fuzzy
         type: boolean
+      - description: page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
@@ -2262,6 +2328,36 @@ paths:
       summary: 摘要 获取指定节点指定存储池指定磁盘信息
       tags:
       - Node
+  /cluster/operations:
+    get:
+      consumes:
+      - application/json
+      description: OperationList 状态枚举 （Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed）
+      parameters:
+      - description: name
+        in: query
+        name: name
+        type: string
+      - description: page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.OperationMetric'
+      summary: 摘要 获取操作记录列表
+      tags:
+      - Metric
   /cluster/pools:
     get:
       consumes:
@@ -2435,7 +2531,7 @@ paths:
       description: get VolumeGroupList
       parameters:
       - description: name
-        in: path
+        in: query
         name: name
         type: string
       - description: fuzzy
@@ -2515,7 +2611,7 @@ paths:
           description: 成功
           schema:
             $ref: '#/definitions/api.VolumeList'
-      summary: 摘要 获取数据卷列表信息
+      summary: 摘要 获取数据卷列表信息 数据卷状态枚举 （ToBeMounted、Created、Creating、Ready、NotReady、ToBeDeleted、Deleted）
       tags:
       - Volume
   /cluster/volumes/{volumeName}:
@@ -2543,7 +2639,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: get GetVolumeConvertOperation
+      description: get GetVolumeConvertOperation 状态枚举 （Submitted、InProgress、Completed、ToBeAborted、Aborted）
       parameters:
       - description: volumeName
         in: path
@@ -2634,14 +2730,14 @@ paths:
           description: 失败
           schema:
             $ref: '#/definitions/api.RspFailBody'
-      summary: 摘要 指定数据卷转换
+      summary: 摘要 指定数据卷扩容
       tags:
       - Volume
   /cluster/volumes/{volumeName}/migrate:
     get:
       consumes:
       - application/json
-      description: get GetVolumeMigrateOperation
+      description: get GetVolumeMigrateOperation 状态枚举 （Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed）
       parameters:
       - description: volumeName
         in: path
@@ -2691,6 +2787,35 @@ paths:
           schema:
             $ref: '#/definitions/api.RspFailBody'
       summary: 摘要 指定数据卷迁移操作
+      tags:
+      - Volume
+  /cluster/volumes/{volumeName}/operations:
+    get:
+      consumes:
+      - application/json
+      description: get VolumeOperation
+      parameters:
+      - description: volumeName
+        in: path
+        name: volumeName
+        required: true
+        type: string
+      - description: volumeEventName
+        in: query
+        name: volumeEventName
+        type: string
+      - description: state
+        in: query
+        name: state
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.VolumeOperationByVolume'
+      summary: 摘要 获取指定数据卷操作记录信息 状态枚举 （Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed)
       tags:
       - Volume
   /cluster/volumes/{volumeName}/replicas:
