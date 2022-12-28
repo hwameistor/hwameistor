@@ -30,7 +30,7 @@ func NewVolumeGroupController(m *manager.ServerManager) IVolumeGroupController {
 // @Summary     摘要 获取数据卷组列表
 // @Description get VolumeGroupList
 // @Tags        VolumeGroup
-// @Param       name path string false "name"
+// @Param       name query string false "name"
 // @Param       fuzzy query bool false "fuzzy"
 // @Param       sort query bool false "sort"
 // @Accept      application/json

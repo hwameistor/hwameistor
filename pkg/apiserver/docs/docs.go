@@ -179,7 +179,7 @@ const docTemplate = `{
         },
         "/cluster/nodes/{nodeName}/disks": {
             "get": {
-                "description": "list StorageNodeDisks",
+                "description": "list StorageNodeDisks 状态枚举 （Active、Inactive、Unknown、Pending、Available、Bound)",
                 "consumes": [
                     "application/json"
                 ],
@@ -421,6 +421,20 @@ const docTemplate = `{
                         "description": "fuzzy",
                         "name": "fuzzy",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pageSize",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -582,6 +596,51 @@ const docTemplate = `{
                         "description": "失败",
                         "schema": {
                             "$ref": "#/definitions/api.RspFailBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/cluster/operations": {
+            "get": {
+                "description": "OperationList 状态枚举 （Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metric"
+                ],
+                "summary": "摘要 获取操作记录列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pageSize",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.OperationMetric"
                         }
                     }
                 }
@@ -854,7 +913,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "name",
                         "name": "name",
-                        "in": "path"
+                        "in": "query"
                     },
                     {
                         "type": "boolean",
@@ -922,7 +981,7 @@ const docTemplate = `{
                 "tags": [
                     "Volume"
                 ],
-                "summary": "摘要 获取数据卷列表信息",
+                "summary": "摘要 获取数据卷列表信息 数据卷状态枚举 （ToBeMounted、Created、Creating、Ready、NotReady、ToBeDeleted、Deleted）",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1007,7 +1066,7 @@ const docTemplate = `{
         },
         "/cluster/volumes/{volumeName}/convert": {
             "get": {
-                "description": "get GetVolumeConvertOperation",
+                "description": "get GetVolumeConvertOperation 状态枚举 （Submitted、InProgress、Completed、ToBeAborted、Aborted）",
                 "consumes": [
                     "application/json"
                 ],
@@ -1127,7 +1186,7 @@ const docTemplate = `{
                 "tags": [
                     "Volume"
                 ],
-                "summary": "摘要 指定数据卷转换",
+                "summary": "摘要 指定数据卷扩容",
                 "parameters": [
                     {
                         "type": "string",
@@ -1155,7 +1214,7 @@ const docTemplate = `{
         },
         "/cluster/volumes/{volumeName}/migrate": {
             "get": {
-                "description": "get GetVolumeMigrateOperation",
+                "description": "get GetVolumeMigrateOperation 状态枚举 （Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed）",
                 "consumes": [
                     "application/json"
                 ],
@@ -1231,6 +1290,50 @@ const docTemplate = `{
                         "description": "失败",
                         "schema": {
                             "$ref": "#/definitions/api.RspFailBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/cluster/volumes/{volumeName}/operations": {
+            "get": {
+                "description": "get VolumeOperation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Volume"
+                ],
+                "summary": "摘要 获取指定数据卷操作记录信息 状态枚举 （Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "volumeName",
+                        "name": "volumeName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "volumeEventName",
+                        "name": "volumeEventName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "state",
+                        "name": "state",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.VolumeOperationByVolume"
                         }
                     }
                 }
@@ -1442,7 +1545,7 @@ const docTemplate = `{
         "api.NodeDiskListByPool": {
             "type": "object",
             "properties": {
-                "localDisks": {
+                "items": {
                     "description": "localDisks 节点磁盘列表",
                     "type": "array",
                     "items": {
@@ -1453,7 +1556,7 @@ const docTemplate = `{
                     "description": "nodeName 节点名称",
                     "type": "string"
                 },
-                "page": {
+                "pagination": {
                     "description": "page 信息",
                     "allOf": [
                         {
@@ -1464,6 +1567,62 @@ const docTemplate = `{
                 "poolName": {
                     "description": "PoolName 存储池名称",
                     "type": "string"
+                }
+            }
+        },
+        "api.Operation": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "详细描述",
+                    "type": "string"
+                },
+                "endTime": {
+                    "description": "结束时间",
+                    "type": "string"
+                },
+                "eventName": {
+                    "description": "事件名称",
+                    "type": "string"
+                },
+                "eventType": {
+                    "description": "事件类型",
+                    "type": "string"
+                },
+                "localVolumeName": {
+                    "description": "操作对象",
+                    "type": "string"
+                },
+                "startTime": {
+                    "description": "开始时间",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "状态",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.State"
+                        }
+                    ]
+                }
+            }
+        },
+        "api.OperationMetric": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Operation"
+                    }
+                },
+                "pagination": {
+                    "description": "page 信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.Pagination"
+                        }
+                    ]
                 }
             }
         },
@@ -1659,20 +1818,20 @@ const docTemplate = `{
         "api.StorageNodeListByPool": {
             "type": "object",
             "properties": {
-                "page": {
+                "items": {
+                    "description": "StorageNodes",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.StorageNode"
+                    }
+                },
+                "pagination": {
                     "description": "page 信息",
                     "allOf": [
                         {
                             "$ref": "#/definitions/api.Pagination"
                         }
                     ]
-                },
-                "storageNodes": {
-                    "description": "StorageNodes",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/api.StorageNode"
-                    }
                 },
                 "storagePoolName": {
                     "description": "StoragePoolName 存储池名称",
@@ -1684,7 +1843,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "allocatedCapacityBytes": {
-                    "description": "AllocatedCapacityBytes 存储池已经分配存储容量",
+                    "description": "AllocatedCapacityBytes 存储池已经分配存储容量 todo",
                     "type": "integer"
                 },
                 "class": {
@@ -1752,20 +1911,20 @@ const docTemplate = `{
         "api.StoragePoolList": {
             "type": "object",
             "properties": {
-                "page": {
+                "items": {
+                    "description": "storagePools",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.StoragePool"
+                    }
+                },
+                "pagination": {
                     "description": "page 信息",
                     "allOf": [
                         {
                             "$ref": "#/definitions/api.Pagination"
                         }
                     ]
-                },
-                "storagePools": {
-                    "description": "storagePools",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/api.StoragePool"
-                    }
                 }
             }
         },
@@ -1861,6 +2020,13 @@ const docTemplate = `{
                     "description": "APIVersion defines the versioned schema of this representation of an object.\nServers should convert recognized schemas to the latest internal value, and\nmay reject unrecognized values.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources\n+optional",
                     "type": "string"
                 },
+                "items": {
+                    "description": "Volumes",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha1.LocalVolume"
+                    }
+                },
                 "kind": {
                     "description": "Kind is a string value representing the REST resource this object represents.\nServers may infer this from the endpoint the client submits requests to.\nCannot be updated.\nIn CamelCase.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds\n+optional",
                     "type": "string"
@@ -1873,13 +2039,6 @@ const docTemplate = `{
                 },
                 "status": {
                     "$ref": "#/definitions/v1alpha1.LocalVolumeGroupStatus"
-                },
-                "volumes": {
-                    "description": "Volumes",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1alpha1.LocalVolume"
-                    }
                 }
             }
         },
@@ -1972,6 +2131,36 @@ const docTemplate = `{
                 }
             }
         },
+        "api.VolumeOperationByVolume": {
+            "type": "object",
+            "properties": {
+                "VolumeConvertOperations": {
+                    "description": "VolumeConvertOperations",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.VolumeConvertOperation"
+                    }
+                },
+                "VolumeExpandOperations": {
+                    "description": "VolumeExpandOperations",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.VolumeExpandOperation"
+                    }
+                },
+                "volumeMigrateOperations": {
+                    "description": "// OperationList\nOperationList []Operation ` + "`" + `json:\"items\"` + "`" + `\nVolumeMigrateOperations",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.VolumeMigrateOperation"
+                    }
+                },
+                "volumeName": {
+                    "description": "VolumeName",
+                    "type": "string"
+                }
+            }
+        },
         "api.VolumeOperationListByNode": {
             "type": "object",
             "properties": {
@@ -2012,14 +2201,6 @@ const docTemplate = `{
                 },
                 "spec": {
                     "$ref": "#/definitions/v1alpha1.LocalVolumeReplicaSpec"
-                },
-                "state": {
-                    "description": "replica state",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/api.State"
-                        }
-                    ]
                 },
                 "status": {
                     "$ref": "#/definitions/v1alpha1.LocalVolumeReplicaStatus"
@@ -3240,6 +3421,11 @@ const docTemplate = `{
         "v1alpha1.State": {
             "type": "string",
             "enum": [
+                "",
+                "ToBeMounted",
+                "ToBeUnMount",
+                "Mounted",
+                "NotReady",
                 "Ready",
                 "Maintain",
                 "Offline",
@@ -3273,14 +3459,14 @@ const docTemplate = `{
                 "Failed",
                 "Available",
                 "InUse",
-                "Offline",
-                "",
-                "ToBeMounted",
-                "ToBeUnMount",
-                "Mounted",
-                "NotReady"
+                "Offline"
             ],
             "x-enum-varnames": [
+                "MountPointStateEmpty",
+                "MountPointToBeMounted",
+                "MountPointToBeUnMount",
+                "MountPointMounted",
+                "MountPointNotReady",
                 "NodeStateReady",
                 "NodeStateMaintain",
                 "NodeStateOffline",
@@ -3314,12 +3500,7 @@ const docTemplate = `{
                 "OperationStateFailed",
                 "DiskStateAvailable",
                 "DiskStateInUse",
-                "DiskStateOffline",
-                "MountPointStateEmpty",
-                "MountPointToBeMounted",
-                "MountPointToBeUnMount",
-                "MountPointMounted",
-                "MountPointNotReady"
+                "DiskStateOffline"
             ]
         },
         "v1alpha1.Topology": {

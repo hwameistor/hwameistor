@@ -31,8 +31,8 @@ type VolumeList struct {
 type VolumeReplica struct {
 	apisv1alpha1.LocalVolumeReplica
 
-	// replica state
-	State State `json:"state,omitempty"`
+	//// replica state todo
+	//State State `json:"state,omitempty"`
 }
 
 // VolumeReplicaList
@@ -57,8 +57,14 @@ type VolumeOperationListByNode struct {
 type VolumeOperationByVolume struct {
 	// VolumeName
 	VolumeName string `json:"volumeName,omitempty"`
+	//// OperationList
+	//OperationList []Operation `json:"items"`
 	// VolumeMigrateOperations
-	VolumeMigrateOperations []*VolumeMigrateOperation `json:"items,omitempty"`
+	VolumeMigrateOperations []*VolumeMigrateOperation `json:"volumeMigrateOperations,omitempty"`
+	// VolumeConvertOperations
+	VolumeConvertOperations []*VolumeConvertOperation `json:"VolumeConvertOperations,omitempty"`
+	// VolumeExpandOperations
+	VolumeExpandOperations []*VolumeExpandOperation `json:"VolumeExpandOperations,omitempty"`
 }
 
 // VolumeOperationByMigrate
@@ -195,7 +201,7 @@ type HAState struct {
 type VolumeGroup struct {
 	apisv1alpha1.LocalVolumeGroup
 	// Volumes
-	Volumes []apisv1alpha1.LocalVolume `json:"volumes,omitempty"`
+	Volumes []apisv1alpha1.LocalVolume `json:"items,omitempty"`
 }
 
 // VolumeGroupList

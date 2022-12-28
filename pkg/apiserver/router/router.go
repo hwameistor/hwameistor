@@ -33,6 +33,7 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	v1 := r.Group("/apis/hwameistor.io/v1alpha1")
 	metricsController := controller.NewMetricsController(sm)
 	v1.GET("/cluster/status", metricsController.ModuleStatus)
+	v1.GET("/cluster/operations", metricsController.OperationList)
 
 	volumeController := controller.NewVolumeController(sm)
 
@@ -49,6 +50,8 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 
 	v1.GET("/cluster/volumes/:volumeName/expand", volumeController.GetVolumeExpandOperation)
 	v1.POST("/cluster/volumes/:volumeName/expand", volumeController.VolumeExpandOperation)
+
+	v1.GET("/cluster/volumes/:volumeName/operations", volumeController.VolumeOperationGet)
 
 	volumeGroupController := controller.NewVolumeGroupController(sm)
 	v1.GET("/cluster/volumegroups/:vgName", volumeGroupController.VolumeGroupGet)

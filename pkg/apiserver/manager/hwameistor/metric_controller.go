@@ -148,6 +148,7 @@ func (mController *MetricController) OperationListMetric(page, pageSize int32) (
 		var operation hwameistorapi.Operation
 		operation.EventName = item.Name
 		operation.EventType = item.Kind
+		operation.LocalVolumeName = item.Spec.VolumeName
 		operation.Status = hwameistorapi.StateConvert(item.Status.State)
 		operation.StartTime = item.CreationTimestamp.Time
 		operation.Description = item.Status.Message

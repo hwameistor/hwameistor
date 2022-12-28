@@ -299,6 +299,6 @@ type QueryPage struct {
 	DiskState         apisv1alpha1.LocalDiskState
 	VolumeName        string
 	VolumeReplicaName string
-	VolumeMigrateName string
+	VolumeEventName   string
 	Synced            string
 }

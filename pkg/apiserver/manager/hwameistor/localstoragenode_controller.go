@@ -538,3 +538,176 @@ func (lsnController *LocalStorageNodeController) ReleaseReserveStorageNodeDisk(q
 	RspBody.DiskRemoveReservedRsp = diskRemoveReservedRsp
 	return RspBody, nil
 }
+
+// GetStorageNodeDisk
+func (lsnController *LocalStorageNodeController) GetStorageNodeDisk(page hwameistorapi.QueryPage, diskHandler *localdisk.Handler) (*hwameistorapi.LocalDiskInfo, error) {
+
+	var ldi = &hwameistorapi.LocalDiskInfo{}
+	nodeKey := client.ObjectKey{
+		Name: page.NodeName,
+	}
+	if lsn, err := lsnController.GetLocalStorageNode(nodeKey); err == nil {
+		fmt.Println("GetStorageNodeDisk lsn = %v", lsn)
+		for _, pool := range lsn.Status.Pools {
+			for _, disk := range pool.Disks {
+				if strings.Contains(disk.DevPath, page.DiskName) {
+					ldi.LocalStoragePooLName = pool.Name
+					ldi.AvailableCapacityBytes = disk.CapacityBytes
+
+					ldname := utils.ConvertNodeName(lsn.Spec.HostName) + "-" + page.DiskName
+
+					localDisk, err := diskHandler.GetLocalDisk(client.ObjectKey{Name: ldname})
+					if err != nil {
+						log.Errorf("failed to get localDisk %s", err.Error())
+						return ldi, err
+					}
+					ldi.LocalDisk = *localDisk
+					ldi.TotalCapacityBytes = localDisk.Spec.Capacity
+				}
+			}
+		}
+	} else {
+		return ldi, err
+	}
+	return ldi, nil
+}
+
+// StorageNodePoolsList
+func (lsnController *LocalStorageNodeController) StorageNodePoolsList(queryPage hwameistorapi.QueryPage, handler *localdisk.Handler) (*hwameistorapi.StoragePoolList, error) {
+	var spl = &hwameistorapi.StoragePoolList{}
+
+	nodeKey := client.ObjectKey{
+		Name: queryPage.NodeName,
+	}
+	fmt.Println("StorageNodePoolsList nodeKey = %v", nodeKey)
+	if lsn, err := lsnController.GetLocalStorageNode(nodeKey); err == nil {
+		fmt.Println("StorageNodePoolsList lsn.Status.Pools = %v", lsn.Status.Pools)
+		for _, pool := range lsn.Status.Pools {
+			var sp = &hwameistorapi.StoragePool{}
+			sp.LocalPool = pool
+			sp.NodeNames = append(sp.NodeNames, queryPage.NodeName)
+			sp.AllocatedCapacityBytes = pool.UsedCapacityBytes
+			sp.CreateTime = lsn.CreationTimestamp.Time
+			spl.StoragePools = append(spl.StoragePools, sp)
+		}
+	} else {
+		fmt.Println("StorageNodePoolsList err = %v", err)
+	}
+
+	fmt.Println("StorageNodePoolsList spl.StoragePools[0] = %v", len(spl.StoragePools))
+
+	var pagination = &hwameistorapi.Pagination{}
+	pagination.Page = queryPage.Page
+	pagination.PageSize = queryPage.PageSize
+	pagination.Total = uint32(len(spl.StoragePools))
+
+	var storagePools []*hwameistorapi.StoragePool
+	if len(spl.StoragePools) == 0 {
+		spl.StoragePools = storagePools
+		return spl, nil
+	} else {
+		pagination.Pages = int32(math.Ceil(float64(len(spl.StoragePools)) / float64(queryPage.PageSize)))
+	}
+
+	spl.Page = pagination
+	spl.StoragePools = utils.DataPatination(spl.StoragePools, queryPage.Page, queryPage.PageSize)
+
+	fmt.Println("StorageNodePoolsList spl = %v", spl)
+	return spl, nil
+}
+
+// StorageNodePoolGet
+func (lsnController *LocalStorageNodeController) StorageNodePoolGet(queryPage hwameistorapi.QueryPage, handler *localdisk.Handler) (*hwameistorapi.StoragePool, error) {
+	var sp = &hwameistorapi.StoragePool{}
+
+	nodeKey := client.ObjectKey{
+		Name: queryPage.NodeName,
+	}
+
+	if lsn, err := lsnController.GetLocalStorageNode(nodeKey); err == nil {
+		for _, pool := range lsn.Status.Pools {
+			if pool.Name == queryPage.PoolName {
+				sp.LocalPool = pool
+				sp.NodeNames = append(sp.NodeNames, queryPage.NodeName)
+				sp.AllocatedCapacityBytes = pool.UsedCapacityBytes
+				sp.CreateTime = lsn.CreationTimestamp.Time
+				break
+			}
+		}
+	}
+
+	return sp, nil
+}
+
+// StorageNodePoolDisksList
+func (lsnController *LocalStorageNodeController) StorageNodePoolDisksList(page hwameistorapi.QueryPage, diskHandler *localdisk.Handler) (*hwameistorapi.LocalDisksItemsList, error) {
+	var ldilist = &hwameistorapi.LocalDisksItemsList{}
+
+	nodeKey := client.ObjectKey{
+		Name: page.NodeName,
+	}
+	if lsn, err := lsnController.GetLocalStorageNode(nodeKey); err == nil {
+		for _, pool := range lsn.Status.Pools {
+			if pool.Name == page.PoolName {
+				for _, disk := range pool.Disks {
+					var ldi = &hwameistorapi.LocalDiskInfo{}
+					ldi.LocalStoragePooLName = pool.Name
+					ldi.AvailableCapacityBytes = disk.CapacityBytes
+
+					diskName := strings.Split(disk.DevPath, "/dev/")[1]
+					ldname := utils.ConvertNodeName(lsn.Spec.HostName) + "-" + diskName
+
+					fmt.Println("StorageNodePoolDisksList ldname = %v", ldname)
+					localDisk, err := diskHandler.GetLocalDisk(client.ObjectKey{Name: ldname})
+					if err != nil {
+						log.Errorf("failed to get localDisk %s", err.Error())
+						return ldilist, err
+					}
+					ldi.LocalDisk = *localDisk
+					ldi.TotalCapacityBytes = localDisk.Spec.Capacity
+					ldilist.LocalDisks = append(ldilist.LocalDisks, ldi)
+				}
+			}
+		}
+	}
+
+	return ldilist, nil
+}
+
+// StorageNodePoolDiskGet
+func (lsnController *LocalStorageNodeController) StorageNodePoolDiskGet(page hwameistorapi.QueryPage, diskHandler *localdisk.Handler) (*hwameistorapi.LocalDiskInfo, error) {
+	var ldi = &hwameistorapi.LocalDiskInfo{}
+
+	nodeKey := client.ObjectKey{
+		Name: page.NodeName,
+	}
+
+	if lsn, err := lsnController.GetLocalStorageNode(nodeKey); err == nil {
+		for _, pool := range lsn.Status.Pools {
+			if pool.Name == page.PoolName {
+				for _, disk := range pool.Disks {
+					localDisk, err := diskHandler.GetLocalDisk(client.ObjectKey{Name: page.DiskName})
+					if err != nil {
+						log.Errorf("failed to get localDisk %s", err.Error())
+						return ldi, err
+					}
+					if localDisk.Spec.DevicePath == disk.DevPath {
+						ldi.LocalStoragePooLName = pool.Name
+						ldi.AvailableCapacityBytes = disk.CapacityBytes
+
+						localDisk, err := diskHandler.GetLocalDisk(client.ObjectKey{Name: page.DiskName})
+						if err != nil {
+							log.Errorf("failed to get localDisk %s", err.Error())
+							return ldi, err
+						}
+						ldi.LocalDisk = *localDisk
+						ldi.TotalCapacityBytes = localDisk.Spec.Capacity
+						break
+					}
+				}
+			}
+		}
+	}
+
+	return ldi, nil
+}

@@ -160,7 +160,7 @@ func (n *NodeController) StorageNodeMigrateGet(ctx *gin.Context) {
 
 // StorageNodeDisksList godoc
 // @Summary 摘要 获取指定存储节点磁盘列表
-// @Description list StorageNodeDisks
+// @Description list StorageNodeDisks 状态枚举 （Active、Inactive、Unknown、Pending、Available、Bound)
 // @Tags        Node
 // @Param       nodeName path string true "nodeName"
 // @Param       page query int32 true "page"
@@ -296,7 +296,16 @@ func (n *NodeController) GetStorageNodeDisk(ctx *gin.Context) {
 	queryPage.NodeName = nodeName
 	queryPage.DiskName = diskName
 
-	return
+	localDiskInfo, err := n.m.StorageNodeController().GetStorageNodeDisk(queryPage, n.diskHandler)
+	if err != nil {
+		var failRsp hwameistorapi.RspFailBody
+		failRsp.ErrCode = 500
+		failRsp.Desc = "GetStorageNodeDisk Failed:" + err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, localDiskInfo)
 }
 
 // StorageNodePoolsList godoc
@@ -305,6 +314,8 @@ func (n *NodeController) GetStorageNodeDisk(ctx *gin.Context) {
 // @Tags        Node
 // @Param       nodeName path string true "nodeName"
 // @Param       fuzzy query bool false "fuzzy"
+// @Param       page query int32 true "page"
+// @Param       pageSize query int32 true "pageSize"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.StoragePoolList  "成功"
@@ -314,19 +325,33 @@ func (n *NodeController) StorageNodePoolsList(ctx *gin.Context) {
 	// 获取path中的nodeName
 	nodeName := ctx.Param("nodeName")
 
-	// 获取path中的diskName
-	diskName := ctx.Param("diskName")
-
-	if nodeName == "" || diskName == "" {
+	if nodeName == "" {
 		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
 		return
 	}
+	// 获取path中的page
+	page := ctx.Query("page")
+	// 获取path中的pageSize
+	pageSize := ctx.Query("pageSize")
+
+	p, _ := strconv.ParseInt(page, 10, 32)
+	ps, _ := strconv.ParseInt(pageSize, 10, 32)
 
 	var queryPage hwameistorapi.QueryPage
 	queryPage.NodeName = nodeName
-	queryPage.DiskName = diskName
+	queryPage.Page = int32(p)
+	queryPage.PageSize = int32(ps)
 
-	return
+	storagePoolList, err := n.m.StorageNodeController().StorageNodePoolsList(queryPage, n.diskHandler)
+	if err != nil {
+		var failRsp hwameistorapi.RspFailBody
+		failRsp.ErrCode = 500
+		failRsp.Desc = "StorageNodePoolsList Failed:" + err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, storagePoolList)
 }
 
 // StorageNodePoolGet godoc
@@ -345,18 +370,27 @@ func (n *NodeController) StorageNodePoolGet(ctx *gin.Context) {
 	nodeName := ctx.Param("nodeName")
 
 	// 获取path中的diskName
-	diskName := ctx.Param("diskName")
+	poolName := ctx.Param("poolName")
 
-	if nodeName == "" || diskName == "" {
+	if nodeName == "" || poolName == "" {
 		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
 		return
 	}
 
 	var queryPage hwameistorapi.QueryPage
 	queryPage.NodeName = nodeName
-	queryPage.DiskName = diskName
+	queryPage.PoolName = poolName
 
-	return
+	storagePool, err := n.m.StorageNodeController().StorageNodePoolGet(queryPage, n.diskHandler)
+	if err != nil {
+		var failRsp hwameistorapi.RspFailBody
+		failRsp.ErrCode = 500
+		failRsp.Desc = "StorageNodePoolGet Failed:" + err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, storagePool)
 }
 
 // StorageNodePoolDisksList godoc
@@ -375,19 +409,28 @@ func (n *NodeController) StorageNodePoolDisksList(ctx *gin.Context) {
 	// 获取path中的nodeName
 	nodeName := ctx.Param("nodeName")
 
-	// 获取path中的diskName
-	diskName := ctx.Param("diskName")
+	// 获取path中的poolName
+	poolName := ctx.Param("poolName")
 
-	if nodeName == "" || diskName == "" {
+	if nodeName == "" || poolName == "" {
 		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
 		return
 	}
 
 	var queryPage hwameistorapi.QueryPage
 	queryPage.NodeName = nodeName
-	queryPage.DiskName = diskName
+	queryPage.PoolName = poolName
 
-	return
+	localDisksItemsList, err := n.m.StorageNodeController().StorageNodePoolDisksList(queryPage, n.diskHandler)
+	if err != nil {
+		var failRsp hwameistorapi.RspFailBody
+		failRsp.ErrCode = 500
+		failRsp.Desc = "StorageNodePoolDisksList Failed:" + err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, localDisksItemsList)
 }
 
 // StorageNodePoolDiskGet godoc
@@ -406,10 +449,13 @@ func (n *NodeController) StorageNodePoolDiskGet(ctx *gin.Context) {
 	// 获取path中的nodeName
 	nodeName := ctx.Param("nodeName")
 
+	// 获取path中的poolName
+	poolName := ctx.Param("poolName")
+
 	// 获取path中的diskName
 	diskName := ctx.Param("diskName")
 
-	if nodeName == "" || diskName == "" {
+	if nodeName == "" || diskName == "" || poolName == "" {
 		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
 		return
 	}
@@ -417,6 +463,16 @@ func (n *NodeController) StorageNodePoolDiskGet(ctx *gin.Context) {
 	var queryPage hwameistorapi.QueryPage
 	queryPage.NodeName = nodeName
 	queryPage.DiskName = diskName
+	queryPage.PoolName = poolName
 
-	return
+	localDiskInfo, err := n.m.StorageNodeController().StorageNodePoolDiskGet(queryPage, n.diskHandler)
+	if err != nil {
+		var failRsp hwameistorapi.RspFailBody
+		failRsp.ErrCode = 500
+		failRsp.Desc = "StorageNodePoolDiskGet Failed:" + err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, localDiskInfo)
 }
