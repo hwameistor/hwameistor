@@ -2,12 +2,15 @@ package api
 
 import (
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	k8sv1 "k8s.io/api/core/v1"
 )
 
-// StorageNode
+// StorageNode todo 新增k8s nodes 数值
 type StorageNode struct {
 	LocalStorageNode apisv1alpha1.LocalStorageNode `json:"localStorageNode,omitempty"`
 	LocalDiskNode    apisv1alpha1.LocalDiskNode    `json:"localDiskNode,omitempty"`
+
+	K8sNode *k8sv1.Node
 
 	K8sNodeState State `json:"k8SNodeState,omitempty"`
 }
@@ -25,6 +28,18 @@ type LocalDiskListByNode struct {
 	LocalDisks []*LocalDiskInfo `json:"items"`
 	// page 信息
 	Page *Pagination `json:"pagination,omitempty"`
+}
+
+// LocalDiskList
+type LocalDiskList struct {
+	// LocalDisks 集群磁盘列表
+	LocalDisks []*apisv1alpha1.LocalDisk `json:"items"`
+}
+
+// LocalDiskNodeList
+type LocalDiskNodeList struct {
+	// LocalDiskNodes 集群磁盘组列表
+	LocalDiskNodes []*apisv1alpha1.LocalDiskNode `json:"items"`
 }
 
 // StorageNodesItemsList

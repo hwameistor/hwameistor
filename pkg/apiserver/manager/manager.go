@@ -32,6 +32,10 @@ type ServerManager struct {
 
 	settingController *hwameistorctr.SettingController
 
+	ldController *hwameistorctr.LocalDiskController
+
+	ldnController *hwameistorctr.LocalDiskNodeController
+
 	mgr mgrpkg.Manager
 
 	logger *log.Entry
@@ -106,4 +110,22 @@ func (m *ServerManager) VolumeGroupController() *hwameistorctr.VolumeGroupContro
 		m.vgController = hwameistorctr.NewVolumeGroupController(m.mgr.GetClient(), m.clientset, recorder)
 	}
 	return m.vgController
+}
+
+func (m *ServerManager) LocalDiskController() *hwameistorctr.LocalDiskController {
+
+	var recorder record.EventRecorder
+	if m.ldController == nil {
+		m.ldController = hwameistorctr.NewLocalDiskController(m.mgr.GetClient(), recorder)
+	}
+	return m.ldController
+}
+
+func (m *ServerManager) LocalDiskNodeController() *hwameistorctr.LocalDiskNodeController {
+
+	var recorder record.EventRecorder
+	if m.ldnController == nil {
+		m.ldnController = hwameistorctr.NewLocalDiskNodeController(m.mgr.GetClient(), recorder)
+	}
+	return m.ldnController
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	k8sv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"math"
 	"strings"
@@ -97,19 +98,12 @@ func (lsnController *LocalStorageNodeController) ListLocalStorageNode(queryPage 
 
 	var sns []*hwameistorapi.StorageNode
 	for i := range lsnList.Items {
-		//claimedLocaldisks, err := lsnController.listClaimedLocalDiskByNode(lsnList.Items[i].Name)
-		//if err != nil {
-		//	log.WithError(err).Error("Failed to list listClaimedLocalDiskByNode")
-		//	return nil, err
-		//}
-		//
-		//localdisks, err := lsnController.ListStorageNodeDisks(queryPage)
-		//if err != nil {
-		//	log.WithError(err).Error("Failed to ListStorageNodeDisks")
-		//	return nil, err
-		//}
-		sn := lsnController.convertStorageNode(lsnList.Items[i])
-		sn.K8sNodeState = lsnController.getK8SNodeStatus(lsnList.Items[i].Name)
+		var sn = &hwameistorapi.StorageNode{}
+
+		sn.LocalStorageNode = lsnList.Items[i]
+		k8snode, K8sNodeState := lsnController.getK8SNode(lsnList.Items[i].Name)
+		sn.K8sNode = k8snode
+		sn.K8sNodeState = K8sNodeState
 
 		fmt.Println("ListLocalStorageNode queryPage.Name = %v, queryPage.DriverState = %v, queryPage.NodeState = %v", queryPage.Name, queryPage.DriverState, queryPage.NodeState)
 		if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState == "") {
@@ -142,6 +136,21 @@ func (lsnController *LocalStorageNodeController) ListLocalStorageNode(queryPage 
 	return sns, nil
 }
 
+// getK8SNode
+func (lsnController *LocalStorageNodeController) getK8SNode(nodeName string) (*k8sv1.Node, hwameistorapi.State) {
+
+	k8snode, err := lsnController.clientset.CoreV1().Nodes().Get(context.TODO(), nodeName, metav1.GetOptions{})
+	if err != nil {
+		return k8snode, hwameistorapi.NodeStateNotReady
+	}
+
+	if k8snode.Name == nodeName {
+		return k8snode, hwameistorapi.State(k8snode.Status.Conditions[len(k8snode.Status.Conditions)-1].Type)
+	}
+
+	return k8snode, hwameistorapi.NodeStateNotReady
+}
+
 // getK8SNodeStatus
 func (lsnController *LocalStorageNodeController) getK8SNodeStatus(nodeName string) hwameistorapi.State {
 	// list K8S nodes
@@ -163,23 +172,6 @@ func (lsnController *LocalStorageNodeController) convertStorageNode(lsn apisv1al
 	sn := &hwameistorapi.StorageNode{}
 
 	sn.LocalStorageNode = lsn
-
-	//sn.NodeName = lsn.Name
-	//sn.IP = lsn.Spec.StorageIP
-
-	//if lsn.Status.State == apisv1alpha1.NodeStateReady {
-	//	for _, pool := range lsn.Status.Pools {
-	//		if pool.Class == hwameistorapi.DiskClassNameHDD {
-	//			sn.TotalHDDCapacityBytes = pool.TotalCapacityBytes
-	//			sn.AllocatedHDDCapacityBytes = pool.UsedCapacityBytes
-	//			//sn.FreeCapacityBytes += pool.FreeCapacityBytes
-	//		} else if pool.Class == hwameistorapi.DiskClassNameSSD {
-	//			sn.TotalSSDCapacityBytes = pool.TotalCapacityBytes
-	//			sn.AllocatedSSDCapacityBytes = pool.UsedCapacityBytes
-	//			//sn.FreeCapacityBytes += pool.FreeCapacityBytes
-	//		}
-	//	}
-	//}
 
 	return sn
 }
@@ -241,19 +233,9 @@ func (lsnController *LocalStorageNodeController) getStorageNodeMigrateOperations
 	fmt.Println("getStorageNodeMigrateOperations lvmList = %v", lvmList)
 	var vmos []*hwameistorapi.VolumeMigrateOperation
 	for _, lvm := range lvmList.Items {
-		//if len(lvm.Spec.TargetNodesSuggested) != 0 {
-		//if lvm.Spec.TargetNodesSuggested[0] == nodeName || lvm.Spec.SourceNode == nodeName {
 		var vmo = &hwameistorapi.VolumeMigrateOperation{}
 		vmo.LocalVolumeMigrate = lvm
-		//vmo.Name = lvm.Name
-		//vmo.SourceNode = lvm.Spec.SourceNode
-		////vmo.TargetNode = lvm.Spec.TargetNodesSuggested[0]
-		//vmo.VolumeName = lvm.Spec.VolumeName
-		//vmo.StartTime = lvm.CreationTimestamp.Time
-		//vmo.State = hwameistorapi.StateConvert(lvm.Status.State)
 		vmos = append(vmos, vmo)
-		//}
-		//}
 	}
 
 	return vmos, nil
@@ -581,12 +563,16 @@ func (lsnController *LocalStorageNodeController) StorageNodePoolsList(queryPage 
 	}
 	fmt.Println("StorageNodePoolsList nodeKey = %v", nodeKey)
 	if lsn, err := lsnController.GetLocalStorageNode(nodeKey); err == nil {
-		fmt.Println("StorageNodePoolsList lsn.Status.Pools = %v", lsn.Status.Pools)
 		for _, pool := range lsn.Status.Pools {
 			var sp = &hwameistorapi.StoragePool{}
-			sp.LocalPool = pool
+			var snp hwameistorapi.StorageNodePool
+			snp.LocalPool = pool
+			snp.NodeName = queryPage.NodeName
+			sp.StorageNodePools = append(sp.StorageNodePools, snp)
+			sp.PoolName = pool.Name
 			sp.NodeNames = append(sp.NodeNames, queryPage.NodeName)
 			sp.AllocatedCapacityBytes = pool.UsedCapacityBytes
+			sp.TotalCapacityBytes = pool.TotalCapacityBytes
 			sp.CreateTime = lsn.CreationTimestamp.Time
 			spl.StoragePools = append(spl.StoragePools, sp)
 		}
@@ -627,9 +613,14 @@ func (lsnController *LocalStorageNodeController) StorageNodePoolGet(queryPage hw
 	if lsn, err := lsnController.GetLocalStorageNode(nodeKey); err == nil {
 		for _, pool := range lsn.Status.Pools {
 			if pool.Name == queryPage.PoolName {
-				sp.LocalPool = pool
+				var snp hwameistorapi.StorageNodePool
+				snp.LocalPool = pool
+				snp.NodeName = queryPage.NodeName
+				sp.PoolName = pool.Name
+				sp.StorageNodePools = append(sp.StorageNodePools, snp)
 				sp.NodeNames = append(sp.NodeNames, queryPage.NodeName)
 				sp.AllocatedCapacityBytes = pool.UsedCapacityBytes
+				sp.TotalCapacityBytes = pool.TotalCapacityBytes
 				sp.CreateTime = lsn.CreationTimestamp.Time
 				break
 			}

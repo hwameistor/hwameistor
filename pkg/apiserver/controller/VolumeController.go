@@ -199,6 +199,7 @@ func (v *VolumeController) VolumeMigrateOperation(ctx *gin.Context) {
 // @Description post VolumeConvertOperation
 // @Tags        Volume
 // @Param       volumeName path string true "volumeName"
+// @Param       body body api.VolumeConvertReqBody true "reqBody"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.VolumeConvertRspBody      "成功"
@@ -209,22 +210,22 @@ func (v *VolumeController) VolumeConvertOperation(ctx *gin.Context) {
 	// 获取path中的name
 	volumeName := ctx.Param("volumeName")
 
-	//var vcrb hwameistorapi.VolumeConvertReqBody
-	//err := ctx.ShouldBind(&vcrb)
-	//if err != nil {
-	//	fmt.Errorf("Unmarshal err = %v", err)
-	//	ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
-	//	return
-	//}
-	//volumeName := vcrb.VolumeName
+	var vcrb hwameistorapi.VolumeConvertReqBody
+	err := ctx.ShouldBind(&vcrb)
+	if err != nil {
+		fmt.Errorf("Unmarshal err = %v", err)
+		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		return
+	}
+	abort := vcrb.Abort
 
-	fmt.Println("VolumeConvertOperation volumeName = %v", volumeName)
+	fmt.Println("VolumeConvertOperation volumeName = %v, abort = %v", volumeName, abort)
 	if volumeName == "" {
 		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
 		return
 	}
 
-	volumeConvert, err := v.m.VolumeController().CreateVolumeConvert(volumeName)
+	volumeConvert, err := v.m.VolumeController().CreateVolumeConvert(volumeName, abort)
 	if err != nil {
 		var failRsp hwameistorapi.RspFailBody
 		failRsp.ErrCode = 500

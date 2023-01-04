@@ -77,6 +77,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/cluster/localdisknodes": {
+            "get": {
+                "description": "get LocalDiskNodeList",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "LocalDiskNode"
+                ],
+                "summary": "摘要 获取集群磁盘组列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LocalDiskNodeList"
+                        }
+                    }
+                }
+            }
+        },
+        "/cluster/localdisks": {
+            "get": {
+                "description": "get LocalDiskList 状态枚举 （Active、Inactive、Unknown、Pending、Available、Bound)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "LocalDisk"
+                ],
+                "summary": "摘要 获取本地磁盘列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LocalDiskList"
+                        }
+                    }
+                }
+            }
+        },
         "/cluster/nodes": {
             "get": {
                 "description": "list StorageNode  驱动状态 [运行中（Ready）,维护中（Maintain）, 离线（Offline)] , 节点状态 [运行中（Ready）,未就绪（NotReady）,未知（Unknown)]",
@@ -1120,6 +1166,15 @@ const docTemplate = `{
                         "name": "volumeName",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "reqBody",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.VolumeConvertReqBody"
+                        }
                     }
                 ],
                 "responses": {
@@ -1457,6 +1512,18 @@ const docTemplate = `{
                 }
             }
         },
+        "api.LocalDiskList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "description": "LocalDisks 集群磁盘列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha1.LocalDisk"
+                    }
+                }
+            }
+        },
         "api.LocalDiskListByNode": {
             "type": "object",
             "properties": {
@@ -1478,6 +1545,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/api.Pagination"
                         }
                     ]
+                }
+            }
+        },
+        "api.LocalDiskNodeList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "description": "LocalDiskNodes 集群磁盘组列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha1.LocalDiskNode"
+                    }
                 }
             }
         },
@@ -1784,6 +1863,9 @@ const docTemplate = `{
         "api.StorageNode": {
             "type": "object",
             "properties": {
+                "K8sNode": {
+                    "$ref": "#/definitions/v1.Node"
+                },
                 "k8SNodeState": {
                     "$ref": "#/definitions/api.State"
                 },
@@ -1839,19 +1921,11 @@ const docTemplate = `{
                 }
             }
         },
-        "api.StoragePool": {
+        "api.StorageNodePool": {
             "type": "object",
             "properties": {
-                "allocatedCapacityBytes": {
-                    "description": "AllocatedCapacityBytes 存储池已经分配存储容量 todo",
-                    "type": "integer"
-                },
                 "class": {
                     "description": "Supported class: HDD, SSD, NVMe\n+kubebuilder:validation:Enum:=HDD;SSD;NVMe",
-                    "type": "string"
-                },
-                "createTime": {
-                    "description": "createTime 创建时间",
                     "type": "string"
                 },
                 "disks": {
@@ -1870,12 +1944,9 @@ const docTemplate = `{
                     "description": "Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL",
                     "type": "string"
                 },
-                "nodeNames": {
-                    "description": "NodesNames Pool所在节点列表",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "nodeName": {
+                    "description": "NodesName Pool所在节点",
+                    "type": "string"
                 },
                 "path": {
                     "description": "VG path",
@@ -1905,6 +1976,40 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "api.StoragePool": {
+            "type": "object",
+            "properties": {
+                "allocatedCapacityBytes": {
+                    "description": "AllocatedCapacityBytes 存储池已经分配存储容量",
+                    "type": "integer"
+                },
+                "createTime": {
+                    "description": "createTime 创建时间",
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.StorageNodePool"
+                    }
+                },
+                "nodeNames": {
+                    "description": "NodesNames Pool所在节点列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "poolName": {
+                    "description": "Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL 存储池名称",
+                    "type": "string"
+                },
+                "totalCapacityBytes": {
+                    "description": "TotalCapacityBytes 存储池对应存储总容量",
+                    "type": "integer"
                 }
             }
         },
@@ -1980,6 +2085,14 @@ const docTemplate = `{
                 },
                 "status": {
                     "$ref": "#/definitions/v1alpha1.LocalVolumeConvertStatus"
+                }
+            }
+        },
+        "api.VolumeConvertReqBody": {
+            "type": "object",
+            "properties": {
+                "abort": {
+                    "type": "boolean"
                 }
             }
         },
@@ -2249,6 +2362,90 @@ const docTemplate = `{
                 "ConditionUnknown"
             ]
         },
+        "k8s_io_api_core_v1.ConditionStatus": {
+            "type": "string",
+            "enum": [
+                "True",
+                "False",
+                "Unknown"
+            ],
+            "x-enum-varnames": [
+                "ConditionTrue",
+                "ConditionFalse",
+                "ConditionUnknown"
+            ]
+        },
+        "resource.Quantity": {
+            "type": "object",
+            "properties": {
+                "Format": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.AttachedVolume": {
+            "type": "object",
+            "properties": {
+                "devicePath": {
+                    "description": "DevicePath represents the device path where the volume should be available",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name of the attached volume",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.ConfigMapNodeConfigSource": {
+            "type": "object",
+            "properties": {
+                "kubeletConfigKey": {
+                    "description": "KubeletConfigKey declares which key of the referenced ConfigMap corresponds to the KubeletConfiguration structure\nThis field is required in all cases.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name is the metadata.name of the referenced ConfigMap.\nThis field is required in all cases.",
+                    "type": "string"
+                },
+                "namespace": {
+                    "description": "Namespace is the metadata.namespace of the referenced ConfigMap.\nThis field is required in all cases.",
+                    "type": "string"
+                },
+                "resourceVersion": {
+                    "description": "ResourceVersion is the metadata.ResourceVersion of the referenced ConfigMap.\nThis field is forbidden in Node.Spec, and required in Node.Status.\n+optional",
+                    "type": "string"
+                },
+                "uid": {
+                    "description": "UID is the metadata.UID of the referenced ConfigMap.\nThis field is forbidden in Node.Spec, and required in Node.Status.\n+optional",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.ContainerImage": {
+            "type": "object",
+            "properties": {
+                "names": {
+                    "description": "Names by which this image is known.\ne.g. [\"k8s.gcr.io/hyperkube:v1.0.7\", \"dockerhub.io/google_containers/hyperkube:v1.0.7\"]",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "sizeBytes": {
+                    "description": "The size of the image in bytes.\n+optional",
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.DaemonEndpoint": {
+            "type": "object",
+            "properties": {
+                "Port": {
+                    "description": "Port number of the given endpoint.",
+                    "type": "integer"
+                }
+            }
+        },
         "v1.FieldsV1": {
             "type": "object"
         },
@@ -2299,6 +2496,379 @@ const docTemplate = `{
                 "ManagedFieldsOperationApply",
                 "ManagedFieldsOperationUpdate"
             ]
+        },
+        "v1.Node": {
+            "type": "object",
+            "properties": {
+                "apiVersion": {
+                    "description": "APIVersion defines the versioned schema of this representation of an object.\nServers should convert recognized schemas to the latest internal value, and\nmay reject unrecognized values.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources\n+optional",
+                    "type": "string"
+                },
+                "kind": {
+                    "description": "Kind is a string value representing the REST resource this object represents.\nServers may infer this from the endpoint the client submits requests to.\nCannot be updated.\nIn CamelCase.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds\n+optional",
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "Standard object's metadata.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.ObjectMeta"
+                        }
+                    ]
+                },
+                "spec": {
+                    "description": "Spec defines the behavior of a node.\nhttps://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.NodeSpec"
+                        }
+                    ]
+                },
+                "status": {
+                    "description": "Most recently observed status of the node.\nPopulated by the system.\nRead-only.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.NodeStatus"
+                        }
+                    ]
+                }
+            }
+        },
+        "v1.NodeAddress": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "description": "The node address.",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "Node address type, one of Hostname, ExternalIP or InternalIP.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.NodeAddressType"
+                        }
+                    ]
+                }
+            }
+        },
+        "v1.NodeAddressType": {
+            "type": "string",
+            "enum": [
+                "Hostname",
+                "ExternalIP",
+                "InternalIP",
+                "ExternalDNS",
+                "InternalDNS"
+            ],
+            "x-enum-varnames": [
+                "NodeHostName",
+                "NodeExternalIP",
+                "NodeInternalIP",
+                "NodeExternalDNS",
+                "NodeInternalDNS"
+            ]
+        },
+        "v1.NodeCondition": {
+            "type": "object",
+            "properties": {
+                "lastHeartbeatTime": {
+                    "description": "Last time we got an update on a given condition.\n+optional",
+                    "type": "string"
+                },
+                "lastTransitionTime": {
+                    "description": "Last time the condition transit from one status to another.\n+optional",
+                    "type": "string"
+                },
+                "message": {
+                    "description": "Human readable message indicating details about last transition.\n+optional",
+                    "type": "string"
+                },
+                "reason": {
+                    "description": "(brief) reason for the condition's last transition.\n+optional",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Status of the condition, one of True, False, Unknown.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/k8s_io_api_core_v1.ConditionStatus"
+                        }
+                    ]
+                },
+                "type": {
+                    "description": "Type of node condition.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.NodeConditionType"
+                        }
+                    ]
+                }
+            }
+        },
+        "v1.NodeConditionType": {
+            "type": "string",
+            "enum": [
+                "Ready",
+                "MemoryPressure",
+                "DiskPressure",
+                "PIDPressure",
+                "NetworkUnavailable"
+            ],
+            "x-enum-varnames": [
+                "NodeReady",
+                "NodeMemoryPressure",
+                "NodeDiskPressure",
+                "NodePIDPressure",
+                "NodeNetworkUnavailable"
+            ]
+        },
+        "v1.NodeConfigSource": {
+            "type": "object",
+            "properties": {
+                "configMap": {
+                    "description": "ConfigMap is a reference to a Node's ConfigMap",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.ConfigMapNodeConfigSource"
+                        }
+                    ]
+                }
+            }
+        },
+        "v1.NodeConfigStatus": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "description": "Active reports the checkpointed config the node is actively using.\nActive will represent either the current version of the Assigned config,\nor the current LastKnownGood config, depending on whether attempting to use the\nAssigned config results in an error.\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.NodeConfigSource"
+                        }
+                    ]
+                },
+                "assigned": {
+                    "description": "Assigned reports the checkpointed config the node will try to use.\nWhen Node.Spec.ConfigSource is updated, the node checkpoints the associated\nconfig payload to local disk, along with a record indicating intended\nconfig. The node refers to this record to choose its config checkpoint, and\nreports this record in Assigned. Assigned only updates in the status after\nthe record has been checkpointed to disk. When the Kubelet is restarted,\nit tries to make the Assigned config the Active config by loading and\nvalidating the checkpointed payload identified by Assigned.\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.NodeConfigSource"
+                        }
+                    ]
+                },
+                "error": {
+                    "description": "Error describes any problems reconciling the Spec.ConfigSource to the Active config.\nErrors may occur, for example, attempting to checkpoint Spec.ConfigSource to the local Assigned\nrecord, attempting to checkpoint the payload associated with Spec.ConfigSource, attempting\nto load or validate the Assigned config, etc.\nErrors may occur at different points while syncing config. Earlier errors (e.g. download or\ncheckpointing errors) will not result in a rollback to LastKnownGood, and may resolve across\nKubelet retries. Later errors (e.g. loading or validating a checkpointed config) will result in\na rollback to LastKnownGood. In the latter case, it is usually possible to resolve the error\nby fixing the config assigned in Spec.ConfigSource.\nYou can find additional information for debugging by searching the error message in the Kubelet log.\nError is a human-readable description of the error state; machines can check whether or not Error\nis empty, but should not rely on the stability of the Error text across Kubelet versions.\n+optional",
+                    "type": "string"
+                },
+                "lastKnownGood": {
+                    "description": "LastKnownGood reports the checkpointed config the node will fall back to\nwhen it encounters an error attempting to use the Assigned config.\nThe Assigned config becomes the LastKnownGood config when the node determines\nthat the Assigned config is stable and correct.\nThis is currently implemented as a 10-minute soak period starting when the local\nrecord of Assigned config is updated. If the Assigned config is Active at the end\nof this period, it becomes the LastKnownGood. Note that if Spec.ConfigSource is\nreset to nil (use local defaults), the LastKnownGood is also immediately reset to nil,\nbecause the local default config is always assumed good.\nYou should not make assumptions about the node's method of determining config stability\nand correctness, as this may change or become configurable in the future.\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.NodeConfigSource"
+                        }
+                    ]
+                }
+            }
+        },
+        "v1.NodeDaemonEndpoints": {
+            "type": "object",
+            "properties": {
+                "kubeletEndpoint": {
+                    "description": "Endpoint on which Kubelet is listening.\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.DaemonEndpoint"
+                        }
+                    ]
+                }
+            }
+        },
+        "v1.NodePhase": {
+            "type": "string",
+            "enum": [
+                "Pending",
+                "Running",
+                "Terminated"
+            ],
+            "x-enum-varnames": [
+                "NodePending",
+                "NodeRunning",
+                "NodeTerminated"
+            ]
+        },
+        "v1.NodeSpec": {
+            "type": "object",
+            "properties": {
+                "configSource": {
+                    "description": "If specified, the source to get node configuration from\nThe DynamicKubeletConfig feature gate must be enabled for the Kubelet to use this field\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.NodeConfigSource"
+                        }
+                    ]
+                },
+                "externalID": {
+                    "description": "Deprecated. Not all kubelets will set this field. Remove field after 1.13.\nsee: https://issues.k8s.io/61966\n+optional",
+                    "type": "string"
+                },
+                "podCIDR": {
+                    "description": "PodCIDR represents the pod IP range assigned to the node.\n+optional",
+                    "type": "string"
+                },
+                "podCIDRs": {
+                    "description": "podCIDRs represents the IP ranges assigned to the node for usage by Pods on that node. If this\nfield is specified, the 0th entry must match the podCIDR field. It may contain at most 1 value for\neach of IPv4 and IPv6.\n+optional\n+patchStrategy=merge",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "providerID": {
+                    "description": "ID of the node assigned by the cloud provider in the format: \u003cProviderName\u003e://\u003cProviderSpecificNodeID\u003e\n+optional",
+                    "type": "string"
+                },
+                "taints": {
+                    "description": "If specified, the node's taints.\n+optional",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Taint"
+                    }
+                },
+                "unschedulable": {
+                    "description": "Unschedulable controls node schedulability of new pods. By default, node is schedulable.\nMore info: https://kubernetes.io/docs/concepts/nodes/node/#manual-node-administration\n+optional",
+                    "type": "boolean"
+                }
+            }
+        },
+        "v1.NodeStatus": {
+            "type": "object",
+            "properties": {
+                "addresses": {
+                    "description": "List of addresses reachable to the node.\nQueried from cloud provider, if available.\nMore info: https://kubernetes.io/docs/concepts/nodes/node/#addresses\nNote: This field is declared as mergeable, but the merge key is not sufficiently\nunique, which can cause data corruption when it is merged. Callers should instead\nuse a full-replacement patch. See http://pr.k8s.io/79391 for an example.\n+optional\n+patchMergeKey=type\n+patchStrategy=merge",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.NodeAddress"
+                    }
+                },
+                "allocatable": {
+                    "description": "Allocatable represents the resources of a node that are available for scheduling.\nDefaults to Capacity.\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.ResourceList"
+                        }
+                    ]
+                },
+                "capacity": {
+                    "description": "Capacity represents the total resources of a node.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#capacity\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.ResourceList"
+                        }
+                    ]
+                },
+                "conditions": {
+                    "description": "Conditions is an array of current observed node conditions.\nMore info: https://kubernetes.io/docs/concepts/nodes/node/#condition\n+optional\n+patchMergeKey=type\n+patchStrategy=merge",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.NodeCondition"
+                    }
+                },
+                "config": {
+                    "description": "Status of the config assigned to the node via the dynamic Kubelet config feature.\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.NodeConfigStatus"
+                        }
+                    ]
+                },
+                "daemonEndpoints": {
+                    "description": "Endpoints of daemons running on the Node.\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.NodeDaemonEndpoints"
+                        }
+                    ]
+                },
+                "images": {
+                    "description": "List of container images on this node\n+optional",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ContainerImage"
+                    }
+                },
+                "nodeInfo": {
+                    "description": "Set of ids/uuids to uniquely identify the node.\nMore info: https://kubernetes.io/docs/concepts/nodes/node/#info\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.NodeSystemInfo"
+                        }
+                    ]
+                },
+                "phase": {
+                    "description": "NodePhase is the recently observed lifecycle phase of the node.\nMore info: https://kubernetes.io/docs/concepts/nodes/node/#phase\nThe field is never populated, and now is deprecated.\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.NodePhase"
+                        }
+                    ]
+                },
+                "volumesAttached": {
+                    "description": "List of volumes that are attached to the node.\n+optional",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AttachedVolume"
+                    }
+                },
+                "volumesInUse": {
+                    "description": "List of attachable volumes in use (mounted) by the node.\n+optional",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "v1.NodeSystemInfo": {
+            "type": "object",
+            "properties": {
+                "architecture": {
+                    "description": "The Architecture reported by the node",
+                    "type": "string"
+                },
+                "bootID": {
+                    "description": "Boot ID reported by the node.",
+                    "type": "string"
+                },
+                "containerRuntimeVersion": {
+                    "description": "ContainerRuntime Version reported by the node through runtime remote API (e.g. docker://1.5.0).",
+                    "type": "string"
+                },
+                "kernelVersion": {
+                    "description": "Kernel Version reported by the node from 'uname -r' (e.g. 3.16.0-0.bpo.4-amd64).",
+                    "type": "string"
+                },
+                "kubeProxyVersion": {
+                    "description": "KubeProxy Version reported by the node.",
+                    "type": "string"
+                },
+                "kubeletVersion": {
+                    "description": "Kubelet Version reported by the node.",
+                    "type": "string"
+                },
+                "machineID": {
+                    "description": "MachineID reported by the node. For unique machine identification\nin the cluster this field is preferred. Learn more from man(5)\nmachine-id: http://man7.org/linux/man-pages/man5/machine-id.5.html",
+                    "type": "string"
+                },
+                "operatingSystem": {
+                    "description": "The Operating System reported by the node",
+                    "type": "string"
+                },
+                "osImage": {
+                    "description": "OS Image reported by the node from /etc/os-release (e.g. Debian GNU/Linux 7 (wheezy)).",
+                    "type": "string"
+                },
+                "systemUUID": {
+                    "description": "SystemUUID reported by the node. For unique machine identification\nMachineID is preferred. This field is specific to Red Hat hosts\nhttps://access.redhat.com/documentation/en-us/red_hat_subscription_management/1/html/rhsm/uuid",
+                    "type": "string"
+                }
+            }
         },
         "v1.ObjectMeta": {
             "type": "object",
@@ -2445,6 +3015,50 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "v1.ResourceList": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/resource.Quantity"
+            }
+        },
+        "v1.Taint": {
+            "type": "object",
+            "properties": {
+                "effect": {
+                    "description": "Required. The effect of the taint on pods\nthat do not tolerate the taint.\nValid effects are NoSchedule, PreferNoSchedule and NoExecute.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.TaintEffect"
+                        }
+                    ]
+                },
+                "key": {
+                    "description": "Required. The taint key to be applied to a node.",
+                    "type": "string"
+                },
+                "timeAdded": {
+                    "description": "TimeAdded represents the time at which the taint was added.\nIt is only written for NoExecute taints.\n+optional",
+                    "type": "string"
+                },
+                "value": {
+                    "description": "The taint value corresponding to the taint key.\n+optional",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.TaintEffect": {
+            "type": "string",
+            "enum": [
+                "NoSchedule",
+                "PreferNoSchedule",
+                "NoExecute"
+            ],
+            "x-enum-varnames": [
+                "TaintEffectNoSchedule",
+                "TaintEffectPreferNoSchedule",
+                "TaintEffectNoExecute"
+            ]
         },
         "v1alpha1.AccessibilityTopology": {
             "type": "object",
@@ -2640,6 +3254,28 @@ const docTemplate = `{
                 "type": {
                     "description": "Supported: HDD, SSD, NVMe, RAM",
                     "type": "string"
+                }
+            }
+        },
+        "v1alpha1.LocalDisk": {
+            "type": "object",
+            "properties": {
+                "apiVersion": {
+                    "description": "APIVersion defines the versioned schema of this representation of an object.\nServers should convert recognized schemas to the latest internal value, and\nmay reject unrecognized values.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources\n+optional",
+                    "type": "string"
+                },
+                "kind": {
+                    "description": "Kind is a string value representing the REST resource this object represents.\nServers may infer this from the endpoint the client submits requests to.\nCannot be updated.\nIn CamelCase.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds\n+optional",
+                    "type": "string"
+                },
+                "metadata": {
+                    "$ref": "#/definitions/v1.ObjectMeta"
+                },
+                "spec": {
+                    "$ref": "#/definitions/v1alpha1.LocalDiskSpec"
+                },
+                "status": {
+                    "$ref": "#/definitions/v1alpha1.LocalDiskStatus"
                 }
             }
         },
