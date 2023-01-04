@@ -462,9 +462,16 @@ func (lvController *LocalVolumeController) CreateVolumeMigrate(volName, srcNode,
 			Abort:                abort,
 		},
 	}
-	if err := lvController.Client.Create(context.Background(), lvm); err != nil {
-		log.WithField("migrate", lvm.Name).WithError(err).Error("Failed to submit a migrate job")
-		return nil, err
+	if abort == false {
+		if err := lvController.Client.Create(context.Background(), lvm); err != nil {
+			log.WithField("migrate", lvm.Name).WithError(err).Error("Failed to submit a migrate job")
+			return nil, err
+		}
+	} else {
+		if err := lvController.Client.Delete(context.TODO(), lvm); err != nil {
+			log.WithField("migrate", lvm.Name).WithError(err).Error("Failed to delete a migrate job")
+			return nil, err
+		}
 	}
 
 	var RspBody = &hwameistorapi.VolumeMigrateRspBody{}
@@ -479,7 +486,7 @@ func (lvController *LocalVolumeController) CreateVolumeMigrate(volName, srcNode,
 }
 
 // CreateVolumeConvert
-func (lvController *LocalVolumeController) CreateVolumeConvert(volName string) (*hwameistorapi.VolumeConvertRspBody, error) {
+func (lvController *LocalVolumeController) CreateVolumeConvert(volName string, abort bool) (*hwameistorapi.VolumeConvertRspBody, error) {
 	lvmName := fmt.Sprintf("convert-%s", volName)
 
 	var RspBody = &hwameistorapi.VolumeConvertRspBody{}
@@ -492,8 +499,8 @@ func (lvController *LocalVolumeController) CreateVolumeConvert(volName string) (
 	if err != nil {
 		return RspBody, nil
 	}
-	if lv.Spec.Convertible == false || lv.Spec.ReplicaNumber == 1 {
-		return RspBody, errors.NewBadRequest("Cannot create convert crd: check convertible is false or replicanumber == 1")
+	if lv.Spec.Convertible == false || lv.Spec.ReplicaNumber > 1 {
+		return RspBody, errors.NewBadRequest("Cannot create convert crd: check convertible is true and replicanumber == 1")
 	}
 
 	lvc := &apisv1alpha1.LocalVolumeConvert{
@@ -507,15 +514,23 @@ func (lvController *LocalVolumeController) CreateVolumeConvert(volName string) (
 		Spec: apisv1alpha1.LocalVolumeConvertSpec{
 			VolumeName:    volName,
 			ReplicaNumber: ConvertReplicaNum,
+			Abort:         abort,
 		},
 	}
 
-	if err := lvController.Client.Create(context.Background(), lvc); err != nil {
-		log.WithField("convert", lvc.Name).WithError(err).Error("Failed to submit a convert job")
-		if errors.IsAlreadyExists(err) {
-			return RspBody, nil
+	if abort == false {
+		if err := lvController.Client.Create(context.Background(), lvc); err != nil {
+			log.WithField("convert", lvc.Name).WithError(err).Error("Failed to submit a convert job")
+			if errors.IsAlreadyExists(err) {
+				return RspBody, nil
+			}
+			return nil, err
 		}
-		return nil, err
+	} else {
+		if err := lvController.Client.Delete(context.Background(), lvc); err != nil {
+			log.WithField("convert", lvc.Name).WithError(err).Error("Failed to delete a convert job")
+			return RspBody, err
+		}
 	}
 
 	RspBody.VolumeConvertInfo = vci

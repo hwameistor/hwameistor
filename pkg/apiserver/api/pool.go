@@ -5,10 +5,22 @@ import (
 	"time"
 )
 
-type StoragePool struct {
+type StorageNodePool struct {
 	apisv1alpha1.LocalPool
+	// NodesName Pool所在节点
+	NodeName string `json:"nodeName"`
+}
 
-	// AllocatedCapacityBytes 存储池已经分配存储容量 todo
+type StoragePool struct {
+	StorageNodePools []StorageNodePool `json:"items"`
+
+	// Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL 存储池名称
+	PoolName string `json:"poolName,omitempty"`
+
+	// TotalCapacityBytes 存储池对应存储总容量
+	TotalCapacityBytes int64 `json:"totalCapacityBytes"`
+
+	// AllocatedCapacityBytes 存储池已经分配存储容量
 	AllocatedCapacityBytes int64 `json:"allocatedCapacityBytes"`
 
 	// NodesNames Pool所在节点列表

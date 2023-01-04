@@ -17,6 +17,7 @@ spec:
       labels:
         app: hwameistor-apiserver
     spec:
+      serviceAccountName: hwameistor-admin
       containers:
         - name: server
           image: {{ .Values.global.hwameistorImageRegistry}}/{{ .Values.apiserver.imageRepository}}:{{ template "hwameistor.apiserverImageTag" . }}

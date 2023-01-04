@@ -72,14 +72,14 @@ func (lspController *LocalStoragePoolController) listLocalStoragePools(queryPage
 	var sps []*hwameistorapi.StoragePool
 	for poolName, poolNodeCollection := range storagePoolNodesCollectionMap {
 		var sp = &hwameistorapi.StoragePool{}
-		sp.Name = poolName
-		sp.Class = poolNodeCollection.StoragePool.Class
+		sp.PoolName = poolNodeCollection.StoragePool.PoolName
+		sp.StorageNodePools = poolNodeCollection.StoragePool.StorageNodePools
 		sp.CreateTime = poolNodeCollection.StoragePool.CreateTime
 		sp.TotalCapacityBytes = poolNodeCollection.StoragePool.TotalCapacityBytes
 		sp.AllocatedCapacityBytes = poolNodeCollection.StoragePool.AllocatedCapacityBytes
 		sp.NodeNames = poolNodeCollection.ManagedNodeNames
 
-		if queryPage.PoolName == "" || (queryPage.PoolName != "" && strings.Contains(sp.Name, queryPage.PoolName)) {
+		if queryPage.PoolName == "" || (queryPage.PoolName != "" && strings.Contains(poolName, queryPage.PoolName)) {
 			sps = append(sps, sp)
 		}
 	}
@@ -101,20 +101,26 @@ func (lspController *LocalStoragePoolController) makeStoragePoolNodesCollectionM
 		for _, pool := range lsn.Status.Pools {
 			if spnc, exists := storagePoolNodesCollectionMap[pool.Name]; exists {
 				spnc.ManagedNodeNames = append(spnc.ManagedNodeNames, lsn.Name)
-				spnc.StoragePool.Name = pool.Name
-				spnc.StoragePool.Class = pool.Class
+				var snp hwameistorapi.StorageNodePool
+				snp.LocalPool = pool
+				snp.NodeName = lsn.Name
+				spnc.StoragePool.StorageNodePools = append(spnc.StoragePool.StorageNodePools, snp)
 				spnc.StoragePool.TotalCapacityBytes += pool.TotalCapacityBytes
 				spnc.StoragePool.AllocatedCapacityBytes += pool.UsedCapacityBytes
 				spnc.StoragePool.CreateTime = lsn.CreationTimestamp.Time
+				spnc.StoragePool.PoolName = pool.Name
 				storagePoolNodesCollectionMap[pool.Name] = spnc
 			} else {
 				spncnew := &hwameistorapi.StoragePoolNodesCollection{}
+				var snp hwameistorapi.StorageNodePool
+				snp.LocalPool = pool
+				snp.NodeName = lsn.Name
 				spncnew.ManagedNodeNames = append(spncnew.ManagedNodeNames, lsn.Name)
-				spncnew.StoragePool.Name = pool.Name
-				spncnew.StoragePool.Class = pool.Class
+				spncnew.StoragePool.StorageNodePools = append(spncnew.StoragePool.StorageNodePools, snp)
 				spncnew.StoragePool.TotalCapacityBytes += pool.TotalCapacityBytes
 				spncnew.StoragePool.AllocatedCapacityBytes += pool.UsedCapacityBytes
 				spncnew.StoragePool.CreateTime = lsn.CreationTimestamp.Time
+				spncnew.StoragePool.PoolName = pool.Name
 				storagePoolNodesCollectionMap[pool.Name] = spncnew
 			}
 		}
@@ -133,7 +139,7 @@ func (lspController *LocalStoragePoolController) GetStoragePool(poolName string)
 	}
 
 	for _, sp := range sps {
-		if sp.Name == poolName {
+		if sp.PoolName == poolName {
 			return sp, nil
 		}
 	}

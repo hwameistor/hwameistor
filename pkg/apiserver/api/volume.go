@@ -223,11 +223,11 @@ type VolumeMigrateRspBody struct {
 type VolumeMigrateReqBody struct {
 	SrcNode      string `json:"srcNode,omitempty"`
 	SelectedNode string `json:"selectedNode,omitempty"`
-	Abort        bool   `json:"abort,omitempty"`
+	Abort        bool   `json:"abort,omitempty default:false"`
 }
 
 type VolumeConvertReqBody struct {
-	VolumeName string `json:"volumeName,omitempty"`
+	Abort bool `json:"abort,omitempty default:false"`
 }
 
 type VolumeConvertRspBody struct {
@@ -235,7 +235,7 @@ type VolumeConvertRspBody struct {
 }
 
 type VolumeConvertInfo struct {
-	VolumeName string `json:"volumeName"`
+	VolumeName string `json:"volumeName,omitempty"`
 	ReplicaNum int64  `json:"replicaNum"`
 }
 

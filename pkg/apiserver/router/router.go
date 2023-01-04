@@ -57,6 +57,12 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	v1.GET("/cluster/volumegroups/:vgName", volumeGroupController.VolumeGroupGet)
 	v1.GET("/cluster/volumegroups", volumeGroupController.VolumeGroupList)
 
+	ldController := controller.NewLocalDiskController(sm)
+	v1.GET("/cluster/localdisks", ldController.LocalDiskList)
+
+	ldnController := controller.NewLocalDiskNodeController(sm)
+	v1.GET("/cluster/localdisknodes", ldnController.LocalDiskNodeList)
+
 	nodeController := controller.NewNodeController(sm, m)
 	v1.GET("/cluster/nodes", nodeController.StorageNodeList)
 	v1.GET("/cluster/nodes/:nodeName", nodeController.StorageNodeGet)
