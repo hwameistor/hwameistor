@@ -70,7 +70,7 @@ type manager struct {
 // New cluster manager
 func New(name string, namespace string, cli client.Client, scheme *runtime.Scheme, informersCache runtimecache.Cache, systemConfig apisv1alpha1.SystemConfig) (apis.ControllerManager, error) {
 	dataCopyStatusCh := make(chan *datacopyutil.DataCopyStatus, 100)
-	dcm, _ := datacopyutil.NewDataCopyManager(context.TODO(), "", cli, dataCopyStatusCh)
+	dcm, _ := datacopyutil.NewDataCopyManager(context.TODO(), "", cli, dataCopyStatusCh, namespace)
 	return &manager{
 		name:                        name,
 		namespace:                   namespace,
