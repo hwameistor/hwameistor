@@ -89,9 +89,9 @@ type jobWithEvent struct {
 func (statusGenerator *statusGenerator) onAdd(obj interface{}) {
 	job := obj.(*batchv1.Job)
 
-	//if !statusGenerator.isReleted(job) {
-	//	return
-	//}
+	if !statusGenerator.isReleted(job) {
+		return
+	}
 
 	eventJob := &jobWithEvent{
 		Job:   job,
@@ -104,9 +104,9 @@ func (statusGenerator *statusGenerator) onAdd(obj interface{}) {
 func (statusGenerator *statusGenerator) onUpdate(_, obj interface{}) {
 	job := obj.(*batchv1.Job)
 
-	//if !statusGenerator.isReleted(job) {
-	//	return
-	//}
+	if !statusGenerator.isReleted(job) {
+		return
+	}
 
 	eventJob := &jobWithEvent{
 		Job:   job,
@@ -130,6 +130,13 @@ func (statusGenerator *statusGenerator) onUpdate(_, obj interface{}) {
 
 // 	statusGenerator.queue.Done(eventJob)
 // }
+
+func (statusGenerator *statusGenerator) isReleted(job *batchv1.Job) bool {
+	if job.Labels == nil {
+		return false
+	}
+	return job.Labels["app"] == RcloneJobLabelApp
+}
 
 func (statusGenerator *statusGenerator) Run() {
 	logger.Debugf("statusGenerator Run")
