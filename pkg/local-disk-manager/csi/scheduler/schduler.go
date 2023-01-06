@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"fmt"
+	"k8s.io/kubernetes/pkg/scheduler/framework"
 	"strings"
 
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/volumemanager"
@@ -98,6 +99,10 @@ func (s *diskVolumeSchedulerPlugin) Unreserve(pendingVolumes []*v1.PersistentVol
 		}
 	}
 	return nil
+}
+
+func (s *diskVolumeSchedulerPlugin) Score(unboundPVCs []*v1.PersistentVolumeClaim, node string) (int64, error) {
+	return framework.MaxNodeScore, nil
 }
 
 func (s *diskVolumeSchedulerPlugin) removeDuplicatePVC(pendingVolumes []*v1.PersistentVolumeClaim) (pvs []*v1.PersistentVolumeClaim) {

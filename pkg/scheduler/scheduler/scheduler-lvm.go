@@ -17,6 +17,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	volumeCountWeight  framework.  = 10
+	volumeCapacityWeight = 0.9
+)
+
 type LVMVolumeScheduler struct {
 	fHandle   framework.Handle
 	apiClient client.Client
@@ -59,6 +64,50 @@ func (s *LVMVolumeScheduler) Filter(lvs []string, pendingPVCs []*corev1.Persiste
 	}
 
 	return s.filterForNewPVCs(pendingPVCs, node)
+}
+
+// Score node according to volume nums and storage pool capacity. Calculate logic is as bellow:
+// 1. volume nums less, score higher
+// 2. volume capacity + nodeUsedCapacity / NodeTotalCapacity less, score higher
+func (s *LVMVolumeScheduler) Score(unboundPVCs []*corev1.PersistentVolumeClaim, node string) (int64, error) {
+	var (
+		err         error
+		storageNode v1alpha1.LocalStorageNode
+		scoreTotal int64
+	)
+
+	if err = s.hwameiStorCache.Get(context.Background(), types.NamespacedName{Name: node}, &storageNode); err != nil {
+		return 0, err
+	}
+
+	// score for each volume
+	for _, volume := range unboundPVCs {
+		score,err := s.scoreOneVolume(volume, &storageNode)
+		if err != nil {
+			return 0, err
+		}
+		scoreTotal += score
+	}
+
+	return scoreTotal, err
+}
+
+func (s *LVMVolumeScheduler) scoreOneVolume(pvc *corev1.PersistentVolumeClaim, node *v1alpha1.LocalStorageNode) (int64, error) {
+	if pvc.Spec.StorageClassName == nil {
+		return 0, fmt.Errorf("storageclass is empty in pvc %s", pvc.Name)
+	}
+	relatedSC, err := s.scLister.Get(*pvc.Spec.StorageClassName)
+	if err != nil {
+		return 0, err
+	}
+	volumeClass := relatedSC.Parameters[v1alpha1.VolumeParameterPoolClassKey]
+	volumeCapacity := pvc.Spec.Resources.Requests.Storage().Value()
+	relatedPool := node.Status.Pools[volumeClass]
+
+	nodeFreeVolumeCount := relatedPool.FreeVolumeCount
+	nodeFreeCapacity := relatedPool.FreeCapacityBytes
+
+	return nodeFreeCapacity - volumeCapacity + nodeFreeVolumeCount, nil
 }
 
 func (s *LVMVolumeScheduler) filterForExistingLocalVolumes(lvs []string, node *corev1.Node) (bool, error) {

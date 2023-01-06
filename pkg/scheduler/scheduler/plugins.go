@@ -23,6 +23,10 @@ const (
 	Name = "hwameistor-scheduler-plugin"
 )
 
+var _ framework.FilterPlugin = &Plugin{}
+var _ framework.ReservePlugin = &Plugin{}
+var _ framework.ScorePlugin = &Plugin{}
+
 // New initializes a new plugin and returns it.
 func New(_ runtime.Object, f framework.Handle) (framework.Plugin, error) {
 	time.Sleep(time.Second) // wait for scheduleLabelMgr to be created
@@ -111,4 +115,29 @@ func (p *Plugin) Unreserve(ctx context.Context, state *framework.CycleState, pod
 func (p *Plugin) filter(pod *v1.Pod, node *v1.Node) (bool, error) {
 	return p.scheduler.
 		Filter(pod, node)
+}
+
+// Score is the functions invoked by framework at "score" extension point
+func (p *Plugin) Score(ctx context.Context, state *framework.CycleState, pod *v1.Pod, node string) (int64, *framework.Status) {
+	if pod == nil {
+		log.Debug("no pod specified")
+	}
+	if node == "" {
+		log.Debug("no node specified")
+	}
+	logCtx := log.Fields{"pod": pod.Name, "node": node}
+	log.WithFields(logCtx).Debug("score node for a pod")
+
+	score, err := p.scheduler.Score(pod, node)
+	if err != nil {
+		log.WithFields(logCtx).WithError(err).Error("failed to score node")
+		return score, framework.NewStatus(framework.Error, err.Error())
+	}
+
+	return score, framework.NewStatus(framework.Success)
+}
+
+// ScoreExtensions is the functions invoked by framework at "score extension" extension point
+func (p *Plugin) ScoreExtensions() framework.ScoreExtensions {
+	return nil
 }
