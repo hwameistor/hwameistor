@@ -1,3 +1,10 @@
+v0.7.1 / 2023-01-06
+========================
+* Check for hwameistor GC JOB before processing (#591 #593 @sun7927 @SSmallMonster)
+
+## Evictor,Admission,LocalStorage,Scheduler,Metrics
+N/A
+
 v0.7.0 / 2022-12-27
 ========================
 
