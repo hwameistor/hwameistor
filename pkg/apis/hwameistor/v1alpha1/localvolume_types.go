@@ -158,6 +158,12 @@ type LocalVolumeStatus struct {
 	// UsedCapacityBytes is the used capacity in bytes of the volume, which is avaiable only for filesystem
 	UsedCapacityBytes int64 `json:"usedCapacityBytes,omitempty"`
 
+	// TotalINodes is the total inodes of the volume's filesystem
+	TotalInodes int64 `json:"totalInode,omitempty"`
+
+	// UsedInode is the used inodes of the volume's filesystem
+	UsedInodes int64 `json:"usedInode,omitempty"`
+
 	// Volume is a logical concept and composed by one or many replicas which will be located at different node.
 	Replicas []string `json:"replicas,omitempty"`
 
