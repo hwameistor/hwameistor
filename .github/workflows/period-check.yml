@@ -22,7 +22,7 @@ jobs:
         run: make unit-test
   e2e-test:
     runs-on: ["vsphere"]
-    timeout-minutes: 180
+    timeout-minutes: 300
     steps:
       - name: delete
         run: |
