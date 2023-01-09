@@ -220,9 +220,17 @@ spec:
                 description: State is the phase of volume replica, e.g. Creating,
                   Ready, NotReady, ToBeDeleted, Deleted
                 type: string
+              totalInode:
+                description: TotalINodes is the total inodes of the volume's filesystem
+                format: int64
+                type: integer
               usedCapacityBytes:
                 description: UsedCapacityBytes is the used capacity in bytes of the
                   volume, which is avaiable only for filesystem
+                format: int64
+                type: integer
+              usedInode:
+                description: UsedInode is the used inodes of the volume's filesystem
                 format: int64
                 type: integer
             required:
