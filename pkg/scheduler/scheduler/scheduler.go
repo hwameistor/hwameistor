@@ -160,7 +160,8 @@ func (s *Scheduler) Score(pod *corev1.Pod, node string) (int64, error) {
 		return 0, err
 	}
 
-	return ((lvmScore + diskScore) / framework.MaxTotalScore) * framework.MaxNodeScore, nil
+	score := (float64(lvmScore+diskScore) / float64(framework.MaxNodeScore*2)) * float64(framework.MaxNodeScore)
+	return int64(score), nil
 }
 
 // return: lvmProvisionedClaims, lvmNewClaims, diskProvisionedClaims, diskNewClaims, error

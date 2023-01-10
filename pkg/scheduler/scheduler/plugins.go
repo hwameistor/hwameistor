@@ -126,7 +126,7 @@ func (p *Plugin) Score(ctx context.Context, state *framework.CycleState, pod *v1
 		log.Debug("no node specified")
 	}
 	logCtx := log.Fields{"pod": pod.Name, "node": node}
-	log.WithFields(logCtx).Debug("score node for a pod")
+	log.WithFields(logCtx).Debug("scoring node for a pod")
 
 	score, err := p.scheduler.Score(pod, node)
 	if err != nil {
@@ -134,6 +134,7 @@ func (p *Plugin) Score(ctx context.Context, state *framework.CycleState, pod *v1
 		return score, framework.NewStatus(framework.Error, err.Error())
 	}
 
+	log.WithFields(logCtx).Infof("node score %v", score)
 	return score, framework.NewStatus(framework.Success)
 }
 

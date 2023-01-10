@@ -17,11 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	volumeCountWeight  framework.  = 10
-	volumeCapacityWeight = 0.9
-)
-
 type LVMVolumeScheduler struct {
 	fHandle   framework.Handle
 	apiClient client.Client
@@ -66,14 +61,14 @@ func (s *LVMVolumeScheduler) Filter(lvs []string, pendingPVCs []*corev1.Persiste
 	return s.filterForNewPVCs(pendingPVCs, node)
 }
 
-// Score node according to volume nums and storage pool capacity. Calculate logic is as bellow:
-// 1. volume nums less, score higher
-// 2. volume capacity + nodeUsedCapacity / NodeTotalCapacity less, score higher
+// Score node according to volume nums and storage pool capacity.
+// For now, we only consider storage capacity, calculate logic is as bellow:
+// volume capacity / poolFreeCapacity less, score higher
 func (s *LVMVolumeScheduler) Score(unboundPVCs []*corev1.PersistentVolumeClaim, node string) (int64, error) {
 	var (
 		err         error
 		storageNode v1alpha1.LocalStorageNode
-		scoreTotal int64
+		scoreTotal  int64
 	)
 
 	if err = s.hwameiStorCache.Get(context.Background(), types.NamespacedName{Name: node}, &storageNode); err != nil {
@@ -82,14 +77,14 @@ func (s *LVMVolumeScheduler) Score(unboundPVCs []*corev1.PersistentVolumeClaim, 
 
 	// score for each volume
 	for _, volume := range unboundPVCs {
-		score,err := s.scoreOneVolume(volume, &storageNode)
+		score, err := s.scoreOneVolume(volume, &storageNode)
 		if err != nil {
 			return 0, err
 		}
 		scoreTotal += score
 	}
 
-	return scoreTotal, err
+	return int64(float64(scoreTotal) / float64(framework.MaxNodeScore*int64(len(unboundPVCs))) * float64(framework.MaxNodeScore)), err
 }
 
 func (s *LVMVolumeScheduler) scoreOneVolume(pvc *corev1.PersistentVolumeClaim, node *v1alpha1.LocalStorageNode) (int64, error) {
@@ -100,14 +95,17 @@ func (s *LVMVolumeScheduler) scoreOneVolume(pvc *corev1.PersistentVolumeClaim, n
 	if err != nil {
 		return 0, err
 	}
+
 	volumeClass := relatedSC.Parameters[v1alpha1.VolumeParameterPoolClassKey]
 	volumeCapacity := pvc.Spec.Resources.Requests.Storage().Value()
-	relatedPool := node.Status.Pools[volumeClass]
-
-	nodeFreeVolumeCount := relatedPool.FreeVolumeCount
+	poolClass, err := buildStoragePoolName(volumeClass, v1alpha1.PoolTypeRegular)
+	if err != nil {
+		return 0, err
+	}
+	relatedPool := node.Status.Pools[poolClass]
 	nodeFreeCapacity := relatedPool.FreeCapacityBytes
 
-	return nodeFreeCapacity - volumeCapacity + nodeFreeVolumeCount, nil
+	return int64(float64(nodeFreeCapacity-volumeCapacity) / float64(nodeFreeCapacity) * float64(framework.MaxNodeScore)), nil
 }
 
 func (s *LVMVolumeScheduler) filterForExistingLocalVolumes(lvs []string, node *corev1.Node) (bool, error) {
