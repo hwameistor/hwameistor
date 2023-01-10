@@ -31,17 +31,15 @@ type DataCopyManager struct {
 //
 // It will feedback copy process status continuously through statusCh,
 // so it dose not need ResourceReady to poll resource status
-func NewDataCopyManager(ctx context.Context,
-	dataCopyJobStatusAnnotationName string,
-	client k8sclient.Client,
-	statusCh chan *DataCopyStatus) (*DataCopyManager, error) {
+func NewDataCopyManager(ctx context.Context, dataCopyJobStatusAnnotationName string,
+	client k8sclient.Client, statusCh chan *DataCopyStatus, namespace string) (*DataCopyManager, error) {
 	dcm := &DataCopyManager{
 		dataCopyJobStatusAnnotationName: dataCopyJobStatusAnnotationName,
 		k8sControllerClient:             client,
 		ctx:                             ctx,
 	}
 
-	statusGenerator, err := newStatusGenerator(dcm, dataCopyJobStatusAnnotationName, statusCh)
+	statusGenerator, err := newStatusGenerator(dcm, dataCopyJobStatusAnnotationName, statusCh, namespace)
 	if err != nil {
 		logger.WithError(err).Error("Failed to init StatusGenerator")
 		return nil, err

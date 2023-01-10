@@ -144,6 +144,35 @@ func (s *Scheduler) Filter(pod *corev1.Pod, node *corev1.Node) (bool, error) {
 	return s.diskScheduler.Filter(existingLocalVolumes, diskNewPVCs, node)
 }
 
+func (s *Scheduler) Score(pod *corev1.Pod, node string) (int64, error) {
+	_, lvmNewPVCs, _, diskNewPVCs, err := s.getHwameiStorPVCs(pod)
+	if err != nil {
+		return 0, err
+	}
+
+	var scoreAll int64
+	var lvmScore int64
+	if len(lvmNewPVCs) > 0 {
+		lvmScore, err = s.lvmScheduler.Score(lvmNewPVCs, node)
+		if err != nil {
+			return 0, err
+		}
+		scoreAll += framework.MaxNodeScore
+	}
+
+	var diskScore int64
+	if len(diskNewPVCs) > 0 {
+		diskScore, err = s.diskScheduler.Score(diskNewPVCs, node)
+		if err != nil {
+			return 0, err
+		}
+		scoreAll += framework.MaxNodeScore
+	}
+
+	score := (float64(lvmScore+diskScore) / float64(scoreAll)) * float64(framework.MaxNodeScore)
+	return int64(score), nil
+}
+
 // return: lvmProvisionedClaims, lvmNewClaims, diskProvisionedClaims, diskNewClaims, error
 func (s *Scheduler) getHwameiStorPVCs(pod *corev1.Pod) ([]*corev1.PersistentVolumeClaim, []*corev1.PersistentVolumeClaim, []*corev1.PersistentVolumeClaim, []*corev1.PersistentVolumeClaim, error) {
 	lvmProvisionedClaims := []*corev1.PersistentVolumeClaim{}

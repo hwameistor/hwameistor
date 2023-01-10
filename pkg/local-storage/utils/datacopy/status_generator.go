@@ -46,9 +46,8 @@ type statusGenerator struct {
 	relatedJobWithResultCh map[string]chan *DataCopyStatus
 }
 
-func newStatusGenerator(dcm *DataCopyManager,
-	dataCopyStatusAnnotationName string,
-	statusCh chan *DataCopyStatus) (*statusGenerator, error) {
+func newStatusGenerator(dcm *DataCopyManager, dataCopyStatusAnnotationName string,
+	statusCh chan *DataCopyStatus, namespace string) (*statusGenerator, error) {
 	statusGenerator := &statusGenerator{
 		dcm:                          dcm,
 		dataCopyStatusAnnotationName: dataCopyStatusAnnotationName,
@@ -66,7 +65,8 @@ func newStatusGenerator(dcm *DataCopyManager,
 	if err != nil {
 		return nil, err
 	}
-	factory := k8sinformers.NewSharedInformerFactory(k8sClientset, 0)
+	factory := k8sinformers.NewSharedInformerFactoryWithOptions(k8sClientset, 0,
+		k8sinformers.WithNamespace(namespace))
 	informer := factory.Batch().V1().Jobs().Informer()
 	informer.AddEventHandler(k8scache.ResourceEventHandlerFuncs{
 		AddFunc:    statusGenerator.onAdd,
