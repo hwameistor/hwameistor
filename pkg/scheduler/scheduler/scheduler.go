@@ -150,17 +150,26 @@ func (s *Scheduler) Score(pod *corev1.Pod, node string) (int64, error) {
 		return 0, err
 	}
 
-	lvmScore, err := s.lvmScheduler.Score(lvmNewPVCs, node)
-	if err != nil {
-		return 0, err
+	var scoreAll int64
+	var lvmScore int64
+	if len(lvmNewPVCs) > 0 {
+		lvmScore, err = s.lvmScheduler.Score(lvmNewPVCs, node)
+		if err != nil {
+			return 0, err
+		}
+		scoreAll += framework.MaxNodeScore
 	}
 
-	diskScore, err := s.diskScheduler.Score(diskNewPVCs, node)
-	if err != nil {
-		return 0, err
+	var diskScore int64
+	if len(diskNewPVCs) > 0 {
+		diskScore, err = s.diskScheduler.Score(diskNewPVCs, node)
+		if err != nil {
+			return 0, err
+		}
+		scoreAll += framework.MaxNodeScore
 	}
 
-	score := (float64(lvmScore+diskScore) / float64(framework.MaxNodeScore*2)) * float64(framework.MaxNodeScore)
+	score := (float64(lvmScore+diskScore) / float64(scoreAll)) * float64(framework.MaxNodeScore)
 	return int64(score), nil
 }
 

@@ -102,7 +102,7 @@ func (s *diskVolumeSchedulerPlugin) Unreserve(pendingVolumes []*v1.PersistentVol
 }
 
 func (s *diskVolumeSchedulerPlugin) Score(unboundPVCs []*v1.PersistentVolumeClaim, node string) (int64, error) {
-	return framework.MaxNodeScore, nil
+	return framework.MinNodeScore, nil
 }
 
 func (s *diskVolumeSchedulerPlugin) removeDuplicatePVC(pendingVolumes []*v1.PersistentVolumeClaim) (pvs []*v1.PersistentVolumeClaim) {
