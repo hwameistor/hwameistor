@@ -1,15 +1,17 @@
 ---
 sidebar_position: 1
-sidebar_label:  "Expand Volumes"
+sidebar_label: "Expand Volumes"
 ---
 
 # Expand Volumes
 
-HwameiStor supports `CSI Volume Expansion`, by which altering the size of `PVC` can dynamically expand the volume online. 
+HwameiStor supports `CSI Volume Expansion`, by which altering the size of `PVC`
+can dynamically expand the volume online.
 
-The below example will expand PVC `data-sts-mysql-local-0` from 1GiB to 2GiB
+The below example will expand PVC `data-sts-mysql-local-0` from 1GiB to 2GiB.
 
-The current size of the `PVC/PV`
+Check the current size of the `PVC/PV`.
+
 ```console
 $ kubectl get pvc data-sts-mysql-local-0
 NAME                     STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS                 AGE
@@ -20,7 +22,9 @@ NAME                                       CAPACITY   ACCESS MODES   RECLAIM POL
 pvc-b9fc8651-97b8-414c-8bcf-c8d2708c4ee8   1Gi        RWO            Delete           Bound    default/data-sts-mysql-local-0   hwameistor-storage-lvm-hdd            85m
 ```
 
-## Verify if the `StorageClass` has parameter `allowVolumeExpansion: true`
+## Verify `StorageClass`
+
+Verify if the `StorageClass` has the parameter `allowVolumeExpansion: true`.
 
 ```console
 $ kubectl get pvc data-sts-mysql-local-0 -o jsonpath='{.spec.storageClassName}'

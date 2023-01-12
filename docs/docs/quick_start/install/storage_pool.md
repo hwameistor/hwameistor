@@ -3,7 +3,7 @@ sidebar_position: 4
 sidebar_label: "Set up a Storage Pool"
 ---
 
-# Setup up a Storage Pool
+# Set up a Storage Pool
 
 The example below is from a 4-node kubernetes cluster:
 
@@ -20,7 +20,8 @@ k8s-worker-3   Ready    worker  36d   v1.24.3-2+63243a96d1c393
 
 ### 1. Create `LocalDiskClaim` objects
 
-HwameiStor sets up storage pools by creating `LocalDiskClaim` objects according to the storage media types. To create an HDD pool, you need to specify `storageNodes`:
+HwameiStor sets up storage pools by creating `LocalDiskClaim` objects according
+to the storage media types. To create an HDD pool, you need to specify `storageNodes`:
 
 ```console
 $ helm template ./hwameistor \
@@ -104,7 +105,8 @@ root@k8s-worker-1:~$ vgdisplay LocalStorage_PoolHDD
 
 ## Set up a storage pool during deployment
 
-A storage pool can be configured during HwameiStor deployment by setting the same `storageNodes` parameter as shown in the below example:
+A storage pool can be configured during HwameiStor deployment by setting the same
+`storageNodes` parameter as shown in the below example:
 
 ```console
 $ helm install hwameistor ./hwameistor \

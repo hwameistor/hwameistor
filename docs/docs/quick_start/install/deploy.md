@@ -11,7 +11,8 @@ The entire HwameiStor stack can be easily deployed by Helm Charts.
 
 ### 1. Prepare helm tools
 
-To install [Helm](https://helm.sh/) commandline tool, please refer to [Helm's Documentation](https://helm.sh/docs/).
+To install [Helm](https://helm.sh/) commandline tool, please refer to
+[Helm's Documentation](https://helm.sh/docs/).
 
 ### 2. Download `hwameistor` repo
 
@@ -36,16 +37,18 @@ $ helm install hwameistor ./hwameistor \
 
 To verify the deployment, please refer to [Post Deployment](./post_check.md).
 
-## Use image repository mirrors
+## Use image repository
 
 :::tip
 
 The default image repositories are `k8s.gcr.io` and `ghcr.io`.
-In case any network problem, you can try to use the mirrors provided by DaoCloud at `k8s-gcr.m.daocloud.io` and `ghcr.m.daocloud.io`.
+In case any network problem, you can try to use the images provided by DaoCloud
+at `k8s-gcr.m.daocloud.io` and `ghcr.m.daocloud.io`.
 
 :::
 
-To switch image repository mirrors, use `--set` to change the value of parameters: `global.k8sImageRegistry` and `global.hwameistorImageRegistry`.
+To switch images, use `--set` to change the value of parameters:
+`global.k8sImageRegistry` and `global.hwameistorImageRegistry`.
 
 ```console
 $ helm install hwameistor ./hwameistor \
@@ -59,11 +62,13 @@ $ helm install hwameistor ./hwameistor \
 :::caution
 
 The default `kubelet` directory is `/var/lib/kubelet`.
-If your Kubernetes distribution uses a different `kubelet` directory, you shall set the parameter `kubeletRootDir`.
+If your Kubernetes distribution uses a different `kubelet` directory,
+you shall set the parameter `kubeletRootDir`.
 
 :::
 
-For example, on [Canonical's MicroK8s](https://microk8s.io/) which uses `/var/snap/microk8s/common/var/lib/kubelet/` as `kubelet` directory, HwameiStor needs to be deployed as:
+For example, on [Canonical's MicroK8s](https://microk8s.io/) which uses
+`/var/snap/microk8s/common/var/lib/kubelet/` as `kubelet` directory, HwameiStor needs to be deployed as:
 
 ```console
 $ helm install hwameistor ./hwameistor \
@@ -79,7 +84,8 @@ A production environment would require to:
 - avoid deploying on master nodes
 - implement quick failover of controllers
 
-HwameiStor provides some recommended values in `values.extra.prod.yaml`. You can use it by:
+HwameiStor provides some recommended values in `values.extra.prod.yaml`.
+You can use it by:
 
 ```console
 $ helm install hwameistor ./hwameistor \
@@ -90,7 +96,8 @@ $ helm install hwameistor ./hwameistor \
 
 :::caution
 
-In a resource-strained test environment, setting the above-mentioned values would cause pods unable to start!
+In a resource-strained test environment, setting the above-mentioned values would
+cause pods unable to start!
 :::
 
 ## [Optional] Install DRBD
@@ -108,7 +115,7 @@ $ helm install drbd-adapter ./drbd-adapter \
     -n hwameistor --create-namespace
 ```
 
-Users in China can try to use the mirror `daocloud.io/daocloud`.
+Users in China can try to use the image `daocloud.io/daocloud`.
 
 ```console
 $ helm install drbd-adapter ./drbd-adapter \

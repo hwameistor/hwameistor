@@ -5,17 +5,19 @@ sidebar_label:  "HA Volumes"
 
 # HA Volumes
 
-HwameiStor creates **highly-available (HA)** volumes by OpenSource DRBD replication. 
+HwameiStor creates **highly-available (HA)** volumes by OpenSource DRBD replication.
 
-Here we use a MySQL an example for demonstration.
+Here takes MySQL as an example for demonstration.
 
 :::note
-The yaml file for MySQL is borrowed from [the official Repo of Kubernetes](https://github.com/kubernetes/website/blob/main/content/en/examples/application/mysql/mysql-statefulset.yaml)
+The yaml file for MySQL is learnt from
+[Kubernetes repo](https://github.com/kubernetes/website/blob/main/content/en/examples/application/mysql/mysql-statefulset.yaml)
 :::
 
 ## Verify `StorageClass`
 
-`StorageClass` "hwameistor-storage-lvm-hdd-ha" has parameter `replicaNumber: "2"`, which indicates a DRBD replication pair.
+`StorageClass` "hwameistor-storage-lvm-hdd-ha" has parameter `replicaNumber: "2"`,
+which indicates a DRBD replication pair.
 
 ```console
 $ kubectl apply -f examples/sc_ha.yaml
@@ -42,7 +44,8 @@ allowVolumeExpansion: true
 
 ## Create `StatefulSet`
 
-With HwameiStor and its `StorageClass` ready, a MySQL StatefulSet and its volumes can be deployed by a single command: 
+With HwameiStor and its `StorageClass` ready, a MySQL StatefulSet and its volumes
+can be deployed by a single command:
 
 ```Console
 $ kubectl apply -f exapmles/sts-mysql_ha.yaml
@@ -80,9 +83,10 @@ NAME                     STATUS   VOLUME                                     CAP
 data-sts-mysql-ha-0   Bound    pvc-5236ee6f-8212-4628-9876-1b620a4c4c36   1Gi        RWO            hwameistor-storage-lvm-hdd    3m   Filesystem
 ```
 
-# Verify `LocalVolume` and `LocalVolumeReplica` objects
+## Verify `LocalVolume` and `LocalVolumeReplica` objects
 
-By listing `LocalVolume(LV)` objects with the same name as that of the `PV`, we can see that the `LV` object is created on two nodes: `k8s-worker-1` and `k8s-worker-2`.
+By listing `LocalVolume(LV)` objects with the same name as that of the `PV`,
+we can see that the `LV` object is created on two nodes: `k8s-worker-1` and `k8s-worker-2`.
 
 ```console
 $ kubectl get lv pvc-5236ee6f-8212-4628-9876-1b620a4c4c36
@@ -91,7 +95,7 @@ NAME                                       POOL                   REPLICAS   CAP
 pvc-5236ee6f-8212-4628-9876-1b620a4c4c36   LocalStorage_PoolHDD   1          1073741824                   Ready   -1         k8s-worker-1,k8s-worker-2    3m
 ```
 
-`LocalVolumeReplica (LVR)` further shows the backend logical volume devices on each node 
+`LocalVolumeReplica (LVR)` further shows the backend logical volume devices on each node.
 
 ```concole
 kubectl get lvr

@@ -7,33 +7,33 @@ sidebar_label: "Prerequisites"
 
 ## Kubernetes
 
-1. Kubernetes `1.18+`
-1. CoreDNS is deployed
+- Kubernetes `1.18+`
+- CoreDNS is deployed
 
 ### Unsupported platforms
 
-1. Openshift
-1. Rancher
+- OpenShift
+- Rancher
 
 :::note
-Above platforms are not supported yet but will be supported in the future.
+Above platforms are not supported currently but will be in the future.
 :::
 
-## Host
+## Hosts
 
-### Linux Distributions
+### Linux distributions
 
 1. CentOS/RHEL `7.4+`
 2. Rocky Linux `8.4+`
 3. Ubuntu `18+`
 4. Kylin `V10`
 
-### Processor Architecture
+### Processor architecture
 
 1. x86_64
 1. ARM64
 
-### Package Dependencies
+### Package dependencies
 
 1. `LVM2` is installed
 2. For HA features, `kernel-devel` must be installed and match the version of the operating `kernel`
@@ -60,7 +60,7 @@ $ dmesg | grep secureboot
 [    0.000000] secureboot: Secure boot disabled
 ```
 
-### Data Disk
+### Data disks
 
 HwameiStor supports `HDD`, `SSD`, and `NVMe`.
 

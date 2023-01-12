@@ -1,9 +1,9 @@
 ---
 sidebar_position: 3
-sidebar_label: "Post-Deployment Checkout"
+sidebar_label: "Post-Check after Deployment"
 ---
 
-# Post-Deployment Checkout
+# Post-Check after Deployment
 
 The example below is from a 4-node kubernetes cluster:
 
@@ -16,7 +16,7 @@ k8s-worker-2   Ready    worker  59d   v1.24.3-2+63243a96d1c393
 k8s-worker-3   Ready    worker  36d   v1.24.3-2+63243a96d1c393
 ```
 
-## Check the pods
+## Check pods
 
 The following pods should be up and running:
 
@@ -41,7 +41,7 @@ hwameistor-webhook-986479678-278cr                         1/1     Running      
 `local-disk-manager` and `local-storage` are `DaemonSets`. They should have one pod on each Kubernetes node.
 :::
 
-## Check the APIs
+## Check APIs
 
 HwameiStor CRDs create the following APIs.
 
@@ -66,9 +66,10 @@ localvolumes               lv           hwameistor.io/v1alpha1   false        Lo
 
 For the details about CRDs, please also refer to [CRDs](../../architecture/apis.md).
 
-## Check the `LocalDiskNode` and `localDisks`
+## Check `LocalDiskNode` and `localDisks`
 
-HwameiStor automatically scans each node and registers each disk as CRD `LocalDisk(ld)`. The unused disks are displayed with `PHASE: Unclaimed`.
+HwameiStor automatically scans each node and registers each disk as CRD `LocalDisk(ld)`.
+The unused disks are displayed with `PHASE: Unclaimed`.
 
 ```console
 $ kubectl get localdisknodes
@@ -92,7 +93,7 @@ k8s-worker-3-sdb   k8s-worker-3           Unclaimed
 k8s-worker-3-sdc   k8s-worker-3           Unclaimed
 ```
 
-## [Optional] Check DRBD Installation
+## [Optional] Check DRBD installation
 
 The `drbd-adapter` pod should be running on each worker node.
 
