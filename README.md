@@ -23,7 +23,7 @@ The latest release of HwameiStor is [![hwameistor-releases](https://img.shields.
 ## Release Status
 
 | Release | Version | Type   |
-|---------|---------|--------|
+| ------- | ------- | ------ |
 | v0.6    | v0.6.0  | latest |
 
 See [current releases](https://github.com/hwameistor/hwameistor/releases).
@@ -31,14 +31,15 @@ See [current releases](https://github.com/hwameistor/hwameistor/releases).
 ## Running Environments
 
 ### Kubernetes compatiblity
-| kubernetes | v0.4.3     | >=v0.5.0 |
-| ---------- | ---------- |-------|
-| >=1.18&&<=1.20 | Yes   | No    | 
-| 1.21       | Yes   | Yes  | 
-| 1.22       | Yes    | Yes  | 
-| 1.23       | Yes    | Yes  | 
-| 1.24       | Yes    | Yes  | 
-| 1.25       | No | Yes | 
+
+| kubernetes     | v0.4.3 | >=v0.5.0 |
+| -------------- | ------ | -------- |
+| >=1.18&&<=1.20 | Yes    | No       |
+| 1.21           | Yes    | Yes      |
+| 1.22           | Yes    | Yes      |
+| 1.23           | Yes    | Yes      |
+| 1.24           | Yes    | Yes      |
+| 1.25           | No     | Yes      |
 
 ## Modules and Code
 
@@ -95,28 +96,28 @@ For full documentation, please see our website [hwameistor.io](https://hwameisto
 
 ## Roadmap
 
-| Feature                                   | Status        | Release   |  Description                                      |
-|------------------------------------------ |-----------    |---------  |-------------------------------------------------- |
-| CSI for LVM volume                        | Completed     | v0.3.2    | Provision volume with lvm                         |
-| CSI for disk volume                       | Completed     | v0.3.2    | Provision volume with disk                        |
-| HA LVM Volume                             | Completed     | v0.3.2    | Volume with HA                                    |
-| LVM Volume expansion                      | Completed     | v0.3.2    | Expand LVM volume capacity online                 |
-| LVM Volume conversion                     | Completed     | v0.3.2    | Convert a non-HA LVM volume to the HA             |
-| LVM Volume migration                      | Completed     | v0.4.0    | Migrate a LVM volume replica to a different node  |
-| Volume Group                              | Completed     | v0.3.2    | Support volume group allocation                   |
-| LVM HA Volume Recovery                    | Planed        |           | Recover the LVM HA volume in problem              |
-| HwameiStor Operator                       | Planed        |           | Operator for HwameiStor install, maintain, etc..  |
-| Observability                             | Planed        |           | Observability, such as metrics, logs, etc..       |
-| Failover                                  | Planed        |           | Fail over the pod with HwameiStor volume          |
-| IO throttling                             | Planed        |           | Limit IO bandwith to access the HwameiStor volume |
-| Disk health check                         | Planed        |           | Disk fault prediction, status reporting           |
-| Disk replacement                          | Planed        |           | Replace disk which fails or will fail soon        |
-| LVM volume auto-expansion                 | Planed        |           | Expand LVM volume automatically                   |
-| LVM volume snapshot                       | Planed        |           | Snapshot of LVM volume                            |
-| LVM volume clone                          | Unplaned      |           | Clone LVM volume                                  |
-| LVM volume thin provision                 | Unplaned      |           | LVM volume thin provision                         |
-| LVM volume stripe mode                    | Unplaned      |           | LVM volume stripe read/write                      |
-| Data encryption                           | Unplaned      |           | Data encryption                                   |
+| Features                  | Status    | Release | Description                                       |
+| ------------------------- | --------- | ------- | ------------------------------------------------- |
+| CSI for LVM volume        | Completed | v0.3.2  | Provision volume with lvm                         |
+| CSI for disk volume       | Completed | v0.3.2  | Provision volume with disk                        |
+| HA LVM Volume             | Completed | v0.3.2  | Volume with HA                                    |
+| LVM Volume expansion      | Completed | v0.3.2  | Expand LVM volume capacity online                 |
+| LVM Volume conversion     | Completed | v0.3.2  | Convert a non-HA LVM volume to the HA             |
+| LVM Volume migration      | Completed | v0.4.0  | Migrate a LVM volume replica to a different node  |
+| Volume Group              | Completed | v0.3.2  | Support volume group allocation                   |
+| LVM HA Volume Recovery    | Planed    |         | Recover the LVM HA volume in problem              |
+| HwameiStor Operator       | Planed    |         | Operator for HwameiStor install, maintain, etc.   |
+| Observability             | Planed    |         | Observability, such as metrics, logs, etc.        |
+| Failover                  | Planed    |         | Fail over the pod with HwameiStor volume          |
+| IO throttling             | Planed    |         | Limit IO bandwith to access the HwameiStor volume |
+| Disk health check         | Planed    |         | Disk fault prediction, status reporting           |
+| Disk replacement          | Planed    |         | Replace disk which fails or will fail soon        |
+| LVM volume auto-expansion | Planed    |         | Expand LVM volume automatically                   |
+| LVM volume snapshot       | Planed    |         | Snapshot of LVM volume                            |
+| LVM volume clone          | Unplaned  |         | Clone LVM volume                                  |
+| LVM volume thin provision | Unplaned  |         | LVM volume thin provision                         |
+| LVM volume stripe mode    | Unplaned  |         | LVM volume stripe read/write                      |
+| Data encryption           | Unplaned  |         | Data encryption                                   |
 
 ## Community
 
@@ -140,7 +141,7 @@ Welcome to follow our roadmap discussions [here](https://github.com/hwameistor/h
 
 ## Requests and Issues
 
-Please feel free to raise requests on chats or by a PR.  
+Please feel free to raise requests on chats or by a PR.
 
 We will try our best to respond to every issue reported on community channels,
 but the issues reported [here](https://github.com/hwameistor/hwameistor/discussions)
