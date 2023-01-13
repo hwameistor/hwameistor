@@ -5,9 +5,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
 	log "github.com/sirupsen/logrus"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
 )
 
 const (

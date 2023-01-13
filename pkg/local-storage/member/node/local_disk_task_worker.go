@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	diskmonitor "github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
 	log "github.com/sirupsen/logrus"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	diskmonitor "github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
 )
 
 func (m *manager) startLocalDiskTaskWorker(stopCh <-chan struct{}) {

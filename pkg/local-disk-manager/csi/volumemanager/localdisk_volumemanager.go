@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/diskmanager"
-
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/builder/localdiskvolume"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/diskmanager"
 	volumectr "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskvolume"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/kubernetes"
-	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/api/errors"
 )
 
 type DiskType = string

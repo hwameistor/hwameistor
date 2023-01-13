@@ -5,24 +5,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/smart"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	"os"
 	"path"
 	"runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
-
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/controller"
-	csidriver "github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/driver"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk"
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/rest"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/log/zap"
@@ -32,10 +19,23 @@ import (
 	"github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/controller"
+	csidriver "github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/driver"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/smart"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 )
 
 // Change below variables to serve metrics on different host or port.

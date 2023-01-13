@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/utils/datacopy"
-
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils/datacopy"
 )
 
 func (m *manager) startRcloneVolumeMountTaskWorker(stopCh <-chan struct{}) {

@@ -4,8 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 func TestNewBuilder(t *testing.T) {
@@ -89,9 +90,9 @@ func TestSetupAttachNode(t *testing.T) {
 
 func TestBuild(t *testing.T) {
 	tests := []struct {
-		name string
+		name    string
 		builder *Builder
-		want *v1alpha1.LocalDiskNode
+		want    *v1alpha1.LocalDiskNode
 	}{
 		{
 			builder: &Builder{

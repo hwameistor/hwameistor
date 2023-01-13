@@ -3,8 +3,8 @@ package localdiskclaim
 import (
 	"context"
 	"fmt"
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	diskHandler "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -13,7 +13,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
+
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	diskHandler "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
 )
 
 type Handler struct {

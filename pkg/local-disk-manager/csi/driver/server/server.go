@@ -3,15 +3,14 @@ package server
 import (
 	"context"
 	"encoding/json"
-
-	"github.com/container-storage-interface/spec/lib/go/csi"
-	server2 "github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/server"
-
 	"sync"
 
+	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/kubernetes-csi/csi-lib-utils/protosanitizer"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+
+	server2 "github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/server"
 )
 
 func NewNonBlockingGRPCServer() *nonBlockingGRPCServer {

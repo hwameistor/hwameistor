@@ -5,13 +5,13 @@ import (
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+	coorv1 "k8s.io/api/coordination/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	log "github.com/sirupsen/logrus"
-	coorv1 "k8s.io/api/coordination/v1"
 )
 
 const (

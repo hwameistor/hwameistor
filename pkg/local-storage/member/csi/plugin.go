@@ -3,13 +3,13 @@ package csi
 import (
 	"sync"
 
-	"github.com/hwameistor/hwameistor/pkg/exechelper"
-	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
-
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
-	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
+	"github.com/hwameistor/hwameistor/pkg/exechelper"
+	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
 )
 
 const (

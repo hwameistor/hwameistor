@@ -2,9 +2,9 @@ package E2eTest
 
 import (
 	"context"
-	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
-	"github.com/hwameistor/hwameistor/test/e2e/framework"
-	"github.com/hwameistor/hwameistor/test/e2e/utils"
+	"strconv"
+	"time"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
@@ -16,9 +16,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
-	"time"
+
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
+	"github.com/hwameistor/hwameistor/test/e2e/framework"
+	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
 var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("stress-test"), func() {
@@ -190,7 +191,7 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("stress-test"), func()
 			logrus.Infof("Waiting for the PVC to be bound")
 			for pvcNumbers := 1; pvcNumbers <= utils.NumberOfBulDeleteTests; pvcNumbers++ {
 				pvc := &apiv1.PersistentVolumeClaim{}
-				pvcKey := k8sclient.ObjectKey{
+				pvcKey := ctrlclient.ObjectKey{
 					Name:      "pvc-lvm-ha-" + strconv.Itoa(pvcNumbers),
 					Namespace: "default",
 				}
@@ -216,7 +217,7 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("stress-test"), func()
 			logrus.Infof("waiting for the deployment to be ready ")
 			for DeploymentNumbers := 1; DeploymentNumbers <= utils.NumberOfBulDeleteTests; DeploymentNumbers++ {
 				deployment := &appsv1.Deployment{}
-				deployKey := k8sclient.ObjectKey{
+				deployKey := ctrlclient.ObjectKey{
 					Name:      utils.HaDeploymentName + strconv.Itoa(DeploymentNumbers),
 					Namespace: "default",
 				}
@@ -247,7 +248,7 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("stress-test"), func()
 			logrus.Printf("deleting test Deployment")
 			for DeploymentNumbers := 1; DeploymentNumbers <= utils.NumberOfBulDeleteTests; DeploymentNumbers++ {
 				deployment := &appsv1.Deployment{}
-				deployKey := k8sclient.ObjectKey{
+				deployKey := ctrlclient.ObjectKey{
 					Name:      utils.HaDeploymentName + strconv.Itoa(DeploymentNumbers),
 					Namespace: "default",
 				}

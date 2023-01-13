@@ -2,13 +2,15 @@ package kubernetes
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var mgr manager.Manager

@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
+
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 type localVolumeReplicaManager struct {

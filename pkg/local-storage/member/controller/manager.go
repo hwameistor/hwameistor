@@ -4,6 +4,13 @@ import (
 	"context"
 	"sync"
 
+	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/cache"
+	runtimecache "sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
@@ -11,13 +18,6 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/controller/volumegroup"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	datacopyutil "github.com/hwameistor/hwameistor/pkg/local-storage/utils/datacopy"
-
-	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/cache"
-	runtimecache "sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // maxRetries is the number of times a task will be retried before it is dropped out of the queue.

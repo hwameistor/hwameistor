@@ -2,10 +2,12 @@ package scheduler
 
 import (
 	"fmt"
-	"github.com/golang/mock/gomock"
-	"github.com/hwameistor/hwameistor/pkg/scheduler/genscheduler"
-	corev1 "k8s.io/api/core/v1"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	corev1 "k8s.io/api/core/v1"
+
+	"github.com/hwameistor/hwameistor/pkg/scheduler/genscheduler"
 )
 
 func TestDiskVolumeScheduler_CSIDriverName(t *testing.T) {

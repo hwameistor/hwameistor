@@ -1,17 +1,18 @@
 package member
 
 import (
+	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	localapis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	localctrl "github.com/hwameistor/hwameistor/pkg/local-storage/member/controller"
 	localcsi "github.com/hwameistor/hwameistor/pkg/local-storage/member/csi"
 	localnode "github.com/hwameistor/hwameistor/pkg/local-storage/member/node"
 	localrest "github.com/hwameistor/hwameistor/pkg/local-storage/member/rest"
-	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/record"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Node is a member of the cluster.

@@ -2,12 +2,14 @@ package smart
 
 import (
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
-	log "github.com/sirupsen/logrus"
-	"github.com/tidwall/gjson"
 	"path"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/tidwall/gjson"
+
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 )
 
 const (

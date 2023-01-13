@@ -2,11 +2,12 @@ package utils
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"reflect"
 	"runtime"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // converts a raw key value pair string into a map of key value pairs

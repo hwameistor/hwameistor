@@ -2,13 +2,10 @@ package localdiskclaim
 
 import (
 	"context"
-	v1 "k8s.io/api/core/v1"
 	"time"
 
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskclaim"
-
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -17,6 +14,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskclaim"
 )
 
 const (

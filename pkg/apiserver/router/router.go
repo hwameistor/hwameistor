@@ -5,17 +5,17 @@ import (
 	"os"
 	"time"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"k8s.io/client-go/kubernetes"
-
 	"github.com/gin-gonic/gin"
-	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
-	"github.com/hwameistor/hwameistor/pkg/apiserver/controller"
-	"github.com/hwameistor/hwameistor/pkg/apiserver/manager"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	mgrpkg "sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
+	"github.com/hwameistor/hwameistor/pkg/apiserver/controller"
+	"github.com/hwameistor/hwameistor/pkg/apiserver/manager"
 )
 
 var (

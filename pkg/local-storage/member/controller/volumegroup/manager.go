@@ -6,11 +6,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
-
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
-
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -19,6 +14,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 	runtimecache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 )
 
 const (

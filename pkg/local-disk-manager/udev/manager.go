@@ -2,11 +2,13 @@ package udev
 
 import (
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
+	"strings"
+
 	"github.com/pilebones/go-udev/crawler"
 	"github.com/pilebones/go-udev/netlink"
 	log "github.com/sirupsen/logrus"
-	"strings"
+
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
 )
 
 // DiskManager monitor disk by udev

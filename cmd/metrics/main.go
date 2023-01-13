@@ -7,8 +7,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/hwameistor/hwameistor/pkg/metrics"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/hwameistor/hwameistor/pkg/metrics"
 )
 
 func setupLogging(enableDebug bool) {

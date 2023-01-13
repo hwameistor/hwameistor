@@ -6,10 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -18,6 +14,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 var _ csi.ControllerServer = (*plugin)(nil)

@@ -1,10 +1,11 @@
 package lsblk
 
 import (
+	log "github.com/sirupsen/logrus"
+
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/udev"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/sys"
-	log "github.com/sirupsen/logrus"
 )
 
 type AttributeParser struct {

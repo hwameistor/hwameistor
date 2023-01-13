@@ -1,6 +1,8 @@
 package framework
 
 import (
+	"time"
+
 	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -9,7 +11,6 @@ import (
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	"time"
 )
 
 // Framework supports common operations used by e2e tests; it will keep a client for you.

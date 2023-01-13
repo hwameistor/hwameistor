@@ -1,6 +1,7 @@
 package manager
 
 import (
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -8,7 +9,6 @@ import (
 
 	hwameistorctr "github.com/hwameistor/hwameistor/pkg/apiserver/manager/hwameistor"
 	utils "github.com/hwameistor/hwameistor/pkg/apiserver/util"
-	log "github.com/sirupsen/logrus"
 )
 
 type ServerManager struct {

@@ -3,31 +3,29 @@ package utils
 import (
 	"bytes"
 	"context"
-
-	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"github.com/sirupsen/logrus"
-	appsv1 "k8s.io/api/apps/v1"
-	b1 "k8s.io/api/batch/v1"
-	k8serror "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/wait"
-
 	"os/exec"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/hwameistor/hwameistor/test/e2e/framework"
-	apiv1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
+	"github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
+	b1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/test/e2e/framework"
 )
 
 func Int32Ptr(i int32) *int32 { return &i }
@@ -42,11 +40,11 @@ func RunInLinux(cmd string) string {
 	return string(result)
 }
 
-func nodeList() *apiv1.NodeList {
+func nodeList() *corev1.NodeList {
 	logrus.Printf("get node list")
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
-	nodelist := &apiv1.NodeList{}
+	nodelist := &corev1.NodeList{}
 	err := client.List(context.TODO(), nodelist)
 	if err != nil {
 		logrus.Printf("%+v ", err)
@@ -59,14 +57,14 @@ func addLabels() {
 	logrus.Printf("add node labels")
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
-	nodelist := &apiv1.NodeList{}
+	nodelist := &corev1.NodeList{}
 	err := client.List(context.TODO(), nodelist)
 	if err != nil {
 		f.ExpectNoError(err)
 		logrus.Printf("%+v ", err)
 	}
 	for _, nodes := range nodelist.Items {
-		node := &apiv1.Node{}
+		node := &corev1.Node{}
 		nodeKey := k8sclient.ObjectKey{
 			Name: nodes.Name,
 		}
@@ -557,7 +555,7 @@ func DeleteAllPVC(ctx context.Context) error {
 	logrus.Printf("delete All PVC")
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
-	pvcList := &apiv1.PersistentVolumeClaimList{}
+	pvcList := &corev1.PersistentVolumeClaimList{}
 	err := client.List(ctx, pvcList)
 	if err != nil {
 		logrus.Error("get pvc list error ", err)
@@ -651,7 +649,7 @@ func ExecInPod(config *rest.Config, namespace, podName, command, containerName s
 		Name(podName).
 		Namespace(namespace).SubResource("exec").Param("container", containerName)
 	req.VersionedParams(
-		&v1.PodExecOptions{
+		&corev1.PodExecOptions{
 			Command: cmd,
 			Stdin:   false,
 			Stdout:  true,

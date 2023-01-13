@@ -3,14 +3,14 @@ package csi
 import (
 	"fmt"
 
-	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 var _ csi.NodeServer = (*plugin)(nil)

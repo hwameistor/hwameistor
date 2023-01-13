@@ -1,9 +1,10 @@
 package csi
 
 import (
+	"testing"
+
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/golang/mock/gomock"
-	"testing"
 )
 
 func Test_server_GracefulStop(t *testing.T) {

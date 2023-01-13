@@ -2,9 +2,9 @@ package E2eTest
 
 import (
 	"context"
-	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
-	"github.com/hwameistor/hwameistor/test/e2e/framework"
-	"github.com/hwameistor/hwameistor/test/e2e/utils"
+	"strconv"
+	"time"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
@@ -16,9 +16,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
-	"time"
+
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
+	"github.com/hwameistor/hwameistor/test/e2e/framework"
+	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
 var _ = ginkgo.Describe("Deduplication test ", ginkgo.Label("stress-test"), func() {
@@ -182,7 +183,7 @@ var _ = ginkgo.Describe("Deduplication test ", ginkgo.Label("stress-test"), func
 			ginkgo.It(strconv.Itoa(testNumbers)+"th PVC STATUS should be Bound", func() {
 
 				pvc := &apiv1.PersistentVolumeClaim{}
-				pvcKey := k8sclient.ObjectKey{
+				pvcKey := ctrlclient.ObjectKey{
 					Name:      "pvc-lvm-ha",
 					Namespace: "default",
 				}
@@ -206,7 +207,7 @@ var _ = ginkgo.Describe("Deduplication test ", ginkgo.Label("stress-test"), func
 			})
 			ginkgo.It(strconv.Itoa(testNumbers)+"th deploy STATUS should be AVAILABLE", func() {
 				deployment := &appsv1.Deployment{}
-				deployKey := k8sclient.ObjectKey{
+				deployKey := ctrlclient.ObjectKey{
 					Name:      utils.HaDeploymentName,
 					Namespace: "default",
 				}
@@ -231,7 +232,7 @@ var _ = ginkgo.Describe("Deduplication test ", ginkgo.Label("stress-test"), func
 			ginkgo.It(strconv.Itoa(testNumbers)+"th Delete test Deployment", func() {
 				//delete deploy
 				deployment := &appsv1.Deployment{}
-				deployKey := k8sclient.ObjectKey{
+				deployKey := ctrlclient.ObjectKey{
 					Name:      utils.HaDeploymentName,
 					Namespace: "default",
 				}

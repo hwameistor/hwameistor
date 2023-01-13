@@ -4,13 +4,14 @@ import (
 	"reflect"
 	"testing"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestNewBuilder(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		name string
 		want *Builder
 	}{
@@ -33,7 +34,7 @@ func TestWithName(t *testing.T) {
 	type args struct {
 		diskName string
 	}
-	tests := []struct{
+	tests := []struct {
 		name string
 		args args
 		want *Builder
@@ -81,15 +82,15 @@ func TestSetupAttribute(t *testing.T) {
 			want: &Builder{
 				disk: &v1alpha1.LocalDisk{
 					Spec: v1alpha1.LocalDiskSpec{
-						Capacity: capacity,
+						Capacity:   capacity,
 						DevicePath: devPath,
 						DiskAttributes: v1alpha1.DiskAttributes{
-							Type: diskType,
-							Vendor: vendor,
-							ModelName: modelName,
-							Protocol: protocol,
+							Type:         diskType,
+							Vendor:       vendor,
+							ModelName:    modelName,
+							Protocol:     protocol,
 							SerialNumber: serialNumber,
-							DevType: devType,
+							DevType:      devType,
 						},
 					},
 				},
@@ -99,16 +100,16 @@ func TestSetupAttribute(t *testing.T) {
 
 	builder := NewBuilder()
 	attr := manager.Attribute{
-		Capacity: capacity,
-		DevName: devPath,
+		Capacity:   capacity,
+		DevName:    devPath,
 		DriverType: diskType,
-		Vendor: vendor,
-		Model: modelName,
-		Bus: protocol,
-		Serial: serialNumber,
-		DevType: devType,
+		Vendor:     vendor,
+		Model:      modelName,
+		Bus:        protocol,
+		Serial:     serialNumber,
+		DevType:    devType,
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := builder.SetupAttribute(attr); !reflect.DeepEqual(got, tt.want) {
@@ -270,9 +271,9 @@ func TestSetupPartitionInfo(t *testing.T) {
 
 func TestGenerateStatus(t *testing.T) {
 	tests := []struct {
-		name string
+		name    string
 		builder *Builder
-		want v1alpha1.LocalDiskStatus
+		want    v1alpha1.LocalDiskStatus
 	}{
 		{
 			builder: &Builder{
