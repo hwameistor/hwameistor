@@ -205,6 +205,16 @@ func GetNodeName() string {
 	return nodeName
 }
 
+func GetPodName() string {
+	podName, ok := os.LookupEnv("POD_NAME")
+	if !ok {
+		log.Errorf("Failed to get POD_NAME from ENV")
+		return ""
+	}
+
+	return podName
+}
+
 // GetNamespace get Namespace from env, else it returns error
 func GetNamespace() string {
 	ns, ok := os.LookupEnv("POD_NAMESPACE")

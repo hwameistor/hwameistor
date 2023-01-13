@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/smart"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	"os"
 	"path"
 	"runtime"
@@ -19,8 +20,6 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/controller"
 	csidriver "github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/driver"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk"
-	"github.com/operator-framework/operator-sdk/pkg/leader"
-
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
@@ -131,17 +130,18 @@ func main() {
 }
 
 func startClusterController(ctx context.Context, mgr manager.Manager) {
-	// Become the leader before proceeding
-	err := leader.Become(ctx, "local-disk-manager-lock")
-	if err != nil {
-		log.Error(err, "Failed to get lock")
-		os.Exit(1)
+	runCluster := func(c context.Context) {
+		log.Info("Starting the Cluster Cmd")
+		// Start the Cmd
+		if err := mgr.Start(ctx); err != nil {
+			log.Error(err, "Failed to start Cluster Cmd")
+			os.Exit(1)
+		}
 	}
 
-	log.Info("Starting the Cluster Cmd.")
-	// Start the Cmd
-	if err := mgr.Start(ctx); err != nil {
-		log.Error(err, "Failed to start Cluster Cmd")
+	// Acquired leader lease before proceeding
+	if err := utils.RunWithLease(utils.GetNamespace(), utils.GetPodName(), fmt.Sprintf("local-disk-manager-master"), runCluster); err != nil {
+		log.Error(err, "Failed to init cluster lease election")
 		os.Exit(1)
 	}
 }
