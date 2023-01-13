@@ -1,13 +1,13 @@
 package main
 
 import (
-	routers "github.com/hwameistor/hwameistor/pkg/apiserver/router"
-
 	"github.com/gin-gonic/gin"
-	"github.com/hwameistor/hwameistor/pkg/apiserver/docs"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+
+	"github.com/hwameistor/hwameistor/pkg/apiserver/docs"
+	routers "github.com/hwameistor/hwameistor/pkg/apiserver/router"
 )
 
 func main() {

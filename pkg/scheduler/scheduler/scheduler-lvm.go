@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"strconv"
 
-	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -15,6 +12,9 @@ import (
 	framework "k8s.io/kubernetes/pkg/scheduler/framework"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 type LVMVolumeScheduler struct {

@@ -8,12 +8,13 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/hwameistor/hwameistor/pkg/evictor"
 	"github.com/kubernetes-csi/csi-lib-utils/leaderelection"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+
+	"github.com/hwameistor/hwameistor/pkg/evictor"
 )
 
 const (

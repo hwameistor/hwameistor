@@ -2,12 +2,14 @@ package metrics
 
 import (
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/smart"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/smart/storage"
-	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
 	"strings"
 	"sync"
+
+	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
+
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/smart"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/smart/storage"
 )
 
 var _ prometheus.Collector = &SMARTCollector{}

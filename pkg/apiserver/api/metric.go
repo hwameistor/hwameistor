@@ -1,8 +1,9 @@
 package api
 
 import (
-	apiv1alpha1 "github.com/hwameistor/hwameistor-operator/api/v1alpha1"
 	"time"
+
+	apiv1alpha1 "github.com/hwameistor/hwameistor-operator/api/v1alpha1"
 )
 
 type BaseMetric struct {

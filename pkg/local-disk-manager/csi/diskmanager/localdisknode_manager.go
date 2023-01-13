@@ -5,17 +5,14 @@ import (
 	"reflect"
 	"sync"
 
-	localdisk2 "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
-
-	"k8s.io/apimachinery/pkg/labels"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/labels"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/builder/localdisknode"
+	localdisk2 "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/kubernetes"
 )
 

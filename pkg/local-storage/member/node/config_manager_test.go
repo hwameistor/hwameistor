@@ -4,11 +4,12 @@ import (
 	"reflect"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/configer"
-	log "github.com/sirupsen/logrus"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func TestNewConfigManager(t *testing.T) {

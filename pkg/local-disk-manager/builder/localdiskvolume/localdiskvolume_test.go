@@ -4,8 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 func TestNewBuilder(t *testing.T) {
@@ -82,7 +83,7 @@ func TestWithName(t *testing.T) {
 }
 
 func TestWithFinalizer(t *testing.T) {
-	finalizers := []string {
+	finalizers := []string{
 		"testFinalizer",
 	}
 
@@ -348,9 +349,9 @@ func TestSetupStatus(t *testing.T) {
 
 func TestAssertVolumeNotNil(t *testing.T) {
 	tests := []struct {
-		name string
+		name    string
 		builder Builder
-		want error
+		want    error
 	}{
 		{
 			builder: Builder{

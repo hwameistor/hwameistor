@@ -2,12 +2,14 @@ package lsblk
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
+	log "github.com/sirupsen/logrus"
+
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/udev"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
-	log "github.com/sirupsen/logrus"
-	"strconv"
-	"strings"
 )
 
 const (

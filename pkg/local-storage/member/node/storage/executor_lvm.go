@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/exechelper"
 	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // consts

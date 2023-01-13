@@ -3,16 +3,18 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	mykube "github.com/hwameistor/hwameistor/pkg/utils/kubernetes"
-	"github.com/hwameistor/hwameistor/pkg/webhook"
+	"os"
+	"strings"
+	"sync"
+
 	"github.com/sirupsen/logrus"
 	admission "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"os"
-	"strings"
-	"sync"
+
+	mykube "github.com/hwameistor/hwameistor/pkg/utils/kubernetes"
+	"github.com/hwameistor/hwameistor/pkg/webhook"
 )
 
 var (

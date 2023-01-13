@@ -2,8 +2,9 @@ package csi
 
 import (
 	"fmt"
-	"github.com/golang/mock/gomock"
 	"testing"
+
+	"github.com/golang/mock/gomock"
 )
 
 func Test_linuxMounter_GetDeviceMountPoints(t *testing.T) {

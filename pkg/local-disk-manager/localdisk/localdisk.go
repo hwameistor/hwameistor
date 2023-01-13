@@ -3,15 +3,15 @@ package localdisk
 import (
 	"context"
 
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/builder/localdisk"
-
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	crmanager "sigs.k8s.io/controller-runtime/pkg/manager"
+
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/builder/localdisk"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 )
 
 // Controller The smallest unit to be processed here should be the disk.

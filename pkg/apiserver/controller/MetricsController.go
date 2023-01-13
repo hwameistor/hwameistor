@@ -2,10 +2,11 @@ package controller
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/hwameistor/hwameistor/pkg/apiserver/manager"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/hwameistor/hwameistor/pkg/apiserver/manager"
 )
 
 type IMetricsController interface {

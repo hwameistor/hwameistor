@@ -10,18 +10,18 @@ import (
 	"strings"
 	"time"
 
-	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/controller"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/member"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/controller"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/member"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 )
 
 const (

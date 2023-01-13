@@ -2,16 +2,16 @@ package scheduler
 
 import (
 	"fmt"
-	"k8s.io/kubernetes/pkg/scheduler/framework"
 	"strings"
 
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/volumemanager"
-
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/diskmanager"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/driver/identity"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	storagev1lister "k8s.io/client-go/listers/storage/v1"
+	"k8s.io/kubernetes/pkg/scheduler/framework"
+
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/diskmanager"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/driver/identity"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/volumemanager"
 )
 
 // diskVolumeSchedulerPlugin implement the Scheduler interface
@@ -32,8 +32,8 @@ func NewDiskVolumeSchedulerPlugin(scLister storagev1lister.StorageClassLister) *
 
 // Filter whether the node meets the storage requirements of pod runtime.
 // The following two types of situations need to be met at the same time:
-//1. If the pod uses a created volume, we need to ensure that the volume is located at the scheduled node.
-//2. If the pod uses a pending volume, we need to ensure that the scheduled node can meet the requirements of the volume.
+// 1. If the pod uses a created volume, we need to ensure that the volume is located at the scheduled node.
+// 2. If the pod uses a pending volume, we need to ensure that the scheduled node can meet the requirements of the volume.
 func (s *diskVolumeSchedulerPlugin) Filter(boundVolumes []string, pendingVolumes []*v1.PersistentVolumeClaim, node *v1.Node) (bool, error) {
 	logCtx := log.Fields{
 		"boundVolumes":   strings.Join(boundVolumes, ","),

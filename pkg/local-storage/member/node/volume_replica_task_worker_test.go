@@ -4,13 +4,14 @@ import (
 	"context"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
-	log "github.com/sirupsen/logrus"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func Test_manager_processVolumeReplica(t *testing.T) {

@@ -5,16 +5,17 @@ import (
 	"os"
 	"path"
 
-	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
-
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 )
 
+// Server - interface of grpc server which is for k8s communication
+//
 //go:generate mockgen -source=grpc_server.go -destination=../../member/csi/grpc_server_mock.go  -package=csi
-//Server - interface of grpc server which is for k8s communication
 type Server interface {
 	Init(endpoint string)
 	Run(ids csi.IdentityServer, cs csi.ControllerServer, ns csi.NodeServer)
@@ -31,7 +32,7 @@ type server struct {
 
 var _ Server = (*server)(nil)
 
-//NewGRPCServer - create a grpc server instance
+// NewGRPCServer - create a grpc server instance
 func NewGRPCServer(logger *log.Entry) Server {
 	return &server{
 		logger: logger,

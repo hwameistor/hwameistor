@@ -9,11 +9,15 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/utils/datacopy"
-
+	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	runtimecache "sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
@@ -21,14 +25,8 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/csi"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
-	log "github.com/sirupsen/logrus"
-
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/cache"
-	runtimecache "sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils/datacopy"
 )
 
 // maxRetries is the number of times a task will be retried before it is dropped out of the queue.

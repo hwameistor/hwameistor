@@ -4,9 +4,10 @@ import (
 	"reflect"
 	"testing"
 
-	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
 )
 
 func TestNew(t *testing.T) {

@@ -1,9 +1,10 @@
 package filter
 
 import (
+	v1 "k8s.io/api/core/v1"
+
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/sys"
-	v1 "k8s.io/api/core/v1"
 )
 
 type Bool int

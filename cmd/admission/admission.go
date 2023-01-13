@@ -2,15 +2,17 @@ package main
 
 import (
 	"fmt"
-	"github.com/hwameistor/hwameistor/cmd/admission/app"
-	"github.com/hwameistor/hwameistor/pkg/webhook"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/pflag"
 	"net/http"
 	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
+
+	"github.com/hwameistor/hwameistor/cmd/admission/app"
+	"github.com/hwameistor/hwameistor/pkg/webhook"
 )
 
 func main() {

@@ -5,9 +5,6 @@ import (
 	"os"
 	"time"
 
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	lvmscheduler "github.com/hwameistor/hwameistor/pkg/local-storage/member/controller/scheduler"
-
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	corev1lister "k8s.io/client-go/listers/core/v1"
@@ -17,6 +14,9 @@ import (
 	framework "k8s.io/kubernetes/pkg/scheduler/framework"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	lvmscheduler "github.com/hwameistor/hwameistor/pkg/local-storage/member/controller/scheduler"
 )
 
 // VolumeScheduler is to scheduler hwameistor volume

@@ -2,13 +2,15 @@ package disk
 
 import (
 	"context"
+
+	log "github.com/sirupsen/logrus"
+	crmanager "sigs.k8s.io/controller-runtime/pkg/manager"
+
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/localdisk"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/lsblk"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/smart"
 	_ "github.com/hwameistor/hwameistor/pkg/local-disk-manager/udev"
-	log "github.com/sirupsen/logrus"
-	crmanager "sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 // Controller

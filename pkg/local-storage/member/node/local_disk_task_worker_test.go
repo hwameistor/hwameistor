@@ -4,12 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
 )
 
 func Test_manager_processLocalDisk(t *testing.T) {
