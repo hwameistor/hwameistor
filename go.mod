@@ -3,7 +3,7 @@ module github.com/hwameistor/hwameistor
 go 1.18
 
 require (
-	github.com/hwameistor/hwameistor-operator v0.0.0-20221222073603-f4c97e21765d
+	github.com/hwameistor/hwameistor-operator v0.0.0-20230109142824-c566f1a5b4f2
 	github.com/operator-framework/operator-sdk v0.18.2
 	github.com/pilebones/go-udev v0.9.0
 	github.com/sirupsen/logrus v1.9.0

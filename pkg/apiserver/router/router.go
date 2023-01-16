@@ -72,7 +72,7 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 
 	v1.GET("/cluster/nodes/:nodeName/disks/:diskName", nodeController.GetStorageNodeDisk)
 
-	v1.POST("/cluster/nodes/:nodeName/disks/:diskName", nodeController.UpdateStorageNodeDisk)
+	v1.POST("/cluster/nodes/:nodeName/disks/:devicePath", nodeController.UpdateStorageNodeDisk)
 
 	v1.GET("/cluster/nodes/:nodeName/pools", nodeController.StorageNodePoolsList)
 	v1.GET("/cluster/nodes/:nodeName/pools/:poolName", nodeController.StorageNodePoolGet)

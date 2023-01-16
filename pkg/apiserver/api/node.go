@@ -24,6 +24,8 @@ type LocalDisksItemsList struct {
 type LocalDiskListByNode struct {
 	// nodeName 节点名称
 	NodeName string `json:"nodeName,omitempty"`
+	// diskPathShort 磁盘路径简写
+	DiskPathShort string `json:"diskPathShort,omitempty"`
 	// localDisks 节点磁盘列表
 	LocalDisks []*LocalDiskInfo `json:"items"`
 	// page 信息

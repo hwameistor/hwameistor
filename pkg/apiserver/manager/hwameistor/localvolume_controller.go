@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/types"
 	"math"
 	"strings"
 
@@ -445,7 +446,23 @@ func (lvController *LocalVolumeController) getLVResourceYaml(lv *apisv1alpha1.Lo
 func (lvController *LocalVolumeController) CreateVolumeMigrate(volName, srcNode, selectedNode string, abort bool) (*hwameistorapi.VolumeMigrateRspBody, error) {
 
 	lvmName := fmt.Sprintf("migrate-%s", volName)
-	lvm := &apisv1alpha1.LocalVolumeMigrate{
+
+	lvm := &apisv1alpha1.LocalVolumeMigrate{}
+	if err := lvController.Client.Get(context.TODO(), client.ObjectKey{Name: lvmName}, lvm); err == nil {
+		return nil, errors.NewBadRequest("LocalVolume has already exists lvm task, try it later")
+	}
+
+	lv := &apisv1alpha1.LocalVolume{}
+	if err := lvController.Client.Get(context.Background(), types.NamespacedName{Name: volName}, lv); err != nil {
+		log.WithField("localvolume", lv.Name).WithError(err).Error("Failed to submit localvolume")
+		return nil, err
+	}
+
+	if lv.Status.PublishedNodeName != "" {
+		return nil, errors.NewBadRequest("LocalVolume is still in use by source node, try it later")
+	}
+
+	lvm = &apisv1alpha1.LocalVolumeMigrate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: lvmName,
 		},
@@ -557,9 +574,9 @@ func (lvController *LocalVolumeController) GetTargetNodesByManualTargetNodeType(
 }
 
 // GetVolumeConvert
-func (lvController *LocalVolumeController) GetVolumeConvert(lvname string) (hwameistorapi.VolumeConvertOperation, error) {
+func (lvController *LocalVolumeController) GetVolumeConvert(lvname string) (*hwameistorapi.VolumeConvertOperation, error) {
 
-	var vcp hwameistorapi.VolumeConvertOperation
+	var vcp = &hwameistorapi.VolumeConvertOperation{}
 
 	lvcList := apisv1alpha1.LocalVolumeConvertList{}
 	if err := lvController.Client.List(context.Background(), &lvcList, &client.ListOptions{}); err != nil {

@@ -3,6 +3,8 @@ package hwameistor
 import (
 	"context"
 	"fmt"
+	hoapisv1alpha1 "github.com/hwameistor/hwameistor-operator/api/v1alpha1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"strings"
 
 	hwameistorapi "github.com/hwameistor/hwameistor/pkg/apiserver/api"
@@ -39,11 +41,34 @@ func NewSettingController(client client.Client, clientset *kubernetes.Clientset,
 // EnableHighAvailability
 func (settingController *SettingController) EnableHighAvailability() (*hwameistorapi.DrbdEnableSettingRspBody, error) {
 	var RspBody = &hwameistorapi.DrbdEnableSettingRspBody{}
-	var drbdEnableSetting = &hwameistorapi.DrbdEnableSetting{}
-	drbdEnableSetting.Enable = true
-	drbdEnableSetting.State = hwameistorapi.DrbdModuleStatusEnabled
-	drbdEnableSetting.Version = "v0.0.1"
-	RspBody.DrbdEnableSetting = drbdEnableSetting
+	clusterList := &hoapisv1alpha1.ClusterList{}
+	if err := settingController.Client.List(context.TODO(), clusterList); err != nil {
+		if !errors.IsNotFound(err) {
+			log.WithError(err).Error("Failed to list clusterList")
+		} else {
+			log.Info("Not found the clusterList")
+		}
+		return RspBody, err
+	}
+
+	for _, cluster := range clusterList.Items {
+		if cluster.Name == OperatorClusterName {
+			drbdSpec := &hoapisv1alpha1.DRBDSpec{}
+			drbdSpec.Enable = true
+			cluster.Spec.DRBD = drbdSpec
+
+			if err := settingController.Client.Update(context.TODO(), &cluster); err != nil {
+				return RspBody, err
+			}
+			var drbdEnableSetting = &hwameistorapi.DrbdEnableSetting{}
+			drbdEnableSetting.Enable = true
+			drbdEnableSetting.State = hwameistorapi.DrbdModuleStatusEnabled
+			drbdEnableSetting.Version = "v0.0.1"
+			RspBody.DrbdEnableSetting = drbdEnableSetting
+			break
+		}
+	}
+
 	return RspBody, nil
 }
 

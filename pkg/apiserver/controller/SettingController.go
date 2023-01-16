@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
+	hwameistorapi "github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/manager"
 )
 
@@ -35,6 +36,8 @@ func NewSettingController(m *manager.ServerManager) ISettingController {
 // @Failure     500 {object}  api.RspFailBody "失败"
 // @Router      /cluster/drbd [post]
 func (n *SettingController) EnableDRBDSetting(ctx *gin.Context) {
+	var failRsp hwameistorapi.RspFailBody
+
 	//// 获取path中的name
 	//enabledrbd := ctx.Param("enabledrbd")
 
@@ -42,7 +45,9 @@ func (n *SettingController) EnableDRBDSetting(ctx *gin.Context) {
 	err := ctx.ShouldBind(&desrb)
 	if err != nil {
 		fmt.Errorf("Unmarshal err = %v", err)
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = err.Error()
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 	enabledrbd := desrb.Enable
@@ -50,7 +55,6 @@ func (n *SettingController) EnableDRBDSetting(ctx *gin.Context) {
 	if enabledrbd == true {
 		setting, err := n.m.SettingController().EnableHighAvailability()
 		if err != nil {
-			var failRsp api.RspFailBody
 			failRsp.ErrCode = 500
 			failRsp.Desc = "EnableDRBDSetting Failed" + err.Error()
 			ctx.JSON(http.StatusInternalServerError, failRsp)
@@ -69,10 +73,13 @@ func (n *SettingController) EnableDRBDSetting(ctx *gin.Context) {
 // @Success     200 {object}  api.DrbdEnableSetting
 // @Router      /cluster/drbd [get]
 func (n *SettingController) DRBDSettingGet(ctx *gin.Context) {
+	var failRsp hwameistorapi.RspFailBody
 
 	setting, err := n.m.SettingController().GetDRBDSetting()
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
+		failRsp.ErrCode = 500
+		failRsp.Desc = "GetDRBDSetting Failed" + err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
 	}
 

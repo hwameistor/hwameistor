@@ -187,7 +187,7 @@ github.com/grpc-ecosystem/go-grpc-prometheus
 ## explicit; go 1.12
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
-# github.com/hwameistor/hwameistor-operator v0.0.0-20221222073603-f4c97e21765d
+# github.com/hwameistor/hwameistor-operator v0.0.0-20230109142824-c566f1a5b4f2
 ## explicit; go 1.17
 github.com/hwameistor/hwameistor-operator/api/v1alpha1
 # github.com/imdario/mergo v0.3.12

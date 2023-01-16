@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	hwameistorapi "github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -38,10 +39,13 @@ func NewVolumeGroupController(m *manager.ServerManager) IVolumeGroupController {
 // @Success     200 {object} api.VolumeGroupList
 // @Router      /cluster/volumegroups [get]
 func (v *VolumeGroupController) VolumeGroupList(ctx *gin.Context) {
+	var failRsp hwameistorapi.RspFailBody
 
 	vgs, err := v.m.VolumeGroupController().ListVolumeGroup()
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
+		failRsp.ErrCode = 500
+		failRsp.Desc = err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
 	}
 
@@ -58,17 +62,22 @@ func (v *VolumeGroupController) VolumeGroupList(ctx *gin.Context) {
 // @Success     200 {object} api.VolumeGroup
 // @Router      /cluster/volumegroups/{vgName} [get]
 func (v *VolumeGroupController) VolumeGroupGet(ctx *gin.Context) {
+	var failRsp hwameistorapi.RspFailBody
 
 	// 获取path中的vgName
 	vgName := ctx.Param("vgName")
 	if vgName == "" {
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = "vgName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 
 	vg, err := v.m.VolumeGroupController().GetVolumeGroupByVolumeGroupName(vgName)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
+		failRsp.ErrCode = 500
+		failRsp.Desc = err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
 	}
 
