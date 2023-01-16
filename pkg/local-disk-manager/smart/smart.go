@@ -156,7 +156,11 @@ func getSMARTCtlResult(device string, options ...string) (gjson.Result, error) {
 	return result, nil
 }
 
-// Parse smartctl return code
+// resultCodeIsOk parses smartctl return code and wraps it into an error or nil.
+// The return values of smartctl are defined by a bitmask. If all is well with the disk,
+// the return value (exist status) of smartctl is 0 (all bits turned off). If a problem occurs,
+// or an error, potenitial error, or fault is detected, then a non-zero status is returned.
+// More info: https://linux.die.net/man/8/smartctl
 func resultCodeIsOk(SMARTCtlResult int64) error {
 	var (
 		err error
