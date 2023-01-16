@@ -61,6 +61,7 @@ If you just want to deploy LDM separately, refer to the following installation p
 
     ```bash
     kubectl get localdisk
+    NAME               NODEMATCH              CLAIM            PHASE
     10-6-118-11-sda    10-6-118-11                             Unclaimed
     10-6-118-11-sdb    10-6-118-11                             Unclaimed
     ```
