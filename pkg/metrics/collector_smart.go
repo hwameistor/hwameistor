@@ -123,7 +123,7 @@ func (sc *SMARTCollector) setupResult(smartStorage *storage.ConfigMap) {
 	}
 
 	// convert all nodes SMART result
-	for node, _ := range data {
+	for node := range data {
 		nodeResult := &smart.TotalResult{}
 		err = nodeResult.Unmarshal([]byte(data[node]))
 		if err != nil {
