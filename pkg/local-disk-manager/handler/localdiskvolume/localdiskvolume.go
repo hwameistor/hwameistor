@@ -74,7 +74,7 @@ func (v *DiskVolumeHandler) ReconcileMount() (reconcile.Result, error) {
 			continue
 		}
 		v.UpdateMountPointPhase(mountPoint.TargetPath, v1alpha1.MountPointMounted)
-		// once a volume is attached success, the disk will be wiped when volume is delete
+		// once a volume is attached success, the disk will be wiped when volume is deleted
 		v.SetCanWipe(true)
 	}
 
@@ -98,7 +98,7 @@ func (v *DiskVolumeHandler) ReconcileUnmount() (reconcile.Result, error) {
 				continue
 			}
 
-			v.MoveMountPoint(mountPoint.TargetPath)
+			v.RemoveMountPoint(mountPoint.TargetPath)
 		}
 	}
 	if !result.Requeue {
@@ -282,7 +282,7 @@ func (v *DiskVolumeHandler) AppendMountPoint(targetPath string, volCap *csi.Volu
 	v.Ldv.Status.MountPoints = append(v.Ldv.Status.MountPoints, mountPoint)
 }
 
-func (v *DiskVolumeHandler) MoveMountPoint(targetPath string) {
+func (v *DiskVolumeHandler) RemoveMountPoint(targetPath string) {
 	for i, mountPoint := range v.GetMountPoints() {
 		if mountPoint.TargetPath == targetPath {
 			v.Ldv.Status.MountPoints = append(v.Ldv.Status.MountPoints[:i], v.Ldv.Status.MountPoints[i+1:]...)
