@@ -273,7 +273,6 @@ github.com/opencontainers/go-digest
 # github.com/operator-framework/operator-sdk v0.18.2
 ## explicit; go 1.13
 github.com/operator-framework/operator-sdk/pkg/k8sutil
-github.com/operator-framework/operator-sdk/pkg/leader
 github.com/operator-framework/operator-sdk/pkg/log/zap
 github.com/operator-framework/operator-sdk/pkg/metrics
 github.com/operator-framework/operator-sdk/version
@@ -328,6 +327,7 @@ github.com/spf13/pflag
 # github.com/stretchr/testify v1.8.0
 ## explicit; go 1.13
 github.com/stretchr/testify/assert
+github.com/stretchr/testify/require
 # github.com/swaggo/files v1.0.0
 ## explicit; go 1.15
 github.com/swaggo/files
