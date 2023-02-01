@@ -51,7 +51,7 @@ func (mr *MockLocalPoolManagerMockRecorder) ExtendPools(localDisks interface{}) 
 // ExtendPoolsInfo mocks base method.
 func (m *MockLocalPoolManager) ExtendPoolsInfo(localDisks map[string]*v1alpha1.LocalDevice) (map[string]*v1alpha1.LocalPool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExtendPoolsInfo", localDisks)
+	ret := m.ctrl.Call(m, "GetPools", localDisks)
 	ret0, _ := ret[0].(map[string]*v1alpha1.LocalPool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -60,7 +60,7 @@ func (m *MockLocalPoolManager) ExtendPoolsInfo(localDisks map[string]*v1alpha1.L
 // ExtendPoolsInfo indicates an expected call of ExtendPoolsInfo.
 func (mr *MockLocalPoolManagerMockRecorder) ExtendPoolsInfo(localDisks interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendPoolsInfo", reflect.TypeOf((*MockLocalPoolManager)(nil).ExtendPoolsInfo), localDisks)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPools", reflect.TypeOf((*MockLocalPoolManager)(nil).ExtendPoolsInfo), localDisks)
 }
 
 // GetReplicas mocks base method.
@@ -267,7 +267,7 @@ func (mr *MockLocalRegistryMockRecorder) Pools() *gomock.Call {
 // SyncResourcesToNodeCRD mocks base method.
 func (m *MockLocalRegistry) SyncResourcesToNodeCRD(localDisks map[string]*v1alpha1.LocalDevice) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SyncResourcesToNodeCRD", localDisks)
+	ret := m.ctrl.Call(m, "SyncNodeResources", localDisks)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
@@ -275,7 +275,7 @@ func (m *MockLocalRegistry) SyncResourcesToNodeCRD(localDisks map[string]*v1alph
 // SyncResourcesToNodeCRD indicates an expected call of SyncResourcesToNodeCRD.
 func (mr *MockLocalRegistryMockRecorder) SyncResourcesToNodeCRD(localDisks interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncResourcesToNodeCRD", reflect.TypeOf((*MockLocalRegistry)(nil).SyncResourcesToNodeCRD), localDisks)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncNodeResources", reflect.TypeOf((*MockLocalRegistry)(nil).SyncResourcesToNodeCRD), localDisks)
 }
 
 // UpdateNodeForVolumeReplica mocks base method.
@@ -453,7 +453,7 @@ func (mr *MockLocalPoolExecutorMockRecorder) ExtendPools(localDisks interface{})
 // ExtendPoolsInfo mocks base method.
 func (m *MockLocalPoolExecutor) ExtendPoolsInfo(localDisks map[string]*v1alpha1.LocalDevice) (map[string]*v1alpha1.LocalPool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExtendPoolsInfo", localDisks)
+	ret := m.ctrl.Call(m, "GetPools", localDisks)
 	ret0, _ := ret[0].(map[string]*v1alpha1.LocalPool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -462,7 +462,7 @@ func (m *MockLocalPoolExecutor) ExtendPoolsInfo(localDisks map[string]*v1alpha1.
 // ExtendPoolsInfo indicates an expected call of ExtendPoolsInfo.
 func (mr *MockLocalPoolExecutorMockRecorder) ExtendPoolsInfo(localDisks interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendPoolsInfo", reflect.TypeOf((*MockLocalPoolExecutor)(nil).ExtendPoolsInfo), localDisks)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPools", reflect.TypeOf((*MockLocalPoolExecutor)(nil).ExtendPoolsInfo), localDisks)
 }
 
 // GetReplicas mocks base method.
