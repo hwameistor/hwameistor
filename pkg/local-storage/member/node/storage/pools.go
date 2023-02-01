@@ -20,8 +20,8 @@ func (mgr *localPoolManager) ExtendPools(localDisks []*apisv1alpha1.LocalDevice)
 	return mgr.cmdExec.ExtendPools(localDisks)
 }
 
-func (mgr *localPoolManager) ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDevice) (map[string]*apisv1alpha1.LocalPool, error) {
-	return mgr.cmdExec.ExtendPoolsInfo(localDisks)
+func (mgr *localPoolManager) GetPools() (map[string]*apisv1alpha1.LocalPool, error) {
+	return mgr.cmdExec.GetPools()
 }
 
 func (mgr *localPoolManager) GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error) {
