@@ -226,6 +226,7 @@ func (m *manager) setupInformers() {
 		m.logger.WithError(err).Fatal("Failed to get informer for localDisk")
 	}
 	localDiskInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.handleLocalDiskAdd,
 		UpdateFunc: m.handleLocalDiskUpdate,
 	})
 
@@ -408,6 +409,14 @@ func (m *manager) handleLocalDiskClaimAdd(obj interface{}) {
 }
 
 func (m *manager) handleLocalDiskUpdate(oldObj, newObj interface{}) {
+	localDisk, _ := newObj.(*apisv1alpha1.LocalDisk)
+	if localDisk.Spec.NodeName != m.name {
+		return
+	}
+	m.localDiskTaskQueue.Add(localDisk.Namespace + "/" + localDisk.Name)
+}
+
+func (m *manager) handleLocalDiskAdd(newObj interface{}) {
 	localDisk, _ := newObj.(*apisv1alpha1.LocalDisk)
 	if localDisk.Spec.NodeName != m.name {
 		return
