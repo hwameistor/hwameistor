@@ -302,10 +302,18 @@ func ConfigureEnvironment(ctx context.Context) error {
 	logrus.Infof("waiting for drbd ready")
 
 	err = wait.PollImmediate(3*time.Second, 15*time.Minute, func() (done bool, err error) {
-		err1 := client.Get(ctx, drbdKey1, drbd1)
-		err2 := client.Get(ctx, drbdKey2, drbd2)
-
-		if k8serror.IsNotFound(err1) && k8serror.IsNotFound(err2) {
+		err = client.Get(ctx, drbdKey1, drbd1)
+		if err != nil {
+			logrus.Error(err)
+			f.ExpectNoError(err)
+		}
+		err = client.Get(ctx, drbdKey2, drbd2)
+		if err != nil {
+			logrus.Error(err)
+			f.ExpectNoError(err)
+		}
+		if drbd1.Status.Succeeded == int32(1) && drbd2.Status.Succeeded == int32(1) {
+			logrus.Printf("drbd ready")
 			return true, nil
 		}
 		return false, nil

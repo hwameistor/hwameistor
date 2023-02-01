@@ -2,7 +2,10 @@ package E2eTest
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
+	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 	"github.com/onsi/ginkgo/v2"
@@ -63,13 +66,36 @@ var _ = ginkgo.Describe("apiserver check test ", ginkgo.Label("api"), func() {
 				}
 
 			}
+			//time.Sleep(60 * time.Second)
 			resp, err := http.Get("http://" + myUrl + ":31111/apis/hwameistor.io/v1alpha1/cluster/drbd")
 			if err != nil {
 				logrus.Error(err)
 			}
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
-			logrus.Printf(string(body))
+			drbd := &api.DrbdEnableSetting{}
+
+			err = json.Unmarshal(body, drbd)
+			if err != nil {
+				fmt.Println("error:", err)
+				return
+			}
+			logrus.Printf(drbd.Version)
+
+			resp, err = http.Get("http://" + myUrl + ":31111/apis/hwameistor.io/v1alpha1/cluster/nodes/k8s-node1")
+			if err != nil {
+				logrus.Error(err)
+			}
+			defer resp.Body.Close()
+			body, err = ioutil.ReadAll(resp.Body)
+			storageNode := &api.StorageNode{}
+			err = json.Unmarshal(body, storageNode)
+			if err != nil {
+				fmt.Println("error:", err)
+				return
+			}
+			logrus.Printf(storageNode.LocalStorageNode.Name)
+
 		})
 	})
 
