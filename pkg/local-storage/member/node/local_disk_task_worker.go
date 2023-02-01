@@ -2,7 +2,7 @@ package node
 
 import (
 	"context"
-	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	diskmonitor "github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
 )
 
 func (m *manager) startLocalDiskTaskWorker(stopCh <-chan struct{}) {
@@ -64,38 +63,84 @@ func (m *manager) processLocalDisk(localDiskNameSpacedName string) error {
 		return nil
 	}
 
-	switch localDisk.Spec.State {
-	case apisv1alpha1.LocalDiskInactive:
-		logCtx.Debug("LocalDiskInactive, todo ...")
-		// 构建离线的event
-		event := &diskmonitor.DiskEvent{}
-		m.diskEventQueue.Add(event)
-		return nil
-
-	case apisv1alpha1.LocalDiskActive:
-		logCtx.Debug("LocalDiskActive ...")
-		return nil
-
-	case apisv1alpha1.LocalDiskUnknown:
-		logCtx.Debug("LocalDiskUnknown ...")
-		return nil
-
-	default:
-		logCtx.Error("Invalid localDisk state")
-	}
-
+	var err error
 	switch localDisk.Status.State {
 	case apisv1alpha1.LocalDiskAvailable:
-		logCtx.Debug("LocalDiskAvailable ...")
-		return nil
+		err = m.processLocalDiskAvailable(localDisk)
 
 	case apisv1alpha1.LocalDiskBound:
-		logCtx.Debug("LocalDiskBound ...")
-		return nil
+		err = m.processLocalDiskBound(localDisk)
 
 	default:
 		logCtx.Error("Invalid localDisk state")
 	}
 
-	return fmt.Errorf("invalid localDisk state")
+	return err
+}
+
+func (m *manager) processLocalDiskBound(localDisk *apisv1alpha1.LocalDisk) error {
+	logCtx := m.logger.WithFields(log.Fields{"localDisk": localDisk.GetName()})
+	logCtx.Info("Starting process bound localdisk")
+
+	// when disk is bound, means disk has been used in StoragePool, so we need to
+	// make notification if disk state has changed(i.g Active -> InActive -> UnKnown)
+	m.handleDiskStateChange(localDisk)
+
+	err := m.resizeStoragePoolCapacity(localDisk)
+	if err != nil {
+		logCtx.WithError(err).Error("Failed to resize storagepool capacity")
+		return err
+	}
+
+	return nil
+}
+
+func (m *manager) processLocalDiskAvailable(_ *apisv1alpha1.LocalDisk) error {
+	return nil
+}
+
+// resize StoragePool capacity according disk's capacity
+func (m *manager) resizeStoragePoolCapacity(localDisk *apisv1alpha1.LocalDisk) error {
+	// find out if disk has used in StoragePool and compare recorded capacity and current capacity
+	// if capacity has been resized, rebuild localstorage registry and update node resource
+	registeredDisks := m.Storage().Registry().Disks()
+	registererDisk, exist := registeredDisks[localDisk.Spec.DevicePath]
+	if !exist {
+		return nil
+	}
+
+	if registererDisk.CapacityBytes == localDisk.Spec.Capacity {
+		return nil
+	}
+
+	var resizeDisks = map[string]*apisv1alpha1.LocalDevice{
+		localDisk.Spec.DevicePath: {
+			DevPath:       localDisk.Spec.DevicePath,
+			Class:         localDisk.Spec.DiskAttributes.Type,
+			CapacityBytes: localDisk.Spec.Capacity,
+			State:         apisv1alpha1.DiskStateInUse,
+		},
+	}
+	// resize pv first
+	err := m.Storage().PoolManager().ResizePhysicalVolumes(resizeDisks)
+	if err != nil {
+		return err
+	}
+
+	return m.Storage().Registry().SyncResourcesToNodeCRD(resizeDisks)
+}
+
+// reduce disk from StoragePool or do migrate volume which located on the disk according to disk state
+func (m *manager) handleDiskStateChange(localDisk *apisv1alpha1.LocalDisk) {
+	logCtx := m.logger.WithFields(log.Fields{"localDisk": localDisk.GetName()})
+	switch localDisk.Spec.State {
+	case apisv1alpha1.LocalDiskInactive:
+		event := &diskmonitor.DiskEvent{}
+		m.diskEventQueue.Add(event)
+	case apisv1alpha1.LocalDiskActive:
+	case apisv1alpha1.LocalDiskUnknown:
+	default:
+		logCtx.Error("Invalid localDisk state")
+	}
+	return
 }

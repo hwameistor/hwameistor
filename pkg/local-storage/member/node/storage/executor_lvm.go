@@ -379,6 +379,19 @@ func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*apisv1alpha1.LocalDev
 	return extend, nil
 }
 
+func (lvm *lvmExecutor) ResizePhysicalVolumes(localDevices map[string]*apisv1alpha1.LocalDevice) error {
+	lvm.logger.Debugf("Resizing pvsize, device(s): %+v, count: %d\n", localDevices, len(localDevices))
+
+	for _, disk := range localDevices {
+		if err := lvm.pvresize(disk.DevPath); err != nil {
+			lvm.logger.WithError(err).Errorf("Failed to resize pv: %+v", disk.DevPath)
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (lvm *lvmExecutor) ConsistencyCheck(crdReplicas map[string]*apisv1alpha1.LocalVolumeReplica) {
 
 	lvm.logger.Debug("Consistency Checking for LVM volume ...")
@@ -714,6 +727,19 @@ func (lvm *lvmExecutor) lvextend(lvPath string, newCapacityBytes int64, options 
 	res := lvm.cmdExec.RunCommand(params)
 	errcontent := res.ErrBuf.String()
 	if res.ExitCode == 0 || strings.Contains(errcontent, "matches existing size") {
+		return nil
+	}
+	return res.Error
+}
+
+func (lvm *lvmExecutor) pvresize(pv string, options ...string) error {
+	params := exechelper.ExecParams{
+		CmdName: "pvresize",
+		CmdArgs: []string{pv, "-y"},
+	}
+	params.CmdArgs = append(params.CmdArgs, options...)
+	res := lvm.cmdExec.RunCommand(params)
+	if res.ExitCode == 0 {
 		return nil
 	}
 	return res.Error

@@ -28,6 +28,10 @@ func (mgr *localPoolManager) GetReplicas() (map[string]*apisv1alpha1.LocalVolume
 	return mgr.cmdExec.GetReplicas()
 }
 
+func (mgr *localPoolManager) ResizePhysicalVolumes(localDisks map[string]*apisv1alpha1.LocalDevice) error {
+	return mgr.cmdExec.ResizePhysicalVolumes(localDisks)
+}
+
 func newLocalPoolManager(lm *LocalManager) LocalPoolManager {
 	return &localPoolManager{
 		cmdExec: newLVMExecutor(lm),

@@ -26,6 +26,8 @@ type LocalPoolManager interface {
 	ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDevice) (map[string]*apisv1alpha1.LocalPool, error)
 
 	GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error)
+
+	ResizePhysicalVolumes(localDisks map[string]*apisv1alpha1.LocalDevice) error
 }
 
 // LocalVolumeReplicaManager interface
@@ -88,4 +90,5 @@ type LocalPoolExecutor interface {
 	ExtendPools(localDisks []*apisv1alpha1.LocalDevice) (bool, error)
 	ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDevice) (map[string]*apisv1alpha1.LocalPool, error)
 	GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error)
+	ResizePhysicalVolumes(localDisks map[string]*apisv1alpha1.LocalDevice) error
 }
