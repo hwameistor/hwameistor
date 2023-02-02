@@ -151,13 +151,13 @@ func Test_manager_getLocalDisksByDiskRefs(t *testing.T) {
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
 			}
-			got, err := m.getLocalDisksByDiskRefs(tt.args.localDiskNames, tt.args.nameSpace)
+			got, err := m.getLocalDiskListByName(tt.args.localDiskNames, tt.args.nameSpace)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("getLocalDisksByDiskRefs() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("getLocalDiskListByName() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(len(got), len(tt.want)) {
-				t.Errorf("getLocalDisksByDiskRefs() got = %v, want %v", got, tt.want)
+				t.Errorf("getLocalDiskListByName() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -230,13 +230,13 @@ func Test_manager_getLocalDisksByLocalDiskClaim(t *testing.T) {
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
 			}
-			got, err := m.getLocalDisksByLocalDiskClaim(tt.args.ldc)
+			got, err := m.getActiveBoundDisks(tt.args.ldc)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("getLocalDisksByLocalDiskClaim() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("getActiveBoundDisks() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(len(got), len(tt.want)) {
-				t.Errorf("getLocalDisksByLocalDiskClaim() got = %v, want %v", got, tt.want)
+				t.Errorf("getActiveBoundDisks() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -309,13 +309,13 @@ func Test_manager_getLocalDisksMapByLocalDiskClaim(t *testing.T) {
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
 			}
-			got, err := m.getLocalDisksMapByLocalDiskClaim(tt.args.ldc)
+			got, err := m.getActiveBoundDisksByClaim(tt.args.ldc)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("getLocalDisksMapByLocalDiskClaim() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("getActiveBoundDisksByClaim() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(len(got), len(tt.want)) {
-				t.Errorf("getLocalDisksMapByLocalDiskClaim() got = %v, want %v", got, tt.want)
+				t.Errorf("getActiveBoundDisksByClaim() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -388,13 +388,13 @@ func Test_manager_listAllAvailableLocalDisksByLocalClaimDisk(t *testing.T) {
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
 			}
-			got, err := m.listAllAvailableLocalDisksByLocalClaimDisk(tt.args.ldc)
+			got, err := m.listActiveBoundDisksByClaim(tt.args.ldc)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("listAllAvailableLocalDisksByLocalClaimDisk() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("listActiveBoundDisksByClaim() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(len(got), len(tt.want)) {
-				t.Errorf("listAllAvailableLocalDisksByLocalClaimDisk() got = %v, want %v", got, tt.want)
+				t.Errorf("listActiveBoundDisksByClaim() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -546,13 +546,13 @@ func Test_manager_listLocalDisksByLocalDiskClaim(t *testing.T) {
 				diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 				logger:         log.WithField("Module", "NodeManager"),
 			}
-			got, err := m.listLocalDisksByLocalDiskClaim(tt.args.ldc)
+			got, err := m.listBoundDisksByClaim(tt.args.ldc)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("listLocalDisksByLocalDiskClaim() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("listBoundDisksByClaim() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(len(got), len(tt.want)) {
-				t.Errorf("listLocalDisksByLocalDiskClaim() got = %v, want %v", got, tt.want)
+				t.Errorf("listBoundDisksByClaim() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
