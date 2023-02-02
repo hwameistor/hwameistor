@@ -332,7 +332,14 @@ func (lvm *lvmExecutor) TestVolumeReplica(replica *apisv1alpha1.LocalVolumeRepli
 }
 
 func (lvm *lvmExecutor) ExtendPools(localDevices []*apisv1alpha1.LocalDevice) (bool, error) {
-	lvm.logger.Debugf("Extending pool, disk(s): %+v, count: %d\n.", localDevices, len(localDevices))
+	stringDevices := func(devs []*apisv1alpha1.LocalDevice) (ds string) {
+		for _, device := range devs {
+			ds = ds + device.DevPath + ","
+		}
+		return strings.TrimSuffix(ds, ",")
+	}
+
+	lvm.logger.Debugf("Start extending pool disk(s): %s, count: %d\n", stringDevices(localDevices), len(localDevices))
 
 	extend := false
 	existingPVMap, err := lvm.getExistingPVs()
@@ -362,6 +369,8 @@ func (lvm *lvmExecutor) ExtendPools(localDevices []*apisv1alpha1.LocalDevice) (b
 		if len(classifiedDisks) == 0 {
 			continue
 		}
+
+		lvm.logger.Debugf("Adding disk(s): %+v to pool %s", stringDevices(classifiedDisks), poolName)
 		if err := lvm.extendPool(poolName, classifiedDisks); err != nil {
 			lvm.logger.WithError(err).Error("Add available disk failed.")
 			return extend, err
