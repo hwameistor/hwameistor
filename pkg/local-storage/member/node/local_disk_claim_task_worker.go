@@ -40,10 +40,9 @@ func (m *manager) startLocalDiskClaimTaskWorker(stopCh <-chan struct{}) {
 }
 
 func (m *manager) processLocalDiskClaim(localDiskNameSpacedName string) error {
-	m.logger.Debug("processLocalDiskClaim start ...")
 	logCtx := m.logger.WithFields(log.Fields{"LocalDiskClaim": localDiskNameSpacedName})
+	logCtx.Debug("start processing LocalDiskClaim")
 
-	logCtx.Debug("Working on a LocalDiskClaim task")
 	splitRes := strings.Split(localDiskNameSpacedName, "/")
 	var nameSpace, diskName string
 	if len(splitRes) >= 2 {
@@ -56,8 +55,7 @@ func (m *manager) processLocalDiskClaim(localDiskNameSpacedName string) error {
 			logCtx.WithError(err).Error("Failed to get LocalDiskClaim from cache, retry it later ...")
 			return err
 		}
-		//logCtx.Info("Not found the LocalDiskClaim from cache, should be deleted already. err = %v", err)
-		fmt.Printf("Not found the LocalDiskClaim from cache, should be deleted already. err = %v", err)
+		logCtx.Info("Not found the LocalDiskClaim from cache, should be deleted already. err = %v", err)
 		return nil
 	}
 
@@ -115,47 +113,42 @@ func (m *manager) recordExtendPoolCondition(extend bool, err error) {
 }
 
 func (m *manager) processLocalDiskClaimBound(claim *apisv1alpha1.LocalDiskClaim) (e error) {
-	m.logger.Debug("processLocalDiskClaimBound start ...")
+	m.logger.Debug("start processing Bound LocalDiskClaim")
 
 	extend := false
 	defer func() {
 		m.recordExtendPoolCondition(extend, e)
 	}()
 
-	availableLocalDisks, err := m.getLocalDisksByLocalDiskClaim(claim)
+	// list disks bounded by the claim
+	boundDisks, err := m.getActiveBoundDisks(claim)
 	if err != nil {
-		log.WithError(err).Error("Failed to getLocalDisksByLocalDiskClaim.")
+		log.WithError(err).Error("Failed to getActiveBoundDisks.")
 		return err
 	}
 
-	if extend, err = m.storageMgr.PoolManager().ExtendPools(availableLocalDisks); err != nil {
+	// add new disks to StoragePools
+	if extend, err = m.storageMgr.PoolManager().ExtendPools(boundDisks); err != nil {
 		log.WithError(err).Error("Failed to ExtendPools")
 		return err
 	}
 
-	localDisks, err := m.getLocalDisksMapByLocalDiskClaim(claim)
-	if err != nil {
-		log.WithError(err).Error("Failed to getLocalDisksMapByLocalDiskClaim")
-		return err
-	}
-	//m.logger.Debug("processLocalDiskClaimBound getLocalDisksMapByLocalDiskClaim  localDisks = %v, claim = %v", localDisks, claim)
-	fmt.Printf("processLocalDiskClaimBound getLocalDisksMapByLocalDiskClaim  localDisks = %v, claim = %v", localDisks, claim)
-
-	if err := m.storageMgr.Registry().SyncResourcesToNodeCRD(localDisks); err != nil {
-		log.WithError(err).Error("Failed to SyncResourcesToNodeCRD")
+	// rebuild Node resource
+	if err = m.storageMgr.Registry().SyncNodeResources(); err != nil {
+		log.WithError(err).Error("Failed to SyncNodeResources")
 		return err
 	}
 	return nil
 }
 
-// getLocalDisksByLocalDiskClaim get disks, including HDD, SSD, NVMe triggered by ldc callback
-func (m *manager) getLocalDisksByLocalDiskClaim(ldc *apisv1alpha1.LocalDiskClaim) ([]*apisv1alpha1.LocalDevice, error) {
-	localDisksMap, err := m.getLocalDisksMapByLocalDiskClaim(ldc)
+// getActiveBoundDisks get disks, including HDD, SSD, NVMe triggered by ldc callback
+func (m *manager) getActiveBoundDisks(ldc *apisv1alpha1.LocalDiskClaim) ([]*apisv1alpha1.LocalDevice, error) {
+	localDisksMap, err := m.getActiveBoundDisksByClaim(ldc)
 	if err != nil {
 		return nil, err
 	}
 
-	localDisks := []*apisv1alpha1.LocalDevice{}
+	var localDisks []*apisv1alpha1.LocalDevice
 	for _, disk := range localDisksMap {
 		localDisks = append(localDisks, disk)
 	}
@@ -163,81 +156,58 @@ func (m *manager) getLocalDisksByLocalDiskClaim(ldc *apisv1alpha1.LocalDiskClaim
 	return localDisks, nil
 }
 
-func (m *manager) getLocalDisksMapByLocalDiskClaim(ldc *apisv1alpha1.LocalDiskClaim) (map[string]*apisv1alpha1.LocalDevice, error) {
-	m.logger.Debug("getLocalDisksMapByLocalDiskClaim ...")
+func (m *manager) getActiveBoundDisksByClaim(ldc *apisv1alpha1.LocalDiskClaim) (map[string]*apisv1alpha1.LocalDevice, error) {
 	disks := make(map[string]*apisv1alpha1.LocalDevice)
-	disksAvailable, err := m.listAllAvailableLocalDisksByLocalClaimDisk(ldc)
+	activeBoundDisks, err := m.listActiveBoundDisksByClaim(ldc)
 	if err != nil {
 		m.logger.WithError(err).Error("Failed to listAllAvailableLocalDisks")
 		return disks, err
 	}
-	for _, diskAvailable := range disksAvailable {
-		if diskAvailable == nil {
+	for _, boundDisk := range activeBoundDisks {
+		if boundDisk == nil {
 			continue
 		}
-		devicePath := diskAvailable.Spec.DevicePath
+		devicePath := boundDisk.Spec.DevicePath
 		if devicePath == "" || !strings.HasPrefix(devicePath, "/dev") || strings.Contains(devicePath, "mapper") {
 			continue
 		}
-		disk := &apisv1alpha1.LocalDevice{}
-		disk.State = apisv1alpha1.DiskStateAvailable
-		disk.CapacityBytes = diskAvailable.Spec.Capacity
-		disk.DevPath = devicePath
-		disk.Class = diskAvailable.Spec.DiskAttributes.Type
-		disks[devicePath] = disk
+		disks[devicePath] = &apisv1alpha1.LocalDevice{
+			DevPath:       devicePath,
+			State:         apisv1alpha1.DiskStateAvailable,
+			Class:         boundDisk.Spec.DiskAttributes.Type,
+			CapacityBytes: boundDisk.Spec.Capacity,
+		}
 	}
 
-	disksInUse, err := m.listAllInUseLocalDisksByLocalClaimDisk(ldc)
-	if err != nil {
-		m.logger.WithError(err).Error("Failed to listAllInUseLocalDisks")
-		return disks, err
-	}
-	for _, diskInUse := range disksInUse {
-		if diskInUse == nil {
-			continue
-		}
-		devicePath := diskInUse.Spec.DevicePath
-		if devicePath == "" || !strings.HasPrefix(devicePath, "/dev") || strings.Contains(devicePath, "mapper") {
-			continue
-		}
-		disk := &apisv1alpha1.LocalDevice{}
-		disk.State = apisv1alpha1.DiskStateInUse
-		disk.CapacityBytes = diskInUse.Spec.Capacity
-		disk.DevPath = devicePath
-		disk.Class = diskInUse.Spec.DiskAttributes.Type
-		disks[devicePath] = disk
-	}
 	return disks, nil
 }
 
-func (m *manager) listAllAvailableLocalDisksByLocalClaimDisk(ldc *apisv1alpha1.LocalDiskClaim) ([]*apisv1alpha1.LocalDisk, error) {
-	m.logger.Debug("listAllAvailableLocalDisksByLocalClaimDisk ...")
-	localDisks, err := m.listLocalDisksByLocalDiskClaim(ldc)
+func (m *manager) listActiveBoundDisksByClaim(ldc *apisv1alpha1.LocalDiskClaim) ([]*apisv1alpha1.LocalDisk, error) {
+	localDisks, err := m.listBoundDisksByClaim(ldc)
 	if err != nil {
-		m.logger.WithError(err).Error("Failed to listLocalDisksByLocalDiskClaim")
+		m.logger.WithError(err).Error("Failed to listBoundDisksByClaim")
 		return nil, err
 	}
-	availableLocalDisks := []*apisv1alpha1.LocalDisk{}
+	var activeBoundDisks []*apisv1alpha1.LocalDisk
 	for _, ld := range localDisks {
 		if ld.Spec.HasPartition {
 			continue
 		}
 
 		if ld.Spec.State == apisv1alpha1.LocalDiskActive {
-			availableLocalDisks = append(availableLocalDisks, ld)
+			activeBoundDisks = append(activeBoundDisks, ld)
 		}
 	}
-	return availableLocalDisks, nil
+	return activeBoundDisks, nil
 }
 
 func (m *manager) listAllInUseLocalDisksByLocalClaimDisk(ldc *apisv1alpha1.LocalDiskClaim) ([]*apisv1alpha1.LocalDisk, error) {
-	m.logger.Debug("listAllInUseLocalDisksByLocalClaimDisk ...")
-	localDisks, err := m.listLocalDisksByLocalDiskClaim(ldc)
+	localDisks, err := m.listBoundDisksByClaim(ldc)
 	if err != nil {
-		m.logger.WithError(err).Error("Failed to listLocalDisksByLocalDiskClaim")
+		m.logger.WithError(err).Error("Failed to listBoundDisksByClaim")
 		return nil, err
 	}
-	inUseLocalDisks := []*apisv1alpha1.LocalDisk{}
+	var inUseLocalDisks []*apisv1alpha1.LocalDisk
 	for _, ld := range localDisks {
 		if !ld.Spec.HasPartition {
 			continue
@@ -249,11 +219,10 @@ func (m *manager) listAllInUseLocalDisksByLocalClaimDisk(ldc *apisv1alpha1.Local
 	return inUseLocalDisks, nil
 }
 
-func (m *manager) listLocalDisksByLocalDiskClaim(ldc *apisv1alpha1.LocalDiskClaim) ([]*apisv1alpha1.LocalDisk, error) {
-	m.logger.Debug("listLocalDisksByLocalDiskClaim ...")
+func (m *manager) listBoundDisksByClaim(ldc *apisv1alpha1.LocalDiskClaim) ([]*apisv1alpha1.LocalDisk, error) {
 	if ldc == nil {
 		err := errors.NewBadRequest("ldc cannot be nil")
-		m.logger.WithError(err).Error("Failed to listLocalDisksByLocalDiskClaim")
+		m.logger.WithError(err).Error("Failed to list LocalDisks by LocalDiskClaim")
 		return nil, err
 	}
 	var diskNames []string
@@ -263,14 +232,12 @@ func (m *manager) listLocalDisksByLocalDiskClaim(ldc *apisv1alpha1.LocalDiskClai
 		}
 		diskNames = append(diskNames, diskRef.Name)
 	}
-	localDisks, _ := m.getLocalDisksByDiskRefs(diskNames, ldc.Namespace)
-	return localDisks, nil
+	return m.getLocalDiskListByName(diskNames, ldc.Namespace)
 }
 
-func (m *manager) getLocalDisksByDiskRefs(localDiskNames []string, nameSpace string) ([]*apisv1alpha1.LocalDisk, error) {
-	m.logger.Debug("getLocalDisksByDiskRefs ...")
+func (m *manager) getLocalDiskListByName(localDiskNames []string, nameSpace string) ([]*apisv1alpha1.LocalDisk, error) {
 	var wg sync.WaitGroup
-	localDiskList := []*apisv1alpha1.LocalDisk{}
+	var localDiskList []*apisv1alpha1.LocalDisk
 	for _, diskName := range localDiskNames {
 		name := diskName
 		wg.Add(1)
@@ -278,8 +245,7 @@ func (m *manager) getLocalDisksByDiskRefs(localDiskNames []string, nameSpace str
 			defer wg.Done()
 			localDisk, err := m.getLocalDiskByName(name, nameSpace)
 			if err != nil {
-				//m.logger.Error("Failed to getLocalDiskByName name = %v, err = %", name, err)
-				//fmt.Errorf("failed to getLocalDiskByName name = %v, err = %v", name, err)
+				m.logger.Error("Failed to get LocalDisk: %v, err: %", name, err)
 				return
 			}
 			if localDisk != nil && localDisk.Status.State == apisv1alpha1.LocalDiskBound {
@@ -293,7 +259,6 @@ func (m *manager) getLocalDisksByDiskRefs(localDiskNames []string, nameSpace str
 
 func (m *manager) getLocalDiskByName(localDiskName, nameSpace string) (*apisv1alpha1.LocalDisk, error) {
 	logCtx := m.logger.WithFields(log.Fields{"localDisk": localDiskName})
-	logCtx.Debug("getLocalDiskByName ...")
 	localDisk := &apisv1alpha1.LocalDisk{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: localDiskName}, localDisk); err != nil {
 		if !errors.IsNotFound(err) {

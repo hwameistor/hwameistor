@@ -97,10 +97,7 @@ type lvmExecutor struct {
 	logger  *log.Entry
 }
 
-func (lvm *lvmExecutor) ExtendPoolsInfo(disks map[string]*apisv1alpha1.LocalDevice) (map[string]*apisv1alpha1.LocalPool, error) {
-	oldRegistryDisks := lvm.lm.registry.Disks()
-	localDisks := mergeRegistryDiskMap(oldRegistryDisks, disks)
-
+func (lvm *lvmExecutor) GetPools() (map[string]*apisv1alpha1.LocalPool, error) {
 	// Get LVM status
 	lvmStatus, err := lvm.getLVMStatus(LVMask | VGMask | PVMask)
 	if err != nil {
@@ -131,32 +128,27 @@ func (lvm *lvmExecutor) ExtendPoolsInfo(disks map[string]*apisv1alpha1.LocalDevi
 		}
 
 		// Prepare PV status
-		pvRecords := lvmStatus.getPVsByVGName(vgName)
-		disks := make([]apisv1alpha1.LocalDevice, 0, len(pvRecords))
-
-		for _, pv := range pvRecords {
-			if _, exists := localDisks[pv.Name]; !exists {
-				continue
-			}
-			pvcap, err := utils.ConvertLVMBytesToNumeric(pv.PvSize)
+		poolPVs := lvmStatus.getPVsByVGName(vgName)
+		poolDisks := make([]apisv1alpha1.LocalDevice, 0, len(poolPVs))
+		for _, pv := range poolPVs {
+			pvCapacity, err := utils.ConvertLVMBytesToNumeric(pv.PvSize)
 			if err != nil {
 				lvm.logger.WithError(err).Errorf("Failed to convert LVM byte numbers int64: %s\n.", pv.PvSize)
 				return nil, err
 			}
-			typedPv := &apisv1alpha1.LocalDevice{
+			poolDisks = append(poolDisks, apisv1alpha1.LocalDevice{
 				DevPath:       pv.Name,
-				Class:         localDisks[pv.Name].Class,
-				CapacityBytes: pvcap,
-				State:         localDisks[pv.Name].State,
-			}
-			disks = append(disks, *typedPv)
+				CapacityBytes: pvCapacity,
+				Class:         poolClass,
+				State:         apisv1alpha1.DiskStateInUse,
+			})
 		}
 
 		// Prepare LV status
-		lvRecords := lvmStatus.getLVsByVGName(vgName)
-		volumes := make([]string, 0, len(lvRecords))
-		for _, lv := range lvRecords {
-			volumes = append(volumes, lv.Name)
+		poolLVs := lvmStatus.getLVsByVGName(vgName)
+		poolVolumes := make([]string, 0, len(poolLVs))
+		for _, lv := range poolLVs {
+			poolVolumes = append(poolVolumes, lv.Name)
 		}
 
 		pools[vgName] = &apisv1alpha1.LocalPool{
@@ -168,10 +160,10 @@ func (lvm *lvmExecutor) ExtendPoolsInfo(disks map[string]*apisv1alpha1.LocalDevi
 			FreeCapacityBytes:        int64(freeCapacityBytes),
 			VolumeCapacityBytesLimit: int64(totalCapacityBytes),
 			TotalVolumeCount:         apisv1alpha1.LVMVolumeMaxCount,
-			UsedVolumeCount:          int64(len(volumes)),
-			FreeVolumeCount:          apisv1alpha1.LVMVolumeMaxCount - int64(len(volumes)),
-			Disks:                    disks,
-			Volumes:                  volumes,
+			UsedVolumeCount:          int64(len(poolVolumes)),
+			FreeVolumeCount:          apisv1alpha1.LVMVolumeMaxCount - int64(len(poolVolumes)),
+			Disks:                    poolDisks,
+			Volumes:                  poolVolumes,
 		}
 	}
 
@@ -339,8 +331,15 @@ func (lvm *lvmExecutor) TestVolumeReplica(replica *apisv1alpha1.LocalVolumeRepli
 	return newReplica, nil
 }
 
-func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*apisv1alpha1.LocalDevice) (bool, error) {
-	lvm.logger.Debugf("Adding available disk %+v, count: %d\n.", availableLocalDisks, len(availableLocalDisks))
+func (lvm *lvmExecutor) ExtendPools(localDevices []*apisv1alpha1.LocalDevice) (bool, error) {
+	stringDevices := func(devs []*apisv1alpha1.LocalDevice) (ds string) {
+		for _, device := range devs {
+			ds = ds + device.DevPath + ","
+		}
+		return strings.TrimSuffix(ds, ",")
+	}
+
+	lvm.logger.Debugf("Start extending pool disk(s): %s, count: %d\n", stringDevices(localDevices), len(localDevices))
 
 	extend := false
 	existingPVMap, err := lvm.getExistingPVs()
@@ -349,15 +348,16 @@ func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*apisv1alpha1.LocalDev
 		return false, err
 	}
 
+	// find out new disks which is not exist in vg(i.g LocalStorage_XXX)
 	disksToBeExtends := make(map[string][]*apisv1alpha1.LocalDevice)
-	for _, disk := range availableLocalDisks {
+	for _, disk := range localDevices {
 		poolName, err := getPoolNameAccordingDisk(disk)
 		if err != nil {
 			lvm.logger.WithError(err)
 			continue
 		}
 		if disksToBeExtends[poolName] == nil {
-			disksToBeExtends[poolName] = make([]*apisv1alpha1.LocalDevice, 0, len(availableLocalDisks))
+			disksToBeExtends[poolName] = make([]*apisv1alpha1.LocalDevice, 0)
 		}
 		if _, ok := existingPVMap[disk.DevPath]; ok {
 			continue
@@ -369,6 +369,8 @@ func (lvm *lvmExecutor) ExtendPools(availableLocalDisks []*apisv1alpha1.LocalDev
 		if len(classifiedDisks) == 0 {
 			continue
 		}
+
+		lvm.logger.Debugf("Adding disk(s): %+v to pool %s", stringDevices(classifiedDisks), poolName)
 		if err := lvm.extendPool(poolName, classifiedDisks); err != nil {
 			lvm.logger.WithError(err).Error("Add available disk failed.")
 			return extend, err
