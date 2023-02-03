@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"math"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -148,5 +149,5 @@ func (m *manager) handleDiskStateChange(localDisk *apisv1alpha1.LocalDisk) {
 func (m *manager) needResizePVCapacity(currentCapacity, recordCapacity int64) bool {
 	// consider metadata size, the capacity in pv may smaller than actual disk capacity
 	var pe = 4 * 1024 * 1024
-	return (currentCapacity - recordCapacity) > int64(pe)
+	return math.Abs(float64(currentCapacity-recordCapacity)) > float64(pe)
 }
