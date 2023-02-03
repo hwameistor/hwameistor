@@ -2,7 +2,6 @@ package node
 
 import (
 	"context"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -10,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
 )
 
 func (m *manager) startLocalDiskTaskWorker(stopCh <-chan struct{}) {
@@ -104,12 +104,12 @@ func (m *manager) resizeStoragePoolCapacity(localDisk *apisv1alpha1.LocalDisk) e
 	// find out if disk has used in StoragePool and compare recorded capacity and current capacity
 	// if capacity has been resized, rebuild localstorage registry and update node resource
 	registeredDisks := m.Storage().Registry().Disks()
-	registererDisk, exist := registeredDisks[localDisk.Spec.DevicePath]
+	registeredDisk, exist := registeredDisks[localDisk.Spec.DevicePath]
 	if !exist {
 		return nil
 	}
 
-	if !m.needResizePVCapacity(localDisk.Spec.Capacity, registererDisk.CapacityBytes) {
+	if !m.needResizePVCapacity(localDisk.Spec.Capacity, registeredDisk.CapacityBytes) {
 		return nil
 	}
 
