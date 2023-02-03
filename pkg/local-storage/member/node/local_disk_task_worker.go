@@ -80,7 +80,7 @@ func (m *manager) processLocalDisk(localDiskNameSpacedName string) error {
 
 func (m *manager) processLocalDiskBound(localDisk *apisv1alpha1.LocalDisk) error {
 	logCtx := m.logger.WithFields(log.Fields{"localDisk": localDisk.GetName()})
-	logCtx.Info("Starting process bound localdisk")
+	logCtx.Info("Start processing Bound localdisk")
 
 	// when disk is bound, means disk has been used in StoragePool, so we need to
 	// make notification if disk state has changed(i.g Active -> InActive -> UnKnown)
@@ -109,7 +109,7 @@ func (m *manager) resizeStoragePoolCapacity(localDisk *apisv1alpha1.LocalDisk) e
 		return nil
 	}
 
-	if registererDisk.CapacityBytes == localDisk.Spec.Capacity {
+	if !m.needResizePVCapacity(localDisk.Spec.Capacity, registererDisk.CapacityBytes) {
 		return nil
 	}
 
@@ -127,7 +127,7 @@ func (m *manager) resizeStoragePoolCapacity(localDisk *apisv1alpha1.LocalDisk) e
 		return err
 	}
 
-	return m.Storage().Registry().SyncResourcesToNodeCRD(resizeDisks)
+	return m.Storage().Registry().SyncNodeResources()
 }
 
 // reduce disk from StoragePool or do migrate volume which located on the disk according to disk state
@@ -143,4 +143,10 @@ func (m *manager) handleDiskStateChange(localDisk *apisv1alpha1.LocalDisk) {
 		logCtx.Error("Invalid localDisk state")
 	}
 	return
+}
+
+func (m *manager) needResizePVCapacity(currentCapacity, recordCapacity int64) bool {
+	// consider metadata size, the capacity in pv may smaller than actual disk capacity
+	var pe = 4 * 1024 * 1024
+	return (currentCapacity - recordCapacity) > int64(pe)
 }
