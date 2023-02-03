@@ -23,7 +23,7 @@ var (
 type LocalPoolManager interface {
 	ExtendPools(localDisks []*apisv1alpha1.LocalDevice) (bool, error)
 
-	ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDevice) (map[string]*apisv1alpha1.LocalPool, error)
+	GetPools() (map[string]*apisv1alpha1.LocalPool, error)
 
 	GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error)
 
@@ -44,6 +44,13 @@ type LocalVolumeReplicaManager interface {
 	ConsistencyCheck()
 }
 
+// LocalDiskManager is an interface to manage local disks
+type LocalDiskManager interface {
+	// Discover all disks including HDD, SSD, NVMe, etc..
+	DiscoverAvailableDisks() ([]*apisv1alpha1.LocalDevice, error)
+	GetLocalDisks() (map[string]*apisv1alpha1.LocalDevice, error)
+}
+
 // LocalRegistry interface
 ////go:generate mockgen -source=types.go -destination=../../../member/node/storage/registry_mock.go  -package=storage
 type LocalRegistry interface {
@@ -54,7 +61,7 @@ type LocalRegistry interface {
 	VolumeReplicas() map[string]*apisv1alpha1.LocalVolumeReplica
 	HasVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) bool
 	UpdateNodeForVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica)
-	SyncResourcesToNodeCRD(localDisks map[string]*apisv1alpha1.LocalDevice) error
+	SyncNodeResources() error
 	UpdateCondition(condition apisv1alpha1.LocalStorageNodeCondition) error
 }
 
@@ -88,7 +95,7 @@ type LocalVolumeExecutor interface {
 ////go:generate mockgen -source=types.go -destination=../../../member/node/storage/pools_executor_mock.go  -package=storage
 type LocalPoolExecutor interface {
 	ExtendPools(localDisks []*apisv1alpha1.LocalDevice) (bool, error)
-	ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDevice) (map[string]*apisv1alpha1.LocalPool, error)
+	GetPools() (map[string]*apisv1alpha1.LocalPool, error)
 	GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error)
 	ResizePhysicalVolumes(localDisks map[string]*apisv1alpha1.LocalDevice) error
 }
