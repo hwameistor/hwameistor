@@ -2,14 +2,14 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"path"
 	"runtime"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
-	"github.com/hwameistor/hwameistor/pkg/metrics"
+	"github.com/hwameistor/hwameistor/pkg/exporter"
 )
 
 func setupLogging(enableDebug bool) {
@@ -35,14 +35,6 @@ func main() {
 
 	setupLogging(true)
 
-	stopCh := make(chan struct{})
+	exporter.NewCollectorManager().Run(signals.SetupSignalHandler().Done())
 
-	handler := metrics.NewHandler()
-	handler.Run(stopCh)
-
-	http.Handle("/metrics", handler)
-	err := http.ListenAndServe(":8080", handler)
-	if err != nil {
-		panic(err)
-	}
 }

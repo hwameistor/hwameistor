@@ -1,4 +1,4 @@
-package metrics
+package exporter
 
 import (
 	"fmt"
@@ -23,7 +23,7 @@ type SMARTCollector struct {
 }
 
 // NewSMARTCollector collector SMART metrics by smartctl
-func NewSMARTCollector() *SMARTCollector {
+func NewSMARTCollector() prometheus.Collector {
 	return &SMARTCollector{result: make(map[string]smart.TotalResult)}
 }
 

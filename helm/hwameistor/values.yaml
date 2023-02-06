@@ -57,9 +57,9 @@ evictor:
   imageRepository: hwameistor/evictor
   resources: {} 
 
-metrics:
+exporter:
   replicas: 1
-  imageRepository: hwameistor/metrics
+  imageRepository: hwameistor/exporter
   resources: {} 
 
 apiserver:
