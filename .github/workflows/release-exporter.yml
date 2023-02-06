@@ -1,4 +1,4 @@
-name: Release Metrics
+name: Release Exporter
 
 on:
   workflow_dispatch:
@@ -36,4 +36,4 @@ jobs:
           echo "SCAN_IMAGES=true" >> $GITHUB_ENV
       - name: Release image
         run: |
-          PROJECT_SOURCE_CODE_DIR=${PROJECT_SOURCE_CODE_DIR} IMAGE_REGISTRY=${IMAGE_REGISTRY} RELEASE_TAG=${RELEASE_TAG} SCAN_IMAGES=${SCAN_IMAGES} make release_metrics
+          PROJECT_SOURCE_CODE_DIR=${PROJECT_SOURCE_CODE_DIR} IMAGE_REGISTRY=${IMAGE_REGISTRY} RELEASE_TAG=${RELEASE_TAG} SCAN_IMAGES=${SCAN_IMAGES} make release_exporter
