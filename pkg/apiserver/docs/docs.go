@@ -3141,6 +3141,9 @@ const docTemplate = `{
                         "$ref": "#/definitions/v1alpha1.PodStatus"
                     }
                 },
+                "workloadName": {
+                    "type": "string"
+                },
                 "workloadType": {
                     "type": "string"
                 }

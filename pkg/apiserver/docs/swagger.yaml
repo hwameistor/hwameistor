@@ -1600,6 +1600,8 @@ definitions:
         items:
           $ref: '#/definitions/v1alpha1.PodStatus'
         type: array
+      workloadName:
+        type: string
       workloadType:
         type: string
     type: object

@@ -3,7 +3,6 @@ module github.com/hwameistor/hwameistor
 go 1.18
 
 require (
-	github.com/hwameistor/hwameistor-operator v0.0.0-20230109142824-c566f1a5b4f2
 	github.com/operator-framework/operator-sdk v0.18.2
 	github.com/pilebones/go-udev v0.9.0
 	github.com/sirupsen/logrus v1.9.0
@@ -39,6 +38,7 @@ require github.com/go-logr/zapr v0.4.0 // indirect
 
 require (
 	github.com/gin-gonic/gin v1.8.1
+	github.com/hwameistor/hwameistor-operator v0.0.0-20230205102054-a22567874a56
 	github.com/jinzhu/gorm v1.9.16
 	github.com/onsi/gomega v1.19.0
 	github.com/swaggo/files v1.0.0
@@ -64,6 +64,7 @@ require (
 	github.com/go-playground/validator/v10 v10.10.0 // indirect
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/goccy/go-json v0.9.7 // indirect
+	github.com/golang-jwt/jwt/v4 v4.0.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
@@ -91,9 +92,9 @@ require (
 	cloud.google.com/go v0.81.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.12 // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.9.5 // indirect
+	github.com/Azure/go-autorest/autorest/adal v0.9.22 // indirect
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
-	github.com/Azure/go-autorest/logger v0.2.0 // indirect
+	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
@@ -102,7 +103,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful v2.16.1-0.20220930181236-19cadd947697+incompatible // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
-	github.com/form3tech-oss/jwt-go v3.2.2+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-logr/logr v1.2.0 // indirect
 	// github.com/go-logr/zapr v1.2.0 // indirect

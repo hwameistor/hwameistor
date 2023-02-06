@@ -187,6 +187,7 @@ type DeployStatus struct {
 	DesiredPodCount int32 `json:"desiredPodCount"`
 	AvailablePodCount int32 `json:"availablePodCount"`
 	WorkloadType string `json:"workloadType"`
+	WorkloadName string `json:"workloadName"`
 }
 
 type PodStatus struct {

@@ -110,13 +110,13 @@ func (mController *MetricController) GetModuleStatus() (*hwameistorapi.ModuleSta
 
 	moduleStatus := mController.convertModuleStatus()
 
-	moduleStatus, err := mController.getHwameistorOperatorStatusMetric()
+	operatorModuleStatus, err := mController.getHwameistorOperatorStatusMetric()
 	if err != nil {
 		log.WithError(err).Error("Failed to getHwameistorOperatorStatusMetric")
 		return moduleStatus, err
 	}
 
-	return moduleStatus, nil
+	return operatorModuleStatus, nil
 }
 
 // GetStoragePoolUseMetric
