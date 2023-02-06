@@ -1,4 +1,4 @@
-package metrics
+package exporter
 
 import (
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"

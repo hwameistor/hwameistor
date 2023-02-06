@@ -2,15 +2,14 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"path"
 	"runtime"
 	"strings"
 
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
-	"github.com/hwameistor/hwameistor/pkg/metrics"
+	"github.com/hwameistor/hwameistor/pkg/exporter"
 )
 
 func setupLogging(enableDebug bool) {
@@ -36,12 +35,6 @@ func main() {
 
 	setupLogging(true)
 
-	metrics.NewCollectorManager().Register(make(chan struct{}))
+	exporter.NewCollectorManager().Run(signals.SetupSignalHandler().Done())
 
-	http.Handle("/metrics", promhttp.Handler())
-
-	err := http.ListenAndServe(":8080", nil)
-	if err != nil {
-		panic(err)
-	}
 }

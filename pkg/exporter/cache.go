@@ -1,4 +1,4 @@
-package metrics
+package exporter
 
 import (
 	localstorageclientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned"

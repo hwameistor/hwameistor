@@ -28,7 +28,7 @@ evictor:
       cpu: 1m
       memory: 20Mi
 
-metrics:
+exporter:
   replicas: 2
   resources:
     limits:
