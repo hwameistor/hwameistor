@@ -22,12 +22,6 @@ import (
 const (
 	// RequeueInterval Requeue every 1 seconds
 	RequeueInterval = time.Second * 1
-
-	// HwameiStorReclaim is used in annotation to check whether LocalDiskClaim is to reclaim or not
-	HwameiStorReclaim = "hwameistor.io/reclaim"
-
-	// HwameiStorLastClaimedDisks ius used in annotation to storage last claimed disks
-	HwameiStorLastClaimedDisks = "hwameistor.io/last-claimed-disks"
 )
 
 func Add(mgr manager.Manager) error {

@@ -3,7 +3,6 @@ package localdiskclaim
 import (
 	"context"
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/controller/localdiskclaim"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	"strings"
 	"time"
@@ -19,6 +18,14 @@ import (
 
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	diskHandler "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
+)
+
+const (
+	// HwameiStorReclaim is used in annotation to check whether LocalDiskClaim is to reclaim or not
+	HwameiStorReclaim = "hwameistor.io/reclaim"
+
+	// HwameiStorLastClaimedDisks ius used in annotation to storage last claimed disks
+	HwameiStorLastClaimedDisks = "hwameistor.io/last-claimed-disks"
 )
 
 type Handler struct {
@@ -247,8 +254,8 @@ func (ldcHandler *Handler) findAndSetLastClaimedDisksAnnotation(originalDisks, c
 	annotations := ldcHandler.diskClaim.GetAnnotations()
 
 	// Set reclaim key to false
-	annotations[localdiskclaim.HwameiStorReclaim] = "false"
-	annotations[localdiskclaim.HwameiStorLastClaimedDisks] = func(disks []string) (s string) {
+	annotations[HwameiStorReclaim] = "false"
+	annotations[HwameiStorLastClaimedDisks] = func(disks []string) (s string) {
 		for _, disk := range disks {
 			s = disk + ","
 		}
@@ -262,7 +269,7 @@ func (ldcHandler *Handler) findAndSetLastClaimedDisksAnnotation(originalDisks, c
 func (ldcHandler *Handler) NeedReclaim() bool {
 	annotation := ldcHandler.diskClaim.GetAnnotations()
 	if annotation != nil {
-		if val, ok := annotation[localdiskclaim.HwameiStorReclaim]; ok && strings.ToLower(val) == "true" {
+		if val, ok := annotation[HwameiStorReclaim]; ok && strings.ToLower(val) == "true" {
 			return true
 		}
 	}
