@@ -108,26 +108,33 @@ var _ = ginkgo.Describe("apiserver test ", ginkgo.Label("api"), func() {
 				logrus.Error("error:", err)
 				return
 			}
-			logrus.Printf(string(body))
-			logrus.Printf(drbd.Version)
-			logrus.Println(drbd.Enable)
+			//logrus.Printf(string(body))
+			//logrus.Printf(drbd.Version)
+			//logrus.Println(drbd.Enable)
 
 		})
 		ginkgo.It("check cluster/nodes/", func() {
-
-			resp, err := http.Get("http://" + myUrl + ":31111/apis/hwameistor.io/v1alpha1/cluster/nodes/k8s-node1")
+			nodeList := &corev1.NodeList{}
+			err := client.List(ctx, nodeList)
 			if err != nil {
 				logrus.Error(err)
 			}
-			defer resp.Body.Close()
-			body, err := ioutil.ReadAll(resp.Body)
-			storageNode := &api.StorageNode{}
-			err = json.Unmarshal(body, storageNode)
-			if err != nil {
-				fmt.Println("error:", err)
-				return
+			for _, node := range nodeList.Items {
+
+				resp, err := http.Get("http://" + myUrl + ":31111/apis/hwameistor.io/v1alpha1/cluster/nodes/" + node.Name)
+				if err != nil {
+					logrus.Error(err)
+				}
+				defer resp.Body.Close()
+				body, err := ioutil.ReadAll(resp.Body)
+				storageNode := &api.StorageNode{}
+				err = json.Unmarshal(body, storageNode)
+				if err != nil {
+					fmt.Println("error:", err)
+					return
+				}
+
 			}
-			logrus.Printf(string(storageNode.LocalStorageNode.Status.State))
 
 		})
 
