@@ -91,6 +91,24 @@ type lvStatus struct {
 	state apisv1alpha1.State
 }
 
+type localDevicesArray []*apisv1alpha1.LocalDevice
+
+func (l localDevicesArray) string() (ds string) {
+	for _, device := range l {
+		ds = ds + device.DevPath + ","
+	}
+	return strings.TrimSuffix(ds, ",")
+}
+
+type localDevicesMap map[string]*apisv1alpha1.LocalDevice
+
+func (l localDevicesMap) string() (ds string) {
+	for _, device := range l {
+		ds = ds + device.DevPath + ","
+	}
+	return strings.TrimSuffix(ds, ",")
+}
+
 type lvmExecutor struct {
 	lm      *LocalManager
 	cmdExec exechelper.Executor
@@ -332,14 +350,7 @@ func (lvm *lvmExecutor) TestVolumeReplica(replica *apisv1alpha1.LocalVolumeRepli
 }
 
 func (lvm *lvmExecutor) ExtendPools(localDevices []*apisv1alpha1.LocalDevice) (bool, error) {
-	stringDevices := func(devs []*apisv1alpha1.LocalDevice) (ds string) {
-		for _, device := range devs {
-			ds = ds + device.DevPath + ","
-		}
-		return strings.TrimSuffix(ds, ",")
-	}
-
-	lvm.logger.Debugf("Start extending pool disk(s): %s, count: %d\n", stringDevices(localDevices), len(localDevices))
+	lvm.logger.Debugf("Start extending pool disk(s): %s, count: %d", localDevicesArray(localDevices).string(), len(localDevices))
 
 	extend := false
 	existingPVMap, err := lvm.getExistingPVs()
@@ -370,7 +381,7 @@ func (lvm *lvmExecutor) ExtendPools(localDevices []*apisv1alpha1.LocalDevice) (b
 			continue
 		}
 
-		lvm.logger.Debugf("Adding disk(s): %+v to pool %s", stringDevices(classifiedDisks), poolName)
+		lvm.logger.Debugf("Adding disk(s): %+v to pool %s", localDevicesArray(classifiedDisks).string(), poolName)
 		if err := lvm.extendPool(poolName, classifiedDisks); err != nil {
 			lvm.logger.WithError(err).Error("Add available disk failed.")
 			return extend, err
@@ -379,6 +390,19 @@ func (lvm *lvmExecutor) ExtendPools(localDevices []*apisv1alpha1.LocalDevice) (b
 	}
 
 	return extend, nil
+}
+
+func (lvm *lvmExecutor) ResizePhysicalVolumes(localDevices map[string]*apisv1alpha1.LocalDevice) error {
+	lvm.logger.Debugf("Resizing pvsize, device(s): %+v, count: %d", localDevicesMap(localDevices).string(), len(localDevices))
+
+	for _, disk := range localDevices {
+		if err := lvm.pvresize(disk.DevPath); err != nil {
+			lvm.logger.WithError(err).Errorf("Failed to resize pv: %+v", disk.DevPath)
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (lvm *lvmExecutor) ConsistencyCheck(crdReplicas map[string]*apisv1alpha1.LocalVolumeReplica) {
@@ -716,6 +740,19 @@ func (lvm *lvmExecutor) lvextend(lvPath string, newCapacityBytes int64, options 
 	res := lvm.cmdExec.RunCommand(params)
 	errcontent := res.ErrBuf.String()
 	if res.ExitCode == 0 || strings.Contains(errcontent, "matches existing size") {
+		return nil
+	}
+	return res.Error
+}
+
+func (lvm *lvmExecutor) pvresize(pv string, options ...string) error {
+	params := exechelper.ExecParams{
+		CmdName: "pvresize",
+		CmdArgs: []string{pv, "-y"},
+	}
+	params.CmdArgs = append(params.CmdArgs, options...)
+	res := lvm.cmdExec.RunCommand(params)
+	if res.ExitCode == 0 {
 		return nil
 	}
 	return res.Error
