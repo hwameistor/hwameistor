@@ -22,6 +22,12 @@ import (
 const (
 	// RequeueInterval Requeue every 1 seconds
 	RequeueInterval = time.Second * 1
+
+	// HwameiStorReclaim is used in annotation to check whether LocalDiskClaim is to reclaim or not
+	HwameiStorReclaim = "hwameistor.io/reclaim"
+
+	// HwameiStorLastClaimedDisks ius used in annotation to storage last claimed disks
+	HwameiStorLastClaimedDisks = "hwameistor.io/last-claimed-disks"
 )
 
 func Add(mgr manager.Manager) error {
@@ -146,12 +152,17 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimBound(diskClaim *v1alpha1.Loca
 	logCtx := log.Fields{"name": diskClaim.Name}
 	log.WithFields(logCtx).Info("Start processing Bound localdiskclaim")
 
+	// Check if any disks were claimed by the request
 	if len(r.diskClaimHandler.DiskRefs()) == 0 {
-		log.WithField("diskClaim", diskClaim.GetName()).
-			Info("No disk(s) bound, change status to Pending and try to reclaim")
+		log.WithFields(logCtx).Info("No disk(s) bound, change status to Pending and try to reclaim")
 		r.diskClaimHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusPending)
-		return r.diskClaimHandler.UpdateClaimStatus()
 	}
 
-	return nil
+	// If the annotation exists and the value is true, then status will be updated to Pending and reclaim disks
+	if r.diskClaimHandler.NeedReclaim() {
+		r.diskClaimHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusPending)
+		log.WithFields(logCtx).Info("Reclaim annotation key found, change status to Pending and try to reclaim")
+	}
+
+	return r.diskClaimHandler.UpdateClaimStatus()
 }

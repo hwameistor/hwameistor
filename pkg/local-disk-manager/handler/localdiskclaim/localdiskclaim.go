@@ -3,6 +3,9 @@ package localdiskclaim
 import (
 	"context"
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/controller/localdiskclaim"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -84,6 +87,12 @@ func (ldcHandler *Handler) AssignFreeDisk() error {
 	}
 
 	var finalAssignedDisks []string
+	var originalDisks = func() (s []string) {
+		for _, disk := range diskClaim.Spec.DiskRefs {
+			s = append(s, disk.Name)
+		}
+		return
+	}()
 
 	// Find suitable disks
 	for _, disk := range diskList.Items {
@@ -102,7 +111,14 @@ func (ldcHandler *Handler) AssignFreeDisk() error {
 		finalAssignedDisks = append(finalAssignedDisks, disk.GetName())
 	}
 
-	// NOTE: Once found disk(s) already bound to this claim, return true directly
+	// Check if the request needs more new disks
+	if ldcHandler.NeedReclaim() {
+		if err = ldcHandler.findAndSetLastClaimedDisksAnnotation(originalDisks, finalAssignedDisks); err != nil {
+			return err
+		}
+	}
+
+	// There must be more than one disk have been assigned or else return err
 	if len(finalAssignedDisks) <= 0 {
 		log.Infof("There is no available disk assigned to %v", diskClaim.GetName())
 		return fmt.Errorf("there is no available disk assigned to %v", diskClaim.GetName())
@@ -220,4 +236,35 @@ func (ldcHandler *Handler) ShowObjectInfo(msg string) {
 		"Status":          ldcHandler.diskClaim.Status.Status,
 		"diskRef":         ldcHandler.diskClaim.Spec.DiskRefs,
 	}).Info(msg)
+}
+
+func (ldcHandler *Handler) findAndSetLastClaimedDisksAnnotation(originalDisks, currentDisks []string) error {
+	newDisks, found := utils.FoundNewStringElems(originalDisks, currentDisks)
+	if !found {
+		return fmt.Errorf("there is no disk(s) assigned to %s", ldcHandler.diskClaim.GetName())
+	}
+
+	annotations := ldcHandler.diskClaim.GetAnnotations()
+
+	// Set reclaim key to false
+	annotations[localdiskclaim.HwameiStorReclaim] = "false"
+	annotations[localdiskclaim.HwameiStorLastClaimedDisks] = func(disks []string) (s string) {
+		for _, disk := range disks {
+			s = disk + ","
+		}
+		return strings.TrimSuffix(s, ",")
+	}(newDisks)
+
+	ldcHandler.diskClaim.SetAnnotations(annotations)
+	return nil
+}
+
+func (ldcHandler *Handler) NeedReclaim() bool {
+	annotation := ldcHandler.diskClaim.GetAnnotations()
+	if annotation != nil {
+		if val, ok := annotation[localdiskclaim.HwameiStorReclaim]; ok && strings.ToLower(val) == "true" {
+			return true
+		}
+	}
+	return false
 }
