@@ -35,10 +35,10 @@ Above platforms are not supported currently but will be in the future.
 
 ### Package dependencies
 
-1. `LVM2` is installed
-2. For HA features, `kernel-devel` must be installed and match the version of the operating `kernel`
-3. For VolumeResize features, filesystem resize tools are needed. By default, we use `xfs`
-as the volume filesystem. Therefore, you need to install `xfs_growfs` on the host
+1. `LVM2` is installed.
+2. For HA features, `kernel-devel` shall be installed and has a compatible version with the current `kernel`.
+3. For VolumeResize features, a tool to resize the filesystem is required. 
+   By default, `xfs` is used as the volume filesystem. Therefore, you need to install `xfs_growfs` on the host.
 
 
 ```console title="CentOS/RHEL, Rocky and Kylin"
