@@ -56,10 +56,14 @@ var _ = ginkgo.Describe("apiserver test", ginkgo.Label("api"), func() {
 			service.Spec.Ports[0] = servicePort
 
 			err = client.Update(ctx, service)
-		})
-		ginkgo.It("check get cluster/drbd", func() {
+			if err != nil {
+				logrus.Error(err)
+			}
 			podList := &corev1.PodList{}
-			err := client.List(ctx, podList)
+			err = client.List(ctx, podList)
+			if err != nil {
+				logrus.Error(err)
+			}
 			for _, pod := range podList.Items {
 				b, _ := regexp.MatchString("hwameistor-apiserver", pod.Name)
 				if b == true {
@@ -69,6 +73,9 @@ var _ = ginkgo.Describe("apiserver test", ginkgo.Label("api"), func() {
 
 			}
 			time.Sleep(60 * time.Second)
+		})
+		ginkgo.It("check get /cluster/drbd", func() {
+
 			resp, err := http.Get("http://" + myUrl + ":31111/apis/hwameistor.io/v1alpha1/cluster/drbd")
 			if err != nil {
 				logrus.Error(err)
@@ -87,7 +94,7 @@ var _ = ginkgo.Describe("apiserver test", ginkgo.Label("api"), func() {
 			//gomega.Expect(drbd.State).To(gomega.Equal(api.DrbdModuleStatusDisabled))
 
 		})
-		ginkgo.It("check post cluster/drbd", func() {
+		ginkgo.It("check post /cluster/drbd", func() {
 
 			req, err := json.Marshal(api.DrbdEnableSettingReqBody{Enable: true})
 			if err != nil {
@@ -108,26 +115,105 @@ var _ = ginkgo.Describe("apiserver test", ginkgo.Label("api"), func() {
 				logrus.Error("error:", err)
 				return
 			}
-			logrus.Printf(string(body))
-			logrus.Printf(drbd.Version)
-			logrus.Println(drbd.Enable)
+			//logrus.Printf(string(body))
+			//logrus.Printf(drbd.Version)
+			//logrus.Println(drbd.Enable)
 
 		})
-		ginkgo.It("check cluster/nodes/", func() {
-
-			resp, err := http.Get("http://" + myUrl + ":31111/apis/hwameistor.io/v1alpha1/cluster/nodes/k8s-node1")
+		ginkgo.It("check get /cluster/localdisknodes", func() {
+			resp, err := http.Get("http://" + myUrl + ":31111/apis/hwameistor.io/v1alpha1/cluster/localdisknodes")
 			if err != nil {
 				logrus.Error(err)
 			}
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
-			storageNode := &api.StorageNode{}
-			err = json.Unmarshal(body, storageNode)
+			LocalDiskNodeList := &api.LocalDiskNodeList{}
+
+			err = json.Unmarshal(body, LocalDiskNodeList)
 			if err != nil {
 				fmt.Println("error:", err)
 				return
 			}
-			logrus.Printf(string(storageNode.LocalStorageNode.Status.State))
+
+		})
+		ginkgo.It("check get /cluster/localdisks", func() {
+			resp, err := http.Get("http://" + myUrl + ":31111/apis/hwameistor.io/v1alpha1/cluster/localdisks")
+			if err != nil {
+				logrus.Error(err)
+			}
+			defer resp.Body.Close()
+			body, err := ioutil.ReadAll(resp.Body)
+			LocalDiskList := &api.LocalDiskList{}
+
+			err = json.Unmarshal(body, LocalDiskList)
+			if err != nil {
+				fmt.Println("error:", err)
+				return
+			}
+
+		})
+		ginkgo.It("check get /cluster/nodes/", func() {
+			resp, err := http.Get("http://" + myUrl + ":31111/apis/hwameistor.io/v1alpha1/cluster/nodes?page=1&pageSize=1")
+			if err != nil {
+				logrus.Error(err)
+			}
+			defer resp.Body.Close()
+			body, err := ioutil.ReadAll(resp.Body)
+			StorageNodeList := &api.StorageNodeList{}
+
+			err = json.Unmarshal(body, StorageNodeList)
+			if err != nil {
+				fmt.Println("error:", err)
+				return
+			}
+
+		})
+		ginkgo.It("check get /cluster/nodes/{nodeName}", func() {
+			nodeList := &corev1.NodeList{}
+			err := client.List(ctx, nodeList)
+			if err != nil {
+				logrus.Error(err)
+			}
+			for _, node := range nodeList.Items {
+
+				resp, err := http.Get("http://" + myUrl + ":31111/apis/hwameistor.io/v1alpha1/cluster/nodes/" + node.Name)
+				if err != nil {
+					logrus.Error(err)
+				}
+				defer resp.Body.Close()
+				body, err := ioutil.ReadAll(resp.Body)
+				storageNode := &api.StorageNode{}
+				err = json.Unmarshal(body, storageNode)
+				if err != nil {
+					fmt.Println("error:", err)
+					return
+				}
+
+			}
+
+		})
+		ginkgo.It("check get /cluster/nodes/{nodeName}/disks", func() {
+			nodeList := &corev1.NodeList{}
+			err := client.List(ctx, nodeList)
+			if err != nil {
+				logrus.Error(err)
+			}
+			for _, node := range nodeList.Items {
+
+				resp, err := http.Get("http://" + myUrl + ":31111/apis/hwameistor.io/v1alpha1/cluster/nodes/" + node.Name + "/disks?page=1&pageSize=1")
+				if err != nil {
+					logrus.Error(err)
+				}
+				defer resp.Body.Close()
+				body, err := ioutil.ReadAll(resp.Body)
+				LocalDiskListByNode := &api.LocalDiskListByNode{}
+				err = json.Unmarshal(body, LocalDiskListByNode)
+				if err != nil {
+					fmt.Println("error:", err)
+					return
+				}
+
+			}
 
 		})
 
