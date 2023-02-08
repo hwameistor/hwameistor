@@ -37,8 +37,7 @@ sidebar_label: "准备工作"
 
 1. 安装 `LVM2`
 2. 高可用功能需要安装和当前运行的 kernel 版本一致的 `kernel-devel`
-3. 数据卷扩容功能需要安装文件系统大小调整工具。默认情况下，我们使用 `xfs` 作为默认文件系统。因此节点上面需要
-安装 `xfs_growfs`
+3. 数据卷扩容功能需要安装文件系统大小调整工具。使用 `xfs` 作为默认文件系统。因此节点上面需要安装 `xfs_growfs`
 
 ```console title="CentOS/RHEL, Rocky 和 Kylin"
 $ yum install -y lvm2
@@ -54,7 +53,7 @@ $ apt-get install -y xfsprogs
 
 ### Secure Boot
 
-高可用功能暂时不支持 `Secure Boot`, 确认 `Secure Boot` 是 `disabled` 状态：
+高可用功能暂时不支持 `Secure Boot`，确认 `Secure Boot` 是 `disabled` 状态：
 
 ```console
 $ mokutil --sb-state
@@ -66,7 +65,7 @@ $ dmesg | grep secureboot
 
 ### 数据盘
 
-HwameiStor 支持物理硬盘(HDD)、固态硬盘(SSD) 和 NVMe 闪存盘.
+HwameiStor 支持物理硬盘 (HDD)、固态硬盘 (SSD) 和 NVMe 闪存盘.
 
 测试环境里，每个主机必须要有至少一块空闲的 `10GiB` 数据盘。
 
