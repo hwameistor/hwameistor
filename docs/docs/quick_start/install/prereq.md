@@ -37,15 +37,20 @@ Above platforms are not supported currently but will be in the future.
 
 1. `LVM2` is installed
 2. For HA features, `kernel-devel` must be installed and match the version of the operating `kernel`
+3. For VolumeResize features, filesystem resize tools are needed. By default, we use `xfs`
+as the volume filesystem. Therefore, you need to install `xfs_growfs` on the host
+
 
 ```console title="CentOS/RHEL, Rocky and Kylin"
 $ yum install -y lvm2
 $ yum install -y kernel-devel-$(uname -r)
+$ yum install -y xfsprogs
 ```
 
 ```console title="Ubuntu"
 $ apt-get install -y lvm2
 $ apt-get install -y linux-headers-$(uname -r)
+$ apt-get install -y xfsprogs
 ```
 
 ### Secure Boot

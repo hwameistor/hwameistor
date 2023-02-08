@@ -37,15 +37,19 @@ sidebar_label: "准备工作"
 
 1. 安装 `LVM2`
 2. 高可用功能需要安装和当前运行的 kernel 版本一致的 `kernel-devel`
+3. 数据卷扩容功能需要安装文件系统大小调整工具。默认情况下，我们使用 `xfs` 作为默认文件系统。因此节点上面需要
+安装 `xfs_growfs`
 
 ```console title="CentOS/RHEL, Rocky 和 Kylin"
 $ yum install -y lvm2
 $ yum install -y kernel-devel-$(uname -r)
+$ yum install -y xfsprogs
 ```
 
 ```console title="Ubuntu"
 $ apt-get install -y lvm2
 $ apt-get install -y linux-headers-$(uname -r)
+$ apt-get install -y xfsprogs
 ```
 
 ### Secure Boot
