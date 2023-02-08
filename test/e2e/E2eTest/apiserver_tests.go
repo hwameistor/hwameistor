@@ -216,6 +216,54 @@ var _ = ginkgo.Describe("apiserver test", ginkgo.Label("api"), func() {
 			}
 
 		})
+		ginkgo.It("check get /cluster/nodes/{nodeName}/migrates", func() {
+			nodeList := &corev1.NodeList{}
+			err := client.List(ctx, nodeList)
+			if err != nil {
+				logrus.Error(err)
+			}
+			for _, node := range nodeList.Items {
+
+				resp, err := http.Get("http://" + myUrl + ":31111/apis/hwameistor.io/v1alpha1/cluster/nodes/" + node.Name + "/migrates?page=1&pageSize=1")
+				if err != nil {
+					logrus.Error(err)
+				}
+				defer resp.Body.Close()
+				body, err := ioutil.ReadAll(resp.Body)
+				VolumeOperationListByNode := &api.VolumeOperationListByNode{}
+				err = json.Unmarshal(body, VolumeOperationListByNode)
+				if err != nil {
+					fmt.Println("error:", err)
+					return
+				}
+
+			}
+
+		})
+		ginkgo.It("check get /cluster/nodes/{nodeName}/pools", func() {
+			nodeList := &corev1.NodeList{}
+			err := client.List(ctx, nodeList)
+			if err != nil {
+				logrus.Error(err)
+			}
+			for _, node := range nodeList.Items {
+
+				resp, err := http.Get("http://" + myUrl + ":31111/apis/hwameistor.io/v1alpha1/cluster/nodes/" + node.Name + "/pools?page=1&pageSize=1")
+				if err != nil {
+					logrus.Error(err)
+				}
+				defer resp.Body.Close()
+				body, err := ioutil.ReadAll(resp.Body)
+				StoragePoolList := &api.StoragePoolList{}
+				err = json.Unmarshal(body, StoragePoolList)
+				if err != nil {
+					fmt.Println("error:", err)
+					return
+				}
+
+			}
+
+		})
 
 	})
 
