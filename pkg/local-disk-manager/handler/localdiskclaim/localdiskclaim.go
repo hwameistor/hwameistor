@@ -251,8 +251,8 @@ func (ldcHandler *Handler) findAndSetLastClaimedDisksAnnotation(originalDisks, c
 		return fmt.Errorf("there is no disk(s) assigned to %s", ldcHandler.diskClaim.GetName())
 	}
 
+	oldDiskClaim := ldcHandler.diskClaim.DeepCopy()
 	annotations := ldcHandler.diskClaim.GetAnnotations()
-
 	// Set reclaim key to false
 	annotations[HwameiStorReclaim] = "false"
 	annotations[HwameiStorLastClaimedDisks] = func(disks []string) (s string) {
@@ -263,7 +263,7 @@ func (ldcHandler *Handler) findAndSetLastClaimedDisksAnnotation(originalDisks, c
 	}(newDisks)
 
 	ldcHandler.diskClaim.SetAnnotations(annotations)
-	return nil
+	return ldcHandler.PatchClaimSpec(client.MergeFrom(oldDiskClaim))
 }
 
 func (ldcHandler *Handler) NeedReclaim() bool {
