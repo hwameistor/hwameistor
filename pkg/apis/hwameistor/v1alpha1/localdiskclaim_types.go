@@ -28,6 +28,10 @@ type LocalDiskClaimStatus struct {
 	// Status represents the current statue of the claim
 	// +kubebuilder:validation:Enum:=Bound;Pending;Extending
 	Status DiskClaimStatus `json:"status,omitempty"`
+
+	// ClaimRecords is a record for claimed disks. key/value format: < unix time >: < list of disks >
+	// +optional
+	ClaimRecords map[string][]string `json:"claimRecords,omitempty"`
 }
 
 // +genclient

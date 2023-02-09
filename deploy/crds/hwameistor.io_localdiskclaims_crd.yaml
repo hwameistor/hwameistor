@@ -124,6 +124,14 @@ spec:
           status:
             description: LocalDiskClaimStatus defines the observed state of LocalDiskClaim
             properties:
+              claimRecords:
+                additionalProperties:
+                  items:
+                    type: string
+                  type: array
+                description: 'ClaimRecords is a record for claimed disks. key/value
+                  format: < unix time >: < list of disks >'
+                type: object
               status:
                 description: Status represents the current statue of the claim
                 enum:
