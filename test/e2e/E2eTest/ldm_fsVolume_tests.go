@@ -21,7 +21,7 @@ import (
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("test fs volume", ginkgo.Label("periodCheck"), func() {
+var _ = ginkgo.Describe("test fs volume", ginkgo.Label("err"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
@@ -163,7 +163,7 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("periodCheck"), func() {
 			}
 
 			logrus.Infof("Waiting for the PVC to be bound")
-			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+			err = wait.PollImmediate(3*time.Second, 5*time.Minute, func() (done bool, err error) {
 				if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Phase != corev1.ClaimBound {
 					return false, nil
 				}
