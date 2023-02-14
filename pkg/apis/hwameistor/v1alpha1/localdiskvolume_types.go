@@ -85,6 +85,9 @@ type LocalDiskVolumeStatus struct {
 	// AllocatedCapacityBytes is the real allocated capacity in bytes
 	AllocatedCapacityBytes int64 `json:"allocatedCapacityBytes,omitempty"`
 
+	// UsedCapacityBytes is the real used capacity in bytes
+	UsedCapacityBytes int64 `json:"usedCapacityBytes,omitempty"`
+
 	// MountPoints
 	MountPoints []MountPoint `json:"mountPoints,omitempty"`
 
@@ -98,11 +101,11 @@ type LocalDiskVolumeStatus struct {
 
 // LocalDiskVolume is the Schema for the localdiskvolumes API
 // +kubebuilder:resource:path=localdiskvolumes,scope=Cluster,shortName=ldv
-//+kubebuilder:printcolumn:JSONPath=".spec.accessibility.node",name=Node,type=string
-//+kubebuilder:printcolumn:JSONPath=".status.devPath",name=Disk,type=string
-//+kubebuilder:printcolumn:JSONPath=".status.allocatedCapacityBytes",name=AllocatedCap,type=integer
-//+kubebuilder:printcolumn:JSONPath=".spec.diskType",name=Type,type=string
-//+kubebuilder:printcolumn:JSONPath=".status.state",name=Status,type=string
+// +kubebuilder:printcolumn:JSONPath=".spec.accessibility.node",name=Node,type=string
+// +kubebuilder:printcolumn:JSONPath=".status.devPath",name=Disk,type=string
+// +kubebuilder:printcolumn:JSONPath=".status.allocatedCapacityBytes",name=AllocatedCap,type=integer
+// +kubebuilder:printcolumn:JSONPath=".spec.diskType",name=Type,type=string
+// +kubebuilder:printcolumn:JSONPath=".status.state",name=Status,type=string
 type LocalDiskVolume struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
