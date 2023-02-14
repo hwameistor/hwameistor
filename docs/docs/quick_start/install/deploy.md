@@ -41,9 +41,9 @@ To verify the deployment, please refer to [Post Deployment](./post_check.md).
 
 :::tip
 
-The default image repositories are `k8s.gcr.io` and `ghcr.io`.
+The default image repositories are `registry.k8s.io` and `ghcr.io`.
 In case any network problem, you can try to use the images provided by DaoCloud
-at `k8s-gcr.m.daocloud.io` and `ghcr.m.daocloud.io`.
+at `m.daocloud.io/registry.k8s.io` and `ghcr.m.daocloud.io`.
 
 :::
 
@@ -53,7 +53,7 @@ To switch images, use `--set` to change the value of parameters:
 ```console
 $ helm install hwameistor ./hwameistor \
     -n hwameistor --create-namespace \
-    --set global.k8sImageRegistry=k8s-gcr.m.daocloud.io \
+    --set global.k8sImageRegistry=m.daocloud.io/registry.k8s.io \
     --set global.hwameistorImageRegistry=ghcr.m.daocloud.io
 ```
 
