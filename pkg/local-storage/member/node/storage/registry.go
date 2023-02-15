@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"reflect"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -242,29 +243,67 @@ func (lr *localRegistry) HasVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica) b
 
 // UpdateCondition append current condition about LocalStorageNode, i.e. StorageExpandSuccess, StorageExpandFail, UnAvailable
 func (lr *localRegistry) UpdateCondition(condition apisv1alpha1.LocalStorageNodeCondition) error {
-	oldNode := &apisv1alpha1.LocalStorageNode{}
-	if err := lr.apiClient.Get(context.TODO(), types.NamespacedName{Name: lr.lm.nodeConf.Name}, oldNode); err != nil {
+	storageNode := &apisv1alpha1.LocalStorageNode{}
+	if err := lr.apiClient.Get(context.TODO(), types.NamespacedName{Name: lr.lm.nodeConf.Name}, storageNode); err != nil {
 		lr.logger.WithError(err).WithField("condition", condition).Error("Failed to query Node")
-		return nil
+		return err
 	}
+
+	oldNode := storageNode.DeepCopy()
 	switch condition.Type {
 	case apisv1alpha1.StorageExpandFailure, apisv1alpha1.StorageUnAvailable:
-		lr.recorder.Event(oldNode, v1.EventTypeWarning, string(condition.Type), condition.Message)
+		lr.recorder.Event(storageNode, v1.EventTypeWarning, string(condition.Type), condition.Message)
 	case apisv1alpha1.StorageExpandSuccess, apisv1alpha1.StorageProgressing:
-		lr.recorder.Event(oldNode, v1.EventTypeNormal, string(condition.Type), condition.Message)
+		lr.recorder.Event(storageNode, v1.EventTypeNormal, string(condition.Type), condition.Message)
 	default:
-		lr.recorder.Event(oldNode, v1.EventTypeNormal, string(condition.Type), condition.Message)
+		lr.recorder.Event(storageNode, v1.EventTypeNormal, string(condition.Type), condition.Message)
 	}
 
-	newNode := oldNode.DeepCopy()
-	i, _ := GetStorageCondition(newNode.Status.Conditions, condition.Type)
+	i, _ := GetStorageCondition(storageNode.Status.Conditions, condition.Type)
 	if i == -1 {
-		newNode.Status.Conditions = append(newNode.Status.Conditions, condition)
+		storageNode.Status.Conditions = append(storageNode.Status.Conditions, condition)
 	} else {
-		newNode.Status.Conditions[i] = condition
+		storageNode.Status.Conditions[i] = condition
 	}
 
-	return lr.apiClient.Status().Patch(context.TODO(), newNode, client.MergeFrom(oldNode))
+	return lr.apiClient.Status().Patch(context.TODO(), storageNode, client.MergeFrom(oldNode))
+}
+
+// UpdatePoolExtendRecord append pool extend records including disks and diskClaim
+func (lr *localRegistry) UpdatePoolExtendRecord(pool string, record apisv1alpha1.LocalDiskClaimSpec) error {
+	if len(record.DiskRefs) == 0 {
+		return nil
+	}
+
+	storageNode := &apisv1alpha1.LocalStorageNode{}
+	if err := lr.apiClient.Get(context.TODO(), types.NamespacedName{Name: lr.lm.nodeConf.Name}, storageNode); err != nil {
+		lr.logger.WithError(err).Error("Failed to query Node")
+		return err
+	}
+	oldStorageNode := storageNode.DeepCopy()
+
+	// init records map
+	if storageNode.Status.PoolExtendRecords == nil {
+		storageNode.Status.PoolExtendRecords = make(map[string]apisv1alpha1.LocalDiskClaimSpecArray)
+	}
+
+	// init pool records
+	if _, ok := storageNode.Status.PoolExtendRecords[pool]; !ok {
+		storageNode.Status.PoolExtendRecords[pool] = make(apisv1alpha1.LocalDiskClaimSpecArray, 0)
+	}
+
+	// append this record if not exist
+	exist := false
+	for _, poolRecord := range storageNode.Status.PoolExtendRecords[pool] {
+		if reflect.DeepEqual(poolRecord, record) {
+			exist = true
+		}
+	}
+	if !exist {
+		storageNode.Status.PoolExtendRecords[pool] = append(storageNode.Status.PoolExtendRecords[pool], record)
+	}
+
+	return lr.apiClient.Status().Patch(context.TODO(), storageNode, client.MergeFrom(oldStorageNode))
 }
 
 // showReplicaOnHost debug func for now

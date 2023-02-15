@@ -3,6 +3,8 @@ package node
 import (
 	"context"
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"sync"
 
@@ -59,23 +61,21 @@ func (m *manager) processLocalDiskClaim(localDiskNameSpacedName string) error {
 		return nil
 	}
 
-	m.logger.Debugf("Required node name %s, current node name %s.", localDiskClaim.Spec.NodeName, m.name)
+	logCtx.Debugf("Required node name %s, current node name %s.", localDiskClaim.Spec.NodeName, m.name)
 	if localDiskClaim.Spec.NodeName != m.name {
 		return nil
 	}
 
+	// We only care about disks under Bound status
+	var err error
 	switch localDiskClaim.Status.Status {
-	case apisv1alpha1.DiskClaimStatusEmpty:
-		return nil
 	case apisv1alpha1.LocalDiskClaimStatusBound:
-		return m.processLocalDiskClaimBound(localDiskClaim)
-	case apisv1alpha1.LocalDiskClaimStatusPending:
-		return nil
+		err = m.processLocalDiskClaimBound(localDiskClaim)
 	default:
 		logCtx.Error("Invalid LocalDiskClaim state")
 	}
 
-	return fmt.Errorf("invalid LocalDiskClaim state")
+	return err
 }
 
 func (m *manager) recordExtendPoolCondition(extend bool, err error) {
@@ -107,13 +107,14 @@ func (m *manager) recordExtendPoolCondition(extend bool, err error) {
 		}
 	}
 
-	if err := m.storageMgr.Registry().UpdateCondition(condition); err != nil {
+	if err = m.storageMgr.Registry().UpdateCondition(condition); err != nil {
 		m.logger.WithField("condition", condition).WithError(err).Error("Failed to update condition")
 	}
 }
 
 func (m *manager) processLocalDiskClaimBound(claim *apisv1alpha1.LocalDiskClaim) (e error) {
-	m.logger.Debug("start processing Bound LocalDiskClaim")
+	logCtx := m.logger.WithFields(log.Fields{"LocalDiskClaim": claim.GetName()})
+	logCtx.Debug("start processing Bound LocalDiskClaim")
 
 	extend := false
 	defer func() {
@@ -123,19 +124,32 @@ func (m *manager) processLocalDiskClaimBound(claim *apisv1alpha1.LocalDiskClaim)
 	// list disks bounded by the claim
 	boundDisks, err := m.getActiveBoundDisks(claim)
 	if err != nil {
-		log.WithError(err).Error("Failed to getActiveBoundDisks.")
+		logCtx.WithError(err).Error("Failed to getActiveBoundDisks")
 		return err
 	}
 
-	// add new disks to StoragePools
+	// 1. add new disks to StoragePools
 	if extend, err = m.storageMgr.PoolManager().ExtendPools(boundDisks); err != nil {
-		log.WithError(err).Error("Failed to ExtendPools")
+		logCtx.WithError(err).Error("Failed to ExtendPools")
 		return err
 	}
 
-	// rebuild Node resource
+	// 2. rebuild Node resource
 	if err = m.storageMgr.Registry().SyncNodeResources(); err != nil {
-		log.WithError(err).Error("Failed to SyncNodeResources")
+		logCtx.WithError(err).Error("Failed to SyncNodeResources")
+		return err
+	}
+
+	// 3. record claim and disks backing this claim to StorageNode
+	pool, _ := utils.BuildStoragePoolName(claim.Spec.Description.DiskType, apisv1alpha1.PoolTypeRegular)
+	if err = m.storageMgr.Registry().UpdatePoolExtendRecord(pool, claim.Spec); err != nil {
+		logCtx.WithError(err).Error("Failed to UpdatePoolExtendRecord")
+		return err
+	}
+
+	// 4. consume disks over and update the claim
+	if err = m.updateDiskClaimConsumed(claim); err != nil {
+		logCtx.WithError(err).Error("Failed to updateDiskClaimConsumed")
 		return err
 	}
 	return nil
@@ -269,4 +283,10 @@ func (m *manager) getLocalDiskByName(localDiskName, nameSpace string) (*apisv1al
 		return nil, err
 	}
 	return localDisk, nil
+}
+
+func (m *manager) updateDiskClaimConsumed(claim *apisv1alpha1.LocalDiskClaim) error {
+	oldClaim := claim.DeepCopy()
+	claim.Spec.Consumed = true
+	return m.apiClient.Patch(context.Background(), claim, client.MergeFrom(oldClaim))
 }

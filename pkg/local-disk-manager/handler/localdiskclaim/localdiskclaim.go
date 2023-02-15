@@ -221,3 +221,7 @@ func (ldcHandler *Handler) ShowObjectInfo(msg string) {
 		"diskRef":         ldcHandler.diskClaim.Spec.DiskRefs,
 	}).Info(msg)
 }
+
+func (ldcHandler *Handler) DeleteLocalDiskClaim() error {
+	return ldcHandler.Delete(context.Background(), ldcHandler.diskClaim)
+}
