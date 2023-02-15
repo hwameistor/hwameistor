@@ -3,8 +3,8 @@ global:
   # k8sImageRegistry is used to control which image registry the CSIController
   # images, i.e. provisioner,attacher,registrar,resizer is pulled from
   # Users in China can change to these sites for option
-  # k8sImageRegistry: k8s-gcr.m.daocloud.io
-  k8sImageRegistry: k8s.gcr.io
+  # k8sImageRegistry: m.daocloud.io/registry.k8s.io
+  k8sImageRegistry: registry.k8s.io
   # hwameistorImageRegistry is used to control which image registry the hwameistor
   # images, i.e. localDiskManager,localstorage,scheduler,admission,evictor is pulled from
   # Users in China can change to these sites for option

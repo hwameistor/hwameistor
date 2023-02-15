@@ -89,7 +89,7 @@ func addLabels() {
 
 func installHwameiStorByHelm() {
 	logrus.Infof("helm install hwameistor")
-	_ = RunInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace --set global.k8sImageRegistry=k8s-gcr.m.daocloud.io")
+	_ = RunInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace --set global.k8sImageRegistry=m.daocloud.io/registry.k8s.io")
 }
 
 func installHwameiStorByHelm_offline() {
