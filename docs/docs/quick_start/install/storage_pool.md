@@ -51,6 +51,8 @@ k8s-worker-2   k8s-worker-2   Bound
 k8s-worker-3   k8s-worker-3   Bound
 ```
 
+>**NOTES**: Since version `v0.8.0`, the claim will be deleted after disk(s) backing the claim are added in `StoragePool`.
+
 ### 3. Verify `StorageClass`
 
 ```console
@@ -64,15 +66,15 @@ hwameistor-storage-lvm-hdd   lvm.hwameistor.io   Delete          WaitForFirstCon
 ```console
 $ kubectl get ld
 NAME               NODEMATCH      CLAIM          PHASE
-k8s-worker-1-sda   k8s-worker-1                  Inuse
-k8s-worker-1-sdb   k8s-worker-1   k8s-worker-1   Claimed
-k8s-worker-1-sdc   k8s-worker-1   k8s-worker-1   Claimed
-k8s-worker-2-sda   k8s-worker-2                  Inuse
-k8s-worker-2-sdb   k8s-worker-2   k8s-worker-2   Claimed
-k8s-worker-2-sdc   k8s-worker-2   k8s-worker-2   Claimed
-k8s-worker-3-sda   k8s-worker-3                  Inuse
-k8s-worker-3-sdb   k8s-worker-3   k8s-worker-3   Claimed
-k8s-worker-3-sdc   k8s-worker-3   k8s-worker-3   Claimed
+k8s-worker-1-sda   k8s-worker-1                  Bound
+k8s-worker-1-sdb   k8s-worker-1   k8s-worker-1   Bound
+k8s-worker-1-sdc   k8s-worker-1   k8s-worker-1   Bound
+k8s-worker-2-sda   k8s-worker-2                  Bound
+k8s-worker-2-sdb   k8s-worker-2   k8s-worker-2   Bound
+k8s-worker-2-sdc   k8s-worker-2   k8s-worker-2   Bound
+k8s-worker-3-sda   k8s-worker-3                  Bound
+k8s-worker-3-sdb   k8s-worker-3   k8s-worker-3   Bound
+k8s-worker-3-sdc   k8s-worker-3   k8s-worker-3   Bound
 ```
 
 ### 5. Observe VG (Optional)
