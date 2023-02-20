@@ -54,6 +54,8 @@ k8s-worker-2   k8s-worker-2   Bound
 k8s-worker-3   k8s-worker-3   Bound
 ```
 
+>**注意**: 从版本 `v0.8.0` 开始，当 Claim 所申请的磁盘被添加到存储池后，相应的 Claim 会被删除。
+
 ### 3. 验证 `StorageClass`
 
 运行以下命令：
@@ -76,15 +78,15 @@ $ kubectl get ld
 
 ```console
 NAME               NODEMATCH      CLAIM          PHASE
-k8s-worker-1-sda   k8s-worker-1                  Inuse
-k8s-worker-1-sdb   k8s-worker-1   k8s-worker-1   Claimed
-k8s-worker-1-sdc   k8s-worker-1   k8s-worker-1   Claimed
-k8s-worker-2-sda   k8s-worker-2                  Inuse
-k8s-worker-2-sdb   k8s-worker-2   k8s-worker-2   Claimed
-k8s-worker-2-sdc   k8s-worker-2   k8s-worker-2   Claimed
-k8s-worker-3-sda   k8s-worker-3                  Inuse
-k8s-worker-3-sdb   k8s-worker-3   k8s-worker-3   Claimed
-k8s-worker-3-sdc   k8s-worker-3   k8s-worker-3   Claimed
+k8s-worker-1-sda   k8s-worker-1                  Bound
+k8s-worker-1-sdb   k8s-worker-1   k8s-worker-1   Bound
+k8s-worker-1-sdc   k8s-worker-1   k8s-worker-1   Bound
+k8s-worker-2-sda   k8s-worker-2                  Bound
+k8s-worker-2-sdb   k8s-worker-2   k8s-worker-2   Bound
+k8s-worker-2-sdc   k8s-worker-2   k8s-worker-2   Bound
+k8s-worker-3-sda   k8s-worker-3                  Bound
+k8s-worker-3-sdb   k8s-worker-3   k8s-worker-3   Bound
+k8s-worker-3-sdc   k8s-worker-3   k8s-worker-3   Bound
 ```
 
 ### 5. 观察 `VG` (可选)

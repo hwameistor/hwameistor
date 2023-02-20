@@ -2,7 +2,6 @@ package disk
 
 import (
 	"context"
-
 	log "github.com/sirupsen/logrus"
 	crmanager "sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -50,6 +49,7 @@ func (ctr *Controller) StartMonitor() {
 	// Start monitor disk event
 	diskEventChan := make(chan manager.Event)
 	go ctr.diskManager.Monitor(diskEventChan)
+	// Start push disk event to controller event chan
 	for disk := range diskEventChan {
 		ctr.Push(disk)
 	}
@@ -66,16 +66,16 @@ func (ctr *Controller) HandleEvent() {
 		switch event.Type {
 		case manager.ADD:
 			fallthrough
-		case manager.EXIST:
+		case manager.EXIST, manager.CHANGE:
 			// Get disk basic info
 			newDisk := DiskParser.ParseDisk()
-			log.Infof("Disk %v basicinfo: %v", event.DevPath, newDisk)
+			// log.Debugf("Disk %v basicinfo: %v", event.DevPath, newDisk)
 			// Convert disk resource to localDisk
 			localDisk := ctr.localDiskController.ConvertDiskToLocalDisk(newDisk)
 
 			// Judge whether the disk is completely new
 			if ctr.localDiskController.IsAlreadyExist(localDisk) {
-				log.Debugf("Disk %+v has been already exist", newDisk)
+				// log.Debugf("Disk %+v has been already exist", newDisk.DevName)
 				// If the disk already exists, try to update
 				if err := ctr.localDiskController.UpdateLocalDisk(localDisk); err != nil {
 					log.WithError(err).Errorf("Update localDisk fail for disk %v", newDisk)

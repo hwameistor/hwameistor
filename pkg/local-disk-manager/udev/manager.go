@@ -2,11 +2,11 @@ package udev
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/pilebones/go-udev/crawler"
 	"github.com/pilebones/go-udev/netlink"
 	log "github.com/sirupsen/logrus"
+	"strings"
+	"time"
 
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
 )
@@ -39,6 +39,34 @@ func (dm DiskManager) Monitor(c chan manager.Event) {
 			log.WithError(err).Errorf("Monitor udev event fail, will try to monitor again")
 			continue
 		}
+	}
+}
+
+// StartTimerTrigger trigger disk event
+func (dm DiskManager) StartTimerTrigger(c chan manager.Event) {
+	setNextTriggerDuration := func(duration *time.Duration) time.Duration {
+		if *duration >= (time.Minute * 8) {
+			*duration = time.Minute
+		}
+		*duration = *duration * 2
+		return *duration
+	}
+
+	duration := time.Minute
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+
+	for {
+		<-timer.C
+		log.Debugf("Trigger disk event")
+		for _, diskEvent := range dm.ListExist() {
+			c <- diskEvent
+		}
+
+		// Reset trigger time
+		setNextTriggerDuration(&duration)
+		timer.Reset(duration)
+		log.Debugf("Next disk event wil be triggered at: %v", time.Now().Add(duration))
 	}
 }
 

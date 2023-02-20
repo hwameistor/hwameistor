@@ -40,6 +40,11 @@ spec:
           spec:
             description: LocalDiskClaimSpec defines the desired state of LocalDiskClaim
             properties:
+              consumed:
+                description: Consumed represents disks backing the claim has been
+                  already consumed by a consumer. If true the claim will be deleted
+                  soon from kubernetes
+                type: boolean
               description:
                 description: Description of the disk to be claimed
                 properties:
@@ -130,6 +135,8 @@ spec:
                 - Bound
                 - Pending
                 - Extending
+                - ToBeDeleted
+                - Deleted
                 type: string
             type: object
         type: object

@@ -53,9 +53,8 @@ func (ctr Controller) UpdateLocalDisk(ld v1alpha1.LocalDisk) error {
 		return err
 	}
 
-	// TODO: merge old disk and new disk
 	ctr.mergerLocalDisk(oldLd, newLd)
-	return ctr.Mgr.GetClient().Update(context.Background(), newLd)
+	return ctr.Mgr.GetClient().Patch(context.Background(), newLd, client.MergeFrom(&oldLd))
 }
 
 func (ctr Controller) IsAlreadyExist(ld v1alpha1.LocalDisk) bool {
