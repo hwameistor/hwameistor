@@ -107,8 +107,8 @@ spec:
                     properties:
                       consumed:
                         description: Consumed represents disks backing the claim has
-                          already consumed by consumer. If true the claim will be
-                          deleted soon form kubernetes
+                          been already consumed by a consumer. If true the claim will
+                          be deleted soon from kubernetes
                         type: boolean
                       description:
                         description: Description of the disk to be claimed

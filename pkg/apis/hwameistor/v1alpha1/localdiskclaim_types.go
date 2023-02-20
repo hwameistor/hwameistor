@@ -22,8 +22,8 @@ type LocalDiskClaimSpec struct {
 	// +optional
 	DiskRefs []*v1.ObjectReference `json:"diskRefs,omitempty"`
 
-	// Consumed represents disks backing the claim has already consumed by consumer.
-	// If true the claim will be deleted soon form kubernetes
+	// Consumed represents disks backing the claim has been already consumed by a consumer.
+	// If true the claim will be deleted soon from kubernetes
 	// +optional
 	Consumed bool `json:"consumed,omitempty"`
 }
