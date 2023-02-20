@@ -2,7 +2,6 @@ package disk
 
 import (
 	"context"
-
 	log "github.com/sirupsen/logrus"
 	crmanager "sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -50,6 +49,11 @@ func (ctr *Controller) StartMonitor() {
 	// Start monitor disk event
 	diskEventChan := make(chan manager.Event)
 	go ctr.diskManager.Monitor(diskEventChan)
+
+	// Start trigger disk event
+	go ctr.diskManager.StartTimerTrigger(diskEventChan)
+
+	// Start push disk event to controller event chan
 	for disk := range diskEventChan {
 		ctr.Push(disk)
 	}
