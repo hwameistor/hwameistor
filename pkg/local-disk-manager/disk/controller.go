@@ -49,10 +49,6 @@ func (ctr *Controller) StartMonitor() {
 	// Start monitor disk event
 	diskEventChan := make(chan manager.Event)
 	go ctr.diskManager.Monitor(diskEventChan)
-
-	// Start trigger disk event
-	go ctr.diskManager.StartTimerTrigger(diskEventChan)
-
 	// Start push disk event to controller event chan
 	for disk := range diskEventChan {
 		ctr.Push(disk)
@@ -70,7 +66,7 @@ func (ctr *Controller) HandleEvent() {
 		switch event.Type {
 		case manager.ADD:
 			fallthrough
-		case manager.EXIST:
+		case manager.EXIST, manager.CHANGE:
 			// Get disk basic info
 			newDisk := DiskParser.ParseDisk()
 			// log.Debugf("Disk %v basicinfo: %v", event.DevPath, newDisk)
