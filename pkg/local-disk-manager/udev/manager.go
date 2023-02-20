@@ -44,8 +44,8 @@ func (dm DiskManager) Monitor(c chan manager.Event) {
 
 // StartTimerTrigger trigger disk event
 func (dm DiskManager) StartTimerTrigger(c chan manager.Event) {
-	getNextTriggerTime := func(duration *time.Duration) time.Duration {
-		if *duration > (time.Hour * 6) {
+	setNextTriggerDuration := func(duration *time.Duration) time.Duration {
+		if *duration >= (time.Minute * 8) {
 			*duration = time.Minute
 		}
 		*duration = *duration * 2
@@ -58,12 +58,15 @@ func (dm DiskManager) StartTimerTrigger(c chan manager.Event) {
 
 	for {
 		<-timer.C
+		log.Debugf("Trigger disk event")
 		for _, diskEvent := range dm.ListExist() {
-			log.Debugf("Trigger disk: %v, time: %v", diskEvent.DevName, time.Now())
 			c <- diskEvent
 		}
 
-		timer.Reset(getNextTriggerTime(&duration))
+		// Reset trigger time
+		setNextTriggerDuration(&duration)
+		timer.Reset(duration)
+		log.Debugf("Next disk event wil be triggered at: %v", time.Now().Add(duration))
 	}
 }
 
