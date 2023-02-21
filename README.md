@@ -23,8 +23,8 @@ The latest release of HwameiStor is [![hwameistor-releases](https://img.shields.
 ## Release Status
 
 | Release | Version | Type   |
-| ------- | ------- | ------ |
-| v0.6    | v0.6.0  | latest |
+|---------|---------| ------ |
+| v0.7.2  | v0.7.2  | latest |
 
 See [current releases](https://github.com/hwameistor/hwameistor/releases).
 
@@ -97,7 +97,7 @@ For full documentation, please see our website [hwameistor.io](https://hwameisto
 ## Roadmap
 
 | Features                  | Status    | Release | Description                                       |
-| ------------------------- | --------- | ------- | ------------------------------------------------- |
+| ------------------------- |-----------|---------| ------------------------------------------------- |
 | CSI for LVM volume        | Completed | v0.3.2  | Provision volume with lvm                         |
 | CSI for disk volume       | Completed | v0.3.2  | Provision volume with disk                        |
 | HA LVM Volume             | Completed | v0.3.2  | Volume with HA                                    |
@@ -105,12 +105,12 @@ For full documentation, please see our website [hwameistor.io](https://hwameisto
 | LVM Volume conversion     | Completed | v0.3.2  | Convert a non-HA LVM volume to the HA             |
 | LVM Volume migration      | Completed | v0.4.0  | Migrate a LVM volume replica to a different node  |
 | Volume Group              | Completed | v0.3.2  | Support volume group allocation                   |
+| Disk health check         | Completed | v0.7.0  | Disk fault prediction, status reporting           |  
 | LVM HA Volume Recovery    | Planed    |         | Recover the LVM HA volume in problem              |
 | HwameiStor Operator       | Planed    |         | Operator for HwameiStor install, maintain, etc.   |
 | Observability             | Planed    |         | Observability, such as metrics, logs, etc.        |
 | Failover                  | Planed    |         | Fail over the pod with HwameiStor volume          |
 | IO throttling             | Planed    |         | Limit IO bandwith to access the HwameiStor volume |
-| Disk health check         | Planed    |         | Disk fault prediction, status reporting           |
 | Disk replacement          | Planed    |         | Replace disk which fails or will fail soon        |
 | LVM volume auto-expansion | Planed    |         | Expand LVM volume automatically                   |
 | LVM volume snapshot       | Planed    |         | Snapshot of LVM volume                            |
