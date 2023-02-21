@@ -540,11 +540,7 @@ func CreateLdc(ctx context.Context) error {
 				Namespace: "kube-system",
 			}
 			err := client.Get(ctx, localDiskClaimKey, localDiskClaim)
-			if err != nil {
-				logrus.Error(err)
-				f.ExpectNoError(err)
-			}
-			if localDiskClaim.Status.Status != v1alpha1.LocalDiskClaimStatusBound {
+			if !k8serror.IsNotFound(err) {
 				return false, nil
 			}
 		}
