@@ -319,3 +319,6 @@ e2e-test:
 pr-test:
 	bash test/pr-test.sh
 
+.PHONY: render-chart-values
+render-chart-values:
+	${RENDER_CHART_VALUES}
