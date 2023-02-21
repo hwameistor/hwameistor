@@ -23,6 +23,9 @@ jobs:
         uses: azure/setup-helm@v1
         with:
           version: v3.7.1
+      - name: Render Chart Values
+        run: |
+          make render-chart-values
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.3.0
         with:

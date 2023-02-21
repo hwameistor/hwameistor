@@ -92,3 +92,7 @@ BUILDER_MOUNT_DST_DIR = /go/src/github.com/hwameistor/hwameistor
 #----------------
 # Operator tools
 OPERATOR_CMD = operator-sdk
+
+# [ CHART ]
+#----------------
+RENDER_CHART_VALUES = ${PROJECT_SOURCE_CODE_DIR}/build/util/render-chart-values.sh
