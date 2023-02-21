@@ -38,34 +38,35 @@ scheduler:
   replicas: 1
   kubeApiServerConfigFilePath: /etc/kubernetes/admin.conf
   imageRepository: hwameistor/scheduler
+  tag: ""
   resources: {}
 
 admission:
   replicas: 1
   imageRepository: hwameistor/admission
+  tag: ""
   resources: {}
   # failurePolicy defines how unrecognized errors from the admission endpoint
   # are handled - allowed values are Ignore or Fail. Defaults to Fail.
   failurePolicy: ""
-  # self-signed is a tool image for generating self-signed certs used by api-server
-  selfSigned:
-    imageRepository: hwameistor/self-signed
-    tag: v1
 
 evictor:
   replicas: 1
   imageRepository: hwameistor/evictor
-  resources: {} 
+  tag: ""
+  resources: {}
 
 exporter:
   replicas: 1
   imageRepository: hwameistor/exporter
-  resources: {} 
+  tag: ""
+  resources: {}
 
 apiserver:
   replicas: 1
   imageRepository: hwameistor/apiserver
-  resources: {} 
+  tag: ""
+  resources: {}
 
 localDiskManager:
   tolerationsOnMaster: true
@@ -76,6 +77,7 @@ localDiskManager:
     resources: {}
   manager:
     imageRepository: hwameistor/local-disk-manager
+    tag: ""
     resources: {}
 
 localDiskManagerCSIController:
@@ -107,6 +109,7 @@ localStorage:
       # default value: 1000
       maxHAVolumeCount:
     imageRepository: hwameistor/local-storage
+    tag: ""
     resources: {}
   migrate:
     rclone:
