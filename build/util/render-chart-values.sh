@@ -7,7 +7,7 @@ HELM_HWAMEISTOR_DIR=${PROGRAM}/helm/hwameistor
 
 # render values.yaml according chart version or release tag
 function render_image_tag() {
-  imageTag=$1
+  local imageTag=$1
   sed -i "s/tag: \"\"/tag: ${imageTag}/g" "${HELM_HWAMEISTOR_DIR}/values.yaml"
 }
 
