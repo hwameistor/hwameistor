@@ -51,7 +51,7 @@ function prepare_install_params() {
 #
 #   sed -i "/hwameistor\/apiserver/a \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
 
-   sed -i "s/version: 1.53.2/version: ${IMAGE_TAG}/" helm/hwameistor/Chart.yaml
+   sed -i "5c version: ${IMAGE_TAG}" helm/hwameistor/Chart.yaml
 
 	 sed -i 's/rclone\/rclone/172.30.45.210\/hwameistor\/hwameistor-migrate-rclone/' helm/hwameistor/values.yaml
 
