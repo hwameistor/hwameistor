@@ -1,0 +1,30 @@
+v0.7.2 / 2023-2-8
+========================
+
+##LocalDiskManager
+* rename MoveMountPoint into RemoveMountPoint and simplify range expression in localdiskvolume #610 (@carlory )
+* fix potenitial panic in raid #609 (@carlory )
+* improve resultCodeIsOk comment #608 (@carlory )
+* added some fields in localvolume status to record storage usage #600 (@sun7927 )
+
+##LocalStorage
+* make localregistry rebuilding process correct #619 (@SSmallMonster )
+* Resize StoragePool Capacity when disk capacity changed #618 (@SSmallMonster )
+
+##Scheduler
+* update scheduler config #602 (@SSmallMonster )
+* Extend Scheduler Score Plugin #601 (@SSmallMonster )
+
+##Exporter
+* renamed metrics collector to exporter and refined the collector manager #621 (@sun7927 )
+
+##Evictor,Admission
+N/A
+
+##Other
+* Add more api tests ( [test]update api test #625 [test]update api test #623 [test]update api test #622 [test]update api test #616 [test]add api test #615 [test]update api test #616 @FloatXD )
+* make for link helm crds #631 (@SSmallMonster )
+* Update fs-resize tools in pre-requirements docs #628 (@SSmallMonster )
+* fix go-import-lint #605 (@carlory )
+* remove reduant gitkeep #606 (@carlory )
+* add print headers for the localdisk resource #607 (@carlory )
