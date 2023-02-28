@@ -31,7 +31,7 @@ func newCollectorForLocalStorageNode(dataCache *metricsCache) prometheus.Collect
 			nil,
 		),
 		statusMetricsDesc: prometheus.NewDesc(
-			"hwameistor_localstoragenode_status",
+			"hwameistor_localstoragenode_status_count",
 			"The status summary of the localstoragenode.",
 			[]string{"status"},
 			nil,
