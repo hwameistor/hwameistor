@@ -16,7 +16,7 @@ func newCollectorForLocalDisk(dataCache *metricsCache) prometheus.Collector {
 	return &LocalDiskMetricsCollector{
 		dataCache: dataCache,
 		statusMetricsDesc: prometheus.NewDesc(
-			"hwameistor_localdisk_status",
+			"hwameistor_localdisk_status_count",
 			"The status summary of the localdisk.",
 			[]string{"nodeName", "type", "status"},
 			nil,

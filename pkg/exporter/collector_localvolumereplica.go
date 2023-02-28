@@ -18,7 +18,7 @@ func newCollectorForLocalVolumeReplica(dataCache *metricsCache) prometheus.Colle
 	return &LocalVolumeReplicaMetricsCollector{
 		dataCache: dataCache,
 		statusMetricsDesc: prometheus.NewDesc(
-			"hwameistor_localvolumereplica_status",
+			"hwameistor_localvolumereplica_status_count",
 			"The status summary of the localvolumereplica.",
 			[]string{"nodeName", "poolName", "status"},
 			nil,

@@ -26,7 +26,7 @@ func newCollectorForLocalVolumeMigrate(dataCache *metricsCache) prometheus.Colle
 			nil,
 		),
 		statusMetricsDesc: prometheus.NewDesc(
-			"hwameistor_localvolumemigrate_status",
+			"hwameistor_localvolumemigrate_status_count",
 			"The status summary of the localvolumemigrate operation.",
 			[]string{"status"},
 			nil,

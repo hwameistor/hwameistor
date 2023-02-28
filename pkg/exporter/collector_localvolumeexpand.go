@@ -25,7 +25,7 @@ func newCollectorForLocalVolumeExpand(dataCache *metricsCache) prometheus.Collec
 			nil,
 		),
 		statusMetricsDesc: prometheus.NewDesc(
-			"hwameistor_localvolumeexpand_status",
+			"hwameistor_localvolumeexpand_status_count",
 			"The status summary of the localvolumeexpand operation.",
 			[]string{"status"},
 			nil,

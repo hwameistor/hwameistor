@@ -3,7 +3,7 @@ module github.com/hwameistor/hwameistor
 go 1.18
 
 require (
-	github.com/hwameistor/hwameistor-operator v0.0.0-20221222073603-f4c97e21765d
+	github.com/hwameistor/hwameistor-operator v0.8.0
 	github.com/operator-framework/operator-sdk v0.18.2
 	github.com/pilebones/go-udev v0.9.0
 	github.com/sirupsen/logrus v1.9.0
@@ -21,7 +21,7 @@ require (
 	github.com/container-storage-interface/spec v1.3.0
 	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/golang/mock v1.6.0
-	github.com/google/uuid v1.1.2
+	github.com/google/uuid v1.1.2 // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/kubernetes-csi/csi-lib-utils v0.7.1
 	github.com/onsi/ginkgo/v2 v2.1.4
@@ -151,9 +151,9 @@ require (
 	k8s.io/component-helpers v0.21.0 // indirect
 	k8s.io/gengo v0.0.0-20211129171323-c02415ce4185 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7 // indirect
+	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect
 	k8s.io/mount-utils v0.0.0 // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.1.0 // indirect
+	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 

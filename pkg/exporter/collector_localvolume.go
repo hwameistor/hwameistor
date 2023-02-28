@@ -19,14 +19,14 @@ func newCollectorForLocalVolume(dataCache *metricsCache) prometheus.Collector {
 	return &LocalVolumeMetricsCollector{
 		dataCache: dataCache,
 		typeMetricsDesc: prometheus.NewDesc(
-			"hwameistor_localvolume_type",
+			"hwameistor_localvolume_type_count",
 			"The type of the localvolume.",
 			[]string{"poolName", "type"},
 			nil,
 		),
 
 		statusMetricsDesc: prometheus.NewDesc(
-			"hwameistor_localvolume_status",
+			"hwameistor_localvolume_status_count",
 			"The status summary of the localvolume.",
 			[]string{"poolName", "type", "status"},
 			nil,

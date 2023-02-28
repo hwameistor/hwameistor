@@ -18,7 +18,7 @@ func newCollectorForLocalDiskVolume(dataCache *metricsCache) prometheus.Collecto
 	return &LocalDiskVolumeMetricsCollector{
 		dataCache: dataCache,
 		stateMetricsDesc: prometheus.NewDesc(
-			"hwameistor_localdiskvolume_state",
+			"hwameistor_localdiskvolume_state_count",
 			"The state summary of the localdiskvolume.",
 			[]string{"type", "state"},
 			nil,
