@@ -34,7 +34,7 @@ true
 ## 修改 `PVC` 的大小
 
 ```console
-$ kubectl get edit pvc data-sts-mysql-local-0
+$ kubectl edit pvc data-sts-mysql-local-0
 
 ...
 spec:
