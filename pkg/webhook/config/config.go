@@ -114,18 +114,7 @@ func CreateAdmissionConfig(caCert *bytes.Buffer) error {
 						Resources:   []string{"pods"},
 					},
 				}},
-				FailurePolicy: func() *admissionregistrationv1.FailurePolicyType {
-					var pt admissionregistrationv1.FailurePolicyType
-					switch failurePolicy {
-					case string(admissionregistrationv1.Fail):
-						pt = admissionregistrationv1.Fail
-					case string(admissionregistrationv1.Ignore):
-						pt = admissionregistrationv1.Ignore
-					default:
-						pt = admissionregistrationv1.Fail
-					}
-					return &pt
-				}(),
+				FailurePolicy: GetFailurePolicy(),
 				NamespaceSelector: &metav1.LabelSelector{
 					MatchExpressions: []metav1.LabelSelectorRequirement{
 						{
@@ -200,4 +189,18 @@ func ensureNameSpaceKeyExist(clientset *k8s.Clientset) error {
 	}
 
 	return nil
+}
+
+func GetFailurePolicy() *admissionregistrationv1.FailurePolicyType {
+	var pt admissionregistrationv1.FailurePolicyType
+	switch failurePolicy {
+	case string(admissionregistrationv1.Fail):
+		pt = admissionregistrationv1.Fail
+	case string(admissionregistrationv1.Ignore):
+		pt = admissionregistrationv1.Ignore
+	default:
+		pt = admissionregistrationv1.Fail
+	}
+
+	return &pt
 }
