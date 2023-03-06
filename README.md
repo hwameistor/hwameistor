@@ -121,13 +121,16 @@ For full documentation, please see our website [hwameistor.io](https://hwameisto
 
 ## Community
 
+We welcome contributions of any kind.
+If you have any questions about contributing, please consult the [contributing documentation](./CONTRIBUTING.md).
+
 ### Blog
 
-Please follow our weekly blogs [here](https://hwameistor.io/blog).
+Please follow our [weekly blogs](https://hwameistor.io/blog).
 
 ### Slack
 
-Our slack channel is [here](https://join.slack.com/t/hwameistor/shared_invite/zt-1dkabcq2c-KIRBJDBc_GgZZfeLrooK6g)
+Welcome to join our [slack channel](https://join.slack.com/t/hwameistor/shared_invite/zt-1dkabcq2c-KIRBJDBc_GgZZfeLrooK6g)
 
 ### WeChat
 
