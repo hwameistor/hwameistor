@@ -94,6 +94,9 @@ container cluster. Currently this module is only for testing purposes.
 
 For full documentation, please see our website [hwameistor.io](https://hwameistor.io/docs/intro).
 
+For detailed adopters that have HwameiStor deployed in a production environment or a user acceptance testing environment,
+please check the [adopters list](./adopters.md).
+
 ## Roadmap
 
 | Features                  | Status    | Release | Description                                       |
