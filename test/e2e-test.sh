@@ -15,9 +15,9 @@ function build_image(){
 	export IMAGE_TAG=${IMAGE_TAG} && make image
 
 	for module in ${MODULES[@]}
-	do
-		docker push ${IMAGE_REGISTRY}/${module}:${IMAGE_TAG}
-	done
+#	do
+#		docker push ${IMAGE_REGISTRY}/${module}:${IMAGE_TAG}
+#	done
 }
 
 function build_image_arm64(){
@@ -70,6 +70,8 @@ fi
 # Step2: prepare install params included image tag or other install options
 prepare_install_params
 
+make render-chart-values
+relok8s chart move helm/hwameistor/ --image-patterns helm/hwameistor/.relok8s-images.yaml  --registry 172.30.45.210 --repo-prefix hwameistor -y
 # Step3: go e2e test
 ginkgo -timeout=10h --fail-fast  --label-filter=${E2E_TESTING_LEVEL} test/e2e
 
