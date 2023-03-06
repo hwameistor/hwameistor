@@ -1,8 +1,14 @@
-name: Period check
+name: relok8s-check
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 18 * * *'
+    - cron: '0 17 * * *'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "helm/**"
+
 
 jobs:
   relk8s-test:
@@ -19,4 +25,5 @@ jobs:
           fetch-depth: 0
       - name: relk8s test
         run: |
+          make render-chart-values
           relok8s chart move helm/hwameistor/ --image-patterns helm/hwameistor/.relok8s-images.yaml  --registry 172.30.45.210 --repo-prefix hwameistor -y
