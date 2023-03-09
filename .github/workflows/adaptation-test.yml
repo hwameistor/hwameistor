@@ -22,7 +22,7 @@ on:
 
 jobs:
   k8s1_25-test:
-    if: ${{ inputs.k8s-version == 'k8s1.25.0 & centos7.6' || inputs.k8s-version == 'ALL'  }}
+    if: ${{ inputs.k8s-version == 'k8s1.25.0 & centos7.6' || inputs.k8s-version == 'ALL' || inputs.k8s-version == ''  }}
     runs-on: ["e2e"]
     timeout-minutes: 180
     steps:
@@ -40,7 +40,7 @@ jobs:
           E2E_TESTING_LEVEL: "k8s1.25"
         run: make e2e-test
   k8s1_23-test:
-    if: ${{ inputs.k8s-version == 'k8s1.23.3 & centos7.9'|| inputs.k8s-version == 'ALL'   }}
+    if: ${{ inputs.k8s-version == 'k8s1.23.3 & centos7.9'|| inputs.k8s-version == 'ALL' || inputs.k8s-version == ''  }}
     runs-on: [ "vsphere" ]
     timeout-minutes: 180
     steps:
@@ -58,7 +58,7 @@ jobs:
           E2E_TESTING_LEVEL: "k8s1.23"
         run: make e2e-test
   c81-test:
-    if: ${{ inputs.k8s-version == 'k8s1.23.3 & centos8.1' || inputs.k8s-version == 'ALL'  }}
+    if: ${{ inputs.k8s-version == 'k8s1.23.3 & centos8.1' || inputs.k8s-version == 'ALL' || inputs.k8s-version == '' }}
     runs-on: ["e2e"]
     timeout-minutes: 180
     steps:
@@ -76,7 +76,7 @@ jobs:
           E2E_TESTING_LEVEL: "k8sc81"
         run: make e2e-test
   u2204-test:
-    if: ${{ inputs.k8s-version == 'k8s1.23.3 & ubuntu2204' || inputs.k8s-version == 'ALL'   }}
+    if: ${{ inputs.k8s-version == 'k8s1.23.3 & ubuntu2204' || inputs.k8s-version == 'ALL' || inputs.k8s-version == ''  }}
     runs-on: ["e2e"]
     timeout-minutes: 180
     steps:
@@ -94,7 +94,7 @@ jobs:
           E2E_TESTING_LEVEL: "k8su2204"
         run: make e2e-test
   kylin10_arm-test:
-    if: ${{ inputs.k8s-version == 'k8s1.25.3 & kylin10_arm' || inputs.k8s-version == 'ALL'  }}
+    if: ${{ inputs.k8s-version == 'k8s1.25.3 & kylin10_arm' || inputs.k8s-version == 'ALL' || inputs.k8s-version == '' }}
     runs-on: ["e2e"]
     timeout-minutes: 180
     steps:
@@ -113,7 +113,7 @@ jobs:
           E2E_VERSION: "ARM"
         run: make e2e-test
   centos7_6_offline-test:
-    if: ${{ inputs.k8s-version == 'k8s1.23.3 & centos7.9_offline' || inputs.k8s-version == 'ALL'  }}
+    if: ${{ inputs.k8s-version == 'k8s1.23.3 & centos7.9_offline' || inputs.k8s-version == 'ALL' || inputs.k8s-version == '' }}
     runs-on: ["e2e"]
     timeout-minutes: 180
     steps:
