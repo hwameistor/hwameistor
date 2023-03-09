@@ -154,8 +154,8 @@ func (r *ReconcileLocalDisk) processDiskAvailable(disk *v1alpha1.LocalDisk) erro
 	logCtx := log.Fields{"name": disk.Name}
 	log.WithFields(logCtx).Info("Start to processing Available localdisk")
 
-	// Update disk status if found partition or filesystem or diskRed or owner on it
-	if disk.Spec.HasPartition || disk.Spec.ClaimRef != nil || disk.Spec.Owner != "" {
+	// Update disk status if found partition or filesystem or diskRed on it
+	if disk.Spec.HasPartition || disk.Spec.ClaimRef != nil {
 		return r.updateDiskStatusBound(disk)
 	}
 
