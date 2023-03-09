@@ -20,6 +20,9 @@ spec:
     - jsonPath: .status.status
       name: Phase
       type: string
+    - jsonPath: .spec.owner
+      name: Owner
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -40,11 +43,6 @@ spec:
           spec:
             description: LocalDiskClaimSpec defines the desired state of LocalDiskClaim
             properties:
-              consumed:
-                description: Consumed represents disks backing the claim has been
-                  already consumed by a consumer. If true the claim will be deleted
-                  soon from kubernetes
-                type: boolean
               description:
                 description: Description of the disk to be claimed
                 properties:
@@ -123,6 +121,10 @@ spec:
               nodeName:
                 description: NodeName represents where disk has to be claimed.
                 type: string
+              owner:
+                description: Owner represents which system owns this claim(e.g. local-storage,
+                  local-disk-manager)
+                type: string
             required:
             - nodeName
             type: object
@@ -135,6 +137,7 @@ spec:
                 - Bound
                 - Pending
                 - Extending
+                - Consumed
                 - ToBeDeleted
                 - Deleted
                 type: string

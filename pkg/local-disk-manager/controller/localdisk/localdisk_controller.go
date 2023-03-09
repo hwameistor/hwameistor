@@ -154,8 +154,8 @@ func (r *ReconcileLocalDisk) processDiskAvailable(disk *v1alpha1.LocalDisk) erro
 	logCtx := log.Fields{"name": disk.Name}
 	log.WithFields(logCtx).Info("Start to processing Available localdisk")
 
-	// Update disk status if found partition or filesystem or diskRed on it
-	if disk.Spec.HasPartition || disk.Spec.ClaimRef != nil {
+	// Update disk status if found partition or filesystem or diskRed or owner on it
+	if disk.Spec.HasPartition || disk.Spec.ClaimRef != nil || disk.Spec.Owner != "" {
 		return r.updateDiskStatusBound(disk)
 	}
 
@@ -167,12 +167,9 @@ func (r *ReconcileLocalDisk) processDiskBound(disk *v1alpha1.LocalDisk) error {
 	logCtx := log.Fields{"name": disk.Name}
 	log.WithFields(logCtx).Info("Start to processing Bound localdisk")
 
-	var (
-		err error
-	)
-
+	var err error
 	// Check if disk can be released
-	if disk.Spec.ClaimRef == nil && !disk.Spec.HasPartition {
+	if disk.Spec.ClaimRef == nil && !disk.Spec.HasPartition && disk.Spec.Owner == "" {
 		if err = r.updateDiskStatusAvailable(disk); err != nil {
 			log.WithError(err).WithFields(logCtx).Error("Failed to release disk")
 			r.Recorder.Eventf(disk, v1.EventTypeWarning, v1alpha1.LocalDiskEventReasonReleaseFail,

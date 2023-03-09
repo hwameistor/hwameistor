@@ -17,8 +17,8 @@ spec:
     - jsonPath: .spec.nodeName
       name: NodeMatch
       type: string
-    - jsonPath: .spec.claimRef.name
-      name: Claim
+    - jsonPath: .spec.owner
+      name: Owner
       priority: 1
       type: string
     - jsonPath: .status.claimState
@@ -141,6 +141,10 @@ spec:
                 type: boolean
               nodeName:
                 description: NodeName represents the node where the disk is attached
+                type: string
+              owner:
+                description: Owner represents which system owns this claim(e.g. local-storage,
+                  local-disk-manager)
                 type: string
               partitionInfo:
                 description: PartitionInfo contains partition information

@@ -195,6 +195,10 @@ type LocalDiskSpec struct {
 	// Reserved represents the disk won't be used in hwameistor later, until it becomes unreserved
 	// +optional
 	Reserved bool `json:"reserved,omitempty"`
+
+	// Owner represents which system owns this claim(e.g. local-storage, local-disk-manager)
+	// +optional
+	Owner string `json:"owner,omitempty"`
 }
 
 // LocalDiskStatus defines the observed state of LocalDisk
@@ -212,7 +216,7 @@ type LocalDiskStatus struct {
 //+kubebuilder:resource:scope=Cluster,shortName=ld
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
-//+kubebuilder:printcolumn:JSONPath=".spec.claimRef.name",name=Claim,type=string,priority=1
+//+kubebuilder:printcolumn:JSONPath=".spec.owner",name=Owner,type=string,priority=1
 //+kubebuilder:printcolumn:JSONPath=".status.claimState",name=Phase,type=string
 //+kubebuilder:printcolumn:JSONPath=".spec.smartInfo.overallHealth",name=Health,type=string,priority=1
 //+kubebuilder:printcolumn:JSONPath=".spec.reserved",name=Reserved,type=boolean,priority=1

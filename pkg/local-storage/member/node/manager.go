@@ -35,7 +35,8 @@ import (
 //
 // Infinitely retry
 const (
-	maxRetries = 0
+	maxRetries   = 0
+	localStorage = "local-storage"
 )
 
 type manager struct {
@@ -394,7 +395,7 @@ func (m *manager) handleVolumeReplicaDelete(obj interface{}) {
 
 func (m *manager) handleLocalDiskClaimUpdate(oldObj, newObj interface{}) {
 	localDiskClaim, _ := newObj.(*apisv1alpha1.LocalDiskClaim)
-	if !(localDiskClaim.Spec.NodeName == m.name && !localDiskClaim.Spec.Consumed &&
+	if !(localDiskClaim.Spec.NodeName == m.name && localDiskClaim.Spec.Owner == localStorage &&
 		localDiskClaim.Status.Status == apisv1alpha1.LocalDiskClaimStatusBound) {
 		return
 	}
@@ -403,7 +404,7 @@ func (m *manager) handleLocalDiskClaimUpdate(oldObj, newObj interface{}) {
 
 func (m *manager) handleLocalDiskClaimAdd(obj interface{}) {
 	localDiskClaim, _ := obj.(*apisv1alpha1.LocalDiskClaim)
-	if !(localDiskClaim.Spec.NodeName == m.name && !localDiskClaim.Spec.Consumed &&
+	if !(localDiskClaim.Spec.NodeName == m.name && localDiskClaim.Spec.Owner == localStorage &&
 		localDiskClaim.Status.Status == apisv1alpha1.LocalDiskClaimStatusBound) {
 		return
 	}
@@ -412,7 +413,8 @@ func (m *manager) handleLocalDiskClaimAdd(obj interface{}) {
 
 func (m *manager) handleLocalDiskUpdate(oldObj, newObj interface{}) {
 	localDisk, _ := newObj.(*apisv1alpha1.LocalDisk)
-	if !(localDisk.Spec.NodeName == m.name && localDisk.Status.State == apisv1alpha1.LocalDiskBound) {
+	if !(localDisk.Spec.NodeName == m.name && localDisk.Spec.Owner == localStorage &&
+		localDisk.Status.State == apisv1alpha1.LocalDiskBound) {
 		return
 	}
 	m.localDiskTaskQueue.Add(localDisk.Namespace + "/" + localDisk.Name)
@@ -420,7 +422,8 @@ func (m *manager) handleLocalDiskUpdate(oldObj, newObj interface{}) {
 
 func (m *manager) handleLocalDiskAdd(newObj interface{}) {
 	localDisk, _ := newObj.(*apisv1alpha1.LocalDisk)
-	if !(localDisk.Spec.NodeName == m.name && localDisk.Status.State == apisv1alpha1.LocalDiskBound) {
+	if !(localDisk.Spec.NodeName == m.name && localDisk.Spec.Owner == localStorage &&
+		localDisk.Status.State == apisv1alpha1.LocalDiskBound) {
 		return
 	}
 	m.localDiskTaskQueue.Add(localDisk.Namespace + "/" + localDisk.Name)

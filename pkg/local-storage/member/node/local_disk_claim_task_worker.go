@@ -287,6 +287,6 @@ func (m *manager) getLocalDiskByName(localDiskName, nameSpace string) (*apisv1al
 
 func (m *manager) updateDiskClaimConsumed(claim *apisv1alpha1.LocalDiskClaim) error {
 	oldClaim := claim.DeepCopy()
-	claim.Spec.Consumed = true
-	return m.apiClient.Patch(context.Background(), claim, client.MergeFrom(oldClaim))
+	claim.Status.Status = apisv1alpha1.LocalDiskClaimStatusConsumed
+	return m.apiClient.Status().Patch(context.Background(), claim, client.MergeFrom(oldClaim))
 }
