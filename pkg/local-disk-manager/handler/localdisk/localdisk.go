@@ -174,6 +174,7 @@ func (ldHandler *Handler) FilterDisk(ldc *v1alpha1.LocalDiskClaim) bool {
 		Init().
 		Available().
 		HasNotReserved().
+		OwnerMatch(ldc.Spec.Owner).
 		NodeMatch(ldc.Spec.NodeName).
 		Capacity(ldc.Spec.Description.Capacity).
 		DiskType(ldc.Spec.Description.DiskType).
