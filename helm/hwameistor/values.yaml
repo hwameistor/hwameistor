@@ -70,7 +70,7 @@ apiserver:
 
 ui:
   replicas: 1
-  imageRepository: hwameistor/ui
+  imageRepository: hwameistor/hwameistor-ui
   tag: ""
   resources: {}
 
