@@ -32,6 +32,14 @@ type LocalDiskNodeStatus struct {
 	// Disks key is the name of LocalDisk
 	Disks map[string]Disk `json:"disks,omitempty"`
 
+	// There may have multiple storage pools in a node.
+	// e.g. HDD_POOL, SSD_POOL, NVMe_POOL
+	// Pools: poolName -> LocalPool
+	Pools map[string]LocalPool `json:"pools,omitempty"`
+
+	// State of the Local Storage Node/Member: New, Active, Inactive, Failed
+	State State `json:"state,omitempty"`
+
 	// TotalDisk
 	TotalDisk int64 `json:"totalDisk,omitempty"`
 
