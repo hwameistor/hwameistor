@@ -38,6 +38,11 @@
   {{- default .Chart.Version .Values.apiserver.tag -}}
 {{- end -}}
 
+{{/* Allow UI image tag to be overridden. */}}
+{{- define "hwameistor.uiImageTag" -}}
+  {{- default .Chart.Version .Values.apiserver.tag -}}
+{{- end -}}
+
 {{/* Allow KubeletRootDir to be overridden. */}}
 {{- define "hwameistor.kubeletRootDir" -}}
   {{- default "/var/lib/kubelet" .Values.kubeletRootDir -}}

@@ -68,6 +68,12 @@ apiserver:
   tag: ""
   resources: {}
 
+ui:
+  replicas: 1
+  imageRepository: hwameistor/ui
+  tag: ""
+  resources: {}
+
 localDiskManager:
   tolerationsOnMaster: true
   enableCSI: true
