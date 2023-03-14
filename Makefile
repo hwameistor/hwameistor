@@ -321,7 +321,7 @@ pr-test:
 
 
 .PHONY: relok8s-test
-pr-test:
+relok8s-test:
 	bash test/relok8s-test.sh
 
 .PHONY: render-chart-values
