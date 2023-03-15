@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node"
 	"os"
 	"path"
 	"runtime"
@@ -45,6 +46,7 @@ var (
 	operatorMetricsPort int32 = 8686
 	csiCfg              csidriver.Config
 	logLevel            = flag.Int("v", 4 /*Log Info*/, "number for the log level verbosity")
+	nodeName            = flag.String("nodeid", "", "Node name")
 )
 var log = logf.Log.WithName("cmd")
 
@@ -124,6 +126,9 @@ func main() {
 
 	// Start Node Controller
 	go startNodeController(stopCh, nodeMgr)
+
+	// Start Node Manager
+	go startNodeManager(stopCh, nodeMgr)
 	select {
 	case <-stopCh.Done():
 		log.Info("Receive exit signal.")
@@ -154,6 +159,25 @@ func startNodeController(ctx context.Context, mgr manager.Manager) {
 	// Start the Cmd
 	if err := mgr.Start(ctx); err != nil {
 		log.Error(err, "Failed to start Node Cmd")
+	}
+
+	os.Exit(1)
+}
+
+func startNodeManager(ctx context.Context, mgr manager.Manager) {
+	nodeManager, err := node.New(node.Options{
+		NodeName:  *nodeName,
+		K8sClient: mgr.GetClient(),
+		Cache:     mgr.GetCache(),
+	})
+	if err != nil {
+		log.Error(err, "Failed to New NodeManager")
+		os.Exit(1)
+	}
+	// Start Node Manager
+	err = nodeManager.Start(ctx)
+	if err != nil {
+		log.Error(err, "Failed to Start NodeManager")
 	}
 
 	os.Exit(1)
