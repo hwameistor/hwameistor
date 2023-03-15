@@ -12,7 +12,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
-	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
@@ -43,6 +42,7 @@ var (
 	drbdStartPort      = flag.Int("drbd-start-port", defaultDRBDStartPort, "drbd start port, end port=start-port+volume-count-1")
 	haVolumeTotalCount = flag.Int("max-ha-volume-count", defaultHAVolumeTotalCount, "max HA volume count")
 	httpPort           = flag.Int("http-port", restServerDefaultPort, "HTTP port for REST server")
+	logLevel           = flag.Int("v", 4 /*Log Info*/, "number for the log level verbosity")
 )
 
 var BUILDVERSION, BUILDTIME, GOVERSION string
@@ -52,27 +52,30 @@ func printVersion() {
 	log.Info(fmt.Sprintf("GitCommit:%q, BuildDate:%q, GoVersion:%q", BUILDVERSION, BUILDTIME, GOVERSION))
 }
 
-func setupLogging(enableDebug bool) {
-	if enableDebug {
-		log.SetLevel(log.DebugLevel)
+func setupLogging() {
+	// parse log level(default level: info)
+	var level log.Level
+	if *logLevel >= int(log.TraceLevel) {
+		level = log.TraceLevel
+	} else if *logLevel <= int(log.PanicLevel) {
+		level = log.PanicLevel
+	} else {
+		level = log.Level(*logLevel)
 	}
 
-	log.SetFormatter(&log.TextFormatter{
-		DisableColors: true,
-		FullTimestamp: true,
-		// log with funcname, file fileds. eg: func=processNode file="node_task_worker.go:43"
+	log.SetLevel(level)
+	log.SetFormatter(&log.JSONFormatter{
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
 			s := strings.Split(f.Function, ".")
-			funcname := s[len(s)-1]
-			filename := path.Base(f.File)
-			return funcname, fmt.Sprintf("%s:%d", filename, f.Line)
-		},
-	})
+			funcName := s[len(s)-1]
+			fileName := path.Base(f.File)
+			return funcName, fmt.Sprintf("%s:%d", fileName, f.Line)
+		}})
 	log.SetReportCaller(true)
 }
 
 func main() {
-	klog.InitFlags(nil)
+	//klog.InitFlags(nil)
 	// Add flags registered by imported packages (e.g. glog and
 	// controller-runtime)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
@@ -83,7 +86,7 @@ func main() {
 
 	flag.Parse()
 
-	setupLogging(*debug)
+	setupLogging()
 
 	if *nodeName == "" {
 		log.WithFields(log.Fields{"nodename": *nodeName}).Error("Invalid node name")

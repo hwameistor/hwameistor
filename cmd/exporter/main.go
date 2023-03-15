@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"path"
 	"runtime"
@@ -12,28 +13,35 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/exporter"
 )
 
-func setupLogging(enableDebug bool) {
-	if enableDebug {
-		log.SetLevel(log.DebugLevel)
+var (
+	logLevel = flag.Int("v", 4 /*Log Info*/, "number for the log level verbosity")
+)
+
+func setupLogging() {
+	// parse log level(default level: info)
+	var level log.Level
+	if *logLevel >= int(log.TraceLevel) {
+		level = log.TraceLevel
+	} else if *logLevel <= int(log.PanicLevel) {
+		level = log.PanicLevel
+	} else {
+		level = log.Level(*logLevel)
 	}
 
-	log.SetFormatter(&log.TextFormatter{
-		DisableColors: true,
-		FullTimestamp: true,
-		// log with funcname, file fileds. eg: func=processNode file="node_task_worker.go:43"
+	log.SetLevel(level)
+	log.SetFormatter(&log.JSONFormatter{
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
 			s := strings.Split(f.Function, ".")
-			funcname := s[len(s)-1]
-			filename := path.Base(f.File)
-			return funcname, fmt.Sprintf("%s:%d", filename, f.Line)
-		},
-	})
+			funcName := s[len(s)-1]
+			fileName := path.Base(f.File)
+			return funcName, fmt.Sprintf("%s:%d", fileName, f.Line)
+		}})
 	log.SetReportCaller(true)
 }
 
 func main() {
-
-	setupLogging(true)
+	flag.Parse()
+	setupLogging()
 
 	exporter.NewCollectorManager().Run(signals.SetupSignalHandler().Done())
 

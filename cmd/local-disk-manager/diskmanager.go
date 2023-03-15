@@ -44,6 +44,7 @@ var (
 	metricsPort         int32 = 8383
 	operatorMetricsPort int32 = 8686
 	csiCfg              csidriver.Config
+	logLevel            = flag.Int("v", 4 /*Log Info*/, "number for the log level verbosity")
 )
 var log = logf.Log.WithName("cmd")
 
@@ -65,6 +66,8 @@ func main() {
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 
 	pflag.Parse()
+
+	flag.Parse()
 
 	// Use a zap logr.Logger implementation. If none of the zap
 	// flags are configured (or if the zap flag set is not being
@@ -227,7 +230,17 @@ func addMetrics(ctx context.Context, cfg *rest.Config) {
 //}
 
 func setupLogging() {
-	logr.SetLevel(logr.TraceLevel)
+	// parse log level(default level: info)
+	var level logr.Level
+	if *logLevel >= int(logr.TraceLevel) {
+		level = logr.TraceLevel
+	} else if *logLevel <= int(logr.PanicLevel) {
+		level = logr.PanicLevel
+	} else {
+		level = logr.Level(*logLevel)
+	}
+
+	logr.SetLevel(level)
 	logr.SetFormatter(&logr.JSONFormatter{
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
 			s := strings.Split(f.Function, ".")
