@@ -382,7 +382,6 @@ func (m *manager) processLocalVolumeGroup(lvgName string) error {
 }
 
 func (m *manager) addLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) error {
-	defer m.debug()
 
 	for _, fnlr := range lvg.Finalizers {
 		if fnlr == volumeGroupFinalizer {
@@ -411,7 +410,6 @@ func (m *manager) addLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) error 
 }
 
 func (m *manager) deleteLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) error {
-	defer m.debug()
 
 	if len(lvg.Spec.Volumes) > 0 {
 		return fmt.Errorf("volumes not empty")
@@ -423,7 +421,6 @@ func (m *manager) deleteLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) err
 }
 
 func (m *manager) releaseLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) error {
-	defer m.debug()
 
 	m.cleanCacheForLocalVolumeGroup(lvg.Name)
 
@@ -506,7 +503,6 @@ func (m *manager) processLocalVolume(lvName string) error {
 }
 
 func (m *manager) addLocalVolume(lv *apisv1alpha1.LocalVolume) error {
-	defer m.debug()
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -538,7 +534,6 @@ func (m *manager) addLocalVolume(lv *apisv1alpha1.LocalVolume) error {
 }
 
 func (m *manager) deleteLocalVolume(lvName string) error {
-	defer m.debug()
 	vol := &apisv1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: lvName}, vol); err != nil {
 		if !errors.IsNotFound(err) {
@@ -611,7 +606,6 @@ func (m *manager) addPVC(pvc *corev1.PersistentVolumeClaim) error {
 }
 
 func (m *manager) deletePVC(namespace string, name string) error {
-	defer m.debug()
 
 	lvgName, exists := m.pvcToVolumeGroups[namespacedName(namespace, name)]
 	if !exists {
