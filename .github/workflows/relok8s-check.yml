@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: relk8s test
+      - name: relok8s test
         run: |
           make render-chart-values
-          relok8s chart move helm/hwameistor/ --image-patterns helm/hwameistor/.relok8s-images.yaml  --registry 172.30.45.210 --repo-prefix hwameistorex -y
+          make relok8s-test
