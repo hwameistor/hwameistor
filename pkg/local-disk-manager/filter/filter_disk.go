@@ -113,7 +113,8 @@ func (ld *LocalDiskFilter) NoPartition() *LocalDiskFilter {
 }
 
 func (ld *LocalDiskFilter) OwnerMatch(owner string) *LocalDiskFilter {
-	if ld.localDisk.Spec.Owner == "" || ld.localDisk.Spec.Owner == owner {
+	if (ld.localDisk.Spec.Owner == "" && owner == "local-storage") /* Only for local-storage */ ||
+		ld.localDisk.Spec.Owner == owner {
 		ld.setResult(TRUE)
 	} else {
 		ld.setResult(FALSE)
