@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -226,7 +225,7 @@ func (statusGenerator *statusGenerator) gc(job *batchv1.Job, runningStatus *Data
 		return
 	}
 	for _, pod := range jobPods.Items {
-		if pod.Labels["job-name"] != job.Name {
+		if pod.Labels["job-name"] != job.Name && pod.Labels["app"] != RcloneJobLabelApp {
 			continue
 		}
 		logger.Debugf("Start deleting pod %s, namesapce %s", pod.Name, pod.Namespace)

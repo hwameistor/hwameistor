@@ -2,11 +2,11 @@ package controller
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
+	hwameistorapi "github.com/hwameistor/hwameistor/pkg/apiserver/api"
+	"github.com/hwameistor/hwameistor/pkg/apiserver/manager"
 	"net/http"
 	"strconv"
-
-	"github.com/gin-gonic/gin"
-	"github.com/hwameistor/hwameistor/pkg/apiserver/manager"
 )
 
 type IMetricsController interface {
@@ -36,10 +36,13 @@ func NewMetricsController(m *manager.ServerManager) IMetricsController {
 // @Success     200 {object} api.ModuleStatus  "成功"
 // @Router      /cluster/status [get]
 func (v *MetricsController) ModuleStatus(ctx *gin.Context) {
+	var failRsp hwameistorapi.RspFailBody
 
 	moduleStatus, err := v.m.MetricController().GetModuleStatus()
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
+		failRsp.ErrCode = 500
+		failRsp.Desc = err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
 	}
 
@@ -58,6 +61,7 @@ func (v *MetricsController) ModuleStatus(ctx *gin.Context) {
 // @Success     200 {object}  api.OperationMetric  "成功"
 // @Router      /cluster/operations [get]
 func (v *MetricsController) OperationList(ctx *gin.Context) {
+	var failRsp hwameistorapi.RspFailBody
 
 	// 获取path中的page
 	page := ctx.Query("page")
@@ -69,7 +73,9 @@ func (v *MetricsController) OperationList(ctx *gin.Context) {
 
 	operationListMetric, err := v.m.MetricController().OperationListMetric(int32(p), int32(ps))
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
+		failRsp.ErrCode = 500
+		failRsp.Desc = err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
 	}
 

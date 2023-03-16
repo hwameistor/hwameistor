@@ -2,6 +2,7 @@ package hwameistor
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"math"
 	"sort"
 	"strings"
@@ -14,14 +15,16 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	hoapisv1alpha1 "github.com/hwameistor/hwameistor-operator/api/v1alpha1"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	hwameistorapi "github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	utils "github.com/hwameistor/hwameistor/pkg/apiserver/util"
 )
 
 const (
-	hwameistorPrefix   = "hwameistor"
-	nodeStorageSortNum = 5
+	hwameistorPrefix    = "hwameistor"
+	nodeStorageSortNum  = 5
+	OperatorClusterName = "cluster-sample"
 )
 
 // MetricController
@@ -105,9 +108,15 @@ func (mController *MetricController) GetModuleStatus() (*hwameistorapi.ModuleSta
 		return nil, err
 	}
 
-	ModuleStatus := mController.convertModuleStatus()
+	moduleStatus := mController.convertModuleStatus()
 
-	return ModuleStatus, nil
+	operatorModuleStatus, err := mController.getHwameistorOperatorStatusMetric()
+	if err != nil {
+		log.WithError(err).Error("Failed to getHwameistorOperatorStatusMetric")
+		return moduleStatus, err
+	}
+
+	return operatorModuleStatus, nil
 }
 
 // GetStoragePoolUseMetric
@@ -452,6 +461,28 @@ func (mController *MetricController) getHwameistorDeploymentStatusMetric() error
 	}
 
 	return nil
+}
+
+// getHwameistorOperatorStatusMetric
+func (mController *MetricController) getHwameistorOperatorStatusMetric() (*hwameistorapi.ModuleStatus, error) {
+
+	var moduleStatus = &hwameistorapi.ModuleStatus{}
+	clusterList := &hoapisv1alpha1.ClusterList{}
+	if err := mController.Client.List(context.TODO(), clusterList); err != nil {
+		if !errors.IsNotFound(err) {
+			log.WithError(err).Error("Failed to list clusterList")
+		} else {
+			log.Info("Not found the clusterList")
+		}
+		return moduleStatus, err
+	}
+
+	for _, cluster := range clusterList.Items {
+		if cluster.Name == OperatorClusterName {
+			moduleStatus.ClusterStatus = cluster.Status
+		}
+	}
+	return moduleStatus, nil
 }
 
 // addStoragePoolUseMetric

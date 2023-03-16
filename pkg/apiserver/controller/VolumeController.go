@@ -46,16 +46,22 @@ func NewVolumeController(m *manager.ServerManager) IVolumeController {
 // @Success     200 {object} api.Volume
 // @Router      /cluster/volumes/{volumeName} [get]
 func (v *VolumeController) VolumeGet(ctx *gin.Context) {
+	var failRsp hwameistorapi.RspFailBody
+
 	// 获取path中的name
 	volumeName := ctx.Param("volumeName")
 
 	if volumeName == "" {
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = "volumeName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 	lv, err := v.m.VolumeController().GetLocalVolume(volumeName)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
+		failRsp.ErrCode = 500
+		failRsp.Desc = err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
 	}
 
@@ -77,6 +83,8 @@ func (v *VolumeController) VolumeGet(ctx *gin.Context) {
 // @Success     200 {object}  api.VolumeList   "成功"
 // @Router      /cluster/volumes [get]
 func (v *VolumeController) VolumeList(ctx *gin.Context) {
+
+	var failRsp hwameistorapi.RspFailBody
 
 	// 获取path中的page
 	page := ctx.Query("page")
@@ -102,7 +110,9 @@ func (v *VolumeController) VolumeList(ctx *gin.Context) {
 
 	lvs, err := v.m.VolumeController().ListLocalVolume(queryPage)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
+		failRsp.ErrCode = 500
+		failRsp.Desc = err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
 	}
 
@@ -121,6 +131,9 @@ func (v *VolumeController) VolumeList(ctx *gin.Context) {
 // @Success     200 {object}  api.VolumeReplicaList  "成功"
 // @Router      /cluster/volumes/{volumeName}/replicas [get]
 func (v *VolumeController) VolumeReplicasGet(ctx *gin.Context) {
+
+	var failRsp hwameistorapi.RspFailBody
+
 	// 获取path中的name
 	volumeName := ctx.Param("volumeName")
 
@@ -130,7 +143,9 @@ func (v *VolumeController) VolumeReplicasGet(ctx *gin.Context) {
 	state := ctx.Query("state")
 
 	if volumeName == "" {
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = "volumeName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 
@@ -141,7 +156,9 @@ func (v *VolumeController) VolumeReplicasGet(ctx *gin.Context) {
 
 	lvs, err := v.m.VolumeController().GetVolumeReplicas(queryPage)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
+		failRsp.ErrCode = 500
+		failRsp.Desc = err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
 	}
 
@@ -161,12 +178,15 @@ func (v *VolumeController) VolumeReplicasGet(ctx *gin.Context) {
 // @Router      /cluster/volumes/{volumeName}/migrate [post]
 func (v *VolumeController) VolumeMigrateOperation(ctx *gin.Context) {
 
+	var failRsp hwameistorapi.RspFailBody
 	// 获取path中的name
 	name := ctx.Param("volumeName")
 	fmt.Println("VolumeMigrateOperation name = %v", name)
 
 	if name == "" {
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = "volumeName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 
@@ -174,19 +194,31 @@ func (v *VolumeController) VolumeMigrateOperation(ctx *gin.Context) {
 	err := ctx.ShouldBind(&vmrb)
 	if err != nil {
 		fmt.Errorf("Unmarshal err = %v", err)
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = err.Error()
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
+	}
+
+	fmt.Println("VolumeMigrateOperation vmrb = %v", vmrb)
+
+	if vmrb.SrcNode == "" || vmrb.SrcNode == "string" {
+		failRsp.ErrCode = 203
+		failRsp.Desc = "SrcNode cannot be empty or cannot be string"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
+		return
+	}
+
+	if vmrb.SelectedNode == "string" {
+		vmrb.SelectedNode = ""
 	}
 
 	sourceNodeName := vmrb.SrcNode
 	targetNodeName := vmrb.SelectedNode
 	abort := vmrb.Abort
 
-	fmt.Println("VolumeMigrateOperation sourceNodeName = %v, targetNodeName = %v", sourceNodeName, targetNodeName)
-
 	volumeMigrate, err := v.m.VolumeController().CreateVolumeMigrate(name, sourceNodeName, targetNodeName, abort)
 	if err != nil {
-		var failRsp hwameistorapi.RspFailBody
 		failRsp.ErrCode = 500
 		failRsp.Desc = "VolumeMigrateOperation Failed: " + err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
@@ -208,6 +240,8 @@ func (v *VolumeController) VolumeMigrateOperation(ctx *gin.Context) {
 // @Router      /cluster/volumes/{volumeName}/convert [post]
 func (v *VolumeController) VolumeConvertOperation(ctx *gin.Context) {
 
+	var failRsp hwameistorapi.RspFailBody
+
 	// 获取path中的name
 	volumeName := ctx.Param("volumeName")
 
@@ -215,20 +249,23 @@ func (v *VolumeController) VolumeConvertOperation(ctx *gin.Context) {
 	err := ctx.ShouldBind(&vcrb)
 	if err != nil {
 		fmt.Errorf("Unmarshal err = %v", err)
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = "Unmarshal Failed: " + err.Error()
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 	abort := vcrb.Abort
 
 	fmt.Println("VolumeConvertOperation volumeName = %v, abort = %v", volumeName, abort)
 	if volumeName == "" {
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = "volumeName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 
 	volumeConvert, err := v.m.VolumeController().CreateVolumeConvert(volumeName, abort)
 	if err != nil {
-		var failRsp hwameistorapi.RspFailBody
 		failRsp.ErrCode = 500
 		failRsp.Desc = "VolumeConvertOperation Failed: " + err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
@@ -250,18 +287,20 @@ func (v *VolumeController) VolumeConvertOperation(ctx *gin.Context) {
 // @Router      /cluster/volumes/{volumeName}/migrate [get]
 func (v *VolumeController) GetVolumeMigrateOperation(ctx *gin.Context) {
 
+	var failRsp hwameistorapi.RspFailBody
 	// 获取path中的name
 	volumeName := ctx.Param("volumeName")
 
 	fmt.Println("VolumeConvertOperation volumeName = %v", volumeName)
 	if volumeName == "" {
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = "volumeName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 
 	volumeConvert, err := v.m.VolumeController().GetVolumeMigrate(volumeName)
 	if err != nil {
-		var failRsp hwameistorapi.RspFailBody
 		failRsp.ErrCode = 500
 		failRsp.Desc = "VolumeConvertOperation Failed: " + err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
@@ -283,18 +322,21 @@ func (v *VolumeController) GetVolumeMigrateOperation(ctx *gin.Context) {
 // @Router      /cluster/volumes/{volumeName}/convert [get]
 func (v *VolumeController) GetVolumeConvertOperation(ctx *gin.Context) {
 
+	var failRsp hwameistorapi.RspFailBody
+
 	// 获取path中的name
 	volumeName := ctx.Param("volumeName")
 
 	fmt.Println("VolumeConvertOperation volumeName = %v", volumeName)
 	if volumeName == "" {
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = "volumeName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 
 	volumeConvert, err := v.m.VolumeController().GetVolumeConvert(volumeName)
 	if err != nil {
-		var failRsp hwameistorapi.RspFailBody
 		failRsp.ErrCode = 500
 		failRsp.Desc = "VolumeConvertOperation Failed: " + err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
@@ -316,18 +358,21 @@ func (v *VolumeController) GetVolumeConvertOperation(ctx *gin.Context) {
 // @Router      /cluster/volumes/{volumeName}/expand [get]
 func (v *VolumeController) GetVolumeExpandOperation(ctx *gin.Context) {
 
+	var failRsp hwameistorapi.RspFailBody
+
 	// 获取path中的name
 	volumeName := ctx.Param("volumeName")
 
 	fmt.Println("VolumeConvertOperation volumeName = %v", volumeName)
 	if volumeName == "" {
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = "volumeName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 
 	volumeConvert, err := v.m.VolumeController().GetVolumeConvert(volumeName)
 	if err != nil {
-		var failRsp hwameistorapi.RspFailBody
 		failRsp.ErrCode = 500
 		failRsp.Desc = "VolumeConvertOperation Failed: " + err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
@@ -349,18 +394,21 @@ func (v *VolumeController) GetVolumeExpandOperation(ctx *gin.Context) {
 // @Router      /cluster/volumes/{volumeName}/expand [post]
 func (v *VolumeController) VolumeExpandOperation(ctx *gin.Context) {
 
+	var failRsp hwameistorapi.RspFailBody
+
 	// 获取path中的name
 	volumeName := ctx.Param("volumeName")
 
 	fmt.Println("VolumeConvertOperation volumeName = %v", volumeName)
 	if volumeName == "" {
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = "volumeName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 
 	volumeConvert, err := v.m.VolumeController().GetVolumeConvert(volumeName)
 	if err != nil {
-		var failRsp hwameistorapi.RspFailBody
 		failRsp.ErrCode = 500
 		failRsp.Desc = "VolumeConvertOperation Failed: " + err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
@@ -383,11 +431,15 @@ func (v *VolumeController) VolumeExpandOperation(ctx *gin.Context) {
 // @Router      /cluster/volumes/{volumeName}/operations [get]
 func (v *VolumeController) VolumeOperationGet(ctx *gin.Context) {
 
+	var failRsp hwameistorapi.RspFailBody
+
 	// 获取path中的name
 	volumeName := ctx.Param("volumeName")
 
 	if volumeName == "" {
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = "volumeName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 
@@ -403,7 +455,9 @@ func (v *VolumeController) VolumeOperationGet(ctx *gin.Context) {
 
 	volumeOperation, err := v.m.VolumeController().GetVolumeOperation(queryPage)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
+		failRsp.ErrCode = 500
+		failRsp.Desc = "VolumeConvertOperation Failed: " + err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
 	}
 

@@ -6,6 +6,9 @@ import apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alph
 type LocalDiskInfo struct {
 	apisv1alpha1.LocalDisk
 
+	// diskPathShort 磁盘路径简写
+	DiskPathShort string `json:"diskPathShort,omitempty"`
+
 	// TotalCapacityBytes 总容量
 	TotalCapacityBytes int64 `json:"totalCapacityBytes,omitempty"`
 

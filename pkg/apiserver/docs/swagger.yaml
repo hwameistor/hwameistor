@@ -36,6 +36,9 @@ definitions:
       availableCapacityBytes:
         description: AvailableCapacityBytes 可用容量
         type: integer
+      diskPathShort:
+        description: diskPathShort 磁盘路径简写
+        type: string
       kind:
         description: |-
           Kind is a string value representing the REST resource this object represents.
@@ -68,6 +71,9 @@ definitions:
     type: object
   api.LocalDiskListByNode:
     properties:
+      diskPathShort:
+        description: diskPathShort 磁盘路径简写
+        type: string
       items:
         description: localDisks 节点磁盘列表
         items:
@@ -115,16 +121,18 @@ definitions:
         $ref: '#/definitions/v1alpha1.ApiServerStatus'
       evictor:
         $ref: '#/definitions/v1alpha1.EvictorStatus'
+      installedCRDS:
+        type: boolean
       localDiskManager:
         $ref: '#/definitions/v1alpha1.LocalDiskManagerStatus'
       localStorage:
         $ref: '#/definitions/v1alpha1.LocalStorageStatus'
+      metrics:
+        $ref: '#/definitions/v1alpha1.MetricsStatus'
       modulesStatus:
         items:
           $ref: '#/definitions/api.ModuleState'
         type: array
-      phase:
-        $ref: '#/definitions/github_com_hwameistor_hwameistor-operator_api_v1alpha1.Phase'
       scheduler:
         $ref: '#/definitions/v1alpha1.SchedulerStatus'
     type: object
@@ -715,16 +723,6 @@ definitions:
           $ref: '#/definitions/api.VolumeReplica'
         type: array
     type: object
-  github_com_hwameistor_hwameistor-operator_api_v1alpha1.Phase:
-    enum:
-    - ""
-    - Toinstall
-    - Installed
-    type: string
-    x-enum-varnames:
-    - ClusterPhaseEmpty
-    - ClusterPhaseToInstall
-    - ClusterPhaseInstalled
   github_com_hwameistor_hwameistor_pkg_apis_hwameistor_v1alpha1.ConditionStatus:
     enum:
     - "True"
@@ -1580,11 +1578,15 @@ definitions:
     type: object
   v1alpha1.AdmissionControllerStatus:
     properties:
+      health:
+        type: string
       instances:
         $ref: '#/definitions/v1alpha1.DeployStatus'
     type: object
   v1alpha1.ApiServerStatus:
     properties:
+      health:
+        type: string
       instances:
         $ref: '#/definitions/v1alpha1.DeployStatus'
     type: object
@@ -1592,18 +1594,16 @@ definitions:
     properties:
       availablePodCount:
         type: integer
-      currentPodCount:
-        type: integer
       desiredPodCount:
         type: integer
       pods:
         items:
           $ref: '#/definitions/v1alpha1.PodStatus'
         type: array
-      readyPodCount:
-        type: integer
-      upToDatePodCount:
-        type: integer
+      workloadName:
+        type: string
+      workloadType:
+        type: string
     type: object
   v1alpha1.Disk:
     properties:
@@ -1655,8 +1655,21 @@ definitions:
         description: Vendor is who provides the disk
         type: string
     type: object
+  v1alpha1.DiskClaimDescription:
+    properties:
+      capacity:
+        description: Capacity of the disk in bytes
+        type: integer
+      diskType:
+        description: |-
+          DiskType represents the type of drive like SSD, HDD etc.,
+          +optional
+        type: string
+    type: object
   v1alpha1.EvictorStatus:
     properties:
+      health:
+        type: string
       instances:
         $ref: '#/definitions/v1alpha1.DeployStatus'
     type: object
@@ -1725,10 +1738,39 @@ definitions:
       status:
         $ref: '#/definitions/v1alpha1.LocalDiskStatus'
     type: object
+  v1alpha1.LocalDiskClaimSpec:
+    properties:
+      consumed:
+        description: |-
+          Consumed represents disks backing the claim has been already consumed by a consumer.
+          If true the claim will be deleted soon from kubernetes
+          +optional
+        type: boolean
+      description:
+        allOf:
+        - $ref: '#/definitions/v1alpha1.DiskClaimDescription'
+        description: |-
+          Description of the disk to be claimed
+          +optional
+      diskRefs:
+        description: |-
+          DiskRefs represents which disks are assigned to the LocalDiskClaim
+          +optional
+        items:
+          $ref: '#/definitions/v1.ObjectReference'
+        type: array
+      nodeName:
+        description: |-
+          +kubebuilder:validation:Required
+          NodeName represents where disk has to be claimed.
+        type: string
+    type: object
   v1alpha1.LocalDiskManagerStatus:
     properties:
       csi:
         $ref: '#/definitions/v1alpha1.DeployStatus'
+      health:
+        type: string
       instances:
         $ref: '#/definitions/v1alpha1.DeployStatus'
     type: object
@@ -1995,6 +2037,15 @@ definitions:
         items:
           $ref: '#/definitions/v1alpha1.LocalStorageNodeCondition'
         type: array
+      poolExtendRecords:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/v1alpha1.LocalDiskClaimSpec'
+          type: array
+        description: |-
+          PoolExtendRecords record why disks are joined in the pool
+          +optional
+        type: object
       pools:
         additionalProperties:
           $ref: '#/definitions/v1alpha1.LocalPool'
@@ -2013,6 +2064,8 @@ definitions:
     properties:
       csi:
         $ref: '#/definitions/v1alpha1.DeployStatus'
+      health:
+        type: string
       instances:
         $ref: '#/definitions/v1alpha1.DeployStatus'
     type: object
@@ -2290,10 +2343,23 @@ definitions:
         - $ref: '#/definitions/v1alpha1.State'
         description: State is the phase of volume replica, e.g. Creating, Ready, NotReady,
           ToBeDeleted, Deleted
+      totalInode:
+        description: TotalINodes is the total inodes of the volume's filesystem
+        type: integer
       usedCapacityBytes:
         description: UsedCapacityBytes is the used capacity in bytes of the volume,
           which is avaiable only for filesystem
         type: integer
+      usedInode:
+        description: UsedInode is the used inodes of the volume's filesystem
+        type: integer
+    type: object
+  v1alpha1.MetricsStatus:
+    properties:
+      health:
+        type: string
+      instances:
+        $ref: '#/definitions/v1alpha1.DeployStatus'
     type: object
   v1alpha1.PartitionInfo:
     properties:
@@ -2328,6 +2394,8 @@ definitions:
     type: object
   v1alpha1.SchedulerStatus:
     properties:
+      health:
+        type: string
       instances:
         $ref: '#/definitions/v1alpha1.DeployStatus'
     type: object
@@ -2348,11 +2416,6 @@ definitions:
     type: object
   v1alpha1.State:
     enum:
-    - ""
-    - ToBeMounted
-    - ToBeUnMount
-    - Mounted
-    - NotReady
     - Ready
     - Maintain
     - Offline
@@ -2387,13 +2450,13 @@ definitions:
     - Available
     - InUse
     - Offline
+    - ""
+    - ToBeMounted
+    - ToBeUnMount
+    - Mounted
+    - NotReady
     type: string
     x-enum-varnames:
-    - MountPointStateEmpty
-    - MountPointToBeMounted
-    - MountPointToBeUnMount
-    - MountPointMounted
-    - MountPointNotReady
     - NodeStateReady
     - NodeStateMaintain
     - NodeStateOffline
@@ -2428,6 +2491,11 @@ definitions:
     - DiskStateAvailable
     - DiskStateInUse
     - DiskStateOffline
+    - MountPointStateEmpty
+    - MountPointToBeMounted
+    - MountPointToBeUnMount
+    - MountPointMounted
+    - MountPointNotReady
   v1alpha1.Topology:
     properties:
       region:
@@ -2670,6 +2738,41 @@ paths:
       summary: 摘要 获取指定存储节点磁盘列表
       tags:
       - Node
+  /cluster/nodes/{nodeName}/disks/{devicePath}:
+    post:
+      consumes:
+      - application/json
+      description: post UpdateStorageNodeDisk devicePath i.g /dev/sdb /dev/sdc ...
+      parameters:
+      - description: nodeName
+        in: path
+        name: nodeName
+        required: true
+        type: string
+      - description: devicePath
+        in: path
+        name: devicePath
+        required: true
+        type: string
+      - description: reqBody
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/api.DiskReqBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/api.DiskReqBody'
+        "500":
+          description: 失败
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 更新磁盘
+      tags:
+      - Node
   /cluster/nodes/{nodeName}/disks/{diskName}:
     get:
       consumes:
@@ -2708,40 +2811,6 @@ paths:
       summary: 摘要 获取指定磁盘信息
       tags:
       - Node
-    post:
-      consumes:
-      - application/json
-      description: post UpdateStorageNodeDisk diskname i.g sdb sdc ...
-      parameters:
-      - description: nodeName
-        in: path
-        name: nodeName
-        required: true
-        type: string
-      - description: diskName
-        in: path
-        name: diskName
-        required: true
-        type: string
-      - description: reqBody
-        in: body
-        name: body
-        schema:
-          $ref: '#/definitions/api.DiskReqBody'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功
-          schema:
-            $ref: '#/definitions/api.DiskReqBody'
-        "500":
-          description: 失败
-          schema:
-            $ref: '#/definitions/api.RspFailBody'
-      summary: 摘要 更新磁盘
-      tags:
-      - Node
   /cluster/nodes/{nodeName}/migrates:
     get:
       consumes:
@@ -2763,6 +2832,18 @@ paths:
         name: pageSize
         required: true
         type: integer
+      - description: migrateOperationName
+        in: query
+        name: migrateOperationName
+        type: string
+      - description: volumeName
+        in: query
+        name: volumeName
+        type: string
+      - description: state
+        in: query
+        name: state
+        type: string
       produces:
       - application/json
       responses:

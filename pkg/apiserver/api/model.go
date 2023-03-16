@@ -247,7 +247,64 @@ func NodeStatefuzzyConvert(state string) State {
 		return NodeStateNotReady
 	}
 
+	if strings.Contains("Maintain", state) {
+		return NodeStateMaintain
+	}
+	if strings.Contains("Offline", state) {
+		return NodeStateOffline
+	}
+
 	return NodeStateUnknown
+}
+
+// OperationStatefuzzyConvert
+func OperationStatefuzzyConvert(state string) apisv1alpha1.State {
+
+	if state == "" {
+		return apisv1alpha1.VolumeStateEmpty
+	}
+
+	if strings.Contains("OperationStateSubmitted", state) {
+		return apisv1alpha1.OperationStateSubmitted
+	}
+
+	if strings.Contains("OperationStateMigrateAddReplica", state) {
+		return apisv1alpha1.OperationStateMigrateAddReplica
+	}
+
+	if strings.Contains("OperationStateMigrateSyncReplica", state) {
+		return apisv1alpha1.OperationStateMigrateSyncReplica
+	}
+
+	if strings.Contains("OperationStateMigratePruneReplica", state) {
+		return apisv1alpha1.OperationStateMigratePruneReplica
+	}
+
+	if strings.Contains("OperationStateInProgress", state) {
+		return apisv1alpha1.OperationStateInProgress
+	}
+
+	if strings.Contains("OperationStateCompleted", state) {
+		return apisv1alpha1.OperationStateCompleted
+	}
+
+	if strings.Contains("OperationStateToBeAborted", state) {
+		return apisv1alpha1.OperationStateToBeAborted
+	}
+
+	if strings.Contains("OperationStateAborting", state) {
+		return apisv1alpha1.OperationStateAborting
+	}
+
+	if strings.Contains("OperationStateAborted", state) {
+		return apisv1alpha1.OperationStateAborted
+	}
+
+	if strings.Contains("OperationStateFailed", state) {
+		return apisv1alpha1.OperationStateFailed
+	}
+
+	return apisv1alpha1.VolumeStateEmpty
 }
 
 // DriverStatefuzzyConvert
@@ -293,13 +350,16 @@ type QueryPage struct {
 	PoolName          string
 	NodeName          string
 	DiskName          string
+	DeviceShortPath   string
 	NameSpace         string
 	VolumeState       apisv1alpha1.State
 	NodeState         State
+	OperationState    apisv1alpha1.State
 	DriverState       apisv1alpha1.State
 	DiskState         apisv1alpha1.LocalDiskState
 	VolumeName        string
 	VolumeReplicaName string
 	VolumeEventName   string
 	Synced            string
+	OperationName     string
 }
