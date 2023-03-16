@@ -19,13 +19,13 @@ If you want to retain your data volumes while uninstalling HwameiStor, perform t
       helm delete -n hwameistor hwameistor
       ```
 
-   2. Delete DRBD helm instance
+   1. Delete DRBD helm instance
 
       ```bash
       helm delete -n hwameistor drbd-adapter
       ```
 
-2. Clean up HwameiStor components
+1. Clean up HwameiStor components
 
    1. Delete hwameistor namespace
 
@@ -33,13 +33,13 @@ If you want to retain your data volumes while uninstalling HwameiStor, perform t
       kubectl delete ns hwameistor
       ```
 
-   2. Delete LocalVolumeGroup instances
+   1. Delete LocalVolumeGroup instances
 
       ```bash
       kubectl delete localvolumegroups.hwameistor.io --all
       ```
 
-   3. Delete CRD, Hook, and RBAC
+   1. Delete CRD, Hook, and RBAC
 
       ```bash
       kubectl get crd,mutatingwebhookconfiguration,clusterrolebinding,clusterrole -o name \
@@ -53,17 +53,17 @@ If you want to retain your data volumes while uninstalling HwameiStor, perform t
 Before you start to perform actions, make sure you reallly want to delete all your data.
 :::
 
-If you confirm to delete your data volumes and uninstall HwameiStor, refer to the procedure below:
+If you confirm to delete your data volumes and uninstall HwameiStor, perform the following steps:
 
 1. Clean up stateful applications
 
-2. Delete stateful applications
+   1. Delete stateful applications
 
-3. Delete PVCs
+   1. Delete PVCs
 
-   The relevant PVs, LVs, LVRs, LVGs will also been deleted.
+      The relevant PVs, LVs, LVRs, LVGs will also been deleted.
 
-4. Clean up helm instances
+1. Clean up helm instances
 
    1. Delete HwameiStor helm instance
 
@@ -71,13 +71,13 @@ If you confirm to delete your data volumes and uninstall HwameiStor, refer to th
       helm delete -n hwameistor hwameistor
       ```
 
-   2. Delete DRBD helm instance
+   1. Delete DRBD helm instance
 
       ```bash
       helm delete -n hwameistor drbd-adapter
       ```
 
-5. Clean up HwameiStor components
+1. Clean up HwameiStor components
 
    1. Delete hwameistor namespace
 
@@ -85,7 +85,7 @@ If you confirm to delete your data volumes and uninstall HwameiStor, refer to th
       kubectl delete ns hwameistor
       ```
 
-   2. Delete CRD, Hook, and RBAC
+   1. Delete CRD, Hook, and RBAC
 
       ```bash
       kubectl get crd,mutatingwebhookconfiguration,clusterrolebinding,clusterrole -o name \
@@ -93,7 +93,7 @@ If you confirm to delete your data volumes and uninstall HwameiStor, refer to th
         | xargs -t kubectl delete
       ```
 
-   3. Delete StorageClass
+   1. Delete StorageClass
 
       ```bash
       kubectl get sc -o name \
