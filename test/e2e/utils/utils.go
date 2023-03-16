@@ -518,6 +518,7 @@ func CreateLdc(ctx context.Context) error {
 				Namespace: "kube-system",
 			},
 			Spec: v1alpha1.LocalDiskClaimSpec{
+				Owner:    "local-storage",
 				NodeName: nodes.Name,
 				Description: v1alpha1.DiskClaimDescription{
 					DiskType: "HDD",
