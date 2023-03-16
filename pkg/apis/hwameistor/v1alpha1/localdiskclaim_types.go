@@ -22,10 +22,8 @@ type LocalDiskClaimSpec struct {
 	// +optional
 	DiskRefs []*v1.ObjectReference `json:"diskRefs,omitempty"`
 
-	// Consumed represents disks backing the claim has been already consumed by a consumer.
-	// If true the claim will be deleted soon from kubernetes
-	// +optional
-	Consumed bool `json:"consumed,omitempty"`
+	// Owner represents which system owns this claim(e.g. local-storage, local-disk-manager)
+	Owner string `json:"owner,omitempty"`
 }
 
 type LocalDiskClaimSpecArray []LocalDiskClaimSpec
@@ -33,7 +31,7 @@ type LocalDiskClaimSpecArray []LocalDiskClaimSpec
 // LocalDiskClaimStatus defines the observed state of LocalDiskClaim
 type LocalDiskClaimStatus struct {
 	// Status represents the current statue of the claim
-	// +kubebuilder:validation:Enum:=Bound;Pending;Extending;ToBeDeleted;Deleted
+	// +kubebuilder:validation:Enum:=Bound;Pending;Extending;Consumed;ToBeDeleted;Deleted
 	Status DiskClaimStatus `json:"status,omitempty"`
 }
 
@@ -46,6 +44,7 @@ type LocalDiskClaimStatus struct {
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
 //+kubebuilder:printcolumn:JSONPath=".status.status",name=Phase,type=string
+//+kubebuilder:printcolumn:JSONPath=".spec.owner",name=Owner,type=string
 //+kubebuilder:resource:scope=Cluster,shortName=ldc
 type LocalDiskClaim struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -92,6 +91,9 @@ const (
 
 	// LocalDiskClaimStatusBound represents LocalDiskClaim has been assigned backing disk and ready for use.
 	LocalDiskClaimStatusBound DiskClaimStatus = "Bound"
+
+	// LocalDiskClaimStatusConsumed represents disks backing this LocalDiskClaim is consumed by the consumer
+	LocalDiskClaimStatusConsumed DiskClaimStatus = "Consumed"
 
 	// LocalDiskClaimStatusToBeDeleted represents disks backing this LocalDiskClaim is consumed already and the claim
 	// will be deleted after some clean job done

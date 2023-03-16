@@ -116,6 +116,7 @@ func (ldHandler *Handler) BoundTo(ldc *v1alpha1.LocalDiskClaim) error {
 	// Update the disk.spec.ClaimRef field to indicate that the disk is claimed
 	ldcRef, _ := reference.GetReference(nil, ldc)
 	ldHandler.localDisk.Spec.ClaimRef = ldcRef
+	ldHandler.localDisk.Spec.Owner = ldc.Spec.Owner
 
 	err := ldHandler.Update()
 	if err == nil {
@@ -173,6 +174,7 @@ func (ldHandler *Handler) FilterDisk(ldc *v1alpha1.LocalDiskClaim) bool {
 		Init().
 		Available().
 		HasNotReserved().
+		OwnerMatch(ldc.Spec.Owner).
 		NodeMatch(ldc.Spec.NodeName).
 		Capacity(ldc.Spec.Description.Capacity).
 		DiskType(ldc.Spec.Description.DiskType).

@@ -112,6 +112,17 @@ func (ld *LocalDiskFilter) NoPartition() *LocalDiskFilter {
 	return ld
 }
 
+func (ld *LocalDiskFilter) OwnerMatch(owner string) *LocalDiskFilter {
+	if (ld.localDisk.Spec.Owner == "" && owner == "local-storage") /* Only for local-storage */ ||
+		ld.localDisk.Spec.Owner == owner {
+		ld.setResult(TRUE)
+	} else {
+		ld.setResult(FALSE)
+	}
+
+	return ld
+}
+
 // HasBoundWith indicates disk has already bound with the claim
 // https://github.com/hwameistor/hwameistor/issues/315
 func (ld *LocalDiskFilter) HasBoundWith(claimName string) bool {
