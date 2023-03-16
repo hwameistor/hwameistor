@@ -3215,6 +3215,19 @@ const docTemplate = `{
                 }
             }
         },
+        "v1alpha1.DiskClaimDescription": {
+            "type": "object",
+            "properties": {
+                "capacity": {
+                    "description": "Capacity of the disk in bytes",
+                    "type": "integer"
+                },
+                "diskType": {
+                    "description": "DiskType represents the type of drive like SSD, HDD etc.,\n+optional",
+                    "type": "string"
+                }
+            }
+        },
         "v1alpha1.EvictorStatus": {
             "type": "object",
             "properties": {
@@ -3300,6 +3313,34 @@ const docTemplate = `{
                 },
                 "status": {
                     "$ref": "#/definitions/v1alpha1.LocalDiskStatus"
+                }
+            }
+        },
+        "v1alpha1.LocalDiskClaimSpec": {
+            "type": "object",
+            "properties": {
+                "consumed": {
+                    "description": "Consumed represents disks backing the claim has been already consumed by a consumer.\nIf true the claim will be deleted soon from kubernetes\n+optional",
+                    "type": "boolean"
+                },
+                "description": {
+                    "description": "Description of the disk to be claimed\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1alpha1.DiskClaimDescription"
+                        }
+                    ]
+                },
+                "diskRefs": {
+                    "description": "DiskRefs represents which disks are assigned to the LocalDiskClaim\n+optional",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ObjectReference"
+                    }
+                },
+                "nodeName": {
+                    "description": "+kubebuilder:validation:Required\nNodeName represents where disk has to be claimed.",
+                    "type": "string"
                 }
             }
         },
@@ -3639,6 +3680,16 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1alpha1.LocalStorageNodeCondition"
+                    }
+                },
+                "poolExtendRecords": {
+                    "description": "PoolExtendRecords record why disks are joined in the pool\n+optional",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/v1alpha1.LocalDiskClaimSpec"
+                        }
                     }
                 },
                 "pools": {

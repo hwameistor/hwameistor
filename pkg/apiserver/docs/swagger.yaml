@@ -1655,6 +1655,17 @@ definitions:
         description: Vendor is who provides the disk
         type: string
     type: object
+  v1alpha1.DiskClaimDescription:
+    properties:
+      capacity:
+        description: Capacity of the disk in bytes
+        type: integer
+      diskType:
+        description: |-
+          DiskType represents the type of drive like SSD, HDD etc.,
+          +optional
+        type: string
+    type: object
   v1alpha1.EvictorStatus:
     properties:
       health:
@@ -1726,6 +1737,33 @@ definitions:
         $ref: '#/definitions/v1alpha1.LocalDiskSpec'
       status:
         $ref: '#/definitions/v1alpha1.LocalDiskStatus'
+    type: object
+  v1alpha1.LocalDiskClaimSpec:
+    properties:
+      consumed:
+        description: |-
+          Consumed represents disks backing the claim has been already consumed by a consumer.
+          If true the claim will be deleted soon from kubernetes
+          +optional
+        type: boolean
+      description:
+        allOf:
+        - $ref: '#/definitions/v1alpha1.DiskClaimDescription'
+        description: |-
+          Description of the disk to be claimed
+          +optional
+      diskRefs:
+        description: |-
+          DiskRefs represents which disks are assigned to the LocalDiskClaim
+          +optional
+        items:
+          $ref: '#/definitions/v1.ObjectReference'
+        type: array
+      nodeName:
+        description: |-
+          +kubebuilder:validation:Required
+          NodeName represents where disk has to be claimed.
+        type: string
     type: object
   v1alpha1.LocalDiskManagerStatus:
     properties:
@@ -1999,6 +2037,15 @@ definitions:
         items:
           $ref: '#/definitions/v1alpha1.LocalStorageNodeCondition'
         type: array
+      poolExtendRecords:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/v1alpha1.LocalDiskClaimSpec'
+          type: array
+        description: |-
+          PoolExtendRecords record why disks are joined in the pool
+          +optional
+        type: object
       pools:
         additionalProperties:
           $ref: '#/definitions/v1alpha1.LocalPool'
