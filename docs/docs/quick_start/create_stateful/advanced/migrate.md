@@ -5,18 +5,30 @@ sidebar_label:  "Migrate Volumes"
 
 # Migrate Volumes
 
-The `Migrate` function is an important operation and maintenance management function in HwameiStor. When the copy of the node where the data volume bound to the application is located is damaged, the copy of the volume can be migrated to other nodes, and after successfully migrated to the new node, the application can be rescheduled to the new node and bind mount the data volume.
+The `Migrate` function is an important operation and maintenance management function
+in HwameiStor. When the copy of the node where the data volume bound to the application
+is located is damaged, the copy of the volume can be migrated to other nodes, and after
+successfully migrated to the new node, the application can be rescheduled to the new
+node and bind mount the data volume.
 
-## Basic Concepts
+## Basic concepts
 
-`LocalVolumeGroup(LVG)` management is an important function in HwameiStor. When an application Pod applies for multiple data volume PVCs, in order to ensure the correct operation of the Pod, these data volumes must have certain attributes, such as the number of copies of the data volume and the node where the copies are located. Properly managing these associated data volumes through the data volume group management function is a very important capability in HwameiStor.
+`LocalVolumeGroup(LVG)` management is an important function in HwameiStor. When
+an application Pod applies for multiple data volume PVCs, in order to ensure the
+correct operation of the Pod, these data volumes must have certain attributes,
+such as the number of copies of the data volume and the node where the copies are
+located. Properly managing these associated data volumes through the data volume
+group management function is a very important capability in HwameiStor.
 
-## Preconditions
+## Prerequisites
 
-`LocalVolumeMigrate` needs to be deployed in the Kubernetes system, and the deployed application needs to meet the following conditions:
+`LocalVolumeMigrate` needs to be deployed in the Kubernetes system, and the
+deployed application needs to meet the following conditions:
 
 * Support `lvm` type volumes
-  * When migrating based on `LocalVolume` granularity, the data volumes belonging to the same `LocalVolumeGroup` by default will not be migrated together (if they are migrated together, you need to configure the switch `MigrateAllVols: true`)
+  * When migrating based on `LocalVolume` granularity, the data volumes belonging
+    to the same `LocalVolumeGroup` by default will not be migrated together
+    (if they are migrated together, you need to configure the switch `MigrateAllVols: true`)
 
 ## Step 1: Create convertible `StorageClass`
 

@@ -13,6 +13,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+
+	"github.com/hwameistor/hwameistor/pkg/apiserver/docs"
+	routers "github.com/hwameistor/hwameistor/pkg/apiserver/router"
 )
 
 func main() {

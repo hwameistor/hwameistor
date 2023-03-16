@@ -2,17 +2,17 @@ package storage
 
 import (
 	"context"
+	"reflect"
 	"sync"
 
+	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
-	log "github.com/sirupsen/logrus"
-
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type localRegistry struct {
@@ -43,53 +43,51 @@ func newLocalRegistry(lm *LocalManager) LocalRegistry {
 	}
 }
 
-// func (lr *localRegistry) reset() {
-// 	lr.resetDisks()
-// 	lr.resetPools()
-// 	lr.resetReplicas()
-// }
-
-// func (lr *localRegistry) resetDisks() {
-// 	lr.disks = make(map[string]*apisv1alpha1.LocalDevice)
-// }
-
-func (lr *localRegistry) resetPools() {
-	lr.pools = make(map[string]*apisv1alpha1.LocalPool)
-}
-
-// func (lr *localRegistry) resetReplicas() {
-// 	lr.logger.Debug("Start to reset replicas")
-// 	lr.replicas = make(map[string]*apisv1alpha1.LocalVolumeReplica)
-// }
-
 func (lr *localRegistry) Init() {
-
-	lr.rebuildRegistryReplicas()
+	_ = lr.SyncNodeResources()
 }
 
-func (lr *localRegistry) SyncResourcesToNodeCRD(localDisks map[string]*apisv1alpha1.LocalDevice) error {
-
+// SyncNodeResources rebuild Node resource according to StoragePool info and sync it to LocalStorageNode object
+func (lr *localRegistry) SyncNodeResources() error {
 	lr.lock.Lock()
 	defer lr.lock.Unlock()
 
-	extendedPools, err := lr.lm.PoolManager().ExtendPoolsInfo(localDisks)
+	lr.logger.Debugf("Rebuilding Node Resource...")
+
+	// rebuild localRegistry resources according StoragePool
+	// 1. rebuild pools
+	rebuildPools, err := lr.lm.PoolManager().GetPools()
 	if err != nil {
-		log.WithError(err).Error("Failed to ExtendPools")
+		log.WithError(err).Error("Failed to get StoragePool info")
 		return err
 	}
-	if len(lr.pools) == 0 {
-		lr.resetPools()
-	}
-	lr.pools = extendedPools
+	lr.pools = rebuildPools
 
-	if err := lr.rebuildRegistryDisks(); err != nil {
-		lr.logger.WithError(err).Fatal("Failed to rebuildRegistryDisks")
+	// 2. rebuild disks
+	rebuildDisks := make(map[string]*apisv1alpha1.LocalDevice)
+	for _, pool := range lr.pools {
+		for _, disk := range pool.Disks {
+			rebuildDisks[disk.DevPath] = disk.DeepCopy()
+		}
 	}
+	lr.disks = rebuildDisks
 
-	if err := lr.syncToNodeCRD(); err != nil {
-		lr.logger.WithError(err).Fatal("Failed to syncToNodeCRD")
+	// 3. rebuild replicas
+	rebuildReplicas, err := lr.lm.PoolManager().GetReplicas()
+	if err != nil {
+		lr.logger.WithError(err).Fatal("Failed to ConstructReplicas")
 		return err
 	}
+	lr.replicas = rebuildReplicas
+
+	// rebuild LocalStorageNode object
+	err = lr.syncToNodeCRD()
+	if err != nil {
+		lr.logger.WithError(err).Fatal("Failed to sync resource to LocalStorageNode")
+		return err
+	}
+
+	lr.logger.Debugf("Successed to Rebuild Node Resource")
 	return nil
 }
 
@@ -174,7 +172,6 @@ func (lr *localRegistry) deregisterVolumeReplica(replica *apisv1alpha1.LocalVolu
 // syncToNodeCRD sync the status into Node CRD
 func (lr *localRegistry) syncToNodeCRD() error {
 	lr.logger.Debug("Syncing registry info to Node")
-	// lr.logger.Debug("Syncing registry info to Node, lr.pools = %v, lr.disks = %v, lr.replicas = %v", lr.pools, lr.disks, lr.replicas)
 
 	node := &apisv1alpha1.LocalStorageNode{}
 	if err := lr.apiClient.Get(context.TODO(), types.NamespacedName{Name: lr.lm.nodeConf.Name}, node); err != nil {
@@ -196,7 +193,7 @@ func (lr *localRegistry) syncToNodeCRD() error {
 }
 
 func (lr *localRegistry) rebuildRegistryDisks() error {
-	lr.logger.Debug("rebuildRegistryDisks start")
+	lr.logger.Debug("rebuild localRegistry Disks")
 
 	disks := make(map[string]*apisv1alpha1.LocalDevice)
 	for _, pool := range lr.pools {
@@ -212,7 +209,7 @@ func (lr *localRegistry) rebuildRegistryDisks() error {
 }
 
 func (lr *localRegistry) rebuildRegistryReplicas() error {
-	lr.logger.Debug("rebuildRegistryReplicas start")
+	lr.logger.Debug("rebuild localRegistry VolumeReplicas")
 
 	replicas, err := lr.lm.PoolManager().GetReplicas()
 	if err != nil {
@@ -246,29 +243,67 @@ func (lr *localRegistry) HasVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica) b
 
 // UpdateCondition append current condition about LocalStorageNode, i.e. StorageExpandSuccess, StorageExpandFail, UnAvailable
 func (lr *localRegistry) UpdateCondition(condition apisv1alpha1.LocalStorageNodeCondition) error {
-	oldNode := &apisv1alpha1.LocalStorageNode{}
-	if err := lr.apiClient.Get(context.TODO(), types.NamespacedName{Name: lr.lm.nodeConf.Name}, oldNode); err != nil {
+	storageNode := &apisv1alpha1.LocalStorageNode{}
+	if err := lr.apiClient.Get(context.TODO(), types.NamespacedName{Name: lr.lm.nodeConf.Name}, storageNode); err != nil {
 		lr.logger.WithError(err).WithField("condition", condition).Error("Failed to query Node")
-		return nil
+		return err
 	}
+
+	oldNode := storageNode.DeepCopy()
 	switch condition.Type {
 	case apisv1alpha1.StorageExpandFailure, apisv1alpha1.StorageUnAvailable:
-		lr.recorder.Event(oldNode, v1.EventTypeWarning, string(condition.Type), condition.Message)
+		lr.recorder.Event(storageNode, v1.EventTypeWarning, string(condition.Type), condition.Message)
 	case apisv1alpha1.StorageExpandSuccess, apisv1alpha1.StorageProgressing:
-		lr.recorder.Event(oldNode, v1.EventTypeNormal, string(condition.Type), condition.Message)
+		lr.recorder.Event(storageNode, v1.EventTypeNormal, string(condition.Type), condition.Message)
 	default:
-		lr.recorder.Event(oldNode, v1.EventTypeNormal, string(condition.Type), condition.Message)
+		lr.recorder.Event(storageNode, v1.EventTypeNormal, string(condition.Type), condition.Message)
 	}
 
-	newNode := oldNode.DeepCopy()
-	i, _ := GetStorageCondition(newNode.Status.Conditions, condition.Type)
+	i, _ := GetStorageCondition(storageNode.Status.Conditions, condition.Type)
 	if i == -1 {
-		newNode.Status.Conditions = append(newNode.Status.Conditions, condition)
+		storageNode.Status.Conditions = append(storageNode.Status.Conditions, condition)
 	} else {
-		newNode.Status.Conditions[i] = condition
+		storageNode.Status.Conditions[i] = condition
 	}
 
-	return lr.apiClient.Status().Patch(context.TODO(), newNode, client.MergeFrom(oldNode))
+	return lr.apiClient.Status().Patch(context.TODO(), storageNode, client.MergeFrom(oldNode))
+}
+
+// UpdatePoolExtendRecord append pool extend records including disks and diskClaim
+func (lr *localRegistry) UpdatePoolExtendRecord(pool string, record apisv1alpha1.LocalDiskClaimSpec) error {
+	if len(record.DiskRefs) == 0 {
+		return nil
+	}
+
+	storageNode := &apisv1alpha1.LocalStorageNode{}
+	if err := lr.apiClient.Get(context.TODO(), types.NamespacedName{Name: lr.lm.nodeConf.Name}, storageNode); err != nil {
+		lr.logger.WithError(err).Error("Failed to query Node")
+		return err
+	}
+	oldStorageNode := storageNode.DeepCopy()
+
+	// init records map
+	if storageNode.Status.PoolExtendRecords == nil {
+		storageNode.Status.PoolExtendRecords = make(map[string]apisv1alpha1.LocalDiskClaimSpecArray)
+	}
+
+	// init pool records
+	if _, ok := storageNode.Status.PoolExtendRecords[pool]; !ok {
+		storageNode.Status.PoolExtendRecords[pool] = make(apisv1alpha1.LocalDiskClaimSpecArray, 0)
+	}
+
+	// append this record if not exist
+	exist := false
+	for _, poolRecord := range storageNode.Status.PoolExtendRecords[pool] {
+		if reflect.DeepEqual(poolRecord, record) {
+			exist = true
+		}
+	}
+	if !exist {
+		storageNode.Status.PoolExtendRecords[pool] = append(storageNode.Status.PoolExtendRecords[pool], record)
+	}
+
+	return lr.apiClient.Status().Patch(context.TODO(), storageNode, client.MergeFrom(oldStorageNode))
 }
 
 // showReplicaOnHost debug func for now

@@ -28,7 +28,7 @@ evictor:
       cpu: 1m
       memory: 20Mi
 
-metrics:
+exporter:
   replicas: 2
   resources:
     limits:
@@ -39,6 +39,16 @@ metrics:
       memory: 20Mi
 
 apiserver:
+  replicas: 2
+  resources:
+    limits:
+      cpu: 300m
+      memory: 300Mi
+    requests:
+      cpu: 1m
+      memory: 20Mi
+
+ui:
   replicas: 2
   resources:
     limits:

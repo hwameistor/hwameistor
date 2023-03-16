@@ -2,8 +2,9 @@ package smart
 
 import (
 	"errors"
-	log "github.com/sirupsen/logrus"
 	"testing"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func TestCollector_Collect(t *testing.T) {

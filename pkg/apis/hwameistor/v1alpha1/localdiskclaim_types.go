@@ -21,12 +21,19 @@ type LocalDiskClaimSpec struct {
 	// DiskRefs represents which disks are assigned to the LocalDiskClaim
 	// +optional
 	DiskRefs []*v1.ObjectReference `json:"diskRefs,omitempty"`
+
+	// Consumed represents disks backing the claim has been already consumed by a consumer.
+	// If true the claim will be deleted soon from kubernetes
+	// +optional
+	Consumed bool `json:"consumed,omitempty"`
 }
+
+type LocalDiskClaimSpecArray []LocalDiskClaimSpec
 
 // LocalDiskClaimStatus defines the observed state of LocalDiskClaim
 type LocalDiskClaimStatus struct {
 	// Status represents the current statue of the claim
-	// +kubebuilder:validation:Enum:=Bound;Pending;Extending
+	// +kubebuilder:validation:Enum:=Bound;Pending;Extending;ToBeDeleted;Deleted
 	Status DiskClaimStatus `json:"status,omitempty"`
 }
 
@@ -85,6 +92,13 @@ const (
 
 	// LocalDiskClaimStatusBound represents LocalDiskClaim has been assigned backing disk and ready for use.
 	LocalDiskClaimStatusBound DiskClaimStatus = "Bound"
+
+	// LocalDiskClaimStatusToBeDeleted represents disks backing this LocalDiskClaim is consumed already and the claim
+	// will be deleted after some clean job done
+	LocalDiskClaimStatusToBeDeleted DiskClaimStatus = "ToBeDeleted"
+
+	// LocalDiskClaimStatusDeleted  represents disks backing this LocalDiskClaim can be deleted
+	LocalDiskClaimStatusDeleted DiskClaimStatus = "Deleted"
 )
 
 func init() {

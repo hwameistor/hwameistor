@@ -1,8 +1,9 @@
 package csi
 
 import (
-	"github.com/golang/mock/gomock"
 	"testing"
+
+	"github.com/golang/mock/gomock"
 )
 
 func Test_plugin_Run(t *testing.T) {

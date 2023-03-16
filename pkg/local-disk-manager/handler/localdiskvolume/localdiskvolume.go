@@ -6,14 +6,15 @@ import (
 	"time"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
-	lscsi "github.com/hwameistor/hwameistor/pkg/local-storage/member/csi"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
+	lscsi "github.com/hwameistor/hwameistor/pkg/local-storage/member/csi"
 )
 
 const (
@@ -73,7 +74,7 @@ func (v *DiskVolumeHandler) ReconcileMount() (reconcile.Result, error) {
 			continue
 		}
 		v.UpdateMountPointPhase(mountPoint.TargetPath, v1alpha1.MountPointMounted)
-		// once a volume is attached success, the disk will be wiped when volume is delete
+		// once a volume is attached success, the disk will be wiped when volume is deleted
 		v.SetCanWipe(true)
 	}
 
@@ -97,7 +98,7 @@ func (v *DiskVolumeHandler) ReconcileUnmount() (reconcile.Result, error) {
 				continue
 			}
 
-			v.MoveMountPoint(mountPoint.TargetPath)
+			v.RemoveMountPoint(mountPoint.TargetPath)
 		}
 	}
 	if !result.Requeue {
@@ -281,7 +282,7 @@ func (v *DiskVolumeHandler) AppendMountPoint(targetPath string, volCap *csi.Volu
 	v.Ldv.Status.MountPoints = append(v.Ldv.Status.MountPoints, mountPoint)
 }
 
-func (v *DiskVolumeHandler) MoveMountPoint(targetPath string) {
+func (v *DiskVolumeHandler) RemoveMountPoint(targetPath string) {
 	for i, mountPoint := range v.GetMountPoints() {
 		if mountPoint.TargetPath == targetPath {
 			v.Ldv.Status.MountPoints = append(v.Ldv.Status.MountPoints[:i], v.Ldv.Status.MountPoints[i+1:]...)

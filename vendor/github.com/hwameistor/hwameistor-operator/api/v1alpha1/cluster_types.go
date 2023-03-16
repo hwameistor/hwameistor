@@ -29,8 +29,9 @@ type ClusterSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	TargetNamespace string `json:"targetNamespace"`
-	// InstallDRBD bool `json:"installDRBD"`
+	TargetNamespace string `json:"targetNamespace,omitempty"`
+
+	DiskReserveConfigurations []DiskReserveConfiguration `json:"diskReserveConfigurations,omitempty"`
 
 	// LocalDiskManager represents settings about LocalDiskManager
 	LocalDiskManager *LocalDiskManagerSpec `json:"localDiskManager,omitempty"`
@@ -95,13 +96,16 @@ type LocalDiskManagerSpec struct {
 	CSI *CSISpec `json:"csi,omitempty"`
 	Common *PodCommonSpec `json:"common,omitempty"`
 	Manager *ContainerCommonSpec `json:"manager,omitempty"`
+	TolerationOnMaster bool `json:"tolerationOnMaster,omitempty"`
 }
 
 type LocalStorageSpec struct {
+	Disable bool `json:"disable,omitempty"`
 	KubeletRootDir string `json:"kubeletRootDir,omitempty"`
 	CSI *CSISpec `json:"csi,omitempty"`
 	Member *MemberSpec `json:"member,omitempty"`
 	Common *PodCommonSpec `json:"common,omitempty"`
+	TolerationOnMaster bool `json:"tolerationOnMaster,omitempty"`
 }
 
 type MemberSpec struct {
@@ -119,6 +123,7 @@ type SchedulerSpec struct {
 }
 
 type EvictorSpec struct {
+	Disable bool `json:"disable,omitempty"`
 	Common *PodCommonSpec `json:"common,omitempty"`
 	Evictor *ContainerCommonSpec `json:"evictor,omitempty"`
 }

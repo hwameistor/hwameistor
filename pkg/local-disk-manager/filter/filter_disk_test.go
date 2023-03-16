@@ -5,12 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/sys"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/sys"
 )
 
 var (
@@ -165,19 +166,19 @@ func TestLocalDiskFilter(t *testing.T) {
 			},
 		},
 		{
-			Description:         "Should return true, Has Reserved",
-			WantFilterResult:    false,
-			WantReserved:        true,
-			disk:                GenFakeLocalDiskObject(),
+			Description:      "Should return true, Has Reserved",
+			WantFilterResult: false,
+			WantReserved:     true,
+			disk:             GenFakeLocalDiskObject(),
 			setProperty: func(disk *v1alpha1.LocalDisk) {
 				disk.Spec.Reserved = true
 			},
 		},
 		{
-			Description:         "Should return false, Has Not Reserved",
-			WantFilterResult:    true,
-			WantReserved:        false,
-			disk:                GenFakeLocalDiskObject(),
+			Description:      "Should return false, Has Not Reserved",
+			WantFilterResult: true,
+			WantReserved:     false,
+			disk:             GenFakeLocalDiskObject(),
 			setProperty: func(disk *v1alpha1.LocalDisk) {
 				disk.Spec.Reserved = false
 			},
@@ -229,17 +230,17 @@ func TestLocalDiskFilter(t *testing.T) {
 
 func TestHasBoundWith(t *testing.T) {
 	testCases := []struct {
-		Description      string
-		WantFilterResult bool
-		WantBoundWithClaim  string
-		disk        *v1alpha1.LocalDisk
-		setProperty func(disk *v1alpha1.LocalDisk)
+		Description        string
+		WantFilterResult   bool
+		WantBoundWithClaim string
+		disk               *v1alpha1.LocalDisk
+		setProperty        func(disk *v1alpha1.LocalDisk)
 	}{
 		{
-			Description:      "Should return true, Has Correct ClaimRef Name",
-			WantFilterResult: true,
-			WantBoundWithClaim:  "ClaimFoo",
-			disk:             GenFakeLocalDiskObject(),
+			Description:        "Should return true, Has Correct ClaimRef Name",
+			WantFilterResult:   true,
+			WantBoundWithClaim: "ClaimFoo",
+			disk:               GenFakeLocalDiskObject(),
 			setProperty: func(disk *v1alpha1.LocalDisk) {
 				disk.Spec.ClaimRef = &v1.ObjectReference{
 					Name: "ClaimFoo",
@@ -247,10 +248,10 @@ func TestHasBoundWith(t *testing.T) {
 			},
 		},
 		{
-			Description:      "Should return false, Has InCorrect ClaimRef Name",
-			WantFilterResult: false,
+			Description:        "Should return false, Has InCorrect ClaimRef Name",
+			WantFilterResult:   false,
 			WantBoundWithClaim: "ClaimFoo",
-			disk:             GenFakeLocalDiskObject(),
+			disk:               GenFakeLocalDiskObject(),
 			setProperty: func(disk *v1alpha1.LocalDisk) {
 				disk.Spec.ClaimRef = &v1.ObjectReference{
 					Name: "ClaimBar",

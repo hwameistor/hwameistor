@@ -2,16 +2,13 @@ package E2eTest
 
 import (
 	"context"
-	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"github.com/hwameistor/hwameistor/test/e2e/framework"
-	"github.com/hwameistor/hwameistor/test/e2e/utils"
+	"time"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
-	apiv1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -20,9 +17,12 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/wait"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	"time"
+
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/test/e2e/framework"
+	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
 var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), func() {
@@ -40,7 +40,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 	ginkgo.Context("create a HA-StorageClass", func() {
 		ginkgo.It("create a sc", func() {
 			//create sc
-			deleteObj := apiv1.PersistentVolumeReclaimDelete
+			deleteObj := corev1.PersistentVolumeReclaimDelete
 			waitForFirstConsumerObj := storagev1.VolumeBindingWaitForFirstConsumer
 			examplesc := &storagev1.StorageClass{
 				ObjectMeta: metav1.ObjectMeta{
@@ -70,17 +70,17 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 		ginkgo.It("create PVC", func() {
 			//create PVC
 			storageClassName := "local-storage-hdd-lvm-ha"
-			examplePvc := &apiv1.PersistentVolumeClaim{
+			examplePvc := &corev1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pvc-lvm-ha",
 					Namespace: "default",
 				},
-				Spec: apiv1.PersistentVolumeClaimSpec{
-					AccessModes:      []apiv1.PersistentVolumeAccessMode{apiv1.ReadWriteOnce},
+				Spec: corev1.PersistentVolumeClaimSpec{
+					AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 					StorageClassName: &storageClassName,
-					Resources: apiv1.ResourceRequirements{
-						Requests: apiv1.ResourceList{
-							apiv1.ResourceStorage: resource.MustParse("100Mi"),
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceStorage: resource.MustParse("100Mi"),
 						},
 					},
 				},
@@ -115,25 +115,25 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 							"app": "demo",
 						},
 					},
-					Template: apiv1.PodTemplateSpec{
+					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
 								"app": "demo",
 							},
 						},
-						Spec: apiv1.PodSpec{
-							Containers: []apiv1.Container{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
 								{
 									Name:  "web",
 									Image: "ghcr.m.daocloud.io/daocloud/dao-2048:v1.2.0",
-									Ports: []apiv1.ContainerPort{
+									Ports: []corev1.ContainerPort{
 										{
 											Name:          "http",
-											Protocol:      apiv1.ProtocolTCP,
+											Protocol:      corev1.ProtocolTCP,
 											ContainerPort: 80,
 										},
 									},
-									VolumeMounts: []apiv1.VolumeMount{
+									VolumeMounts: []corev1.VolumeMount{
 										{
 											Name:      "2048-volume-lvm-ha",
 											MountPath: "/data",
@@ -141,11 +141,11 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 									},
 								},
 							},
-							Volumes: []apiv1.Volume{
+							Volumes: []corev1.Volume{
 								{
 									Name: "2048-volume-lvm-ha",
-									VolumeSource: apiv1.VolumeSource{
-										PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
+									VolumeSource: corev1.VolumeSource{
+										PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 											ClaimName: "pvc-lvm-ha",
 										},
 									},
@@ -165,8 +165,8 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 		})
 		ginkgo.It("PVC STATUS should be Bound", func() {
 
-			pvc := &apiv1.PersistentVolumeClaim{}
-			pvcKey := k8sclient.ObjectKey{
+			pvc := &corev1.PersistentVolumeClaim{}
+			pvcKey := ctrlclient.ObjectKey{
 				Name:      "pvc-lvm-ha",
 				Namespace: "default",
 			}
@@ -177,7 +177,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 			}
 			logrus.Infof("Waiting for the PVC to be bound")
 			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
-				if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Phase != apiv1.ClaimBound {
+				if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Phase != corev1.ClaimBound {
 					return false, nil
 				}
 				return true, nil
@@ -190,7 +190,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 		})
 		ginkgo.It("deploy STATUS should be AVAILABLE", func() {
 			deployment := &appsv1.Deployment{}
-			deployKey := k8sclient.ObjectKey{
+			deployKey := ctrlclient.ObjectKey{
 				Name:      utils.HaDeploymentName,
 				Namespace: "default",
 			}
@@ -222,7 +222,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 			}
 
 			deployment := &appsv1.Deployment{}
-			deployKey := k8sclient.ObjectKey{
+			deployKey := ctrlclient.ObjectKey{
 				Name:      utils.HaDeploymentName,
 				Namespace: "default",
 			}
@@ -235,10 +235,10 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
 			selector := labels.NewSelector()
 			selector = selector.Add(*apps)
-			listOption := k8sclient.ListOptions{
+			listOption := ctrlclient.ListOptions{
 				LabelSelector: selector,
 			}
-			podlist := &v1.PodList{}
+			podlist := &corev1.PodList{}
 			err = client.List(ctx, podlist, &listOption)
 
 			if err != nil {
@@ -277,7 +277,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 				f.ExpectNoError(err)
 			}
 			deployment := &appsv1.Deployment{}
-			deployKey := k8sclient.ObjectKey{
+			deployKey := ctrlclient.ObjectKey{
 				Name:      utils.HaDeploymentName,
 				Namespace: "default",
 			}
@@ -291,10 +291,10 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
 			selector := labels.NewSelector()
 			selector = selector.Add(*apps)
-			listOption := k8sclient.ListOptions{
+			listOption := ctrlclient.ListOptions{
 				LabelSelector: selector,
 			}
-			podlist := &v1.PodList{}
+			podlist := &corev1.PodList{}
 			err = client.List(ctx, podlist, &listOption)
 			if err != nil {
 				logrus.Printf("%+v ", err)
@@ -350,7 +350,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 				f.ExpectNoError(err)
 			}
 			deployment := &appsv1.Deployment{}
-			deployKey := k8sclient.ObjectKey{
+			deployKey := ctrlclient.ObjectKey{
 				Name:      utils.HaDeploymentName,
 				Namespace: "default",
 			}
@@ -364,10 +364,10 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
 			selector := labels.NewSelector()
 			selector = selector.Add(*apps)
-			listOption := k8sclient.ListOptions{
+			listOption := ctrlclient.ListOptions{
 				LabelSelector: selector,
 			}
-			podlist := &v1.PodList{}
+			podlist := &corev1.PodList{}
 			err = client.List(ctx, podlist, &listOption)
 			if err != nil {
 				logrus.Printf("%+v ", err)
@@ -391,7 +391,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 			}
 
 			deployment := &appsv1.Deployment{}
-			deployKey := k8sclient.ObjectKey{
+			deployKey := ctrlclient.ObjectKey{
 				Name:      utils.HaDeploymentName,
 				Namespace: "default",
 			}
@@ -404,10 +404,10 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
 			selector := labels.NewSelector()
 			selector = selector.Add(*apps)
-			listOption := k8sclient.ListOptions{
+			listOption := ctrlclient.ListOptions{
 				LabelSelector: selector,
 			}
-			podlist := &v1.PodList{}
+			podlist := &corev1.PodList{}
 			err = client.List(ctx, podlist, &listOption)
 
 			if err != nil {
@@ -432,7 +432,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 		ginkgo.It("Delete test Deployment", func() {
 			//delete deploy
 			deployment := &appsv1.Deployment{}
-			deployKey := k8sclient.ObjectKey{
+			deployKey := ctrlclient.ObjectKey{
 				Name:      utils.HaDeploymentName,
 				Namespace: "default",
 			}

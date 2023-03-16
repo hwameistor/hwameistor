@@ -1,0 +1,23 @@
+v0.8.0 / 2023-2-23
+========================
+
+## LocalDiskManager
+
+* Added metrics for volume operations #639 (@sun7927 )
+
+* [Feat] Delete the Claim after it has been consumed #641 (@SSmallMonster )
+
+## Other
+
+* Add more api tests ( fix test #636 fix e2e #649 fix e2e #655 @FloatXD )
+* update registry #638 (@FloatXD )
+* fix chinese doc #645 (@FloatXD )
+* added maintainers #650 (@sun7927 )
+* [Chart] Render chart values.yaml  #651 (@SSmallMonster )
+* [relok8s] Add relok8s hint config #652 (@SSmallMonster )
+* update latest version and roadmap #653 (@SSmallMonster )
+* update hwameistor image registry to ghcr.io #654 (@SSmallMonster )
+* set default failurePolicy:Ignore in admission config #657 (@SSmallMonster )
+
+## LocalStorage,Scheduler,Evictor,Admission,Exporter
+N/A

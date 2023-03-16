@@ -9,12 +9,13 @@ import (
 	"time"
 	"unicode"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/kubernetes-csi/csi-lib-utils/leaderelection"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 const (
@@ -203,6 +204,16 @@ func GetNodeName() string {
 	}
 
 	return nodeName
+}
+
+func GetPodName() string {
+	podName, ok := os.LookupEnv("POD_NAME")
+	if !ok {
+		log.Errorf("Failed to get POD_NAME from ENV")
+		return ""
+	}
+
+	return podName
 }
 
 // GetNamespace get Namespace from env, else it returns error

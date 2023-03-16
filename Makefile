@@ -18,8 +18,8 @@ ADMISSION_BUILD_INPUT = ${CMDS_DIR}/${ADMISSION_MODULE_NAME}/admission.go
 EVICTOR_MODULE_NAME = evictor
 EVICTOR_BUILD_INPUT = ${CMDS_DIR}/${EVICTOR_MODULE_NAME}/main.go
 
-METRICS_MODULE_NAME = metrics
-METRICS_BUILD_INPUT = ${CMDS_DIR}/${METRICS_MODULE_NAME}/main.go
+EXPORTER_MODULE_NAME = exporter
+EXPORTER_BUILD_INPUT = ${CMDS_DIR}/${EXPORTER_MODULE_NAME}/main.go
 
 APISERVER_MODULE_NAME = apiserver
 APISERVER_BUILD_INPUT = ${CMDS_DIR}/${APISERVER_MODULE_NAME}/main.go
@@ -38,18 +38,18 @@ apiserver_run: apiserver_swag
 	GIN_MODE=debug go run ${BUILD_OPTIONS} ${APISERVER_BUILD_INPUT}
 
 .PHONY: compile
-compile: compile_ldm compile_ls compile_scheduler compile_admission compile_evictor compile_metrics compile_apiserver
+compile: compile_ldm compile_ls compile_scheduler compile_admission compile_evictor compile_exporter compile_apiserver
 
 .PHONY: image
-image: build_ldm_image build_ls_image build_scheduler_image build_admission_image build_evictor_image build_metrics_image build_apiserver_image
+image: build_ldm_image build_ls_image build_scheduler_image build_admission_image build_evictor_image build_exporter_image build_apiserver_image
 
 
 .PHONY: arm-image
-arm-image: build_ldm_image_arm64 build_ls_image_arm64 build_scheduler_image_arm64 build_admission_image_arm64 build_evictor_image_arm64 build_metrics_image_arm64 build_apiserver_image_arm64
+arm-image: build_ldm_image_arm64 build_ls_image_arm64 build_scheduler_image_arm64 build_admission_image_arm64 build_evictor_image_arm64 build_exporter_image_arm64 build_apiserver_image_arm64
 
 
 .PHONY: release
-release: release_ldm release_ls release_scheduler release_admission release_evictor release_metrics release_apiserver
+release: release_ldm release_ls release_scheduler release_admission release_evictor release_exporter release_apiserver
 
 .PHONY: unit-test
 unit-test:
@@ -116,16 +116,16 @@ release_evictor:
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${EVICTOR_IMAGE_NAME}:${RELEASE_TAG}
 
-.PHONY: release_metrics
-release_metrics:
+.PHONY: release_exporter
+release_exporter:
 	# build for amd64 version
-	${DOCKER_MAKE_CMD} make compile_metrics
-	${DOCKER_BUILDX_CMD_AMD64} -t ${METRICS_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${METRICS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	${DOCKER_MAKE_CMD} make compile_exporter
+	${DOCKER_BUILDX_CMD_AMD64} -t ${EXPORTER_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${EXPORTER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
-	${DOCKER_MAKE_CMD} make compile_metrics_arm64
-	${DOCKER_BUILDX_CMD_ARM64} -t ${METRICS_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${METRICS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	${DOCKER_MAKE_CMD} make compile_exporter_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${EXPORTER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${EXPORTER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# push to a public registry
-	${MUILT_ARCH_PUSH_CMD} -i ${METRICS_IMAGE_NAME}:${RELEASE_TAG}
+	${MUILT_ARCH_PUSH_CMD} -i ${EXPORTER_IMAGE_NAME}:${RELEASE_TAG}
 
 .PHONY: release_apiserver
 release_apiserver:
@@ -169,11 +169,11 @@ build_evictor_image:
 	${DOCKER_MAKE_CMD} make compile_evictor
 	docker build -t ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG} -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
-.PHONY: build_metrics_image
-build_metrics_image:
-	@echo "Build metrics image ${METRICS_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_metrics
-	docker build -t ${METRICS_IMAGE_NAME}:${IMAGE_TAG} -f ${METRICS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+.PHONY: build_exporter_image
+build_exporter_image:
+	@echo "Build exporter image ${EXPORTER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_exporter
+	docker build -t ${EXPORTER_IMAGE_NAME}:${IMAGE_TAG} -f ${EXPORTER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
 
 .PHONY: build_apiserver_image
@@ -213,11 +213,11 @@ build_evictor_image_arm64:
 	${DOCKER_MAKE_CMD} make compile_evictor_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG} -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
-.PHONY: build_metrics_image_arm64
-build_metrics_image_arm64:
-	@echo "Build metrics image ${METRICS_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_metrics_arm64
-	${DOCKER_BUILDX_CMD_ARM64} -t ${METRICS_IMAGE_NAME}:${IMAGE_TAG} -f ${METRICS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+.PHONY: build_exporter_image_arm64
+build_exporter_image_arm64:
+	@echo "Build exporter image ${EXPORTER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_exporter_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${EXPORTER_IMAGE_NAME}:${IMAGE_TAG} -f ${EXPORTER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
 .PHONY: build_apiserver_image_arm64
 build_apiserver_image_arm64:
@@ -281,13 +281,13 @@ compile_evictor:
 compile_evictor_arm64:
 	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${EVICTOR_BUILD_OUTPUT} ${EVICTOR_BUILD_INPUT}
 
-.PHONY: compile_metrics
-compile_metrics:
-	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${METRICS_BUILD_OUTPUT} ${METRICS_BUILD_INPUT}
+.PHONY: compile_exporter
+compile_exporter:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${EXPORTER_BUILD_OUTPUT} ${EXPORTER_BUILD_INPUT}
 
-.PHONY: compile_metrics_arm64
-compile_metrics_arm64:
-	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${METRICS_BUILD_OUTPUT} ${METRICS_BUILD_INPUT}
+.PHONY: compile_exporter_arm64
+compile_exporter_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${EXPORTER_BUILD_OUTPUT} ${EXPORTER_BUILD_INPUT}
 
 .PHONY: compile_apiserver
 compile_apiserver:
@@ -319,3 +319,11 @@ e2e-test:
 pr-test:
 	bash test/pr-test.sh
 
+
+.PHONY: relok8s-test
+relok8s-test:
+	bash test/relok8s-test.sh
+
+.PHONY: render-chart-values
+render-chart-values:
+	${RENDER_CHART_VALUES}

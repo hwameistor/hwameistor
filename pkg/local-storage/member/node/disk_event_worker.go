@@ -1,9 +1,9 @@
 package node
 
 import (
-	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
-
 	log "github.com/sirupsen/logrus"
+
+	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
 )
 
 func (m *manager) startDiskEventWorker(stopCh <-chan struct{}) {

@@ -5,25 +5,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/smart"
 	"os"
 	"path"
 	"runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
-
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/controller"
-	csidriver "github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/driver"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk"
-	"github.com/operator-framework/operator-sdk/pkg/leader"
-
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/rest"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/log/zap"
@@ -33,10 +19,23 @@ import (
 	"github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/controller"
+	csidriver "github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/driver"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/smart"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 )
 
 // Change below variables to serve metrics on different host or port.
@@ -45,6 +44,7 @@ var (
 	metricsPort         int32 = 8383
 	operatorMetricsPort int32 = 8686
 	csiCfg              csidriver.Config
+	logLevel            = flag.Int("v", 4 /*Log Info*/, "number for the log level verbosity")
 )
 var log = logf.Log.WithName("cmd")
 
@@ -66,6 +66,8 @@ func main() {
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 
 	pflag.Parse()
+
+	flag.Parse()
 
 	// Use a zap logr.Logger implementation. If none of the zap
 	// flags are configured (or if the zap flag set is not being
@@ -131,17 +133,18 @@ func main() {
 }
 
 func startClusterController(ctx context.Context, mgr manager.Manager) {
-	// Become the leader before proceeding
-	err := leader.Become(ctx, "local-disk-manager-lock")
-	if err != nil {
-		log.Error(err, "Failed to get lock")
-		os.Exit(1)
+	runCluster := func(c context.Context) {
+		log.Info("Starting the Cluster Cmd")
+		// Start the Cmd
+		if err := mgr.Start(ctx); err != nil {
+			log.Error(err, "Failed to start Cluster Cmd")
+			os.Exit(1)
+		}
 	}
 
-	log.Info("Starting the Cluster Cmd.")
-	// Start the Cmd
-	if err := mgr.Start(ctx); err != nil {
-		log.Error(err, "Failed to start Cluster Cmd")
+	// Acquired leader lease before proceeding
+	if err := utils.RunWithLease(utils.GetNamespace(), utils.GetPodName(), fmt.Sprintf("local-disk-manager-master"), runCluster); err != nil {
+		log.Error(err, "Failed to init cluster lease election")
 		os.Exit(1)
 	}
 }
@@ -227,7 +230,17 @@ func addMetrics(ctx context.Context, cfg *rest.Config) {
 //}
 
 func setupLogging() {
-	logr.SetLevel(logr.TraceLevel)
+	// parse log level(default level: info)
+	var level logr.Level
+	if *logLevel >= int(logr.TraceLevel) {
+		level = logr.TraceLevel
+	} else if *logLevel <= int(logr.PanicLevel) {
+		level = logr.PanicLevel
+	} else {
+		level = logr.Level(*logLevel)
+	}
+
+	logr.SetLevel(level)
 	logr.SetFormatter(&logr.JSONFormatter{
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
 			s := strings.Split(f.Function, ".")

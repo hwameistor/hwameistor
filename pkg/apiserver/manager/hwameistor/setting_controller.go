@@ -7,13 +7,14 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"strings"
 
-	hwameistorapi "github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	hwameistorapi "github.com/hwameistor/hwameistor/pkg/apiserver/api"
 )
 
 const (

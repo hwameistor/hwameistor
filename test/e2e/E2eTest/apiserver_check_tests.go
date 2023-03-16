@@ -1,10 +1,11 @@
 package E2eTest
 
 import (
-	"github.com/hwameistor/hwameistor/test/e2e/utils"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
+
+	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
 var _ = ginkgo.Describe("apiserver check test ", ginkgo.Label("periodCheck"), func() {

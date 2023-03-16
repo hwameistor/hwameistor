@@ -143,6 +143,10 @@ spec:
                 description: State is the phase of volume replica, e.g. Creating,
                   Ready, NotReady, ToBeDeleted, Deleted
                 type: string
+              usedCapacityBytes:
+                description: UsedCapacityBytes is the real used capacity in bytes
+                format: int64
+                type: integer
             required:
             - devPath
             type: object

@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: hwameistor-ui
+  name: hwameistor-ui
+  namespace: {{ .Release.Namespace}}
+spec:
+  replicas: {{ .Values.ui.replicas}}
+  selector:
+    matchLabels:
+      app: hwameistor-ui
+  template:
+    metadata:
+      labels:
+        app: hwameistor-ui
+      name: hwameistor-ui
+    spec:
+      containers:
+        - image: {{ .Values.global.hwameistorImageRegistry}}/{{ .Values.ui.imageRepository}}:{{ template "hwameistor.uiImageTag" . }}
+          imagePullPolicy: IfNotPresent
+          name: hwameistor-ui
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.apiserver.resources | nindent 12 }}
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hwameistor-ui
+  namespace: {{ .Release.Namespace}}
+spec:
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app: hwameistor-ui

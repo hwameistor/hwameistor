@@ -2,13 +2,10 @@ package localdiskclaim
 
 import (
 	"context"
-	v1 "k8s.io/api/core/v1"
 	"time"
 
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskclaim"
-
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -17,6 +14,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskclaim"
 )
 
 const (
@@ -94,6 +94,10 @@ func (r *ReconcileLocalDiskClaim) Reconcile(_ context.Context, req reconcile.Req
 		err = r.processDiskClaimPending(diskClaim)
 	case v1alpha1.LocalDiskClaimStatusBound:
 		err = r.processDiskClaimBound(diskClaim)
+	case v1alpha1.LocalDiskClaimStatusToBeDeleted:
+		err = r.processDiskClaimToBeDeleted(diskClaim)
+	case v1alpha1.LocalDiskClaimStatusDeleted:
+		err = r.processDiskClaimDeleted(diskClaim)
 	default:
 		log.Warningf("LocalDiskClaim %s status %v is UNKNOWN", diskClaim.Name, diskClaim.Status.Status)
 	}
@@ -153,5 +157,28 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimBound(diskClaim *v1alpha1.Loca
 		return r.diskClaimHandler.UpdateClaimStatus()
 	}
 
+	// Update claim.status to ToBeDeleted if disks backing this claim have been consumed
+	if diskClaim.Spec.Consumed {
+		r.diskClaimHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusToBeDeleted)
+		return r.diskClaimHandler.UpdateClaimStatus()
+	}
+
 	return nil
+}
+
+func (r *ReconcileLocalDiskClaim) processDiskClaimToBeDeleted(diskClaim *v1alpha1.LocalDiskClaim) error {
+	logCtx := log.Fields{"name": diskClaim.Name}
+	log.WithFields(logCtx).Info("Start processing ToBeDeleted localdiskclaim")
+
+	// Nothing to do here
+	r.diskClaimHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusDeleted)
+	return r.diskClaimHandler.UpdateClaimStatus()
+}
+
+func (r *ReconcileLocalDiskClaim) processDiskClaimDeleted(diskClaim *v1alpha1.LocalDiskClaim) error {
+	logCtx := log.Fields{"name": diskClaim.Name}
+	log.WithFields(logCtx).Info("Start processing Deleted localdiskclaim")
+
+	// Delete this claim
+	return r.diskClaimHandler.DeleteLocalDiskClaim()
 }

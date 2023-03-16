@@ -2,11 +2,12 @@ package sys
 
 import (
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 )
 
 // Device represents a blockdevice using its sysfs path.

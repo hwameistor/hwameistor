@@ -11,8 +11,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hwameistor/hwameistor/pkg/exechelper"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/hwameistor/hwameistor/pkg/exechelper"
 )
 
 type basicExecutor struct {

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
@@ -49,7 +50,7 @@ func TestLocalDiskVolumeHandler_AppendMountPoint(t *testing.T) {
 	}
 }
 
-func TestLocalDiskVolumeHandler_MoveMountPoint(t *testing.T) {
+func TestLocalDiskVolumeHandler_RemoveMountPoint(t *testing.T) {
 	v := newEmptyVolumeHandler()
 	v.Ldv = &v1alpha1.LocalDiskVolume{}
 
@@ -85,7 +86,7 @@ func TestLocalDiskVolumeHandler_MoveMountPoint(t *testing.T) {
 
 	for _, testcase := range umountPointCases {
 		t.Run(testcase.Description, func(t *testing.T) {
-			v.MoveMountPoint(testcase.MountPath)
+			v.RemoveMountPoint(testcase.MountPath)
 			if v.ExistMountPoint(testcase.MountPath) != testcase.WantExist {
 				t.Fatalf("UnMountPoints %s Append fail, want %v actual %v",
 					testcase.MountPath, testcase.WantExist, !testcase.WantExist)

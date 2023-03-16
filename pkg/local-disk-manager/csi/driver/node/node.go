@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/container-storage-interface/spec/lib/go/csi"
+
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/volumemanager"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 )
@@ -14,7 +15,7 @@ type Server struct {
 	vm volumemanager.VolumeManager
 
 	// supportNodeCapability
-	supportNodeCapability []*NodeServiceCapability
+	supportNodeCapability []*csi.NodeServiceCapability
 
 	// Config
 	Config `json:"config"`
@@ -37,7 +38,7 @@ func (s *Server) initConfig() {
 }
 
 func (s *Server) initNodeCapabilities() {
-	caps := []NodeServiceCapability_RPC_Type{
+	caps := []csi.NodeServiceCapability_RPC_Type{
 		//NodeServiceCapability_RPC_GET_VOLUME_STATS,
 		//NodeServiceCapability_RPC_VOLUME_CONDITION,
 	}
@@ -46,63 +47,63 @@ func (s *Server) initNodeCapabilities() {
 	}
 }
 
-func newNodeServiceCapability(cap NodeServiceCapability_RPC_Type) *NodeServiceCapability {
-	return &NodeServiceCapability{
-		Type: &NodeServiceCapability_Rpc{
-			Rpc: &NodeServiceCapability_RPC{
+func newNodeServiceCapability(cap csi.NodeServiceCapability_RPC_Type) *csi.NodeServiceCapability {
+	return &csi.NodeServiceCapability{
+		Type: &csi.NodeServiceCapability_Rpc{
+			Rpc: &csi.NodeServiceCapability_RPC{
 				Type: cap,
 			},
 		},
 	}
 }
 
-func (s *Server) NodeStageVolume(context.Context, *NodeStageVolumeRequest) (*NodeStageVolumeResponse, error) {
+func (s *Server) NodeStageVolume(context.Context, *csi.NodeStageVolumeRequest) (*csi.NodeStageVolumeResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (s *Server) NodeUnstageVolume(ctx context.Context, req *NodeUnstageVolumeRequest) (*NodeUnstageVolumeResponse, error) {
+func (s *Server) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolumeRequest) (*csi.NodeUnstageVolumeResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (s *Server) NodePublishVolume(ctx context.Context, req *NodePublishVolumeRequest) (*NodePublishVolumeResponse, error) {
+func (s *Server) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
 	if err := s.validateNodePublishRequest(req); err != nil {
 		return nil, err
 	}
 
-	return &NodePublishVolumeResponse{}, s.vm.NodePublishVolume(ctx, req)
+	return &csi.NodePublishVolumeResponse{}, s.vm.NodePublishVolume(ctx, req)
 }
 
-func (s *Server) NodeUnpublishVolume(ctx context.Context, req *NodeUnpublishVolumeRequest) (*NodeUnpublishVolumeResponse, error) {
+func (s *Server) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
 	if err := s.validateNodeUnPublishRequest(req); err != nil {
 		return nil, err
 	}
 
-	return &NodeUnpublishVolumeResponse{}, s.vm.NodeUnpublishVolume(ctx, req.GetVolumeId(), req.GetTargetPath())
+	return &csi.NodeUnpublishVolumeResponse{}, s.vm.NodeUnpublishVolume(ctx, req.GetVolumeId(), req.GetTargetPath())
 }
 
-func (s *Server) NodeGetVolumeStats(ctx context.Context, req *NodeGetVolumeStatsRequest) (*NodeGetVolumeStatsResponse, error) {
+func (s *Server) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeStatsRequest) (*csi.NodeGetVolumeStatsResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (s *Server) NodeExpandVolume(context.Context, *NodeExpandVolumeRequest) (*NodeExpandVolumeResponse, error) {
+func (s *Server) NodeExpandVolume(context.Context, *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (s *Server) NodeGetCapabilities(context.Context, *NodeGetCapabilitiesRequest) (*NodeGetCapabilitiesResponse, error) {
-	return &NodeGetCapabilitiesResponse{Capabilities: s.supportNodeCapability}, nil
+func (s *Server) NodeGetCapabilities(context.Context, *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
+	return &csi.NodeGetCapabilitiesResponse{Capabilities: s.supportNodeCapability}, nil
 }
 
-func (s *Server) NodeGetInfo(context.Context, *NodeGetInfoRequest) (*NodeGetInfoResponse, error) {
-	return &NodeGetInfoResponse{
+func (s *Server) NodeGetInfo(context.Context, *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
+	return &csi.NodeGetInfoResponse{
 		NodeId: s.NodeName,
-		AccessibleTopology: &Topology{
+		AccessibleTopology: &csi.Topology{
 			Segments: map[string]string{
 				volumemanager.TopologyNodeKey: s.NodeName,
 			}},
 	}, nil
 }
 
-func (s *Server) validateNodePublishRequest(req *NodePublishVolumeRequest) error {
+func (s *Server) validateNodePublishRequest(req *csi.NodePublishVolumeRequest) error {
 	if req.GetVolumeId() == "" {
 		return fmt.Errorf("VolumeId is empty")
 	}
@@ -118,7 +119,7 @@ func (s *Server) validateNodePublishRequest(req *NodePublishVolumeRequest) error
 	return nil
 }
 
-func (s *Server) validateNodeUnPublishRequest(req *NodeUnpublishVolumeRequest) error {
+func (s *Server) validateNodeUnPublishRequest(req *csi.NodeUnpublishVolumeRequest) error {
 	if req.GetVolumeId() == "" {
 		return fmt.Errorf("VolumeId is empty")
 	}

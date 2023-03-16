@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hwameistor/hwameistor/pkg/exechelper"
-	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
-
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/gofrs/uuid"
+
+	"github.com/hwameistor/hwameistor/pkg/exechelper"
+	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
 )
 
 func newControllerServiceCapability(cap csi.ControllerServiceCapability_RPC_Type) *csi.ControllerServiceCapability {

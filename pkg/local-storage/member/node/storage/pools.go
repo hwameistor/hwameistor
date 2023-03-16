@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
+
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 type localPoolManager struct {
@@ -19,12 +20,16 @@ func (mgr *localPoolManager) ExtendPools(localDisks []*apisv1alpha1.LocalDevice)
 	return mgr.cmdExec.ExtendPools(localDisks)
 }
 
-func (mgr *localPoolManager) ExtendPoolsInfo(localDisks map[string]*apisv1alpha1.LocalDevice) (map[string]*apisv1alpha1.LocalPool, error) {
-	return mgr.cmdExec.ExtendPoolsInfo(localDisks)
+func (mgr *localPoolManager) GetPools() (map[string]*apisv1alpha1.LocalPool, error) {
+	return mgr.cmdExec.GetPools()
 }
 
 func (mgr *localPoolManager) GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error) {
 	return mgr.cmdExec.GetReplicas()
+}
+
+func (mgr *localPoolManager) ResizePhysicalVolumes(localDisks map[string]*apisv1alpha1.LocalDevice) error {
+	return mgr.cmdExec.ResizePhysicalVolumes(localDisks)
 }
 
 func newLocalPoolManager(lm *LocalManager) LocalPoolManager {

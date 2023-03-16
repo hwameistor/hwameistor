@@ -3,8 +3,8 @@ global:
   # k8sImageRegistry is used to control which image registry the CSIController
   # images, i.e. provisioner,attacher,registrar,resizer is pulled from
   # Users in China can change to these sites for option
-  # k8sImageRegistry: k8s-gcr.m.daocloud.io
-  k8sImageRegistry: k8s.gcr.io
+  # k8sImageRegistry: m.daocloud.io/registry.k8s.io
+  k8sImageRegistry: registry.k8s.io
   # hwameistorImageRegistry is used to control which image registry the hwameistor
   # images, i.e. localDiskManager,localstorage,scheduler,admission,evictor is pulled from
   # Users in China can change to these sites for option
@@ -38,34 +38,41 @@ scheduler:
   replicas: 1
   kubeApiServerConfigFilePath: /etc/kubernetes/admin.conf
   imageRepository: hwameistor/scheduler
+  tag: ""
   resources: {}
 
 admission:
   replicas: 1
   imageRepository: hwameistor/admission
+  tag: ""
   resources: {}
   # failurePolicy defines how unrecognized errors from the admission endpoint
   # are handled - allowed values are Ignore or Fail. Defaults to Fail.
-  failurePolicy: ""
-  # self-signed is a tool image for generating self-signed certs used by api-server
-  selfSigned:
-    imageRepository: hwameistor/self-signed
-    tag: v1
+  failurePolicy: "Ignore"
 
 evictor:
   replicas: 1
   imageRepository: hwameistor/evictor
-  resources: {} 
+  tag: ""
+  resources: {}
 
-metrics:
+exporter:
   replicas: 1
-  imageRepository: hwameistor/metrics
-  resources: {} 
+  imageRepository: hwameistor/exporter
+  tag: ""
+  resources: {}
 
 apiserver:
   replicas: 1
   imageRepository: hwameistor/apiserver
-  resources: {} 
+  tag: ""
+  resources: {}
+
+ui:
+  replicas: 1
+  imageRepository: hwameistor/hwameistor-ui
+  tag: ""
+  resources: {}
 
 localDiskManager:
   tolerationsOnMaster: true
@@ -76,6 +83,7 @@ localDiskManager:
     resources: {}
   manager:
     imageRepository: hwameistor/local-disk-manager
+    tag: ""
     resources: {}
 
 localDiskManagerCSIController:
@@ -107,6 +115,7 @@ localStorage:
       # default value: 1000
       maxHAVolumeCount:
     imageRepository: hwameistor/local-storage
+    tag: ""
     resources: {}
   migrate:
     rclone:

@@ -3,8 +3,8 @@ package localdiskclaim
 import (
 	"context"
 	"fmt"
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	diskHandler "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -13,7 +13,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
+
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	diskHandler "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
 )
 
 type Handler struct {
@@ -125,7 +127,8 @@ func (ldcHandler *Handler) PatchBoundDiskRef() error {
 		Infof("Found %d localdisk(s) in cluster", len(diskList.Items))
 	for _, disk := range diskList.Items {
 		if disk.Spec.ClaimRef != nil &&
-			disk.Spec.ClaimRef.Name == ldcHandler.diskClaim.GetName() {
+			// Since the claim can be applied repeatedly with a same name, thus only empty disks need to be appended
+			disk.Spec.ClaimRef.Name == ldcHandler.diskClaim.GetName() && !disk.Spec.HasPartition {
 			ldcHandler.AppendDiskRef(&disk)
 		}
 	}
@@ -218,4 +221,8 @@ func (ldcHandler *Handler) ShowObjectInfo(msg string) {
 		"Status":          ldcHandler.diskClaim.Status.Status,
 		"diskRef":         ldcHandler.diskClaim.Spec.DiskRefs,
 	}).Info(msg)
+}
+
+func (ldcHandler *Handler) DeleteLocalDiskClaim() error {
+	return ldcHandler.Delete(context.Background(), ldcHandler.diskClaim)
 }

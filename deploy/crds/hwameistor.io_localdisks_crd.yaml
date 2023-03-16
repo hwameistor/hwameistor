@@ -19,6 +19,7 @@ spec:
       type: string
     - jsonPath: .spec.claimRef.name
       name: Claim
+      priority: 1
       type: string
     - jsonPath: .status.claimState
       name: Phase

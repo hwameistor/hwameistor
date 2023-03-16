@@ -3,16 +3,21 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	mykube "github.com/hwameistor/hwameistor/pkg/utils/kubernetes"
-	"github.com/hwameistor/hwameistor/pkg/webhook"
+	"github.com/hwameistor/hwameistor/pkg/webhook/config"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"os"
+	"strings"
+	"sync"
+
 	"github.com/sirupsen/logrus"
 	admission "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"os"
-	"strings"
-	"sync"
+
+	mykube "github.com/hwameistor/hwameistor/pkg/utils/kubernetes"
+	"github.com/hwameistor/hwameistor/pkg/webhook"
 )
 
 var (
@@ -108,11 +113,14 @@ func (p *patchSchedulerName) ResourceNeedHandle(req admission.AdmissionReview) (
 		}
 		ok, err := p.IsHwameiStorVolume(pod.GetNamespace(), volume.PersistentVolumeClaim.ClaimName)
 		if err != nil {
-			// fixme: add a option to control the action when pvc is not found
-			//if errors.IsNotFound(err) {
-			//	logrus.WithFields(logCtx).Info("skip mutate this pod, because of pvc or storageclass is not found, can't judge volume is hwameistor volume")
-			//	return false, nil
-			//}
+			// case1: if FailurePolicy == Ignore and the StorageClass is not found, skip mutate
+			if errors.IsNotFound(err) && *config.GetFailurePolicy() == admissionregistrationv1.Ignore {
+				logrus.WithFields(logCtx).Infof("skip mutate this pod, because of pvc or storageclass is not found"+
+					"and FailurePolicy now is %s can't judge volume is hwameistor volume", admissionregistrationv1.Ignore)
+				return false, nil
+			}
+
+			// default: reject!
 			logrus.WithFields(logCtx).WithError(err).Error("failed to judge volume is hwameistor volume or not")
 			return false, err
 		}

@@ -2,9 +2,10 @@ package utils
 
 import (
 	"bytes"
-	log "github.com/sirupsen/logrus"
 	"os/exec"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func Bash(cmd string) (string, error) {

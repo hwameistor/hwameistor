@@ -62,6 +62,10 @@ type LocalStorageNodeStatus struct {
 	// Represents the latest available observations of a localstoragenode's current state.
 	// +optional
 	Conditions []LocalStorageNodeCondition `json:"conditions,omitempty"`
+
+	// PoolExtendRecords record why disks are joined in the pool
+	// +optional
+	PoolExtendRecords map[string]LocalDiskClaimSpecArray `json:"poolExtendRecords,omitempty"`
 }
 
 // LocalStorageNodeCondition describes the state of a localstoragenode at a certain point.

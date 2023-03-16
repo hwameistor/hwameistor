@@ -212,7 +212,7 @@ type LocalDiskStatus struct {
 //+kubebuilder:resource:scope=Cluster,shortName=ld
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
-//+kubebuilder:printcolumn:JSONPath=".spec.claimRef.name",name=Claim,type=string
+//+kubebuilder:printcolumn:JSONPath=".spec.claimRef.name",name=Claim,type=string,priority=1
 //+kubebuilder:printcolumn:JSONPath=".status.claimState",name=Phase,type=string
 //+kubebuilder:printcolumn:JSONPath=".spec.smartInfo.overallHealth",name=Health,type=string,priority=1
 //+kubebuilder:printcolumn:JSONPath=".spec.reserved",name=Reserved,type=boolean,priority=1

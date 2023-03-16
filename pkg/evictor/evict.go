@@ -4,6 +4,12 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/informers"
+	informercorev1 "k8s.io/client-go/informers/core/v1"
+	informerstoragev1 "k8s.io/client-go/informers/storage/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	localstorageclientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned"
@@ -11,14 +17,6 @@ import (
 	localstorageinformersv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/client/informers/externalversions/hwameistor/v1alpha1"
 	localstorageapis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
-
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/informers"
-	informercorev1 "k8s.io/client-go/informers/core/v1"
-	informerstoragev1 "k8s.io/client-go/informers/storage/v1"
-
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 )
 
 const (

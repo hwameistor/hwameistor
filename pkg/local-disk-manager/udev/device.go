@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	"github.com/pilebones/go-udev/crawler"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/json"
+
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 )
 
 // CDevice alias of crawler.Device

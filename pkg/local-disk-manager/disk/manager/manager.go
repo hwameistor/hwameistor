@@ -33,6 +33,9 @@ type Manager interface {
 
 	// Monitor monitor all disk events(e.g. add/remove/offline)
 	Monitor(chan Event)
+
+	// StartTimerTrigger periodic trigger event
+	StartTimerTrigger(chan Event)
 }
 
 // RegisterManager

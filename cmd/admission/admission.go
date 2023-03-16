@@ -1,22 +1,30 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"github.com/hwameistor/hwameistor/cmd/admission/app"
-	"github.com/hwameistor/hwameistor/pkg/webhook"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/pflag"
 	"net/http"
 	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
+
+	"github.com/hwameistor/hwameistor/cmd/admission/app"
+	"github.com/hwameistor/hwameistor/pkg/webhook"
+)
+
+var (
+	logLevel = flag.Int("v", 4 /*Log Info*/, "number for the log level verbosity")
 )
 
 func main() {
 	options := webhook.NewServerOption()
 	pflag.CommandLine.AddFlagSet(options.AddFlags(&pflag.FlagSet{}))
 	pflag.Parse()
+	flag.Parse()
 
 	certPath := filepath.Join(options.CertDir, options.TLSCert)
 	keyPath := filepath.Join(options.CertDir, options.TLSKey)
@@ -37,7 +45,17 @@ func main() {
 }
 
 func setupLogging() {
-	log.SetLevel(log.TraceLevel)
+	// parse log level(default level: info)
+	var level log.Level
+	if *logLevel >= int(log.TraceLevel) {
+		level = log.TraceLevel
+	} else if *logLevel <= int(log.PanicLevel) {
+		level = log.PanicLevel
+	} else {
+		level = log.Level(*logLevel)
+	}
+
+	log.SetLevel(level)
 	log.SetFormatter(&log.JSONFormatter{
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
 			s := strings.Split(f.Function, ".")

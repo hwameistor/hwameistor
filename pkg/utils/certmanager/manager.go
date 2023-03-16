@@ -7,9 +7,10 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	log "github.com/sirupsen/logrus"
 	"math/big"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // certManager helps to generate certs

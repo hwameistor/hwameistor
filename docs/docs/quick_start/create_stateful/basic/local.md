@@ -7,15 +7,17 @@ sidebar_label:  "Local Volumes"
 
 Running a stateful application with HwameiStor is super easy.
 
-Here we use a MySQL an example for demonstration.
+Here takes MySQL as an example for demonstration.
 
 :::note
-The yaml file for MySQL is borrowed from [the official Repo of Kubernetes](https://github.com/kubernetes/website/blob/main/content/en/examples/application/mysql/mysql-statefulset.yaml)
+The yaml file for MySQL is learnt from
+[Kubernetes repo](https://github.com/kubernetes/website/blob/main/content/en/examples/application/mysql/mysql-statefulset.yaml)
 :::
 
 ## Verify `StorageClass`
 
-HwameiStor helm charts by default install a `StorageClass` named `hwameistor-storage-lvm-hdd`, which provisions basic local volumes.
+HwameiStor helm charts by default install a `StorageClass` named `hwameistor-storage-lvm-hdd`,
+which provisions basic local volumes.
 
 ```console
 $ kubectl get sc hwameistor-storage-lvm-hdd -o yaml
@@ -46,7 +48,8 @@ $ kubectl apply -f examples/sc-local.yaml
 
 ## Create `StatefulSet`
 
-With HwameiStor and its `StorageClass` ready, a MySQL StatefulSet and its volumes can be deployed by a single command: 
+With HwameiStor and its `StorageClass` ready, a MySQL StatefulSet and its volumes
+can be deployed by a single command:
 
 ```Console
 $ kubectl apply -f sts-mysql_local.yaml
@@ -95,7 +98,8 @@ data-sts-mysql-local-0   Bound    pvc-accf1ddd-6f47-4275-b520-dc317c90f80b   1Gi
 
 ## Verify `LocalVolume` objects
 
-By listing `LocalVolume(LV)` objects with the same name as that of the `PV`, we can see that the local volume is also created on node `k8s-worker-3`
+By listing `LocalVolume(LV)` objects with the same name as that of the `PV`,
+we can see that the local volume is also created on node `k8s-worker-3`
 
 ```console
 $ kubectl get lv pvc-accf1ddd-6f47-4275-b520-dc317c90f80b
@@ -106,7 +110,8 @@ pvc-accf1ddd-6f47-4275-b520-dc317c90f80b   LocalStorage_PoolHDD   1          107
 
 ## [Optional] Scale MySQL out into a 3-node Cluster
 
-HwameiStor supports `StatefulSet` scaleout. Each `pod` of the `StatefulSet` will attach and mount an independent HwameiStor volume.
+HwameiStor supports `StatefulSet` scaleout. Each `pod` of the `StatefulSet` will
+attach and mount an independent HwameiStor volume.
 
 ```console
 $ kubectl scale sts/sts-mysql-local --replicas=3

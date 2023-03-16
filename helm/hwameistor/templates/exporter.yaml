@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hwameistor-exporter
+  namespace: {{ .Release.Namespace}}
+  labels:
+    app: hwameistor-exporter
+spec:
+  replicas: {{ .Values.exporter.replicas}}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hwameistor-exporter
+  template:
+    metadata:
+      labels:
+        app: hwameistor-exporter
+    spec:
+      serviceAccountName: hwameistor-admin
+      containers:
+        - name: exporter
+          image: {{ .Values.global.hwameistorImageRegistry}}/{{ .Values.exporter.imageRepository}}:{{ template "hwameistor.exporterImageTag" . }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: exporter-apis
+          resources: 
+            {{- toYaml .Values.exporter.resources | nindent 12 }}
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: hwameistor-exporter
+  namespace: {{ .Release.Namespace}}
+spec:
+  selector:
+    app: hwameistor-exporter
+  ports:
+    - port: 80
+      targetPort: exporter-apis
+

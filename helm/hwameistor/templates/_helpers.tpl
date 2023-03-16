@@ -29,12 +29,17 @@
 {{- end -}}
 
 {{/* Allow Metrics image tag to be overridden. */}}
-{{- define "hwameistor.metricsImageTag" -}}
-  {{- default .Chart.Version .Values.metrics.tag -}}
+{{- define "hwameistor.exporterImageTag" -}}
+  {{- default .Chart.Version .Values.exporter.tag -}}
 {{- end -}}
 
 {{/* Allow APIServer image tag to be overridden. */}}
 {{- define "hwameistor.apiserverImageTag" -}}
+  {{- default .Chart.Version .Values.apiserver.tag -}}
+{{- end -}}
+
+{{/* Allow UI image tag to be overridden. */}}
+{{- define "hwameistor.uiImageTag" -}}
   {{- default .Chart.Version .Values.apiserver.tag -}}
 {{- end -}}
 

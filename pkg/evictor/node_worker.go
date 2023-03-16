@@ -3,9 +3,9 @@ package evictor
 import (
 	"fmt"
 
-	localstorageapis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-
 	log "github.com/sirupsen/logrus"
+
+	localstorageapis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 func (ev *evictor) startNodeWorker(stopCh <-chan struct{}) {
