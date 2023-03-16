@@ -3,16 +3,16 @@ package node
 import (
 	"context"
 	"fmt"
+	volumemanager2 "github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/volume"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/volumemanager"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 )
 
 type Server struct {
 	// vm manager volume create,delete,query
-	vm volumemanager.VolumeManager
+	vm volumemanager2.Manager
 
 	// supportNodeCapability
 	supportNodeCapability []*csi.NodeServiceCapability
@@ -29,7 +29,7 @@ func NewServer() *Server {
 	server := &Server{}
 	server.initConfig()
 	server.initNodeCapabilities()
-	server.vm = volumemanager.NewLocalDiskVolumeManager()
+	server.vm = volumemanager2.New()
 	return server
 }
 
@@ -98,7 +98,7 @@ func (s *Server) NodeGetInfo(context.Context, *csi.NodeGetInfoRequest) (*csi.Nod
 		NodeId: s.NodeName,
 		AccessibleTopology: &csi.Topology{
 			Segments: map[string]string{
-				volumemanager.TopologyNodeKey: s.NodeName,
+				volumemanager2.TopologyNodeKey: s.NodeName,
 			}},
 	}, nil
 }

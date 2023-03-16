@@ -1,8 +1,10 @@
-package volumemanager
+package volume
 
 import (
 	"context"
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/disk"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
 	"strconv"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
@@ -11,7 +13,6 @@ import (
 
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/builder/localdiskvolume"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/diskmanager"
 	volumectr "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskvolume"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/kubernetes"
@@ -34,14 +35,14 @@ const (
 	VolumeSelectedNodeKey          = "volume.kubernetes.io/selected-node"
 )
 
-// LocalDiskVolumeManager manage the allocation, deletion and query of local disk data volumes.
+// localDiskVolumeManager manage the allocation, deletion and query of local disk data volumes.
 // Internally, the reasonable allocation of data volumes will be realized by tuning the LocalDiskNode resources
-type LocalDiskVolumeManager struct {
+type localDiskVolumeManager struct {
 	// SupportVolumeCapacities
 	SupportVolumeCapacities []*csi.VolumeCapability
 
 	// dm manager all disks in cluster
-	dm diskmanager.DiskManager
+	dm disk.Manager
 
 	// GetClient for query LocalDiskVolume resources from k8s
 	GetClient func() (*localdiskvolume.Kubeclient, error)
@@ -109,7 +110,7 @@ func (r *VolumeRequest) SetDiskType(diskType string) {
 
 func (r *VolumeRequest) Valid() error {
 	if r.DiskType == "" {
-		return fmt.Errorf("DiskType is empty")
+		return fmt.Errorf("DevType is empty")
 	}
 	if r.PVCName == "" {
 		return fmt.Errorf("PVCName is empty")
@@ -120,9 +121,8 @@ func (r *VolumeRequest) Valid() error {
 	return nil
 }
 
-// NewLocalDiskVolumeManager
-func NewLocalDiskVolumeManager() *LocalDiskVolumeManager {
-	vm := &LocalDiskVolumeManager{}
+func New() Manager {
+	vm := &localDiskVolumeManager{}
 	vm.initVolumeCapacities()
 	vm.initKubernetesClient()
 	vm.initLocalDiskManager()
@@ -131,7 +131,7 @@ func NewLocalDiskVolumeManager() *LocalDiskVolumeManager {
 	return vm
 }
 
-func (vm *LocalDiskVolumeManager) CreateVolume(name string, parameters interface{}) (*Volume, error) {
+func (vm *localDiskVolumeManager) CreateVolume(name string, parameters interface{}) (*types.Volume, error) {
 	r, err := vm.ParseVolumeRequest(parameters)
 	if err != nil {
 		log.WithError(err).Error("Failed to ParseVolumeRequest")
@@ -182,14 +182,14 @@ func (vm *LocalDiskVolumeManager) CreateVolume(name string, parameters interface
 		return nil, err
 	}
 
-	return &Volume{
+	return &types.Volume{
 		Name:     v.Name,
 		Exist:    true,
 		Capacity: v.Status.AllocatedCapacityBytes,
 		Ready:    v.Status.State == v1alpha1.VolumeStateReady}, nil
 }
 
-func (vm *LocalDiskVolumeManager) UpdateVolume(name string, parameters interface{}) (*Volume, error) {
+func (vm *localDiskVolumeManager) UpdateVolume(name string, parameters interface{}) (*types.Volume, error) {
 	r, err := vm.ParseVolumeRequest(parameters)
 	if err != nil {
 		log.WithError(err).Error("Failed to ParseVolumeRequest")
@@ -227,14 +227,14 @@ func (vm *LocalDiskVolumeManager) UpdateVolume(name string, parameters interface
 		return nil, err
 	}
 
-	return &Volume{
+	return &types.Volume{
 		Name:     v.Name,
 		Exist:    true,
 		Capacity: v.Status.AllocatedCapacityBytes,
 		Ready:    v.Status.State == v1alpha1.VolumeStateReady}, nil
 }
 
-func (vm *LocalDiskVolumeManager) newHandlerForVolume(name string) (*volumectr.DiskVolumeHandler, error) {
+func (vm *localDiskVolumeManager) newHandlerForVolume(name string) (*volumectr.DiskVolumeHandler, error) {
 	vh, err := vm.GetVolumeHandler()
 	if err != nil {
 		return nil, err
@@ -247,7 +247,7 @@ func (vm *LocalDiskVolumeManager) newHandlerForVolume(name string) (*volumectr.D
 	return vh, nil
 }
 
-func (vm *LocalDiskVolumeManager) NodePublishVolume(ctx context.Context, volumeReq interface{}) error {
+func (vm *localDiskVolumeManager) NodePublishVolume(ctx context.Context, volumeReq interface{}) error {
 	r, ok := volumeReq.(*csi.NodePublishVolumeRequest)
 	if !ok {
 		return fmt.Errorf("NodePublishRequest is not valid")
@@ -272,7 +272,7 @@ func (vm *LocalDiskVolumeManager) NodePublishVolume(ctx context.Context, volumeR
 	return volume.WaitVolume(ctx, v1alpha1.VolumeStateReady)
 }
 
-func (vm *LocalDiskVolumeManager) NodeUnpublishVolume(ctx context.Context,
+func (vm *localDiskVolumeManager) NodeUnpublishVolume(ctx context.Context,
 	name, targetPath string) error {
 	volume, err := vm.newHandlerForVolume(name)
 	if err != nil {
@@ -295,7 +295,7 @@ func (vm *LocalDiskVolumeManager) NodeUnpublishVolume(ctx context.Context,
 	return volume.WaitVolumeUnmounted(ctx, targetPath)
 }
 
-func (vm *LocalDiskVolumeManager) DeleteVolume(ctx context.Context, name string) error {
+func (vm *localDiskVolumeManager) DeleteVolume(ctx context.Context, name string) error {
 	volume, err := vm.newHandlerForVolume(name)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -338,8 +338,8 @@ func (vm *LocalDiskVolumeManager) DeleteVolume(ctx context.Context, name string)
 	return volume.UpdateLocalDiskVolume()
 }
 
-func (vm *LocalDiskVolumeManager) GetVolumeInfo(name string) (*Volume, error) {
-	volume := &Volume{}
+func (vm *localDiskVolumeManager) GetVolumeInfo(name string) (*types.Volume, error) {
+	volume := &types.Volume{}
 	exist, err := vm.VolumeIsExist(name)
 	if err != nil {
 		return nil, err
@@ -363,7 +363,7 @@ func (vm *LocalDiskVolumeManager) GetVolumeInfo(name string) (*Volume, error) {
 	return volume, nil
 }
 
-func (vm *LocalDiskVolumeManager) VolumeIsReady(name string) (bool, error) {
+func (vm *localDiskVolumeManager) VolumeIsReady(name string) (bool, error) {
 	vol, err := vm.getVolume(name)
 	if err != nil {
 		log.WithError(err).Error("Failed to get disk volume")
@@ -373,7 +373,7 @@ func (vm *LocalDiskVolumeManager) VolumeIsReady(name string) (bool, error) {
 	return vol.Status.State == v1alpha1.VolumeStateReady, nil
 }
 
-func (vm *LocalDiskVolumeManager) VolumeIsExist(name string) (bool, error) {
+func (vm *localDiskVolumeManager) VolumeIsExist(name string) (bool, error) {
 	vol, err := vm.getVolume(name)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -384,19 +384,19 @@ func (vm *LocalDiskVolumeManager) VolumeIsExist(name string) (bool, error) {
 	return vol.Name == name, nil
 }
 
-func (vm *LocalDiskVolumeManager) GetVolumeCapacities() interface{} {
+func (vm *localDiskVolumeManager) GetVolumeCapacities() interface{} {
 	return vm.SupportVolumeCapacities
 }
 
-func (vm *LocalDiskVolumeManager) initKubernetesClient() {
+func (vm *localDiskVolumeManager) initKubernetesClient() {
 	vm.GetClient = localdiskvolume.NewKubeclient
 }
 
-func (vm *LocalDiskVolumeManager) initLocalDiskManager() {
-	vm.dm = diskmanager.NewLocalDiskManager()
+func (vm *localDiskVolumeManager) initLocalDiskManager() {
+	vm.dm = disk.New()
 }
 
-func (vm *LocalDiskVolumeManager) initLocalVolumeHandler() {
+func (vm *localDiskVolumeManager) initLocalVolumeHandler() {
 	client, err := kubernetes.NewClient()
 	if err != nil {
 		log.WithError(err).Error("Failed to new kubernetes client")
@@ -417,7 +417,7 @@ func (vm *LocalDiskVolumeManager) initLocalVolumeHandler() {
 	}
 }
 
-func (vm *LocalDiskVolumeManager) initVolumeCapacities() {
+func (vm *localDiskVolumeManager) initVolumeCapacities() {
 	vm.SupportVolumeCapacities = []*csi.VolumeCapability{
 		{ // Tell CO we can provision readWriteOnce raw block volumes.
 			AccessType: &csi.VolumeCapability_Block{
@@ -442,7 +442,7 @@ func (vm *LocalDiskVolumeManager) initVolumeCapacities() {
 }
 
 // ParseVolumeRequest ParseParams
-func (vm *LocalDiskVolumeManager) ParseVolumeRequest(parameters interface{}) (*VolumeRequest, error) {
+func (vm *localDiskVolumeManager) ParseVolumeRequest(parameters interface{}) (*VolumeRequest, error) {
 	r, ok := parameters.(*csi.CreateVolumeRequest)
 	if !ok {
 		return nil, fmt.Errorf("volume request type error, not the CreateVolumeRequest")
@@ -480,7 +480,7 @@ func (vm *LocalDiskVolumeManager) ParseVolumeRequest(parameters interface{}) (*V
 }
 
 // isSupportVolumeCapability
-func (vm *LocalDiskVolumeManager) isSupportVolumeCapabilities(caps []*csi.VolumeCapability) (bool, error) {
+func (vm *localDiskVolumeManager) isSupportVolumeCapabilities(caps []*csi.VolumeCapability) (bool, error) {
 	supportCaps, ok := vm.GetVolumeCapacities().([]*csi.VolumeCapability)
 	if !ok {
 		log.WithFields(utils.StructToMap(vm.GetVolumeCapacities(), "json")).Error("Failed to get VolumeCapacities")
@@ -505,7 +505,7 @@ func (vm *LocalDiskVolumeManager) isSupportVolumeCapabilities(caps []*csi.Volume
 	return true, nil
 }
 
-func (vm *LocalDiskVolumeManager) getVolume(name string) (*v1alpha1.LocalDiskVolume, error) {
+func (vm *localDiskVolumeManager) getVolume(name string) (*v1alpha1.LocalDiskVolume, error) {
 	client, err := vm.GetClient()
 	if err != nil {
 		return nil, err
@@ -514,7 +514,7 @@ func (vm *LocalDiskVolumeManager) getVolume(name string) (*v1alpha1.LocalDiskVol
 	return client.Get(name)
 }
 
-func (vm *LocalDiskVolumeManager) createVolume(volume *v1alpha1.LocalDiskVolume) (*v1alpha1.LocalDiskVolume, error) {
+func (vm *localDiskVolumeManager) createVolume(volume *v1alpha1.LocalDiskVolume) (*v1alpha1.LocalDiskVolume, error) {
 	client, err := vm.GetClient()
 	if err != nil {
 		log.WithError(err).Error("Failed to create kubernetes client")
@@ -524,7 +524,7 @@ func (vm *LocalDiskVolumeManager) createVolume(volume *v1alpha1.LocalDiskVolume)
 	return client.Create(volume)
 }
 
-func (vm *LocalDiskVolumeManager) updateVolume(volume *v1alpha1.LocalDiskVolume) (*v1alpha1.LocalDiskVolume, error) {
+func (vm *localDiskVolumeManager) updateVolume(volume *v1alpha1.LocalDiskVolume) (*v1alpha1.LocalDiskVolume, error) {
 	client, err := vm.GetClient()
 	if err != nil {
 		return nil, err
@@ -533,7 +533,7 @@ func (vm *LocalDiskVolumeManager) updateVolume(volume *v1alpha1.LocalDiskVolume)
 	return client.Update(volume)
 }
 
-func (vm *LocalDiskVolumeManager) quireBytes(csiRequest *csi.CreateVolumeRequest) (int64, error) {
+func (vm *localDiskVolumeManager) quireBytes(csiRequest *csi.CreateVolumeRequest) (int64, error) {
 	pvcRequireBytes := int64(0)
 	if csiRequest.GetCapacityRange() != nil {
 		pvcRequireBytes = csiRequest.GetCapacityRange().GetRequiredBytes()

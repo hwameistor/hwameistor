@@ -1,6 +1,8 @@
 package scheduler
 
-import "github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/volumemanager"
+import (
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/volume"
+)
 
 type StorageClassParams struct {
 	DiskType string `json:"diskType"`
@@ -8,6 +10,6 @@ type StorageClassParams struct {
 
 func parseParams(params map[string]string) *StorageClassParams {
 	return &StorageClassParams{
-		DiskType: params[volumemanager.VolumeParameterDiskTypeKey],
+		DiskType: params[volume.VolumeParameterDiskTypeKey],
 	}
 }

@@ -1,7 +1,8 @@
-package diskmanager
+package disk
 
 import (
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
 	"reflect"
 	"sync"
 
@@ -12,21 +13,20 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/builder/localdisknode"
 	localdisk2 "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/kubernetes"
 )
 
 var (
 	once sync.Once
-	ldn  *LocalDiskNodesManager
+	ldn  *localDiskNodesManager
 )
 
 const (
 	ReservedPVCKey = "disk.hwameistor.io/pvc"
 )
 
-// LocalDiskNodesManager manage all disks in the cluster by interacting with localDisk resources
-type LocalDiskNodesManager struct {
+// localDiskNodesManager manage all disks in the cluster by interacting with localDisk resources
+type localDiskNodesManager struct {
 	// GetClient for query LocalDiskNode resources from k8s
 	GetClient func() (*localdisknode.Kubeclient, error)
 
@@ -37,7 +37,7 @@ type LocalDiskNodesManager struct {
 	DiskHandler *localdisk2.Handler
 }
 
-func (ldn *LocalDiskNodesManager) ReleaseDisk(disk string) error {
+func (ldn *localDiskNodesManager) ReleaseDisk(disk string) error {
 	if disk == "" {
 		log.Debug("ReleaseDisk skipped due to disk needs to release is empty")
 		return nil
@@ -52,7 +52,7 @@ func (ldn *LocalDiskNodesManager) ReleaseDisk(disk string) error {
 	return ldn.DiskHandler.Update()
 }
 
-func (ldn *LocalDiskNodesManager) UnReserveDiskForPVC(pvc string) error {
+func (ldn *localDiskNodesManager) UnReserveDiskForPVC(pvc string) error {
 	label := labels.Set{ReservedPVCKey: pvc}
 	list, err := ldn.DiskHandler.GetLocalDiskWithLabels(label)
 	if err != nil {
@@ -70,9 +70,9 @@ func (ldn *LocalDiskNodesManager) UnReserveDiskForPVC(pvc string) error {
 	return err
 }
 
-func NewLocalDiskManager() *LocalDiskNodesManager {
+func New() Manager {
 	once.Do(func() {
-		ldn = &LocalDiskNodesManager{}
+		ldn = &localDiskNodesManager{}
 		ldn.GetClient = localdisknode.NewKubeclient
 		cli, _ := kubernetes.NewClient()
 		recoder, _ := kubernetes.NewRecorderFor("localdisknodemanager")
@@ -84,14 +84,14 @@ func NewLocalDiskManager() *LocalDiskNodesManager {
 
 // GetClusterDisks
 // Here is just a simple implementation
-func (ldn *LocalDiskNodesManager) GetClusterDisks() (map[string][]*Disk, error) {
+func (ldn *localDiskNodesManager) GetClusterDisks() (map[string][]*types.Disk, error) {
 	cli, err := ldn.GetClient()
 	if err != nil {
 		return nil, err
 	}
 
 	// fixme: should do more check
-	var clusterDisks = make(map[string][]*Disk)
+	var clusterDisks = make(map[string][]*types.Disk)
 
 	var nodes *v1alpha1.LocalDiskNodeList
 
@@ -101,7 +101,7 @@ func (ldn *LocalDiskNodesManager) GetClusterDisks() (map[string][]*Disk, error) 
 	}
 
 	for _, node := range nodes.Items {
-		var nodeDisks []*Disk
+		var nodeDisks []*types.Disk
 		for name, disk := range node.Status.Disks {
 			nodeDisks = append(nodeDisks, convertToDisk(node.Spec.AttachNode, name, disk))
 		}
@@ -113,7 +113,7 @@ func (ldn *LocalDiskNodesManager) GetClusterDisks() (map[string][]*Disk, error) 
 }
 
 // GetNodeDisks get disks which attached on the node
-func (ldn *LocalDiskNodesManager) GetNodeDisks(node string) ([]*Disk, error) {
+func (ldn *localDiskNodesManager) GetNodeDisks(node string) ([]*types.Disk, error) {
 	cli, err := ldn.GetClient()
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (ldn *LocalDiskNodesManager) GetNodeDisks(node string) ([]*Disk, error) {
 		return nil, err
 	}
 
-	var nodeDisks []*Disk
+	var nodeDisks []*types.Disk
 	for name, disk := range diskNode.Status.Disks {
 		nodeDisks = append(nodeDisks, convertToDisk(node, name, disk))
 	}
@@ -133,8 +133,8 @@ func (ldn *LocalDiskNodesManager) GetNodeDisks(node string) ([]*Disk, error) {
 	return nodeDisks, nil
 }
 
-func (ldn *LocalDiskNodesManager) filterDisk(reqDisk, existDisk Disk) bool {
-	if existDisk.Status != DiskStatusAvailable {
+func (ldn *localDiskNodesManager) filterDisk(reqDisk, existDisk types.Disk) bool {
+	if existDisk.Status != types.DiskStatusAvailable {
 		return false
 	}
 	if existDisk.DiskType == reqDisk.DiskType &&
@@ -144,7 +144,7 @@ func (ldn *LocalDiskNodesManager) filterDisk(reqDisk, existDisk Disk) bool {
 	return false
 }
 
-func (ldn *LocalDiskNodesManager) diskScoreMax(reqDisk Disk, existDisks []*Disk) *Disk {
+func (ldn *localDiskNodesManager) diskScoreMax(reqDisk types.Disk, existDisks []*types.Disk) *types.Disk {
 	if len(existDisks) == 0 {
 		return nil
 	}
@@ -161,7 +161,7 @@ func (ldn *LocalDiskNodesManager) diskScoreMax(reqDisk Disk, existDisks []*Disk)
 
 // GetReservedDiskByPVC get disk by use pvc as a label selector
 // Return err if reserved disk is more than 1
-func (ldn *LocalDiskNodesManager) GetReservedDiskByPVC(pvc string) (*Disk, error) {
+func (ldn *localDiskNodesManager) GetReservedDiskByPVC(pvc string) (*types.Disk, error) {
 	list, err := ldn.DiskHandler.GetLocalDiskWithLabels(labels.Set{ReservedPVCKey: pvc})
 	if err != nil {
 		return nil, err
@@ -172,9 +172,9 @@ func (ldn *LocalDiskNodesManager) GetReservedDiskByPVC(pvc string) (*Disk, error
 		return nil, fmt.Errorf("there are more one disks reserved by pvc %s", pvc)
 	}
 
-	var reservedDisk *Disk
+	var reservedDisk *types.Disk
 	for _, disk := range list.Items {
-		reservedDisk = &Disk{
+		reservedDisk = &types.Disk{
 			AttachNode: disk.Spec.NodeName,
 			Name:       disk.Name,
 			DevPath:    disk.Spec.DevicePath,
@@ -187,7 +187,7 @@ func (ldn *LocalDiskNodesManager) GetReservedDiskByPVC(pvc string) (*Disk, error
 }
 
 // ClaimDisk claim a localDisk by update localDisk spec.hasPartition true
-func (ldn *LocalDiskNodesManager) ClaimDisk(name string) error {
+func (ldn *localDiskNodesManager) ClaimDisk(name string) error {
 	if name == "" {
 		return fmt.Errorf("disk is empty")
 	}
@@ -203,7 +203,7 @@ func (ldn *LocalDiskNodesManager) ClaimDisk(name string) error {
 	return ldn.DiskHandler.Update()
 }
 
-func (ldn *LocalDiskNodesManager) reserve(disk *Disk, pvc string) error {
+func (ldn *localDiskNodesManager) reserve(disk *types.Disk, pvc string) error {
 	if disk == nil {
 		return fmt.Errorf("disk is nil")
 	}
@@ -221,10 +221,10 @@ func (ldn *LocalDiskNodesManager) reserve(disk *Disk, pvc string) error {
 }
 
 // ReserveDiskForVolume reserve a localDisk by update localDisk spec.reserved and label this disk for the volume
-func (ldn *LocalDiskNodesManager) ReserveDiskForVolume(reqDisk Disk, pvc string) error {
+func (ldn *localDiskNodesManager) ReserveDiskForVolume(reqDisk types.Disk, pvc string) error {
 	ldn.mutex.Lock()
 	defer ldn.mutex.Unlock()
-	var finalSelectDisk *Disk
+	var finalSelectDisk *types.Disk
 	var err error
 
 	// lookup if a disk was reserved by the pvc
@@ -251,7 +251,7 @@ func (ldn *LocalDiskNodesManager) ReserveDiskForVolume(reqDisk Disk, pvc string)
 	return nil
 }
 
-func (ldn *LocalDiskNodesManager) SelectDisk(reqDisk Disk) (*Disk, error) {
+func (ldn *localDiskNodesManager) SelectDisk(reqDisk types.Disk) (*types.Disk, error) {
 	// get all disks attached on this node
 	existDisks, err := ldn.GetNodeDisks(reqDisk.AttachNode)
 	if err != nil {
@@ -260,7 +260,7 @@ func (ldn *LocalDiskNodesManager) SelectDisk(reqDisk Disk) (*Disk, error) {
 	}
 
 	// find out all matchable disks
-	var matchDisks []*Disk
+	var matchDisks []*types.Disk
 	for _, existDisk := range existDisks {
 		if ldn.filterDisk(reqDisk, *existDisk) {
 			matchDisks = append(matchDisks, existDisk)
@@ -274,7 +274,7 @@ func (ldn *LocalDiskNodesManager) SelectDisk(reqDisk Disk) (*Disk, error) {
 	return ldn.diskScoreMax(reqDisk, matchDisks), nil
 }
 
-func (ldn *LocalDiskNodesManager) FilterFreeDisks(reqDisks []Disk) (bool, error) {
+func (ldn *localDiskNodesManager) FilterFreeDisks(reqDisks []types.Disk) (bool, error) {
 	if len(reqDisks) == 0 {
 		return true, nil
 	}
@@ -288,7 +288,7 @@ func (ldn *LocalDiskNodesManager) FilterFreeDisks(reqDisks []Disk) (bool, error)
 
 	for _, reqDisk := range reqDisks {
 		// find out all matchable disks
-		var matchDisks []*Disk
+		var matchDisks []*types.Disk
 		for _, existDisk := range existDisks {
 			if ldn.filterDisk(reqDisk, *existDisk) {
 				matchDisks = append(matchDisks, existDisk)
@@ -311,8 +311,8 @@ func (ldn *LocalDiskNodesManager) FilterFreeDisks(reqDisks []Disk) (bool, error)
 	return true, nil
 }
 
-func convertToDisk(diskNode, diskName string, disk v1alpha1.Disk) *Disk {
-	return &Disk{
+func convertToDisk(diskNode, diskName string, disk v1alpha1.Disk) *types.Disk {
+	return &types.Disk{
 		AttachNode: diskNode,
 		Name:       diskName,
 		DevPath:    disk.DevPath,
@@ -322,31 +322,31 @@ func convertToDisk(diskNode, diskName string, disk v1alpha1.Disk) *Disk {
 	}
 }
 
-func isSameDisk(d1, d2 Disk) bool {
+func isSameDisk(d1, d2 types.Disk) bool {
 	return reflect.DeepEqual(d1, d2)
 }
 
-func init() {
-	// create LocalDiskNode Resource first when this module is imported
-	cli, err := NewLocalDiskManager().GetClient()
-	if err != nil {
-		log.Errorf("failed to get cli %s.", err.Error())
-		return
-	}
-
-	// LocalDiskNode will be created if not exist
-	ldn, err := cli.Get(utils.GetNodeName())
-	if ldn.GetName() != "" {
-		log.Infof("LocalDiskNode %s is already exist.", ldn.GetName())
-		return
-	}
-
-	ldn, _ = localdisknode.NewBuilder().WithName(utils.GetNodeName()).
-		SetupAttachNode(utils.GetNodeName()).Build()
-	if _, err = cli.Create(ldn); err != nil {
-		log.Errorf("failed to create LocalDiskNode instance %s.", err.Error())
-		return
-	}
-
-	log.Infof("LocalDiskNode %s create successfully.", ldn.GetName())
-}
+//func init() {
+//	// create LocalDiskNode Resource first when this module is imported
+//	cli, err := New().GetClient()
+//	if err != nil {
+//		log.Errorf("failed to get cli %s.", err.Error())
+//		return
+//	}
+//
+//	// LocalDiskNode will be created if not exist
+//	ldn, err := cli.Get(utils.GetNodeName())
+//	if ldn.GetName() != "" {
+//		log.Infof("LocalDiskNode %s is already exist.", ldn.GetName())
+//		return
+//	}
+//
+//	ldn, _ = localdisknode.NewBuilder().WithName(utils.GetNodeName()).
+//		SetupAttachNode(utils.GetNodeName()).Build()
+//	if _, err = cli.Create(ldn); err != nil {
+//		log.Errorf("failed to create LocalDiskNode instance %s.", err.Error())
+//		return
+//	}
+//
+//	log.Infof("LocalDiskNode %s create successfully.", ldn.GetName())
+//}

@@ -1,38 +1,20 @@
-package volumemanager
+package volume
 
-import "context"
+import (
+	"context"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
+)
 
 const (
 	TopologyNodeKey = "topology.disk.hwameistor.io/node"
 )
 
-// Volume
-type Volume struct {
-	// Name
-	Name string `json:"name"`
-
-	// Ready
-	Ready bool `json:"ready"`
-
-	// Exist
-	Exist bool `json:"exist"`
-
-	// Capacity
-	Capacity int64 `json:"capacity"`
-
-	// VolumeContext
-	VolumeContext map[string]string
-
-	// AttachNode
-	AttachNode string `json:"attachNode"`
-}
-
-type VolumeManager interface {
+type Manager interface {
 	// CreateVolume when volume is not exist
-	CreateVolume(name string, volumeRequest interface{}) (*Volume, error)
+	CreateVolume(name string, volumeRequest interface{}) (*types.Volume, error)
 
 	// UpdateVolume
-	UpdateVolume(name string, volumeRequest interface{}) (*Volume, error)
+	UpdateVolume(name string, volumeRequest interface{}) (*types.Volume, error)
 
 	// NodePublishVolume
 	NodePublishVolume(ctx context.Context, volumeRequest interface{}) error
@@ -44,7 +26,7 @@ type VolumeManager interface {
 	DeleteVolume(ctx context.Context, name string) error
 
 	// GetVolumeInfo
-	GetVolumeInfo(name string) (*Volume, error)
+	GetVolumeInfo(name string) (*types.Volume, error)
 
 	// GetVolumeCapacities
 	GetVolumeCapacities() interface{}

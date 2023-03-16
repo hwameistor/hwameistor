@@ -90,7 +90,7 @@ func TestLocalDiskClaimHandler_AssignDisk(t *testing.T) {
 			deleteDiskClaim:    deleteLocalDiskClaim,
 		},
 		{
-			Description: "Should return false, Disk don't satisfied for DiskType",
+			Description: "Should return false, Disk don't satisfied for DevType",
 			DiskClaim:   GenFakeLocalDiskClaimObject(),
 			FreeDisk:    GenFakeLocalDiskObject(),
 			WantAssign:  false,

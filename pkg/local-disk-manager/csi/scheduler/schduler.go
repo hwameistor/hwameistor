@@ -2,6 +2,9 @@ package scheduler
 
 import (
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/disk"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/volume"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -9,23 +12,21 @@ import (
 	storagev1lister "k8s.io/client-go/listers/storage/v1"
 	"k8s.io/kubernetes/pkg/scheduler/framework"
 
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/diskmanager"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/driver/identity"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/volumemanager"
 )
 
 // diskVolumeSchedulerPlugin implement the Scheduler interface
 // defined in github.com/hwameistor/scheduler/pkg/scheduler/scheduler.go: Scheduler
 type diskVolumeSchedulerPlugin struct {
-	diskNodeHandler   diskmanager.DiskManager
-	diskVolumeHandler volumemanager.VolumeManager
+	diskNodeHandler   disk.Manager
+	diskVolumeHandler volume.Manager
 	scLister          storagev1lister.StorageClassLister
 }
 
 func NewDiskVolumeSchedulerPlugin(scLister storagev1lister.StorageClassLister) *diskVolumeSchedulerPlugin {
 	return &diskVolumeSchedulerPlugin{
-		diskNodeHandler:   diskmanager.NewLocalDiskManager(),
-		diskVolumeHandler: volumemanager.NewLocalDiskVolumeManager(),
+		diskNodeHandler:   disk.New(),
+		diskVolumeHandler: volume.New(),
 		scLister:          scLister,
 	}
 }
@@ -136,15 +137,15 @@ func (s *diskVolumeSchedulerPlugin) filterExistVolumes(boundVolumes []string, to
 	return true, nil
 }
 
-func (s *diskVolumeSchedulerPlugin) convertPVCToDiskRequest(pvc *v1.PersistentVolumeClaim, node string) (diskmanager.Disk, error) {
+func (s *diskVolumeSchedulerPlugin) convertPVCToDiskRequest(pvc *v1.PersistentVolumeClaim, node string) (types.Disk, error) {
 	sc, err := s.getParamsFromStorageClass(pvc)
 	if err != nil {
 		log.WithError(err).Errorf("failed to parse params from StorageClass")
-		return diskmanager.Disk{}, err
+		return types.Disk{}, err
 	}
 
 	storage := pvc.Spec.Resources.Requests[v1.ResourceStorage]
-	return diskmanager.Disk{
+	return types.Disk{
 		AttachNode: node,
 		Capacity:   storage.Value(),
 		DiskType:   sc.DiskType,
@@ -169,7 +170,7 @@ func (s *diskVolumeSchedulerPlugin) getParamsFromStorageClass(volume *v1.Persist
 // filterPendingVolumes select free disks for pending pvc
 func (s *diskVolumeSchedulerPlugin) filterPendingVolumes(pendingVolumes []*v1.PersistentVolumeClaim, tobeScheduleNode string) (bool, error) {
 	pendingVolumes = s.removeDuplicatePVC(pendingVolumes)
-	var reqDisks []diskmanager.Disk
+	var reqDisks []types.Disk
 	for _, pvc := range pendingVolumes {
 		disk, err := s.convertPVCToDiskRequest(pvc, tobeScheduleNode)
 		if err != nil {
