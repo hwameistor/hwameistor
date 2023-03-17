@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"net/http"
 	"path"
@@ -17,14 +16,13 @@ import (
 )
 
 var (
-	logLevel = flag.Int("v", 4 /*Log Info*/, "number for the log level verbosity")
+	logLevel = pflag.Int("v", 4 /*Log Info*/, "number for the log level verbosity")
 )
 
 func main() {
 	options := webhook.NewServerOption()
 	pflag.CommandLine.AddFlagSet(options.AddFlags(&pflag.FlagSet{}))
 	pflag.Parse()
-	flag.Parse()
 
 	certPath := filepath.Join(options.CertDir, options.TLSCert)
 	keyPath := filepath.Join(options.CertDir, options.TLSKey)
