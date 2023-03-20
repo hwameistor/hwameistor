@@ -53,7 +53,7 @@ Follow these steps to retire a node:
 2. Get LocalStorageNode.
 
     ```bash
-    kubectl get localstoragenode NODE
+    kubectl get localstoragenode NODE -o yaml
     ```
 
     The output may look like:
