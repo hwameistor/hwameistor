@@ -25,7 +25,7 @@ import (
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), func() {
+var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("test"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
@@ -302,24 +302,48 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 			}
 
 			logrus.Infof("The node where the application is located is: " + podlist.Items[0].Spec.NodeName)
+			SourceNode := podlist.Items[0].Spec.NodeName
 
 			lvname := lvlist.Items[0].Name
 
-			SourceNode := ""
+			TargetNode := ""
+			var lvrNodelist []string
+			nodeList := &corev1.NodeList{}
+			err = client.List(ctx, nodeList)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
 			for _, lvr := range lvrList.Items {
-				if lvr.Spec.NodeName != podlist.Items[0].Spec.NodeName {
-					SourceNode = lvr.Spec.NodeName
+				lvrNodelist = append(lvrNodelist, lvr.Spec.NodeName)
+
+			}
+
+			for _, node := range nodeList.Items {
+				if node.Name != lvrNodelist[0] && node.Name != lvrNodelist[1] {
+					TargetNode = node.Name
 				}
 
 			}
-			logrus.Infof("The node where the replica is located is: " + SourceNode)
+
+			logrus.Infof("The TargetNode is: " + TargetNode)
+
+			logrus.Infof("Modify the application replica to 0")
+
+			deployment.Spec.Replicas = utils.Int32Ptr(0)
+			err = client.Update(ctx, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
 			exlvm := &v1alpha1.LocalVolumeMigrate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "localvolumegroupmigrate-1",
 					Namespace: "default",
 				},
 				Spec: v1alpha1.LocalVolumeMigrateSpec{
-					TargetNodesSuggested: []string{},
+					TargetNodesSuggested: []string{TargetNode},
 					SourceNode:           SourceNode,
 					VolumeName:           lvname,
 					MigrateAllVols:       true,
@@ -338,50 +362,37 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 		})
 		ginkgo.It("check localvolumemigrate", func() {
 
-			lvrList := &v1alpha1.LocalVolumeReplicaList{}
-			err := client.List(ctx, lvrList)
-			if err != nil {
-				logrus.Printf("list lvr failed ：%+v ", err)
-			}
-			lvlist := &v1alpha1.LocalVolumeList{}
-			err = client.List(ctx, lvlist)
-			if err != nil {
-				logrus.Error("%+v ", err)
-				f.ExpectNoError(err)
-			}
 			deployment := &appsv1.Deployment{}
 			deployKey := ctrlclient.ObjectKey{
 				Name:      utils.HaDeploymentName,
 				Namespace: "default",
 			}
-
-			err = client.Get(ctx, deployKey, deployment)
+			err := client.Get(ctx, deployKey, deployment)
 			if err != nil {
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
 
-			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
-			selector := labels.NewSelector()
-			selector = selector.Add(*apps)
-			listOption := ctrlclient.ListOptions{
-				LabelSelector: selector,
-			}
-			podlist := &corev1.PodList{}
-			err = client.List(ctx, podlist, &listOption)
+			logrus.Infof("Modify the application replica to 1")
+			deployment.Spec.Replicas = utils.Int32Ptr(1)
+			err = client.Update(ctx, deployment)
 			if err != nil {
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
 
-			SourceNode := ""
-			for _, lvr := range lvrList.Items {
-				if lvr.Spec.NodeName != podlist.Items[0].Spec.NodeName {
-					SourceNode = lvr.Spec.NodeName
+			logrus.Infof("waiting for the deployment to be ready ")
+			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+				if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(1) {
+					return false, nil
 				}
-
+				return true, nil
+			})
+			if err != nil {
+				logrus.Infof("deployment ready timeout")
+				logrus.Error(err)
 			}
-			logrus.Infof("After migrate The node where the replica is located is: " + SourceNode)
+			gomega.Expect(err).To(gomega.BeNil())
 
 		})
 		ginkgo.It("check test file", func() {
