@@ -4,3 +4,4 @@ description: the HwameiStor local storage
 type: application
 version: v0.8.0
 appVersion: v0.8.0
+icon: https://hwameistor.io/img/logo.svg
