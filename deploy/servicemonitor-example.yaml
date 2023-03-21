@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: hwameistor
+  namespace: hwameistor
+spec:
+  endpoints:
+  - interval: 30s
+    path: /metrics
+    port: metrics
+  namespaceSelector:
+    matchNames:
+    - hwameistor
+  selector:
+    matchLabels:
+      app: hwameistor-exporter
