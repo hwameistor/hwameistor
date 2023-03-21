@@ -30,6 +30,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  labels:
+    app: hwameistor-ui
   name: hwameistor-ui
   namespace: {{ .Release.Namespace}}
 spec:
