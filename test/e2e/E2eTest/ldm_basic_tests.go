@@ -41,7 +41,7 @@ var _ = ginkgo.Describe("Local Disk Manager basic tests", ginkgo.Label("periodCh
 		ginkgo.It("Manage new disks", func() {
 			output := utils.RunInLinux("sh adddisk.sh")
 			logrus.Info("add  disk :", output)
-			err := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+			err := wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				localDiskList := &v1alpha1.LocalDiskList{}
 				err = client.List(ctx, localDiskList)
 				if err != nil {

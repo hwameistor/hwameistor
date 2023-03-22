@@ -176,7 +176,7 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("periodCheck"), func(
 				f.ExpectNoError(err)
 			}
 			logrus.Infof("Waiting for the PVC to be bound")
-			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Phase != corev1.ClaimBound {
 					return false, nil
 				}
@@ -200,7 +200,7 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("periodCheck"), func(
 				f.ExpectNoError(err)
 			}
 			logrus.Infof("waiting for the deployment to be ready ")
-			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(1) {
 					return false, nil
 				}
@@ -446,7 +446,7 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("periodCheck"), func(
 				logrus.Error(err)
 				f.ExpectNoError(err)
 			}
-			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				if err := client.Get(ctx, deployKey, deployment); !k8serror.IsNotFound(err) {
 					return false, nil
 				}
@@ -604,7 +604,7 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("periodCheck"), func(
 			}
 
 			logrus.Infof("Waiting for the PVC to be bound")
-			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Phase != corev1.ClaimBound {
 					return false, nil
 				}
@@ -628,7 +628,7 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("periodCheck"), func(
 				f.ExpectNoError(err)
 			}
 			logrus.Infof("waiting for the deployment to be ready ")
-			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(1) {
 					return false, nil
 				}
@@ -771,7 +771,7 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("periodCheck"), func(
 
 			logrus.Infof(pvc.Status.Capacity.Storage().String())
 			logrus.Infof("Waiting for the PVC to be bound")
-			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Capacity.Storage().String() != "2Gi" {
 					return false, nil
 				}
@@ -896,7 +896,7 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("periodCheck"), func(
 				logrus.Error(err)
 				f.ExpectNoError(err)
 			}
-			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				if err := client.Get(ctx, deployKey, deployment); !k8serror.IsNotFound(err) {
 					return false, nil
 				}

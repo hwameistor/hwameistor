@@ -532,7 +532,7 @@ func CreateLdc(ctx context.Context) error {
 		}
 	}
 
-	err := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+	err := wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 		for _, nodes := range nodelist.Items {
 			time.Sleep(3 * time.Second)
 			localDiskClaim := &v1alpha1.LocalDiskClaim{}
@@ -577,7 +577,7 @@ func DeleteAllPVC(ctx context.Context) error {
 		}
 	}
 
-	err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+	err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 		err = client.List(ctx, pvcList)
 		if err != nil {
 			logrus.Error("get pvc list error: ", err)
@@ -617,7 +617,7 @@ func DeleteAllSC(ctx context.Context) error {
 			f.ExpectNoError(err)
 		}
 	}
-	err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+	err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 		err = client.List(ctx, scList)
 		if err != nil {
 			logrus.Error("get sc list error", err)

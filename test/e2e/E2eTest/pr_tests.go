@@ -174,7 +174,7 @@ var _ = ginkgo.Describe("pr test ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), func
 			}
 
 			logrus.Infof("Waiting for the PVC to be bound")
-			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Phase != corev1.ClaimBound {
 					return false, nil
 				}
@@ -198,7 +198,7 @@ var _ = ginkgo.Describe("pr test ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), func
 				f.ExpectNoError(err)
 			}
 			logrus.Infof("waiting for the deployment to be ready ")
-			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(1) {
 					return false, nil
 				}
