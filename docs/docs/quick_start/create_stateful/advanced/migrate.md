@@ -5,11 +5,11 @@ sidebar_label:  "Migrate Volumes"
 
 # Migrate Volumes
 
-The `Migrate` function is an important operation and maintenance management function
-in HwameiStor. When the copy of the node where the data volume bound to the application
-is located is damaged, the copy of the volume can be migrated to other nodes, and after
-successfully migrated to the new node, the application can be rescheduled to the new
-node and bind mount the data volume.
+Volume Migration is an important operation and maintenance management function of HwameiStor.
+Application-mounted data volumes can be unmounted and migrated from a node with errors or an
+alert indicating an impending errors to a healthy node. After the data volume is successfully
+migrated, the Pods of related applications are also rescheduled to the new node and the new data
+volume is bound and mounted.
 
 ## Basic concepts
 
