@@ -17,7 +17,7 @@ import "time"
 
 const (
 	// Default timeouts to be used in TimeoutContext
-	podStartTimeout                  = 5 * time.Minute
+	PodStartTimeout                  = 5 * time.Minute
 	podStartShortTimeout             = 2 * time.Minute
 	podStartSlowTimeout              = 15 * time.Minute
 	podDeleteTimeout                 = 5 * time.Minute
@@ -91,7 +91,7 @@ type TimeoutContext struct {
 // NewTimeoutContextWithDefaults returns a TimeoutContext with default values.
 func NewTimeoutContextWithDefaults() *TimeoutContext {
 	return &TimeoutContext{
-		PodStart:                  podStartTimeout,
+		PodStart:                  PodStartTimeout,
 		PodStartShort:             podStartShortTimeout,
 		PodStartSlow:              podStartSlowTimeout,
 		PodDelete:                 podDeleteTimeout,
