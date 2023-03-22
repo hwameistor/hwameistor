@@ -248,7 +248,7 @@ func (m *drbdConfigure) ApplyConfig(replica *apisv1alpha1.LocalVolumeReplica, co
 	return nil
 }
 
-// Initialize do the initalization for volume
+// Initialize do the initialization for volume
 func (m *drbdConfigure) Initialize(replica *apisv1alpha1.LocalVolumeReplica, config apisv1alpha1.VolumeConfig) error {
 	m.logger.WithField("Replica", replica.Name).Info("initialize volume")
 	resourceName := m.genResourceName(replica)

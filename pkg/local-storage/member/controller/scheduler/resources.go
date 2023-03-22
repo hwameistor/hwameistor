@@ -224,7 +224,7 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 		}
 	}
 
-	// step 3. check the rest of all nodes for the volume replica, and queue the qualified by the avaliable storage space
+	// step 3. check the rest of all nodes for the volume replica, and queue the qualified by the available storage space
 	pq := make(PriorityQueue, 0)
 	for _, node := range r.storageNodes {
 		if excludedNodes[node.Name] {
