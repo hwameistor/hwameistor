@@ -146,7 +146,7 @@ func (m *manager) volumeConvertSubmit(convert *apisv1alpha1.LocalVolumeConvert) 
 						convert.Status.State = apisv1alpha1.OperationStateFailed
 						break
 					} else if vol.Spec.ReplicaNumber == 1 && convert.Spec.ReplicaNumber == 2 {
-						// currently, only support convertible non-HA volume to HA convertion
+						// currently, only support convertible non-HA volume to HA conversion
 						convert.Status.State = apisv1alpha1.OperationStateSubmitted
 					} else {
 						logCtx.WithField("volume", vol.Spec).Error("Too big convert")
