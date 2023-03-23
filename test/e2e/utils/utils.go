@@ -686,3 +686,67 @@ func installDrbd() {
 	_ = RunInLinux("sh install_drbd.sh")
 
 }
+
+//通过deploy获取对应的pod
+func GetPodsByDeploy(ctx context.Context, namespace, deployName string) (*corev1.PodList, error) {
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
+	client := f.GetClient()
+	deploy := &appsv1.Deployment{}
+	deployKey := k8sclient.ObjectKey{
+		Name:      deployName,
+		Namespace: namespace,
+	}
+	err := client.Get(ctx, deployKey, deploy)
+	if err != nil {
+		logrus.Error("get deploy error", err)
+		f.ExpectNoError(err)
+	}
+	podList := &corev1.PodList{}
+	err = client.List(ctx, podList, k8sclient.InNamespace(deploy.Namespace), k8sclient.MatchingLabels(deploy.Spec.Selector.MatchLabels))
+	if err != nil {
+		logrus.Error("get pod list error", err)
+		f.ExpectNoError(err)
+	}
+	return podList, nil
+}
+
+//输出目标podlist的evnets
+func GetPodEvents(ctx context.Context, podList *corev1.PodList) {
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
+	client := f.GetClient()
+	for _, pod := range podList.Items {
+		eventList := &corev1.EventList{}
+		err := client.List(ctx, eventList, k8sclient.InNamespace(pod.Namespace), k8sclient.MatchingFields{"involvedObject.name": pod.Name})
+		if err != nil {
+			logrus.Error("get event list error", err)
+			f.ExpectNoError(err)
+		}
+		for _, event := range eventList.Items {
+			logrus.Printf("event:%+v", event)
+		}
+	}
+}
+
+//输出所有default namespace下pod的events
+func GetAllPodEventsInDefaultNamespace(ctx context.Context) {
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
+	client := f.GetClient()
+	podList := &corev1.PodList{}
+	err := client.List(ctx, podList, k8sclient.InNamespace("default"))
+	if err != nil {
+		logrus.Error("get pod list error", err)
+		f.ExpectNoError(err)
+	}
+	for _, pod := range podList.Items {
+		eventList := &corev1.EventList{}
+		err := client.List(ctx, eventList, k8sclient.InNamespace(pod.Namespace), k8sclient.MatchingFields{"involvedObject.name": pod.Name})
+		if err != nil {
+			logrus.Error("get event list error", err)
+			f.ExpectNoError(err)
+		}
+		for _, event := range eventList.Items {
+			logrus.Printf("event:%+v", event)
+		}
+	}
+
+}
