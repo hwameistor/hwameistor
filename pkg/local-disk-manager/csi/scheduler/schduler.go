@@ -38,7 +38,7 @@ func (s *diskVolumeSchedulerPlugin) Filter(boundVolumes []string, pendingVolumes
 	logCtx := log.Fields{
 		"boundVolumes":   strings.Join(boundVolumes, ","),
 		"node":           node.GetName(),
-		"pendingVolumes": listPendingVolumes(pendingVolumes),
+		"pendingVolumes": listVolumes(pendingVolumes),
 	}
 	log.WithFields(logCtx).Debug("start disk volume filter")
 
@@ -68,16 +68,16 @@ func (s *diskVolumeSchedulerPlugin) Filter(boundVolumes []string, pendingVolumes
 	return true, nil
 }
 
-func listPendingVolumes(pvs []*v1.PersistentVolumeClaim) (s string) {
+func listVolumes(pvs []*v1.PersistentVolumeClaim) (s string) {
 	for _, pv := range pvs {
-		s = pv.GetName() + ","
+		s = s + "," + pv.GetName()
 	}
-	return strings.TrimSuffix(s, ",")
+	return strings.TrimPrefix(s, ",")
 }
 
 // Reserve disk needed by the volumes
 func (s *diskVolumeSchedulerPlugin) Reserve(pendingVolumes []*v1.PersistentVolumeClaim, node string) error {
-	log.WithFields(log.Fields{"node": node, "volumes": listPendingVolumes(pendingVolumes)}).Debug("reserving disk")
+	log.WithFields(log.Fields{"node": node, "volumes": listVolumes(pendingVolumes)}).Debug("reserving disk")
 	for _, pvc := range pendingVolumes {
 		diskReq, err := s.convertPVCToDiskRequest(pvc, node)
 		if err != nil {
