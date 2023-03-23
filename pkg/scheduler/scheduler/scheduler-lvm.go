@@ -3,8 +3,6 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	"strconv"
-
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -12,6 +10,7 @@ import (
 	framework "k8s.io/kubernetes/pkg/scheduler/framework"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strconv"
 
 	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
@@ -104,6 +103,13 @@ func (s *LVMVolumeScheduler) scoreOneVolume(pvc *corev1.PersistentVolumeClaim, n
 	}
 	relatedPool := node.Status.Pools[poolClass]
 	nodeFreeCapacity := relatedPool.FreeCapacityBytes
+
+	log.WithFields(log.Fields{
+		"volume":           pvc.GetName(),
+		"volumeCapacity":   volumeCapacity,
+		"node":             node.GetName(),
+		"nodeFreeCapacity": nodeFreeCapacity,
+	}).Debug("score node for one lvm-volume")
 
 	return int64(float64(nodeFreeCapacity-volumeCapacity) / float64(nodeFreeCapacity) * float64(framework.MaxNodeScore)), nil
 }
