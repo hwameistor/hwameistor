@@ -91,7 +91,7 @@ func (f *Framework) defaultConfig() {
 
 		// Create the mapper provider
 		mapper, err := apiutil.NewDynamicRESTMapper(cfg)
-		err = wait.PollImmediate(5*time.Second, 3*time.Minute, func() (done bool, err error) {
+		err = wait.PollImmediate(5*time.Second, PodStartTimeout, func() (done bool, err error) {
 			_, err = apiutil.NewDynamicRESTMapper(cfg)
 			if err != nil {
 				return false, nil

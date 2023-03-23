@@ -25,7 +25,7 @@ import (
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("eviction test", ginkgo.Label("err"), func() {
+var _ = ginkgo.Describe("eviction test", ginkgo.Label("periodCheck"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
@@ -123,7 +123,7 @@ var _ = ginkgo.Describe("eviction test", ginkgo.Label("err"), func() {
 							Containers: []corev1.Container{
 								{
 									Name:  "web",
-									Image: "ghcr.m.daocloud.io/daocloud/dao-2048:v1.2.0",
+									Image: "172.30.45.210/hwameistor/dao-2048:v1.2.0",
 									Ports: []corev1.ContainerPort{
 										{
 											Name:          "http",
@@ -514,7 +514,7 @@ var _ = ginkgo.Describe("eviction test", ginkgo.Label("err"), func() {
 							Containers: []corev1.Container{
 								{
 									Name:  "web",
-									Image: "ghcr.m.daocloud.io/daocloud/dao-2048:v1.2.0",
+									Image: "172.30.45.210/hwameistor/dao-2048:v1.2.0",
 									Ports: []corev1.ContainerPort{
 										{
 											Name:          "http",
