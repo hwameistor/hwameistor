@@ -705,7 +705,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvList)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lsn)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lsnList)
-	return fake.NewFakeClientWithScheme(s), s
+	return fake.NewClientBuilder().WithScheme(s).Build(), s
 }
 
 func Test_resources_predicate(t *testing.T) {
