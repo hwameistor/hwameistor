@@ -234,6 +234,7 @@ func ConfigureadEnvironment(ctx context.Context, k8s string) error {
 func ConfigureEnvironment(ctx context.Context) error {
 	logrus.Info("start rollback")
 	_ = RunInLinux("sh rollback.sh")
+
 	err := wait.PollImmediate(10*time.Second, 20*time.Minute, func() (done bool, err error) {
 		output := RunInLinux("kubectl get pod -A  |grep -v Running |wc -l")
 		if output != "1\n" {
