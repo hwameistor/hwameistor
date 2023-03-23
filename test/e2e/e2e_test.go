@@ -29,7 +29,7 @@ func TestE2E(t *testing.T) {
 var _ = ginkgo.AfterSuite(func() {
 	//判断ginkgo是否成功
 	report := ginkgo.CurrentSpecReport()
-	logrus.Info(report.State)
+	logrus.Info("report.State")
 	logrus.Info(report.State)
 	//输出所有default namespace下pod的events
 	ctx := context.TODO()
