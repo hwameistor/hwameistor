@@ -123,7 +123,7 @@ var _ = ginkgo.Describe("eviction test", ginkgo.Label("test"), func() {
 							Containers: []corev1.Container{
 								{
 									Name:  "web",
-									Image: "172.30.45.210/hwameistorex/dao-2048:v1.2.0",
+									Image: "172.30.45.210/hwameistor/dao-2048:v1.2.0",
 									Ports: []corev1.ContainerPort{
 										{
 											Name:          "http",
@@ -514,7 +514,7 @@ var _ = ginkgo.Describe("eviction test", ginkgo.Label("test"), func() {
 							Containers: []corev1.Container{
 								{
 									Name:  "web",
-									Image: "172.30.45.210/hwameistorex/dao-2048:v1.2.0",
+									Image: "172.30.45.210/hwameistor/dao-2048:v1.2.0",
 									Ports: []corev1.ContainerPort{
 										{
 											Name:          "http",
