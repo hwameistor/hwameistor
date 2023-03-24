@@ -13,6 +13,9 @@ spec:
   # If nodeName contains ".",please replace it with "-".
   # The field value should be consistent with the nodeName in localdisk
   nodeName: {{ . }}
+  # owner indicates which storage-system will consume the bounded disks backing this claim
+  # by default, we set local-storage as the owner
+  owner: local-storage
   description:
     diskType: {{ $.Values.storageClass.diskType }}
 ---
