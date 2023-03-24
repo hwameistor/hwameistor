@@ -687,7 +687,7 @@ func installDrbd() {
 
 }
 
-//通过deploy获取对应的pod
+//Get the corresponding pod by deploy
 func GetPodsByDeploy(ctx context.Context, namespace, deployName string) (*corev1.PodList, error) {
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
@@ -710,7 +710,7 @@ func GetPodsByDeploy(ctx context.Context, namespace, deployName string) (*corev1
 	return podList, nil
 }
 
-//输出目标podlist的evnets
+//Output the events of the target podlist
 func GetPodEvents(ctx context.Context, podList *corev1.PodList) {
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
@@ -727,7 +727,7 @@ func GetPodEvents(ctx context.Context, podList *corev1.PodList) {
 	}
 }
 
-//输出所有default namespace下pod的events
+//Output the events of all pods under the default namespace
 func GetAllPodEventsInDefaultNamespace(ctx context.Context) {
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
@@ -737,6 +737,7 @@ func GetAllPodEventsInDefaultNamespace(ctx context.Context) {
 		logrus.Error("get pod list error", err)
 		f.ExpectNoError(err)
 	}
+	logrus.Printf("Output the events of all pods under the default namespace")
 	for _, pod := range podList.Items {
 		eventList := &corev1.EventList{}
 		err := client.List(ctx, eventList, k8sclient.InNamespace(pod.Namespace), k8sclient.MatchingFields{"involvedObject.name": pod.Name})
