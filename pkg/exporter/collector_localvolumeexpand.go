@@ -25,9 +25,9 @@ func newCollectorForLocalVolumeExpand(dataCache *metricsCache) prometheus.Collec
 			nil,
 		),
 		statusMetricsDesc: prometheus.NewDesc(
-			"hwameistor_localvolumeexpand_status_count",
-			"The status summary of the localvolumeexpand operation.",
-			[]string{"status"},
+			"hwameistor_localvolumeexpand_status",
+			"The status of the localvolumeexpand operation.",
+			[]string{"volumeName", "status"},
 			nil,
 		),
 	}
@@ -46,7 +46,6 @@ func (mc *LocalVolumeExpandMetricsCollector) Collect(ch chan<- prometheus.Metric
 		return
 	}
 
-	statusCount := map[string]int64{}
 	for _, expand := range expands {
 		ch <- prometheus.MustNewConstMetric(
 			mc.durationMetricsDesc,
@@ -55,9 +54,6 @@ func (mc *LocalVolumeExpandMetricsCollector) Collect(ch chan<- prometheus.Metric
 			expand.Spec.VolumeName,
 			expand.CreationTimestamp.String(),
 		)
-		statusCount[string(expand.Status.State)]++
-	}
-	for status, count := range statusCount {
-		ch <- prometheus.MustNewConstMetric(mc.statusMetricsDesc, prometheus.GaugeValue, float64(count), status)
+		ch <- prometheus.MustNewConstMetric(mc.statusMetricsDesc, prometheus.GaugeValue, 1, expand.Spec.VolumeName, string(expand.Status.State))
 	}
 }

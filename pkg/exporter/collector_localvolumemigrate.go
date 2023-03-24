@@ -26,9 +26,9 @@ func newCollectorForLocalVolumeMigrate(dataCache *metricsCache) prometheus.Colle
 			nil,
 		),
 		statusMetricsDesc: prometheus.NewDesc(
-			"hwameistor_localvolumemigrate_status_count",
-			"The status summary of the localvolumemigrate operation.",
-			[]string{"status"},
+			"hwameistor_localvolumemigrate_status",
+			"The status of the localvolumemigrate operation.",
+			[]string{"volumeName", "status"},
 			nil,
 		),
 	}
@@ -47,7 +47,6 @@ func (mc *LocalVolumeMigrateMetricsCollector) Collect(ch chan<- prometheus.Metri
 		return
 	}
 
-	statusCount := map[string]int64{}
 	for _, migrate := range migrates {
 		ch <- prometheus.MustNewConstMetric(
 			mc.durationMetricsDesc,
@@ -58,9 +57,6 @@ func (mc *LocalVolumeMigrateMetricsCollector) Collect(ch chan<- prometheus.Metri
 			migrate.Spec.SourceNode,
 			migrate.Status.TargetNode,
 		)
-		statusCount[string(migrate.Status.State)]++
-	}
-	for status, count := range statusCount {
-		ch <- prometheus.MustNewConstMetric(mc.statusMetricsDesc, prometheus.GaugeValue, float64(count), status)
+		ch <- prometheus.MustNewConstMetric(mc.statusMetricsDesc, prometheus.GaugeValue, 1, migrate.Spec.VolumeName, string(migrate.Status.State))
 	}
 }

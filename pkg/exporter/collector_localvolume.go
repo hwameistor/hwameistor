@@ -1,7 +1,6 @@
 package exporter
 
 import (
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
@@ -10,7 +9,6 @@ import (
 type LocalVolumeMetricsCollector struct {
 	dataCache *metricsCache
 
-	typeMetricsDesc     *prometheus.Desc
 	statusMetricsDesc   *prometheus.Desc
 	capacityMetricsDesc *prometheus.Desc
 }
@@ -18,24 +16,18 @@ type LocalVolumeMetricsCollector struct {
 func newCollectorForLocalVolume(dataCache *metricsCache) prometheus.Collector {
 	return &LocalVolumeMetricsCollector{
 		dataCache: dataCache,
-		typeMetricsDesc: prometheus.NewDesc(
-			"hwameistor_localvolume_type_count",
-			"The type of the localvolume.",
-			[]string{"poolName", "type"},
-			nil,
-		),
 
 		statusMetricsDesc: prometheus.NewDesc(
-			"hwameistor_localvolume_status_count",
+			"hwameistor_localvolume_status",
 			"The status summary of the localvolume.",
-			[]string{"poolName", "type", "status"},
+			[]string{"poolName", "volumeName", "type", "mountedOn", "status"},
 			nil,
 		),
 
 		capacityMetricsDesc: prometheus.NewDesc(
 			"hwameistor_localvolume_capacity",
 			"The capacity of the localvolume.",
-			[]string{"poolName", "volumeName", "type"},
+			[]string{"poolName", "volumeName", "type", "mountedOn", "kind"},
 			nil,
 		),
 	}
@@ -48,71 +40,40 @@ func (mc *LocalVolumeMetricsCollector) Describe(ch chan<- *prometheus.Desc) {
 func (mc *LocalVolumeMetricsCollector) Collect(ch chan<- prometheus.Metric) {
 
 	log.Debug("Collecting metrics for LocalVolume ...")
-	volumes, err := mc.dataCache.lvInformer.Lister().List(labels.NewSelector())
-	if err != nil || len(volumes) == 0 {
+	lvs, err := mc.dataCache.lvInformer.Lister().List(labels.NewSelector())
+	if err != nil || len(lvs) == 0 {
 		log.WithError(err).Debug("Not found LocalVolume")
 		return
 	}
-	volumeTypeCount := map[string]map[string]int64{
-		apisv1alpha1.DiskClassNameHDD: {
-			VolumeTypeNonHA:       0,
-			VolumeTypeConvertible: 0,
-			VolumeTypeHA:          0,
-		},
-		apisv1alpha1.DiskClassNameSSD: {
-			VolumeTypeNonHA:       0,
-			VolumeTypeConvertible: 0,
-			VolumeTypeHA:          0,
-		},
-		apisv1alpha1.DiskClassNameNVMe: {
-			VolumeTypeNonHA:       0,
-			VolumeTypeConvertible: 0,
-			VolumeTypeHA:          0,
-		},
-	}
-	volumeStatusCount := map[string]map[string]map[string]int64{
-		apisv1alpha1.DiskClassNameHDD: {
-			VolumeTypeNonHA:       {},
-			VolumeTypeHA:          {},
-			VolumeTypeConvertible: {},
-		},
-		apisv1alpha1.DiskClassNameSSD: {
-			VolumeTypeNonHA:       {},
-			VolumeTypeHA:          {},
-			VolumeTypeConvertible: {},
-		},
-		apisv1alpha1.DiskClassNameNVMe: {
-			VolumeTypeNonHA:       {},
-			VolumeTypeHA:          {},
-			VolumeTypeConvertible: {},
-		},
-	}
-	for _, vol := range volumes {
+	for _, vol := range lvs {
 		poolName := unifiedPoolName(vol.Spec.PoolName)
+		volType := "Unknown"
 		if !vol.Spec.Convertible {
-			volumeTypeCount[poolName][VolumeTypeNonHA]++
-			volumeStatusCount[poolName][VolumeTypeNonHA][string(vol.Status.State)]++
+			volType = VolumeTypeNonHA
 		} else if vol.Spec.ReplicaNumber > 1 {
-			volumeTypeCount[poolName][VolumeTypeHA]++
-			volumeStatusCount[poolName][VolumeTypeHA][string(vol.Status.State)]++
+			volType = VolumeTypeHA
 		} else {
-			volumeTypeCount[poolName][VolumeTypeConvertible]++
-			volumeStatusCount[poolName][VolumeTypeConvertible][string(vol.Status.State)]++
+			volType = VolumeTypeConvertible
 		}
-		ch <- prometheus.MustNewConstMetric(mc.capacityMetricsDesc, prometheus.GaugeValue, float64(vol.Status.AllocatedCapacityBytes), poolName, vol.Name, "Allocated")
-		ch <- prometheus.MustNewConstMetric(mc.capacityMetricsDesc, prometheus.GaugeValue, float64(vol.Status.UsedCapacityBytes), poolName, vol.Name, "Used")
-	}
-	for poolName, volumeCount := range volumeTypeCount {
-		for volType, count := range volumeCount {
-			ch <- prometheus.MustNewConstMetric(mc.typeMetricsDesc, prometheus.GaugeValue, float64(count), poolName, volType)
-		}
-	}
-	for poolName, typeCount := range volumeStatusCount {
-		for volType, statusCount := range typeCount {
-			for state, count := range statusCount {
-				ch <- prometheus.MustNewConstMetric(mc.statusMetricsDesc, prometheus.GaugeValue, float64(count), poolName, volType, state)
-			}
-		}
+		ch <- prometheus.MustNewConstMetric(mc.capacityMetricsDesc, prometheus.GaugeValue, float64(vol.Status.AllocatedCapacityBytes), poolName, vol.Name, volType, vol.Status.PublishedNodeName, "Allocated")
+		ch <- prometheus.MustNewConstMetric(mc.capacityMetricsDesc, prometheus.GaugeValue, float64(vol.Status.UsedCapacityBytes), poolName, vol.Name, volType, vol.Status.PublishedNodeName, "Used")
+		ch <- prometheus.MustNewConstMetric(mc.statusMetricsDesc, prometheus.GaugeValue, 1, poolName, vol.Name, volType, vol.Status.PublishedNodeName, string(vol.Status.State))
 	}
 
+	log.Debug("Collecting metrics for LocalDiskVolume ...")
+	ldvs, err := mc.dataCache.ldvInformer.Lister().List(labels.NewSelector())
+	if err != nil || len(ldvs) == 0 {
+		log.WithError(err).Debug("Not found LocalDiskVolume")
+		return
+	}
+
+	for _, vol := range ldvs {
+		mountedOn := ""
+		if len(vol.Status.MountPoints) > 0 && len(vol.Spec.Accessibility.Nodes) > 0 {
+			mountedOn = vol.Spec.Accessibility.Nodes[0]
+		}
+		ch <- prometheus.MustNewConstMetric(mc.capacityMetricsDesc, prometheus.GaugeValue, float64(vol.Status.AllocatedCapacityBytes), vol.Spec.DiskType, vol.Name, "Disk", mountedOn, "Allocated")
+		ch <- prometheus.MustNewConstMetric(mc.capacityMetricsDesc, prometheus.GaugeValue, float64(vol.Status.UsedCapacityBytes), vol.Spec.DiskType, vol.Name, "Disk", mountedOn, "Used")
+		ch <- prometheus.MustNewConstMetric(mc.statusMetricsDesc, prometheus.GaugeValue, 1, vol.Spec.DiskType, vol.Name, "Disk", mountedOn, string(vol.Status.State))
+	}
 }
