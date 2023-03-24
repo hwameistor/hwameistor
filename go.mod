@@ -38,7 +38,7 @@ require github.com/go-logr/zapr v0.4.0 // indirect
 
 require (
 	github.com/gin-gonic/gin v1.8.1
-	github.com/hwameistor/hwameistor-operator v0.0.0-20230205102054-a22567874a56
+	github.com/hwameistor/hwameistor-operator v0.8.1-rc.4
 	github.com/jinzhu/gorm v1.9.16
 	github.com/onsi/gomega v1.19.0
 	github.com/swaggo/files v1.0.0

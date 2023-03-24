@@ -1620,35 +1620,26 @@ const docTemplate = `{
         "api.ModuleStatus": {
             "type": "object",
             "properties": {
-                "admissionController": {
-                    "$ref": "#/definitions/v1alpha1.AdmissionControllerStatus"
+                "componentStatus": {
+                    "$ref": "#/definitions/v1alpha1.ComponentStatus"
                 },
-                "apiServer": {
-                    "$ref": "#/definitions/v1alpha1.ApiServerStatus"
+                "diskReserveState": {
+                    "type": "string"
                 },
-                "evictor": {
-                    "$ref": "#/definitions/v1alpha1.EvictorStatus"
+                "drbdAdapterCreated": {
+                    "type": "boolean"
+                },
+                "drbdAdapterCreatedJobNum": {
+                    "type": "integer"
                 },
                 "installedCRDS": {
                     "type": "boolean"
-                },
-                "localDiskManager": {
-                    "$ref": "#/definitions/v1alpha1.LocalDiskManagerStatus"
-                },
-                "localStorage": {
-                    "$ref": "#/definitions/v1alpha1.LocalStorageStatus"
-                },
-                "metrics": {
-                    "$ref": "#/definitions/v1alpha1.MetricsStatus"
                 },
                 "modulesStatus": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.ModuleState"
                     }
-                },
-                "scheduler": {
-                    "$ref": "#/definitions/v1alpha1.SchedulerStatus"
                 }
             }
         },
@@ -3126,6 +3117,32 @@ const docTemplate = `{
                 }
             }
         },
+        "v1alpha1.ComponentStatus": {
+            "type": "object",
+            "properties": {
+                "admissionController": {
+                    "$ref": "#/definitions/v1alpha1.AdmissionControllerStatus"
+                },
+                "apiServer": {
+                    "$ref": "#/definitions/v1alpha1.ApiServerStatus"
+                },
+                "evictor": {
+                    "$ref": "#/definitions/v1alpha1.EvictorStatus"
+                },
+                "exporter": {
+                    "$ref": "#/definitions/v1alpha1.ExporterStatus"
+                },
+                "localDiskManager": {
+                    "$ref": "#/definitions/v1alpha1.LocalDiskManagerStatus"
+                },
+                "localStorage": {
+                    "$ref": "#/definitions/v1alpha1.LocalStorageStatus"
+                },
+                "scheduler": {
+                    "$ref": "#/definitions/v1alpha1.SchedulerStatus"
+                }
+            }
+        },
         "v1alpha1.DeployStatus": {
             "type": "object",
             "properties": {
@@ -3239,6 +3256,17 @@ const docTemplate = `{
                 }
             }
         },
+        "v1alpha1.ExporterStatus": {
+            "type": "object",
+            "properties": {
+                "health": {
+                    "type": "string"
+                },
+                "instances": {
+                    "$ref": "#/definitions/v1alpha1.DeployStatus"
+                }
+            }
+        },
         "v1alpha1.FileSystemInfo": {
             "type": "object",
             "properties": {
@@ -3319,10 +3347,6 @@ const docTemplate = `{
         "v1alpha1.LocalDiskClaimSpec": {
             "type": "object",
             "properties": {
-                "consumed": {
-                    "description": "Consumed represents disks backing the claim has been already consumed by a consumer.\nIf true the claim will be deleted soon from kubernetes\n+optional",
-                    "type": "boolean"
-                },
                 "description": {
                     "description": "Description of the disk to be claimed\n+optional",
                     "allOf": [
@@ -3340,6 +3364,10 @@ const docTemplate = `{
                 },
                 "nodeName": {
                     "description": "+kubebuilder:validation:Required\nNodeName represents where disk has to be claimed.",
+                    "type": "string"
+                },
+                "owner": {
+                    "description": "Owner represents which system owns this claim(e.g. local-storage, local-disk-manager)",
                     "type": "string"
                 }
             }
@@ -3442,6 +3470,10 @@ const docTemplate = `{
                 },
                 "nodeName": {
                     "description": "NodeName represents the node where the disk is attached\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
+                "owner": {
+                    "description": "Owner represents which system owns this claim(e.g. local-storage, local-disk-manager)\n+optional",
                     "type": "string"
                 },
                 "partitionInfo": {
@@ -4058,23 +4090,12 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "usedCapacityBytes": {
-                    "description": "UsedCapacityBytes is the used capacity in bytes of the volume, which is avaiable only for filesystem",
+                    "description": "UsedCapacityBytes is the used capacity in bytes of the volume, which is available only for filesystem",
                     "type": "integer"
                 },
                 "usedInode": {
                     "description": "UsedInode is the used inodes of the volume's filesystem",
                     "type": "integer"
-                }
-            }
-        },
-        "v1alpha1.MetricsStatus": {
-            "type": "object",
-            "properties": {
-                "health": {
-                    "type": "string"
-                },
-                "instances": {
-                    "$ref": "#/definitions/v1alpha1.DeployStatus"
                 }
             }
         },
@@ -4160,6 +4181,11 @@ const docTemplate = `{
         "v1alpha1.State": {
             "type": "string",
             "enum": [
+                "",
+                "ToBeMounted",
+                "ToBeUnMount",
+                "Mounted",
+                "NotReady",
                 "Ready",
                 "Maintain",
                 "Offline",
@@ -4193,14 +4219,14 @@ const docTemplate = `{
                 "Failed",
                 "Available",
                 "InUse",
-                "Offline",
-                "",
-                "ToBeMounted",
-                "ToBeUnMount",
-                "Mounted",
-                "NotReady"
+                "Offline"
             ],
             "x-enum-varnames": [
+                "MountPointStateEmpty",
+                "MountPointToBeMounted",
+                "MountPointToBeUnMount",
+                "MountPointMounted",
+                "MountPointNotReady",
                 "NodeStateReady",
                 "NodeStateMaintain",
                 "NodeStateOffline",
@@ -4234,12 +4260,7 @@ const docTemplate = `{
                 "OperationStateFailed",
                 "DiskStateAvailable",
                 "DiskStateInUse",
-                "DiskStateOffline",
-                "MountPointStateEmpty",
-                "MountPointToBeMounted",
-                "MountPointToBeUnMount",
-                "MountPointMounted",
-                "MountPointNotReady"
+                "DiskStateOffline"
             ]
         },
         "v1alpha1.Topology": {
