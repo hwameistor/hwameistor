@@ -24,13 +24,13 @@ func TestMain(m *testing.M) {
 func TestE2E(t *testing.T) {
 	gomega.RegisterFailHandler(ginkgo.Fail)
 	ginkgo.RunSpecs(t, "hwameistor e2e test")
-	// 判断testing是否有错误
+
 	if t.Failed() {
 		logrus.Info("e2e test failed")
 		ctx := context.TODO()
 		utils.GetAllPodEventsInDefaultNamespace(ctx)
-	} else
-	{
+		utils.GetAllPodLogsInHwameistorNamespace(ctx)
+	} else {
 		logrus.Info("e2e test success")
 	}
 

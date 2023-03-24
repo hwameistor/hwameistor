@@ -3,8 +3,10 @@ package utils
 import (
 	"bytes"
 	"context"
+	"io"
 	"os/exec"
 	"regexp"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"strings"
 	"time"
 
@@ -746,8 +748,69 @@ func GetAllPodEventsInDefaultNamespace(ctx context.Context) {
 			f.ExpectNoError(err)
 		}
 		for _, event := range eventList.Items {
-			logrus.Printf("event:%+v", event)
+			logrus.Printf("event-Reason:%+v", event.Reason)
+			logrus.Printf("event-Message:%+v", event.Message)
 		}
 	}
 
+}
+
+//return All Pod In Hwameistor Namespace
+func GetAllPodInHwameistorNamespace(ctx context.Context) *corev1.PodList {
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
+	client := f.GetClient()
+	podList := &corev1.PodList{}
+	err := client.List(ctx, podList, k8sclient.InNamespace("hwameistor"))
+	if err != nil {
+		logrus.Error("get pod list error", err)
+		f.ExpectNoError(err)
+	}
+	return podList
+}
+
+//Get logs of target pod
+func getPodLogs(pod corev1.Pod) {
+	podLogOpts := corev1.PodLogOptions{}
+	config, err := config.GetConfig()
+	if err != nil {
+		logrus.Error("error in getting config")
+	}
+	// creates the clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		logrus.Error("error in getting access to K8S")
+	}
+	// 循环输出这个pod的每个container
+	for _, container := range pod.Spec.Containers {
+		logrus.Printf("container name:%+v", container.Name)
+		podLogOpts.Container = container.Name
+		req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
+		ctx := context.TODO()
+		podLogs, err := req.Stream(ctx)
+		if err != nil {
+			logrus.Error("error in opening stream")
+		}
+		defer podLogs.Close()
+		buf := new(bytes.Buffer)
+		_, err = io.Copy(buf, podLogs)
+		if err != nil {
+			logrus.Error("error in copy information from podLogs to buf")
+		}
+		str := buf.String()
+		if strings.Contains(str, "error") {
+			logrus.Infoln(str)
+		}
+
+	}
+
+}
+
+//return All Pod logs In Hwameistor Namespace
+func GetAllPodLogsInHwameistorNamespace(ctx context.Context) {
+	podList := GetAllPodInHwameistorNamespace(ctx)
+	for _, pod := range podList.Items {
+		logrus.Printf("pod:%+v", pod.Name)
+		getPodLogs(pod)
+
+	}
 }
