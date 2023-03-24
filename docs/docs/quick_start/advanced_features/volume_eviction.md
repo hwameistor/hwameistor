@@ -5,11 +5,18 @@ sidebar_label: "Eviction"
 
 # Eviction
 
-Data volume migration along with node eviction is very important to keep the data persistent in a dynamic kubernetes native environment.
+Data volume migration along with node eviction is very important to keep the data 
+persistent in a dynamic kubernetes native environment.
 
-Node-pressure eviction is the process by which the kubelet proactively terminates pods to reclaim resources on nodes. The kubelet monitors resources like memory, disk space, and filesystem inodes on your cluster's nodes. When one or more of these resources reach specific consumption levels, the kubelet can proactively fail one or more pods on the node to reclaim resources and prevent starvation.
+Node-pressure eviction is the process by which the kubelet proactively terminates pods
+to reclaim resources on nodes. The kubelet monitors resources like memory, disk space,
+and filesystem inodes on your cluster's nodes. When one or more of these resources
+reach specific consumption levels, the kubelet can proactively fail one or more pods
+on the node to reclaim resources and prevent starvation.
 
-HwameiStor will detect all the volume replicas located on the node to be evicted, automatically migrate them to other available nodes, and the evicted pods will be rescheduled to the new pod, mount the new volume afterwards.
+HwameiStor will detect all the volume replicas located on the node to be evicted,
+automatically migrate them to other available nodes, and the evicted pods will be
+rescheduled to the new pod, mount the new volume afterwards.
 
 ## Node Eviction
 
