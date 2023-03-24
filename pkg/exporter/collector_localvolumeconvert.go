@@ -25,9 +25,9 @@ func newCollectorForLocalVolumeConvert(dataCache *metricsCache) prometheus.Colle
 			nil,
 		),
 		statusMetricsDesc: prometheus.NewDesc(
-			"hwameistor_localvolumeconvert_status_count",
-			"The status summary of the localvolumeconvert operation.",
-			[]string{"status"},
+			"hwameistor_localvolumeconvert_status",
+			"The status of the localvolumeconvert operation.",
+			[]string{"volumeName", "status"},
 			nil,
 		),
 	}
@@ -46,7 +46,6 @@ func (mc *LocalVolumeConvertMetricsCollector) Collect(ch chan<- prometheus.Metri
 		return
 	}
 
-	statusCount := map[string]int64{}
 	for _, convert := range converts {
 		ch <- prometheus.MustNewConstMetric(
 			mc.durationMetricsDesc,
@@ -55,9 +54,6 @@ func (mc *LocalVolumeConvertMetricsCollector) Collect(ch chan<- prometheus.Metri
 			convert.Spec.VolumeName,
 			convert.CreationTimestamp.String(),
 		)
-		statusCount[string(convert.Status.State)]++
-	}
-	for status, count := range statusCount {
-		ch <- prometheus.MustNewConstMetric(mc.statusMetricsDesc, prometheus.GaugeValue, float64(count), status)
+		ch <- prometheus.MustNewConstMetric(mc.statusMetricsDesc, prometheus.GaugeValue, 1, convert.Spec.VolumeName, string(convert.Status.State))
 	}
 }
