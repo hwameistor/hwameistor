@@ -24,12 +24,12 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 1,
+    "id": 2,
     "links": [],
     "liveNow": false,
     "panels": [
       {
-        "collapsed": false,
+        "collapsed": true,
         "gridPos": {
           "h": 1,
           "w": 24,
@@ -37,595 +37,592 @@
           "y": 0
         },
         "id": 16,
-        "panels": [],
+        "panels": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "Gjcc2df4z"
+            },
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "mappings": [],
+                "noValue": "0",
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green"
+                    },
+                    {
+                      "color": "red",
+                      "value": 80
+                    }
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "Ready"
+                  },
+                  "properties": [
+                    {
+                      "id": "color",
+                      "value": {
+                        "fixedColor": "dark-green",
+                        "mode": "fixed"
+                      }
+                    },
+                    {
+                      "id": "noValue",
+                      "value": "0"
+                    }
+                  ]
+                },
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "Not Ready"
+                  },
+                  "properties": [
+                    {
+                      "id": "color",
+                      "value": {
+                        "fixedColor": "dark-orange",
+                        "mode": "fixed"
+                      }
+                    },
+                    {
+                      "id": "noValue",
+                      "value": "0"
+                    }
+                  ]
+                },
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "Total"
+                  },
+                  "properties": [
+                    {
+                      "id": "color",
+                      "value": {
+                        "fixedColor": "text",
+                        "mode": "fixed"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            "gridPos": {
+              "h": 6,
+              "w": 10,
+              "x": 0,
+              "y": 1
+            },
+            "id": 4,
+            "options": {
+              "colorMode": "value",
+              "graphMode": "none",
+              "justifyMode": "center",
+              "orientation": "auto",
+              "reduceOptions": {
+                "calcs": [
+                  "lastNotNull"
+                ],
+                "fields": "",
+                "values": false
+              },
+              "text": {
+                "titleSize": 40,
+                "valueSize": 100
+              },
+              "textMode": "value_and_name"
+            },
+            "pluginVersion": "9.1.0",
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "Gjcc2df4z"
+                },
+                "editorMode": "code",
+                "exemplar": false,
+                "expr": "sum(hwameistor_localstoragenode_status)",
+                "format": "time_series",
+                "hide": false,
+                "instant": true,
+                "legendFormat": "Total",
+                "range": false,
+                "refId": "A"
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "Gjcc2df4z"
+                },
+                "editorMode": "code",
+                "exemplar": false,
+                "expr": "sum(hwameistor_localstoragenode_status{status=\"Ready\"})",
+                "hide": false,
+                "instant": true,
+                "legendFormat": "Ready",
+                "range": false,
+                "refId": "B"
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "Gjcc2df4z"
+                },
+                "editorMode": "code",
+                "exemplar": false,
+                "expr": "sum(hwameistor_localstoragenode_status) - sum(hwameistor_localstoragenode_status{status=\"Ready\"})",
+                "hide": false,
+                "instant": true,
+                "legendFormat": "Not Ready",
+                "range": false,
+                "refId": "C"
+              }
+            ],
+            "title": "Nodes Summary",
+            "transformations": [],
+            "type": "stat"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "Gjcc2df4z"
+            },
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "custom": {
+                  "align": "center",
+                  "displayMode": "auto",
+                  "inspect": false
+                },
+                "mappings": [],
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green"
+                    }
+                  ]
+                },
+                "unit": "bytes"
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "Capacity Usage %"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.displayMode",
+                      "value": "lcd-gauge"
+                    },
+                    {
+                      "id": "color",
+                      "value": {
+                        "mode": "continuous-GrYlRd"
+                      }
+                    },
+                    {
+                      "id": "thresholds",
+                      "value": {
+                        "mode": "percentage",
+                        "steps": [
+                          {
+                            "color": "green"
+                          },
+                          {
+                            "color": "#EAB839",
+                            "value": 50
+                          },
+                          {
+                            "color": "red",
+                            "value": 80
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "id": "unit",
+                      "value": "percentunit"
+                    }
+                  ]
+                },
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "Volumes Usage %"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.displayMode",
+                      "value": "lcd-gauge"
+                    },
+                    {
+                      "id": "thresholds",
+                      "value": {
+                        "mode": "percentage",
+                        "steps": [
+                          {
+                            "color": "green"
+                          },
+                          {
+                            "color": "#EAB839",
+                            "value": 50
+                          },
+                          {
+                            "color": "red",
+                            "value": 80
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "id": "unit",
+                      "value": "percentunit"
+                    },
+                    {
+                      "id": "color",
+                      "value": {
+                        "mode": "continuous-GrYlRd"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "Total Volume Limits"
+                  },
+                  "properties": [
+                    {
+                      "id": "unit",
+                      "value": "none"
+                    }
+                  ]
+                },
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "Allocated Volumes"
+                  },
+                  "properties": [
+                    {
+                      "id": "unit",
+                      "value": "none"
+                    },
+                    {
+                      "id": "custom.width",
+                      "value": 161
+                    }
+                  ]
+                },
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "Available Volumes"
+                  },
+                  "properties": [
+                    {
+                      "id": "unit",
+                      "value": "none"
+                    }
+                  ]
+                },
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "Status"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.width",
+                      "value": 121
+                    }
+                  ]
+                },
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "Pool"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.width",
+                      "value": 117
+                    }
+                  ]
+                }
+              ]
+            },
+            "gridPos": {
+              "h": 7,
+              "w": 23,
+              "x": 0,
+              "y": 7
+            },
+            "id": 6,
+            "options": {
+              "footer": {
+                "fields": "",
+                "reducer": [
+                  "sum"
+                ],
+                "show": false
+              },
+              "showHeader": true,
+              "sortBy": []
+            },
+            "pluginVersion": "9.1.0",
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "Gjcc2df4z"
+                },
+                "editorMode": "builder",
+                "exemplar": false,
+                "expr": "hwameistor_localstoragenode_capacity{kind=\"Total\"}",
+                "format": "table",
+                "instant": true,
+                "legendFormat": "Total",
+                "range": false,
+                "refId": "A"
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "Gjcc2df4z"
+                },
+                "editorMode": "builder",
+                "exemplar": false,
+                "expr": "hwameistor_localstoragenode_capacity{kind=\"Used\"}",
+                "format": "table",
+                "hide": false,
+                "instant": true,
+                "legendFormat": "Used",
+                "range": false,
+                "refId": "B"
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "Gjcc2df4z"
+                },
+                "editorMode": "builder",
+                "exemplar": false,
+                "expr": "hwameistor_localstoragenode_capacity{kind=\"Free\"}",
+                "format": "table",
+                "hide": false,
+                "instant": true,
+                "legendFormat": "Free",
+                "range": false,
+                "refId": "C"
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "Gjcc2df4z"
+                },
+                "editorMode": "builder",
+                "exemplar": false,
+                "expr": "hwameistor_localstoragenode_volumecount{kind=\"Total\"}",
+                "format": "table",
+                "hide": false,
+                "instant": true,
+                "legendFormat": "volTotal",
+                "range": false,
+                "refId": "D"
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "Gjcc2df4z"
+                },
+                "editorMode": "builder",
+                "exemplar": false,
+                "expr": "hwameistor_localstoragenode_volumecount{kind=\"Used\"}",
+                "format": "table",
+                "hide": false,
+                "instant": true,
+                "legendFormat": "volUsed",
+                "range": false,
+                "refId": "E"
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "Gjcc2df4z"
+                },
+                "editorMode": "builder",
+                "exemplar": false,
+                "expr": "hwameistor_localstoragenode_volumecount{kind=\"Free\"}",
+                "format": "table",
+                "hide": false,
+                "instant": true,
+                "legendFormat": "volFree",
+                "range": false,
+                "refId": "F"
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "Gjcc2df4z"
+                },
+                "editorMode": "builder",
+                "exemplar": false,
+                "expr": "hwameistor_localstoragenode_status",
+                "format": "table",
+                "hide": false,
+                "instant": true,
+                "legendFormat": "Status",
+                "range": false,
+                "refId": "G"
+              }
+            ],
+            "title": "Node Storage Usage",
+            "transformations": [
+              {
+                "id": "groupBy",
+                "options": {
+                  "fields": {
+                    "Value #A": {
+                      "aggregations": [
+                        "lastNotNull"
+                      ],
+                      "operation": "aggregate"
+                    },
+                    "Value #B": {
+                      "aggregations": [
+                        "lastNotNull"
+                      ],
+                      "operation": "aggregate"
+                    },
+                    "Value #C": {
+                      "aggregations": [
+                        "lastNotNull"
+                      ],
+                      "operation": "aggregate"
+                    },
+                    "Value #D": {
+                      "aggregations": [
+                        "lastNotNull"
+                      ],
+                      "operation": "aggregate"
+                    },
+                    "Value #E": {
+                      "aggregations": [
+                        "lastNotNull"
+                      ],
+                      "operation": "aggregate"
+                    },
+                    "Value #F": {
+                      "aggregations": [
+                        "lastNotNull"
+                      ],
+                      "operation": "aggregate"
+                    },
+                    "nodeName": {
+                      "aggregations": [],
+                      "operation": "groupby"
+                    },
+                    "poolName": {
+                      "aggregations": [],
+                      "operation": "groupby"
+                    },
+                    "status": {
+                      "aggregations": [
+                        "lastNotNull"
+                      ],
+                      "operation": "aggregate"
+                    }
+                  }
+                }
+              },
+              {
+                "id": "merge",
+                "options": {}
+              },
+              {
+                "id": "organize",
+                "options": {
+                  "excludeByName": {},
+                  "indexByName": {
+                    "Value #A (lastNotNull)": 3,
+                    "Value #B (lastNotNull)": 4,
+                    "Value #C (lastNotNull)": 5,
+                    "Value #D (lastNotNull)": 6,
+                    "Value #E (lastNotNull)": 7,
+                    "Value #F (lastNotNull)": 8,
+                    "nodeName": 0,
+                    "poolName": 2,
+                    "status (lastNotNull)": 1
+                  },
+                  "renameByName": {
+                    "Value #A (lastNotNull)": "Total Capacity",
+                    "Value #B (lastNotNull)": "Allocated Capacity",
+                    "Value #C (lastNotNull)": "Available Capacity",
+                    "Value #D (lastNotNull)": "Total Volume Limits",
+                    "Value #E (lastNotNull)": "Allocated Volumes",
+                    "Value #F (lastNotNull)": "Available Volumes",
+                    "nodeName": "Node",
+                    "poolName": "Pool",
+                    "status (lastNotNull)": "Status"
+                  }
+                }
+              },
+              {
+                "id": "calculateField",
+                "options": {
+                  "alias": "Capacity Usage %",
+                  "binary": {
+                    "left": "Allocated Capacity",
+                    "operator": "/",
+                    "reducer": "sum",
+                    "right": "Total Capacity"
+                  },
+                  "mode": "binary",
+                  "reduce": {
+                    "reducer": "sum"
+                  }
+                }
+              },
+              {
+                "id": "calculateField",
+                "options": {
+                  "alias": "Volumes Usage %",
+                  "binary": {
+                    "left": "Allocated Volumes",
+                    "operator": "/",
+                    "reducer": "sum",
+                    "right": "Total Volume Limits"
+                  },
+                  "mode": "binary",
+                  "reduce": {
+                    "reducer": "sum"
+                  }
+                }
+              }
+            ],
+            "type": "table"
+          }
+        ],
         "title": "Storage Nodes",
         "type": "row"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "Gjcc2df4z"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            },
-            "mappings": [],
-            "noValue": "0",
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            }
-          },
-          "overrides": [
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Ready"
-              },
-              "properties": [
-                {
-                  "id": "color",
-                  "value": {
-                    "fixedColor": "dark-green",
-                    "mode": "fixed"
-                  }
-                },
-                {
-                  "id": "noValue",
-                  "value": "0"
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Not Ready"
-              },
-              "properties": [
-                {
-                  "id": "color",
-                  "value": {
-                    "fixedColor": "dark-orange",
-                    "mode": "fixed"
-                  }
-                },
-                {
-                  "id": "noValue",
-                  "value": "0"
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Total"
-              },
-              "properties": [
-                {
-                  "id": "color",
-                  "value": {
-                    "fixedColor": "text",
-                    "mode": "fixed"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        "gridPos": {
-          "h": 6,
-          "w": 10,
-          "x": 0,
-          "y": 1
-        },
-        "id": 4,
-        "options": {
-          "colorMode": "value",
-          "graphMode": "none",
-          "justifyMode": "center",
-          "orientation": "auto",
-          "reduceOptions": {
-            "calcs": [
-              "lastNotNull"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "text": {
-            "titleSize": 40,
-            "valueSize": 100
-          },
-          "textMode": "value_and_name"
-        },
-        "pluginVersion": "9.1.0",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "Gjcc2df4z"
-            },
-            "editorMode": "code",
-            "exemplar": false,
-            "expr": "sum(hwameistor_localstoragenode_status)",
-            "format": "time_series",
-            "hide": false,
-            "instant": true,
-            "legendFormat": "Total",
-            "range": false,
-            "refId": "A"
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "Gjcc2df4z"
-            },
-            "editorMode": "code",
-            "exemplar": false,
-            "expr": "sum(hwameistor_localstoragenode_status{status=\"Ready\"})",
-            "hide": false,
-            "instant": true,
-            "legendFormat": "Ready",
-            "range": false,
-            "refId": "B"
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "Gjcc2df4z"
-            },
-            "editorMode": "code",
-            "exemplar": false,
-            "expr": "sum(hwameistor_localstoragenode_status) - sum(hwameistor_localstoragenode_status{status=\"Ready\"})",
-            "hide": false,
-            "instant": true,
-            "legendFormat": "Not Ready",
-            "range": false,
-            "refId": "C"
-          }
-        ],
-        "title": "Nodes Summary",
-        "transformations": [],
-        "type": "stat"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "Gjcc2df4z"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "custom": {
-              "align": "center",
-              "displayMode": "auto",
-              "inspect": false
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                }
-              ]
-            },
-            "unit": "bytes"
-          },
-          "overrides": [
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Capacity Usage %"
-              },
-              "properties": [
-                {
-                  "id": "custom.displayMode",
-                  "value": "lcd-gauge"
-                },
-                {
-                  "id": "color",
-                  "value": {
-                    "mode": "continuous-GrYlRd"
-                  }
-                },
-                {
-                  "id": "thresholds",
-                  "value": {
-                    "mode": "percentage",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "#EAB839",
-                        "value": 50
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "unit",
-                  "value": "percentunit"
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Volumes Usage %"
-              },
-              "properties": [
-                {
-                  "id": "custom.displayMode",
-                  "value": "lcd-gauge"
-                },
-                {
-                  "id": "thresholds",
-                  "value": {
-                    "mode": "percentage",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "#EAB839",
-                        "value": 50
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "unit",
-                  "value": "percentunit"
-                },
-                {
-                  "id": "color",
-                  "value": {
-                    "mode": "continuous-GrYlRd"
-                  }
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Total Volume Limits"
-              },
-              "properties": [
-                {
-                  "id": "unit",
-                  "value": "none"
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Allocated Volumes"
-              },
-              "properties": [
-                {
-                  "id": "unit",
-                  "value": "none"
-                },
-                {
-                  "id": "custom.width",
-                  "value": 161
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Available Volumes"
-              },
-              "properties": [
-                {
-                  "id": "unit",
-                  "value": "none"
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Status"
-              },
-              "properties": [
-                {
-                  "id": "custom.width",
-                  "value": 121
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Pool"
-              },
-              "properties": [
-                {
-                  "id": "custom.width",
-                  "value": 117
-                }
-              ]
-            }
-          ]
-        },
-        "gridPos": {
-          "h": 7,
-          "w": 23,
-          "x": 0,
-          "y": 7
-        },
-        "id": 6,
-        "options": {
-          "footer": {
-            "fields": "",
-            "reducer": [
-              "sum"
-            ],
-            "show": false
-          },
-          "showHeader": true,
-          "sortBy": []
-        },
-        "pluginVersion": "9.1.0",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "Gjcc2df4z"
-            },
-            "editorMode": "builder",
-            "exemplar": false,
-            "expr": "hwameistor_localstoragenode_capacity{kind=\"Total\"}",
-            "format": "table",
-            "instant": true,
-            "legendFormat": "Total",
-            "range": false,
-            "refId": "A"
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "Gjcc2df4z"
-            },
-            "editorMode": "builder",
-            "exemplar": false,
-            "expr": "hwameistor_localstoragenode_capacity{kind=\"Used\"}",
-            "format": "table",
-            "hide": false,
-            "instant": true,
-            "legendFormat": "Used",
-            "range": false,
-            "refId": "B"
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "Gjcc2df4z"
-            },
-            "editorMode": "builder",
-            "exemplar": false,
-            "expr": "hwameistor_localstoragenode_capacity{kind=\"Free\"}",
-            "format": "table",
-            "hide": false,
-            "instant": true,
-            "legendFormat": "Free",
-            "range": false,
-            "refId": "C"
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "Gjcc2df4z"
-            },
-            "editorMode": "builder",
-            "exemplar": false,
-            "expr": "hwameistor_localstoragenode_volumecount{kind=\"Total\"}",
-            "format": "table",
-            "hide": false,
-            "instant": true,
-            "legendFormat": "volTotal",
-            "range": false,
-            "refId": "D"
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "Gjcc2df4z"
-            },
-            "editorMode": "builder",
-            "exemplar": false,
-            "expr": "hwameistor_localstoragenode_volumecount{kind=\"Used\"}",
-            "format": "table",
-            "hide": false,
-            "instant": true,
-            "legendFormat": "volUsed",
-            "range": false,
-            "refId": "E"
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "Gjcc2df4z"
-            },
-            "editorMode": "builder",
-            "exemplar": false,
-            "expr": "hwameistor_localstoragenode_volumecount{kind=\"Free\"}",
-            "format": "table",
-            "hide": false,
-            "instant": true,
-            "legendFormat": "volFree",
-            "range": false,
-            "refId": "F"
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "Gjcc2df4z"
-            },
-            "editorMode": "builder",
-            "exemplar": false,
-            "expr": "hwameistor_localstoragenode_status",
-            "format": "table",
-            "hide": false,
-            "instant": true,
-            "legendFormat": "Status",
-            "range": false,
-            "refId": "G"
-          }
-        ],
-        "title": "Node Storage Usage",
-        "transformations": [
-          {
-            "id": "groupBy",
-            "options": {
-              "fields": {
-                "Value #A": {
-                  "aggregations": [
-                    "lastNotNull"
-                  ],
-                  "operation": "aggregate"
-                },
-                "Value #B": {
-                  "aggregations": [
-                    "lastNotNull"
-                  ],
-                  "operation": "aggregate"
-                },
-                "Value #C": {
-                  "aggregations": [
-                    "lastNotNull"
-                  ],
-                  "operation": "aggregate"
-                },
-                "Value #D": {
-                  "aggregations": [
-                    "lastNotNull"
-                  ],
-                  "operation": "aggregate"
-                },
-                "Value #E": {
-                  "aggregations": [
-                    "lastNotNull"
-                  ],
-                  "operation": "aggregate"
-                },
-                "Value #F": {
-                  "aggregations": [
-                    "lastNotNull"
-                  ],
-                  "operation": "aggregate"
-                },
-                "nodeName": {
-                  "aggregations": [],
-                  "operation": "groupby"
-                },
-                "poolName": {
-                  "aggregations": [],
-                  "operation": "groupby"
-                },
-                "status": {
-                  "aggregations": [
-                    "lastNotNull"
-                  ],
-                  "operation": "aggregate"
-                }
-              }
-            }
-          },
-          {
-            "id": "merge",
-            "options": {}
-          },
-          {
-            "id": "organize",
-            "options": {
-              "excludeByName": {},
-              "indexByName": {
-                "Value #A (lastNotNull)": 3,
-                "Value #B (lastNotNull)": 4,
-                "Value #C (lastNotNull)": 5,
-                "Value #D (lastNotNull)": 6,
-                "Value #E (lastNotNull)": 7,
-                "Value #F (lastNotNull)": 8,
-                "nodeName": 0,
-                "poolName": 2,
-                "status (lastNotNull)": 1
-              },
-              "renameByName": {
-                "Value #A (lastNotNull)": "Total Capacity",
-                "Value #B (lastNotNull)": "Allocated Capacity",
-                "Value #C (lastNotNull)": "Available Capacity",
-                "Value #D (lastNotNull)": "Total Volume Limits",
-                "Value #E (lastNotNull)": "Allocated Volumes",
-                "Value #F (lastNotNull)": "Available Volumes",
-                "nodeName": "Node",
-                "poolName": "Pool",
-                "status (lastNotNull)": "Status"
-              }
-            }
-          },
-          {
-            "id": "calculateField",
-            "options": {
-              "alias": "Capacity Usage %",
-              "binary": {
-                "left": "Allocated Capacity",
-                "operator": "/",
-                "reducer": "sum",
-                "right": "Total Capacity"
-              },
-              "mode": "binary",
-              "reduce": {
-                "reducer": "sum"
-              }
-            }
-          },
-          {
-            "id": "calculateField",
-            "options": {
-              "alias": "Volumes Usage %",
-              "binary": {
-                "left": "Allocated Volumes",
-                "operator": "/",
-                "reducer": "sum",
-                "right": "Total Volume Limits"
-              },
-              "mode": "binary",
-              "reduce": {
-                "reducer": "sum"
-              }
-            }
-          }
-        ],
-        "type": "table"
       },
       {
         "collapsed": true,
@@ -633,7 +630,7 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 14
+          "y": 1
         },
         "id": 18,
         "panels": [
@@ -653,8 +650,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
-                      "value": null
+                      "color": "green"
                     },
                     {
                       "color": "red",
@@ -719,7 +715,7 @@
               "h": 6,
               "w": 10,
               "x": 0,
-              "y": 15
+              "y": 2
             },
             "id": 8,
             "options": {
@@ -810,8 +806,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
-                      "value": null
+                      "color": "green"
                     }
                   ]
                 },
@@ -844,8 +839,7 @@
                         "mode": "percentage",
                         "steps": [
                           {
-                            "color": "green",
-                            "value": null
+                            "color": "green"
                           },
                           {
                             "color": "#EAB839",
@@ -938,7 +932,7 @@
               "h": 9,
               "w": 23,
               "x": 0,
-              "y": 21
+              "y": 8
             },
             "id": 14,
             "options": {
@@ -1006,7 +1000,7 @@
                 "refId": "C"
               }
             ],
-            "title": "Volumes Summary",
+            "title": "Volumes Details",
             "transformations": [
               {
                 "id": "groupBy",
@@ -1129,10 +1123,225 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 15
+          "y": 2
         },
         "id": 22,
         "panels": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "Gjcc2df4z"
+            },
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "mappings": [],
+                "thresholds": {
+                  "mode": "percentage",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "Total"
+                  },
+                  "properties": [
+                    {
+                      "id": "color",
+                      "value": {
+                        "fixedColor": "text",
+                        "mode": "fixed"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "Bound"
+                  },
+                  "properties": [
+                    {
+                      "id": "color",
+                      "value": {
+                        "fixedColor": "dark-green",
+                        "mode": "fixed"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            "gridPos": {
+              "h": 6,
+              "w": 9,
+              "x": 0,
+              "y": 3
+            },
+            "id": 24,
+            "options": {
+              "colorMode": "value",
+              "graphMode": "none",
+              "justifyMode": "center",
+              "orientation": "auto",
+              "reduceOptions": {
+                "calcs": [
+                  "lastNotNull"
+                ],
+                "fields": "",
+                "values": false
+              },
+              "textMode": "auto"
+            },
+            "pluginVersion": "9.1.0",
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "Gjcc2df4z"
+                },
+                "editorMode": "code",
+                "exemplar": false,
+                "expr": "count(hwameistor_localdisk_capacity)",
+                "hide": false,
+                "instant": true,
+                "legendFormat": "Total",
+                "range": false,
+                "refId": "A"
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "Gjcc2df4z"
+                },
+                "editorMode": "code",
+                "exemplar": false,
+                "expr": "count(hwameistor_localdisk_capacity{status=\"Bound\"})",
+                "instant": true,
+                "legendFormat": "Bound",
+                "range": false,
+                "refId": "B"
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "Gjcc2df4z"
+                },
+                "editorMode": "code",
+                "exemplar": false,
+                "expr": "count(hwameistor_localdisk_capacity{reserved=\"true\"})",
+                "hide": false,
+                "instant": true,
+                "legendFormat": "Reseverd",
+                "range": false,
+                "refId": "C"
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "Gjcc2df4z"
+                },
+                "editorMode": "code",
+                "exemplar": false,
+                "expr": "count(hwameistor_localdisk_capacity{status=\"Available\"})",
+                "hide": false,
+                "instant": true,
+                "legendFormat": "Available",
+                "range": false,
+                "refId": "D"
+              }
+            ],
+            "title": "Disks Status Overview",
+            "type": "stat"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "Gjcc2df4z"
+            },
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "axisCenteredZero": false,
+                  "axisColorMode": "text",
+                  "axisLabel": "",
+                  "axisPlacement": "auto",
+                  "barAlignment": 0,
+                  "drawStyle": "line",
+                  "fillOpacity": 0,
+                  "gradientMode": "none",
+                  "hideFrom": {
+                    "legend": false,
+                    "tooltip": false,
+                    "viz": false
+                  },
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "pointSize": 5,
+                  "scaleDistribution": {
+                    "type": "linear"
+                  },
+                  "showPoints": "auto",
+                  "spanNulls": false,
+                  "stacking": {
+                    "group": "A",
+                    "mode": "none"
+                  },
+                  "thresholdsStyle": {
+                    "mode": "off"
+                  }
+                },
+                "mappings": [],
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 80
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "gridPos": {
+              "h": 6,
+              "w": 8,
+              "x": 9,
+              "y": 3
+            },
+            "id": 26,
+            "options": {
+              "legend": {
+                "calcs": [],
+                "displayMode": "list",
+                "placement": "bottom",
+                "showLegend": true
+              },
+              "tooltip": {
+                "mode": "single",
+                "sort": "none"
+              }
+            },
+            "title": "Disks Health Overview",
+            "type": "timeseries"
+          },
           {
             "datasource": {
               "type": "prometheus",
@@ -1170,7 +1379,7 @@
               "h": 10,
               "w": 17,
               "x": 0,
-              "y": 16
+              "y": 9
             },
             "id": 20,
             "options": {
@@ -1200,7 +1409,7 @@
                 "refId": "A"
               }
             ],
-            "title": "Disks Summary",
+            "title": "Disks Details",
             "transformations": [
               {
                 "id": "groupBy",
@@ -1317,7 +1526,7 @@
     "timepicker": {},
     "timezone": "",
     "title": "HwameiStor Metrics",
-    "uid": "L9482OfVk",
-    "version": 46,
+    "uid": "L9482OfVz",
+    "version": 11,
     "weekStart": ""
   }
