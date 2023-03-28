@@ -18,6 +18,7 @@ v0.9.0 / 2023-3-28
 
 ## Admission
 * fix start error caused by args parse #698 (@SSmallMonster )
+* update apiserver #732 (@buffalo1024 )
 
 ## Other
 * Add grafana dashboard (#733 #735 #736 @sun7927 )
