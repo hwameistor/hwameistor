@@ -136,7 +136,7 @@ localStorageCSIController:
     imageRepository: sig-storage/csi-resizer
     tag: v1.0.1
     resources: {}
-  health-monitor:
+  healthMonitor:
     imageRepository: sig-storage/csi-external-health-monitor-controller
     tag: v0.8.0
     resources: {}
