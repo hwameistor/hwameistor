@@ -57,7 +57,7 @@ spec:
         - --namespace=$(POD_NAMESPACE)
         - --csi-address=$(CSI_ENDPOINT)
         - --http-port=80
-        - --debug=true
+        - --v=5
         {{- if .Values.localStorage.member.config.drbdStartPort }}
         - --drbd-start-port={{ .Values.localStorage.member.config.drbdStartPort }}
         {{- end }}
