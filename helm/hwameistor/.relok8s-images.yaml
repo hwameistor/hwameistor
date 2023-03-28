@@ -13,3 +13,4 @@
 - "{{ .global.k8sImageRegistry }}/{{ .localStorageCSIController.resizer.imageRepository }}:{{ .localStorageCSIController.resizer.tag }}"
 - "{{ .global.hwameistorImageRegistry }}/{{ .apiserver.imageRepository }}:{{ .apiserver.tag }}"
 - "{{ .global.hwameistorImageRegistry }}/{{ .exporter.imageRepository }}:{{ .exporter.tag }}"
+- "{{ .global.hwameistorImageRegistry }}/{{ .ui.imageRepository }}:{{ .ui.tag }}"
