@@ -115,26 +115,20 @@ definitions:
     type: object
   api.ModuleStatus:
     properties:
-      admissionController:
-        $ref: '#/definitions/v1alpha1.AdmissionControllerStatus'
-      apiServer:
-        $ref: '#/definitions/v1alpha1.ApiServerStatus'
-      evictor:
-        $ref: '#/definitions/v1alpha1.EvictorStatus'
+      componentStatus:
+        $ref: '#/definitions/v1alpha1.ComponentStatus'
+      diskReserveState:
+        type: string
+      drbdAdapterCreated:
+        type: boolean
+      drbdAdapterCreatedJobNum:
+        type: integer
       installedCRDS:
         type: boolean
-      localDiskManager:
-        $ref: '#/definitions/v1alpha1.LocalDiskManagerStatus'
-      localStorage:
-        $ref: '#/definitions/v1alpha1.LocalStorageStatus'
-      metrics:
-        $ref: '#/definitions/v1alpha1.MetricsStatus'
       modulesStatus:
         items:
           $ref: '#/definitions/api.ModuleState'
         type: array
-      scheduler:
-        $ref: '#/definitions/v1alpha1.SchedulerStatus'
     type: object
   api.NodeDiskListByPool:
     properties:
@@ -1590,6 +1584,23 @@ definitions:
       instances:
         $ref: '#/definitions/v1alpha1.DeployStatus'
     type: object
+  v1alpha1.ComponentStatus:
+    properties:
+      admissionController:
+        $ref: '#/definitions/v1alpha1.AdmissionControllerStatus'
+      apiServer:
+        $ref: '#/definitions/v1alpha1.ApiServerStatus'
+      evictor:
+        $ref: '#/definitions/v1alpha1.EvictorStatus'
+      exporter:
+        $ref: '#/definitions/v1alpha1.ExporterStatus'
+      localDiskManager:
+        $ref: '#/definitions/v1alpha1.LocalDiskManagerStatus'
+      localStorage:
+        $ref: '#/definitions/v1alpha1.LocalStorageStatus'
+      scheduler:
+        $ref: '#/definitions/v1alpha1.SchedulerStatus'
+    type: object
   v1alpha1.DeployStatus:
     properties:
       availablePodCount:
@@ -1673,6 +1684,13 @@ definitions:
       instances:
         $ref: '#/definitions/v1alpha1.DeployStatus'
     type: object
+  v1alpha1.ExporterStatus:
+    properties:
+      health:
+        type: string
+      instances:
+        $ref: '#/definitions/v1alpha1.DeployStatus'
+    type: object
   v1alpha1.FileSystemInfo:
     properties:
       fsType:
@@ -1740,12 +1758,6 @@ definitions:
     type: object
   v1alpha1.LocalDiskClaimSpec:
     properties:
-      consumed:
-        description: |-
-          Consumed represents disks backing the claim has been already consumed by a consumer.
-          If true the claim will be deleted soon from kubernetes
-          +optional
-        type: boolean
       description:
         allOf:
         - $ref: '#/definitions/v1alpha1.DiskClaimDescription'
@@ -1763,6 +1775,10 @@ definitions:
         description: |-
           +kubebuilder:validation:Required
           NodeName represents where disk has to be claimed.
+        type: string
+      owner:
+        description: Owner represents which system owns this claim(e.g. local-storage,
+          local-disk-manager)
         type: string
     type: object
   v1alpha1.LocalDiskManagerStatus:
@@ -1845,6 +1861,11 @@ definitions:
         description: |-
           NodeName represents the node where the disk is attached
           +kubebuilder:validation:Required
+        type: string
+      owner:
+        description: |-
+          Owner represents which system owns this claim(e.g. local-storage, local-disk-manager)
+          +optional
         type: string
       partitionInfo:
         description: |-
@@ -2348,18 +2369,11 @@ definitions:
         type: integer
       usedCapacityBytes:
         description: UsedCapacityBytes is the used capacity in bytes of the volume,
-          which is avaiable only for filesystem
+          which is available only for filesystem
         type: integer
       usedInode:
         description: UsedInode is the used inodes of the volume's filesystem
         type: integer
-    type: object
-  v1alpha1.MetricsStatus:
-    properties:
-      health:
-        type: string
-      instances:
-        $ref: '#/definitions/v1alpha1.DeployStatus'
     type: object
   v1alpha1.PartitionInfo:
     properties:
@@ -2416,6 +2430,11 @@ definitions:
     type: object
   v1alpha1.State:
     enum:
+    - ""
+    - ToBeMounted
+    - ToBeUnMount
+    - Mounted
+    - NotReady
     - Ready
     - Maintain
     - Offline
@@ -2450,13 +2469,13 @@ definitions:
     - Available
     - InUse
     - Offline
-    - ""
-    - ToBeMounted
-    - ToBeUnMount
-    - Mounted
-    - NotReady
     type: string
     x-enum-varnames:
+    - MountPointStateEmpty
+    - MountPointToBeMounted
+    - MountPointToBeUnMount
+    - MountPointMounted
+    - MountPointNotReady
     - NodeStateReady
     - NodeStateMaintain
     - NodeStateOffline
@@ -2491,11 +2510,6 @@ definitions:
     - DiskStateAvailable
     - DiskStateInUse
     - DiskStateOffline
-    - MountPointStateEmpty
-    - MountPointToBeMounted
-    - MountPointToBeUnMount
-    - MountPointMounted
-    - MountPointNotReady
   v1alpha1.Topology:
     properties:
       region:

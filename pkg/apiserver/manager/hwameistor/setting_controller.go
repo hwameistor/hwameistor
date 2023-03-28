@@ -52,23 +52,23 @@ func (settingController *SettingController) EnableHighAvailability() (*hwameisto
 		return RspBody, err
 	}
 
-	for _, cluster := range clusterList.Items {
-		if cluster.Name == OperatorClusterName {
-			drbdSpec := &hoapisv1alpha1.DRBDSpec{}
-			drbdSpec.Enable = true
-			cluster.Spec.DRBD = drbdSpec
+	// for _, cluster := range clusterList.Items {
+	// 	if cluster.Name == OperatorClusterName {
+	// 		drbdSpec := &hoapisv1alpha1.DRBDSpec{}
+	// 		drbdSpec.Enable = true
+	// 		cluster.Spec.DRBD = drbdSpec
 
-			if err := settingController.Client.Update(context.TODO(), &cluster); err != nil {
-				return RspBody, err
-			}
-			var drbdEnableSetting = &hwameistorapi.DrbdEnableSetting{}
-			drbdEnableSetting.Enable = true
-			drbdEnableSetting.State = hwameistorapi.DrbdModuleStatusEnabled
-			drbdEnableSetting.Version = "v0.0.1"
-			RspBody.DrbdEnableSetting = drbdEnableSetting
-			break
-		}
-	}
+	// 		if err := settingController.Client.Update(context.TODO(), &cluster); err != nil {
+	// 			return RspBody, err
+	// 		}
+	// 		var drbdEnableSetting = &hwameistorapi.DrbdEnableSetting{}
+	// 		drbdEnableSetting.Enable = true
+	// 		drbdEnableSetting.State = hwameistorapi.DrbdModuleStatusEnabled
+	// 		drbdEnableSetting.Version = "v0.0.1"
+	// 		RspBody.DrbdEnableSetting = drbdEnableSetting
+	// 		break
+	// 	}
+	// }
 
 	return RspBody, nil
 }
