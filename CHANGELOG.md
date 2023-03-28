@@ -1,3 +1,14 @@
+v0.9.1 / 2023-3-28
+========================
+
+## LocalStorage
+* enabled the volume stats capability #741 (@sun7927 )
+* corrected the local-storage deploy #742 (@sun7927 )
+
+## LocalDiskManager,Scheduler,Apiserver,Evictor,Exporter,Admission
+N/A
+
+
 v0.9.0 / 2023-3-28
 ========================
 
