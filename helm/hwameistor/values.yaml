@@ -97,7 +97,7 @@ localDiskManagerCSIController:
     imageRepository: sig-storage/csi-attacher
     tag: v3.0.1
     resources: {}
-    
+
 localStorage:
   tolerationsOnMaster: true
   priorityClassName: 
@@ -135,4 +135,8 @@ localStorageCSIController:
   resizer:
     imageRepository: sig-storage/csi-resizer
     tag: v1.0.1
+    resources: {}
+  health-monitor:
+    imageRepository: sig-storage/csi-external-health-monitor-controller
+    tag: v0.8.0
     resources: {}

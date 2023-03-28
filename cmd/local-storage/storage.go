@@ -34,7 +34,6 @@ const (
 )
 
 var (
-	debug              = flag.Bool("debug", false, "debug mode, false by default")
 	nodeName           = flag.String("nodename", "", "Node name")
 	namespace          = flag.String("namespace", "", "Namespace of the Pod")
 	csiSockAddr        = flag.String("csi-address", "", "CSI endpoint")
