@@ -73,7 +73,7 @@ spec:
         env:
           - name: CSI_ADDRESS
             value: /csi/csi.sock
-        image: {{ .Values.global.k8sImageRegistry}}/{{ .Values.localStorageCSIController.health-monitor.imageRepository}}:{{ .Values.localStorageCSIController.health-monitor.tag}}
+        image: {{ .Values.global.k8sImageRegistry}}/{{ .Values.localStorageCSIController.healthMonitor.imageRepository}}:{{ .Values.localStorageCSIController.healthMonitor.tag}}
         imagePullPolicy: IfNotPresent
         name: monitor
         volumeMounts:
