@@ -22,10 +22,6 @@ The latest release of HwameiStor is [![hwameistor-releases](https://img.shields.
 
 ## Release Status
 
-| Release | Version | Type   |
-|---------|---------| ------ |
-| v0.8.0  | v0.8.0  | latest |
-
 See [current releases](https://github.com/hwameistor/hwameistor/releases).
 
 ## Running Environments
@@ -110,8 +106,8 @@ please check the [adopters list](./adopters.md).
 | Volume Group              | Completed | v0.3.2  | Support volume group allocation                   |
 | Disk health check         | Completed | v0.7.0  | Disk fault prediction, status reporting           |  
 | LVM HA Volume Recovery    | Planed    |         | Recover the LVM HA volume in problem              |
-| HwameiStor Operator       | Planed    |         | Operator for HwameiStor install, maintain, etc.   |
-| Observability             | Planed    |         | Observability, such as metrics, logs, etc.        |
+| HwameiStor Operator       | Completed | v0.9.0  | Operator for HwameiStor install, maintain, etc.   |
+| Observability             | Completed | v0.9.2  | Observability, such as metrics, logs, etc.        |
 | Failover                  | Planed    |         | Fail over the pod with HwameiStor volume          |
 | IO throttling             | Planed    |         | Limit IO bandwith to access the HwameiStor volume |
 | Disk replacement          | Planed    |         | Replace disk which fails or will fail soon        |
