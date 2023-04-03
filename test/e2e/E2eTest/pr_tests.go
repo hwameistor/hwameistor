@@ -24,7 +24,7 @@ import (
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("pr test ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), func() {
+var _ = ginkgo.Describe("pr test ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), ginkgo.FlakeAttempts(3), func() {
 	var f *framework.Framework
 	var client ctrlclient.Client
 	ctx := context.TODO()

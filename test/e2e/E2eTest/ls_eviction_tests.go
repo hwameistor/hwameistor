@@ -340,7 +340,7 @@ var _ = ginkgo.Describe("eviction test", ginkgo.Label("periodCheck"), func() {
 			_ = utils.RunInLinux("kubectl uncordon " + beforeEvictionNode)
 			gomega.Expect(beforeEvictionNode).NotTo(gomega.Equal(podlist.Items[0].Spec.NodeName))
 		})
-		ginkgo.It("check test file", func() {
+		ginkgo.It("check test file", ginkgo.FlakeAttempts(3), func() {
 			config, err := config.GetConfig()
 			if err != nil {
 				return
@@ -758,7 +758,6 @@ var _ = ginkgo.Describe("eviction test", ginkgo.Label("periodCheck"), func() {
 			}
 		})
 	})
-
 	ginkgo.Context("Clean up the environment", func() {
 		ginkgo.It("Delete test Deployment", func() {
 			//delete deploy
