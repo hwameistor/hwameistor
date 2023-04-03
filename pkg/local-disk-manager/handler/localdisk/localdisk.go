@@ -194,3 +194,17 @@ func (ldHandler *Handler) RecordEvent(eventtype, reason, messageFmt string, args
 func (ldHandler *Handler) SetPartition(hasPartition bool) {
 	ldHandler.localDisk.Spec.HasPartition = hasPartition
 }
+
+func (ldHandler *Handler) SetOwner(owner string) {
+	ldHandler.localDisk.Spec.Owner = owner
+}
+
+func (ldHandler *Handler) PatchDiskOwner(owner string) error {
+	oldDisk := ldHandler.localDisk.DeepCopy()
+	ldHandler.SetOwner(owner)
+	return ldHandler.PatchDiskSpec(client.MergeFrom(oldDisk))
+}
+
+func (ldHandler *Handler) PatchDiskSpec(patch client.Patch) error {
+	return ldHandler.Client.Patch(context.Background(), ldHandler.localDisk, patch)
+}
