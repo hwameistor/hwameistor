@@ -341,6 +341,7 @@ var _ = ginkgo.Describe("eviction test", ginkgo.Label("periodCheck"), func() {
 			gomega.Expect(beforeEvictionNode).NotTo(gomega.Equal(podlist.Items[0].Spec.NodeName))
 		})
 		ginkgo.It("check test file", ginkgo.FlakeAttempts(3), func() {
+			time.Sleep(1 * time.Minute)
 			config, err := config.GetConfig()
 			if err != nil {
 				return
