@@ -1,7 +1,8 @@
 name: Period check
 on:
   workflow_dispatch:
-
+  schedule:
+    - cron: '0 18 * * *'
 
 jobs:
   unit-test:
