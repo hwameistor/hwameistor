@@ -3,11 +3,11 @@ package localdisk
 import (
 	"context"
 	"fmt"
-
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -159,6 +159,11 @@ func (r *ReconcileLocalDisk) processDiskAvailable(disk *v1alpha1.LocalDisk) erro
 		return r.updateDiskStatusBound(disk)
 	}
 
+	// check and correct spec if needed, return directly if updated or occur error
+	if updated, err := r.checkAndCorrectSpec(disk); updated || err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -169,7 +174,7 @@ func (r *ReconcileLocalDisk) processDiskBound(disk *v1alpha1.LocalDisk) error {
 
 	var err error
 	// Check if disk can be released
-	if disk.Spec.ClaimRef == nil && !disk.Spec.HasPartition && disk.Spec.Owner == "" {
+	if disk.Spec.ClaimRef == nil && !disk.Spec.HasPartition {
 		if err = r.updateDiskStatusAvailable(disk); err != nil {
 			log.WithError(err).WithFields(logCtx).Error("Failed to release disk")
 			r.Recorder.Eventf(disk, v1.EventTypeWarning, v1alpha1.LocalDiskEventReasonReleaseFail,
@@ -179,6 +184,12 @@ func (r *ReconcileLocalDisk) processDiskBound(disk *v1alpha1.LocalDisk) error {
 			r.Recorder.Eventf(disk, v1.EventTypeNormal, v1alpha1.LocalDiskEventReasonRelease,
 				"Succeed to release disk %v", disk.Name)
 		}
+		return err
+	}
+
+	// check and correct spec if needed, return directly if updated or occur error
+	if updated, err := r.checkAndCorrectSpec(disk); updated || err != nil {
+		return err
 	}
 
 	return err
@@ -243,4 +254,81 @@ func (r *ReconcileLocalDisk) updateDiskStatusAvailable(disk *v1alpha1.LocalDisk)
 
 	r.Recorder.Eventf(disk, eventType, eventReason, eventMessage)
 	return err
+}
+
+// checkAndCorrectSpec some fields(e.g. owner info) may change during the usage phase, try to fix them here to be correct before reconcile
+// return true if modified.
+func (r *ReconcileLocalDisk) checkAndCorrectSpec(disk *v1alpha1.LocalDisk) (bool, error) {
+	var updated bool
+	if updated, err := r.checkAndCorrectOwner(disk); err != nil {
+		return updated, err
+	}
+
+	return updated, nil
+}
+
+func (r *ReconcileLocalDisk) checkAndCorrectOwner(disk *v1alpha1.LocalDisk) (bool, error) {
+	switch disk.Status.State {
+	case v1alpha1.LocalDiskBound:
+		if disk.Spec.Owner != "" {
+			return false, nil
+		}
+
+		log.WithField("disk", disk.GetName()).Info("Start to populate disk owner")
+		if actualOwner, err := findDiskOwner(r.Client, disk.Spec.NodeName, disk.Spec.DevicePath); err != nil {
+			return false, err
+		} else {
+			if actualOwner != disk.Spec.Owner {
+				log.WithField("disk", disk.GetName()).Infof("Try to update owner(actual owner: %s, origin owner: %s)",
+					actualOwner, disk.Spec.Owner)
+				return true, r.diskHandler.PatchDiskOwner(actualOwner)
+			}
+		}
+	case v1alpha1.LocalDiskAvailable:
+		if disk.Spec.Owner == "" {
+			return false, nil
+		}
+
+		log.WithField("disk", disk.GetName()).Infof("Try to remove owner(origin owner: %s)", disk.Spec.Owner)
+		return true, r.diskHandler.PatchDiskOwner("")
+	default:
+		return false, nil
+	}
+
+	return false, nil
+}
+
+// findDiskOwner find which system owns the disk(e.g. local-storage, system)
+func findDiskOwner(cli client.Client, nodeName, devPath string) (string, error) {
+	// we only find disks known by our system, if disks managed by the other system we just show its owner as system
+	// list disks managed by local-storage
+	lsDisks, err := listDisksOwnedByLocalStorage(cli, nodeName)
+	if err != nil {
+		return "", err
+	}
+
+	if _, found := utils.StrFind(lsDisks, devPath); found {
+		return v1alpha1.LocalStorage, nil
+	}
+
+	return v1alpha1.System, nil
+}
+
+func listDisksOwnedByLocalStorage(cli client.Client, nodeName string) ([]string, error) {
+	// ** The best way may be to use lvm to check the list of devices belonging to local-storage **
+	lsn := v1alpha1.LocalStorageNode{}
+	err := cli.Get(context.Background(), types.NamespacedName{Name: nodeName}, &lsn)
+	if err != nil {
+		return nil, err
+	}
+
+	// list all devices existed in storage pool
+	var poolDisks []string
+	for _, pool := range lsn.Status.Pools {
+		for _, disk := range pool.Disks {
+			poolDisks = append(poolDisks, disk.DevPath)
+		}
+	}
+
+	return poolDisks, nil
 }
