@@ -319,6 +319,9 @@ func listDisksOwnedByLocalStorage(cli client.Client, nodeName string) ([]string,
 	lsn := v1alpha1.LocalStorageNode{}
 	err := cli.Get(context.Background(), types.NamespacedName{Name: nodeName}, &lsn)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
