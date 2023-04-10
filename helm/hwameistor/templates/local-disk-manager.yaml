@@ -12,6 +12,7 @@ spec:
       labels:
         app: hwameistor-local-disk-manager
     spec:
+      hostNetwork: true
       hostPID: true
       serviceAccountName: hwameistor-admin
       containers:
