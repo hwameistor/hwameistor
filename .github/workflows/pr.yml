@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "pkg/**"
+      - "cmd/**"
       - "test/**"
 
 jobs:
