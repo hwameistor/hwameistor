@@ -5,7 +5,7 @@ authors: [Ada, Michelle]
 tags: [livestream]
 ---
 
-![Livestream Highlights](img/livestream-highlights.png)
+![Livestream Highlights](img/highlight-en.png)
 
 The rapid development of cloud native industry makes many things possible, but it also poses some challenges for application development and operation. As more and more stateful applications are moved onto container platforms, stateful applications have become a major consumer of storage. As a cornerstone for running applications, storage now becomes a major challenge in the process of containerization. In the era of cloud native, what are the new requirements for storage systems? What are the new opportunities and challenges facing cloud-native storage? What are the popular cloud native storage solutions?
 
@@ -15,7 +15,7 @@ On June 20th, 2022, we had a live discussion with [Pengyun Network](https://www.
 
 As an infrastructure for containerization in cloud native stack, cloud-native storage exposes underlying storage services to containers and micro-services, and collects storage resources from different media. It can enable stateful workloads to run in containers by providing persistent volumes. CNCF's definition for cloud-native storage has three key points. First, it runs on Kubernetes as a container. Second, it uses Kubernetes object classes, mainly custom resource definition (CRD). Last and the most important, it uses a container storage interface (CSI). HwameiStor is developed based on these three points. it is an end-to-end cloud-native local storage system.
 
-![HwameiStor Architecture](img/hwameistor-architecture.png)
+![HwameiStor Architecture](img/architect.jpg)
 
 The bottom layer of HwameiStor is a local disk manager (LDM). LDM automatically collects resources from various storage media (such as HDD, SSD and NVMe disks) to form a local storage resource pool for unified automatic management. After HwameiStor is deployed, it can allocate resources on various storage media to different pools. Above the resource pool, it uses logical volume manager (LVM) for management, It also uses the CSI architecture to provide distributed local data volume service, so as to provide data persistence capabilities for cloud-native stateful applications or components.
 
@@ -57,7 +57,7 @@ HwameiStor is recommended in the following scenarios:
 
 According to the CNCF 2020 Annual Report, stateful applications account for 55% of all container applications, making it a mainstream. About 29% stateful applications listed storage as the main challenge for adopting container technology. A storage problem facing cloud native scenarios is that it is difficult to balance performance and availability. Using a single type of storage cannot meet all needs. Therefore, in the actual implementation of stateful applications, data storage technology is the key.
 
-![Storage Solution Comparison](img/compare-storage.png)
+![Storage Solution Comparison](img/compare-en.png)
 
 ZettaStor HASP is a cloud-native data aggregation & storage platform. It is also a user-state file system of high performance that supports redundancy protection based on multiple replicas across heterogeneous storage systems. Data replicas can flow between different types of storage systems, which is a big competitiveness over traditional distributed storage systems. In addition, it also supports unified and flexible orchestration of storage resources, and can be tightly integrated with container platforms.
 
@@ -69,7 +69,7 @@ ZettaStor HASP can achieve data high availability based on cross-node redundancy
 
 - Critical business should prevent the risk of simultaneous failure of two nodes. ZettaStor HASP's replica redundancy protection across local and external storage systems can ensure smooth running of critical business.
 
-![ZettaStor HASP Architecture](img/zettastor.png)
+![ZettaStor HASP Architecture](img/zettastor-en.png)
 
 ZettaStor HASP has a three-layer architecture. On the top is a high-performance distributed file system, which is also the core of HASP. This independently-developed file system is fully compatible with POSIX standards and supports zero data copy between user-mode and kernel-mode, giving a full play to the performance of high-speed media, such as NVMe SSD/SCM/PM. In the middle is the data service layer, which can provide services across local storage systems on different nodes, across local storage and external storage systems, and across heterogeneous external storage systems. It can be customized into single replica, multiple replicas, strong consistency, and weak consistency solutions. At the bottom is a storage management layer, which is responsible for interacting with different storage devices. It can break device barriers and connect data islands with unified data format, helping data and business get rid of device limitations. In addition, it can also schedule storage devices through CSI.
 
