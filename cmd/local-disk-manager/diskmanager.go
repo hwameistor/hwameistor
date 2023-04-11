@@ -40,7 +40,6 @@ import (
 
 // Change below variables to serve metrics on different host or port.
 var (
-	metricsHost               = "0.0.0.0"
 	metricsPort         int32 = 8383
 	operatorMetricsPort int32 = 8686
 	csiCfg              csidriver.Config
@@ -116,8 +115,9 @@ func main() {
 		go csidriver.NewDiskDriver(csiCfg).Run()
 	}
 
-	// Add the Metrics Service
-	addMetrics(stopCh, cfg)
+	// NOTES： currently all metrics are exposed through the exporter
+	// disable metrics service
+	// addMetrics(stopCh, cfg)
 
 	// Start Cluster Controller
 	go startClusterController(stopCh, clusterMgr)
@@ -263,7 +263,9 @@ func registerCSIParams() {
 func newClusterManager(cfg *rest.Config) (manager.Manager, error) {
 	// Set default manager options
 	options := manager.Options{
-		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
+		// NOTES： currently all metrics are exposed through the exporter
+		// disable metrics serving
+		MetricsBindAddress: "0",
 	}
 
 	// Create a new manager to provide shared dependencies and start components
@@ -292,6 +294,8 @@ func newClusterManager(cfg *rest.Config) (manager.Manager, error) {
 func newNodeManager(cfg *rest.Config) (manager.Manager, error) {
 	// Set default manager options
 	options := manager.Options{
+		// NOTES： currently all metrics are exposed through the exporter
+		// disable metrics serving
 		MetricsBindAddress: "0",
 	}
 
