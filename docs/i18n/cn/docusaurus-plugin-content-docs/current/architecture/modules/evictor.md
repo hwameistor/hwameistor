@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 5
 sidebar_label: "驱逐器"
 ---
 
@@ -13,7 +13,3 @@ sidebar_label: "驱逐器"
 ## 如何使用
 
 请参考 [Eviction](../../quick_start/advanced_features/volume_eviction.md)
-
-## 安装（Helm Chart)
-
-驱逐器依赖 HwameiStor 的本地存储和本地磁盘管理器，建议通过 [Helm Chart 进行安装](../../quick_start/install/deploy.md) 进行安装.

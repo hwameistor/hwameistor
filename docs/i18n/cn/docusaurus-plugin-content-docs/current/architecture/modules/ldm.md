@@ -27,44 +27,13 @@ sidebar_label: "本地磁盘管理器"
 
 ## 用法
 
-如果想完整地部署 HwameiStor，请参考[使用 Helm Chart 安装部署](../../quick_start/install/deploy.md)。
-
-如果只想单独部署 LDM，可以参考下面的步骤进行安装。
-
-## 安装本地磁盘管理器
-
-1. 克隆  repo 到本机
-
-    ```bash
-    $ git clone https://github.com/hwameistor/local-disk-manager.git
-    ```
-
-2. 进入 repo 对应的目录
-
-    ```bash
-    $ cd deploy
-    ```
-
-3. 安装 CRDs 和 运行 LocalDiskManager
-
-    1. 安装 LocalDisk 和 LocalDiskClaim 的 CRD
-
-        ```bash
-        $ kubectl apply -f deploy/crds/
-        ```
-
-    2. 安装权限认证的 CR 以及 LDM 的 Operator
-
-        ```bash
-        $ kubectl apply -f deploy/
-        ```
-
-4. 查看 LocalDisk 信息
+1. 查看 LocalDisk 信息
 
     ```bash
     $ kubectl get localdisk
-    10-6-118-11-sda    10-6-118-11                             Unclaimed
-    10-6-118-11-sdb    10-6-118-11                             Unclaimed
+    NAME               NODEMATCH        PHASE
+    10-6-118-11-sda    10-6-118-11      Available
+    10-6-118-11-sdb    10-6-118-11      Available
     ```
 
     该命令用于获取集群中磁盘资源信息，获取的信息总共有四列，含义分别如下：
@@ -76,7 +45,7 @@ sidebar_label: "本地磁盘管理器"
 
     通过`kuebctl get localdisk <name> -o yaml` 查看更多关于某块磁盘的信息。
 
-5. 申请可用磁盘
+2. 申请可用磁盘
 
     1. 创建 LocalDiskClaim
 

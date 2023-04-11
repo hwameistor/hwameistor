@@ -29,13 +29,9 @@ For the HA local LVM volume, it's the best solution for data persistency in the 
 - **Database**, such as MySQL, PostgreSQL, etc.
 - Other applications which require the data with HA features.
 
-## Usage with Helm Chart
+## Usage with Local Disk Manager
 
-Local Storage is a component of HwameiStor and must work with the [Local Disk Manager](./ldm.md) module. It's suggested to [install by helm-charts](../../quick_start/install/deploy.md).
-
-## Usage with Independent Installation
-
-Developer can start using local-storage with [helm chart](../../quick_start/install/deploy.md). This is for dev or test, and will deploy local-storage from the github repo. In this case, you should first install the Local Disk Manager.
+Local Storage is a component of HwameiStor and must work with the [Local Disk Manager](./ldm.md) module.
 
 ## Roadmap
 

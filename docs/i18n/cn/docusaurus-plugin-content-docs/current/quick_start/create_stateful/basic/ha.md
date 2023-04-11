@@ -5,7 +5,7 @@ sidebar_label:  "高可用卷"
 
 # 高可用卷
 
-HwameiStor 使用开源的 DRBD 数据同步技术创建**高可用卷**，又叫 **HA 卷**。
+当 HwameiStor 的 HA 模块被开启后，HwameiStor Operator 会自动创建一个 HA 的 StorageClass 用于创建 HA 数据卷。
 
 这里我们使用一个 MySQL 应用作为例子。
 
