@@ -46,7 +46,6 @@ var (
 	operatorMetricsPort int32 = 8686
 	csiCfg              csidriver.Config
 	logLevel            = flag.Int("v", 4 /*Log Info*/, "number for the log level verbosity")
-	nodeName            = flag.String("nodeid", "", "Node name")
 )
 var log = logf.Log.WithName("cmd")
 
@@ -165,8 +164,8 @@ func startNodeController(ctx context.Context, mgr manager.Manager) {
 }
 
 func startNodeManager(ctx context.Context, mgr manager.Manager) {
-	nodeManager, err := node.New(node.Options{
-		NodeName:  *nodeName,
+	nodeManager, err := node.NewManager(node.Options{
+		NodeName:  csiCfg.NodeID,
 		K8sClient: mgr.GetClient(),
 		Cache:     mgr.GetCache(),
 	})

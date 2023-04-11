@@ -1,7 +1,5 @@
 package pool
 
-import "github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
-
 // Pool contains disks, volume, pool info
 type Pool struct {
 	Name string
@@ -21,5 +19,5 @@ type Manager interface {
 	GetPool(poolName string) (*Pool, error)
 
 	// ExtendPool extend StoragePool with new disk
-	ExtendPool(poolName string, disk types.Disk) (bool, error)
+	ExtendPool(poolName string, devPath string) (bool, error)
 }

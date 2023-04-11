@@ -27,11 +27,13 @@ const maxRetries = 0
 type VolumeManagerProvider func() volume.Manager
 type DiskManagerProvider func() disk.Manager
 type LocalRegistryProvider func() registry.Manager
+type PoolManagerProvider func() pool.Manager
 
 var (
 	defaultVolumeManagerProvider VolumeManagerProvider = volume.New
 	defaultDiskManagerProvider   DiskManagerProvider   = disk.New
 	defaultLocalRegistryProvider LocalRegistryProvider = registry.New
+	defaultPoolManagerProvider   PoolManagerProvider   = pool.New
 	defaultPoolClasses                                 = []types.DevType{types.DevTypeHDD, types.DevTypeSSD, types.DevTypeNVMe}
 )
 
@@ -55,6 +57,9 @@ type Manager interface {
 
 	// LocalRegistry returns a registry.Manager
 	LocalRegistry() registry.Manager
+
+	// PoolManager returns a pool.Manager
+	PoolManager() pool.Manager
 }
 
 // Options are the arguments for creating a new Manager
@@ -92,10 +97,13 @@ type Options struct {
 
 	// LocalRegistryProvider provides the manager for node resources
 	LocalRegistryProvider
+
+	// PoolManagerProvider provides the manager for DiskPool
+	PoolManagerProvider
 }
 
-// New returns a new Manager for creating Controllers.
-func New(options Options) (Manager, error) {
+// NewManager returns a new Manager for creating Controllers.
+func NewManager(options Options) (Manager, error) {
 	// Set default values for options fields
 	options = setDefaultOptions(options)
 
@@ -120,6 +128,8 @@ func New(options Options) (Manager, error) {
 		diskManager:        options.DiskManagerProvider(),
 		volumeManager:      options.VolumeManagerProvider(),
 		registryManager:    options.LocalRegistryProvider(),
+		poolManager:        options.PoolManagerProvider(),
+		pools:              make(map[types.DevType]*apisv1alpha1.LocalPool),
 	}, nil
 }
 
@@ -155,6 +165,10 @@ type nodeManager struct {
 	registryManager registry.Manager
 
 	pools map[types.DevType]*apisv1alpha1.LocalPool
+}
+
+func (m *nodeManager) PoolManager() pool.Manager {
+	return m.poolManager
 }
 
 func (m *nodeManager) GetClient() client.Client {
@@ -220,9 +234,9 @@ func (m *nodeManager) setupInformers() {
 		m.logger.WithError(err).Fatalf("Failed to get informer for LocalDiskClaim")
 	}
 	diskClaimInformer.AddEventHandler(cache2.ResourceEventHandlerFuncs{
-		AddFunc:    m.handleLocalDiskAdd,
-		UpdateFunc: m.handleLocalDiskUpdate,
-		DeleteFunc: m.handleLocalDiskDelete,
+		AddFunc:    m.handleLocalDiskClaimAdd,
+		UpdateFunc: m.handleLocalDiskClaimUpdate,
+		DeleteFunc: m.handleLocalDiskClaimDelete,
 	})
 	// LocalDiskNode Informer
 	// todo
@@ -303,14 +317,20 @@ func setDefaultOptions(options Options) Options {
 		options.VolumeManagerProvider = defaultVolumeManagerProvider
 	}
 
-	options.LocalRegistryProvider = defaultLocalRegistryProvider
+	if options.LocalRegistryProvider == nil {
+		options.LocalRegistryProvider = defaultLocalRegistryProvider
+	}
+
+	if options.PoolManagerProvider == nil {
+		options.PoolManagerProvider = defaultPoolManagerProvider
+	}
 
 	return options
 }
 
 func (m *nodeManager) handleLocalDiskAdd(obj interface{}) {
 	localDisk := obj.(*apisv1alpha1.LocalDisk)
-	if localDisk.Spec.NodeName != m.nodeName {
+	if localDisk.Spec.NodeName != m.nodeName || localDisk.Spec.Owner == apisv1alpha1.LocalDiskManager {
 		return
 	}
 	m.diskTaskQueue.Add(localDisk.GetName())
@@ -318,7 +338,7 @@ func (m *nodeManager) handleLocalDiskAdd(obj interface{}) {
 
 func (m *nodeManager) handleLocalDiskUpdate(_, obj interface{}) {
 	localDisk := obj.(*apisv1alpha1.LocalDisk)
-	if localDisk.Spec.NodeName != m.nodeName {
+	if localDisk.Spec.NodeName != m.nodeName || localDisk.Spec.Owner == apisv1alpha1.LocalDiskManager {
 		return
 	}
 	m.diskTaskQueue.Add(localDisk.GetName())
@@ -326,7 +346,7 @@ func (m *nodeManager) handleLocalDiskUpdate(_, obj interface{}) {
 
 func (m *nodeManager) handleLocalDiskDelete(obj interface{}) {
 	localDisk := obj.(*apisv1alpha1.LocalDisk)
-	if localDisk.Spec.NodeName != m.nodeName {
+	if localDisk.Spec.NodeName != m.nodeName || localDisk.Spec.Owner == apisv1alpha1.LocalDiskManager {
 		return
 	}
 	m.diskTaskQueue.Add(localDisk.GetName())
@@ -334,7 +354,7 @@ func (m *nodeManager) handleLocalDiskDelete(obj interface{}) {
 
 func (m *nodeManager) handleLocalDiskClaimAdd(obj interface{}) {
 	localDiskClaim := obj.(*apisv1alpha1.LocalDiskClaim)
-	if localDiskClaim.Spec.NodeName != m.nodeName {
+	if localDiskClaim.Spec.NodeName != m.nodeName || localDiskClaim.Spec.Owner != apisv1alpha1.LocalDiskManager {
 		return
 	}
 	m.diskClaimTaskQueue.Add(localDiskClaim.GetName())
@@ -342,7 +362,7 @@ func (m *nodeManager) handleLocalDiskClaimAdd(obj interface{}) {
 
 func (m *nodeManager) handleLocalDiskClaimUpdate(_, obj interface{}) {
 	localDiskClaim := obj.(*apisv1alpha1.LocalDiskClaim)
-	if localDiskClaim.Spec.NodeName != m.nodeName {
+	if localDiskClaim.Spec.NodeName != m.nodeName || localDiskClaim.Spec.Owner == apisv1alpha1.LocalDiskManager {
 		return
 	}
 	m.diskClaimTaskQueue.Add(localDiskClaim.GetName())
@@ -350,7 +370,7 @@ func (m *nodeManager) handleLocalDiskClaimUpdate(_, obj interface{}) {
 
 func (m *nodeManager) handleLocalDiskClaimDelete(obj interface{}) {
 	localDiskClaim := obj.(*apisv1alpha1.LocalDiskClaim)
-	if localDiskClaim.Spec.NodeName != m.nodeName {
+	if localDiskClaim.Spec.NodeName != m.nodeName || localDiskClaim.Spec.Owner == apisv1alpha1.LocalDiskManager {
 		return
 	}
 	m.diskClaimTaskQueue.Add(localDiskClaim.GetName())

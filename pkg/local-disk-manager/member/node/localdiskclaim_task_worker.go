@@ -64,7 +64,8 @@ func (m *nodeManager) processLocalDiskClaim(diskClaim string) error {
 
 // processLocalDiskClaimBound use all disks backing the claim to set up DiskPool
 func (m *nodeManager) processLocalDiskClaimBound(diskClaim *v1alpha1.LocalDiskClaim) error {
-	logCtx := m.logger.WithField("diskClaim", diskClaim)
+	logCtx := m.logger.WithFields(log.Fields{"diskClaim": diskClaim.Name, "status": diskClaim.Status.Status})
+	logCtx.Debugf("Start processing Bound LocalDiskClaim")
 
 	// fetch allocated disks
 	allocatedDisks, err := fetchAllocatedLocalDisks(m.k8sClient, diskClaim)
@@ -85,24 +86,21 @@ func (m *nodeManager) processLocalDiskClaimBound(diskClaim *v1alpha1.LocalDiskCl
 		tobeExtendedDisks = append(tobeExtendedDisks, localDisk.DeepCopy())
 	}
 
+	if len(tobeExtendedDisks) == 0 {
+		logCtx.Infof("No LocalDisk found from LocalDiskClaim %s", diskClaim.Name)
+		return confirmLocalDisksConsumed(m.k8sClient, diskClaim)
+	}
 	logCtx.Infof("Found %d LocalDisk(s) need to process from LocalDiskClaim %s", len(tobeExtendedDisks), diskClaim.Name)
 
+	// disks backing the diskClaim must be the same class
+	poolName := types.GetLocalDiskPoolName(diskClaim.Spec.Description.DiskType)
 	for _, disk := range tobeExtendedDisks {
-		extendDisk := types.Disk{
-			DevPath:  disk.Spec.DevicePath,
-			Capacity: disk.Spec.Capacity,
-			DiskType: disk.Spec.DiskAttributes.DevType,
-		}
-		extendPool := types.GetLocalDiskPoolName(extendDisk.DiskType)
-		ok, e := m.poolManager.ExtendPool(extendPool, extendDisk)
-
+		ok, err := m.poolManager.ExtendPool(poolName, disk.Spec.DevicePath)
 		// don't block pool expand process for one disk error
-		if e != nil {
-			err = e
-			continue
-		}
 		if ok {
-			logCtx.WithFields(log.Fields{"poolName": extendPool, "extendDisk": extendDisk.DevPath}).Infof("Succeed to expand StoragePool")
+			logCtx.WithFields(log.Fields{"poolName": poolName, "extendDisk": disk.Spec.DevicePath}).Infof("Succeed to expand DiskPool")
+		} else if err != nil {
+			logCtx.WithError(err).WithFields(log.Fields{"poolName": poolName, "extendDisk": disk.Spec.DevicePath}).Errorf("Failed to expand DiskPool")
 		}
 	}
 
@@ -110,9 +108,10 @@ func (m *nodeManager) processLocalDiskClaimBound(diskClaim *v1alpha1.LocalDiskCl
 	m.rebuildLocalPools()
 
 	// sync pool registry to ApiServer
-	// todo
+	// TODO
 
-	return err
+	// finally confirm disks consumed
+	return confirmLocalDisksConsumed(m.k8sClient, diskClaim)
 }
 
 func fetchAllocatedLocalDisks(cli client.Client, diskClaim *v1alpha1.LocalDiskClaim) ([]*v1alpha1.LocalDisk, error) {
@@ -141,4 +140,9 @@ func fetchLocalDisk(cli client.Client, localDisk string) (*v1alpha1.LocalDisk, e
 		}
 	}
 	return localDiskObject, err
+}
+
+func confirmLocalDisksConsumed(cli client.Client, diskClaim *v1alpha1.LocalDiskClaim) error {
+	diskClaim.Status.Status = v1alpha1.LocalDiskClaimStatusConsumed
+	return cli.Status().Update(context.TODO(), diskClaim)
 }

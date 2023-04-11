@@ -1,9 +1,11 @@
 package pool
 
 import (
+	"fmt"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
 	"k8s.io/kubernetes/pkg/volume/util/hostutil"
 	"os"
+	"strings"
 )
 
 // diskPool implement interface pool.Manager
@@ -44,14 +46,34 @@ func (p *diskPool) GetPool(poolName string) (*Pool, error) {
 	panic("implement me")
 }
 
-func (p *diskPool) ExtendPool(poolName string, disk types.Disk) (bool, error) {
-	//TODO implement me
-	panic("implement me")
+func (p *diskPool) ExtendPool(poolName string, devPath string) (bool, error) {
+	err := p.CreatePool(poolName)
+	if err != nil {
+		return false, err
+	}
+
+	devName := getDeviceName(devPath)
+	if devName == "" {
+		return false, fmt.Errorf("devName can't be empty(devPath: %s)", devPath)
+	}
+
+	poolDevicePath := types.ComposePoolDevicePath(poolName, devName)
+	err = os.Symlink(devPath, poolDevicePath)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
-func NewDiskPool(poolName string) Manager {
+func New() Manager {
 	return &diskPool{
-		name: poolName,
-		hu:   hostutil.NewHostUtil(),
+		hu: hostutil.NewHostUtil(),
 	}
+}
+
+// /dev/sdc -> sda
+func getDeviceName(devPath string) string {
+	ss := strings.Split(devPath, "/")
+	return ss[len(ss)-1]
 }
