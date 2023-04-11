@@ -90,7 +90,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Not Ready"
+              "options": "Maintain"
             },
             "properties": [
               {
@@ -116,6 +116,21 @@
                 "id": "color",
                 "value": {
                   "fixedColor": "text",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Offline"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-red",
                   "mode": "fixed"
                 }
               }
@@ -158,10 +173,10 @@
           "editorMode": "code",
           "exemplar": false,
           "expr": "sum(hwameistor_localstoragenode_status)",
-          "format": "time_series",
+          "format": "table",
           "hide": false,
           "instant": true,
-          "legendFormat": "Total",
+          "legendFormat": "Auto",
           "range": false,
           "refId": "A"
         },
@@ -173,9 +188,10 @@
           "editorMode": "code",
           "exemplar": false,
           "expr": "sum(hwameistor_localstoragenode_status{status=\"Ready\"})",
+          "format": "table",
           "hide": false,
           "instant": true,
-          "legendFormat": "Ready",
+          "legendFormat": "Auto",
           "range": false,
           "refId": "B"
         },
@@ -186,16 +202,50 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(hwameistor_localstoragenode_status) - sum(hwameistor_localstoragenode_status{status=\"Ready\"})",
+          "expr": "sum(hwameistor_localstoragenode_status{status=\"Maintain\"})",
+          "format": "table",
           "hide": false,
           "instant": true,
-          "legendFormat": "Not Ready",
+          "legendFormat": "Auto",
           "range": false,
           "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Gjcc2df4z"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(hwameistor_localstoragenode_status{status=\"Offline\"})",
+          "format": "table",
+          "hide": false,
+          "instant": true,
+          "legendFormat": "Auto",
+          "range": false,
+          "refId": "D"
         }
       ],
-      "title": "Nodes Summary",
-      "transformations": [],
+      "title": "Summary",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "Value #A": "Total",
+              "Value #B": "Ready",
+              "Value #C": "Maintain",
+              "Value #D": "Offline"
+            }
+          }
+        }
+      ],
       "type": "stat"
     },
     {
@@ -308,7 +358,7 @@
           "refId": "B"
         }
       ],
-      "title": "Nodes Storage Usage",
+      "title": "Storage Usage",
       "transformations": [
         {
           "id": "groupBy",
@@ -655,7 +705,7 @@
           "refId": "G"
         }
       ],
-      "title": "Node Storage Usage Details",
+      "title": "Storage Usage Details",
       "transformations": [
         {
           "id": "groupBy",
@@ -943,7 +993,7 @@
           "refId": "C"
         }
       ],
-      "title": "Volumes Status Summary",
+      "title": "Status Summary",
       "transformations": [],
       "type": "stat"
     },
@@ -1057,7 +1107,7 @@
           "refId": "D"
         }
       ],
-      "title": "Volumes Type Summary",
+      "title": "Type Summary",
       "transformations": [
         {
           "id": "merge",
@@ -1308,7 +1358,7 @@
           "refId": "C"
         }
       ],
-      "title": "Volumes Details",
+      "title": "Details",
       "transformations": [
         {
           "id": "groupBy",
@@ -1601,7 +1651,7 @@
           "refId": "C"
         }
       ],
-      "title": "Disks Status Overview",
+      "title": "Status Overview",
       "type": "stat"
     },
     {
@@ -1680,7 +1730,7 @@
           "sort": "none"
         }
       },
-      "title": "Disks Health Overview",
+      "title": "Health Overview",
       "type": "timeseries"
     },
     {
@@ -1750,7 +1800,7 @@
           "refId": "A"
         }
       ],
-      "title": "Disks Details",
+      "title": "Details",
       "transformations": [
         {
           "id": "groupBy",
@@ -1864,6 +1914,6 @@
   "timezone": "",
   "title": "HwameiStor Metrics",
   "uid": "L9482OfVz",
-  "version": 34,
+  "version": 47,
   "weekStart": ""
 }

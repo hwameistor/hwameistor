@@ -5,7 +5,7 @@ sidebar_label:  "HA Volumes"
 
 # HA Volumes
 
-HwameiStor creates **highly-available (HA)** volumes by OpenSource DRBD replication.
+When the HA module is enabled, HwameiStor Operator will generate a StorageClass of HA automatically.
 
 Here takes MySQL as an example for demonstration.
 

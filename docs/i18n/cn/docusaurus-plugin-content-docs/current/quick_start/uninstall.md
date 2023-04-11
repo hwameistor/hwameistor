@@ -3,89 +3,59 @@ sidebar_position: 4
 sidebar_label: "卸载"
 ---
 
-# 卸载
+# 卸载 (仅用于测试环境)
 
-本页讲述了卸载 HwameiStor 的 2 个方案。
+这部分介绍了两种卸载 HwameiStor 系统的方式。
 
-## 若要保留数据卷
+## 卸载并保留已有数据卷
 
-如果要在卸载 HwameiStor 时保留数据卷，请执行以下操作：
+如果想要卸载 HwameiStor 的系统组件，但是保留已经创建的数据卷并服务于数据应用，采用下列方式：
 
-1. 清理 helm 实例
+```console
+$ kubectl get cluster.hwameistor.io
+NAME             AGE
+cluster-sample   21m
 
-   1. 删除 HwameiStor helm 实例
+$ kubectl delete cluster cluster-sample
+```
 
-      ```bash
-      helm delete -n hwameistor hwameistor
-      ```
+最终，所有的 HwameiStor 系统组件（Pods）将被删除。用下列命令检查，结果为空
 
-   1. 删除 DRBD helm 实例
+```console
+$ kubectl -n hwameistor get pod
+```
 
-      ```bash
-      helm delete -n hwameistor drbd-adapter
-      ```
-
-1. 清理 HwameiStor 组件
-
-   1. 删除 hwameistor 命名空间
-
-      ```bash
-      kubectl delete ns hwameistor
-      ```
-
-   1. 删除 LocalVolumeGroup 实例
-
-      ```bash
-      kubectl delete localvolumegroups.hwameistor.io --all
-      ```
-
-   1. 删除 CRD、Hook 和 RBAC
-
-      ```bash
-      kubectl get crd,mutatingwebhookconfiguration,clusterrolebinding,clusterrole -o name \
-        | grep hwameistor \
-        | xargs -t kubectl delete
-      ```
-
-## 若要删除数据卷
+## 完全卸载
 
 :::danger
-执行卸载操作之前，请务必确认您确实要删除数据。
+在卸载之前，请确认所有数据都可以被删除
 :::
 
-如果你确认要在卸载 HwameiStor 时删除数据卷，请执行以下步骤：
+如果想要卸载 HwameiStor 所有组件，并删除所有数据卷及数据，采用下列方式：
 
-1. 清理有状态应用
+1. 清理有状态数据应用
 
-   1. 删除有状态应用
+   1. 删除应用
 
-   1. 删除 PVC
+   2. 删除数据卷 PVCs
 
-      相关的 PV、LV、LVR、LVG 也会被删除。
+      相关的 PVs，LVs，LVRs，LVGs 都将被删除.
 
-1. 清理 helm 实例
+2. 清理 HwameiStor 系统组件
 
-   1. 删除 HwameiStor helm 实例
+   1. 删除 HwameiStor 组件
 
-      ```bash
-      helm delete -n hwameistor hwameistor
+      ```console
+      $ kubectl delete cluster cluster-sample
       ```
+      
+   2. 删除 HwameiStor 系统空间
 
-   1. 删除 DRBD helm 实例
-
-      ```bash
-      helm delete -n hwameistor drbd-adapter
-      ```
-
-1. 清理 HwameiStor 组件
-
-   1. 删除 hwameistor 命名空间
-
-      ```bash
+      ```console
       kubectl delete ns hwameistor
       ```
 
-   1. 删除 CRD、Hook 和 RBAC
+   3. 删除 CRD, Hook, 以及 RBAC
 
       ```bash
       kubectl get crd,mutatingwebhookconfiguration,clusterrolebinding,clusterrole -o name \
@@ -93,10 +63,12 @@ sidebar_label: "卸载"
         | xargs -t kubectl delete
       ```
 
-   1. 删除 StorageClass
+   4. 删除 StorageClass
 
       ```bash
       kubectl get sc -o name \
         | grep hwameistor-storage-lvm- \
         | xargs -t kubectl delete
       ```
+
+最后，你仍然需要清理每个节点上的 LVM 配置，并采用额外的系统工具（例如：wipefs）清除磁盘上的所有数据

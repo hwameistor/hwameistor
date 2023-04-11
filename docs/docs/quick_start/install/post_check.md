@@ -1,44 +1,48 @@
 ---
-sidebar_position: 4
+sidebar_position: 3
 sidebar_label: "Post-Check after Deployment"
 ---
 
 # Post-Check after Deployment
 
-The example below is from a 4-node kubernetes cluster:
+The example below is from a 3-node kubernetes cluster:
 
 ```console
-$ kubectl get no
+$ kubectl get node
 NAME           STATUS   ROLES   AGE   VERSION
-k8s-master-1   Ready    master  82d   v1.24.3-2+63243a96d1c393
-k8s-worker-1   Ready    worker  36d   v1.24.3-2+63243a96d1c393
-k8s-worker-2   Ready    worker  59d   v1.24.3-2+63243a96d1c393
-k8s-worker-3   Ready    worker  36d   v1.24.3-2+63243a96d1c393
+10-6-234-40   Ready    control-plane,master   140d   v1.21.11
+10-6-234-41   Ready    <none>                 140d   v1.21.11
+10-6-234-42   Ready    <none>                 140d   v1.21.11
 ```
 
-## Check pods
+## Check Components
 
 The following pods should be up and running:
 
 ```console
 $ kubectl -n hwameistor get pod
 NAME                                                       READY   STATUS                  RESTARTS   AGE
-hwameistor-local-disk-csi-controller-665bb7f47d-6227f      2/2     Running                 0          30s
-hwameistor-local-disk-manager-5ph2d                        2/2     Running                 0          30s
-hwameistor-local-disk-manager-jhj59                        2/2     Running                 0          30s
-hwameistor-local-disk-manager-k9cvj                        2/2     Running                 0          30s
-hwameistor-local-disk-manager-kxwww                        2/2     Running                 0          30s
-hwameistor-local-storage-csi-controller-667d949fbb-k488w   3/3     Running                 0          30s
-hwameistor-local-storage-csqqv                             2/2     Running                 0          30s
-hwameistor-local-storage-gcrzm                             2/2     Running                 0          30s
-hwameistor-local-storage-v8g7t                             2/2     Running                 0          30s
-hwameistor-local-storage-zkwmn                             2/2     Running                 0          30s
-hwameistor-scheduler-58dfcf79f5-lswkt                      1/1     Running                 0          30s
-hwameistor-webhook-986479678-278cr                         1/1     Running                 0          30s
+drbd-adapter-10-6-234-40-rhel7-shfgt                      0/2     Completed   0          39s
+drbd-adapter-10-6-234-41-rhel7-sw75z                      0/2     Completed   0          39s
+drbd-adapter-10-6-234-42-rhel7-4vnl9                      0/2     Completed   0          39s
+hwameistor-admission-controller-6995559b48-rxs4s          1/1     Running     0          40s
+hwameistor-apiserver-677ddbdb8-9969c                      1/1     Running     0          40s
+hwameistor-exporter-66784d5745-xwsxx                      1/1     Running     0          39s
+hwameistor-local-disk-csi-controller-5d74d6c8cf-8vx5v     2/2     Running     0          40s
+hwameistor-local-disk-manager-9vc75                       2/2     Running     0          40s
+hwameistor-local-disk-manager-r42sg                       2/2     Running     0          40s
+hwameistor-local-disk-manager-v75qb                       2/2     Running     0          40s
+hwameistor-local-storage-csi-controller-758c94489-7g5tl   4/4     Running     0          40s
+hwameistor-local-storage-pr265                            2/2     Running     0          40s
+hwameistor-local-storage-qvrgb                            2/2     Running     0          40s
+hwameistor-local-storage-zvggz                            2/2     Running     0          40s
+hwameistor-scheduler-7585d88d9-8tbms                      1/1     Running     0          40s
+hwameistor-ui-9885d9dc5-l4tlx                             1/1     Running     0          40s
+hwameistor-volume-evictor-56df755847-m4h8b                1/1     Running     0          40s
 ```
 
 :::info
-`local-disk-manager` and `local-storage` are `DaemonSets`. They should have one pod on each Kubernetes node.
+The components of `local-disk-manager` and `local-storage` are `DaemonSets`, and should have one pod on each Kubernetes node.
 :::
 
 ## Check APIs
@@ -69,53 +73,113 @@ For the details about CRDs, please also refer to [CRDs](../../architecture/apis.
 ## Check `LocalDiskNode` and `localDisks`
 
 HwameiStor automatically scans each node and registers each disk as CRD `LocalDisk(ld)`.
-The unused disks are displayed with `PHASE: Unclaimed`.
+The unused disks are displayed with `PHASE: Available`.
 
 ```console
 $ kubectl get localdisknodes
-NAME           TOTALDISK   FREEDISK
-k8s-master-1   5           3
-k8s-worker-1   5           2
-k8s-worker-2   5           2
-k8s-worker-3   5           2
+NAME          TOTALDISK   FREEDISK
+10-6-234-40   1
+10-6-234-41   8
+10-6-234-42   8
 
 $ kubectl get localdisks
-NAME               NODEMATCH      CLAIM   PHASE
-k8s-master-1-sda   k8s-master-1           Inuse
-k8s-worker-1-sda   k8s-worker-1           Inuse
-k8s-worker-1-sdb   k8s-worker-1           Unclaimed
-k8s-worker-1-sdc   k8s-worker-1           Unclaimed
-k8s-worker-2-sda   k8s-worker-2           Inuse
-k8s-worker-2-sdb   k8s-worker-2           Unclaimed
-k8s-worker-2-sdc   k8s-worker-2           Unclaimed
-k8s-worker-3-sda   k8s-worker-3           Inuse
-k8s-worker-3-sdb   k8s-worker-3           Unclaimed
-k8s-worker-3-sdc   k8s-worker-3           Unclaimed
+NAME              NODEMATCH     PHASE
+10-6-234-40-sda   10-6-234-40   Bound
+10-6-234-41-sda   10-6-234-41   Bound
+10-6-234-41-sdb   10-6-234-41   Bound
+10-6-234-41-sdc   10-6-234-41   Bound
+10-6-234-41-sdd   10-6-234-41   Bound
+10-6-234-41-sde   10-6-234-41   Bound
+10-6-234-41-sdf   10-6-234-41   Bound
+10-6-234-41-sdg   10-6-234-41   Bound
+10-6-234-41-sdh   10-6-234-41   Bound
+10-6-234-42-sda   10-6-234-42   Bound
+10-6-234-42-sdb   10-6-234-42   Bound
+10-6-234-42-sdc   10-6-234-42   Bound
+10-6-234-42-sdd   10-6-234-42   Bound
+10-6-234-42-sde   10-6-234-42   Bound
+10-6-234-42-sdf   10-6-234-42   Bound
+10-6-234-42-sdg   10-6-234-42   Bound
+10-6-234-42-sdh   10-6-234-42   Bound
 ```
+## Check LocalStorageNodes and Storage Pools
 
-## [Optional] Check DRBD installation
-
-The `drbd-adapter` pod should be running on each worker node.
+HwameiStor automatically generates the LocalStorageNode (i.e. LSN) resource for each node.
+Each LSN will record the resources and status of the node, including Storage Pool, Volumes, etc..
 
 ```console
-$ kubectl -n hwameistor get po -l k8s-app=drbd-adapter -o wide
-NAME                 READY   STATUS    RESTARTS   AGE   IP            NODE        
-drbd-adapter-4rndg   1/1     Running   0          9h    10.6.254.22   k8s-worker-2   
-drbd-adapter-bpprj   1/1     Running   0          9h    10.6.254.21   k8s-worker-1
-drbd-adapter-n52w4   1/1     Running   0          9h    10.6.254.24   k8s-worker-4
-drbd-adapter-rs9zk   1/1     Running   0          9h    10.6.254.25   k8s-worker-5
-drbd-adapter-zc882   1/1     Running   0          9h    10.6.254.23   k8s-worker-3
+$ kubectl get lsn
+NAME          IP            STATUS   AGE
+10-6-234-40   10.6.234.40   Ready    3m52s
+10-6-234-41   10.6.234.41   Ready    3m54s
+10-6-234-42   10.6.234.42   Ready    3m55s
+
+$ kubectl get lsn 10-6-234-41 -o yaml
+[root@10-6-234-40 ~]# k get lsn 10-6-234-41 -o yaml
+apiVersion: hwameistor.io/v1alpha1
+kind: LocalStorageNode
+metadata:
+  creationTimestamp: "2023-04-11T06:46:52Z"
+  generation: 1
+  name: 10-6-234-41
+  resourceVersion: "13575433"
+  uid: 4986f7b8-6fe1-43f1-bdca-e68b6fa53f92
+spec:
+  hostname: 10-6-234-41
+  storageIP: 10.6.234.41
+  topogoly:
+    region: default
+    zone: default
+status:
+  pools:
+    LocalStorage_PoolHDD:
+      class: HDD
+      disks:
+      - capacityBytes: 10733223936
+        devPath: /dev/sdb
+        state: InUse
+        type: HDD
+      - capacityBytes: 1069547520
+        devPath: /dev/sdc
+        state: InUse
+        type: HDD
+      - capacityBytes: 1069547520
+        devPath: /dev/sdd
+        state: InUse
+        type: HDD
+      - capacityBytes: 1069547520
+        devPath: /dev/sde
+        state: InUse
+        type: HDD
+      - capacityBytes: 1069547520
+        devPath: /dev/sdf
+        state: InUse
+        type: HDD
+      - capacityBytes: 1069547520
+        devPath: /dev/sdg
+        state: InUse
+        type: HDD
+      freeCapacityBytes: 16080961536
+      freeVolumeCount: 1000
+      name: LocalStorage_PoolHDD
+      totalCapacityBytes: 16080961536
+      totalVolumeCount: 1000
+      type: REGULAR
+      usedCapacityBytes: 0
+      usedVolumeCount: 0
+      volumeCapacityBytesLimit: 16080961536
+  state: Ready
 ```
 
-On each worker node, the DRBD kernel module should be loaded, for example on node `k8s-worker-1`：
+
+## Check StorageClass
+
+The Operator will automatically create the StorageClasses as following according to the HwameiStor system's configuration (e.g. HA enabled, disk type, etc ..).
 
 ```console
-[root@k8s-worker-1 ~]$ lsmod | grep ^drbd
-drbd_transport_tcp     22227  0
-drbd                  606840  1 drbd_transport_tcp
-
-[root@k8s-worker-1 ~]$ cat /proc/drbd
-version: 9.0.32-1 (api:2/proto:86-121)
-GIT-hash: 7d2933d5a3764fcc5e0bf54b71fd9cfb0363be1a build by @4904565a901d, 2022-09-07 08:53:17
-Transports (api:17): tcp (9.0.32-1)
+$ kubectl get sc
+NAME                                     PROVISIONER         RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+hwameistor-storage-lvm-hdd               lvm.hwameistor.io   Delete          WaitForFirstConsumer   false                  23h
+hwameistor-storage-lvm-hdd-convertible   lvm.hwameistor.io   Delete          WaitForFirstConsumer   false                  23h
+hwameistor-storage-lvm-hdd-ha            lvm.hwameistor.io   Delete          WaitForFirstConsumer   false                  23h
 ```

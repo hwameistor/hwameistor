@@ -1,35 +1,38 @@
 ---
-sidebar_position: 3
-sidebar_label: "通过 hwameistor-operator 安装"
+sidebar_position: 2
+sidebar_label: "HwameiStor-Operator 安装"
 ---
 
-# 通过 hwameistor-operator 安装
+# 通过 HwameiStor-Operator 安装
 
-hwameistor-operator 用于自动化管理和安装各个 HwameiStor 组件。
+Hwameistor-Operator 负责自动化安装并管理 HwameiStor 系统。
 
 - HwameiStor 组件的全生命周期管理 (LCM)：
-  - Apiserver
-  - LocalStorage
   - LocalDiskManager
+  - LocalStorage
   - Scheduler
   - AdmissionController
   - VolumeEvictor
   - Exporter
-- 自动化本地磁盘声明确保 HwameiStor 准备就绪
-- 管理 HwameiStor 卷验证所用的准入控制配置
+  - Apiserver
+  - Graph UI
+
+- 根据不同目的和用途配置节点磁盘
+- 自动发现节点磁盘的类型，并以此自动创建 HwameiStor 存储池
+- 根据 HwameiStor 系统的配置和功能自动创建相应的 StorageClass
 
 ## 安装步骤
 
 1. 安装 hwameistor-operator
 
-   ```bash
+   ```console
    helm repo add hwameistor-operator https://hwameistor.io/hwameistor-operator
-   ```
-
-2. 使用 hwameistor-operator 安装 HwameiStor
-
-   ```bash
    helm repo update hwameistor-operator
    helm install hwameistor-operator hwameistor-operator/hwameistor-operator
+   ```
+
+2. 创建 HwameiStor 存储系统
+
+   ```console
    kubectl apply -f https://raw.githubusercontent.com/hwameistor/hwameistor-operator/main/config/samples/hwameistor.io_hmcluster.yaml
    ```
