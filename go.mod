@@ -45,6 +45,7 @@ require (
 	github.com/swaggo/gin-swagger v1.5.3
 	github.com/swaggo/swag v1.8.7
 	github.com/tidwall/gjson v1.14.4
+	golang.org/x/sync v0.1.0
 	k8s.io/cli-runtime v0.25.4
 )
 
@@ -78,7 +79,6 @@ require (
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200910180754-dd1b699fc489 // indirect
-	golang.org/x/sync v0.1.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	k8s.io/cloud-provider v0.21.0 // indirect
 	k8s.io/component-base v0.21.2 // indirect

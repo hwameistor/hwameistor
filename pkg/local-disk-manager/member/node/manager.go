@@ -4,6 +4,7 @@ import (
 	"context"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/disk"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/pool"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/registry"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/volume"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
@@ -118,7 +119,7 @@ func New(options Options) (Manager, error) {
 		lock:               sync.RWMutex{},
 		diskManager:        options.DiskManagerProvider(),
 		volumeManager:      options.VolumeManagerProvider(),
-		registry:           options.LocalRegistryProvider(),
+		registryManager:    options.LocalRegistryProvider(),
 	}, nil
 }
 
@@ -149,7 +150,9 @@ type nodeManager struct {
 
 	volumeManager volume.Manager
 
-	registry registry.Manager
+	poolManager pool.Manager
+
+	registryManager registry.Manager
 
 	pools map[types.DevType]*apisv1alpha1.LocalPool
 }
@@ -171,7 +174,7 @@ func (m *nodeManager) VolumeManager() volume.Manager {
 }
 
 func (m *nodeManager) LocalRegistry() registry.Manager {
-	return m.registry
+	return m.registryManager
 }
 
 // Start all registered task workers
@@ -212,16 +215,24 @@ func (m *nodeManager) setupInformers() {
 	})
 
 	// LocalDiskClaim Informer
-	// todo
+	diskClaimInformer, err := m.cache.GetInformer(context.TODO(), &apisv1alpha1.LocalDiskClaim{})
+	if err != nil {
+		m.logger.WithError(err).Fatalf("Failed to get informer for LocalDiskClaim")
+	}
+	diskClaimInformer.AddEventHandler(cache2.ResourceEventHandlerFuncs{
+		AddFunc:    m.handleLocalDiskAdd,
+		UpdateFunc: m.handleLocalDiskUpdate,
+		DeleteFunc: m.handleLocalDiskDelete,
+	})
 	// LocalDiskNode Informer
 	// todo
 }
 
-// discoveryNodeResources collect resources on this node and storage to local registry
+// discoveryNodeResources collect resources on this node and storage to local registryManager
 func (m *nodeManager) discoveryNodeResources() {
 	// 1. collect disks managed to LocalDiskManager
 	// 2. collect volumes managed by LocalDiskManager
-	m.registry.DiscoveryResources()
+	m.registryManager.DiscoveryResources()
 }
 
 // rebuildLocalPools according discovery disks and volumes
@@ -240,7 +251,7 @@ func (m *nodeManager) rebuildLocalPools() {
 
 		// rebuild discovery disks
 		var discoveryDisks []apisv1alpha1.LocalDevice
-		for _, classDisk := range m.registry.ListDisksByType(class) {
+		for _, classDisk := range m.registryManager.ListDisksByType(class) {
 			discoveryDisks = append(discoveryDisks, apisv1alpha1.LocalDevice{
 				DevPath:       classDisk.DevPath,
 				Class:         classDisk.DiskType,
@@ -251,7 +262,7 @@ func (m *nodeManager) rebuildLocalPools() {
 
 		// rebuild discovery volumes
 		var discoveryVolumes []string
-		for _, classVolume := range m.registry.ListVolumesByType(class) {
+		for _, classVolume := range m.registryManager.ListVolumesByType(class) {
 			discoveryVolumes = append(discoveryVolumes, classVolume.Name)
 		}
 		m.pools[class].Volumes = discoveryVolumes
@@ -281,7 +292,7 @@ func setDefaultOptions(options Options) Options {
 	}
 
 	if options.DiskNodeTaskQueue == nil {
-		options.DiskNodeTaskQueue = common.NewTaskQueue("LocalDiskNode", maxRetries)
+		options.DiskNodeTaskQueue = common.NewTaskQueue("LocalDiskNodeTask", maxRetries)
 	}
 
 	if options.DiskManagerProvider == nil {
@@ -319,4 +330,28 @@ func (m *nodeManager) handleLocalDiskDelete(obj interface{}) {
 		return
 	}
 	m.diskTaskQueue.Add(localDisk.GetName())
+}
+
+func (m *nodeManager) handleLocalDiskClaimAdd(obj interface{}) {
+	localDiskClaim := obj.(*apisv1alpha1.LocalDiskClaim)
+	if localDiskClaim.Spec.NodeName != m.nodeName {
+		return
+	}
+	m.diskClaimTaskQueue.Add(localDiskClaim.GetName())
+}
+
+func (m *nodeManager) handleLocalDiskClaimUpdate(_, obj interface{}) {
+	localDiskClaim := obj.(*apisv1alpha1.LocalDiskClaim)
+	if localDiskClaim.Spec.NodeName != m.nodeName {
+		return
+	}
+	m.diskClaimTaskQueue.Add(localDiskClaim.GetName())
+}
+
+func (m *nodeManager) handleLocalDiskClaimDelete(obj interface{}) {
+	localDiskClaim := obj.(*apisv1alpha1.LocalDiskClaim)
+	if localDiskClaim.Spec.NodeName != m.nodeName {
+		return
+	}
+	m.diskClaimTaskQueue.Add(localDiskClaim.GetName())
 }
