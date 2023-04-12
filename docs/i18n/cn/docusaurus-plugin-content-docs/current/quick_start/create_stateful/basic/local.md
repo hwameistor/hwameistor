@@ -15,7 +15,6 @@ sidebar_label:  "本地卷"
 
 ## 查看 `StorageClass`
 
-Make sure the StorageClasses have been created successfully by HwameiStor Operator. And then select one of them to provision the data volume for the application.
 首先确认 HwameiStor Operator 创建了 StorageClass。然后从中选一个合适的用于创建单副本数据卷。
 
 ```console
