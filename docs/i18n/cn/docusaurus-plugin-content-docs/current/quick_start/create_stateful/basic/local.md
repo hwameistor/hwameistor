@@ -70,15 +70,6 @@ spec:
           storage: 1Gi
 ```
 
-和 `schedulerName: hwameistor-scheduler`:
-
-```yaml
-spec:
-  template:
-    spec:
-      schedulerName: hwameistor-scheduler
-```
-
 ## 查看 MySQL 容器和 `PVC/PV`
 
 在这个例子里，MySQL 容器被调度到了节点 `k8s-worker-3`。
