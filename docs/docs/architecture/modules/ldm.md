@@ -58,8 +58,7 @@ LocalDiskClaim (LDC): This is a way to use disks. A user can add the disk descri
         ```bash
         kubectl get localdiskclaim <name>
         ```
-
-        Check the status of `Claim`. If a disk is available, you will find that the status is changed to `Bound`, the localdisk status will be Claimed, and it points to the claim that references the disk.
+    3. Once the LDC is processed successfully, it will be cleanup by the system automatically. The result will be recorded in the `LocalStorageNode`.
 
 ## Roadmap
 

@@ -70,7 +70,7 @@ localvolumes               lv           hwameistor.io/v1alpha1   false        Lo
 
 For the details about CRDs, please also refer to [CRDs](../../architecture/apis.md).
 
-## Check `LocalDiskNode` and `localDisks`
+## Check `LocalDiskNodes` and `localDisks`
 
 HwameiStor automatically scans each node and registers each disk as CRD `LocalDisk(ld)`.
 The unused disks are displayed with `PHASE: Available`.
@@ -102,7 +102,7 @@ NAME              NODEMATCH     PHASE
 10-6-234-42-sdg   10-6-234-42   Bound
 10-6-234-42-sdh   10-6-234-42   Bound
 ```
-## Check LocalStorageNodes and Storage Pools
+## Check `LocalStorageNodes` and Storage Pools
 
 HwameiStor automatically generates the LocalStorageNode (i.e. LSN) resource for each node.
 Each LSN will record the resources and status of the node, including Storage Pool, Volumes, etc..
@@ -172,7 +172,7 @@ status:
 ```
 
 
-## Check StorageClass
+## Check `StorageClass`
 
 The Operator will automatically create the StorageClasses as following according to the HwameiStor system's configuration (e.g. HA enabled, disk type, etc ..).
 

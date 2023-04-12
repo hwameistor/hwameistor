@@ -61,7 +61,8 @@ sidebar_label: "本地磁盘管理器"
         $ kubectl get localdiskclaim <name>
         ```
 
-查看 `Claim` 的 Status 字段信息。如果存在可用的磁盘，您将会看到该字段的值为 `Bound`。
+    3. LDC 被处理完成后，将立即被系统自动清理。处理后的结果可以在对应的 `LocalStorageNode` 里查看
+
 
 ## 路线规划图
 
