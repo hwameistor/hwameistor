@@ -2,20 +2,33 @@ package registry
 
 import (
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/sys"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/kubernetes/pkg/volume/util/hostutil"
 	"os"
+	"path"
 	"path/filepath"
 	"sync"
 )
 
 type localRegistry struct {
 	// disks storage node disks managed by LocalDiskManager
+	// index by disk name
 	disks sync.Map
 
+	// disks storage node disks managed by LocalDiskManager
+	// index by poolClass
+	poolDisks sync.Map
+
 	// volumes storage node volumes managed by LocalDiskManager
+	// index by volume name
 	volumes sync.Map
 
+	// volumes storage node volumes managed by LocalDiskManager
+	// index by poolClass
+	poolVolumes sync.Map
+
+	// hu helps to find and create file on host
 	hu hostutil.HostUtils
 }
 
@@ -31,25 +44,52 @@ func (r *localRegistry) DiscoveryResources() {
 	r.discoveryVolumes()
 }
 
-// ListDisks list all registered disks
+// ListDisks list all registered disks from cache
 func (r *localRegistry) ListDisks() []types.Disk {
-	return nil
+	var disks []types.Disk
+	r.disks.Range(func(key, value any) bool {
+		v, ok := value.(types.Disk)
+		if ok {
+			disks = append(disks, v)
+		}
+		return true
+	})
+	return disks
 }
 
+// ListDisksByType list disks from cache
 func (r *localRegistry) ListDisksByType(devType types.DevType) []types.Disk {
-	return nil
+	var disks []types.Disk
+	v, ok := r.poolDisks.Load(devType)
+	if !ok {
+		return nil
+	}
+	disks, ok = v.([]types.Disk)
+	if !ok {
+		return nil
+	}
+	return disks
 }
 
-func (r *localRegistry) GetDiskByPath(devPath string) types.Disk {
-	return types.Disk{}
+// GetDiskByPath get disk from cache
+func (r *localRegistry) GetDiskByPath(devPath string) *types.Disk {
+	v, ok := r.disks.Load(devPath)
+	if !ok {
+		return nil
+	}
+	disk, ok := v.(types.Disk)
+	if !ok {
+		return nil
+	}
+	return &disk
 }
 
-// ListVolumes list all registered volumes
+// ListVolumes list all registered volumes from cache
 func (r *localRegistry) ListVolumes() []types.Volume {
 	return nil
 }
 
-// ListVolumesByType list all registered volumes
+// ListVolumesByType list all registered volumes from cache
 func (r *localRegistry) ListVolumesByType(devType types.DevType) []types.Volume {
 	return nil
 }
@@ -60,16 +100,29 @@ func (r *localRegistry) GetVolumeByName() types.Volume {
 
 func (r *localRegistry) discoveryDisks() {
 	for _, poolClass := range types.DefaultPoolClasses {
-		rootPath := types.GetLocalDiskPoolPath(poolClass)
-		disks, err := discoveryDevices(rootPath)
+		rootPath := types.GetPoolDiskPath(poolClass)
+		diskNames, err := discoveryDevices(rootPath)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to discovery devices from %s", rootPath)
 			os.Exit(1)
 		}
 
-		// store discovery disks
-		r.disks.Store(poolClass, disks)
+		var discoverDisks []types.Disk
+		for _, name := range diskNames {
+			if discoveryDisk, err := convertDisk(name, poolClass); err != nil {
+				log.WithError(err).Errorf("Failed to convert disk %s", name)
+				os.Exit(1)
+			} else {
+				r.disks.Store(discoveryDisk.DevPath, discoveryDisk)
+				discoverDisks = append(discoverDisks, discoveryDisk)
+			}
+		}
+		// store discovery discoverDisks
+		r.poolDisks.Store(poolClass, discoverDisks)
+		log.WithFields(log.Fields{"pool": poolClass, "disks": len(discoverDisks)}).Info("Succeed to discovery disks")
 	}
+
+	log.Debug("Finish discovery disks")
 }
 
 func (r *localRegistry) discoveryVolumes() {}
@@ -108,4 +161,22 @@ func discoveryDevices(rootPath string) ([]string, error) {
 		log.WithError(err).Error("Failed to discovery disks")
 	}
 	return discoveryDevices, err
+}
+
+func convertDisk(devName string, devType types.DevType) (types.Disk, error) {
+	device, err := sys.NewSysFsDeviceFromDevPath(path.Join(types.SysDeviceRoot, devName))
+	if err != nil {
+		return types.Disk{}, err
+	}
+	capacity, err := device.GetCapacityInBytes()
+	if err != nil {
+		return types.Disk{}, err
+	}
+
+	return types.Disk{
+		Name:     devName,
+		DevPath:  path.Join(types.SysDeviceRoot, devName),
+		Capacity: capacity,
+		DiskType: devType,
+	}, nil
 }

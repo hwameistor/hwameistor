@@ -11,7 +11,7 @@ type Manager interface {
 
 	ListDisksByType(devType types.DevType) []types.Disk
 
-	GetDiskByPath(devPath string) types.Disk
+	GetDiskByPath(devPath string) *types.Disk
 
 	// ListVolumes list all registered volumes
 	ListVolumes() []types.Volume

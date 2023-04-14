@@ -288,6 +288,7 @@ func (m *nodeManager) rebuildLocalPools() {
 
 // syncNodeResources sync discovery resources to ApiServer
 func (m *nodeManager) syncNodeResources() error {
+	m.logger.Infof("Succeed to find resources on node %q", m.pools)
 	return nil
 }
 
