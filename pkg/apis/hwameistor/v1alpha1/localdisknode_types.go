@@ -43,8 +43,14 @@ type LocalDiskNodeStatus struct {
 	// TotalDisk
 	TotalDisk int64 `json:"totalDisk,omitempty"`
 
-	// AllocatableDisk
-	AllocatableDisk int64 `json:"allocatableDisk,omitempty"`
+	// FreeDisk
+	FreeDisk int64 `json:"freeDisk,omitempty"`
+
+	// TotalCapacity indicates the capacity of all the disks
+	TotalCapacity int64 `json:"totalCapacity,omitempty"`
+
+	// FreeCapacity indicates the free capacity of all the disks
+	FreeCapacity int64 `json:"freeCapacity,omitempty"`
 }
 
 // +genclient
@@ -53,8 +59,10 @@ type LocalDiskNodeStatus struct {
 
 // LocalDiskNode is the Schema for the localdisknodes API
 // +kubebuilder:resource:path=localdisknodes,scope=Cluster,shortName=ldn
-//+kubebuilder:printcolumn:JSONPath=".status.totalDisk",name=TotalDisk,type=integer
-//+kubebuilder:printcolumn:JSONPath=".status.allocatableDisk",name=FreeDisk,type=integer
+// +kubebuilder:printcolumn:JSONPath=".status.freeCapacity",name=FreeCapacity,type=integer
+// +kubebuilder:printcolumn:JSONPath=".status.totalCapacity",name=TotalCapacity,type=integer
+// +kubebuilder:printcolumn:JSONPath=".status.totalDisk",name=TotalDisk,type=integer
+// +kubebuilder:printcolumn:name="age",type=date,JSONPath=`.metadata.creationTimestamp`
 type LocalDiskNode struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

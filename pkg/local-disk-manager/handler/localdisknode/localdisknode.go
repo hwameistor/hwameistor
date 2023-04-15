@@ -82,12 +82,12 @@ func (n *DiskNodeHandler) UpdateDiskLists(updateDisks, removedDisks map[string]v
 
 func (n *DiskNodeHandler) UpdateDiskStats() {
 	n.diskNode.Status.TotalDisk = 0
-	n.diskNode.Status.AllocatableDisk = 0
+	n.diskNode.Status.FreeDisk = 0
 	for _, disk := range n.Disks() {
 		n.diskNode.Status.TotalDisk++
 		if disk.Status == string(v1alpha1.LocalDiskUnclaimed) ||
 			disk.Status == string(v1alpha1.LocalDiskReleased) {
-			n.diskNode.Status.AllocatableDisk++
+			n.diskNode.Status.FreeDisk++
 		}
 	}
 }

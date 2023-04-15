@@ -427,6 +427,13 @@ func (in *LocalDiskNodeStatus) DeepCopyInto(out *LocalDiskNodeStatus) {
 			(*out)[key] = val
 		}
 	}
+	if in.Pools != nil {
+		in, out := &in.Pools, &out.Pools
+		*out = make(map[string]LocalPool, len(*in))
+		for key, val := range *in {
+			(*out)[key] = *val.DeepCopy()
+		}
+	}
 	return
 }
 

@@ -19,5 +19,5 @@ type Manager interface {
 	// ListVolumesByType list all registered volumes
 	ListVolumesByType(devType types.DevType) []types.Volume
 
-	GetVolumeByName() types.Volume
+	GetVolumeByName(name string) *types.Volume
 }

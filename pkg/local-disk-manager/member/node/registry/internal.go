@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"fmt"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/sys"
 	log "github.com/sirupsen/logrus"
@@ -86,20 +87,45 @@ func (r *localRegistry) GetDiskByPath(devPath string) *types.Disk {
 
 // ListVolumes list all registered volumes from cache
 func (r *localRegistry) ListVolumes() []types.Volume {
-	return nil
+	var volumes []types.Volume
+	r.volumes.Range(func(key, value any) bool {
+		v, ok := value.(types.Volume)
+		if ok {
+			volumes = append(volumes, v)
+		}
+		return true
+	})
+	return volumes
 }
 
 // ListVolumesByType list all registered volumes from cache
 func (r *localRegistry) ListVolumesByType(devType types.DevType) []types.Volume {
-	return nil
+	var volumes []types.Volume
+	v, ok := r.poolVolumes.Load(devType)
+	if !ok {
+		return nil
+	}
+	volumes, ok = v.([]types.Volume)
+	if !ok {
+		return nil
+	}
+	return volumes
 }
 
-func (r *localRegistry) GetVolumeByName() types.Volume {
-	return types.Volume{}
+func (r *localRegistry) GetVolumeByName(name string) *types.Volume {
+	v, ok := r.volumes.Load(name)
+	if !ok {
+		return nil
+	}
+	volume, ok := v.(types.Volume)
+	if !ok {
+		return nil
+	}
+	return &volume
 }
 
 func (r *localRegistry) discoveryDisks() {
-	for _, poolClass := range types.DefaultPoolClasses {
+	for _, poolClass := range types.DefaultDevTypes {
 		rootPath := types.GetPoolDiskPath(poolClass)
 		diskNames, err := discoveryDevices(rootPath)
 		if err != nil {
@@ -108,24 +134,51 @@ func (r *localRegistry) discoveryDisks() {
 		}
 
 		var discoverDisks []types.Disk
-		for _, name := range diskNames {
-			if discoveryDisk, err := convertDisk(name, poolClass); err != nil {
-				log.WithError(err).Errorf("Failed to convert disk %s", name)
+		for _, disk := range diskNames {
+			if discoveryDisk, err := convertDisk(disk, poolClass); err != nil {
+				log.WithError(err).Errorf("Failed to convert disk %s", disk)
 				os.Exit(1)
 			} else {
 				r.disks.Store(discoveryDisk.DevPath, discoveryDisk)
 				discoverDisks = append(discoverDisks, discoveryDisk)
+				log.WithFields(log.Fields{"pool": poolClass, "disks": disk}).Info("Succeed discovery disk")
 			}
 		}
 		// store discovery discoverDisks
 		r.poolDisks.Store(poolClass, discoverDisks)
-		log.WithFields(log.Fields{"pool": poolClass, "disks": len(discoverDisks)}).Info("Succeed to discovery disks")
+		log.WithFields(log.Fields{"pool": poolClass, "disks": len(discoverDisks)}).Info("Succeed discovery pool disks")
 	}
 
 	log.Debug("Finish discovery disks")
 }
 
-func (r *localRegistry) discoveryVolumes() {}
+func (r *localRegistry) discoveryVolumes() {
+	for _, poolClass := range types.DefaultDevTypes {
+		rootPath := types.GetPoolVolumePath(poolClass)
+		volumes, err := discoveryDevices(rootPath)
+		if err != nil {
+			log.WithError(err).Errorf("Failed to discovery devices from %s", rootPath)
+			os.Exit(1)
+		}
+
+		var discoverVolumes []types.Volume
+		for _, volume := range volumes {
+			if discoveryVolume, err := convertVolume(volume, poolClass); err != nil {
+				log.WithError(err).Errorf("Failed to convert volume %s", volume)
+				os.Exit(1)
+			} else {
+				r.volumes.Store(discoveryVolume.Name, discoveryVolume)
+				discoverVolumes = append(discoverVolumes, discoveryVolume)
+				log.WithFields(log.Fields{"pool": poolClass, "volume": volume}).Info("Succeed discovery volume")
+			}
+		}
+		// store discovery discoverVolumes
+		r.poolVolumes.Store(poolClass, discoverVolumes)
+		log.WithFields(log.Fields{"pool": poolClass, "volumes": len(discoverVolumes)}).Info("Succeed discovery pool volumes")
+	}
+
+	log.Debug("Finish discovery volumes")
+}
 
 var hu hostutil.HostUtils = hostutil.NewHostUtil()
 
@@ -178,5 +231,32 @@ func convertDisk(devName string, devType types.DevType) (types.Disk, error) {
 		DevPath:  path.Join(types.SysDeviceRoot, devName),
 		Capacity: capacity,
 		DiskType: devType,
+	}, nil
+}
+
+func convertVolume(volumeName, devType types.DevType) (types.Volume, error) {
+	actualPath, err := hu.EvalHostSymlinks(path.Join(types.GetPoolVolumePath(devType), volumeName))
+	if err != nil {
+		return types.Volume{}, err
+	}
+	ok, err := hu.PathIsDevice(actualPath)
+	if err != nil {
+		return types.Volume{}, err
+	}
+	if !ok {
+		return types.Volume{}, fmt.Errorf("volume %s not a device", volumeName)
+	}
+	device, err := sys.NewSysFsDeviceFromDevPath(actualPath)
+	if err != nil {
+		return types.Volume{}, err
+	}
+	capacity, err := device.GetCapacityInBytes()
+	if err != nil {
+		return types.Volume{}, err
+	}
+
+	return types.Volume{
+		Name:     volumeName,
+		Capacity: capacity,
 	}, nil
 }

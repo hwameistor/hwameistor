@@ -1,5 +1,7 @@
 package types
 
+const MaxLimitVolume = 100
+
 // Volume
 type Volume struct {
 	// Name

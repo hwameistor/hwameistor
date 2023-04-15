@@ -12,7 +12,7 @@ const (
 )
 
 var (
-	DefaultPoolClasses = []DevType{DevTypeHDD, DevTypeSSD, DevTypeNVMe}
+	DefaultDevTypes = []DevType{DevTypeHDD, DevTypeSSD, DevTypeNVMe}
 )
 
 // GetLocalDiskPoolName return LocalDisk_PoolHDD, LocalDisk_PoolSSD, LocalDisk_PoolNVMe
@@ -26,7 +26,11 @@ func GetLocalDiskPoolPath(devType DevType) string {
 }
 
 func GetPoolDiskPath(devType DevType) string {
-	return path.Join(GetLocalDiskPoolPath(devType), "disk")
+	return path.Join(GetLocalDiskPoolPath(devType), diskSubPath)
+}
+
+func GetPoolVolumePath(devType DevType) string {
+	return path.Join(GetLocalDiskPoolPath(devType), volumeSubPath)
 }
 
 func ComposePoolDevicePath(poolName, devName string) string {
@@ -34,7 +38,7 @@ func ComposePoolDevicePath(poolName, devName string) string {
 }
 
 func GetDefaultDiskPoolPath() (dps []string) {
-	for _, poolClass := range DefaultPoolClasses {
+	for _, poolClass := range DefaultDevTypes {
 		dps = append(dps, GetLocalDiskPoolPath(poolClass))
 	}
 	return

@@ -202,8 +202,8 @@ func TestReconcileLocalDiskNode_Reconcile(t *testing.T) {
 			}
 			refreshNodeDisks(testcase.freeNode, testcase.freeNode.Spec.AttachNode)
 
-			if testcase.freeNode.Status.AllocatableDisk != testcase.wantFreeDiskCount {
-				t.Errorf("Expected AllocatableDisk %d but actual get %d", testcase.wantFreeDiskCount, testcase.freeNode.Status.AllocatableDisk)
+			if testcase.freeNode.Status.FreeDisk != testcase.wantFreeDiskCount {
+				t.Errorf("Expected FreeDisk %d but actual get %d", testcase.wantFreeDiskCount, testcase.freeNode.Status.FreeDisk)
 			}
 		})
 	}
@@ -275,12 +275,12 @@ func GenFakeLocalDiskNodeObject() *v1alpha1.LocalDiskNode {
 
 func refreshNodeDisks(node *v1alpha1.LocalDiskNode, wantNode string) {
 	node.Status.TotalDisk = 0
-	node.Status.AllocatableDisk = 0
+	node.Status.FreeDisk = 0
 	for name, disk := range node.Status.Disks {
 		if strings.HasPrefix(name, wantNode) {
 			node.Status.TotalDisk++
 			if disk.Status == string(v1alpha1.LocalDiskAvailable) {
-				node.Status.AllocatableDisk++
+				node.Status.FreeDisk++
 			}
 		}
 	}

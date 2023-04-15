@@ -14,12 +14,18 @@ spec:
   scope: Cluster
   versions:
   - additionalPrinterColumns:
+    - jsonPath: .status.freeCapacity
+      name: FreeCapacity
+      type: integer
+    - jsonPath: .status.totalCapacity
+      name: TotalCapacity
+      type: integer
     - jsonPath: .status.totalDisk
       name: TotalDisk
       type: integer
-    - jsonPath: .status.allocatableDisk
-      name: FreeDisk
-      type: integer
+    - jsonPath: .metadata.creationTimestamp
+      name: age
+      type: date
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -49,10 +55,6 @@ spec:
           status:
             description: LocalDiskNodeStatus defines the observed state of LocalDiskNode
             properties:
-              allocatableDisk:
-                description: AllocatableDisk
-                format: int64
-                type: integer
               disks:
                 additionalProperties:
                   properties:
@@ -76,6 +78,103 @@ spec:
                   type: object
                 description: Disks key is the name of LocalDisk
                 type: object
+              freeCapacity:
+                description: FreeCapacity indicates the free capacity of all the disks
+                format: int64
+                type: integer
+              freeDisk:
+                description: FreeDisk
+                format: int64
+                type: integer
+              pools:
+                additionalProperties:
+                  description: LocalPool is storage pool struct
+                  properties:
+                    class:
+                      description: 'Supported class: HDD, SSD, NVMe'
+                      enum:
+                      - HDD
+                      - SSD
+                      - NVMe
+                      type: string
+                    disks:
+                      items:
+                        description: LocalDevice is disk struct
+                        properties:
+                          capacityBytes:
+                            description: disk capacity
+                            format: int64
+                            type: integer
+                          devPath:
+                            description: e.g. /dev/sdb
+                            type: string
+                          state:
+                            description: 'Possible state: Available, Inuse, Offline'
+                            type: string
+                          type:
+                            description: 'Supported: HDD, SSD, NVMe, RAM'
+                            type: string
+                        type: object
+                      type: array
+                    freeCapacityBytes:
+                      format: int64
+                      type: integer
+                    freeVolumeCount:
+                      format: int64
+                      type: integer
+                    name:
+                      description: 'Supported pool name: HDD_POOL, SSD_POOL, NVMe_POOL'
+                      type: string
+                    path:
+                      description: VG path
+                      type: string
+                    totalCapacityBytes:
+                      format: int64
+                      type: integer
+                    totalVolumeCount:
+                      format: int64
+                      type: integer
+                    type:
+                      default: REGULAR
+                      description: 'Supported type: REGULAR'
+                      enum:
+                      - REGULAR
+                      type: string
+                    usedCapacityBytes:
+                      format: int64
+                      type: integer
+                    usedVolumeCount:
+                      format: int64
+                      type: integer
+                    volumeCapacityBytesLimit:
+                      format: int64
+                      type: integer
+                    volumes:
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - class
+                  - freeCapacityBytes
+                  - freeVolumeCount
+                  - totalCapacityBytes
+                  - totalVolumeCount
+                  - type
+                  - usedCapacityBytes
+                  - usedVolumeCount
+                  - volumeCapacityBytesLimit
+                  type: object
+                description: 'There may have multiple storage pools in a node. e.g.
+                  HDD_POOL, SSD_POOL, NVMe_POOL Pools: poolName -> LocalPool'
+                type: object
+              state:
+                description: 'State of the Local Storage Node/Member: New, Active,
+                  Inactive, Failed'
+                type: string
+              totalCapacity:
+                description: TotalCapacity indicates the capacity of all the disks
+                format: int64
+                type: integer
               totalDisk:
                 description: TotalDisk
                 format: int64

@@ -3325,7 +3325,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "allocatableDisk": {
-                    "description": "AllocatableDisk",
+                    "description": "FreeDisk",
                     "type": "integer"
                 },
                 "disks": {

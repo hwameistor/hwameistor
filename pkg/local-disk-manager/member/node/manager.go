@@ -11,6 +11,8 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/kubernetes"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/api/errors"
+	types2 "k8s.io/apimachinery/pkg/types"
 	cache2 "k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,7 +36,6 @@ var (
 	defaultDiskManagerProvider   DiskManagerProvider   = disk.New
 	defaultLocalRegistryProvider LocalRegistryProvider = registry.New
 	defaultPoolManagerProvider   PoolManagerProvider   = pool.New
-	defaultPoolClasses                                 = []types.DevType{types.DevTypeHDD, types.DevTypeSSD, types.DevTypeNVMe}
 )
 
 // Manager  is responsible for managing node resources, including storage pools, disks, and processing-related resources.
@@ -199,7 +200,13 @@ func (m *nodeManager) Start(c context.Context) error {
 
 	m.rebuildLocalPools()
 
-	err := m.syncNodeResources()
+	err := m.register()
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to register node")
+		return err
+	}
+
+	err = m.syncNodeResources()
 	if err != nil {
 		m.logger.WithError(err).Error("Failed to sync node resources")
 		return err
@@ -238,7 +245,13 @@ func (m *nodeManager) setupInformers() {
 		UpdateFunc: m.handleLocalDiskClaimUpdate,
 		DeleteFunc: m.handleLocalDiskClaimDelete,
 	})
+
 	// LocalDiskNode Informer
+	diskNodeInformer, err := m.cache.GetInformer(context.TODO(), &apisv1alpha1.LocalDiskNode{})
+	if err != nil {
+		m.logger.WithError(err).Fatalf("Failed to get informer fot LocalDiskNode")
+	}
+	diskNodeInformer.AddEventHandler(cache2.ResourceEventHandlerFuncs{})
 	// todo
 }
 
@@ -254,42 +267,96 @@ func (m *nodeManager) rebuildLocalPools() {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	for _, class := range defaultPoolClasses {
-		if m.pools[class] == nil {
-			m.pools[class] = &apisv1alpha1.LocalPool{
-				Class: class,
-				Name:  types.GetLocalDiskPoolName(class),
-				Path:  types.GetLocalDiskPoolPath(class),
-			}
-		}
-
+	for _, devType := range types.DefaultDevTypes {
+		poolName := types.GetLocalDiskPoolName(devType)
 		// rebuild discovery disks
 		var discoveryDisks []apisv1alpha1.LocalDevice
-		for _, classDisk := range m.registryManager.ListDisksByType(class) {
+		var totalCapacity, maxCapacity int64
+		for _, classDisk := range m.registryManager.ListDisksByType(devType) {
 			discoveryDisks = append(discoveryDisks, apisv1alpha1.LocalDevice{
 				DevPath:       classDisk.DevPath,
 				Class:         classDisk.DiskType,
 				CapacityBytes: classDisk.Capacity,
 			})
+			totalCapacity += classDisk.Capacity
+			if maxCapacity < classDisk.Capacity {
+				maxCapacity = classDisk.Capacity
+			}
 		}
-		m.pools[class].Disks = discoveryDisks
 
 		// rebuild discovery volumes
 		var discoveryVolumes []string
-		for _, classVolume := range m.registryManager.ListVolumesByType(class) {
+		var usedCapacity int64
+		for _, classVolume := range m.registryManager.ListVolumesByType(devType) {
 			discoveryVolumes = append(discoveryVolumes, classVolume.Name)
+			usedCapacity += classVolume.Capacity
 		}
-		m.pools[class].Volumes = discoveryVolumes
 
-		// calculate storage capacity including total, used, free, maxAvailable per volume
-		// todo
+		if len(discoveryVolumes) == 0 && len(discoveryDisks) == 0 {
+			continue
+		}
+		if m.pools[poolName] == nil {
+			m.pools[poolName] = &apisv1alpha1.LocalPool{
+				Class: devType,
+				Type:  apisv1alpha1.PoolTypeRegular,
+			}
+		}
+		m.pools[poolName].Volumes = discoveryVolumes
+		m.pools[poolName].Disks = discoveryDisks
+		m.pools[poolName].TotalCapacityBytes = totalCapacity
+		m.pools[poolName].UsedCapacityBytes = usedCapacity
+		m.pools[poolName].FreeCapacityBytes = totalCapacity - usedCapacity
+		m.pools[poolName].TotalVolumeCount = types.MaxLimitVolume
+		m.pools[poolName].UsedVolumeCount = int64(len(discoveryVolumes))
+		m.pools[poolName].VolumeCapacityBytesLimit = maxCapacity
+		m.pools[poolName].FreeVolumeCount = types.MaxLimitVolume - int64(len(discoveryVolumes))
 	}
 }
 
 // syncNodeResources sync discovery resources to ApiServer
 func (m *nodeManager) syncNodeResources() error {
-	m.logger.Infof("Succeed to find resources on node %q", m.pools)
-	return nil
+	diskNode := apisv1alpha1.LocalDiskNode{}
+	err := m.k8sClient.Get(context.TODO(), types2.NamespacedName{Name: m.nodeName}, &diskNode)
+	if err != nil {
+		return err
+	}
+
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	if diskNode.Status.Pools == nil {
+		diskNode.Status.Pools = make(map[types.DevType]apisv1alpha1.LocalPool)
+	}
+	var totalDisk, totalCapacity, freeCapacity int64
+	localPools := make(map[types.DevType]apisv1alpha1.LocalPool)
+	for pooName, localPool := range m.pools {
+		lp := apisv1alpha1.LocalPool{}
+		localPool.DeepCopyInto(&lp)
+		localPools[pooName] = lp
+		totalDisk += int64(len(lp.Disks))
+		totalCapacity += lp.TotalCapacityBytes
+		freeCapacity += lp.FreeCapacityBytes
+	}
+	diskNode.Status.Pools = localPools
+	diskNode.Status.TotalDisk = totalDisk
+	diskNode.Status.TotalCapacity = totalCapacity
+	diskNode.Status.FreeCapacity = freeCapacity
+	m.logger.WithField("totalCapacity", totalCapacity).Info("Pool info")
+	return m.k8sClient.Update(context.TODO(), &diskNode)
+}
+
+func (m *nodeManager) register() error {
+	diskNode := apisv1alpha1.LocalDiskNode{}
+	err := m.k8sClient.Get(context.TODO(), types2.NamespacedName{Name: m.nodeName}, &diskNode)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			diskNode.Name = m.nodeName
+			diskNode.Spec.AttachNode = m.nodeName
+			return m.k8sClient.Create(context.TODO(), &diskNode)
+		}
+		return err
+	}
+	diskNode.Spec.AttachNode = m.nodeName
+	return m.k8sClient.Update(context.TODO(), &diskNode)
 }
 
 // setOptionsDefaults set default values for Options fields
