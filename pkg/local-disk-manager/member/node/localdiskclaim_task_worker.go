@@ -56,6 +56,7 @@ func (m *nodeManager) processLocalDiskClaim(diskClaim string) error {
 	case v1alpha1.LocalDiskClaimStatusBound:
 		err = m.processLocalDiskClaimBound(localDiskClaim)
 	default:
+		logCtx.WithField("Status", localDiskClaim.Status.Status).Info("Skip processing LocalDiskClaim")
 		return nil
 	}
 
@@ -77,10 +78,10 @@ func (m *nodeManager) processLocalDiskClaimBound(diskClaim *v1alpha1.LocalDiskCl
 	// remove disks that already exist in DiskPool
 	var tobeExtendedDisks []*v1alpha1.LocalDisk
 	for _, localDisk := range allocatedDisks {
-		disk := m.registryManager.GetDiskByPath(localDisk.Spec.DevicePath)
+		exist := m.registryManager.DiskExist(localDisk.Spec.DevicePath)
 		// skip exist disk
-		if disk.Name != "" {
-			logCtx.Infof("Disk %s already exist in DiskPool, skip it", disk.DevPath)
+		if exist {
+			logCtx.Infof("Disk %s already exist in DiskPool, skip it", localDisk.Spec.DevicePath)
 			continue
 		}
 		tobeExtendedDisks = append(tobeExtendedDisks, localDisk.DeepCopy())
@@ -105,10 +106,12 @@ func (m *nodeManager) processLocalDiskClaimBound(diskClaim *v1alpha1.LocalDiskCl
 	}
 
 	// rebuild local pool
+	m.discoveryNodeResources()
 	m.rebuildLocalPools()
-
 	// sync pool registry to ApiServer
-	// TODO
+	if err = m.syncNodeResources(); err != nil {
+		return err
+	}
 
 	// finally confirm disks consumed
 	return confirmLocalDisksConsumed(m.k8sClient, diskClaim)

@@ -235,6 +235,18 @@ func (m *nodeManager) setupInformers() {
 		DeleteFunc: m.handleLocalDiskDelete,
 	})
 
+	// create a shared informers for all resources
+	//config, err := rest.InClusterConfig()
+	//if err != nil {
+	//	log.WithError(err).Fatal("Failed to build kubernetes config")
+	//	return
+	//}
+	//cli, err := versioned.NewForConfig(config)
+	//if err != nil {
+	//	log.WithError(err).Fatal("Failed to build kubernetes clientset")
+	//	return
+	//}
+	// diskClaimInformer := v1alpha1.NewLocalDiskClaimInformer(cli, time.Second, nil)
 	// LocalDiskClaim Informer
 	diskClaimInformer, err := m.cache.GetInformer(context.TODO(), &apisv1alpha1.LocalDiskClaim{})
 	if err != nil {
@@ -245,6 +257,8 @@ func (m *nodeManager) setupInformers() {
 		UpdateFunc: m.handleLocalDiskClaimUpdate,
 		DeleteFunc: m.handleLocalDiskClaimDelete,
 	})
+
+	// go diskClaimInformer.Run(make(<-chan struct{}))
 
 	// LocalDiskNode Informer
 	diskNodeInformer, err := m.cache.GetInformer(context.TODO(), &apisv1alpha1.LocalDiskNode{})
@@ -321,8 +335,8 @@ func (m *nodeManager) syncNodeResources() error {
 		return err
 	}
 
-	m.lock.Lock()
-	defer m.lock.Unlock()
+	m.lock.RLock()
+	defer m.lock.RUnlock()
 	if diskNode.Status.Pools == nil {
 		diskNode.Status.Pools = make(map[types.DevType]apisv1alpha1.LocalPool)
 	}
@@ -398,7 +412,7 @@ func setDefaultOptions(options Options) Options {
 
 func (m *nodeManager) handleLocalDiskAdd(obj interface{}) {
 	localDisk := obj.(*apisv1alpha1.LocalDisk)
-	if localDisk.Spec.NodeName != m.nodeName || localDisk.Spec.Owner == apisv1alpha1.LocalDiskManager {
+	if localDisk.Spec.NodeName != m.nodeName || localDisk.Spec.Owner != apisv1alpha1.LocalDiskManager {
 		return
 	}
 	m.diskTaskQueue.Add(localDisk.GetName())
@@ -406,7 +420,7 @@ func (m *nodeManager) handleLocalDiskAdd(obj interface{}) {
 
 func (m *nodeManager) handleLocalDiskUpdate(_, obj interface{}) {
 	localDisk := obj.(*apisv1alpha1.LocalDisk)
-	if localDisk.Spec.NodeName != m.nodeName || localDisk.Spec.Owner == apisv1alpha1.LocalDiskManager {
+	if localDisk.Spec.NodeName != m.nodeName || localDisk.Spec.Owner != apisv1alpha1.LocalDiskManager {
 		return
 	}
 	m.diskTaskQueue.Add(localDisk.GetName())
@@ -414,7 +428,7 @@ func (m *nodeManager) handleLocalDiskUpdate(_, obj interface{}) {
 
 func (m *nodeManager) handleLocalDiskDelete(obj interface{}) {
 	localDisk := obj.(*apisv1alpha1.LocalDisk)
-	if localDisk.Spec.NodeName != m.nodeName || localDisk.Spec.Owner == apisv1alpha1.LocalDiskManager {
+	if localDisk.Spec.NodeName != m.nodeName || localDisk.Spec.Owner != apisv1alpha1.LocalDiskManager {
 		return
 	}
 	m.diskTaskQueue.Add(localDisk.GetName())
@@ -422,7 +436,8 @@ func (m *nodeManager) handleLocalDiskDelete(obj interface{}) {
 
 func (m *nodeManager) handleLocalDiskClaimAdd(obj interface{}) {
 	localDiskClaim := obj.(*apisv1alpha1.LocalDiskClaim)
-	if localDiskClaim.Spec.NodeName != m.nodeName || localDiskClaim.Spec.Owner != apisv1alpha1.LocalDiskManager {
+	if localDiskClaim.Spec.NodeName != m.nodeName || localDiskClaim.Spec.Owner != apisv1alpha1.LocalDiskManager ||
+		localDiskClaim.Status.Status != apisv1alpha1.LocalDiskClaimStatusBound {
 		return
 	}
 	m.diskClaimTaskQueue.Add(localDiskClaim.GetName())
@@ -430,7 +445,8 @@ func (m *nodeManager) handleLocalDiskClaimAdd(obj interface{}) {
 
 func (m *nodeManager) handleLocalDiskClaimUpdate(_, obj interface{}) {
 	localDiskClaim := obj.(*apisv1alpha1.LocalDiskClaim)
-	if localDiskClaim.Spec.NodeName != m.nodeName || localDiskClaim.Spec.Owner == apisv1alpha1.LocalDiskManager {
+	if localDiskClaim.Spec.NodeName != m.nodeName || localDiskClaim.Spec.Owner != apisv1alpha1.LocalDiskManager ||
+		localDiskClaim.Status.Status != apisv1alpha1.LocalDiskClaimStatusBound {
 		return
 	}
 	m.diskClaimTaskQueue.Add(localDiskClaim.GetName())
@@ -438,7 +454,8 @@ func (m *nodeManager) handleLocalDiskClaimUpdate(_, obj interface{}) {
 
 func (m *nodeManager) handleLocalDiskClaimDelete(obj interface{}) {
 	localDiskClaim := obj.(*apisv1alpha1.LocalDiskClaim)
-	if localDiskClaim.Spec.NodeName != m.nodeName || localDiskClaim.Spec.Owner == apisv1alpha1.LocalDiskManager {
+	if localDiskClaim.Spec.NodeName != m.nodeName || localDiskClaim.Spec.Owner != apisv1alpha1.LocalDiskManager ||
+		localDiskClaim.Status.Status != apisv1alpha1.LocalDiskClaimStatusBound {
 		return
 	}
 	m.diskClaimTaskQueue.Add(localDiskClaim.GetName())

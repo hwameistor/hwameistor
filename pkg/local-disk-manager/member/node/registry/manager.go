@@ -13,11 +13,13 @@ type Manager interface {
 
 	GetDiskByPath(devPath string) *types.Disk
 
+	GetVolumeByName(name string) *types.Volume
+
 	// ListVolumes list all registered volumes
 	ListVolumes() []types.Volume
 
 	// ListVolumesByType list all registered volumes
 	ListVolumesByType(devType types.DevType) []types.Volume
 
-	GetVolumeByName(name string) *types.Volume
+	DiskExist(devPath string) bool
 }

@@ -169,7 +169,7 @@ func (r *ReconcileLocalDisk) processDiskBound(disk *v1alpha1.LocalDisk) error {
 
 	var err error
 	// Check if disk can be released
-	if disk.Spec.ClaimRef == nil && !disk.Spec.HasPartition && disk.Spec.Owner == "" {
+	if disk.Spec.ClaimRef == nil && !disk.Spec.HasPartition {
 		if err = r.updateDiskStatusAvailable(disk); err != nil {
 			log.WithError(err).WithFields(logCtx).Error("Failed to release disk")
 			r.Recorder.Eventf(disk, v1.EventTypeWarning, v1alpha1.LocalDiskEventReasonReleaseFail,

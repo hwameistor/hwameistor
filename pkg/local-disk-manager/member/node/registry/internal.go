@@ -124,6 +124,11 @@ func (r *localRegistry) GetVolumeByName(name string) *types.Volume {
 	return &volume
 }
 
+func (r *localRegistry) DiskExist(devPath string) bool {
+	_, ok := r.disks.Load(devPath)
+	return ok
+}
+
 func (r *localRegistry) discoveryDisks() {
 	for _, poolClass := range types.DefaultDevTypes {
 		rootPath := types.GetPoolDiskPath(poolClass)
