@@ -105,9 +105,6 @@ func (m *nodeManager) processLocalDiskClaimBound(diskClaim *v1alpha1.LocalDiskCl
 		}
 	}
 
-	// rebuild local pool
-	m.discoveryNodeResources()
-	m.rebuildLocalPools()
 	// sync pool registry to ApiServer
 	if err = m.syncNodeResources(); err != nil {
 		return err

@@ -13,10 +13,12 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	types2 "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	cache2 "k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
+	"time"
 )
 
 // maxRetries is the number of times a task will be retried before it is dropped out of the queue.
@@ -24,7 +26,10 @@ import (
 // a task is going to be requeued:
 //
 // Infinitely retry
-const maxRetries = 0
+const (
+	maxRetries = 0
+	duration   = time.Minute * 5
+)
 
 type VolumeManagerProvider func() volume.Manager
 type DiskManagerProvider func() disk.Manager
@@ -196,18 +201,12 @@ func (m *nodeManager) LocalRegistry() registry.Manager {
 func (m *nodeManager) Start(c context.Context) error {
 	m.setupInformers()
 
-	m.discoveryNodeResources()
-
-	m.rebuildLocalPools()
-
-	err := m.register()
-	if err != nil {
+	if err := m.register(); err != nil {
 		m.logger.WithError(err).Error("Failed to register node")
 		return err
 	}
 
-	err = m.syncNodeResources()
-	if err != nil {
+	if err := m.syncNodeResources(); err != nil {
 		m.logger.WithError(err).Error("Failed to sync node resources")
 		return err
 	}
@@ -217,6 +216,8 @@ func (m *nodeManager) Start(c context.Context) error {
 	go m.startDiskClaimTaskWorker(c)
 
 	go m.startDiskNodeTaskWorker(c)
+
+	go m.startTimerSync(c)
 
 	// We are done, Stop Node Manager
 	<-c.Done()
@@ -235,18 +236,6 @@ func (m *nodeManager) setupInformers() {
 		DeleteFunc: m.handleLocalDiskDelete,
 	})
 
-	// create a shared informers for all resources
-	//config, err := rest.InClusterConfig()
-	//if err != nil {
-	//	log.WithError(err).Fatal("Failed to build kubernetes config")
-	//	return
-	//}
-	//cli, err := versioned.NewForConfig(config)
-	//if err != nil {
-	//	log.WithError(err).Fatal("Failed to build kubernetes clientset")
-	//	return
-	//}
-	// diskClaimInformer := v1alpha1.NewLocalDiskClaimInformer(cli, time.Second, nil)
 	// LocalDiskClaim Informer
 	diskClaimInformer, err := m.cache.GetInformer(context.TODO(), &apisv1alpha1.LocalDiskClaim{})
 	if err != nil {
@@ -257,8 +246,6 @@ func (m *nodeManager) setupInformers() {
 		UpdateFunc: m.handleLocalDiskClaimUpdate,
 		DeleteFunc: m.handleLocalDiskClaimDelete,
 	})
-
-	// go diskClaimInformer.Run(make(<-chan struct{}))
 
 	// LocalDiskNode Informer
 	diskNodeInformer, err := m.cache.GetInformer(context.TODO(), &apisv1alpha1.LocalDiskNode{})
@@ -329,6 +316,13 @@ func (m *nodeManager) rebuildLocalPools() {
 
 // syncNodeResources sync discovery resources to ApiServer
 func (m *nodeManager) syncNodeResources() error {
+	// 1. rebuild local registry
+	m.discoveryNodeResources()
+
+	// 2. rebuild local pool
+	m.rebuildLocalPools()
+
+	// 3. sync resources to ApiServer according to local pool
 	diskNode := apisv1alpha1.LocalDiskNode{}
 	err := m.k8sClient.Get(context.TODO(), types2.NamespacedName{Name: m.nodeName}, &diskNode)
 	if err != nil {
@@ -371,6 +365,19 @@ func (m *nodeManager) register() error {
 	}
 	diskNode.Spec.AttachNode = m.nodeName
 	return m.k8sClient.Update(context.TODO(), &diskNode)
+}
+
+// sync node resource timely
+func (m *nodeManager) startTimerSync(c context.Context) {
+	m.logger.WithField("syncDuration", duration).Info("Start syncNodeResources timer")
+
+	wait.Until(func() {
+		if err := m.syncNodeResources(); err != nil {
+			m.logger.WithError(err).Error("Failed to sync node resource")
+		}
+	}, duration, c.Done())
+
+	m.logger.Info("Stop syncNodeResources timer")
 }
 
 // setOptionsDefaults set default values for Options fields
