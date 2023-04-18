@@ -3,6 +3,7 @@ package pool
 import (
 	"fmt"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/kubernetes/pkg/volume/util/hostutil"
 	"os"
 	"strings"
@@ -15,26 +16,27 @@ type diskPool struct {
 }
 
 func (p *diskPool) Init() error {
-	exist, err := p.PoolExist(p.name)
-	if err != nil {
-		return err
+	for _, poolType := range types.DefaultDevTypes {
+		if err := p.CreatePool(poolType); err != nil {
+			return err
+		}
 	}
-	if exist {
-		return nil
-	}
-
-	return p.CreatePool(p.name)
+	return nil
 }
 
-func (p *diskPool) CreatePool(poolName string) error {
-	poolPath := types.GetLocalDiskPoolPath(poolName)
-	exist, _ := p.hu.PathExists(poolPath)
-	if exist {
-		return nil
+func (p *diskPool) CreatePool(poolType types.DevType) error {
+	for _, poolPath := range []string{types.GetLocalDiskPoolPath(poolType), types.GetPoolDiskPath(poolType), types.GetPoolVolumePath(poolType)} {
+		exist, _ := p.hu.PathExists(poolPath)
+		if !exist {
+			if err := os.MkdirAll(poolPath, 0755); err != nil {
+				return err
+			}
+			log.Debugf("Succeed to create %s(mode: 0755) directory", poolPath)
+			continue
+		}
+		log.Debugf("Directory %s already exist", poolPath)
 	}
-
-	// create LocalDisk_Pool{HDD,SSD,NVMe}
-	return os.MkdirAll(poolPath, 0755)
+	return nil
 }
 
 func (p *diskPool) PoolExist(poolName string) (bool, error) {
@@ -47,18 +49,13 @@ func (p *diskPool) GetPool(poolName string) (*Pool, error) {
 }
 
 func (p *diskPool) ExtendPool(poolName string, devPath string) (bool, error) {
-	err := p.CreatePool(poolName)
-	if err != nil {
-		return false, err
-	}
-
 	devName := getDeviceName(devPath)
 	if devName == "" {
 		return false, fmt.Errorf("devName can't be empty(devPath: %s)", devPath)
 	}
 
 	poolDevicePath := types.ComposePoolDevicePath(poolName, devName)
-	err = os.Symlink(devPath, poolDevicePath)
+	err := os.Symlink(devPath, poolDevicePath)
 	if err != nil {
 		return false, err
 	}

@@ -211,7 +211,7 @@ func discoveryDevices(rootPath string) ([]string, error) {
 			log.Infof("Found disk %s exist in %s", info.Name(), rootPath)
 			discoveryDevices = append(discoveryDevices, info.Name())
 		} else {
-			log.Debugf("Found %s but not a device, skip it", info.Name())
+			log.Debugf("Found %s(mode: %s) in %s but not a device, skip it", info.Name(), info.Mode().Type().String(), rootPath)
 		}
 		return nil
 	})
@@ -261,7 +261,8 @@ func convertVolume(volumeName, devType types.DevType) (types.Volume, error) {
 	}
 
 	return types.Volume{
-		Name:     volumeName,
-		Capacity: capacity,
+		Name:       volumeName,
+		Capacity:   capacity,
+		AttachPath: actualPath,
 	}, nil
 }

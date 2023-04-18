@@ -21,4 +21,7 @@ type Volume struct {
 
 	// AttachNode
 	AttachNode string `json:"attachNode"`
+
+	// AttachPath represents where the volume is attached(e.g. /dev/sdb)
+	AttachPath string `json:"attachPath"`
 }

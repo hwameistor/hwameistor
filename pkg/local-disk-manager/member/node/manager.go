@@ -8,6 +8,7 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/registry"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/volume"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/kubernetes"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 	log "github.com/sirupsen/logrus"
@@ -201,23 +202,23 @@ func (m *nodeManager) LocalRegistry() registry.Manager {
 func (m *nodeManager) Start(c context.Context) error {
 	m.setupInformers()
 
+	if err := m.poolManager.Init(); err != nil {
+		m.logger.WithError(err).Error("Failed to init pool")
+		return err
+	}
+
 	if err := m.register(); err != nil {
 		m.logger.WithError(err).Error("Failed to register node")
 		return err
 	}
 
-	if err := m.syncNodeResources(); err != nil {
-		m.logger.WithError(err).Error("Failed to sync node resources")
-		return err
-	}
+	go m.startTimerSyncWorker(c)
 
 	go m.startDiskTaskWorker(c)
 
 	go m.startDiskClaimTaskWorker(c)
 
 	go m.startDiskNodeTaskWorker(c)
-
-	go m.startTimerSync(c)
 
 	// We are done, Stop Node Manager
 	<-c.Done()
@@ -263,6 +264,14 @@ func (m *nodeManager) discoveryNodeResources() {
 	m.registryManager.DiscoveryResources()
 }
 
+// findDiskState find if disk inuse according to inuse disk list
+var findDiskState = func(devPath string, inuseDisks []string) apisv1alpha1.State {
+	if _, ok := utils.StrFind(inuseDisks, devPath); ok {
+		return apisv1alpha1.DiskStateInUse
+	}
+	return apisv1alpha1.DiskStateAvailable
+}
+
 // rebuildLocalPools according discovery disks and volumes
 func (m *nodeManager) rebuildLocalPools() {
 	m.lock.Lock()
@@ -270,27 +279,30 @@ func (m *nodeManager) rebuildLocalPools() {
 
 	for _, devType := range types.DefaultDevTypes {
 		poolName := types.GetLocalDiskPoolName(devType)
+		// rebuild discovery volumes
+		var discoveryVolumes, inuseDisks []string
+		var usedCapacity int64
+		for _, classVolume := range m.registryManager.ListVolumesByType(devType) {
+			discoveryVolumes = append(discoveryVolumes, classVolume.Name)
+			inuseDisks = append(inuseDisks, classVolume.AttachPath)
+			usedCapacity += classVolume.Capacity
+		}
+
 		// rebuild discovery disks
 		var discoveryDisks []apisv1alpha1.LocalDevice
 		var totalCapacity, maxCapacity int64
 		for _, classDisk := range m.registryManager.ListDisksByType(devType) {
-			discoveryDisks = append(discoveryDisks, apisv1alpha1.LocalDevice{
+			discoveryDisk := apisv1alpha1.LocalDevice{
 				DevPath:       classDisk.DevPath,
 				Class:         classDisk.DiskType,
 				CapacityBytes: classDisk.Capacity,
-			})
-			totalCapacity += classDisk.Capacity
-			if maxCapacity < classDisk.Capacity {
+				State:         findDiskState(classDisk.DevPath, inuseDisks),
+			}
+			if discoveryDisk.State == apisv1alpha1.DiskStateAvailable && maxCapacity < classDisk.Capacity {
 				maxCapacity = classDisk.Capacity
 			}
-		}
-
-		// rebuild discovery volumes
-		var discoveryVolumes []string
-		var usedCapacity int64
-		for _, classVolume := range m.registryManager.ListVolumesByType(devType) {
-			discoveryVolumes = append(discoveryVolumes, classVolume.Name)
-			usedCapacity += classVolume.Capacity
+			totalCapacity += classDisk.Capacity
+			discoveryDisks = append(discoveryDisks, discoveryDisk)
 		}
 
 		if len(discoveryVolumes) == 0 && len(discoveryDisks) == 0 {
@@ -307,15 +319,17 @@ func (m *nodeManager) rebuildLocalPools() {
 		m.pools[poolName].TotalCapacityBytes = totalCapacity
 		m.pools[poolName].UsedCapacityBytes = usedCapacity
 		m.pools[poolName].FreeCapacityBytes = totalCapacity - usedCapacity
-		m.pools[poolName].TotalVolumeCount = types.MaxLimitVolume
+		m.pools[poolName].TotalVolumeCount = int64(len(discoveryDisks))
 		m.pools[poolName].UsedVolumeCount = int64(len(discoveryVolumes))
 		m.pools[poolName].VolumeCapacityBytesLimit = maxCapacity
-		m.pools[poolName].FreeVolumeCount = types.MaxLimitVolume - int64(len(discoveryVolumes))
+		m.pools[poolName].FreeVolumeCount = int64(len(discoveryDisks) - len(discoveryVolumes))
 	}
 }
 
 // syncNodeResources sync discovery resources to ApiServer
 func (m *nodeManager) syncNodeResources() error {
+	m.logger.Info("Start to sync node resource")
+
 	// 1. rebuild local registry
 	m.discoveryNodeResources()
 
@@ -334,7 +348,7 @@ func (m *nodeManager) syncNodeResources() error {
 	if diskNode.Status.Pools == nil {
 		diskNode.Status.Pools = make(map[types.DevType]apisv1alpha1.LocalPool)
 	}
-	var totalDisk, totalCapacity, freeCapacity int64
+	var totalDisk, totalCapacity, freeCapacity int64 = 0, 0, 0
 	localPools := make(map[types.DevType]apisv1alpha1.LocalPool)
 	for pooName, localPool := range m.pools {
 		lp := apisv1alpha1.LocalPool{}
@@ -348,8 +362,12 @@ func (m *nodeManager) syncNodeResources() error {
 	diskNode.Status.TotalDisk = totalDisk
 	diskNode.Status.TotalCapacity = totalCapacity
 	diskNode.Status.FreeCapacity = freeCapacity
-	m.logger.WithField("totalCapacity", totalCapacity).Info("Pool info")
-	return m.k8sClient.Update(context.TODO(), &diskNode)
+	if err = m.k8sClient.Update(context.TODO(), &diskNode); err != nil {
+		return err
+	}
+
+	m.logger.Info("Succeed to sync node resource")
+	return nil
 }
 
 func (m *nodeManager) register() error {
@@ -368,8 +386,8 @@ func (m *nodeManager) register() error {
 }
 
 // sync node resource timely
-func (m *nodeManager) startTimerSync(c context.Context) {
-	m.logger.WithField("syncDuration", duration).Info("Start syncNodeResources timer")
+func (m *nodeManager) startTimerSyncWorker(c context.Context) {
+	m.logger.WithField("period", duration.String()).Info("Start node resource sync timer worker")
 
 	wait.Until(func() {
 		if err := m.syncNodeResources(); err != nil {
@@ -377,7 +395,7 @@ func (m *nodeManager) startTimerSync(c context.Context) {
 		}
 	}, duration, c.Done())
 
-	m.logger.Info("Stop syncNodeResources timer")
+	m.logger.Info("Stop node resource sync timer worker")
 }
 
 // setOptionsDefaults set default values for Options fields
