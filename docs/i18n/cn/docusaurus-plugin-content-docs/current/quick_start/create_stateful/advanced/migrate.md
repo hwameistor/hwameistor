@@ -48,7 +48,7 @@ kubectl -n hwameistor scale --current-replicas=1 --replicas=0 deployment/nginx-l
 ## 步骤 5: 创建迁移任务
 
 ```console
-cat > ./migrate_lv.yaml <<- EOF
+cat << EOF | kubectl apply -f -
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalVolumeMigrate
 metadata:
@@ -71,7 +71,18 @@ EOF
 2）如果不指定 targetNodesSuggested，系统会根据容量平衡原则自动选择一个适合的节点进行迁移。
 
 ```console
-$ kubectl apply -f ./migrate_lv.yaml
+cat << EOF | kubectl apply -f -
+apiVersion: hwameistor.io/v1alpha1
+kind: LocalVolumeMigrate
+metadata:
+  namespace: hwameistor
+  name: <localVolumeMigrateName>
+spec:
+  sourceNode: <sourceNodeName>
+  targetNodesSuggested: []
+  volumeName: <volName>
+  migrateAllVols: <true/false>
+EOF
 ```
 
 ## 步骤 6: 查看迁移状态
