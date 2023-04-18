@@ -80,6 +80,21 @@ Attentions:
 
 2) If targetNodesSuggested is emtpy or not set, HwameiStore will automatically select a propriate node for the migrate. If there is no valid candidate, the migrate will fail.
 
+```console
+cat << EOF | kubectl apply -f -
+apiVersion: hwameistor.io/v1alpha1
+kind: LocalVolumeMigrate
+metadata:
+  namespace: hwameistor
+  name: <localVolumeMigrateName>
+spec:
+  sourceNode: <sourceNodeName>
+  targetNodesSuggested: []
+  volumeName: <volName>
+  migrateAllVols: <true/false>
+EOF
+```
+
 ## Step 6: Check migration Status
 
 ```console
