@@ -185,6 +185,16 @@ spec:
                 format: int64
                 minimum: 4194304
                 type: integer
+              volumeQoS:
+                description: VolumeQoS is the QoS of the volume
+                properties:
+                  iops:
+                    description: IOPS defines the IOPS of the volume
+                    type: string
+                  throughput:
+                    description: Throughput defines the throughput of the volume
+                    type: string
+                type: object
               volumegroup:
                 description: VolumeGroup is the group name of the local volumes. It
                   is designed for the scheduling and allocating.
@@ -226,7 +236,7 @@ spec:
                 type: integer
               usedCapacityBytes:
                 description: UsedCapacityBytes is the used capacity in bytes of the
-                  volume, which is avaiable only for filesystem
+                  volume, which is available only for filesystem
                 format: int64
                 type: integer
               usedInode:

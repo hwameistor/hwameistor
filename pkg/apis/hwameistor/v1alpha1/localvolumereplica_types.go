@@ -23,6 +23,9 @@ type LocalVolumeReplicaSpec struct {
 	// +kubebuilder:validation:Minimum:=4194304
 	RequiredCapacityBytes int64 `json:"requiredCapacityBytes,omitempty"`
 
+	// VolumeQoS is the QoS of the volume
+	VolumeQoS VolumeQoS `json:"volumeQoS,omitempty"`
+
 	// Delete is to indicate where the replica should be deleted or not.
 	// It's different from the regular resource delete interface in Kubernetes.
 	// The purpose is to protect it from any mistakes

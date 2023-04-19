@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -106,6 +107,7 @@ func (m *manager) createVolumeReplica(vol *apisv1alpha1.LocalVolume) error {
 			VolumeName:            vol.Name,
 			PoolName:              vol.Spec.PoolName,
 			RequiredCapacityBytes: vol.Spec.RequiredCapacityBytes,
+			VolumeQoS:             vol.Spec.VolumeQoS,
 			NodeName:              m.name,
 		},
 	}
@@ -138,6 +140,13 @@ func (m *manager) updateVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica, 
 		// for capacity expansion
 		logCtx.Debug("Expand LocalVolumeReplica capacity")
 		replica.Spec.RequiredCapacityBytes = vol.Spec.RequiredCapacityBytes
+		return m.apiClient.Update(context.TODO(), replica)
+	}
+
+	if !reflect.DeepEqual(vol.Spec.VolumeQoS, replica.Spec.VolumeQoS) {
+		// for QoS update
+		logCtx.Debug("Update LocalVolumeReplica QoS")
+		replica.Spec.VolumeQoS = vol.Spec.VolumeQoS
 		return m.apiClient.Update(context.TODO(), replica)
 	}
 

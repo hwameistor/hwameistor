@@ -126,6 +126,11 @@ func (m *manager) processVolumeReplicaCheck(replica *apisv1alpha1.LocalVolumeRep
 		return err
 	}
 
+	if err := m.configureQoS(replica); err != nil {
+		m.logger.WithError(err).Error("Failed to configure QoS for VolumeReplica")
+		return err
+	}
+
 	// idempotent operation
 	// 1. configure for HA volume by replication module like DRBD
 	// 2. configure for non-HA volume transit from HA by removing replication module

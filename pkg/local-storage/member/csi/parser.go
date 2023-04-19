@@ -22,6 +22,8 @@ type volumeParameters struct {
 	convertible   bool
 	pvcName       string
 	pvcNamespace  string
+	throughput    string
+	iops          string
 }
 
 func parseParameters(req RequestParameterHandler) (*volumeParameters, error) {
@@ -78,5 +80,7 @@ func parseParameters(req RequestParameterHandler) (*volumeParameters, error) {
 		convertible:   convertible,
 		pvcNamespace:  pvcNamespace,
 		pvcName:       pvcName,
+		throughput:    params[apisv1alpha1.VolumeParameterThroughput],
+		iops:          params[apisv1alpha1.VolumeParameterIOPS],
 	}, nil
 }

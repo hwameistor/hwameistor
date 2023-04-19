@@ -106,18 +106,27 @@ func (p *plugin) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 		return resp, nil
 	}
 
-	if req.GetVolumeCapability().GetBlock() != nil {
+	// mount volume
+	volumeCap := req.GetVolumeCapability()
+	switch volumeCap.GetAccessType().(type) {
+	case *csi.VolumeCapability_Block:
 		// raw block
-		return resp, p.mounter.MountRawBlock(devicePath, req.TargetPath)
-	}
-
-	if mnt := req.GetVolumeCapability().GetMount(); mnt != nil {
+		err := p.mounter.MountRawBlock(devicePath, req.TargetPath)
+		if err != nil {
+			return resp, err
+		}
+	case *csi.VolumeCapability_Mount:
 		// filesystem block
-		return resp, p.mounter.FormatAndMount(devicePath, req.TargetPath, mnt.FsType, mnt.MountFlags)
+		mnt := req.GetVolumeCapability().GetMount()
+		err := p.mounter.FormatAndMount(devicePath, req.TargetPath, mnt.FsType, mnt.MountFlags)
+		if err != nil {
+			return resp, err
+		}
+	default:
+		return resp, fmt.Errorf("invalid access type")
 	}
 
-	return resp, fmt.Errorf("invalid access type")
-
+	return resp, nil
 }
 
 // NodeUnpublishVolume -  it will umount the volume from the pod's mountpoint

@@ -78,6 +78,16 @@ spec:
               volumeName:
                 description: VolumeName is the name of the volume, e.g. pvc-fbf3ffc3-66db-4dae-9032-bda3c61b8f85
                 type: string
+              volumeQoS:
+                description: VolumeQoS is the QoS of the volume
+                properties:
+                  iops:
+                    description: IOPS defines the IOPS of the volume
+                    type: string
+                  throughput:
+                    description: Throughput defines the throughput of the volume
+                    type: string
+                type: object
             type: object
           status:
             description: LocalVolumeReplicaStatus defines the observed state of LocalVolumeReplica

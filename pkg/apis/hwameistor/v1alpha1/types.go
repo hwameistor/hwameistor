@@ -112,6 +112,8 @@ const (
 	VolumeParameterReplicaNumberKey = "replicaNumber"
 	VolumeParameterFSTypeKey        = "csi.storage.k8s.io/fstype"
 	VolumeParameterConvertible      = "convertible"
+	VolumeParameterThroughput       = "provision-throughput-on-creation"
+	VolumeParameterIOPS             = "provision-iops-on-creation"
 )
 
 // misc
