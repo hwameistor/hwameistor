@@ -1,9 +1,8 @@
 package scheduler
 
 import (
+	diskscheduler "github.com/hwameistor/hwameistor/pkg/local-disk-manager/scheduler"
 	framework "k8s.io/kubernetes/pkg/scheduler/framework"
-
-	diskscheduler "github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/scheduler"
 )
 
 func NewDiskVolumeScheduler(f framework.Handle) VolumeScheduler {

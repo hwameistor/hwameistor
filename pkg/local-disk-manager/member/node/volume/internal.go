@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/disk"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
+	"sort"
 	"strconv"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
@@ -19,12 +20,6 @@ import (
 )
 
 type DiskType = string
-
-const (
-	HDD  DiskType = "HDD"
-	SSD  DiskType = "SSD"
-	NVMe DiskType = "NVME"
-)
 
 // consts
 const (
@@ -132,38 +127,37 @@ func New() Manager {
 }
 
 func (vm *localDiskVolumeManager) CreateVolume(name string, parameters interface{}) (*types.Volume, error) {
-	r, err := vm.ParseVolumeRequest(parameters)
+	volumeRequest, err := vm.ParseVolumeRequest(parameters)
 	if err != nil {
 		log.WithError(err).Error("Failed to ParseVolumeRequest")
 		return nil, err
 	}
 	logCtx := log.Fields{
 		"volume":           name,
-		"node":             r.OwnerNodeName,
-		"pvcNamespaceName": r.PVCNameSpace + "/" + r.PVCName}
+		"node":             volumeRequest.OwnerNodeName,
+		"pvcNamespaceName": volumeRequest.PVCNameSpace + "/" + volumeRequest.PVCName}
 
-	// get reserved disk for the volume
-	reservedDisk, err := vm.dm.GetReservedDiskByPVC(r.PVCNameSpace + "-" + r.PVCName)
+	// select suitable disk for the volume
+	selectDisk, err := vm.findSuitableDisk(volumeRequest)
 	if err != nil {
-		log.WithError(err).Error("failed to get reserved disk")
+		log.WithFields(logCtx).WithError(err).Error("Failed to find suitable disk")
 		return nil, err
 	}
-	if reservedDisk == nil {
-		err = fmt.Errorf("there is no disk reserved by pvc")
-		log.WithFields(logCtx).WithError(err).Error(err)
+	if selectDisk == nil {
+		err = fmt.Errorf("there is no suitable disk")
 		return nil, err
 	}
-	log.WithFields(logCtx).Debugf("get reserve disk %s success", reservedDisk.Name)
+	log.WithFields(logCtx).Debugf("Succeed to select disk %s success", selectDisk.Name)
 
 	// create LocalDiskVolume if not exist
 	volume, err := localdiskvolume.NewBuilder().WithName(name).
-		SetupDiskType(r.DiskType).
-		SetupDisk(reservedDisk.DevPath).
-		SetupLocalDiskName(reservedDisk.Name).
-		SetupAllocateCap(reservedDisk.Capacity).
-		SetupRequiredCapacityBytes(r.RequireCapacity).
-		SetupPVCNameSpaceName(r.PVCNameSpace + "/" + r.PVCName).
-		SetupAccessibility(v1alpha1.AccessibilityTopology{Nodes: []string{r.OwnerNodeName}}).
+		SetupDiskType(volumeRequest.DiskType).
+		SetupDisk(selectDisk.DevPath).
+		SetupLocalDiskName(selectDisk.Name).
+		SetupAllocateCap(selectDisk.Capacity).
+		SetupRequiredCapacityBytes(volumeRequest.RequireCapacity).
+		SetupPVCNameSpaceName(volumeRequest.PVCNameSpace + "/" + volumeRequest.PVCName).
+		SetupAccessibility(v1alpha1.AccessibilityTopology{Nodes: []string{volumeRequest.OwnerNodeName}}).
 		SetupStatus(v1alpha1.VolumeStateCreated).Build()
 	if err != nil {
 		log.WithError(err).Error("Failed to build volume object")
@@ -173,12 +167,6 @@ func (vm *localDiskVolumeManager) CreateVolume(name string, parameters interface
 	v, err := vm.createVolume(volume)
 	if err != nil {
 		log.WithError(err).Error("Failed to create volume")
-		return nil, err
-	}
-
-	// fixme: auto-detect disk status is a better way
-	if err = vm.dm.ClaimDisk(volume.Status.LocalDiskName); err != nil {
-		log.WithError(err).Errorf("Failed to update localdisk %s status to InUse", volume.Status.LocalDiskName)
 		return nil, err
 	}
 
@@ -218,12 +206,6 @@ func (vm *localDiskVolumeManager) UpdateVolume(name string, parameters interface
 
 	v, err := vm.updateVolume(newVolume)
 	if err != nil {
-		return nil, err
-	}
-
-	// fixme: auto-detect disk status is a better way
-	if err = vm.dm.ClaimDisk(newVolume.Status.LocalDiskName); err != nil {
-		log.WithError(err).Errorf("Failed to update localdisk %s status to InUse", volume.Status.LocalDiskName)
 		return nil, err
 	}
 
@@ -328,10 +310,7 @@ func (vm *localDiskVolumeManager) DeleteVolume(ctx context.Context, name string)
 	}
 
 	// 2. once volume is safely deleted, disk can be released
-	if err = vm.dm.ReleaseDisk(volume.GetBoundDisk()); err != nil {
-		log.WithError(err).Errorf("Failed to release disk %s", volume.GetBoundDisk())
-		return err
-	}
+	// todo: release disk
 
 	// 3. remove finalizer, volume will be deleted totally
 	_ = volume.RemoveFinalizers()
@@ -557,4 +536,23 @@ func (vm *localDiskVolumeManager) quireBytes(csiRequest *csi.CreateVolumeRequest
 	}
 
 	return pvcRequireBytes, nil
+}
+
+// findSuitableDisk according volume request(contains attach-node, request storage capacity)
+func (vm *localDiskVolumeManager) findSuitableDisk(vq *VolumeRequest) (*types.Disk, error) {
+	disks, err := vm.dm.GetNodeDisks(vq.OwnerNodeName)
+	if err != nil {
+		return nil, err
+	}
+	var suitableDisk *types.Disk
+	var sortDisks = utils.ByDiskSize(disks)
+	sort.Sort(sortDisks)
+	for _, d := range sortDisks {
+		// todo: filter disk already reserve by volume according to localdiskvolume
+		if d.Status != types.DiskStatusAvailable || d.DiskType != vq.DiskType || d.Capacity < vq.RequireCapacity {
+			continue
+		}
+		suitableDisk = &d
+	}
+	return suitableDisk, nil
 }

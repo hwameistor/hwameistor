@@ -1775,6 +1775,7 @@ k8s.io/component-base v0.21.0/go.mod h1:qvtjz6X0USWXbgmbfXR+Agik4RZ3jv2Bgr5QnZzd
 k8s.io/component-helpers v0.21.0 h1:SoWLsd63LI5uwofcHVSO4jtlmZEJRycfwNBKU4eAGPQ=
 k8s.io/component-helpers v0.21.0/go.mod h1:tezqefP7lxfvJyR+0a+6QtVrkZ/wIkyMLK4WcQ3Cj8U=
 k8s.io/controller-manager v0.21.0/go.mod h1:Ohy0GRNRKPVjB8C8G+dV+4aPn26m8HYUI6ejloUBvUA=
+k8s.io/cri-api v0.21.2-rc.0 h1:/dKzg0sYbeen0fsedA990smHa8AxRJwtCFrGLJoKsv4=
 k8s.io/cri-api v0.21.2-rc.0/go.mod h1:nJbXlTpXwYCYuGMR7v3PQb1Du4WOGj2I9085xMVjr3I=
 k8s.io/csi-translation-lib v0.21.0 h1:kzwraa2eenvtMuOAe+xSQgIgG0G88pocorYP8CSitRY=
 k8s.io/csi-translation-lib v0.21.0/go.mod h1:edq+UMpgqEx3roTuGF/03uIuSOsI986jtu65+ytLlkA=

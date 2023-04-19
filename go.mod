@@ -82,6 +82,7 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	k8s.io/cloud-provider v0.21.0 // indirect
 	k8s.io/component-base v0.21.2 // indirect
+	k8s.io/cri-api v0.0.0 // indirect
 	k8s.io/csi-translation-lib v0.21.0 // indirect
 	k8s.io/kube-scheduler v0.0.0 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.15 // indirect
