@@ -7,9 +7,8 @@ const (
 	SysDeviceRoot       = "/dev"
 
 	// sub path store sub resources under LocalDiskPool
-
-	DiskSubPath   = "disk"
-	VolumeSubPath = "volume"
+	diskSubPath   = "disk"
+	volumeSubPath = "volume"
 )
 
 var (
@@ -27,15 +26,15 @@ func GetLocalDiskPoolPath(devType DevType) string {
 }
 
 func GetPoolDiskPath(devType DevType) string {
-	return path.Join(GetLocalDiskPoolPath(devType), DiskSubPath)
+	return path.Join(GetLocalDiskPoolPath(devType), diskSubPath)
 }
 
 func GetPoolVolumePath(devType DevType) string {
-	return path.Join(GetLocalDiskPoolPath(devType), VolumeSubPath)
+	return path.Join(GetLocalDiskPoolPath(devType), volumeSubPath)
 }
 
 func ComposePoolDevicePath(poolName, devName string) string {
-	return path.Join(path.Join(SysDeviceRoot, poolName, DiskSubPath), devName)
+	return path.Join(path.Join(SysDeviceRoot, poolName, diskSubPath), devName)
 }
 
 func GetDefaultDiskPoolPath() (dps []string) {
