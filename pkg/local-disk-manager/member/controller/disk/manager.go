@@ -9,4 +9,10 @@ import (
 type Manager interface {
 	// GetNodeDisks list all disk located on the node
 	GetNodeDisks(node string) ([]types.Disk, error)
+
+	GetNodeAvailableDisks(node string) ([]types.Disk, error)
+
+	MarkNodeDiskInuse(node string, disk *types.Disk) error
+
+	MarkNodeDiskAvailable(node string, disk *types.Disk) error
 }

@@ -14,7 +14,7 @@ spec:
   scope: Cluster
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .spec.accessibility.node
+    - jsonPath: .spec.accessibility.nodes[0]
       name: Node
       type: string
     - jsonPath: .status.devPath

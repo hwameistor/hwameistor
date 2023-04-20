@@ -3,7 +3,7 @@ package volume
 import (
 	"context"
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/disk"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/controller/disk"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
 	"sort"
 	"strconv"
@@ -138,23 +138,23 @@ func (vm *localDiskVolumeManager) CreateVolume(name string, parameters interface
 		"pvcNamespaceName": volumeRequest.PVCNameSpace + "/" + volumeRequest.PVCName}
 
 	// select suitable disk for the volume
-	selectDisk, err := vm.findSuitableDisk(volumeRequest)
+	selectedDisk, err := vm.findSuitableDisk(volumeRequest)
 	if err != nil {
 		log.WithFields(logCtx).WithError(err).Error("Failed to find suitable disk")
 		return nil, err
 	}
-	if selectDisk == nil {
+	if selectedDisk == nil {
 		err = fmt.Errorf("there is no suitable disk")
 		return nil, err
 	}
-	log.WithFields(logCtx).Debugf("Succeed to select disk %s success", selectDisk.Name)
+	log.WithFields(logCtx).Debugf("Select disk %s to place volume", selectedDisk.Name)
 
 	// create LocalDiskVolume if not exist
 	volume, err := localdiskvolume.NewBuilder().WithName(name).
 		SetupDiskType(volumeRequest.DiskType).
-		SetupDisk(selectDisk.DevPath).
-		SetupLocalDiskName(selectDisk.Name).
-		SetupAllocateCap(selectDisk.Capacity).
+		SetupDisk(selectedDisk.DevPath).
+		SetupLocalDiskName(selectedDisk.Name).
+		SetupAllocateCap(selectedDisk.Capacity).
 		SetupRequiredCapacityBytes(volumeRequest.RequireCapacity).
 		SetupPVCNameSpaceName(volumeRequest.PVCNameSpace + "/" + volumeRequest.PVCName).
 		SetupAccessibility(v1alpha1.AccessibilityTopology{Nodes: []string{volumeRequest.OwnerNodeName}}).
@@ -164,17 +164,22 @@ func (vm *localDiskVolumeManager) CreateVolume(name string, parameters interface
 		return nil, err
 	}
 
-	v, err := vm.createVolume(volume)
+	createVolume, err := vm.createVolume(volume)
 	if err != nil {
 		log.WithError(err).Error("Failed to create volume")
 		return nil, err
 	}
 
+	//if err = vm.markNodeDiskInuse(volumeRequest.OwnerNodeName, selectedDisk); err != nil {
+	//	log.WithFields(logCtx).WithField("selectedDisk", selectedDisk.DevPath).WithError(err).Error("Failed to mark select disk state as inuse")
+	//	return nil, err
+	//}
+
 	return &types.Volume{
-		Name:     v.Name,
+		Name:     createVolume.Name,
 		Exist:    true,
-		Capacity: v.Status.AllocatedCapacityBytes,
-		Ready:    v.Status.State == v1alpha1.VolumeStateReady}, nil
+		Capacity: createVolume.Status.AllocatedCapacityBytes,
+		Ready:    createVolume.Status.State == v1alpha1.VolumeStateReady}, nil
 }
 
 func (vm *localDiskVolumeManager) UpdateVolume(name string, parameters interface{}) (*types.Volume, error) {
@@ -208,6 +213,12 @@ func (vm *localDiskVolumeManager) UpdateVolume(name string, parameters interface
 	if err != nil {
 		return nil, err
 	}
+
+	//selectedDisk := &types.Disk{DevPath: newVolume.Status.DevPath, DiskType: newVolume.Spec.DiskType}
+	//if err = vm.markNodeDiskInuse(r.OwnerNodeName, selectedDisk); err != nil {
+	//	log.WithField("selectedDisk", selectedDisk.DevPath).WithError(err).Error("Failed to mark select disk state as inuse")
+	//	return nil, err
+	//}
 
 	return &types.Volume{
 		Name:     v.Name,
@@ -310,7 +321,13 @@ func (vm *localDiskVolumeManager) DeleteVolume(ctx context.Context, name string)
 	}
 
 	// 2. once volume is safely deleted, disk can be released
-	// todo: release disk
+	//if volume.Ldv.Spec.Accessibility.Nodes != nil {
+	//	toReleaseDisk := &types.Disk{DevPath: volume.Ldv.Status.DevPath, DiskType: volume.Ldv.Spec.DiskType}
+	//	if err = vm.dm.MarkNodeDiskAvailable(volume.Ldv.Spec.Accessibility.Nodes[0], toReleaseDisk); err != nil {
+	//		log.WithError(err).WithFields(log.Fields{"volume": name, "toReleaseDisk": toReleaseDisk.DevPath}).Error("Failed to mark disk as Available")
+	//		return err
+	//	}
+	//}
 
 	// 3. remove finalizer, volume will be deleted totally
 	_ = volume.RemoveFinalizers()
@@ -540,19 +557,27 @@ func (vm *localDiskVolumeManager) quireBytes(csiRequest *csi.CreateVolumeRequest
 
 // findSuitableDisk according volume request(contains attach-node, request storage capacity)
 func (vm *localDiskVolumeManager) findSuitableDisk(vq *VolumeRequest) (*types.Disk, error) {
-	disks, err := vm.dm.GetNodeDisks(vq.OwnerNodeName)
+	nodeAvailableDisks, err := vm.dm.GetNodeAvailableDisks(vq.OwnerNodeName)
 	if err != nil {
 		return nil, err
 	}
 	var suitableDisk *types.Disk
-	var sortDisks = utils.ByDiskSize(disks)
+	var sortDisks = utils.ByDiskSize(nodeAvailableDisks)
 	sort.Sort(sortDisks)
-	for _, d := range sortDisks {
-		// todo: filter disk already reserve by volume according to localdiskvolume
-		if d.Status != types.DiskStatusAvailable || d.DiskType != vq.DiskType || d.Capacity < vq.RequireCapacity {
-			continue
+	for _, availableDisk := range sortDisks {
+		if availableDisk.DiskType == vq.DiskType && availableDisk.Capacity >= vq.RequireCapacity {
+			suitableDisk = &availableDisk
+			break
 		}
-		suitableDisk = &d
+		continue
 	}
 	return suitableDisk, nil
+}
+
+func (vm *localDiskVolumeManager) markNodeDiskInuse(node string, disk *types.Disk) error {
+	return vm.dm.MarkNodeDiskInuse(node, disk)
+}
+
+func (vm *localDiskVolumeManager) markNodeDiskAvailable(node string, disk *types.Disk) error {
+	return vm.dm.MarkNodeDiskAvailable(node, disk)
 }

@@ -1,39 +1,54 @@
 package volume
 
 import (
-	"context"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
+	"k8s.io/kubernetes/pkg/volume/util/hostutil"
+	"os"
+	"path"
 )
 
-const (
-	TopologyNodeKey = "topology.disk.hwameistor.io/node"
-)
-
+// Manager responsible for creating, updating, and deleting volumes on nodes
 type Manager interface {
-	// CreateVolume when volume is not exist
-	CreateVolume(name string, volumeRequest interface{}) (*types.Volume, error)
+	// CreateVolume create volume from device exist in pool
+	CreateVolume(name string, pool string, device string) error
 
-	// UpdateVolume
-	UpdateVolume(name string, volumeRequest interface{}) (*types.Volume, error)
+	// DeleteVolume delete volume from pool and release bound disk
+	DeleteVolume(name string, pool string) error
 
-	// NodePublishVolume
-	NodePublishVolume(ctx context.Context, volumeRequest interface{}) error
+	// GetVolume return info about this volume
+	GetVolume(name string) *types.Volume
+}
 
-	// NodeUnpublishVolume
-	NodeUnpublishVolume(ctx context.Context, name, targetPath string) error
+type volume struct {
+	hu hostutil.HostUtils
+}
 
-	// DeleteVolume
-	DeleteVolume(ctx context.Context, name string) error
+// CreateVolume create volume symlink for bound disk
+func (v *volume) CreateVolume(volume string, pool string, device string) error {
+	devicePath := path.Join("..", "disk", device)
+	volumePath := types.ComposePoolVolumePath(pool, volume)
+	exist, err := v.hu.PathExists(volumePath)
+	if err != nil || exist {
+		return err
+	}
+	return os.Symlink(devicePath, volumePath)
+}
 
-	// GetVolumeInfo
-	GetVolumeInfo(name string) (*types.Volume, error)
+func (v *volume) DeleteVolume(volume string, pool string) error {
+	volumePath := types.ComposePoolVolumePath(pool, volume)
+	exist, err := v.hu.PathExists(volumePath)
+	if err != nil || !exist {
+		return err
+	}
+	return os.Remove(volumePath)
+}
 
-	// GetVolumeCapacities
-	GetVolumeCapacities() interface{}
+func (v *volume) GetVolume(name string) *types.Volume {
+	return nil
+}
 
-	// VolumeIsReady
-	VolumeIsReady(name string) (bool, error)
-
-	// VolumeIsExist
-	VolumeIsExist(name string) (bool, error)
+func New() Manager {
+	return &volume{
+		hu: hostutil.NewHostUtil(),
+	}
 }

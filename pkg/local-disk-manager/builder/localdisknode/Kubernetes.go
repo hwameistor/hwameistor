@@ -2,6 +2,7 @@ package localdisknode
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,24 +58,12 @@ func (k *Kubeclient) Update(ldn *v1alpha1.LocalDiskNode) (*v1alpha1.LocalDiskNod
 	return k.clientset.HwameistorV1alpha1().LocalDiskNodes().Update(context.Background(), ldn, v1.UpdateOptions{})
 }
 
-//
-//func (k *Kubeclient) updateDiskStatus(node, devPath, status string) (*v1alpha1.LocalDiskNode, error) {
-//	ldn, err := k.Get(node)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	ldnNew := ldn.DeepCopy()
-//	for i, disk := range ldnNew.Spec.Disks {
-//		if disk.DevPath == devPath {
-//			ldnNew.Spec.Disks[i].Status = status
-//			break
-//		}
-//	}
-//
-//	return k.clientset.HwameistorV1alpha1().LocalDiskNodes().Update(context.Background(), ldnNew, v1.UpdateOptions{})
-//}
-
-//func (k *Kubeclient) UpdateDiskStatusInUse(node, devPath string) (*v1alpha1.LocalDiskNode, error) {
-//	return k.updateDiskStatus(node, devPath, "InUse")
-//}
+func (k *Kubeclient) Patch(ldnOld, ldnNew *v1alpha1.LocalDiskNode) error {
+	patch := client.MergeFrom(ldnOld)
+	patchData, err := patch.Data(ldnNew)
+	if err != nil {
+		return err
+	}
+	_, err = k.clientset.HwameistorV1alpha1().LocalDiskNodes().Patch(context.Background(), ldnNew.GetName(), patch.Type(), patchData, v1.PatchOptions{})
+	return err
+}

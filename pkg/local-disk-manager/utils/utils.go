@@ -122,7 +122,7 @@ func FoundNewStringElems(old, new []string) ([]string, bool) {
 type ByDiskSize []types.Disk
 
 func (a ByDiskSize) Less(i, j int) bool {
-	return a[i].Capacity > a[j].Capacity
+	return a[i].Capacity < a[j].Capacity
 }
 func (a ByDiskSize) Len() int      { return len(a) }
 func (a ByDiskSize) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
@@ -132,7 +132,7 @@ func (a ByDiskSize) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 type ByVolumeCapacity []*corev1.PersistentVolumeClaim
 
 func (a ByVolumeCapacity) Less(i, j int) bool {
-	return a[i].Spec.Resources.Requests.Storage().Value() > a[j].Spec.Resources.Requests.Storage().Value()
+	return a[i].Spec.Resources.Requests.Storage().Value() < a[j].Spec.Resources.Requests.Storage().Value()
 }
 func (a ByVolumeCapacity) Len() int      { return len(a) }
 func (a ByVolumeCapacity) Swap(i, j int) { a[i], a[j] = a[j], a[i] }

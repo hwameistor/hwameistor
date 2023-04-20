@@ -62,6 +62,79 @@ func (ldn *localDiskNodesManager) GetNodeDisks(node string) ([]types.Disk, error
 	return nodeDisks, nil
 }
 
+// GetNodeAvailableDisks get available disks which attached on the node
+func (ldn *localDiskNodesManager) GetNodeAvailableDisks(node string) ([]types.Disk, error) {
+	cli, err := ldn.GetClient()
+	if err != nil {
+		return nil, err
+	}
+
+	var diskNode *v1alpha1.LocalDiskNode
+	diskNode, err = cli.Get(node)
+	if err != nil {
+		return nil, err
+	}
+
+	var nodeAvailableDisks []types.Disk
+	for _, pool := range diskNode.Status.Pools {
+		for _, disk := range pool.Disks {
+			if disk.State == v1alpha1.DiskStateAvailable {
+				nodeAvailableDisks = append(nodeAvailableDisks, *convertToDisk(node, disk))
+			}
+		}
+	}
+
+	return nodeAvailableDisks, nil
+}
+
+func (ldn *localDiskNodesManager) MarkNodeDiskInuse(node string, disk *types.Disk) error {
+	cli, err := ldn.GetClient()
+	if err != nil {
+		return err
+	}
+
+	var diskNode *v1alpha1.LocalDiskNode
+	diskNode, err = cli.Get(node)
+	if err != nil {
+		return err
+	}
+
+	diskNodeOld := diskNode.DeepCopy()
+	poolName := types.GetLocalDiskPoolName(disk.DiskType)
+	for i, poolDisk := range diskNode.Status.Pools[poolName].Disks {
+		if poolDisk.DevPath == disk.DevPath {
+			diskNode.Status.Pools[poolName].Disks[i].State = v1alpha1.DiskStateInUse
+			break
+		}
+	}
+
+	return cli.Patch(diskNodeOld, diskNode)
+}
+
+func (ldn *localDiskNodesManager) MarkNodeDiskAvailable(node string, disk *types.Disk) error {
+	cli, err := ldn.GetClient()
+	if err != nil {
+		return err
+	}
+
+	var diskNode *v1alpha1.LocalDiskNode
+	diskNode, err = cli.Get(node)
+	if err != nil {
+		return err
+	}
+
+	diskNodeOld := diskNode.DeepCopy()
+	poolName := types.GetLocalDiskPoolName(disk.DiskType)
+	for i, poolDisk := range diskNode.Status.Pools[poolName].Disks {
+		if poolDisk.DevPath == disk.DevPath {
+			diskNode.Status.Pools[poolName].Disks[i].State = v1alpha1.DiskStateAvailable
+			break
+		}
+	}
+
+	return cli.Patch(diskNodeOld, diskNode)
+}
+
 func convertToDisk(diskNode string, disk v1alpha1.LocalDevice) *types.Disk {
 	return &types.Disk{
 		AttachNode: diskNode,

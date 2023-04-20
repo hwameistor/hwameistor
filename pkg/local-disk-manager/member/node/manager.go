@@ -2,8 +2,9 @@ package node
 
 import (
 	"context"
+	"github.com/fsnotify/fsnotify"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/disk"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/controller/disk"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/pool"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/registry"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/volume"
@@ -212,6 +213,8 @@ func (m *nodeManager) Start(c context.Context) error {
 		return err
 	}
 
+	go m.startPoolEventsWatcher(c)
+
 	go m.startTimerSyncWorker(c)
 
 	go m.startDiskTaskWorker(c)
@@ -306,6 +309,7 @@ func (m *nodeManager) rebuildLocalPools() {
 		}
 
 		if len(discoveryVolumes) == 0 && len(discoveryDisks) == 0 {
+			delete(m.pools, poolName)
 			continue
 		}
 		if m.pools[poolName] == nil {
@@ -396,6 +400,54 @@ func (m *nodeManager) startTimerSyncWorker(c context.Context) {
 	}, duration, c.Done())
 
 	m.logger.Info("Stop node resource sync timer worker")
+}
+
+func (m *nodeManager) startPoolEventsWatcher(c context.Context) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		m.logger.WithError(err).Fatal("Failed to start pool events watcher")
+	}
+	defer watcher.Close()
+
+	for _, poolType := range types.DefaultDevTypes {
+		volumePath := types.GetPoolVolumePath(poolType)
+		if err := watcher.Add(volumePath); err != nil {
+			m.logger.WithError(err).WithField("volumePath", volumePath).Fatal("Failed to add pool volume to watch path")
+		}
+		m.logger.Infof("Succeed to add pool volume %s to watch path ", volumePath)
+
+		diskPath := types.GetPoolDiskPath(poolType)
+		if err := watcher.Add(diskPath); err != nil {
+			m.logger.WithError(err).WithField("diskPath", volumePath).Fatal("Failed to add pool disk to watch path")
+		}
+		m.logger.Infof("Succeed to add pool disk %s to watch path ", diskPath)
+	}
+
+	// Start listening for events.
+	wait.Until(func() {
+		m.logger.Info("Start watching pool events")
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				m.logger.WithField("event", event).Debug("Receive events from pool, start sync node resources")
+				if err = m.syncNodeResources(); err != nil {
+					m.logger.WithError(err).Error("Failed to sync node resource")
+				}
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					m.logger.WithError(err).Error("Pool events chan is closed, exiting now")
+					return
+				}
+				m.logger.WithError(err).Error("Error happened when watch pool events, exiting now")
+				return
+			}
+		}
+	}, time.Second, c.Done())
+
+	m.logger.Info("Stop watch pool events")
 }
 
 // setOptionsDefaults set default values for Options fields

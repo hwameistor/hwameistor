@@ -121,6 +121,10 @@ func (r *ReconcileLocalDiskVolume) Reconcile(_ context.Context, request reconcil
 	}
 
 	switch v.VolumeState() {
+	// Create Volumes
+	case v1alpha1.VolumeStateCreated:
+		return v.ReconcileCreated()
+
 	// Mount Volumes
 	case v1alpha1.VolumeStateNotReady, v1alpha1.VolumeStateEmpty:
 		return v.ReconcileMount()

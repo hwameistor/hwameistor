@@ -37,6 +37,10 @@ func ComposePoolDevicePath(poolName, devName string) string {
 	return path.Join(path.Join(SysDeviceRoot, poolName, diskSubPath), devName)
 }
 
+func ComposePoolVolumePath(poolName, volumeName string) string {
+	return path.Join(path.Join(SysDeviceRoot, poolName, volumeSubPath), volumeName)
+}
+
 func GetDefaultDiskPoolPath() (dps []string) {
 	for _, poolClass := range DefaultDevTypes {
 		dps = append(dps, GetLocalDiskPoolPath(poolClass))
