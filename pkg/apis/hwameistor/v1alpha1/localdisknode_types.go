@@ -29,9 +29,6 @@ type Disk struct {
 
 // LocalDiskNodeStatus defines the observed state of LocalDiskNode
 type LocalDiskNodeStatus struct {
-	// Disks key is the name of LocalDisk
-	Disks map[string]Disk `json:"disks,omitempty"`
-
 	// There may have multiple storage pools in a node.
 	// e.g. HDD_POOL, SSD_POOL, NVMe_POOL
 	// Pools: poolName -> LocalPool
@@ -39,6 +36,14 @@ type LocalDiskNodeStatus struct {
 
 	// State of the Local Storage Node/Member: New, Active, Inactive, Failed
 	State State `json:"state,omitempty"`
+
+	// Represents the latest available observations of a localstoragenode's current state.
+	// +optional
+	Conditions []StorageNodeCondition `json:"conditions,omitempty"`
+
+	// PoolExtendRecords record why disks are joined in the pool
+	// +optional
+	PoolExtendRecords map[string]LocalDiskClaimSpecArray `json:"poolExtendRecords,omitempty"`
 
 	// TotalDisk
 	TotalDisk int64 `json:"totalDisk,omitempty"`
@@ -58,6 +63,7 @@ type LocalDiskNodeStatus struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // LocalDiskNode is the Schema for the localdisknodes API
+// +kubebuilder:subresource:status
 // +kubebuilder:resource:path=localdisknodes,scope=Cluster,shortName=ldn
 // +kubebuilder:printcolumn:JSONPath=".status.freeCapacity",name=FreeCapacity,type=integer
 // +kubebuilder:printcolumn:JSONPath=".status.totalCapacity",name=TotalCapacity,type=integer

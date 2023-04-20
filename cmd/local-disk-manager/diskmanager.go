@@ -168,6 +168,7 @@ func startNodeManager(ctx context.Context, mgr manager.Manager) {
 		NodeName:  csiCfg.NodeID,
 		K8sClient: mgr.GetClient(),
 		Cache:     mgr.GetCache(),
+		Recorder:  mgr.GetEventRecorderFor(fmt.Sprintf("%s/%s", "localdiskmanager", csiCfg.NodeID)),
 	})
 	if err != nil {
 		log.Error(err, "Failed to New NodeManager")

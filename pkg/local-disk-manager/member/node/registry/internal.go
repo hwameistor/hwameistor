@@ -130,6 +130,7 @@ func (r *localRegistry) DiskExist(devPath string) bool {
 }
 
 func (r *localRegistry) discoveryDisks() {
+	clearMapsSafely(&r.poolDisks, &r.disks)
 	for _, poolClass := range types.DefaultDevTypes {
 		rootPath := types.GetPoolDiskPath(poolClass)
 		diskNames, err := discoveryDevices(rootPath)
@@ -158,6 +159,7 @@ func (r *localRegistry) discoveryDisks() {
 }
 
 func (r *localRegistry) discoveryVolumes() {
+	clearMapsSafely(&r.poolVolumes, &r.volumes)
 	for _, poolClass := range types.DefaultDevTypes {
 		rootPath := types.GetPoolVolumePath(poolClass)
 		volumes, err := discoveryDevices(rootPath)
@@ -265,4 +267,13 @@ func convertVolume(volumeName, devType types.DevType) (types.Volume, error) {
 		Capacity:   capacity,
 		AttachPath: actualPath,
 	}, nil
+}
+
+func clearMapsSafely(ms ...*sync.Map) {
+	for _, m := range ms {
+		m.Range(func(key, value any) bool {
+			m.Delete(key)
+			return true
+		})
+	}
 }

@@ -1,7 +1,7 @@
 package scheduler
 
 import (
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/volume"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/controller/volume"
 )
 
 type StorageClassParams struct {

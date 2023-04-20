@@ -2,8 +2,8 @@ package scheduler
 
 import (
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/disk"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/volume"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/controller/disk"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/controller/volume"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	log "github.com/sirupsen/logrus"

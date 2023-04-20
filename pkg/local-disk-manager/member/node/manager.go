@@ -12,11 +12,15 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/kubernetes"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
+	utils2 "github.com/hwameistor/hwameistor/pkg/utils"
 	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types2 "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	cache2 "k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
@@ -97,6 +101,8 @@ type Options struct {
 	// If none is set, it defaults to log.Log global logger.
 	Logger *log.Entry
 
+	Recorder record.EventRecorder
+
 	// VolumeManagerProvider provides the manager for Volumes
 	VolumeManagerProvider
 
@@ -138,6 +144,7 @@ func NewManager(options Options) (Manager, error) {
 		registryManager:    options.LocalRegistryProvider(),
 		poolManager:        options.PoolManagerProvider(),
 		pools:              make(map[types.DevType]*apisv1alpha1.LocalPool),
+		recorder:           options.Recorder,
 	}, nil
 }
 
@@ -173,6 +180,8 @@ type nodeManager struct {
 	registryManager registry.Manager
 
 	pools map[types.DevType]*apisv1alpha1.LocalPool
+
+	recorder record.EventRecorder
 }
 
 func (m *nodeManager) PoolManager() pool.Manager {
@@ -346,6 +355,7 @@ func (m *nodeManager) syncNodeResources() error {
 	if err != nil {
 		return err
 	}
+	diskNodeNew := diskNode.DeepCopy()
 
 	m.lock.RLock()
 	defer m.lock.RUnlock()
@@ -362,16 +372,78 @@ func (m *nodeManager) syncNodeResources() error {
 		totalCapacity += lp.TotalCapacityBytes
 		freeCapacity += lp.FreeCapacityBytes
 	}
-	diskNode.Status.Pools = localPools
-	diskNode.Status.TotalDisk = totalDisk
-	diskNode.Status.TotalCapacity = totalCapacity
-	diskNode.Status.FreeCapacity = freeCapacity
-	if err = m.k8sClient.Update(context.TODO(), &diskNode); err != nil {
+	diskNodeNew.Status.Pools = localPools
+	diskNodeNew.Status.TotalDisk = totalDisk
+	diskNodeNew.Status.TotalCapacity = totalCapacity
+	diskNodeNew.Status.FreeCapacity = freeCapacity
+	m.updateStorageNodeCondition(diskNodeNew)
+	patch := client.MergeFrom(&diskNode)
+	if err = m.k8sClient.Status().Patch(context.TODO(), diskNodeNew, patch); err != nil {
 		return err
 	}
 
 	m.logger.Info("Succeed to sync node resource")
 	return nil
+}
+
+func (m *nodeManager) updateStorageNodeCondition(storageNode *apisv1alpha1.LocalDiskNode) {
+	condition := apisv1alpha1.StorageNodeCondition{
+		Status:             apisv1alpha1.ConditionTrue,
+		LastUpdateTime:     metav1.Now(),
+		LastTransitionTime: metav1.Now(),
+	}
+
+	if storageNode.Status.FreeCapacity > 0 {
+		condition.Type = apisv1alpha1.StorageAvailable
+		condition.Reason = "Storage" + string(apisv1alpha1.StorageAvailable)
+		condition.Message = "Sufficient storage capacity"
+	} else {
+		condition.Type = apisv1alpha1.StorageUnAvailable
+		condition.Reason = "Storage" + string(apisv1alpha1.StorageUnAvailable)
+		condition.Message = "Insufficient storage capacity"
+	}
+
+	// only record StorageUnavailable events
+	switch condition.Type {
+	case apisv1alpha1.StorageUnAvailable:
+		m.recorder.Event(storageNode, v1.EventTypeWarning, condition.Reason, condition.Message)
+	default:
+	}
+
+	i, _ := utils2.GetStorageCondition(storageNode.Status.Conditions, condition.Type)
+	if i == -1 {
+		storageNode.Status.Conditions = append(storageNode.Status.Conditions, condition)
+	} else {
+		storageNode.Status.Conditions[i] = condition
+	}
+}
+
+// UpdateCondition append current condition about LocalStorageNode, i.e. StorageExpandSuccess, StorageExpandFail, UnAvailable
+func (m *nodeManager) UpdateCondition(condition apisv1alpha1.StorageNodeCondition) error {
+	storageNode := &apisv1alpha1.LocalStorageNode{}
+	if err := m.k8sClient.Get(context.TODO(), types2.NamespacedName{Name: m.nodeName}, storageNode); err != nil {
+		m.logger.WithError(err).WithField("condition", condition).Error("Failed to query Node")
+		return err
+	}
+
+	oldNode := storageNode.DeepCopy()
+	switch condition.Type {
+	case apisv1alpha1.StorageExpandFailure, apisv1alpha1.StorageUnAvailable:
+		m.recorder.Event(storageNode, v1.EventTypeWarning, string(condition.Type), condition.Message)
+	case apisv1alpha1.StorageExpandSuccess, apisv1alpha1.StorageProgressing:
+		m.recorder.Event(storageNode, v1.EventTypeNormal, string(condition.Type), condition.Message)
+	default:
+		m.recorder.Event(storageNode, v1.EventTypeNormal, string(condition.Type), condition.Message)
+	}
+
+	i, _ := utils2.GetStorageCondition(storageNode.Status.Conditions, condition.Type)
+	if i == -1 {
+		storageNode.Status.Conditions = append(storageNode.Status.Conditions, condition)
+	} else {
+		storageNode.Status.Conditions[i] = condition
+	}
+
+	return m.k8sClient.Status().Patch(context.TODO(), storageNode, client.MergeFrom(oldNode))
 }
 
 func (m *nodeManager) register() error {
