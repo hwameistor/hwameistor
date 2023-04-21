@@ -40,6 +40,8 @@ kind: Service
 metadata:
   name: hwameistor-exporter
   namespace: {{ .Release.Namespace}}
+  labels:
+    app: hwameistor-exporter
 spec:
   selector:
     app: hwameistor-exporter
