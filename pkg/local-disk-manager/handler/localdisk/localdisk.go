@@ -165,7 +165,7 @@ func (ldHandler *Handler) ReserveDisk() {
 
 func (ldHandler *Handler) FilterDisk(ldc *v1alpha1.LocalDiskClaim) bool {
 	// Bounded disk
-	if ldHandler.filter.HasBoundWith(ldc.GetName()) {
+	if ldHandler.filter.HasBoundWith(ldc.GetName(), ldc.Spec.NodeName) {
 		return true
 	}
 
