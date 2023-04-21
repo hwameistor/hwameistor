@@ -125,7 +125,10 @@ func (ld *LocalDiskFilter) OwnerMatch(owner string) *LocalDiskFilter {
 
 // HasBoundWith indicates disk has already bound with the claim
 // https://github.com/hwameistor/hwameistor/issues/315
-func (ld *LocalDiskFilter) HasBoundWith(claimName string) bool {
+func (ld *LocalDiskFilter) HasBoundWith(claimName, nodeName string) bool {
+	if ld.localDisk.Spec.NodeName != nodeName {
+		return false
+	}
 	if ld.localDisk.Spec.ClaimRef != nil {
 		if ld.localDisk.Spec.ClaimRef.Name == claimName {
 			return true

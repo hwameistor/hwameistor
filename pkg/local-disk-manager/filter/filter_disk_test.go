@@ -265,7 +265,7 @@ func TestHasBoundWith(t *testing.T) {
 			testCase.setProperty(testCase.disk)
 			filter := NewLocalDiskFilter(testCase.disk)
 			filter.Init()
-			if got := filter.HasBoundWith(testCase.WantBoundWithClaim); !reflect.DeepEqual(got, testCase.WantFilterResult) {
+			if got := filter.HasBoundWith(testCase.WantBoundWithClaim, testCase.disk.Spec.NodeName); !reflect.DeepEqual(got, testCase.WantFilterResult) {
 				t.Fatalf("HasBoundWith fail, want %v, got %v", testCase.WantFilterResult, got)
 			}
 		})
