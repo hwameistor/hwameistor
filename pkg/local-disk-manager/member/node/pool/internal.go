@@ -55,7 +55,12 @@ func (p *diskPool) ExtendPool(poolName string, devPath string) (bool, error) {
 	}
 
 	poolDevicePath := types.ComposePoolDevicePath(poolName, devName)
-	err := os.Symlink(devPath, poolDevicePath)
+	exist, err := p.hu.PathExists(poolDevicePath)
+	if exist || err != nil {
+		return exist, err
+	}
+
+	err = os.Symlink(devPath, poolDevicePath)
 	if err != nil {
 		return false, err
 	}
