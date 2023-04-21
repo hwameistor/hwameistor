@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	cache2 "k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
@@ -265,8 +266,9 @@ func (m *nodeManager) setupInformers() {
 	if err != nil {
 		m.logger.WithError(err).Fatalf("Failed to get informer fot LocalDiskNode")
 	}
-	diskNodeInformer.AddEventHandler(cache2.ResourceEventHandlerFuncs{})
-	// todo
+	diskNodeInformer.AddEventHandler(cache2.ResourceEventHandlerFuncs{
+		DeleteFunc: m.handleLocalDiskNodeDelete,
+	})
 }
 
 // discoveryNodeResources collect resources on this node and storage to local registryManager
@@ -608,4 +610,33 @@ func (m *nodeManager) handleLocalDiskClaimDelete(obj interface{}) {
 		return
 	}
 	m.diskClaimTaskQueue.Add(localDiskClaim.GetName())
+}
+
+func (m *nodeManager) handleLocalDiskNodeDelete(obj interface{}) {
+	tobeDeletedNode := obj.(*apisv1alpha1.LocalDiskNode)
+	if tobeDeletedNode.GetName() != m.nodeName {
+		return
+	}
+	m.logger.WithFields(log.Fields{"node": tobeDeletedNode.GetName()}).Info("Observed LocalDiskNode resource deletion")
+
+	rebuildNode := apisv1alpha1.LocalDiskNode{}
+	rebuildNode.SetName(tobeDeletedNode.Name)
+	rebuildNode.Spec = tobeDeletedNode.Spec
+	rebuildNode.Status = tobeDeletedNode.Status
+	// NOTE: it's useless to push deleted object to queue because reconcile will fail at fetching object, so rebuild here at once
+	// try 5 times if occurs timeout error
+	err := retry.OnError(retry.DefaultRetry, errors.IsTimeout, func() error {
+		m.logger.WithField("node", rebuildNode.GetName()).Info("Rebuilding LocalDiskNode resource")
+		err := m.k8sClient.Create(context.TODO(), &rebuildNode)
+		if err != nil {
+			if !errors.IsAlreadyExists(err) {
+				return err
+			}
+		}
+		return m.k8sClient.Status().Update(context.TODO(), &rebuildNode)
+	})
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to rebuild LocalDiskNode resource")
+	}
+	m.logger.WithField("node", rebuildNode.GetName()).Error("Succeed to rebuild LocalDiskNode resource")
 }

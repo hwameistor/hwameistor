@@ -3,6 +3,7 @@ package registry
 import (
 	"fmt"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/sys"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/kubernetes/pkg/volume/util/hostutil"
@@ -31,6 +32,8 @@ type localRegistry struct {
 
 	// hu helps to find and create file on host
 	hu hostutil.HostUtils
+
+	lock sync.Mutex
 }
 
 func New() Manager {
@@ -129,47 +132,63 @@ func (r *localRegistry) DiskExist(devPath string) bool {
 	return ok
 }
 
+// discoveryDisks discovery and store cache
 func (r *localRegistry) discoveryDisks() {
-	clearMapsSafely(&r.poolDisks, &r.disks)
+	var allDiscoveryDiskNames []string
+
+	// 1. store discovery disks
 	for _, poolClass := range types.DefaultDevTypes {
 		rootPath := types.GetPoolDiskPath(poolClass)
-		diskNames, err := discoveryDevices(rootPath)
+		discoveryDiskNames, err := discoveryDevices(rootPath)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to discovery devices from %s", rootPath)
 			os.Exit(1)
 		}
+		allDiscoveryDiskNames = append(allDiscoveryDiskNames, discoveryDiskNames...)
 
 		var discoverDisks []types.Disk
-		for _, disk := range diskNames {
+		for _, disk := range discoveryDiskNames {
 			if discoveryDisk, err := convertDisk(disk, poolClass); err != nil {
 				log.WithError(err).Errorf("Failed to convert disk %s", disk)
 				os.Exit(1)
 			} else {
 				r.disks.Store(discoveryDisk.DevPath, discoveryDisk)
 				discoverDisks = append(discoverDisks, discoveryDisk)
-				log.WithFields(log.Fields{"pool": poolClass, "disks": disk}).Info("Succeed discovery disk")
+				log.WithFields(log.Fields{"pool": poolClass, "disk": disk}).Debug("Succeed discovery disk")
 			}
 		}
-		// store discovery discoverDisks
 		r.poolDisks.Store(poolClass, discoverDisks)
 		log.WithFields(log.Fields{"pool": poolClass, "disks": len(discoverDisks)}).Info("Succeed discovery pool disks")
 	}
+
+	// 2. scale down pool(disks that already removed)
+	r.disks.Range(func(key, value any) bool {
+		_, ok := utils.StrFind(allDiscoveryDiskNames, value.(types.Disk).Name)
+		if !ok {
+			r.disks.Delete(key)
+			log.WithFields(log.Fields{"pool": value.(types.Disk).DiskType, "disk": value.(types.Disk).Name}).Info("Scale down pool")
+		}
+		return true
+	})
 
 	log.Debug("Finish discovery disks")
 }
 
 func (r *localRegistry) discoveryVolumes() {
-	clearMapsSafely(&r.poolVolumes, &r.volumes)
+	var allDiscoveryVolumeNames []string
+
+	// 1. store discovery volumes
 	for _, poolClass := range types.DefaultDevTypes {
 		rootPath := types.GetPoolVolumePath(poolClass)
-		volumes, err := discoveryDevices(rootPath)
+		discoveryVolumes, err := discoveryDevices(rootPath)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to discovery devices from %s", rootPath)
 			os.Exit(1)
 		}
+		allDiscoveryVolumeNames = append(allDiscoveryVolumeNames, discoveryVolumes...)
 
 		var discoverVolumes []types.Volume
-		for _, volume := range volumes {
+		for _, volume := range discoveryVolumes {
 			if discoveryVolume, err := convertVolume(volume, poolClass); err != nil {
 				log.WithError(err).Errorf("Failed to convert volume %s", volume)
 				os.Exit(1)
@@ -179,10 +198,19 @@ func (r *localRegistry) discoveryVolumes() {
 				log.WithFields(log.Fields{"pool": poolClass, "volume": volume}).Info("Succeed discovery volume")
 			}
 		}
-		// store discovery discoverVolumes
 		r.poolVolumes.Store(poolClass, discoverVolumes)
-		log.WithFields(log.Fields{"pool": poolClass, "volumes": len(discoverVolumes)}).Info("Succeed discovery pool volumes")
+		log.WithFields(log.Fields{"pool": poolClass, "discoveryVolumes": len(discoverVolumes)}).Info("Succeed discovery pool volumes")
 	}
+
+	// 2. recycle pool volumes
+	r.volumes.Range(func(key, value any) bool {
+		_, ok := utils.StrFind(allDiscoveryVolumeNames, value.(types.Volume).Name)
+		if !ok {
+			r.volumes.Delete(key)
+			log.WithField("volume", value.(types.Volume).Name).Info("Recycle volume")
+		}
+		return true
+	})
 
 	log.Debug("Finish discovery volumes")
 }
@@ -267,13 +295,4 @@ func convertVolume(volumeName, devType types.DevType) (types.Volume, error) {
 		Capacity:   capacity,
 		AttachPath: actualPath,
 	}, nil
-}
-
-func clearMapsSafely(ms ...*sync.Map) {
-	for _, m := range ms {
-		m.Range(func(key, value any) bool {
-			m.Delete(key)
-			return true
-		})
-	}
 }
