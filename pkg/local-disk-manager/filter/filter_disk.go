@@ -2,6 +2,7 @@ package filter
 
 import (
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/sys"
@@ -125,12 +126,11 @@ func (ld *LocalDiskFilter) OwnerMatch(owner string) *LocalDiskFilter {
 
 // HasBoundWith indicates disk has already bound with the claim
 // https://github.com/hwameistor/hwameistor/issues/315
-func (ld *LocalDiskFilter) HasBoundWith(claimName, nodeName string) bool {
-	if ld.localDisk.Spec.NodeName != nodeName {
-		return false
-	}
+func (ld *LocalDiskFilter) HasBoundWith(claimUID types.UID) bool {
+	// since the ldc will be deleted after consumed, so the ldc(s) instance with the same name can be applied multiple times.
+	// so, we need to filter more when ClaimRef has already exist
 	if ld.localDisk.Spec.ClaimRef != nil {
-		if ld.localDisk.Spec.ClaimRef.Name == claimName {
+		if ld.localDisk.Spec.ClaimRef.UID == claimUID {
 			return true
 		}
 	}
