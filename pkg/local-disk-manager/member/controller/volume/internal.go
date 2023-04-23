@@ -561,17 +561,14 @@ func (vm *localDiskVolumeManager) findSuitableDisk(vq *VolumeRequest) (*types.Di
 	if err != nil {
 		return nil, err
 	}
-	var suitableDisk *types.Disk
-	var sortDisks = utils.ByDiskSize(nodeAvailableDisks)
-	sort.Sort(sortDisks)
-	for _, availableDisk := range sortDisks {
+	sort.Sort(utils.ByDiskSize(nodeAvailableDisks))
+	for _, availableDisk := range nodeAvailableDisks {
 		if availableDisk.DiskType == vq.DiskType && availableDisk.Capacity >= vq.RequireCapacity {
-			suitableDisk = &availableDisk
-			break
+			return &availableDisk, nil
 		}
 		continue
 	}
-	return suitableDisk, nil
+	return nil, nil
 }
 
 func (vm *localDiskVolumeManager) markNodeDiskInuse(node string, disk *types.Disk) error {

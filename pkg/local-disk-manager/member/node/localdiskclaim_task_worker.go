@@ -82,15 +82,15 @@ func (m *nodeManager) processLocalDiskClaimBound(diskClaim *v1alpha1.LocalDiskCl
 		}
 	}()
 
-	// fetch allocated disks
-	allocatedDisks, err := fetchAllocatedLocalDisks(m.k8sClient, diskClaim)
+	// fetch disks that bounded by the claim
+	allocatedDisks, err := fetchBoundedLocalDisks(m.k8sClient, diskClaim)
 	if err != nil {
 		logCtx.WithError(err).Error("Failed to fetch allocated LocalDisk")
 		return err
 	}
 	logCtx.Infof("Found %d LocalDisk(s) bound by LocalDiskClaim", len(allocatedDisks))
 
-	// remove disks that already exist in DiskPool
+	// find out disks that need to be extended actually
 	var tobeExtendedDisks []*v1alpha1.LocalDisk
 	for _, localDisk := range allocatedDisks {
 		exist := m.registryManager.DiskExist(localDisk.Spec.DevicePath)
@@ -119,7 +119,6 @@ func (m *nodeManager) processLocalDiskClaimBound(diskClaim *v1alpha1.LocalDiskCl
 
 	for _, disk := range tobeExtendedDisks {
 		ok, err := m.poolManager.ExtendPool(poolName, disk.Spec.DevicePath)
-		// don't block pool expand process for one disk error
 		if ok {
 			logCtx.WithFields(log.Fields{"poolName": poolName, "extendDisk": disk.Spec.DevicePath}).Infof("Succeed to expand DiskPool")
 		} else if err != nil {
@@ -163,7 +162,7 @@ func (m *nodeManager) updatePoolExtendRecord(poolName string, record v1alpha1.Lo
 	return m.k8sClient.Status().Patch(context.TODO(), &storageNode, client.MergeFrom(storageNodeOld))
 }
 
-func fetchAllocatedLocalDisks(cli client.Client, diskClaim *v1alpha1.LocalDiskClaim) ([]*v1alpha1.LocalDisk, error) {
+func fetchBoundedLocalDisks(cli client.Client, diskClaim *v1alpha1.LocalDiskClaim) ([]*v1alpha1.LocalDisk, error) {
 	var allocatedDisks []*v1alpha1.LocalDisk
 	eg, _ := errgroup.WithContext(context.TODO())
 	for _, localDisk := range diskClaim.Spec.DiskRefs {

@@ -156,31 +156,20 @@ func (s *diskVolumeSchedulerPlugin) getParamsFromStorageClass(volume *v1.Persist
 
 // filterPendingVolumes select free disks for pending pvc
 func (s *diskVolumeSchedulerPlugin) filterPendingVolumes(pendingVolumes []*v1.PersistentVolumeClaim, tobeScheduleNode string) (bool, error) {
-	var avaSortDisks utils.ByDiskSize
-	disks, err := s.diskNodeHandler.GetNodeDisks(tobeScheduleNode)
+	avaSortDisks, err := s.diskNodeHandler.GetNodeAvailableDisks(tobeScheduleNode)
 	if err != nil {
 		return false, err
 	}
-	for _, d := range disks {
-		if d.Status == types.DiskStatusAvailable {
-			avaSortDisks = append(avaSortDisks, types.Disk{
-				Name:     d.Name,
-				Capacity: d.Capacity,
-				DiskType: d.DiskType,
-				Status:   d.Status,
-			})
-		}
-	}
-	pendingVolumes = s.removeDuplicatePVC(pendingVolumes)
+
+	pendingSortVolumes := s.removeDuplicatePVC(pendingVolumes)
 	if len(pendingVolumes) > len(avaSortDisks) {
 		log.WithFields(log.Fields{"avaSortDisks": len(avaSortDisks), "pendingVolumes": len(pendingVolumes)}).Info("No enough free disks")
 		return false, nil
 	}
 
 	// descending order
-	var pendingSortVolumes = utils.ByVolumeCapacity(pendingVolumes)
-	sort.Sort(sort.Reverse(avaSortDisks))
-	sort.Sort(sort.Reverse(pendingSortVolumes))
+	sort.Sort(sort.Reverse(utils.ByDiskSize(avaSortDisks)))
+	sort.Sort(sort.Reverse(utils.ByVolumeCapacity(pendingSortVolumes)))
 
 	// we should order available disks and persistent volume claim by d type(e.g. HDD,SSD etc.)
 	var classSortDisks, classSortVolumes sync.Map
@@ -222,7 +211,7 @@ func (s *diskVolumeSchedulerPlugin) filterPendingVolumes(pendingVolumes []*v1.Pe
 		if !ok {
 			log.WithFields(log.Fields{"volumeType": volumeType, "volumes": len(classPendingVolumes)}).Info("There is no matchable type disk available")
 			meetup = false
-			return false
+			return meetup
 		}
 		classAvailableDisks := v.([]types.Disk)
 		for i, pendingVolume := range classPendingVolumes {
@@ -232,7 +221,7 @@ func (s *diskVolumeSchedulerPlugin) filterPendingVolumes(pendingVolumes []*v1.Pe
 			log.WithFields(log.Fields{"index": i, "pendingVolume": pendingVolume.GetName(), "requestCapacity": pendingVolume.Spec.Resources.Requests.Storage().Value()}).
 				Info("Can't meetup volume request storage capacity")
 			meetup = false
-			return false
+			return meetup
 		}
 		return true
 	})
