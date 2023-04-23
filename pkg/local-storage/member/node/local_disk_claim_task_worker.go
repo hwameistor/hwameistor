@@ -262,9 +262,7 @@ func (m *manager) getLocalDiskListByName(localDiskNames []string, nameSpace stri
 				m.logger.Error("Failed to get LocalDisk: %v, err: %", name, err)
 				return
 			}
-			if localDisk != nil && localDisk.Status.State == apisv1alpha1.LocalDiskBound {
-				localDiskList = append(localDiskList, localDisk)
-			}
+			localDiskList = append(localDiskList, localDisk)
 		}()
 	}
 	wg.Wait()
