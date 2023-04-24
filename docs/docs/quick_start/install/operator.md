@@ -30,9 +30,3 @@ You can use hwameistor-operator to deploy and manage HwameiStor system.
    helm repo update hwameistor-operator
    helm install hwameistor-operator hwameistor-operator/hwameistor-operator
    ```
-
-2. Deploy a HwameiStor system
-
-   ```console
-   kubectl apply -f https://raw.githubusercontent.com/hwameistor/hwameistor-operator/main/config/samples/hwameistor.io_hmcluster.yaml
-   ```
