@@ -11,6 +11,7 @@ v0.9.3 / 2023-4-24
 * dismiss not found error #782(@SSmallMonster )
 * [Fix] merge disk self attrs when triggerd by udev events #788 (@SSmallMonster )
 * add labels on service #812 (@SSmallMonster )
+* [Enhance] separate disk assign and disk status update process #815 (@SSmallMonster )
 
 ## Exporter
 * rename exporter port to http-metrics #798 (@SSmallMonster )
@@ -23,10 +24,10 @@ v0.9.3 / 2023-4-24
 * Add more tests ( update relok8s #752 update e2e #758 update e2e #764 update e2e #765 @FloatXD )
 * Update Docs ([zh-docs] sync /quick_start/install/operator.md #751 @windsonsea update doc #784 update doc #800 @FloatXD updated the documents for the latest features #787 @SSmallMonster updated the documents #789 updated the document by removing scheduler configuration #790 removed the document for upgrade section #791 @sun7927 ）
 * mark roadmap for observability and operator as completed in v0.9.x #761(@SSmallMonster )
+* ignore hwameistor/Chart.yaml when trriger relok8s check action #824 (@SSmallMonster )
 
 ## Admission,Apiserver,Scheduler,Evictor
 N/A
-
 
 v0.9.2 / 2023-3-28
 ========================
