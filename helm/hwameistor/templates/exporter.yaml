@@ -48,4 +48,5 @@ spec:
   ports:
     - port: 80
       targetPort: http-metrics
+      name: http-metrics
 
