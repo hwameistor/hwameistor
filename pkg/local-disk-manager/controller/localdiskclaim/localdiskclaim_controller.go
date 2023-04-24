@@ -129,19 +129,25 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimPending(diskClaim *v1alpha1.Lo
 		err error
 	)
 
-	if err = r.diskClaimHandler.AssignFreeDisk(); err != nil {
-		r.Recorder.Eventf(diskClaim, v1.EventTypeWarning, v1alpha1.LocalDiskClaimEventReasonAssignFail,
-			"Assign free disk fail, due to error: %v", err)
-		log.WithError(err).WithFields(logCtx).Errorf("Assign free disk for locadiskclaim %v/%v fail, "+
-			"will try after %v", diskClaim.GetNamespace(), diskClaim.GetName(), RequeueInterval)
-		return err
-	}
+	// assign disks or update status bound according to diskRefs
+	switch {
+	case len(diskClaim.Spec.DiskRefs) == 0:
+		if err = r.diskClaimHandler.AssignFreeDisk(); err != nil {
+			r.Recorder.Eventf(diskClaim, v1.EventTypeWarning, v1alpha1.LocalDiskClaimEventReasonAssignFail,
+				"Assign free disk fail, due to error: %v", err)
+			log.WithError(err).WithFields(logCtx).Errorf("Assign free disk for locadiskclaim %v/%v fail, "+
+				"will try after %v", diskClaim.GetNamespace(), diskClaim.GetName(), RequeueInterval)
+			return err
+		}
 
-	// Update claim.spec.diskRefs according to disk status
-	if err = r.diskClaimHandler.PatchBoundDiskRef(); err != nil {
-		log.WithError(err).Errorf("Failed to extend for locadiskclaim %v fail, will try after %v",
-			diskClaim.GetName(), RequeueInterval)
+		// Update claim.spec.diskRefs according to disk status
+		if err = r.diskClaimHandler.PatchBoundDiskRef(); err != nil {
+			log.WithError(err).Errorf("Failed to extend for locadiskclaim %v fail, will try after %v",
+				diskClaim.GetName(), RequeueInterval)
+		}
 		return err
+	default:
+		log.WithFields(log.Fields{"diskClaim": diskClaim.GetName(), "assignedDisks": len(diskClaim.Spec.DiskRefs)}).Info("Found Bounded disks")
 	}
 
 	return r.diskClaimHandler.UpdateClaimStatusToBound()

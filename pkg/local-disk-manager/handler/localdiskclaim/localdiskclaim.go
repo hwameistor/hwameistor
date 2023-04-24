@@ -127,8 +127,8 @@ func (ldcHandler *Handler) PatchBoundDiskRef() error {
 		Infof("Found %d localdisk(s) in cluster", len(diskList.Items))
 	for _, disk := range diskList.Items {
 		if disk.Spec.ClaimRef != nil &&
-			// Since the claim can be applied repeatedly with a same name, thus only empty disks need to be appended
-			disk.Spec.ClaimRef.Name == ldcHandler.diskClaim.GetName() && !disk.Spec.HasPartition {
+			// Since the claim can be applied repeatedly with a same name, thus compare UID here
+			disk.Spec.ClaimRef.UID == ldcHandler.diskClaim.UID {
 			ldcHandler.AppendDiskRef(&disk)
 		}
 	}

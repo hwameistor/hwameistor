@@ -109,7 +109,7 @@ func (ldHandler *Handler) UnClaimed() bool {
 func (ldHandler *Handler) BoundTo(ldc *v1alpha1.LocalDiskClaim) error {
 	// If this disk has already bound to the ldc, return directly
 	if ldHandler.localDisk.Spec.ClaimRef != nil &&
-		ldc.GetName() == ldHandler.localDisk.Spec.ClaimRef.Name {
+		ldc.GetUID() == ldHandler.localDisk.Spec.ClaimRef.UID {
 		return nil
 	}
 
@@ -164,11 +164,10 @@ func (ldHandler *Handler) ReserveDisk() {
 }
 
 func (ldHandler *Handler) FilterDisk(ldc *v1alpha1.LocalDiskClaim) bool {
-	// Bounded disk
-	if ldHandler.filter.HasBoundWith(ldc.GetName(), ldc.Spec.NodeName) {
+	// Bound disk
+	if ldHandler.filter.HasBoundWith(ldc.UID) {
 		return true
 	}
-
 	// Unbound disk
 	return ldHandler.filter.
 		Init().
