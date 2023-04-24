@@ -46,7 +46,8 @@ HwameiStor contains several modules:
 * [scheduler](#scheduler)
 * [admission-controller](#admission-controller)
 * [Evictor](#evictor)
-* [DRDB installer](#drbd-installer)
+* [Exporter](#exporter)
+* [HA module installer](#ha-module-installer)
 
 ### local-disk-manager
 
@@ -78,13 +79,17 @@ When a node or pod is evicted as either Planned or Unplanned, the associated Hwa
 which have a replica on the node, will be detected and migrated out this node automatically.
 [Learn more](docs/docs/architecture/modules/evictor.md)
 
-## DRBD installer
+## HA module installer
 
-DRBD (Distributed Replicated Block Device) is composed of Linux kernel modules and related scripts
+DRBD (Distributed Replicated Block Device) is one of third-party HA modules which the HwameiStor will leverage to provide HA volume. It composed of Linux kernel modules and related scripts
 to build high available clusters. It is implemented by mirroring the entire device over the network,
 which can be thought of as a kind of network RAID. This installer can directly install DRBD to a
 container cluster. Currently this module is only for testing purposes.
 [Learn more](docs/docs/architecture/modules/drbd.md)
+
+## Exporter
+
+Exporter will collect the system metrics including nodes, storage pools, volumes, disks. It supports Prometheus.
 
 ## Documentation
 
@@ -109,14 +114,16 @@ please check the [adopters list](./adopters.md).
 | HwameiStor Operator       | Completed | v0.9.0  | Operator for HwameiStor install, maintain, etc.   |
 | Observability             | Completed | v0.9.2  | Observability, such as metrics, logs, etc.        |
 | Failover                  | Planed    |         | Fail over the pod with HwameiStor volume          |
-| IO throttling             | Planed    |         | Limit IO bandwith to access the HwameiStor volume |
+| IO throttling             | In Progress    |    | Limit IO bandwith to access the HwameiStor volume |
 | Disk replacement          | Planed    |         | Replace disk which fails or will fail soon        |
-| LVM volume auto-expansion | Planed    |         | Expand LVM volume automatically                   |
-| LVM volume snapshot       | Planed    |         | Snapshot of LVM volume                            |
-| LVM volume clone          | Unplaned  |         | Clone LVM volume                                  |
+| LVM volume auto-expansion | In Progress    |         | Expand LVM volume automatically                   |
+| LVM volume snapshot       | In Progress    |         | Snapshot of LVM volume                            |
+| LVM volume clone          | Planed  |         | Clone LVM volume                                  |
 | LVM volume thin provision | Unplaned  |         | LVM volume thin provision                         |
 | LVM volume stripe mode    | Unplaned  |         | LVM volume stripe read/write                      |
 | Data encryption           | Unplaned  |         | Data encryption                                   |
+| System Consistency        | Planed    |         | Consistent check and recovery from a disaster     |
+| Volume backup             | Planed    |         | Backup the volume data to remote server and restore  |
 
 ## Community
 
