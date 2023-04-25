@@ -68,6 +68,7 @@ type LocalDiskNodeStatus struct {
 // +kubebuilder:printcolumn:JSONPath=".status.freeCapacity",name=FreeCapacity,type=integer
 // +kubebuilder:printcolumn:JSONPath=".status.totalCapacity",name=TotalCapacity,type=integer
 // +kubebuilder:printcolumn:JSONPath=".status.totalDisk",name=TotalDisk,type=integer
+// +kubebuilder:printcolumn:name="status",type=string,JSONPath=`.status.state`,description="State of the LocalDisk Node"
 // +kubebuilder:printcolumn:name="age",type=date,JSONPath=`.metadata.creationTimestamp`
 type LocalDiskNode struct {
 	metav1.TypeMeta   `json:",inline"`

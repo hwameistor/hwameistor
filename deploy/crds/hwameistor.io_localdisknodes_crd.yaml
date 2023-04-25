@@ -23,6 +23,10 @@ spec:
     - jsonPath: .status.totalDisk
       name: TotalDisk
       type: integer
+    - description: State of the LocalDisk Node
+      jsonPath: .status.state
+      name: status
+      type: string
     - jsonPath: .metadata.creationTimestamp
       name: age
       type: date

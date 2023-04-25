@@ -15,4 +15,6 @@ type Manager interface {
 	MarkNodeDiskInuse(node string, disk *types.Disk) error
 
 	MarkNodeDiskAvailable(node string, disk *types.Disk) error
+
+	NodeIsReady(node string) (bool, error)
 }

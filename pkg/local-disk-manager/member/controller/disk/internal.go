@@ -135,6 +135,21 @@ func (ldn *localDiskNodesManager) MarkNodeDiskAvailable(node string, disk *types
 	return cli.Patch(diskNodeOld, diskNode)
 }
 
+func (ldn *localDiskNodesManager) NodeIsReady(node string) (bool, error) {
+	cli, err := ldn.GetClient()
+	if err != nil {
+		return false, err
+	}
+
+	var diskNode *v1alpha1.LocalDiskNode
+	diskNode, err = cli.Get(node)
+	if err != nil {
+		return false, err
+	}
+
+	return diskNode.Status.State == v1alpha1.NodeStateReady, nil
+}
+
 func convertToDisk(diskNode string, disk v1alpha1.LocalDevice) *types.Disk {
 	return &types.Disk{
 		AttachNode: diskNode,

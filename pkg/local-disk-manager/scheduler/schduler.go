@@ -45,6 +45,14 @@ func (s *diskVolumeSchedulerPlugin) Filter(boundVolumes []string, pendingVolumes
 	}
 	log.WithFields(logCtx).Debug("Start filter node")
 
+	if ready, err := s.diskNodeHandler.NodeIsReady(node.GetName()); err != nil {
+		log.WithError(err).WithFields(logCtx).Error("failed to get LocalDiskNode info")
+		return false, err
+	} else if !ready {
+		log.WithFields(logCtx).Info("node is not ready")
+		return false, nil
+	}
+
 	// step1: filter bounded volumes
 	ok, err := s.filterExistVolumes(boundVolumes, node.GetName())
 	if err != nil {

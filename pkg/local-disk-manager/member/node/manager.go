@@ -212,6 +212,10 @@ func (m *nodeManager) LocalRegistry() registry.Manager {
 // Start all registered task workers
 func (m *nodeManager) Start(c context.Context) error {
 	m.setupInformers()
+	if ok := m.cache.WaitForCacheSync(c); ok {
+		m.logger.Error("Failed to wait cache start")
+		return nil
+	}
 
 	if err := m.poolManager.Init(); err != nil {
 		m.logger.WithError(err).Error("Failed to init pool")
@@ -378,6 +382,7 @@ func (m *nodeManager) syncNodeResources() error {
 	diskNodeNew.Status.TotalDisk = totalDisk
 	diskNodeNew.Status.TotalCapacity = totalCapacity
 	diskNodeNew.Status.FreeCapacity = freeCapacity
+	diskNodeNew.Status.State = apisv1alpha1.NodeStateReady
 	m.updateStorageNodeCondition(diskNodeNew)
 	patch := client.MergeFrom(&diskNode)
 	if err = m.k8sClient.Status().Patch(context.TODO(), diskNodeNew, patch); err != nil {
