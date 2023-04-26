@@ -212,10 +212,6 @@ func (m *nodeManager) LocalRegistry() registry.Manager {
 // Start all registered task workers
 func (m *nodeManager) Start(c context.Context) error {
 	m.setupInformers()
-	if ok := m.cache.WaitForCacheSync(c); ok {
-		m.logger.Error("Failed to wait cache start")
-		return nil
-	}
 
 	if err := m.poolManager.Init(); err != nil {
 		m.logger.WithError(err).Error("Failed to init pool")

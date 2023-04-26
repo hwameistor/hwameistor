@@ -5,6 +5,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/smart"
 	"os"
 	"path"
 	"runtime"
@@ -33,10 +35,8 @@ import (
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/controller"
 	csidriver "github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/driver"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk"
 	mc "github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/controller"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/smart"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 )
 
@@ -107,17 +107,6 @@ func main() {
 
 	stopCh := signals.SetupSignalHandler()
 
-	log.Info("starting monitor disk")
-	go disk.NewController(nodeMgr).StartMonitor()
-
-	log.Info("starting collect S.M.A.R.T")
-	go smart.NewCollector().WithSyncPeriod(time.Hour * 6).StartTimerCollect(stopCh)
-
-	if csiCfg.Enable {
-		log.Info("starting Disk CSI Driver")
-		go csidriver.NewDiskDriver(csiCfg).Run()
-	}
-
 	// Add the Metrics Service
 	addMetrics(stopCh, cfg)
 
@@ -143,6 +132,17 @@ func startNodeComponents(c context.Context, mgr manager.Manager) {
 	runNodeController := func(_ context.Context) {
 		go startNodeController(c, mgr)
 		go startNodeManager(c, mgr)
+
+		log.Info("starting monitor disk")
+		go disk.NewController(mgr).StartMonitor()
+
+		log.Info("starting collect S.M.A.R.T")
+		go smart.NewCollector().WithSyncPeriod(time.Hour * 6).StartTimerCollect(c)
+
+		if csiCfg.Enable {
+			log.Info("starting Disk CSI Driver")
+			go csidriver.NewDiskDriver(csiCfg).Run()
+		}
 	}
 
 	if err := utils.RunWithLease(utils.GetNamespace(), csiCfg.NodeID, fmt.Sprintf("hwameistor-local-disk-manager-worker-%s", csiCfg.NodeID), runNodeController); err != nil {
