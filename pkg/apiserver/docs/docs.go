@@ -3316,7 +3316,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "attachNode": {
-                    "description": "AttachNode represent where disk is attached",
+                    "description": "NodeName represent where disk is attached",
                     "type": "string"
                 }
             }

@@ -78,7 +78,7 @@ func (n *DiskNodeHandler) Disks() map[string]v1alpha1.Disk {
 }
 
 func (n *DiskNodeHandler) ListNodeDisks() (map[string]v1alpha1.Disk, error) {
-	lds, err := n.diskHandler.ListNodeLocalDisk(n.diskNode.Spec.AttachNode)
+	lds, err := n.diskHandler.ListNodeLocalDisk(n.diskNode.Spec.NodeName)
 	if err != nil {
 		return nil, err
 	}

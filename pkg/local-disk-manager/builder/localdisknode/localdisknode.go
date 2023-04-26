@@ -32,7 +32,7 @@ func (builder *Builder) SetupAttachNode(node string) *Builder {
 		return builder
 	}
 
-	builder.DiskNode.Spec.AttachNode = node
+	builder.DiskNode.Spec.NodeName = node
 	return builder
 }
 

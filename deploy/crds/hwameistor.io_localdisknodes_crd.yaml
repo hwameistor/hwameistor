@@ -50,11 +50,11 @@ spec:
           spec:
             description: LocalDiskNodeSpec defines the desired state of LocalDiskNode
             properties:
-              attachNode:
-                description: AttachNode represent where disk is attached
+              nodeName:
+                description: NodeName represent where disk is attached
                 type: string
             required:
-            - attachNode
+            - nodeName
             type: object
           status:
             description: LocalDiskNodeStatus defines the observed state of LocalDiskNode

@@ -81,20 +81,20 @@ func withCurrentNode() predicate.Predicate {
 	return predicate.Funcs{
 		CreateFunc: func(event event.CreateEvent) bool {
 			node, _ := event.Object.DeepCopyObject().(*v1alpha1.LocalDiskNode)
-			return node.Spec.AttachNode == utils.GetNodeName()
+			return node.Spec.NodeName == utils.GetNodeName()
 		},
 		DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
 			node, _ := deleteEvent.Object.DeepCopyObject().(*v1alpha1.LocalDiskNode)
-			return node.Spec.AttachNode == utils.GetNodeName()
+			return node.Spec.NodeName == utils.GetNodeName()
 		},
 		UpdateFunc: func(updateEvent event.UpdateEvent) bool {
 			node, _ := updateEvent.ObjectNew.DeepCopyObject().(*v1alpha1.LocalDiskNode)
-			return node.Spec.AttachNode == utils.GetNodeName() &&
+			return node.Spec.NodeName == utils.GetNodeName() &&
 				updateEvent.ObjectNew.GetGeneration() != updateEvent.ObjectOld.GetGeneration()
 		},
 		GenericFunc: func(genericEvent event.GenericEvent) bool {
 			node, _ := genericEvent.Object.DeepCopyObject().(*v1alpha1.LocalDiskNode)
-			return node.Spec.AttachNode == utils.GetNodeName()
+			return node.Spec.NodeName == utils.GetNodeName()
 		},
 	}
 }

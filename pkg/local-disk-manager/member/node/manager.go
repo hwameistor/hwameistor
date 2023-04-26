@@ -455,12 +455,12 @@ func (m *nodeManager) register() error {
 	if err != nil {
 		if errors.IsNotFound(err) {
 			diskNode.Name = m.nodeName
-			diskNode.Spec.AttachNode = m.nodeName
+			diskNode.Spec.NodeName = m.nodeName
 			return m.k8sClient.Create(context.TODO(), &diskNode)
 		}
 		return err
 	}
-	diskNode.Spec.AttachNode = m.nodeName
+	diskNode.Spec.NodeName = m.nodeName
 	return m.k8sClient.Update(context.TODO(), &diskNode)
 }
 

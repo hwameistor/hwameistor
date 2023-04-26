@@ -9,8 +9,8 @@ import (
 
 // LocalDiskNodeSpec defines the desired state of LocalDiskNode
 type LocalDiskNodeSpec struct {
-	// AttachNode represent where disk is attached
-	AttachNode string `json:"attachNode"`
+	// NodeName represent where disk is attached
+	NodeName string `json:"nodeName"`
 }
 
 type Disk struct {
