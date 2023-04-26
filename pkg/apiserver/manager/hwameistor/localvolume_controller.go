@@ -459,7 +459,7 @@ func (lvController *LocalVolumeController) CreateVolumeMigrate(volName, srcNode,
 		return nil, err
 	}
 
-	if lv.Status.PublishedNodeName != "" {
+	if lv.Status.PublishedNodeName == srcNode {
 		return nil, errors.NewBadRequest("LocalVolume is still in use by source node, try it later")
 	}
 
