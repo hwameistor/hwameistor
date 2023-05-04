@@ -69,15 +69,14 @@ func (ctr *Controller) HandleEvent() {
 		case manager.EXIST, manager.CHANGE:
 			// Get disk basic info
 			newDisk := DiskParser.ParseDisk()
-			// log.Debugf("Disk %v basicinfo: %v", event.DevPath, newDisk)
+			log.Debugf("Disk %v basicinfo: %v", event.DevPath, newDisk)
 			// Convert disk resource to localDisk
 			localDisk := ctr.localDiskController.ConvertDiskToLocalDisk(newDisk)
 
 			// Judge whether the disk is completely new
 			if ctr.localDiskController.IsAlreadyExist(localDisk) {
-				// log.Debugf("Disk %+v has been already exist", newDisk.DevName)
 				// If the disk already exists, try to update
-				if err := ctr.localDiskController.UpdateLocalDisk(localDisk); err != nil {
+				if err := ctr.localDiskController.UpdateLocalDiskAttr(localDisk); err != nil {
 					log.WithError(err).Errorf("Update localDisk fail for disk %v", newDisk)
 				}
 				continue

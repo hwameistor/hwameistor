@@ -37,16 +37,22 @@ func NewPoolController(m *manager.ServerManager) IPoolController {
 // @Success     200 {object}  api.StoragePool
 // @Router      /cluster/pools/{poolName} [get]
 func (n *PoolController) StoragePoolGet(ctx *gin.Context) {
+	var failRsp hwameistorapi.RspFailBody
+
 	// 获取path中的name
 	poolName := ctx.Param("poolName")
 
 	if poolName == "" {
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = "poolName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 	sp, err := n.m.StoragePoolController().GetStoragePool(poolName)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
+		failRsp.ErrCode = 500
+		failRsp.Desc = err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
 	}
 
@@ -67,6 +73,7 @@ func (n *PoolController) StoragePoolGet(ctx *gin.Context) {
 // @Success     200 {object} api.StoragePoolList
 // @Router      /cluster/pools [get]
 func (n *PoolController) StoragePoolList(ctx *gin.Context) {
+	var failRsp hwameistorapi.RspFailBody
 
 	// 获取path中的name
 	name := ctx.Query("name")
@@ -85,7 +92,9 @@ func (n *PoolController) StoragePoolList(ctx *gin.Context) {
 
 	lds, err := n.m.StoragePoolController().StoragePoolList(queryPage)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
+		failRsp.ErrCode = 500
+		failRsp.Desc = err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
 	}
 
@@ -108,11 +117,15 @@ func (n *PoolController) StoragePoolList(ctx *gin.Context) {
 // @Success     200 {object}  api.StorageNodeListByPool
 // @Router      /cluster/pools/{poolName}/nodes [get]
 func (n *PoolController) StorageNodesGetByPoolName(ctx *gin.Context) {
+	var failRsp hwameistorapi.RspFailBody
+
 	// 获取path中的name
 	storagePoolName := ctx.Param("poolName")
 
 	if storagePoolName == "" {
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = "storagePoolName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 
@@ -138,7 +151,9 @@ func (n *PoolController) StorageNodesGetByPoolName(ctx *gin.Context) {
 
 	sn, err := n.m.StoragePoolController().GetStorageNodeByPoolName(queryPage)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
+		failRsp.ErrCode = 500
+		failRsp.Desc = err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
 	}
 
@@ -159,11 +174,15 @@ func (n *PoolController) StorageNodesGetByPoolName(ctx *gin.Context) {
 // @Success     200 {object}  api.NodeDiskListByPool
 // @Router      /cluster/pools/{poolName}/nodes/{nodeName}/disks [get]
 func (n *PoolController) StorageNodeDisksGetByPoolName(ctx *gin.Context) {
+	var failRsp hwameistorapi.RspFailBody
+
 	// 获取path中的StoragePoolName
 	poolName := ctx.Param("poolName")
 
 	if poolName == "" {
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = "poolName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 
@@ -171,7 +190,9 @@ func (n *PoolController) StorageNodeDisksGetByPoolName(ctx *gin.Context) {
 	nodeName := ctx.Param("nodeName")
 
 	if nodeName == "" {
-		ctx.JSON(http.StatusNonAuthoritativeInfo, nil)
+		failRsp.ErrCode = 203
+		failRsp.Desc = "nodeName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 
@@ -191,7 +212,9 @@ func (n *PoolController) StorageNodeDisksGetByPoolName(ctx *gin.Context) {
 
 	sndisksByPoolName, err := n.m.StoragePoolController().StorageNodeDisksGetByPoolName(queryPage)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
+		failRsp.ErrCode = 500
+		failRsp.Desc = err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
 	}
 

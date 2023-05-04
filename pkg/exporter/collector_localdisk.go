@@ -9,16 +9,16 @@ import (
 type LocalDiskMetricsCollector struct {
 	dataCache *metricsCache
 
-	statusMetricsDesc *prometheus.Desc
+	capacityMetricsDesc *prometheus.Desc
 }
 
 func newCollectorForLocalDisk(dataCache *metricsCache) prometheus.Collector {
 	return &LocalDiskMetricsCollector{
 		dataCache: dataCache,
-		statusMetricsDesc: prometheus.NewDesc(
-			"hwameistor_localdisk_status_count",
-			"The status summary of the localdisk.",
-			[]string{"nodeName", "type", "status"},
+		capacityMetricsDesc: prometheus.NewDesc(
+			"hwameistor_localdisk_capacity",
+			"The capacity of the localdisk.",
+			[]string{"nodeName", "type", "devPath", "reserved", "owner", "status"},
 			nil,
 		),
 	}
@@ -36,28 +36,19 @@ func (mc *LocalDiskMetricsCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	// nodename.type.state = count
-	statusCount := map[string]map[string]map[string]int64{}
-
 	for _, disk := range disks {
-		if _, exists := statusCount[disk.Spec.NodeName]; !exists {
-			statusCount[disk.Spec.NodeName] = map[string]map[string]int64{}
+		reserved := "false"
+		if disk.Spec.Reserved {
+			reserved = "true"
 		}
-		if _, exists := statusCount[disk.Spec.NodeName][disk.Spec.DiskAttributes.Type]; !exists {
-			statusCount[disk.Spec.NodeName][disk.Spec.DiskAttributes.Type] = map[string]int64{}
+		owner := disk.Spec.Owner
+		if len(owner) == 0 {
+			owner = "Unknown"
 		}
-		if _, exists := statusCount[disk.Spec.NodeName][disk.Spec.DiskAttributes.Type][string(disk.Status.State)]; !exists {
-			statusCount[disk.Spec.NodeName][disk.Spec.DiskAttributes.Type][string(disk.Status.State)] = 0
-		}
-
-		statusCount[disk.Spec.NodeName][disk.Spec.DiskAttributes.Type][string(disk.Status.State)]++
-	}
-
-	for nodeName, nodeCount := range statusCount {
-		for diskType, typeCount := range nodeCount {
-			for status, count := range typeCount {
-				ch <- prometheus.MustNewConstMetric(mc.statusMetricsDesc, prometheus.GaugeValue, float64(count), nodeName, diskType, status)
-			}
-		}
+		ch <- prometheus.MustNewConstMetric(
+			mc.capacityMetricsDesc, prometheus.GaugeValue,
+			float64(disk.Spec.Capacity),
+			disk.Spec.NodeName, disk.Spec.DiskAttributes.Type, disk.Spec.DevicePath, reserved, owner, string(disk.Status.State),
+		)
 	}
 }

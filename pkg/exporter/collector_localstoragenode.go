@@ -1,7 +1,6 @@
 package exporter
 
 import (
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
@@ -31,9 +30,9 @@ func newCollectorForLocalStorageNode(dataCache *metricsCache) prometheus.Collect
 			nil,
 		),
 		statusMetricsDesc: prometheus.NewDesc(
-			"hwameistor_localstoragenode_status_count",
-			"The status summary of the localstoragenode.",
-			[]string{"status"},
+			"hwameistor_localstoragenode_status",
+			"The status of the localstoragenode.",
+			[]string{"nodeName", "status"},
 			nil,
 		),
 	}
@@ -50,13 +49,9 @@ func (mc *LocalStorageNodeMetricsCollector) Collect(ch chan<- prometheus.Metric)
 		log.WithError(err).Debug("Not found LocalStorageNode")
 		return
 	}
-	nodeCount := map[string]int64{}
-	nodeCount[string(apisv1alpha1.NodeStateReady)] = 0
-	nodeCount[string(apisv1alpha1.NodeStateMaintain)] = 0
-	nodeCount[string(apisv1alpha1.NodeStateOffline)] = 0
 
 	for _, node := range nodes {
-		nodeCount[string(node.Status.State)]++
+		ch <- prometheus.MustNewConstMetric(mc.statusMetricsDesc, prometheus.GaugeValue, 1, node.Name, string(node.Status.State))
 		for poolName, pool := range node.Status.Pools {
 			poolName = unifiedPoolName(poolName)
 			ch <- prometheus.MustNewConstMetric(mc.capacityMetricsDesc, prometheus.GaugeValue, float64(pool.TotalCapacityBytes), node.Name, poolName, "Total")
@@ -67,10 +62,6 @@ func (mc *LocalStorageNodeMetricsCollector) Collect(ch chan<- prometheus.Metric)
 			ch <- prometheus.MustNewConstMetric(mc.volumeCountMetricsDesc, prometheus.GaugeValue, float64(pool.FreeVolumeCount), node.Name, poolName, "Free")
 			ch <- prometheus.MustNewConstMetric(mc.volumeCountMetricsDesc, prometheus.GaugeValue, float64(pool.UsedVolumeCount), node.Name, poolName, "Used")
 		}
-	}
-
-	for state, count := range nodeCount {
-		ch <- prometheus.MustNewConstMetric(mc.statusMetricsDesc, prometheus.GaugeValue, float64(count), state)
 	}
 
 }

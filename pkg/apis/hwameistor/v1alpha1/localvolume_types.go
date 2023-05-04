@@ -155,7 +155,7 @@ type LocalVolumeStatus struct {
 	// In case of HA volume with multiple replicas, the value is equal to the one of a replica's size
 	AllocatedCapacityBytes int64 `json:"allocatedCapacityBytes,omitempty"`
 
-	// UsedCapacityBytes is the used capacity in bytes of the volume, which is avaiable only for filesystem
+	// UsedCapacityBytes is the used capacity in bytes of the volume, which is available only for filesystem
 	UsedCapacityBytes int64 `json:"usedCapacityBytes,omitempty"`
 
 	// TotalINodes is the total inodes of the volume's filesystem

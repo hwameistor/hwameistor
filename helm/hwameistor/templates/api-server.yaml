@@ -35,6 +35,8 @@ kind: Service
 metadata:
   name: hwameistor-apiserver
   namespace: {{ .Release.Namespace}}
+  labels:
+    app: hwameistor-apiserver
 spec:
   selector:
     app: hwameistor-apiserver

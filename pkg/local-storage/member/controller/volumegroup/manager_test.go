@@ -22,7 +22,6 @@ import (
 	crmgr "sigs.k8s.io/controller-runtime/pkg/manager"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	ldmv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 )
 
@@ -483,20 +482,20 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	}
 
 	s := scheme.Scheme
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lv)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvc)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvcList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvm)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvmList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvr)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvrList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvg)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lvgList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lsn)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lsnList)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, lease)
-	s.AddKnownTypes(ldmv1alpha1.SchemeGroupVersion, leaseList)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lv)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvList)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvc)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvcList)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvm)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvmList)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvr)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvrList)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvg)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvgList)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lsn)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lsnList)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lease)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, leaseList)
 	return fake.NewFakeClientWithScheme(s), s
 }
 

@@ -97,7 +97,7 @@ localDiskManagerCSIController:
     imageRepository: sig-storage/csi-attacher
     tag: v3.0.1
     resources: {}
-    
+
 localStorage:
   tolerationsOnMaster: true
   priorityClassName: 
@@ -109,11 +109,9 @@ localStorage:
     config:
       # Each HA volume using DRBD will occupy a port for data volume synchronization.
       # hwameistor limits each node to use up to 1000 volumes, so the final port range is [ startPort, startPort + maxHAVolumeCount - 1 ].
-      # default value: 43001
-      drbdStartPort:
+      drbdStartPort: 43001
       # Max HA volume count
-      # default value: 1000
-      maxHAVolumeCount:
+      maxHAVolumeCount: 1000
     imageRepository: hwameistor/local-storage
     tag: ""
     resources: {}
@@ -137,4 +135,8 @@ localStorageCSIController:
   resizer:
     imageRepository: sig-storage/csi-resizer
     tag: v1.0.1
+    resources: {}
+  healthMonitor:
+    imageRepository: sig-storage/csi-external-health-monitor-controller
+    tag: v0.8.0
     resources: {}

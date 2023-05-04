@@ -58,7 +58,7 @@ func TestLocalDiskClaimController_FilterByDiskCapacity(t *testing.T) {
 	}{
 		// Disk cap100G is sufficient, should success
 		{
-			description: "Should return success, ldc state should be Bound",
+			description: "Should return success, ldc state should be Pending",
 			ld:          GenFakeLocalDiskObject(),
 			ldc:         GenFakeLocalDiskClaimObject(),
 			setProperty: func(claim *v1alpha1.LocalDiskClaim, disk *v1alpha1.LocalDisk) {
@@ -66,7 +66,7 @@ func TestLocalDiskClaimController_FilterByDiskCapacity(t *testing.T) {
 				disk.Spec.Capacity = cap100G
 				claim.Spec.Description.Capacity = cap100G
 			},
-			wantBound: true,
+			wantBound: false,
 		},
 
 		// Disk cap10G is not enough, should fail
@@ -135,6 +135,11 @@ func TestReconcileLocalDiskClaim_Reconcile(t *testing.T) {
 		t.Errorf("Reconcile fail %v", err)
 	}
 
+	_, err = r.Reconcile(context.TODO(), req)
+	if err != nil {
+		t.Errorf("Reconcile fail %v", err)
+	}
+
 	// Update claim
 	err = r.Get(context.Background(), req.NamespacedName, claim)
 	if err != nil {
@@ -178,6 +183,11 @@ func TestReconcileDiskClaim_Reconcile_WhenDiskBoundAlready(t *testing.T) {
 		t.Errorf("Reconcile fail %v", err)
 	}
 
+	_, err = r.Reconcile(context.TODO(), req)
+	if err != nil {
+		t.Errorf("Reconcile fail %v", err)
+	}
+
 	// Update claim
 	err = r.Get(context.Background(), req.NamespacedName, claim)
 	if err != nil {
@@ -196,6 +206,11 @@ func TestReconcileDiskClaim_Reconcile_WhenDiskBoundAlready(t *testing.T) {
 	}
 
 	// Mock LocalDiskClaim request again
+	_, err = r.Reconcile(context.TODO(), req)
+	if err != nil {
+		t.Errorf("Reconcile fail %v", err)
+	}
+
 	_, err = r.Reconcile(context.TODO(), req)
 	if err != nil {
 		t.Errorf("Reconcile fail %v", err)
@@ -395,5 +410,5 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, diskList)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, claim)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, claimList)
-	return fake.NewFakeClientWithScheme(s), s
+	return fake.NewClientBuilder().WithScheme(s).Build(), s
 }

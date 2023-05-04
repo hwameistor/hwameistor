@@ -66,6 +66,32 @@ spec:
         - mountPath: /csi
           name: socket-dir
       - args:
+          - "--v=5"
+          - "--csi-address=$(CSI_ADDRESS)"
+          - "--leader-election"
+          - "--http-endpoint=:8080"
+        env:
+          - name: CSI_ADDRESS
+            value: /csi/csi.sock
+        image: {{ .Values.global.k8sImageRegistry}}/{{ .Values.localStorageCSIController.healthMonitor.imageRepository}}:{{ .Values.localStorageCSIController.healthMonitor.tag}}
+        imagePullPolicy: IfNotPresent
+        name: monitor
+        volumeMounts:
+          - name: socket-dir
+            mountPath: /csi
+        ports:
+          - containerPort: 8080
+            name: http-endpoint
+            protocol: TCP
+        livenessProbe:
+          failureThreshold: 1
+          httpGet:
+            path: /healthz/leader-election
+            port: http-endpoint
+          initialDelaySeconds: 10
+          timeoutSeconds: 10
+          periodSeconds: 20
+      - args:
         - --v=5
         - --csi-address=$(CSI_ADDRESS)
         - --leader-election=true

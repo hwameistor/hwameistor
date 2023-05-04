@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	hwameistorapi "github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -34,10 +35,13 @@ func NewLocalDiskNodeController(m *manager.ServerManager) ILocalDiskNodeControll
 // @Success     200 {object} api.LocalDiskNodeList
 // @Router      /cluster/localdisknodes [get]
 func (v *LocalDiskNodeController) LocalDiskNodeList(ctx *gin.Context) {
+	var failRsp hwameistorapi.RspFailBody
 
 	vgs, err := v.m.LocalDiskNodeController().ListLocalDiskNode()
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, nil)
+		failRsp.ErrCode = 500
+		failRsp.Desc = err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
 	}
 

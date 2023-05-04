@@ -3,8 +3,10 @@ package utils
 import (
 	"bytes"
 	"context"
+	"io"
 	"os/exec"
 	"regexp"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"strings"
 	"time"
 
@@ -234,6 +236,7 @@ func ConfigureadEnvironment(ctx context.Context, k8s string) error {
 func ConfigureEnvironment(ctx context.Context) error {
 	logrus.Info("start rollback")
 	_ = RunInLinux("sh rollback.sh")
+
 	err := wait.PollImmediate(10*time.Second, 20*time.Minute, func() (done bool, err error) {
 		output := RunInLinux("kubectl get pod -A  |grep -v Running |wc -l")
 		if output != "1\n" {
@@ -518,6 +521,7 @@ func CreateLdc(ctx context.Context) error {
 				Namespace: "kube-system",
 			},
 			Spec: v1alpha1.LocalDiskClaimSpec{
+				Owner:    "local-storage",
 				NodeName: nodes.Name,
 				Description: v1alpha1.DiskClaimDescription{
 					DiskType: "HDD",
@@ -531,7 +535,7 @@ func CreateLdc(ctx context.Context) error {
 		}
 	}
 
-	err := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+	err := wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 		for _, nodes := range nodelist.Items {
 			time.Sleep(3 * time.Second)
 			localDiskClaim := &v1alpha1.LocalDiskClaim{}
@@ -576,7 +580,7 @@ func DeleteAllPVC(ctx context.Context) error {
 		}
 	}
 
-	err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+	err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 		err = client.List(ctx, pvcList)
 		if err != nil {
 			logrus.Error("get pvc list error: ", err)
@@ -616,7 +620,7 @@ func DeleteAllSC(ctx context.Context) error {
 			f.ExpectNoError(err)
 		}
 	}
-	err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+	err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 		err = client.List(ctx, scList)
 		if err != nil {
 			logrus.Error("get sc list error", err)
@@ -683,4 +687,130 @@ func installDrbd() {
 	logrus.Printf("installing drbd")
 	_ = RunInLinux("sh install_drbd.sh")
 
+}
+
+//Get the corresponding pod by deploy
+func GetPodsByDeploy(ctx context.Context, namespace, deployName string) (*corev1.PodList, error) {
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
+	client := f.GetClient()
+	deploy := &appsv1.Deployment{}
+	deployKey := k8sclient.ObjectKey{
+		Name:      deployName,
+		Namespace: namespace,
+	}
+	err := client.Get(ctx, deployKey, deploy)
+	if err != nil {
+		logrus.Error("get deploy error", err)
+		f.ExpectNoError(err)
+	}
+	podList := &corev1.PodList{}
+	err = client.List(ctx, podList, k8sclient.InNamespace(deploy.Namespace), k8sclient.MatchingLabels(deploy.Spec.Selector.MatchLabels))
+	if err != nil {
+		logrus.Error("get pod list error", err)
+		f.ExpectNoError(err)
+	}
+	return podList, nil
+}
+
+//Output the events of the target podlist
+func GetPodEvents(ctx context.Context, podList *corev1.PodList) {
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
+	client := f.GetClient()
+	for _, pod := range podList.Items {
+		eventList := &corev1.EventList{}
+		err := client.List(ctx, eventList, k8sclient.InNamespace(pod.Namespace), k8sclient.MatchingFields{"involvedObject.name": pod.Name})
+		if err != nil {
+			logrus.Error("get event list error", err)
+			f.ExpectNoError(err)
+		}
+		for _, event := range eventList.Items {
+			logrus.Printf("event:%+v", event)
+		}
+	}
+}
+
+//Output the events of all pods under the default namespace
+func GetAllPodEventsInDefaultNamespace(ctx context.Context) {
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
+	client := f.GetClient()
+	podList := &corev1.PodList{}
+	err := client.List(ctx, podList, k8sclient.InNamespace("default"))
+	if err != nil {
+		logrus.Error("get pod list error", err)
+		f.ExpectNoError(err)
+	}
+	logrus.Printf("Output the events of all pods under the default namespace")
+	for _, pod := range podList.Items {
+		eventList := &corev1.EventList{}
+		err := client.List(ctx, eventList, k8sclient.InNamespace(pod.Namespace), k8sclient.MatchingFields{"involvedObject.name": pod.Name})
+		if err != nil {
+			logrus.Error("get event list error", err)
+			f.ExpectNoError(err)
+		}
+		for _, event := range eventList.Items {
+			logrus.Printf("event-Reason:%+v", event.Reason)
+			logrus.Printf("event-Message:%+v", event.Message)
+		}
+	}
+
+}
+
+//return All Pod In Hwameistor Namespace
+func GetAllPodInHwameistorNamespace(ctx context.Context) *corev1.PodList {
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
+	client := f.GetClient()
+	podList := &corev1.PodList{}
+	err := client.List(ctx, podList, k8sclient.InNamespace("hwameistor"))
+	if err != nil {
+		logrus.Error("get pod list error", err)
+		f.ExpectNoError(err)
+	}
+	return podList
+}
+
+//Get logs of target pod
+func getPodLogs(pod corev1.Pod) {
+	podLogOpts := corev1.PodLogOptions{}
+	config, err := config.GetConfig()
+	if err != nil {
+		logrus.Error("error in getting config")
+	}
+	// creates the clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		logrus.Error("error in getting access to K8S")
+	}
+	// 循环输出这个pod的每个container
+	for _, container := range pod.Spec.Containers {
+		logrus.Printf("container name:%+v", container.Name)
+		podLogOpts.Container = container.Name
+		req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
+		ctx := context.TODO()
+		podLogs, err := req.Stream(ctx)
+		if err != nil {
+			logrus.Error("error in opening stream")
+		}
+		defer podLogs.Close()
+		buf := new(bytes.Buffer)
+		_, err = io.Copy(buf, podLogs)
+		if err != nil {
+			logrus.Error("error in copy information from podLogs to buf")
+		}
+		str := buf.String()
+		if strings.Contains(str, "error") {
+			logrus.Infoln(str)
+		}
+
+	}
+
+}
+
+//return All Pod logs In Hwameistor Namespace
+func GetAllPodLogsInHwameistorNamespace(ctx context.Context) {
+	podList := GetAllPodInHwameistorNamespace(ctx)
+	for _, pod := range podList.Items {
+		logrus.Printf("pod:%+v", pod.Name)
+		getPodLogs(pod)
+
+	}
 }

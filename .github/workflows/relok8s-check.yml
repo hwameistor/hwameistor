@@ -8,6 +8,7 @@ on:
       - main
     paths:
       - "helm/**"
+      - "!helm/hwameistor/Chart.yaml"
 
 
 jobs:

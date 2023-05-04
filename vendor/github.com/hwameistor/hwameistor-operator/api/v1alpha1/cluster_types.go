@@ -61,7 +61,7 @@ type ClusterSpec struct {
 
 type DiskReserveConfiguration struct {
 	NodeName string `json:"nodeName"`
-	DiskType string `json:"diskType"`
+	Devices []string `json:"devices"`
 }
 
 type ImageSpec struct {
@@ -91,7 +91,6 @@ type CSIControllerSpec struct {
 }
 
 type CSISpec struct {
-	Enable bool `json:"enable,omitempty"`
 	Registrar *ContainerCommonSpec `json:"registrar,omitempty"`
 	Controller *CSIControllerSpec `json:"controller,omitempty"`
 }
@@ -190,6 +189,10 @@ type ClusterStatus struct {
 	DRBDAdapterCreated bool `json:"drbdAdapterCreated"`
 	DRBDAdapterCreatedJobNum int `json:"drbdAdapterCreatedJobNum"`
 	DiskReserveState string `json:"diskReserveState"`
+	ComponentStatus ComponentStatus `json:"componentStatus"`
+}
+
+type ComponentStatus struct {
 	LocalDiskManager *LocalDiskManagerStatus `json:"localDiskManager,omitempty"`
 	LocalStorage *LocalStorageStatus `json:"localStorage,omitempty"`
 	Scheduler *SchedulerStatus `json:"scheduler,omitempty"`

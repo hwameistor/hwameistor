@@ -3,6 +3,7 @@ package scheduler
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -140,7 +141,7 @@ func (s *Scheduler) Filter(pod *corev1.Pod, node *corev1.Node) (bool, error) {
 
 func (s *Scheduler) Score(pod *corev1.Pod, node string) (int64, error) {
 	_, lvmNewPVCs, _, diskNewPVCs, err := s.getHwameiStorPVCs(pod)
-	if err != nil {
+	if err != nil || len(append(lvmNewPVCs, diskNewPVCs...)) == 0 {
 		return 0, err
 	}
 
@@ -152,6 +153,13 @@ func (s *Scheduler) Score(pod *corev1.Pod, node string) (int64, error) {
 			return 0, err
 		}
 		scoreAll += framework.MaxNodeScore
+
+		log.WithFields(log.Fields{
+			"lvmScore": lvmScore,
+			"scoreAll": scoreAll,
+			"volumes":  listVolumes(lvmNewPVCs),
+			"node":     node,
+		}).Debug("node score for lvm-volumes")
 	}
 
 	var diskScore int64
@@ -161,9 +169,22 @@ func (s *Scheduler) Score(pod *corev1.Pod, node string) (int64, error) {
 			return 0, err
 		}
 		scoreAll += framework.MaxNodeScore
+
+		log.WithFields(log.Fields{
+			"diskScore": diskScore,
+			"scoreAll":  scoreAll,
+			"volumes":   listVolumes(diskNewPVCs),
+			"node":      node,
+		}).Debug("node score for disk-volumes")
 	}
 
 	score := (float64(lvmScore+diskScore) / float64(scoreAll)) * float64(framework.MaxNodeScore)
+	log.WithFields(log.Fields{
+		"volumes":    listVolumes(append(lvmNewPVCs, diskNewPVCs...)),
+		"node":       node,
+		"totalScore": score,
+		"scoreAll":   scoreAll,
+	}).Debug("node score for volumes")
 	return int64(score), nil
 }
 
@@ -216,4 +237,11 @@ func (s *Scheduler) getHwameiStorPVCs(pod *corev1.Pod) ([]*corev1.PersistentVolu
 	}
 
 	return lvmProvisionedClaims, lvmNewClaims, diskProvisionedClaims, diskNewClaims, nil
+}
+
+func listVolumes(pvs []*corev1.PersistentVolumeClaim) (s string) {
+	for _, pv := range pvs {
+		s = s + "," + pv.GetName()
+	}
+	return strings.TrimPrefix(s, ",")
 }

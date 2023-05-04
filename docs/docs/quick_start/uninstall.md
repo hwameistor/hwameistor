@@ -3,48 +3,72 @@ sidebar_position: 4
 sidebar_label: "Uninstall"
 ---
 
-# Uninstall
+# Uninstallation (For test purpose, not use for production)
+
+This page describes two schemes to uninstall your HwameiStor.
+
+## To retain data volumes
+
+If you want to uninstall the HwameiStor components, but still keep the existing data volumes working with the applications, perform by the following steps:
+
+```console
+$ kubectl get cluster.hwameistor.io
+NAME             AGE
+cluster-sample   21m
+
+$ kubectl delete cluster cluster-sample
+```
+
+Finally, all the HwameiStor's components (i.e. Pods) will be deleted. Check by
+
+```console
+$ kubectl -n hwameistor get pod
+```
+
+## To delete data volumes
 
 :::danger
-Before uninstalling HwameiStor, please make sure you have backed up all the data.
+Before you start to perform actions, make sure you reallly want to delete all your data.
 :::
 
-## Delete helm instance
+If you confirm to delete your data volumes and uninstall HwameiStor, perform the following steps:
 
-```console
-$ helm delete -n hwameistor hwameistor
-```
+1. Clean up stateful applications
 
-## Cleanup
+   1. Delete stateful applications
 
-### 1. Remove namespace
+   1. Delete PVCs
 
-```console
-$ kubectl delete ns hwameistor
-```
+      The relevant PVs, LVs, LVRs, LVGs will also been deleted.
 
-### 2. Remove `LocalVolumeGroup` instances
-   
-:::note
-   The `LocalVolumeGroup` object has a special finalizer, so its instances must be deleted before its definition is deleted.
-:::
+1. Clean up HwameiStor components
 
-```console
-$ kubectl delete localvolumegroups.hwameistor.io --all
-```
+   1. Delete HwameiStor components
 
-### 3. Remove CRD, Hook, and RBAC
+      ```console
+      $ kubectl delete cluster cluster-sample
+      ```
+      
+   2. Delete hwameistor namespace
 
-```console
-$ kubectl get crd,mutatingwebhookconfiguration,clusterrolebinding,clusterrole -o name \
-      | grep hwameistor \
-      | xargs -t kubectl delete
-```
+      ```console
+      kubectl delete ns hwameistor
+      ```
 
-### 4. Remove StorageClass
+   3. Delete CRD, Hook, and RBAC
 
-```console
-$ kubectl get sc -o name \
-      | grep hwameistor-storage-lvm- \
-      | xargs -t kubectl delete
-```
+      ```bash
+      kubectl get crd,mutatingwebhookconfiguration,clusterrolebinding,clusterrole -o name \
+        | grep hwameistor \
+        | xargs -t kubectl delete
+      ```
+
+   4. Delete StorageClass
+
+      ```bash
+      kubectl get sc -o name \
+        | grep hwameistor-storage-lvm- \
+        | xargs -t kubectl delete
+      ```
+
+Finally, you still need to clean up the LVM configuration on each node, and also data on the disks by tools like `wipefs`.

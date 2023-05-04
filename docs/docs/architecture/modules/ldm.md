@@ -25,45 +25,13 @@ LocalDiskClaim (LDC): This is a way to use disks. A user can add the disk descri
 
 ## Usage
 
-If you want to entirely deploy HwameiStor, refer to [Usage with Helm Chart](../../quick_start/install/deploy.md).
-
-If you just want to deploy LDM separately, refer to the following installation procedure.
-
-## Install Local Disk Manager
-
-1. Clone the repo to your machine.
-
-    ```bash
-    git clone https://github.com/hwameistor/local-disk-manager.git
-    ```
-
-2. Change to the deploy directory.
-
-    ```bash
-    cd deploy
-    ```
-
-3. Deploy CRDs and run local-disk-manager.
-
-    1. Deploy LD and LDC CRDs.
-
-        ```bash
-        kubectl apply -f deploy/crds/
-        ```
-
-    2. Deploy RBAC CRs and operators.
-
-        ```bash
-        kubectl apply -f deploy/
-        ```
-
-4. Get the LocalDisk information.
+1. Get the LocalDisk information.
 
     ```bash
     kubectl get localdisk
-    NAME               NODEMATCH              CLAIM            PHASE
-    10-6-118-11-sda    10-6-118-11                             Unclaimed
-    10-6-118-11-sdb    10-6-118-11                             Unclaimed
+    NAME               NODEMATCH        PHASE
+    10-6-118-11-sda    10-6-118-11      Available
+    10-6-118-11-sdb    10-6-118-11      Available
     ```
 
     Get locally discovered disk resource information with four columns displayed.
@@ -75,7 +43,7 @@ If you just want to deploy LDM separately, refer to the following installation p
 
     Use `kuebctl get localdisk <name> -o yaml` to view more information about disks.
 
-5. Claim available disks.
+2. Claim available disks.
 
     1. Apply a LocalDiskClaim.
 
@@ -90,8 +58,7 @@ If you just want to deploy LDM separately, refer to the following installation p
         ```bash
         kubectl get localdiskclaim <name>
         ```
-
-        Check the status of `Claim`. If a disk is available, you will find that the status is changed to `Bound`, the localdisk status will be Claimed, and it points to the claim that references the disk.
+    3. Once the LDC is processed successfully, it will be cleanup by the system automatically. The result will be recorded in the `LocalStorageNode`.
 
 ## Roadmap
 

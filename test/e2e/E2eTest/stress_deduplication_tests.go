@@ -142,7 +142,7 @@ var _ = ginkgo.Describe("Deduplication test ", ginkgo.Label("stress-test"), func
 								Containers: []apiv1.Container{
 									{
 										Name:  "web",
-										Image: "ghcr.m.daocloud.io/daocloud/dao-2048:v1.2.0",
+										Image: "172.30.45.210/hwameistor/dao-2048:v1.2.0",
 										Ports: []apiv1.ContainerPort{
 											{
 												Name:          "http",
@@ -193,7 +193,7 @@ var _ = ginkgo.Describe("Deduplication test ", ginkgo.Label("stress-test"), func
 					f.ExpectNoError(err)
 				}
 				logrus.Infof("Waiting for the PVC to be bound")
-				err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+				err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 					if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Phase != apiv1.ClaimBound {
 						return false, nil
 					}
@@ -217,7 +217,7 @@ var _ = ginkgo.Describe("Deduplication test ", ginkgo.Label("stress-test"), func
 					f.ExpectNoError(err)
 				}
 				logrus.Infof("waiting for the deployment to be ready ")
-				err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+				err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 					if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(1) {
 						return false, nil
 					}
@@ -246,7 +246,7 @@ var _ = ginkgo.Describe("Deduplication test ", ginkgo.Label("stress-test"), func
 					logrus.Error(err)
 					f.ExpectNoError(err)
 				}
-				err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+				err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 					if err := client.Get(ctx, deployKey, deployment); !k8serror.IsNotFound(err) {
 						return false, nil
 					}
@@ -268,7 +268,7 @@ var _ = ginkgo.Describe("Deduplication test ", ginkgo.Label("stress-test"), func
 				var client ctrlclient.Client
 				pvList := &apiv1.PersistentVolumeList{}
 
-				err := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+				err := wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 					err = client.List(ctx, pvList)
 					if err != nil {
 						logrus.Error("get pv list error", err)

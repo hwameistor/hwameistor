@@ -52,6 +52,7 @@ metadata:
   name: k8s-worker-4
 spec:
   nodeName: k8s-worker-4
+  owner: local-storage
   description:
     diskType: SSD
 EOF
@@ -62,7 +63,7 @@ EOF
 完成上述步骤后，检查新增存储节点及其存储池的状态，确保节点和 HwameiStor 系统的正常运行。具体如下：
 
 ```console
-$ kubectl get localstoragenode k8s-worker-4
+$ kubectl get localstoragenode k8s-worker-4 -o yaml
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalStorageNode
 metadata:

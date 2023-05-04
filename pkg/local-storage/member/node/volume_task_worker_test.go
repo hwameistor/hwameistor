@@ -755,5 +755,5 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, ldc)
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, ldcList)
 
-	return fake.NewFakeClientWithScheme(s), s
+	return fake.NewClientBuilder().WithScheme(s).Build(), s
 }

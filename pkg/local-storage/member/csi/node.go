@@ -8,7 +8,6 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
@@ -184,13 +183,13 @@ func (p *plugin) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeS
 		return resp, err
 	}
 
-	newVol := vol.DeepCopy()
-	patch := client.MergeFrom(vol)
-	newVol.Status.UsedCapacityBytes = metrics.UsedCapacityBytes
-	newVol.Status.TotalInodes = metrics.TotalINodeNumber
-	newVol.Status.UsedInodes = metrics.UsedINodeNumber
-	if err := p.apiClient.Patch(ctx, newVol, patch); err != nil {
-		logCtx.WithFields(log.Fields{"volume": vol.Name, "status": vol.Status}).WithError(err).Error("Failed to patch LocalVolume status")
+	logCtx.WithFields(log.Fields{"capacityUsed": metrics.UsedCapacityBytes, "iNodes": metrics.TotalINodeNumber, "iNodesUsed": metrics.UsedINodeNumber}).Debug("Got volume metrics")
+
+	vol.Status.UsedCapacityBytes = metrics.UsedCapacityBytes
+	vol.Status.TotalInodes = metrics.TotalINodeNumber
+	vol.Status.UsedInodes = metrics.UsedINodeNumber
+	if err := p.apiClient.Status().Update(ctx, vol); err != nil {
+		logCtx.WithFields(log.Fields{"volume": vol.Name, "status": vol.Status}).WithError(err).Error("Failed to update LocalVolume capacity status")
 	}
 
 	resp.Usage = []*csi.VolumeUsage{

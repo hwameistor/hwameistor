@@ -441,7 +441,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lsnList)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lease)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, leaseList)
-	return fake.NewFakeClientWithScheme(s), s
+	return fake.NewClientBuilder().WithScheme(s).Build(), s
 }
 
 func Test_manager_processVolume(t *testing.T) {

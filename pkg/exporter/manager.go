@@ -27,7 +27,6 @@ func (mc *CollectorManager) Run(stopCh <-chan struct{}) {
 	newRegister.MustRegister(newCollectorForLocalVolumeExpand(mc.cache))
 	newRegister.MustRegister(newCollectorForLocalVolumeMigrate(mc.cache))
 	newRegister.MustRegister(newCollectorForLocalDisk(mc.cache))
-	newRegister.MustRegister(newCollectorForLocalDiskVolume(mc.cache))
 	newRegister.MustRegister(NewSMARTCollector())
 
 	http.Handle("/metrics", promhttp.HandlerFor(newRegister, promhttp.HandlerOpts{}))

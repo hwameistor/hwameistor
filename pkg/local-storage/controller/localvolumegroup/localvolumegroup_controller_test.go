@@ -149,7 +149,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s := scheme.Scheme
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvg)
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvgList)
-	return fake.NewFakeClientWithScheme(s), s
+	return fake.NewClientBuilder().WithScheme(s).Build(), s
 }
 
 func validateSystemConfig() error {

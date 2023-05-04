@@ -287,6 +287,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/cluster/nodes/{nodeName}/disks/{devicePath}": {
+            "post": {
+                "description": "post UpdateStorageNodeDisk devicePath i.g /dev/sdb /dev/sdc ...",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Node"
+                ],
+                "summary": "摘要 更新磁盘",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "nodeName",
+                        "name": "nodeName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "devicePath",
+                        "name": "devicePath",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "reqBody",
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/api.DiskReqBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/api.DiskReqBody"
+                        }
+                    },
+                    "500": {
+                        "description": "失败",
+                        "schema": {
+                            "$ref": "#/definitions/api.RspFailBody"
+                        }
+                    }
+                }
+            }
+        },
         "/cluster/nodes/{nodeName}/disks/{diskName}": {
             "get": {
                 "description": "get GetStorageNodeDisk diskname i.g sdb sdc ...",
@@ -342,57 +395,6 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "post": {
-                "description": "post UpdateStorageNodeDisk diskname i.g sdb sdc ...",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Node"
-                ],
-                "summary": "摘要 更新磁盘",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "nodeName",
-                        "name": "nodeName",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "diskName",
-                        "name": "diskName",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "reqBody",
-                        "name": "body",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/api.DiskReqBody"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功",
-                        "schema": {
-                            "$ref": "#/definitions/api.DiskReqBody"
-                        }
-                    },
-                    "500": {
-                        "description": "失败",
-                        "schema": {
-                            "$ref": "#/definitions/api.RspFailBody"
-                        }
-                    }
-                }
             }
         },
         "/cluster/nodes/{nodeName}/migrates": {
@@ -429,6 +431,24 @@ const docTemplate = `{
                         "name": "pageSize",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "migrateOperationName",
+                        "name": "migrateOperationName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "volumeName",
+                        "name": "volumeName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "state",
+                        "name": "state",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1489,6 +1509,10 @@ const docTemplate = `{
                     "description": "AvailableCapacityBytes 可用容量",
                     "type": "integer"
                 },
+                "diskPathShort": {
+                    "description": "diskPathShort 磁盘路径简写",
+                    "type": "string"
+                },
                 "kind": {
                     "description": "Kind is a string value representing the REST resource this object represents.\nServers may infer this from the endpoint the client submits requests to.\nCannot be updated.\nIn CamelCase.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds\n+optional",
                     "type": "string"
@@ -1527,6 +1551,10 @@ const docTemplate = `{
         "api.LocalDiskListByNode": {
             "type": "object",
             "properties": {
+                "diskPathShort": {
+                    "description": "diskPathShort 磁盘路径简写",
+                    "type": "string"
+                },
                 "items": {
                     "description": "localDisks 节点磁盘列表",
                     "type": "array",
@@ -1592,32 +1620,26 @@ const docTemplate = `{
         "api.ModuleStatus": {
             "type": "object",
             "properties": {
-                "admissionController": {
-                    "$ref": "#/definitions/v1alpha1.AdmissionControllerStatus"
+                "componentStatus": {
+                    "$ref": "#/definitions/v1alpha1.ComponentStatus"
                 },
-                "apiServer": {
-                    "$ref": "#/definitions/v1alpha1.ApiServerStatus"
+                "diskReserveState": {
+                    "type": "string"
                 },
-                "evictor": {
-                    "$ref": "#/definitions/v1alpha1.EvictorStatus"
+                "drbdAdapterCreated": {
+                    "type": "boolean"
                 },
-                "localDiskManager": {
-                    "$ref": "#/definitions/v1alpha1.LocalDiskManagerStatus"
+                "drbdAdapterCreatedJobNum": {
+                    "type": "integer"
                 },
-                "localStorage": {
-                    "$ref": "#/definitions/v1alpha1.LocalStorageStatus"
+                "installedCRDS": {
+                    "type": "boolean"
                 },
                 "modulesStatus": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.ModuleState"
                     }
-                },
-                "phase": {
-                    "$ref": "#/definitions/github_com_hwameistor_hwameistor-operator_api_v1alpha1.Phase"
-                },
-                "scheduler": {
-                    "$ref": "#/definitions/v1alpha1.SchedulerStatus"
                 }
             }
         },
@@ -2335,19 +2357,6 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "github_com_hwameistor_hwameistor-operator_api_v1alpha1.Phase": {
-            "type": "string",
-            "enum": [
-                "",
-                "Toinstall",
-                "Installed"
-            ],
-            "x-enum-varnames": [
-                "ClusterPhaseEmpty",
-                "ClusterPhaseToInstall",
-                "ClusterPhaseInstalled"
-            ]
         },
         "github_com_hwameistor_hwameistor_pkg_apis_hwameistor_v1alpha1.ConditionStatus": {
             "type": "string",
@@ -3089,6 +3098,9 @@ const docTemplate = `{
         "v1alpha1.AdmissionControllerStatus": {
             "type": "object",
             "properties": {
+                "health": {
+                    "type": "string"
+                },
                 "instances": {
                     "$ref": "#/definitions/v1alpha1.DeployStatus"
                 }
@@ -3097,8 +3109,37 @@ const docTemplate = `{
         "v1alpha1.ApiServerStatus": {
             "type": "object",
             "properties": {
+                "health": {
+                    "type": "string"
+                },
                 "instances": {
                     "$ref": "#/definitions/v1alpha1.DeployStatus"
+                }
+            }
+        },
+        "v1alpha1.ComponentStatus": {
+            "type": "object",
+            "properties": {
+                "admissionController": {
+                    "$ref": "#/definitions/v1alpha1.AdmissionControllerStatus"
+                },
+                "apiServer": {
+                    "$ref": "#/definitions/v1alpha1.ApiServerStatus"
+                },
+                "evictor": {
+                    "$ref": "#/definitions/v1alpha1.EvictorStatus"
+                },
+                "exporter": {
+                    "$ref": "#/definitions/v1alpha1.ExporterStatus"
+                },
+                "localDiskManager": {
+                    "$ref": "#/definitions/v1alpha1.LocalDiskManagerStatus"
+                },
+                "localStorage": {
+                    "$ref": "#/definitions/v1alpha1.LocalStorageStatus"
+                },
+                "scheduler": {
+                    "$ref": "#/definitions/v1alpha1.SchedulerStatus"
                 }
             }
         },
@@ -3106,9 +3147,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "availablePodCount": {
-                    "type": "integer"
-                },
-                "currentPodCount": {
                     "type": "integer"
                 },
                 "desiredPodCount": {
@@ -3120,11 +3158,11 @@ const docTemplate = `{
                         "$ref": "#/definitions/v1alpha1.PodStatus"
                     }
                 },
-                "readyPodCount": {
-                    "type": "integer"
+                "workloadName": {
+                    "type": "string"
                 },
-                "upToDatePodCount": {
-                    "type": "integer"
+                "workloadType": {
+                    "type": "string"
                 }
             }
         },
@@ -3194,9 +3232,36 @@ const docTemplate = `{
                 }
             }
         },
+        "v1alpha1.DiskClaimDescription": {
+            "type": "object",
+            "properties": {
+                "capacity": {
+                    "description": "Capacity of the disk in bytes",
+                    "type": "integer"
+                },
+                "diskType": {
+                    "description": "DiskType represents the type of drive like SSD, HDD etc.,\n+optional",
+                    "type": "string"
+                }
+            }
+        },
         "v1alpha1.EvictorStatus": {
             "type": "object",
             "properties": {
+                "health": {
+                    "type": "string"
+                },
+                "instances": {
+                    "$ref": "#/definitions/v1alpha1.DeployStatus"
+                }
+            }
+        },
+        "v1alpha1.ExporterStatus": {
+            "type": "object",
+            "properties": {
+                "health": {
+                    "type": "string"
+                },
                 "instances": {
                     "$ref": "#/definitions/v1alpha1.DeployStatus"
                 }
@@ -3279,11 +3344,42 @@ const docTemplate = `{
                 }
             }
         },
+        "v1alpha1.LocalDiskClaimSpec": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "Description of the disk to be claimed\n+optional",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1alpha1.DiskClaimDescription"
+                        }
+                    ]
+                },
+                "diskRefs": {
+                    "description": "DiskRefs represents which disks are assigned to the LocalDiskClaim\n+optional",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ObjectReference"
+                    }
+                },
+                "nodeName": {
+                    "description": "+kubebuilder:validation:Required\nNodeName represents where disk has to be claimed.",
+                    "type": "string"
+                },
+                "owner": {
+                    "description": "Owner represents which system owns this claim(e.g. local-storage, local-disk-manager)",
+                    "type": "string"
+                }
+            }
+        },
         "v1alpha1.LocalDiskManagerStatus": {
             "type": "object",
             "properties": {
                 "csi": {
                     "$ref": "#/definitions/v1alpha1.DeployStatus"
+                },
+                "health": {
+                    "type": "string"
                 },
                 "instances": {
                     "$ref": "#/definitions/v1alpha1.DeployStatus"
@@ -3374,6 +3470,10 @@ const docTemplate = `{
                 },
                 "nodeName": {
                     "description": "NodeName represents the node where the disk is attached\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
+                "owner": {
+                    "description": "Owner represents which system owns this claim(e.g. local-storage, local-disk-manager)\n+optional",
                     "type": "string"
                 },
                 "partitionInfo": {
@@ -3614,6 +3714,16 @@ const docTemplate = `{
                         "$ref": "#/definitions/v1alpha1.LocalStorageNodeCondition"
                     }
                 },
+                "poolExtendRecords": {
+                    "description": "PoolExtendRecords record why disks are joined in the pool\n+optional",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/v1alpha1.LocalDiskClaimSpec"
+                        }
+                    }
+                },
                 "pools": {
                     "description": "There may have multiple storage pools in a node.\ne.g. HDD_POOL, SSD_POOL, NVMe_POOL\nPools: poolName -\u003e LocalPool",
                     "type": "object",
@@ -3636,6 +3746,9 @@ const docTemplate = `{
             "properties": {
                 "csi": {
                     "$ref": "#/definitions/v1alpha1.DeployStatus"
+                },
+                "health": {
+                    "type": "string"
                 },
                 "instances": {
                     "$ref": "#/definitions/v1alpha1.DeployStatus"
@@ -3972,8 +4085,16 @@ const docTemplate = `{
                         }
                     ]
                 },
+                "totalInode": {
+                    "description": "TotalINodes is the total inodes of the volume's filesystem",
+                    "type": "integer"
+                },
                 "usedCapacityBytes": {
-                    "description": "UsedCapacityBytes is the used capacity in bytes of the volume, which is avaiable only for filesystem",
+                    "description": "UsedCapacityBytes is the used capacity in bytes of the volume, which is available only for filesystem",
+                    "type": "integer"
+                },
+                "usedInode": {
+                    "description": "UsedInode is the used inodes of the volume's filesystem",
                     "type": "integer"
                 }
             }
@@ -4025,6 +4146,9 @@ const docTemplate = `{
         "v1alpha1.SchedulerStatus": {
             "type": "object",
             "properties": {
+                "health": {
+                    "type": "string"
+                },
                 "instances": {
                     "$ref": "#/definitions/v1alpha1.DeployStatus"
                 }

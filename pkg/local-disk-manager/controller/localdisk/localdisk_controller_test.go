@@ -142,7 +142,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, diskList)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, claim)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, claimList)
-	return fake.NewFakeClientWithScheme(s), s
+	return fake.NewClientBuilder().WithScheme(s).Build(), s
 }
 
 // GenFakeLocalDiskObject Create disk

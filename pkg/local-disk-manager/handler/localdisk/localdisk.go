@@ -109,7 +109,7 @@ func (ldHandler *Handler) UnClaimed() bool {
 func (ldHandler *Handler) BoundTo(ldc *v1alpha1.LocalDiskClaim) error {
 	// If this disk has already bound to the ldc, return directly
 	if ldHandler.localDisk.Spec.ClaimRef != nil &&
-		ldc.GetName() == ldHandler.localDisk.Spec.ClaimRef.Name {
+		ldc.GetUID() == ldHandler.localDisk.Spec.ClaimRef.UID {
 		return nil
 	}
 
@@ -164,11 +164,10 @@ func (ldHandler *Handler) ReserveDisk() {
 }
 
 func (ldHandler *Handler) FilterDisk(ldc *v1alpha1.LocalDiskClaim) bool {
-	// Bounded disk
-	if ldHandler.filter.HasBoundWith(ldc.GetName(), ldc.Spec.NodeName) {
+	// Bound disk
+	if ldHandler.filter.HasBoundWith(ldc.UID) {
 		return true
 	}
-
 	// Unbound disk
 	return ldHandler.filter.
 		Init().
@@ -193,4 +192,18 @@ func (ldHandler *Handler) RecordEvent(eventtype, reason, messageFmt string, args
 
 func (ldHandler *Handler) SetPartition(hasPartition bool) {
 	ldHandler.localDisk.Spec.HasPartition = hasPartition
+}
+
+func (ldHandler *Handler) SetOwner(owner string) {
+	ldHandler.localDisk.Spec.Owner = owner
+}
+
+func (ldHandler *Handler) PatchDiskOwner(owner string) error {
+	oldDisk := ldHandler.localDisk.DeepCopy()
+	ldHandler.SetOwner(owner)
+	return ldHandler.PatchDiskSpec(client.MergeFrom(oldDisk))
+}
+
+func (ldHandler *Handler) PatchDiskSpec(patch client.Patch) error {
+	return ldHandler.Client.Patch(context.Background(), ldHandler.localDisk, patch)
 }

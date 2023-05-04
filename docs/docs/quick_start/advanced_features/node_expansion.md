@@ -53,6 +53,7 @@ metadata:
   name: k8s-worker-4
 spec:
   nodeName: k8s-worker-4
+  owner: local-storage
   description:
     diskType: SSD
 EOF
@@ -63,7 +64,7 @@ EOF
 Finally, check if the node has constructed the storage pool by checking the LocalStorageNode CR.
 
 ```bash
-kubectl get localstoragenode k8s-worker-4
+kubectl get localstoragenode k8s-worker-4 -o yaml
 ```
 
 The output may look like:

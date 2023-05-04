@@ -15,7 +15,7 @@ sidebar_label:  "本地卷"
 
 ## 查看 `StorageClass`
 
-HwameiStor 的 Helm charts 会默认安装一个 名为 `hwameistor-storage-lvm-hdd` 的 `StorageClass`. 它可以创建本地卷。
+首先确认 HwameiStor Operator 创建了 StorageClass。然后从中选一个合适的用于创建单副本数据卷。
 
 ```console
 $ kubectl get sc hwameistor-storage-lvm-hdd -o yaml
@@ -68,15 +68,6 @@ spec:
       resources:
         requests:
           storage: 1Gi
-```
-
-和 `schedulerName: hwameistor-scheduler`:
-
-```yaml
-spec:
-  template:
-    spec:
-      schedulerName: hwameistor-scheduler
 ```
 
 ## 查看 MySQL 容器和 `PVC/PV`

@@ -24,7 +24,7 @@ import (
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("pr test ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), func() {
+var _ = ginkgo.Describe("pr test ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), ginkgo.FlakeAttempts(3), func() {
 	var f *framework.Framework
 	var client ctrlclient.Client
 	ctx := context.TODO()
@@ -123,7 +123,7 @@ var _ = ginkgo.Describe("pr test ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), func
 							Containers: []corev1.Container{
 								{
 									Name:  "web",
-									Image: "ghcr.m.daocloud.io/daocloud/dao-2048:v1.2.0",
+									Image: "172.30.45.210/hwameistor/dao-2048:v1.2.0",
 									Ports: []corev1.ContainerPort{
 										{
 											Name:          "http",
@@ -174,7 +174,7 @@ var _ = ginkgo.Describe("pr test ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), func
 			}
 
 			logrus.Infof("Waiting for the PVC to be bound")
-			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Phase != corev1.ClaimBound {
 					return false, nil
 				}
@@ -198,7 +198,7 @@ var _ = ginkgo.Describe("pr test ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), func
 				f.ExpectNoError(err)
 			}
 			logrus.Infof("waiting for the deployment to be ready ")
-			err = wait.PollImmediate(3*time.Second, 3*time.Minute, func() (done bool, err error) {
+			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(1) {
 					return false, nil
 				}

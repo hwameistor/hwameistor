@@ -2,7 +2,6 @@ package localdisk
 
 import (
 	"context"
-
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,17 +43,15 @@ func (ctr Controller) CreateLocalDisk(ld v1alpha1.LocalDisk) error {
 	return ctr.Mgr.GetClient().Create(context.Background(), &ld)
 }
 
-func (ctr Controller) UpdateLocalDisk(ld v1alpha1.LocalDisk) error {
-	newLd := ld.DeepCopy()
-	key := client.ObjectKey{Name: ld.GetName(), Namespace: ""}
-
-	oldLd, err := ctr.GetLocalDisk(key)
+func (ctr Controller) UpdateLocalDiskAttr(newLocalDisk v1alpha1.LocalDisk) error {
+	key := client.ObjectKey{Name: newLocalDisk.GetName(), Namespace: ""}
+	remote, err := ctr.GetLocalDisk(key)
 	if err != nil {
 		return err
 	}
-
-	ctr.mergerLocalDisk(oldLd, newLd)
-	return ctr.Mgr.GetClient().Patch(context.Background(), newLd, client.MergeFrom(&oldLd))
+	remoteOrigin := remote.DeepCopy()
+	ctr.mergeLocalDiskAttr(&remote, newLocalDisk)
+	return ctr.Mgr.GetClient().Patch(context.Background(), &remote, client.MergeFrom(remoteOrigin))
 }
 
 func (ctr Controller) IsAlreadyExist(ld v1alpha1.LocalDisk) bool {
@@ -91,13 +88,18 @@ func (ctr Controller) ConvertDiskToLocalDisk(disk manager.DiskInfo) (ld v1alpha1
 	return
 }
 
-func (ctr Controller) mergerLocalDisk(oldLd v1alpha1.LocalDisk, newLd *v1alpha1.LocalDisk) {
-	newLd.Status = oldLd.Status
-	newLd.TypeMeta = oldLd.TypeMeta
-	newLd.ObjectMeta = oldLd.ObjectMeta
-	newLd.Spec.ClaimRef = oldLd.Spec.ClaimRef
-	newLd.Spec.Owner = oldLd.Spec.Owner
-	newLd.Spec.Reserved = oldLd.Spec.Reserved
+// mergeLocalDiskAttr only merge disk self attrs(e.g., capacity, partition, attributes, etc.)
+func (ctr Controller) mergeLocalDiskAttr(oldLd *v1alpha1.LocalDisk, newLd v1alpha1.LocalDisk) {
+	oldLd.Spec.DiskAttributes = newLd.Spec.DiskAttributes
+	oldLd.Spec.Capacity = newLd.Spec.Capacity
+	oldLd.Spec.HasRAID = newLd.Spec.HasRAID
+	oldLd.Spec.HasSmartInfo = newLd.Spec.HasSmartInfo
+	oldLd.Spec.SmartInfo = newLd.Spec.SmartInfo
+	oldLd.Spec.HasPartition = newLd.Spec.HasPartition
+	oldLd.Spec.PartitionInfo = newLd.Spec.PartitionInfo
+	oldLd.Spec.DevicePath = newLd.Spec.DevicePath
+	oldLd.Spec.UUID = newLd.Spec.UUID
+	oldLd.Spec.State = newLd.Spec.State
 }
 
 func (ctr Controller) GenLocalDiskName(disk manager.DiskInfo) string {

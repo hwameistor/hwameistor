@@ -1,3 +1,104 @@
+v0.9.3 / 2023-4-24
+========================
+
+## LocalStorage
+* fix: ignore state when list bounded disks #813(@SSmallMonster )
+
+## LocalDiskManager
+* populate disk owner when empty #762 (@SSmallMonster )
+* remove hostNetwork #776 (@SSmallMonster )
+* disable metrics serving #779 (@SSmallMonster )
+* dismiss not found error #782(@SSmallMonster )
+* [Fix] merge disk self attrs when triggerd by udev events #788 (@SSmallMonster )
+* add labels on service #812 (@SSmallMonster )
+* [Enhance] separate disk assign and disk status update process #815 (@SSmallMonster )
+
+## Exporter
+* rename exporter port to http-metrics #798 (@SSmallMonster )
+* add port name on exporter service #821 (@SSmallMonster )
+
+## UI
+* fix ui template error #756 (@SSmallMonster )
+
+## Other
+* Add more tests ( update relok8s #752 update e2e #758 update e2e #764 update e2e #765 @FloatXD )
+* Update Docs ([zh-docs] sync /quick_start/install/operator.md #751 @windsonsea update doc #784 update doc #800 @FloatXD updated the documents for the latest features #787 @SSmallMonster updated the documents #789 updated the document by removing scheduler configuration #790 removed the document for upgrade section #791 @sun7927 ）
+* mark roadmap for observability and operator as completed in v0.9.x #761(@SSmallMonster )
+* ignore hwameistor/Chart.yaml when trriger relok8s check action #824 (@SSmallMonster )
+
+## Admission,Apiserver,Scheduler,Evictor
+N/A
+
+v0.9.2 / 2023-3-28
+========================
+
+## Other
+* Add ui relok8s  (@FloatXD)
+
+
+## LocalDiskManager,Scheduler,Apiserver,Evictor,Exporter,Admission，LocalStorage
+N/A
+
+
+v0.9.1 / 2023-3-28
+========================
+
+## LocalStorage
+* enabled the volume stats capability #741 (@sun7927 )
+* corrected the local-storage deploy #742 (@sun7927 )
+
+## LocalDiskManager,Scheduler,Apiserver,Evictor,Exporter,Admission
+N/A
+
+
+v0.9.0 / 2023-3-28
+========================
+
+## LocalStorage
+* track the volume's used capacity #667 (@sun7927 )
+* optimize log level args(default: 4 - info) #691 (@SSmallMonster )
+* remove debug call #692 (@SSmallMonster )
+
+## LocalDiskManager
+* Feat: Support specify disk owner #681 (@SSmallMonster )
+
+## Scheduler
+* ignore NotFound error according to FailurePolicy #671 (@SSmallMonster )
+* [Scheduler] skip score if no new volumes found #724 (@SSmallMonster )
+
+## Apiserver
+* to merge new codes for apiserver #694 (@SSmallMonster )
+
+## Admission
+* fix start error caused by args parse #698 (@SSmallMonster )
+* update apiserver #732 (@buffalo1024 )
+
+## Other
+* Add grafana dashboard (#733 #735 #736 @sun7927 )
+* Add more tests  ( #673 #674 #680 #683 #695 #704 #705 #714 @FloatXD )
+* Update Docs (#675 #676 #677 #693 #697 @windsonsea )
+* delete unused file #665 (@SSmallMonster )
+* bump up the hwameistor-operator version #666 (@sun7927 )
+* add module.go to support import crds directory #668 (@SSmallMonster )
+* fix wrong describe for update pvc. #670 (@yanggangtony )
+* add ui deployment #679 (@SSmallMonster )
+* Improve docs for kubectl command #706 (@mengjiao-liu )
+* ui: add app label to ui service #710 (@SSmallMonster )
+* [Docs] Update migrate.md #711 (@nameYULI )
+* update helm icon #712 (@FloatXD )
+* Update release status in README #715 (@Zhuzhenghao )
+* use NewClientBuilder instead of the deprecated NewFakeClientWithScheme #716 (@Fish-pro )
+* clean up duplicate package imports #717 (@Fish-pro )
+* fix fatal misspellings #718 (@Fish-pro )
+* set drbdStartPort 43001 #723 (@SSmallMonster )
+* Update volume_eviction.md #729 (@yanzhifa )
+* sync owner in charts and docs #731 (@SSmallMonster )
+
+
+## Evictor,Exporter
+N/A
+
+
 v0.8.0 / 2023-2-23
 ========================
 

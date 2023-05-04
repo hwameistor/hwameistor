@@ -117,8 +117,9 @@ func (p *plugin) initControllerServiceCapabilities() {
 		csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME,
 		csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME,
 		csi.ControllerServiceCapability_RPC_LIST_VOLUMES,
-		csi.ControllerServiceCapability_RPC_GET_VOLUME,
 		csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
+		csi.ControllerServiceCapability_RPC_GET_VOLUME,
+		csi.ControllerServiceCapability_RPC_VOLUME_CONDITION,
 		// for storage capacity
 		//csi.ControllerServiceCapability_RPC_GET_CAPACITY, // don't support it as the scheduler will take care of it
 		// for snapshot

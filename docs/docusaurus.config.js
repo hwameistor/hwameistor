@@ -26,13 +26,13 @@ const config = {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
-          editUrl: 'https://github.com/hwameistor/hwameistor',
+          editUrl: 'https://github.com/hwameistor/hwameistor/edit/main/docs/',
         },
         blog: {
           showReadingTime: true,
           // Please change this to your repo.
           editUrl:
-            'https://github.com/hwameistor/hwameistor',
+            'https://github.com/hwameistor/hwameistor/edit/main/docs/',
         },
 
         theme: {

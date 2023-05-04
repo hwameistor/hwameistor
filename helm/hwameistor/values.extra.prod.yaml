@@ -144,3 +144,11 @@ localStorageCSIController:
       requests:
         cpu: 1m
         memory: 20Mi
+  healthMonitor:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      requests:
+        cpu: 1m
+        memory: 20Mi

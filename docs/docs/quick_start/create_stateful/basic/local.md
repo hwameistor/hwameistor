@@ -16,8 +16,7 @@ The yaml file for MySQL is learnt from
 
 ## Verify `StorageClass`
 
-HwameiStor helm charts by default install a `StorageClass` named `hwameistor-storage-lvm-hdd`,
-which provisions basic local volumes.
+Make sure the StorageClasses have been created successfully by HwameiStor Operator. And then select one of them to provision the data volume for the application.
 
 ```console
 $ kubectl get sc hwameistor-storage-lvm-hdd -o yaml
@@ -38,12 +37,6 @@ provisioner: lvm.hwameistor.io
 reclaimPolicy: Delete
 volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: true
-```
-
-If it is missing, you can recreate it by:
-
-```console
-$ kubectl apply -f examples/sc-local.yaml
 ```
 
 ## Create `StatefulSet`
@@ -71,15 +64,6 @@ spec:
       resources:
         requests:
           storage: 1Gi
-```
-
-and `schedulerName: hwameistor-scheduler`:
-
-```yaml
-spec:
-  template:
-    spec:
-      schedulerName: hwameistor-scheduler
 ```
 
 ## Verify MySQL Pod and `PVC/PV`

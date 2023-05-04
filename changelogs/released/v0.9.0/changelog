@@ -1,0 +1,46 @@
+v0.9.0 / 2023-3-28
+========================
+
+## LocalStorage
+* track the volume's used capacity #667 (@sun7927 )
+* optimize log level args(default: 4 - info) #691 (@SSmallMonster )
+* remove debug call #692 (@SSmallMonster )
+
+## LocalDiskManager
+* Feat: Support specify disk owner #681 (@SSmallMonster )
+
+## Scheduler
+* ignore NotFound error according to FailurePolicy #671 (@SSmallMonster )
+* [Scheduler] skip score if no new volumes found #724 (@SSmallMonster )
+
+## Apiserver
+* to merge new codes for apiserver #694 (@SSmallMonster )
+
+## Admission
+* fix start error caused by args parse #698 (@SSmallMonster )
+* update apiserver #732 (@buffalo1024 )
+
+## Other
+* Add grafana dashboard (#733 #735 #736 @sun7927 )
+* Add more tests  ( #673 #674 #680 #683 #695 #704 #705 #714 @FloatXD )
+* Update Docs (#675 #676 #677 #693 #697 @windsonsea )
+* delete unused file #665 (@SSmallMonster )
+* bump up the hwameistor-operator version #666 (@sun7927 )
+* add module.go to support import crds directory #668 (@SSmallMonster )
+* fix wrong describe for update pvc. #670 (@yanggangtony )
+* add ui deployment #679 (@SSmallMonster )
+* Improve docs for kubectl command #706 (@mengjiao-liu )
+* ui: add app label to ui service #710 (@SSmallMonster )
+* [Docs] Update migrate.md #711 (@nameYULI )
+* update helm icon #712 (@FloatXD )
+* Update release status in README #715 (@Zhuzhenghao )
+* use NewClientBuilder instead of the deprecated NewFakeClientWithScheme #716 (@Fish-pro )
+* clean up duplicate package imports #717 (@Fish-pro )
+* fix fatal misspellings #718 (@Fish-pro )
+* set drbdStartPort 43001 #723 (@SSmallMonster )
+* Update volume_eviction.md #729 (@yanzhifa )
+* sync owner in charts and docs #731 (@SSmallMonster )
+
+
+## Evictor,Exporter
+N/A

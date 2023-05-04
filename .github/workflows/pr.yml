@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "pkg/**"
+      - "cmd/**"
       - "test/**"
 
 jobs:
@@ -41,4 +42,3 @@ jobs:
         env:
           E2E_TESTING_LEVEL: "pr-e2e"
         run: make pr-test
-

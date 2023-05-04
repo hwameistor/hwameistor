@@ -40,7 +40,7 @@
 
 {{/* Allow UI image tag to be overridden. */}}
 {{- define "hwameistor.uiImageTag" -}}
-  {{- default .Chart.Version .Values.apiserver.tag -}}
+  {{- default .Chart.Version .Values.ui.tag -}}
 {{- end -}}
 
 {{/* Allow KubeletRootDir to be overridden. */}}

@@ -5,11 +5,11 @@ sidebar_label:  "Migrate Volumes"
 
 # Migrate Volumes
 
-The `Migrate` function is an important operation and maintenance management function
-in HwameiStor. When the copy of the node where the data volume bound to the application
-is located is damaged, the copy of the volume can be migrated to other nodes, and after
-successfully migrated to the new node, the application can be rescheduled to the new
-node and bind mount the data volume.
+Volume Migration is an important operation and maintenance management function of HwameiStor.
+Application-mounted data volumes can be unmounted and migrated from a node with errors or an
+alert indicating an impending errors to a healthy node. After the data volume is successfully
+migrated, the Pods of related applications are also rescheduled to the new node and the new data
+volume is bound and mounted.
 
 ## Basic concepts
 
@@ -79,6 +79,21 @@ Attentions:
 1) HwameiStor will select a target node from targetNodesSuggested to migrate. If all the candidates don't have enough storage space, the migrate will fail.
 
 2) If targetNodesSuggested is emtpy or not set, HwameiStore will automatically select a propriate node for the migrate. If there is no valid candidate, the migrate will fail.
+
+```console
+cat << EOF | kubectl apply -f -
+apiVersion: hwameistor.io/v1alpha1
+kind: LocalVolumeMigrate
+metadata:
+  namespace: hwameistor
+  name: <localVolumeMigrateName>
+spec:
+  sourceNode: <sourceNodeName>
+  targetNodesSuggested: []
+  volumeName: <volName>
+  migrateAllVols: <true/false>
+EOF
+```
 
 ## Step 6: Check migration Status
 

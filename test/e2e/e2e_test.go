@@ -1,6 +1,9 @@
 package e2e
 
 import (
+	"context"
+	"github.com/hwameistor/hwameistor/test/e2e/utils"
+	"github.com/sirupsen/logrus"
 	"math/rand"
 	"os"
 	"testing"
@@ -21,4 +24,14 @@ func TestMain(m *testing.M) {
 func TestE2E(t *testing.T) {
 	gomega.RegisterFailHandler(ginkgo.Fail)
 	ginkgo.RunSpecs(t, "hwameistor e2e test")
+
+	if t.Failed() {
+		logrus.Info("e2e test failed")
+		ctx := context.TODO()
+		utils.GetAllPodEventsInDefaultNamespace(ctx)
+		utils.GetAllPodLogsInHwameistorNamespace(ctx)
+	} else {
+		logrus.Info("e2e test success")
+	}
+
 }

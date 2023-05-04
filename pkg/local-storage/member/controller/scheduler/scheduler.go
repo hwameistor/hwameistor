@@ -101,7 +101,7 @@ func (s *scheduler) Allocate(vol *apisv1alpha1.LocalVolume) (*apisv1alpha1.Volum
 	if neededNodeNumber > 0 {
 		nodes, err := s.resourceCollections.getNodeCandidates(vol)
 		if err != nil {
-			logCtx.WithError(err).Error("Failed to get list of avaliable sorted LocalStorageNodes")
+			logCtx.WithError(err).Error("Failed to get list of available sorted LocalStorageNodes")
 			return nil, err
 		}
 
@@ -109,7 +109,7 @@ func (s *scheduler) Allocate(vol *apisv1alpha1.LocalVolume) (*apisv1alpha1.Volum
 
 		if len(nodes) < neededNodeNumber {
 			logCtx.Error("No enough LocalStorageNodes available for LocalVolume")
-			return nil, fmt.Errorf("no enough avaiable node")
+			return nil, fmt.Errorf("no enough available node")
 		}
 		selectedNodes = nodes
 	}

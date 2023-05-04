@@ -10,7 +10,7 @@ type Configer interface {
 	// create or update config for replica, and use replica.Status.StoragePath
 	// create new device at replica.Status.DevicePath
 	ApplyConfig(replica *apisv1alpha1.LocalVolumeReplica, config apisv1alpha1.VolumeConfig) error
-	// Initialize do the initalization for volume
+	// Initialize do the initialization for volume
 	Initialize(replica *apisv1alpha1.LocalVolumeReplica, config apisv1alpha1.VolumeConfig) error
 	// delete config for replica, will remove the resource
 	DeleteConfig(replica *apisv1alpha1.LocalVolumeReplica) error

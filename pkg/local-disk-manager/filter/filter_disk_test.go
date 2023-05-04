@@ -230,20 +230,23 @@ func TestLocalDiskFilter(t *testing.T) {
 
 func TestHasBoundWith(t *testing.T) {
 	testCases := []struct {
-		Description        string
-		WantFilterResult   bool
-		WantBoundWithClaim string
-		disk               *v1alpha1.LocalDisk
-		setProperty        func(disk *v1alpha1.LocalDisk)
+		Description           string
+		WantFilterResult      bool
+		WantBoundWithClaim    string
+		WantBoundWithClaimUID string
+		disk                  *v1alpha1.LocalDisk
+		setProperty           func(disk *v1alpha1.LocalDisk)
 	}{
 		{
-			Description:        "Should return true, Has Correct ClaimRef Name",
-			WantFilterResult:   true,
-			WantBoundWithClaim: "ClaimFoo",
-			disk:               GenFakeLocalDiskObject(),
+			Description:           "Should return true, Has Correct ClaimRef Name",
+			WantFilterResult:      true,
+			WantBoundWithClaim:    "ClaimFoo",
+			WantBoundWithClaimUID: "ClaimUID",
+			disk:                  GenFakeLocalDiskObject(),
 			setProperty: func(disk *v1alpha1.LocalDisk) {
 				disk.Spec.ClaimRef = &v1.ObjectReference{
 					Name: "ClaimFoo",
+					UID:  types.UID("ClaimUID"),
 				}
 			},
 		},
@@ -255,6 +258,7 @@ func TestHasBoundWith(t *testing.T) {
 			setProperty: func(disk *v1alpha1.LocalDisk) {
 				disk.Spec.ClaimRef = &v1.ObjectReference{
 					Name: "ClaimBar",
+					UID:  "a",
 				}
 			},
 		},
@@ -265,7 +269,7 @@ func TestHasBoundWith(t *testing.T) {
 			testCase.setProperty(testCase.disk)
 			filter := NewLocalDiskFilter(testCase.disk)
 			filter.Init()
-			if got := filter.HasBoundWith(testCase.WantBoundWithClaim, testCase.disk.Spec.NodeName); !reflect.DeepEqual(got, testCase.WantFilterResult) {
+			if got := filter.HasBoundWith(types.UID(testCase.WantBoundWithClaimUID)); !reflect.DeepEqual(got, testCase.WantFilterResult) {
 				t.Fatalf("HasBoundWith fail, want %v, got %v", testCase.WantFilterResult, got)
 			}
 		})

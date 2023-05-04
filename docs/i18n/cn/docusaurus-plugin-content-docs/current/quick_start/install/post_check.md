@@ -1,65 +1,58 @@
 ---
 sidebar_position: 3
-sidebar_label: "安装后检查"
+sidebar_label: "查看系统状态"
 ---
 
-# 安装后检查
+# 查看安装系统的状态
 
-下文的示例来自一个 4 节点的 Kubernetes 集群
+此处，以三个节点的 kubernetes 集群为例，安装 HwameiStor 存储系统。
 
 ```console
-$ kubectl get no
+$ kubectl get node
 NAME           STATUS   ROLES   AGE   VERSION
-k8s-master-1   Ready    master  82d   v1.24.3-2+63243a96d1c393
-k8s-worker-1   Ready    worker  36d   v1.24.3-2+63243a96d1c393
-k8s-worker-2   Ready    worker  59d   v1.24.3-2+63243a96d1c393
-k8s-worker-3   Ready    worker  36d   v1.24.3-2+63243a96d1c393
+10-6-234-40   Ready    control-plane,master   140d   v1.21.11
+10-6-234-41   Ready    <none>                 140d   v1.21.11
+10-6-234-42   Ready    <none>                 140d   v1.21.11
 ```
 
-## 检查 Pod
+## 查看 HwameiStor 系统组件
 
-运行以下命令检查 hwameistor 相关 Pod。
+以下 Pods 必须在系统中正常运行
 
 ```console
 $ kubectl -n hwameistor get pod
 NAME                                                       READY   STATUS                  RESTARTS   AGE
-hwameistor-local-disk-csi-controller-665bb7f47d-6227f      2/2     Running                 0          30s
-hwameistor-local-disk-manager-5ph2d                        2/2     Running                 0          30s
-hwameistor-local-disk-manager-jhj59                        2/2     Running                 0          30s
-hwameistor-local-disk-manager-k9cvj                        2/2     Running                 0          30s
-hwameistor-local-disk-manager-kxwww                        2/2     Running                 0          30s
-hwameistor-local-storage-csi-controller-667d949fbb-k488w   3/3     Running                 0          30s
-hwameistor-local-storage-csqqv                             2/2     Running                 0          30s
-hwameistor-local-storage-gcrzm                             2/2     Running                 0          30s
-hwameistor-local-storage-v8g7t                             2/2     Running                 0          30s
-hwameistor-local-storage-zkwmn                             2/2     Running                 0          30s
-hwameistor-scheduler-58dfcf79f5-lswkt                      1/1     Running                 0          30s
-hwameistor-webhook-986479678-278cr                         1/1     Running                 0          30s
+drbd-adapter-10-6-234-40-rhel7-shfgt                      0/2     Completed   0          39s
+drbd-adapter-10-6-234-41-rhel7-sw75z                      0/2     Completed   0          39s
+drbd-adapter-10-6-234-42-rhel7-4vnl9                      0/2     Completed   0          39s
+hwameistor-admission-controller-6995559b48-rxs4s          1/1     Running     0          40s
+hwameistor-apiserver-677ddbdb8-9969c                      1/1     Running     0          40s
+hwameistor-exporter-66784d5745-xwsxx                      1/1     Running     0          39s
+hwameistor-local-disk-csi-controller-5d74d6c8cf-8vx5v     2/2     Running     0          40s
+hwameistor-local-disk-manager-9vc75                       2/2     Running     0          40s
+hwameistor-local-disk-manager-r42sg                       2/2     Running     0          40s
+hwameistor-local-disk-manager-v75qb                       2/2     Running     0          40s
+hwameistor-local-storage-csi-controller-758c94489-7g5tl   4/4     Running     0          40s
+hwameistor-local-storage-pr265                            2/2     Running     0          40s
+hwameistor-local-storage-qvrgb                            2/2     Running     0          40s
+hwameistor-local-storage-zvggz                            2/2     Running     0          40s
+hwameistor-scheduler-7585d88d9-8tbms                      1/1     Running     0          40s
+hwameistor-ui-9885d9dc5-l4tlx                             1/1     Running     0          40s
+hwameistor-volume-evictor-56df755847-m4h8b                1/1     Running     0          40s
 ```
 
 :::info
-`local-disk-manager` 和 `local-storage` 是 `DaemonSet`。在每个 Kubernetes 节点上都应该有一个 DaemonSet Pod。
+
+`local-disk-manager` 和 `local-storage` 组件是以 `DaemonSets` 方式进行部署的，必须在每个节点上运行.
 :::
 
-## 检查 `StorageClass`
+## 查看 HwameiStor CRDs (i.e. APIs)
 
-创建 `StorageClass` 后，运行以下命令：
-
-```console
-$ kubectl get storageclass hwameistor-storage-disk-hdd
-
-NAME                          PROVISIONER          RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
-hwameistor-storage-disk-hdd   disk.hwameistor.io   Delete          WaitForFirstConsumer   true                   4m29s
-```
-
-## 检查 API
-
-运行以下命令通过 HwameiStor CRD 创建 API。
+以下 HwameiStor CRDs 必须安装在系统上。
 
 ```console
 $ kubectl api-resources --api-group hwameistor.io
 
-```console
 NAME                       SHORTNAMES   APIVERSION               NAMESPACED   KIND
 localdiskclaims            ldc          hwameistor.io/v1alpha1   false        LocalDiskClaim
 localdisknodes             ldn          hwameistor.io/v1alpha1   false        LocalDiskNode
@@ -76,58 +69,118 @@ localvolumereplicas        lvr          hwameistor.io/v1alpha1   false        Lo
 localvolumes               lv           hwameistor.io/v1alpha1   false        LocalVolume
 ```
 
-## 检查 `LocalDiskNode` 和 `LocalDisks`
+想了解具体的 CRDs 信息，请查阅 [CRDs](../../architecture/apis.md).
 
-HwameiStor 自动扫描每个节点并将每块数据盘注册为 CRD `LocalDisk(ld)`。未使用的数据盘显示为 `PHASE: Unclaimed`。
+## 查看 `LocalDiskNode` 和 `localDisks`
 
-运行以下命令查看带有 `LocalDisk` 的节点：
+HwameiStor 自动扫描每个节点上的磁盘，并为每一块磁盘生成一个 CRD 资源 `LocalDisk (LD)`.
+没有被使用的磁盘，其状态被标记为 `PHASE: Available`.
 
 ```console
 $ kubectl get localdisknodes
-NAME           TOTALDISK   FREEDISK
-k8s-master-1   5           3
-k8s-worker-1   5           2
-k8s-worker-2   5           2
-k8s-worker-3   5           2
+NAME          TOTALDISK   FREEDISK
+10-6-234-40   1
+10-6-234-41   8
+10-6-234-42   8
 
 $ kubectl get localdisks
-
-NAME               NODEMATCH      CLAIM   PHASE
-k8s-master-1-sda   k8s-master-1           Inuse
-k8s-worker-1-sda   k8s-worker-1           Inuse
-k8s-worker-1-sdb   k8s-worker-1           Unclaimed
-k8s-worker-1-sdc   k8s-worker-1           Unclaimed
-k8s-worker-2-sda   k8s-worker-2           Inuse
-k8s-worker-2-sdb   k8s-worker-2           Unclaimed
-k8s-worker-2-sdc   k8s-worker-2           Unclaimed
-k8s-worker-3-sda   k8s-worker-3           Inuse
-k8s-worker-3-sdb   k8s-worker-3           Unclaimed
-k8s-worker-3-sdc   k8s-worker-3           Unclaimed
+NAME              NODEMATCH     PHASE
+10-6-234-40-sda   10-6-234-40   Bound
+10-6-234-41-sda   10-6-234-41   Bound
+10-6-234-41-sdb   10-6-234-41   Bound
+10-6-234-41-sdc   10-6-234-41   Bound
+10-6-234-41-sdd   10-6-234-41   Bound
+10-6-234-41-sde   10-6-234-41   Bound
+10-6-234-41-sdf   10-6-234-41   Bound
+10-6-234-41-sdg   10-6-234-41   Bound
+10-6-234-41-sdh   10-6-234-41   Bound
+10-6-234-42-sda   10-6-234-42   Bound
+10-6-234-42-sdb   10-6-234-42   Bound
+10-6-234-42-sdc   10-6-234-42   Bound
+10-6-234-42-sdd   10-6-234-42   Bound
+10-6-234-42-sde   10-6-234-42   Bound
+10-6-234-42-sdf   10-6-234-42   Bound
+10-6-234-42-sdg   10-6-234-42   Bound
+10-6-234-42-sdh   10-6-234-42   Bound
 ```
+## 查看 `LocalStorageNodes` 及 存储池
 
-## [可选] 检查 DRBD 的安装
-
-`drbd-adapter` Pod 需要在每个 Worker 节点上运行：
+HwameiStor 为每个存储节点创建一个 CRD 资源 `LocalStorageNode (LSN)`.
+每个 LSN 将会记录该存储节点的状态，及节点上的所有存储资源，包括存储池、数据卷、及相关配置信息。
 
 ```console
-$ kubectl -n hwameistor get po -l k8s-app=drbd-adapter -o wide
-NAME                 READY   STATUS    RESTARTS   AGE   IP            NODE        
-drbd-adapter-4rndg   1/1     Running   0          9h    10.6.254.22   k8s-worker-2   
-drbd-adapter-bpprj   1/1     Running   0          9h    10.6.254.21   k8s-worker-1
-drbd-adapter-n52w4   1/1     Running   0          9h    10.6.254.24   k8s-worker-4
-drbd-adapter-rs9zk   1/1     Running   0          9h    10.6.254.25   k8s-worker-5
-drbd-adapter-zc882   1/1     Running   0          9h    10.6.254.23   k8s-worker-3
+$ kubectl get lsn
+NAME          IP            STATUS   AGE
+10-6-234-40   10.6.234.40   Ready    3m52s
+10-6-234-41   10.6.234.41   Ready    3m54s
+10-6-234-42   10.6.234.42   Ready    3m55s
+
+$ kubectl get lsn 10-6-234-41 -o yaml
+[root@10-6-234-40 ~]# k get lsn 10-6-234-41 -o yaml
+apiVersion: hwameistor.io/v1alpha1
+kind: LocalStorageNode
+metadata:
+  creationTimestamp: "2023-04-11T06:46:52Z"
+  generation: 1
+  name: 10-6-234-41
+  resourceVersion: "13575433"
+  uid: 4986f7b8-6fe1-43f1-bdca-e68b6fa53f92
+spec:
+  hostname: 10-6-234-41
+  storageIP: 10.6.234.41
+  topogoly:
+    region: default
+    zone: default
+status:
+  pools:
+    LocalStorage_PoolHDD:
+      class: HDD
+      disks:
+      - capacityBytes: 10733223936
+        devPath: /dev/sdb
+        state: InUse
+        type: HDD
+      - capacityBytes: 1069547520
+        devPath: /dev/sdc
+        state: InUse
+        type: HDD
+      - capacityBytes: 1069547520
+        devPath: /dev/sdd
+        state: InUse
+        type: HDD
+      - capacityBytes: 1069547520
+        devPath: /dev/sde
+        state: InUse
+        type: HDD
+      - capacityBytes: 1069547520
+        devPath: /dev/sdf
+        state: InUse
+        type: HDD
+      - capacityBytes: 1069547520
+        devPath: /dev/sdg
+        state: InUse
+        type: HDD
+      freeCapacityBytes: 16080961536
+      freeVolumeCount: 1000
+      name: LocalStorage_PoolHDD
+      totalCapacityBytes: 16080961536
+      totalVolumeCount: 1000
+      type: REGULAR
+      usedCapacityBytes: 0
+      usedVolumeCount: 0
+      volumeCapacityBytesLimit: 16080961536
+  state: Ready
 ```
 
-在每个 Worker 节点上，DRBD 的内核模块必须被加载，例如在节点 `k8s-worker-1` 上：
+
+## 查看 `StorageClass`
+
+HwameiStor Operator 在完成 HwameiStor 系统组件安装和系统初始化之后，会根据系统配置（例如：是否开启 HA 模块，磁盘类型，等）自动创建相应的 `StorageClass`，用于创建数据卷。
 
 ```console
-[root@k8s-worker-1 ~]$ lsmod | grep ^drbd
-drbd_transport_tcp     22227  0
-drbd                  606840  1 drbd_transport_tcp
-
-# cat /proc/drbd
-version: 9.0.32-1 (api:2/proto:86-121)
-GIT-hash: 7d2933d5a3764fcc5e0bf54b71fd9cfb0363be1a build by @4904565a901d, 2022-09-07 08:53:17
-Transports (api:17): tcp (9.0.32-1)
+$ kubectl get sc
+NAME                                     PROVISIONER         RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+hwameistor-storage-lvm-hdd               lvm.hwameistor.io   Delete          WaitForFirstConsumer   false                  23h
+hwameistor-storage-lvm-hdd-convertible   lvm.hwameistor.io   Delete          WaitForFirstConsumer   false                  23h
+hwameistor-storage-lvm-hdd-ha            lvm.hwameistor.io   Delete          WaitForFirstConsumer   false                  23h
 ```

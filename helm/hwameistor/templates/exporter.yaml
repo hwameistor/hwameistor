@@ -24,7 +24,7 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
-              name: exporter-apis
+              name: http-metrics
           resources: 
             {{- toYaml .Values.exporter.resources | nindent 12 }}
           env:
@@ -40,10 +40,13 @@ kind: Service
 metadata:
   name: hwameistor-exporter
   namespace: {{ .Release.Namespace}}
+  labels:
+    app: hwameistor-exporter
 spec:
   selector:
     app: hwameistor-exporter
   ports:
     - port: 80
-      targetPort: exporter-apis
+      targetPort: http-metrics
+      name: http-metrics
 

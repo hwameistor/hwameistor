@@ -1,7 +1,6 @@
 package exporter
 
 import (
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
@@ -18,9 +17,9 @@ func newCollectorForLocalVolumeReplica(dataCache *metricsCache) prometheus.Colle
 	return &LocalVolumeReplicaMetricsCollector{
 		dataCache: dataCache,
 		statusMetricsDesc: prometheus.NewDesc(
-			"hwameistor_localvolumereplica_status_count",
-			"The status summary of the localvolumereplica.",
-			[]string{"nodeName", "poolName", "status"},
+			"hwameistor_localvolumereplica_status",
+			"The status of the localvolumereplica.",
+			[]string{"nodeName", "poolName", "volumeName", "status"},
 			nil,
 		),
 
@@ -45,29 +44,9 @@ func (mc *LocalVolumeReplicaMetricsCollector) Collect(ch chan<- prometheus.Metri
 		return
 	}
 
-	replicaStatusCount := map[string]map[string]map[string]int64{
-		apisv1alpha1.DiskClassNameHDD:  {},
-		apisv1alpha1.DiskClassNameSSD:  {},
-		apisv1alpha1.DiskClassNameNVMe: {},
-	}
-
 	for _, replica := range replicas {
 		poolName := unifiedPoolName(replica.Spec.PoolName)
-		_, exist := replicaStatusCount[poolName][replica.Spec.NodeName]
-		if !exist {
-			replicaStatusCount[poolName][replica.Spec.NodeName] = map[string]int64{}
-		}
-		replicaStatusCount[poolName][replica.Spec.NodeName][string(replica.Status.State)]++
-
 		ch <- prometheus.MustNewConstMetric(mc.capacityMetricsDesc, prometheus.GaugeValue, float64(replica.Status.AllocatedCapacityBytes), replica.Spec.NodeName, poolName, replica.Spec.VolumeName)
-	}
-
-	for poolName, nodeCount := range replicaStatusCount {
-		for nodeName, stateCount := range nodeCount {
-			for state, count := range stateCount {
-				ch <- prometheus.MustNewConstMetric(mc.statusMetricsDesc, prometheus.GaugeValue, float64(count), nodeName, poolName, state)
-			}
-		}
-
+		ch <- prometheus.MustNewConstMetric(mc.statusMetricsDesc, prometheus.GaugeValue, 1, replica.Spec.NodeName, poolName, replica.Spec.VolumeName, string(replica.Status.State))
 	}
 }

@@ -5,7 +5,9 @@ sidebar_label:  "卷的迁移"
 
 # 卷的迁移
 
-`Migrate` 迁移功能是 HwameiStor 中重要的运维管理功能，当应用绑定的数据卷所在节点副本损坏时，卷副本可以通过迁移到其他节点，并在成功迁移到新节点后，将应用重新调度到新节点，并进行数据卷的绑定挂载。
+数据卷迁移 (Volume Migration) 是 HwameiStor 的重要运维管理功能。
+应用挂载的数据卷可以从一个有状况或通过告警提示即将出现状况的节点卸载迁移到一个正常的节点。
+数据卷迁移成功后，相关应用的 `Pod` 也被重新调度到新的节点并将数据新卷绑定挂载。
 
 ## 基本概念
 
@@ -46,7 +48,7 @@ kubectl -n hwameistor scale --current-replicas=1 --replicas=0 deployment/nginx-l
 ## 步骤 5: 创建迁移任务
 
 ```console
-cat > ./migrate_lv.yaml <<- EOF
+cat << EOF | kubectl apply -f -
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalVolumeMigrate
 metadata:
@@ -69,7 +71,18 @@ EOF
 2）如果不指定 targetNodesSuggested，系统会根据容量平衡原则自动选择一个适合的节点进行迁移。
 
 ```console
-$ kubectl apply -f ./migrate_lv.yaml
+cat << EOF | kubectl apply -f -
+apiVersion: hwameistor.io/v1alpha1
+kind: LocalVolumeMigrate
+metadata:
+  namespace: hwameistor
+  name: <localVolumeMigrateName>
+spec:
+  sourceNode: <sourceNodeName>
+  targetNodesSuggested: []
+  volumeName: <volName>
+  migrateAllVols: <true/false>
+EOF
 ```
 
 ## 步骤 6: 查看迁移状态

@@ -31,12 +31,12 @@ We suggest using a single pod for deployment because the block data volumes can 
 HwameiStor provides the volume eviction/migration functions to keep the Pods and HwameiStor
 volumes' data running when retiring/rebooting a node.
 
-### Retire a node
+### Remove a node
 
 Before remove a node from a Kubernetes cluster, the Pods and volumes on the node should be
 rescheduled and migrated to another available node, and keep the Pods/volumes running.
 
-Follow these steps to retire a node:
+Follow these steps to remove a node:
 
 1. Drain node.
 
@@ -50,10 +50,10 @@ Follow these steps to retire a node:
     to another available node. Make sure the migration to complete by following
     command before moving ahead.
 
-2. Get LocalStorageNode.
+2. Check the migration progress.
 
     ```bash
-    kubectl get localstoragenode NODE
+    kubectl get localstoragenode NODE -o yaml
     ```
 
     The output may look like:
@@ -88,7 +88,7 @@ Follow these steps to retire a node:
           usedCapacityBytes: 1073741824
           usedVolumeCount: 1
           volumeCapacityBytesLimit: 17175674880
-        ## **** make sure volumes is empty **** ##
+          ## **** make sure volumes is empty **** ##
           volumes:  
       state: Ready
     ```
@@ -112,26 +112,35 @@ HwameiStor can immediately reschedule the Pod to another available node with ass
 volume data and bring the Pod back to running in very short time (~ 10 seconds for the
 Pod using a HA volume, and longer time for the Pod with non-HA volume depends on the data size).
 
-If user doesn't want to migrate the volumes during the node reboots, can add the following
-label to the node before draining it.
+1. Add a label (optional)
 
-```bash
-kubectl label node NODE hwameistor.io/eviction=disable
-```
+    If it is not required to migrate the volumes during the node reboots,
+    you can add the following label to the node before draining it.
 
-To reboot a node, the step 1 and 2 are same as above (in section of `Retire a node`).
+    ```bash
+    kubectl label node NODE hwameistor.io/eviction=disable
+    ```
 
-After the node reboots and comes back online, the volumes on this node can still be avaiable for access.
+2. Drain the node.
 
-Run the following command to bring the node back to normal
+    ```bash
+    kubectl drain NODE --ignore-daemonsets=true. --ignore-daemonsets=true
+    ```
 
-```bash
-kubectl uncordon NODE
-```
+    - If Step 1 has been performed, you can reboot the node after Step 2 is successful.
+    - If Step 1 has not been performed, you should check if the data migration is complete after Step 2 is successful (similar to Step 2 in [remove node](#remove-a-node)). After the data migration is complete, you can reboot the node.
 
-### For the traditional shared storage
+    After the first two steps are successful, you can reboot the node and wait for the node system to return to normal.
 
-StatefulSet will deploy replicas to other worker nodes for workload distribution and
+3. Bring the node back to normal.
+
+    ```bash
+    kubectl uncordon NODE
+    ```
+
+### Traditional shared storage
+
+In this case, StatefulSet will deploy replicas to other worker nodes for workload distribution and
 will also create a PV data volume for each replica.
 
 The `Deployment` will also deploy replicas to other worker nodes for workload distribution
