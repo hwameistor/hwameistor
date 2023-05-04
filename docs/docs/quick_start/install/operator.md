@@ -8,15 +8,15 @@ sidebar_label: "Deploy with hwameistor-operator"
 You can use hwameistor-operator to deploy and manage HwameiStor system.
 
 - Perform Life Cycle Management (LCM) for HwameiStor components:
-  - LocalDiskManager
-  - LocalStorage
-  - Scheduler
-  - AdmissionController
-  - VolumeEvictor
-  - Exporter
-  - HA module
-  - Apiserver
-  - Graph UI
+    - LocalDiskManager
+    - LocalStorage
+    - Scheduler
+    - AdmissionController
+    - VolumeEvictor
+    - Exporter
+    - HA module
+    - Apiserver
+    - Graph UI
 - Configure the disks for different purpose;
 - Setup the storage pools automatically by discovering the underlying disks' type (e.g. HDD, SSD);
 - Setup the StorageClasses automatically according to the HwameiStor's configurations and capabilities;
@@ -28,5 +28,11 @@ You can use hwameistor-operator to deploy and manage HwameiStor system.
    ```console
    helm repo add hwameistor-operator https://hwameistor.io/hwameistor-operator
    helm repo update hwameistor-operator
-   helm install hwameistor-operator hwameistor-operator/hwameistor-operator
+   helm install -n hwameistor hwameistor-operator hwameistor-operator/hwameistor-operator
+   ```
+
+2. Create HwameiStor storage system
+
+   ```console
+   kubectl -n hwameistor apply -f https://raw.githubusercontent.com/hwameistor/hwameistor-operator/main/config/samples/hwameistor.io_hmcluster.yaml
    ```
