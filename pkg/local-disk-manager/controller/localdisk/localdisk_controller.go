@@ -284,13 +284,6 @@ func (r *ReconcileLocalDisk) checkAndCorrectOwner(disk *v1alpha1.LocalDisk) (boo
 				return true, r.diskHandler.PatchDiskOwner(actualOwner)
 			}
 		}
-	case v1alpha1.LocalDiskAvailable:
-		if disk.Spec.Owner == "" {
-			return false, nil
-		}
-
-		log.WithField("disk", disk.GetName()).Infof("Try to remove owner(origin owner: %s)", disk.Spec.Owner)
-		return true, r.diskHandler.PatchDiskOwner("")
 	default:
 		return false, nil
 	}
