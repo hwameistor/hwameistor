@@ -28,11 +28,5 @@ Hwameistor-Operator 负责自动化安装并管理 HwameiStor 系统。
    ```console
    helm repo add hwameistor-operator https://hwameistor.io/hwameistor-operator
    helm repo update hwameistor-operator
-   helm install -n hwameistor hwameistor-operator hwameistor-operator/hwameistor-operator
-   ```
-
-2. 创建 HwameiStor 存储系统
-
-   ```console
-   kubectl -n hwameistor apply -f https://raw.githubusercontent.com/hwameistor/hwameistor-operator/main/config/samples/hwameistor.io_hmcluster.yaml
+   helm install hwameistor-operator hwameistor-operator/hwameistor-operator
    ```

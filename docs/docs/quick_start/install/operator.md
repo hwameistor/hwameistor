@@ -28,11 +28,5 @@ You can use hwameistor-operator to deploy and manage HwameiStor system.
    ```console
    helm repo add hwameistor-operator https://hwameistor.io/hwameistor-operator
    helm repo update hwameistor-operator
-   helm install -n hwameistor hwameistor-operator hwameistor-operator/hwameistor-operator
-   ```
-
-2. Create HwameiStor storage system
-
-   ```console
-   kubectl -n hwameistor apply -f https://raw.githubusercontent.com/hwameistor/hwameistor-operator/main/config/samples/hwameistor.io_hmcluster.yaml
+   helm install hwameistor-operator hwameistor-operator/hwameistor-operator
    ```
