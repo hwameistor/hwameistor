@@ -70,6 +70,8 @@ spec:
           storage: 1Gi
 ```
 
+请注意，PVC 容量的最小值需要超过 4096 个块，例如使用 4KB 块时为 16MB。
+
 ## 查看 MySQL 容器和 `PVC/PV`
 
 在这个例子里，MySQL 容器被调度到了节点 `k8s-worker-3`。
