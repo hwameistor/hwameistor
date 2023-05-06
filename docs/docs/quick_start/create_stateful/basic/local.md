@@ -66,6 +66,8 @@ spec:
           storage: 1Gi
 ```
 
+Please note the minimum PVC size need to be over 4096 blocks, for example, 16MB with 4KB block.
+
 ## Verify MySQL Pod and `PVC/PV`
 
 In this example, the pod is scheduled on node `k8s-worker-3`.
