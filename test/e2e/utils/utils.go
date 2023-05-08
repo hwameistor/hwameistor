@@ -250,14 +250,16 @@ func ConfigureEnvironment(ctx context.Context) error {
 	if err != nil {
 		logrus.Error(err)
 	}
+
+	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
+	client := f.GetClient()
+
 	installHwameiStorByHelm()
 	installDrbd()
 	if err != nil {
 		logrus.Error(err)
 	}
 	addLabels()
-	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
-	client := f.GetClient()
 
 	drbd1 := &b1.Job{}
 	drbdKey1 := k8sclient.ObjectKey{
