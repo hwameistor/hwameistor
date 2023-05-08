@@ -89,17 +89,24 @@ func monitorDeviceEvent(c chan manager.Event, matchRule netlink.Matcher) error {
 				return fmt.Errorf("EventChan has been closed when monitor udev event")
 			}
 
-			if !NewCDevice(crawler.Device{KObj: device.KObj, Env: device.Env}).FilterDisk() {
-				log.Debugf("Device:%+v is drop", device)
-				continue
-			}
-			log.Debugf("Device:%+v is keep", device)
-
-			c <- manager.Event{
+			event := manager.Event{
 				Type:    string(device.Action),
 				DevPath: addSysPrefix(device.KObj),
 				DevType: device.Env["DEVTYPE"],
 				DevName: device.Env["DEVNAME"],
+			}
+
+			switch string(device.Action) {
+			case manager.REMOVE:
+				// push chan directly
+				c <- event
+			default:
+				if !NewCDevice(crawler.Device{KObj: device.KObj, Env: device.Env}).FilterDisk() {
+					log.Debugf("Device:%+v is drop", device)
+					continue
+				}
+				log.Debugf("Device:%+v is keep", device)
+				c <- event
 			}
 
 		case err := <-errChan:
