@@ -70,8 +70,8 @@ spec:
                 description: Represents the latest available observations of a localstoragenode's
                   current state.
                 items:
-                  description: LocalStorageNodeCondition describes the state of a
-                    localstoragenode at a certain point.
+                  description: StorageNodeCondition describes the state of a localstoragenode
+                    at a certain point.
                   properties:
                     lastTransitionTime:
                       description: Last time the condition transitioned from one status

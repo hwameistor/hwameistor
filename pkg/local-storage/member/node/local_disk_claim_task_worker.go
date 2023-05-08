@@ -79,7 +79,7 @@ func (m *manager) processLocalDiskClaim(localDiskNameSpacedName string) error {
 }
 
 func (m *manager) recordExtendPoolCondition(extend bool, err error) {
-	condition := apisv1alpha1.LocalStorageNodeCondition{
+	condition := apisv1alpha1.StorageNodeCondition{
 		Status:             apisv1alpha1.ConditionTrue,
 		LastUpdateTime:     metav1.Now(),
 		LastTransitionTime: metav1.Now(),
@@ -87,22 +87,22 @@ func (m *manager) recordExtendPoolCondition(extend bool, err error) {
 
 	if err != nil {
 		condition.Type = apisv1alpha1.StorageExpandFailure
-		condition.Reason = string(apisv1alpha1.StorageExpandFailure)
+		condition.Reason = "Storage" + string(apisv1alpha1.StorageExpandFailure)
 		condition.Message = fmt.Sprintf("Failed to expand storage capacity, err: %s", err.Error())
 	} else if extend {
 		// only record and update condition in extend storage capacity actually
 		condition.Type = apisv1alpha1.StorageExpandSuccess
-		condition.Reason = string(apisv1alpha1.StorageExpandSuccess)
+		condition.Reason = "Storage" + string(apisv1alpha1.StorageExpandSuccess)
 		condition.Message = "Successfully to expand storage capacity"
 	} else {
 		// check if any disk has already managed
 		if len(m.storageMgr.Registry().Disks()) > 0 {
 			condition.Type = apisv1alpha1.StorageAvailable
-			condition.Reason = string(apisv1alpha1.StorageAvailable)
+			condition.Reason = "Storage" + string(apisv1alpha1.StorageAvailable)
 			condition.Message = "Sufficient storage capacity"
 		} else {
 			condition.Type = apisv1alpha1.StorageUnAvailable
-			condition.Reason = string(apisv1alpha1.StorageAvailable)
+			condition.Reason = "Storage" + string(apisv1alpha1.StorageAvailable)
 			condition.Message = "Insufficient storage capacity"
 		}
 	}

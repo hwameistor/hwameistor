@@ -19,20 +19,20 @@ const (
 	ConditionUnknown ConditionStatus = "Unknown"
 )
 
-type LocalStorageNodeConditionType string
+type StorageNodeConditionType string
 
-// These are valid conditions of a localstoragenode.
+// These are valid conditions of a storagenode.
 const (
-	// StorageAvailable Available means the localstoragenode is available, i.e. the free storage capacity is more than or equal 0
-	StorageAvailable LocalStorageNodeConditionType = "Available"
-	// StorageUnAvailable UnAvailable means the localstoragenode is unavailable, i.e. the free storage capacity is less than or equal 0
-	StorageUnAvailable LocalStorageNodeConditionType = "UnAvailable"
-	// StorageProgressing Progressing means the localstoragenode is progressing, i.e. extending storage capacity
-	StorageProgressing LocalStorageNodeConditionType = "Progressing"
-	// StorageExpandFailure is added in a localstoragenode when a disk fails to be joined the storage pool
-	StorageExpandFailure LocalStorageNodeConditionType = "StorageExpandFailure"
-	// StorageExpandSuccess is added in a localstoragenode when a disk succeeds to be joined the storage pool
-	StorageExpandSuccess LocalStorageNodeConditionType = "StorageExpandSuccess"
+	// StorageAvailable Available means the storagenode is available, i.e. the free storage capacity is more than or equal 0
+	StorageAvailable StorageNodeConditionType = "Available"
+	// StorageUnAvailable UnAvailable means the storagenode is unavailable, i.e. the free storage capacity is less than or equal 0
+	StorageUnAvailable StorageNodeConditionType = "UnAvailable"
+	// StorageProgressing Progressing means the storagenode is progressing, i.e. extending storage capacity
+	StorageProgressing StorageNodeConditionType = "Progressing"
+	// StorageExpandFailure is added in a storagenode when a disk fails to be joined the storage pool
+	StorageExpandFailure StorageNodeConditionType = "ExpandFailure"
+	// StorageExpandSuccess is added in a storagenode when a disk succeeds to be joined the storage pool
+	StorageExpandSuccess StorageNodeConditionType = "ExpandSuccess"
 )
 
 // LocalStorageNodeSpec defines the desired state of LocalStorageNode
@@ -61,17 +61,17 @@ type LocalStorageNodeStatus struct {
 
 	// Represents the latest available observations of a localstoragenode's current state.
 	// +optional
-	Conditions []LocalStorageNodeCondition `json:"conditions,omitempty"`
+	Conditions []StorageNodeCondition `json:"conditions,omitempty"`
 
 	// PoolExtendRecords record why disks are joined in the pool
 	// +optional
 	PoolExtendRecords map[string]LocalDiskClaimSpecArray `json:"poolExtendRecords,omitempty"`
 }
 
-// LocalStorageNodeCondition describes the state of a localstoragenode at a certain point.
-type LocalStorageNodeCondition struct {
+// StorageNodeCondition describes the state of a localstoragenode at a certain point.
+type StorageNodeCondition struct {
 	// Type of localstoragenode condition.
-	Type LocalStorageNodeConditionType `json:"type"`
+	Type StorageNodeConditionType `json:"type"`
 	// Status of the condition, one of True, False, Unknown.
 	Status ConditionStatus `json:"status"`
 	// The last time this condition was updated.

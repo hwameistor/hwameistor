@@ -9,8 +9,9 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 const (
-	LocalStorage = "local-storage"
-	System       = "system"
+	LocalStorage     = "local-storage"
+	LocalDiskManager = "local-disk-manager"
+	System           = "system"
 )
 
 // PartitionInfo contains partition information(e.g. FileSystem)

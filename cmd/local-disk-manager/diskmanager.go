@@ -5,6 +5,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/smart"
 	"os"
 	"path"
 	"runtime"
@@ -33,8 +35,8 @@ import (
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/controller"
 	csidriver "github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/driver"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/smart"
+	mc "github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/controller"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 )
 
@@ -104,26 +106,20 @@ func main() {
 
 	stopCh := signals.SetupSignalHandler()
 
-	log.Info("starting monitor disk")
-	go disk.NewController(nodeMgr).StartMonitor()
-
-	log.Info("starting collect S.M.A.R.T")
-	go smart.NewCollector().WithSyncPeriod(time.Hour * 6).StartTimerCollect(stopCh)
-
-	if csiCfg.Enable {
-		log.Info("starting Disk CSI Driver")
-		go csidriver.NewDiskDriver(csiCfg).Run()
-	}
-
 	// NOTES： currently all metrics are exposed through the exporter
 	// disable metrics service
 	// addMetrics(stopCh, cfg)
 
-	// Start Cluster Controller
-	go startClusterController(stopCh, clusterMgr)
+	// Start Cluster Components
+	// - cluster controller
+	// - node cluster manager
+	go startClusterComponents(stopCh, clusterMgr)
 
-	// Start Node Controller
-	go startNodeController(stopCh, nodeMgr)
+	// Start Node Components
+	// - node controller
+	// - node manager
+	go startNodeComponents(stopCh, nodeMgr)
+
 	select {
 	case <-stopCh.Done():
 		log.Info("Receive exit signal.")
@@ -132,31 +128,98 @@ func main() {
 	}
 }
 
-func startClusterController(ctx context.Context, mgr manager.Manager) {
-	runCluster := func(c context.Context) {
-		log.Info("Starting the Cluster Cmd")
-		// Start the Cmd
-		if err := mgr.Start(ctx); err != nil {
-			log.Error(err, "Failed to start Cluster Cmd")
-			os.Exit(1)
+func startNodeComponents(c context.Context, mgr manager.Manager) {
+	runNodeController := func(_ context.Context) {
+		go startNodeController(c, mgr)
+		go startNodeManager(c, mgr)
+
+		log.Info("starting monitor disk")
+		go disk.NewController(mgr).StartMonitor()
+
+		log.Info("starting collect S.M.A.R.T")
+		go smart.NewCollector().WithSyncPeriod(time.Hour * 6).StartTimerCollect(c)
+
+		if csiCfg.Enable {
+			log.Info("starting Disk CSI Driver")
+			go csidriver.NewDiskDriver(csiCfg).Run()
 		}
 	}
 
+	if err := utils.RunWithLease(utils.GetNamespace(), csiCfg.NodeID, fmt.Sprintf("hwameistor-local-disk-manager-worker-%s", csiCfg.NodeID), runNodeController); err != nil {
+		log.Error(err, "Failed to init node lease election")
+		os.Exit(1)
+	}
+}
+
+func startClusterComponents(ctx context.Context, mgr manager.Manager) {
+	runCluster := func(_ context.Context) {
+		go startClusterController(ctx, mgr)
+		go startNodeClusterManager(ctx, mgr)
+	}
+
 	// Acquired leader lease before proceeding
-	if err := utils.RunWithLease(utils.GetNamespace(), utils.GetPodName(), fmt.Sprintf("local-disk-manager-master"), runCluster); err != nil {
+	if err := utils.RunWithLease(utils.GetNamespace(), utils.GetPodName(), fmt.Sprintf("hwameistor-local-disk-manager-master"), runCluster); err != nil {
 		log.Error(err, "Failed to init cluster lease election")
 		os.Exit(1)
 	}
 }
 
 func startNodeController(ctx context.Context, mgr manager.Manager) {
-	log.Info("Starting the Node Cmd.")
+	log.Info("Starting the Node Controller")
+	if err := mgr.Start(ctx); err != nil {
+		log.Error(err, "Failed to start node controller")
+		os.Exit(1)
+	}
+}
+
+func startClusterController(ctx context.Context, mgr manager.Manager) {
+	log.Info("Starting the Cluster Controller")
 	// Start the Cmd
 	if err := mgr.Start(ctx); err != nil {
-		log.Error(err, "Failed to start Node Cmd")
+		log.Error(err, "Failed to start Cluster Cmd")
+		os.Exit(1)
 	}
+}
 
-	os.Exit(1)
+func startNodeManager(ctx context.Context, mgr manager.Manager) {
+	log.Info("Starting the Node Manager")
+	nodeManager, err := node.NewManager(node.Options{
+		NodeName:  csiCfg.NodeID,
+		K8sClient: mgr.GetClient(),
+		Cache:     mgr.GetCache(),
+		Recorder:  mgr.GetEventRecorderFor(fmt.Sprintf("%s/%s", "localdiskmanager", csiCfg.NodeID)),
+	})
+	if err != nil {
+		log.Error(err, "Failed to New NodeManager")
+		os.Exit(1)
+	}
+	// Start Node Manager
+	err = nodeManager.Start(ctx)
+	if err != nil {
+		log.Error(err, "Failed to start node manager")
+		os.Exit(1)
+	}
+}
+
+func startNodeClusterManager(ctx context.Context, mgr manager.Manager) {
+	log.Info("Starting the Node Cluster Manager")
+	clusterManager, err := mc.NewManager(mc.Options{
+		Namespace: utils.GetNamespace(),
+		NodeName:  csiCfg.NodeID,
+		K8sClient: mgr.GetClient(),
+		Cache:     mgr.GetCache(),
+		Recorder:  mgr.GetEventRecorderFor(fmt.Sprintf("%s/%s", "localdiskmanager-controller", csiCfg.NodeID)),
+	})
+	if err != nil {
+		log.Error(err, "Failed to New NodeClusterManager")
+		os.Exit(1)
+	}
+	// Start Node Cluster Manager
+	err = clusterManager.Start(ctx)
+	if err != nil {
+		log.Error(err, "Failed to start cluster manager")
+		os.Exit(1)
+	}
 }
 
 // addMetrics will create the Services and Service Monitors to allow the operator export the metrics by using

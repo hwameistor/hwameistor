@@ -3,13 +3,13 @@ package controller
 import (
 	"context"
 	"fmt"
+	volume "github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/controller/volume"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/volumemanager"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 )
 
@@ -18,12 +18,12 @@ type Server struct {
 	supportControllerCapability []*csi.ControllerServiceCapability
 
 	// vm manager volume create,delete,query
-	vm volumemanager.VolumeManager
+	vm volume.Manager
 }
 
 func NewServer() *Server {
 	server := &Server{}
-	server.vm = volumemanager.NewLocalDiskVolumeManager()
+	server.vm = volume.New()
 	server.initControllerCapability()
 	return server
 }

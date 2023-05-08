@@ -62,7 +62,7 @@ type LocalRegistry interface {
 	HasVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) bool
 	UpdateNodeForVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica)
 	SyncNodeResources() error
-	UpdateCondition(condition apisv1alpha1.LocalStorageNodeCondition) error
+	UpdateCondition(condition apisv1alpha1.StorageNodeCondition) error
 	UpdatePoolExtendRecord(pool string, record apisv1alpha1.LocalDiskClaimSpec) error
 }
 

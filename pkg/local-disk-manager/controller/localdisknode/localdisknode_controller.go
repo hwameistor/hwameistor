@@ -3,8 +3,6 @@ package localdisknode
 import (
 	"context"
 
-	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -17,8 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisknode"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 )
 
@@ -84,20 +81,20 @@ func withCurrentNode() predicate.Predicate {
 	return predicate.Funcs{
 		CreateFunc: func(event event.CreateEvent) bool {
 			node, _ := event.Object.DeepCopyObject().(*v1alpha1.LocalDiskNode)
-			return node.Spec.AttachNode == utils.GetNodeName()
+			return node.Spec.NodeName == utils.GetNodeName()
 		},
 		DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
 			node, _ := deleteEvent.Object.DeepCopyObject().(*v1alpha1.LocalDiskNode)
-			return node.Spec.AttachNode == utils.GetNodeName()
+			return node.Spec.NodeName == utils.GetNodeName()
 		},
 		UpdateFunc: func(updateEvent event.UpdateEvent) bool {
 			node, _ := updateEvent.ObjectNew.DeepCopyObject().(*v1alpha1.LocalDiskNode)
-			return node.Spec.AttachNode == utils.GetNodeName() &&
+			return node.Spec.NodeName == utils.GetNodeName() &&
 				updateEvent.ObjectNew.GetGeneration() != updateEvent.ObjectOld.GetGeneration()
 		},
 		GenericFunc: func(genericEvent event.GenericEvent) bool {
 			node, _ := genericEvent.Object.DeepCopyObject().(*v1alpha1.LocalDiskNode)
-			return node.Spec.AttachNode == utils.GetNodeName()
+			return node.Spec.NodeName == utils.GetNodeName()
 		},
 	}
 }
@@ -116,44 +113,6 @@ type ReconcileLocalDiskNode struct {
 
 // Reconcile reads that state of the cluster for a LocalDiskNode object and makes changes based on the state read
 func (r *ReconcileLocalDiskNode) Reconcile(_ context.Context, request reconcile.Request) (reconcile.Result, error) {
-	log.WithField("LocalDiskNode", request.NamespacedName).Info("Reconciling LocalDiskNode")
-	ldnHandler := localdisknode.NewDiskNodeHelper(r.client, r.Recorder)
-	err := ldnHandler.For(request.NamespacedName)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return reconcile.Result{}, nil
-		}
-		log.WithError(err).Errorf("failed to get LocalDiskNode %s", request.NamespacedName)
-		return reconcile.Result{}, err
-	}
-
-	// The main task here is to update the resource status of
-	// the localDisk of this node to the latest status.
-	newDisks, err := ldnHandler.ListNodeDisks()
-	if err != nil {
-		log.WithError(err).Errorf("failed to list disks on node %s", request.Name)
-		return reconcile.Result{}, err
-	}
-
-	// find out new disks
-	needUpdateDisks := map[string]v1alpha1.Disk{}
-	for name, newDisk := range newDisks {
-		if !ldnHandler.IsSameDisk(name, newDisk) {
-			needUpdateDisks[name] = *newDisk.DeepCopy()
-		}
-	}
-
-	// find out disk which is removed already
-	needRemoveDisks := map[string]v1alpha1.Disk{}
-	for name, disk := range ldnHandler.Disks() {
-		if _, exist := newDisks[name]; !exist {
-			needRemoveDisks[name] = *disk.DeepCopy()
-		}
-	}
-
-	// update or remove disk
-	ldnHandler.UpdateDiskLists(needUpdateDisks, needRemoveDisks)
-	ldnHandler.UpdateDiskStats()
-
-	return reconcile.Result{}, ldnHandler.UpdateStatus()
+	// NOTE: Do nothing here, all events will br processed at member/node/manager.go
+	return reconcile.Result{}, nil
 }

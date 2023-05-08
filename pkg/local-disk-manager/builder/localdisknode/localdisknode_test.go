@@ -70,7 +70,7 @@ func TestSetupAttachNode(t *testing.T) {
 			want: &Builder{
 				DiskNode: &v1alpha1.LocalDiskNode{
 					Spec: v1alpha1.LocalDiskNodeSpec{
-						AttachNode: attachNode,
+						NodeName: attachNode,
 					},
 				},
 			},

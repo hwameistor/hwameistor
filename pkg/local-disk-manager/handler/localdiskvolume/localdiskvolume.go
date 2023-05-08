@@ -3,6 +3,9 @@ package localdiskvolume
 import (
 	"context"
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/volume"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
+	"strings"
 	"time"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
@@ -27,6 +30,7 @@ type DiskVolumeHandler struct {
 	client.Client
 	record.EventRecorder
 	Ldv     *v1alpha1.LocalDiskVolume
+	hostVM  volume.Manager
 	mounter lscsi.Mounter
 }
 
@@ -37,7 +41,15 @@ func NewLocalDiskVolumeHandler(cli client.Client, recorder record.EventRecorder)
 		Client:        cli,
 		EventRecorder: recorder,
 		mounter:       lscsi.NewLinuxMounter(logger),
+		hostVM:        volume.New(),
 	}
+}
+
+func (v *DiskVolumeHandler) ReconcileCreated() (reconcile.Result, error) {
+	volumeName := v.Ldv.Name
+	volumeType := v.Ldv.Spec.DiskType
+	selectedDisk := strings.TrimPrefix(v.Ldv.Status.DevPath, types.SysDeviceRoot)
+	return reconcile.Result{}, v.hostVM.CreateVolume(volumeName, types.GetLocalDiskPoolName(volumeType), selectedDisk)
 }
 
 func (v *DiskVolumeHandler) ReconcileMount() (reconcile.Result, error) {
@@ -125,7 +137,12 @@ func (v *DiskVolumeHandler) ReconcileToBeDeleted() (reconcile.Result, error) {
 }
 
 func (v *DiskVolumeHandler) ReconcileDeleted() (reconcile.Result, error) {
-	// wipe disk
+	// 1. delete volume
+	if err := v.hostVM.DeleteVolume(v.Ldv.Name, types.GetLocalDiskPoolName(v.Ldv.Spec.DiskType)); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	// 2. wipe disk
 	if err := v.WipeDisk(); err != nil {
 		return reconcile.Result{}, err
 	}

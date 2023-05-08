@@ -101,7 +101,7 @@ type LocalDiskVolumeStatus struct {
 
 // LocalDiskVolume is the Schema for the localdiskvolumes API
 // +kubebuilder:resource:path=localdiskvolumes,scope=Cluster,shortName=ldv
-// +kubebuilder:printcolumn:JSONPath=".spec.accessibility.node",name=Node,type=string
+// +kubebuilder:printcolumn:JSONPath=".spec.accessibility.nodes[0]",name=Node,type=string
 // +kubebuilder:printcolumn:JSONPath=".status.devPath",name=Disk,type=string
 // +kubebuilder:printcolumn:JSONPath=".status.allocatedCapacityBytes",name=AllocatedCap,type=integer
 // +kubebuilder:printcolumn:JSONPath=".spec.diskType",name=Type,type=string

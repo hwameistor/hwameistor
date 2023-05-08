@@ -2,6 +2,8 @@ package utils
 
 import (
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
+	corev1 "k8s.io/api/core/v1"
 	"os"
 	"reflect"
 	"runtime"
@@ -114,3 +116,23 @@ func FoundNewStringElems(old, new []string) ([]string, bool) {
 	}
 	return ns, len(ns) > 0
 }
+
+// ByDiskSize makes an array of disks sortable by their size in descending
+// order.
+type ByDiskSize []types.Disk
+
+func (a ByDiskSize) Less(i, j int) bool {
+	return a[i].Capacity < a[j].Capacity
+}
+func (a ByDiskSize) Len() int      { return len(a) }
+func (a ByDiskSize) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+
+// ByVolumeCapacity makes an array of pvcs sortable by their storage capacity in descending
+// order.
+type ByVolumeCapacity []*corev1.PersistentVolumeClaim
+
+func (a ByVolumeCapacity) Less(i, j int) bool {
+	return a[i].Spec.Resources.Requests.Storage().Value() < a[j].Spec.Resources.Requests.Storage().Value()
+}
+func (a ByVolumeCapacity) Len() int      { return len(a) }
+func (a ByVolumeCapacity) Swap(i, j int) { a[i], a[j] = a[j], a[i] }

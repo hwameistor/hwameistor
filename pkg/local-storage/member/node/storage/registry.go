@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	utils2 "github.com/hwameistor/hwameistor/pkg/utils"
 	"reflect"
 	"sync"
 
@@ -242,7 +243,7 @@ func (lr *localRegistry) HasVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica) b
 }
 
 // UpdateCondition append current condition about LocalStorageNode, i.e. StorageExpandSuccess, StorageExpandFail, UnAvailable
-func (lr *localRegistry) UpdateCondition(condition apisv1alpha1.LocalStorageNodeCondition) error {
+func (lr *localRegistry) UpdateCondition(condition apisv1alpha1.StorageNodeCondition) error {
 	storageNode := &apisv1alpha1.LocalStorageNode{}
 	if err := lr.apiClient.Get(context.TODO(), types.NamespacedName{Name: lr.lm.nodeConf.Name}, storageNode); err != nil {
 		lr.logger.WithError(err).WithField("condition", condition).Error("Failed to query Node")
@@ -252,14 +253,14 @@ func (lr *localRegistry) UpdateCondition(condition apisv1alpha1.LocalStorageNode
 	oldNode := storageNode.DeepCopy()
 	switch condition.Type {
 	case apisv1alpha1.StorageExpandFailure, apisv1alpha1.StorageUnAvailable:
-		lr.recorder.Event(storageNode, v1.EventTypeWarning, string(condition.Type), condition.Message)
+		lr.recorder.Event(storageNode, v1.EventTypeWarning, condition.Reason, condition.Message)
 	case apisv1alpha1.StorageExpandSuccess, apisv1alpha1.StorageProgressing:
-		lr.recorder.Event(storageNode, v1.EventTypeNormal, string(condition.Type), condition.Message)
+		lr.recorder.Event(storageNode, v1.EventTypeNormal, condition.Reason, condition.Message)
 	default:
-		lr.recorder.Event(storageNode, v1.EventTypeNormal, string(condition.Type), condition.Message)
+		lr.recorder.Event(storageNode, v1.EventTypeNormal, condition.Reason, condition.Message)
 	}
 
-	i, _ := GetStorageCondition(storageNode.Status.Conditions, condition.Type)
+	i, _ := utils2.GetStorageCondition(storageNode.Status.Conditions, condition.Type)
 	if i == -1 {
 		storageNode.Status.Conditions = append(storageNode.Status.Conditions, condition)
 	} else {
@@ -312,17 +313,4 @@ func (lr *localRegistry) showReplicaOnHost() {
 	for volume := range lr.replicas {
 		lr.logger.WithField("volume", volume).Infof("Existing volume replica on host")
 	}
-}
-
-// GetStorageCondition extracts the provided condition from the given status and returns that.
-// Returns nil and -1 if the condition is not present, and the index of the located condition.
-func GetStorageCondition(conditions []apisv1alpha1.LocalStorageNodeCondition,
-	conditionType apisv1alpha1.LocalStorageNodeConditionType) (int, *apisv1alpha1.LocalStorageNodeCondition) {
-	for i, condition := range conditions {
-		if condition.Type == conditionType {
-			return i, &conditions[i]
-		}
-	}
-
-	return -1, nil
 }

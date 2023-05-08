@@ -3412,7 +3412,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "attachNode": {
-                    "description": "AttachNode represent where disk is attached",
+                    "description": "NodeName represent where disk is attached",
                     "type": "string"
                 }
             }
@@ -3421,7 +3421,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "allocatableDisk": {
-                    "description": "AllocatableDisk",
+                    "description": "FreeDisk",
                     "type": "integer"
                 },
                 "disks": {

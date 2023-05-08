@@ -71,7 +71,7 @@ func TestLocalDiskFilter(t *testing.T) {
 			},
 		},
 		{
-			Description:      "Should return true, Has Correct DiskType",
+			Description:      "Should return true, Has Correct DevType",
 			WantFilterResult: true,
 			WantDiskType:     diskTypeHDD,
 			disk:             GenFakeLocalDiskObject(),
@@ -80,7 +80,7 @@ func TestLocalDiskFilter(t *testing.T) {
 			},
 		},
 		{
-			Description:      "Should return false, Has InCorrect DiskType",
+			Description:      "Should return false, Has InCorrect DevType",
 			WantFilterResult: false,
 			WantDiskType:     diskTypeSSD,
 			disk:             GenFakeLocalDiskObject(),
