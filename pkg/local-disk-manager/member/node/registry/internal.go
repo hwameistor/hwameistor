@@ -13,6 +13,11 @@ import (
 	"sync"
 )
 
+var (
+	registry Manager
+	once     sync.Once
+)
+
 type localRegistry struct {
 	// disks storage node disks managed by LocalDiskManager
 	// index by disk name
@@ -37,9 +42,14 @@ type localRegistry struct {
 }
 
 func New() Manager {
-	return &localRegistry{
-		hu: hostutil.NewHostUtil(),
-	}
+	once.Do(func() {
+		registry = &localRegistry{
+			hu: hostutil.NewHostUtil(),
+		}
+		// discovery resources immediately
+		registry.DiscoveryResources()
+	})
+	return registry
 }
 
 // DiscoveryResources discovery disks and volumes
