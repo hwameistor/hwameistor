@@ -259,7 +259,6 @@ func ConfigureEnvironment(ctx context.Context) error {
 	if err != nil {
 		logrus.Error(err)
 	}
-	addLabels()
 
 	drbd1 := &b1.Job{}
 	drbdKey1 := k8sclient.ObjectKey{
@@ -538,6 +537,71 @@ func CreateLdc(ctx context.Context) error {
 	}
 
 	err := wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
+		for _, nodes := range nodelist.Items {
+			time.Sleep(3 * time.Second)
+			localDiskClaim := &v1alpha1.LocalDiskClaim{}
+			localDiskClaimKey := k8sclient.ObjectKey{
+				Name:      "localdiskclaim-" + nodes.Name,
+				Namespace: "kube-system",
+			}
+			err := client.Get(ctx, localDiskClaimKey, localDiskClaim)
+			if !k8serror.IsNotFound(err) {
+				return false, nil
+			}
+		}
+		return true, nil
+	})
+	if err != nil {
+		logrus.Error(err)
+		return err
+	} else {
+		return nil
+	}
+
+}
+
+func CreateLdcForLdm(ctx context.Context) error {
+	logrus.Printf("create ldc for each node")
+	nodelist := nodeList()
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
+	client := f.GetClient()
+
+	LdList := &v1alpha1.LocalDiskList{}
+	err := client.List(ctx, LdList)
+	for _, ld := range LdList.Items {
+		logrus.Printf(ld.Spec.Owner)
+		if ld.Spec.Owner == "" {
+			ld.Spec.Owner = "local-disk-manager"
+			err := client.Update(ctx, &ld)
+			if err != nil {
+				logrus.Printf("Update LDC failed ：%+v ", err)
+				f.ExpectNoError(err)
+			}
+		}
+	}
+
+	for _, nodes := range nodelist.Items {
+		exmlocalDiskClaim := &v1alpha1.LocalDiskClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "localdiskclaim-" + nodes.Name,
+				Namespace: "kube-system",
+			},
+			Spec: v1alpha1.LocalDiskClaimSpec{
+				Owner:    "local-disk-manager",
+				NodeName: nodes.Name,
+				Description: v1alpha1.DiskClaimDescription{
+					DiskType: "HDD",
+				},
+			},
+		}
+		err := client.Create(ctx, exmlocalDiskClaim)
+		if err != nil {
+			logrus.Printf("Create LDC failed ：%+v ", err)
+			f.ExpectNoError(err)
+		}
+	}
+
+	err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 		for _, nodes := range nodelist.Items {
 			time.Sleep(3 * time.Second)
 			localDiskClaim := &v1alpha1.LocalDiskClaim{}

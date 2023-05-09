@@ -31,6 +31,8 @@ var _ = ginkgo.Describe("block volume test", ginkgo.Label("test"), func() {
 		gomega.Expect(result).To(gomega.BeNil())
 		f := framework.NewDefaultFramework(clientset.AddToScheme)
 		client = f.GetClient()
+		err := utils.CreateLdcForLdm(ctx)
+		gomega.Expect(err).To(gomega.BeNil())
 
 	})
 	ginkgo.Context("create a StorageClass", func() {
