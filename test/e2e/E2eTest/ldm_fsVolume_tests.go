@@ -21,7 +21,7 @@ import (
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("test fs volume", ginkgo.Label("test"), func() {
+var _ = ginkgo.Describe("test fs volume", ginkgo.Label("testfs"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
@@ -31,6 +31,8 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("test"), func() {
 		gomega.Expect(result).To(gomega.BeNil())
 		f := framework.NewDefaultFramework(clientset.AddToScheme)
 		client = f.GetClient()
+		err := utils.CreateLdcForLdm(ctx)
+		gomega.Expect(err).To(gomega.BeNil())
 
 	})
 	ginkgo.Context("create a StorageClass", func() {
