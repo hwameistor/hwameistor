@@ -8,6 +8,14 @@ if [ $1 == "k8s1.25" ]; then
   kubectl config use-context k8s1.25
 fi
 
+if [ $1 == "k8s1.25" ]; then
+  export GOVC_RESOURCE_POOL="fupan-k8s-1.25"
+  export hosts="adaptation-master adaptation-node1 adaptation-node2"
+  export snapshot="k8s126"
+  kubectl config use-context k8s1.26
+fi
+
+
 if [ $1 == "k8sc81" ]; then
   export GOVC_RESOURCE_POOL="fupan-k8s-1.25"
   export hosts="fupan-ad-c81"
