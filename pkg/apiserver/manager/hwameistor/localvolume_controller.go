@@ -55,7 +55,7 @@ func NewLocalVolumeController(client client.Client, clientset *kubernetes.Client
 func (lvController *LocalVolumeController) ListLocalVolume(queryPage hwameistorapi.QueryPage) (*hwameistorapi.VolumeList, error) {
 	var volList = &hwameistorapi.VolumeList{}
 	vols, err := lvController.listLocalVolume(queryPage)
-	fmt.Println("ListLocalVolume vols = %v", vols)
+	log.Infof("ListLocalVolume vols = %v", vols)
 	if err != nil {
 		log.WithError(err).Error("Failed to listLocalVolume")
 		return nil, err
@@ -84,7 +84,7 @@ func (lvController *LocalVolumeController) listLocalVolume(queryPage hwameistora
 		log.WithError(err).Error("Failed to list LocalVolumes")
 		return nil, err
 	}
-	fmt.Println("listLocalVolume queryPage = %v, queryPage.VolumeState = %v", queryPage, queryPage.VolumeState)
+	log.Infof("listLocalVolume queryPage = %v, queryPage.VolumeState = %v", queryPage, queryPage.VolumeState)
 
 	var vols []*hwameistorapi.Volume
 	for _, lv := range lvList.Items {

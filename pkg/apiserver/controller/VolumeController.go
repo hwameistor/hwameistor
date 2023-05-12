@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"fmt"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 
@@ -31,7 +31,7 @@ type VolumeController struct {
 }
 
 func NewVolumeController(m *manager.ServerManager) IVolumeController {
-	fmt.Println("NewVolumeController start")
+	log.Info("NewVolumeController start")
 
 	return &VolumeController{m}
 }
@@ -92,7 +92,7 @@ func (v *VolumeController) VolumeList(ctx *gin.Context) {
 	pageSize := ctx.Query("pageSize")
 	// 获取path中的volumeName
 	volumeName := ctx.Query("volumeName")
-	fmt.Println("VolumeList volumeName = %v", volumeName)
+	log.Infof("VolumeList volumeName = %v", volumeName)
 	// 获取path中的state
 	state := ctx.Query("state")
 	// 获取path中的namespace
@@ -181,7 +181,7 @@ func (v *VolumeController) VolumeMigrateOperation(ctx *gin.Context) {
 	var failRsp hwameistorapi.RspFailBody
 	// 获取path中的name
 	name := ctx.Param("volumeName")
-	fmt.Println("VolumeMigrateOperation name = %v", name)
+	log.Infof("VolumeMigrateOperation name = %v", name)
 
 	if name == "" {
 		failRsp.ErrCode = 203
@@ -193,14 +193,14 @@ func (v *VolumeController) VolumeMigrateOperation(ctx *gin.Context) {
 	var vmrb hwameistorapi.VolumeMigrateReqBody
 	err := ctx.ShouldBind(&vmrb)
 	if err != nil {
-		fmt.Errorf("Unmarshal err = %v", err)
+		log.Errorf("Unmarshal err = %v", err)
 		failRsp.ErrCode = 203
 		failRsp.Desc = err.Error()
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 
-	fmt.Println("VolumeMigrateOperation vmrb = %v", vmrb)
+	log.Infof("VolumeMigrateOperation vmrb = %v", vmrb)
 
 	if vmrb.SrcNode == "" || vmrb.SrcNode == "string" {
 		failRsp.ErrCode = 203
@@ -248,7 +248,7 @@ func (v *VolumeController) VolumeConvertOperation(ctx *gin.Context) {
 	var vcrb hwameistorapi.VolumeConvertReqBody
 	err := ctx.ShouldBind(&vcrb)
 	if err != nil {
-		fmt.Errorf("Unmarshal err = %v", err)
+		log.Errorf("Unmarshal err = %v", err)
 		failRsp.ErrCode = 203
 		failRsp.Desc = "Unmarshal Failed: " + err.Error()
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
@@ -256,7 +256,7 @@ func (v *VolumeController) VolumeConvertOperation(ctx *gin.Context) {
 	}
 	abort := vcrb.Abort
 
-	fmt.Println("VolumeConvertOperation volumeName = %v, abort = %v", volumeName, abort)
+	log.Infof("VolumeConvertOperation volumeName = %v, abort = %v", volumeName, abort)
 	if volumeName == "" {
 		failRsp.ErrCode = 203
 		failRsp.Desc = "volumeName cannot be empty"
@@ -291,7 +291,7 @@ func (v *VolumeController) GetVolumeMigrateOperation(ctx *gin.Context) {
 	// 获取path中的name
 	volumeName := ctx.Param("volumeName")
 
-	fmt.Println("VolumeConvertOperation volumeName = %v", volumeName)
+	log.Infof("VolumeConvertOperation volumeName = %v", volumeName)
 	if volumeName == "" {
 		failRsp.ErrCode = 203
 		failRsp.Desc = "volumeName cannot be empty"
@@ -327,7 +327,7 @@ func (v *VolumeController) GetVolumeConvertOperation(ctx *gin.Context) {
 	// 获取path中的name
 	volumeName := ctx.Param("volumeName")
 
-	fmt.Println("VolumeConvertOperation volumeName = %v", volumeName)
+	log.Infof("VolumeConvertOperation volumeName = %v", volumeName)
 	if volumeName == "" {
 		failRsp.ErrCode = 203
 		failRsp.Desc = "volumeName cannot be empty"
@@ -363,7 +363,7 @@ func (v *VolumeController) GetVolumeExpandOperation(ctx *gin.Context) {
 	// 获取path中的name
 	volumeName := ctx.Param("volumeName")
 
-	fmt.Println("VolumeConvertOperation volumeName = %v", volumeName)
+	log.Infof("VolumeConvertOperation volumeName = %v", volumeName)
 	if volumeName == "" {
 		failRsp.ErrCode = 203
 		failRsp.Desc = "volumeName cannot be empty"
@@ -399,7 +399,7 @@ func (v *VolumeController) VolumeExpandOperation(ctx *gin.Context) {
 	// 获取path中的name
 	volumeName := ctx.Param("volumeName")
 
-	fmt.Println("VolumeConvertOperation volumeName = %v", volumeName)
+	log.Infof("VolumeConvertOperation volumeName = %v", volumeName)
 	if volumeName == "" {
 		failRsp.ErrCode = 203
 		failRsp.Desc = "volumeName cannot be empty"
@@ -419,7 +419,7 @@ func (v *VolumeController) VolumeExpandOperation(ctx *gin.Context) {
 }
 
 // VolumeOperationGet godoc
-// @Summary 摘要 获取指定数据卷操作记录信息 状态枚举 （Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed)
+// @Summary 摘要 获取指定数据卷操作记录信息 状态枚举 (Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed)
 // @Description get VolumeOperation
 // @Tags        Volume
 // @Param       volumeName path string true "volumeName"

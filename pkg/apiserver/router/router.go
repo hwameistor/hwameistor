@@ -26,7 +26,7 @@ var (
 )
 
 func CollectRoute(r *gin.Engine) *gin.Engine {
-	fmt.Println("CollectRoute start ...")
+	log.Info("CollectRoute start ...")
 
 	sm, m := BuildServerMgr()
 
@@ -91,13 +91,13 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	v1.POST("/cluster/drbd", settingController.EnableDRBDSetting)
 	v1.GET("/cluster/drbd", settingController.DRBDSettingGet)
 
-	fmt.Println("CollectRoute end ...")
+	log.Info("CollectRoute end ...")
 
 	return r
 }
 
 func BuildServerMgr() (*manager.ServerManager, mgrpkg.Manager) {
-	fmt.Println("buildServerMgr start ...")
+	log.Info("buildServerMgr start ...")
 
 	// Get a config to talk to the apiserver
 	cfg, err := config.GetConfig()

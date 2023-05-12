@@ -2,7 +2,6 @@ package hwameistor
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strings"
 
@@ -190,7 +189,7 @@ func (lspController *LocalStoragePoolController) getStorageNodeByPoolName(queryP
 				log.WithError(err).Error("Failed to GetStorageNode")
 				return nil, err
 			}
-			fmt.Println("queryPage.NodeState = %v, sn.NodeState = %v", queryPage.NodeState, sn.K8sNodeState)
+			log.Infof("queryPage.NodeState = %v, sn.NodeState = %v", queryPage.NodeState, sn.K8sNodeState)
 			if queryPage.NodeName == "" && queryPage.NodeState == hwameistorapi.NodeStateEmpty {
 				sns = append(sns, sn)
 			} else if (queryPage.NodeName != "" && strings.Contains(sn.LocalStorageNode.Name, queryPage.NodeName)) && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) {
@@ -219,14 +218,14 @@ func (lspController *LocalStoragePoolController) StorageNodeDisksGetByPoolName(q
 	lsnController := NewLocalStorageNodeController(lspController.Client, lspController.clientset, lspController.EventRecorder)
 	if spnc, exists := storagePoolNodesCollectionMap[queryPage.PoolName]; exists {
 		for _, nn := range spnc.ManagedNodeNames {
-			fmt.Println("StorageNodeDisksGetByPoolName queryPage.NodeName = %v, spnc.ManagedNodeNames = %v", queryPage.NodeName, spnc.ManagedNodeNames)
+			log.Infof("StorageNodeDisksGetByPoolName queryPage.NodeName = %v, spnc.ManagedNodeNames = %v", queryPage.NodeName, spnc.ManagedNodeNames)
 			if nn == queryPage.NodeName {
 				tmplds, err := lsnController.ListStorageNodeDisks(queryPage)
 				if err != nil {
 					log.WithError(err).Error("Failed to ListStorageNodeDisks")
 					return nil, err
 				}
-				fmt.Println("StorageNodeDisksGetByPoolName tmplds = %v", tmplds)
+				log.Infof("StorageNodeDisksGetByPoolName tmplds = %v", tmplds)
 				for _, ld := range tmplds {
 					if ld.LocalStoragePooLName == queryPage.PoolName {
 						lds = append(lds, ld)
