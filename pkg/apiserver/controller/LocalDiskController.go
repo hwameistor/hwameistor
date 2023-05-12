@@ -28,7 +28,7 @@ func NewLocalDiskController(m *manager.ServerManager) ILocalDiskController {
 
 // LocalDiskList godoc
 // @Summary     摘要 获取本地磁盘列表
-// @Description get LocalDiskList 状态枚举 （Active、Inactive、Unknown、Pending、Available、Bound)
+// @Description get LocalDiskList 状态枚举 (Active、Inactive、Unknown、Pending、Available、Bound)
 // @Tags        LocalDisk
 // @Accept      application/json
 // @Produce     application/json

@@ -44,7 +44,7 @@ func (n *SettingController) EnableDRBDSetting(ctx *gin.Context) {
 	var desrb api.DrbdEnableSettingReqBody
 	err := ctx.ShouldBind(&desrb)
 	if err != nil {
-		fmt.Errorf("Unmarshal err = %v", err)
+		fmt.Errorf("Unmarshal err = %v\n", err)
 		failRsp.ErrCode = 203
 		failRsp.Desc = err.Error()
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)

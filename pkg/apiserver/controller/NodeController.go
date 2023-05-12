@@ -105,7 +105,7 @@ func (n *NodeController) StorageNodeList(ctx *gin.Context) {
 	p, _ := strconv.ParseInt(page, 10, 32)
 	ps, _ := strconv.ParseInt(pageSize, 10, 32)
 
-	fmt.Println("StorageNodeList driverState = %v, nodeName = %v", driverState, nodeName)
+	fmt.Printf("StorageNodeList driverState = %v, nodeName = %v\n", driverState, nodeName)
 
 	var queryPage hwameistorapi.QueryPage
 	queryPage.Page = int32(p)
@@ -258,12 +258,12 @@ func (n *NodeController) UpdateStorageNodeDisk(ctx *gin.Context) {
 
 	// 获取path中的devicePath
 	devicePath := ctx.Param("devicePath")
-	fmt.Println("devicePath = %v", devicePath)
+	fmt.Printf("devicePath = %v\n", devicePath)
 
 	var drb hwameistorapi.DiskReqBody
 	err := ctx.ShouldBind(&drb)
 	if err != nil {
-		fmt.Errorf("Unmarshal err = %v", err)
+		fmt.Errorf("Unmarshal err = %v\n", err)
 		failRsp.ErrCode = 203
 		failRsp.Desc = err.Error()
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
