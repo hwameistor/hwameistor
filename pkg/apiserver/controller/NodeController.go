@@ -263,7 +263,7 @@ func (n *NodeController) UpdateStorageNodeDisk(ctx *gin.Context) {
 	var drb hwameistorapi.DiskReqBody
 	err := ctx.ShouldBind(&drb)
 	if err != nil {
-		log.Infof("Unmarshal err = %v", err)
+		log.Errorf("Unmarshal err = %v", err)
 		failRsp.ErrCode = 203
 		failRsp.Desc = err.Error()
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
