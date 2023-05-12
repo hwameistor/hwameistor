@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"fmt"
 	hwameistorapi "github.com/hwameistor/hwameistor/pkg/apiserver/api"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -23,7 +23,7 @@ type VolumeGroupController struct {
 }
 
 func NewVolumeGroupController(m *manager.ServerManager) IVolumeGroupController {
-	fmt.Println("NewVolumeGroupController start")
+	log.Info("NewVolumeGroupController start")
 
 	return &VolumeGroupController{m}
 }

@@ -2,7 +2,6 @@ package hwameistor
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -48,13 +47,13 @@ func (vgController *VolumeGroupController) GetVolumeGroupByVolumeGroupName(vgNam
 	}
 	vg.LocalVolumeGroup = *lvg
 
-	fmt.Println("ListVolumesByVolumeGroup lvg.Name = %v, lvg.Spec.Volumes = %v", lvg.Name, lvg.Spec.Volumes)
+	log.Infof("ListVolumesByVolumeGroup lvg.Name = %v, lvg.Spec.Volumes = %v", lvg.Name, lvg.Spec.Volumes)
 	vg.Name = lvg.Name
 
 	for _, volumeinfo := range lvg.Spec.Volumes {
 
 		volName := volumeinfo.LocalVolumeName
-		fmt.Println("ListVolumesByVolumeGroup volName = %v", volName)
+		log.Infof("ListVolumesByVolumeGroup volName = %v", volName)
 		lv := &apisv1alpha1.LocalVolume{}
 		if err := vgController.Client.Get(context.TODO(), client.ObjectKey{Name: volName}, lv); err != nil {
 			if !errors.IsNotFound(err) {

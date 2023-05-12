@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"fmt"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 
@@ -105,7 +105,7 @@ func (n *NodeController) StorageNodeList(ctx *gin.Context) {
 	p, _ := strconv.ParseInt(page, 10, 32)
 	ps, _ := strconv.ParseInt(pageSize, 10, 32)
 
-	fmt.Printf("StorageNodeList driverState = %v, nodeName = %v\n", driverState, nodeName)
+	log.Infof("StorageNodeList driverState = %v, nodeName = %v", driverState, nodeName)
 
 	var queryPage hwameistorapi.QueryPage
 	queryPage.Page = int32(p)
@@ -258,12 +258,12 @@ func (n *NodeController) UpdateStorageNodeDisk(ctx *gin.Context) {
 
 	// 获取path中的devicePath
 	devicePath := ctx.Param("devicePath")
-	fmt.Printf("devicePath = %v\n", devicePath)
+	log.Infof("devicePath = %v", devicePath)
 
 	var drb hwameistorapi.DiskReqBody
 	err := ctx.ShouldBind(&drb)
 	if err != nil {
-		fmt.Errorf("Unmarshal err = %v\n", err)
+		log.Infof("Unmarshal err = %v", err)
 		failRsp.ErrCode = 203
 		failRsp.Desc = err.Error()
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)

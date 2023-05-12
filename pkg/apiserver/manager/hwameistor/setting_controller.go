@@ -2,7 +2,6 @@ package hwameistor
 
 import (
 	"context"
-	"fmt"
 	hoapisv1alpha1 "github.com/hwameistor/hwameistor-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"strings"
@@ -84,10 +83,10 @@ func (settingController *SettingController) GetDRBDSetting() (*hwameistorapi.Drb
 	var drbdSetting = &hwameistorapi.DrbdEnableSetting{}
 	for _, job := range jobs {
 		if label, exists := job.Labels[drbdVersion]; exists {
-			fmt.Println("GetDRBDSetting label = %v", label)
+			log.Infof("GetDRBDSetting label = %v", label)
 			drbdSetting.Version = label
 		}
-		fmt.Println("job.Status.Succeeded = %v, job.Status.Active = %v", job.Status.Succeeded, job.Status.Active)
+		log.Infof("job.Status.Succeeded = %v, job.Status.Active = %v", job.Status.Succeeded, job.Status.Active)
 		if job.Status.Succeeded != 0 && (job.Status.Active == job.Status.Succeeded) {
 			drbdSetting.State = hwameistorapi.DrbdModuleStatusEnabled
 			drbdSetting.Enable = true
@@ -109,7 +108,7 @@ func (settingController *SettingController) getDrbdJobListByNS() ([]v1.Job, erro
 	// 过滤非同前缀的Job
 	var items []v1.Job
 	for _, v := range jobList.Items {
-		fmt.Println("getDrbdJobListByNS v.Name = %v", v.Name)
+		log.Infof("getDrbdJobListByNS v.Name = %v", v.Name)
 		if strings.HasPrefix(v.Name, drbdJobPrefix) {
 			items = append(items, v)
 		}

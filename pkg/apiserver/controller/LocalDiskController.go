@@ -1,7 +1,8 @@
 package controller
 
 import (
-	"fmt"
+	log "github.com/sirupsen/logrus"
+
 	hwameistorapi "github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"net/http"
 
@@ -21,7 +22,7 @@ type LocalDiskController struct {
 }
 
 func NewLocalDiskController(m *manager.ServerManager) ILocalDiskController {
-	fmt.Println("NewLocalDiskController start")
+	log.Info("NewLocalDiskController start")
 
 	return &LocalDiskController{m}
 }

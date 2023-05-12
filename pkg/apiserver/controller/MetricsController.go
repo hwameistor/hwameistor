@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	hwameistorapi "github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/manager"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 )
@@ -21,7 +21,7 @@ type MetricsController struct {
 }
 
 func NewMetricsController(m *manager.ServerManager) IMetricsController {
-	fmt.Println("NewMetricsController start")
+	log.Info("NewMetricsController start")
 
 	return &MetricsController{m}
 }

@@ -3,7 +3,6 @@ package hwameistor
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"math"
 	"strings"
 
@@ -105,7 +104,7 @@ func (lsnController *LocalStorageNodeController) ListLocalStorageNode(queryPage 
 		sn.K8sNode = k8snode
 		sn.K8sNodeState = K8sNodeState
 
-		fmt.Println("ListLocalStorageNode queryPage.Name = %v, queryPage.DriverState = %v, queryPage.NodeState = %v", queryPage.Name, queryPage.DriverState, queryPage.NodeState)
+		log.Infof("ListLocalStorageNode queryPage.Name = %v, queryPage.DriverState = %v, queryPage.NodeState = %v", queryPage.Name, queryPage.DriverState, queryPage.NodeState)
 		if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState == "") {
 			sns = append(sns, sn)
 		} else if (queryPage.Name != "" && strings.Contains(sn.LocalStorageNode.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState == "") {
@@ -198,7 +197,7 @@ func (lsnController *LocalStorageNodeController) GetStorageNode(nodeName string)
 func (lsnController *LocalStorageNodeController) GetStorageNodeMigrate(queryPage hwameistorapi.QueryPage) (*hwameistorapi.VolumeOperationListByNode, error) {
 	var volumeOperationListByNode = &hwameistorapi.VolumeOperationListByNode{}
 
-	fmt.Println("GetStorageNodeMigrate queryPage = %v", queryPage)
+	log.Infof("GetStorageNodeMigrate queryPage = %v", queryPage)
 	volumeMigrateOperations, err := lsnController.getStorageNodeMigrateOperations(queryPage)
 	if err != nil {
 		log.WithError(err).Error("Failed to getStorageNodeMigrateOperations")
@@ -231,7 +230,7 @@ func (lsnController *LocalStorageNodeController) getStorageNodeMigrateOperations
 		return nil, err
 	}
 
-	fmt.Println("getStorageNodeMigrateOperations lvmList = %v", lvmList)
+	log.Infof("getStorageNodeMigrateOperations lvmList = %v", lvmList)
 	var vmos []*hwameistorapi.VolumeMigrateOperation
 	for _, lvm := range lvmList.Items {
 		var vmo = &hwameistorapi.VolumeMigrateOperation{}
@@ -309,7 +308,7 @@ func (lsnController *LocalStorageNodeController) LocalDiskListByNode(queryPage h
 		log.WithError(err).Error("Failed to ListStorageNodeDisks")
 		return nil, err
 	}
-	fmt.Println("LocalDiskListByNode disks = %v", disks)
+	log.Infof("LocalDiskListByNode disks = %v", disks)
 
 	var pagination = &hwameistorapi.Pagination{}
 	pagination.Page = queryPage.Page
@@ -377,7 +376,7 @@ func (lsnController *LocalStorageNodeController) ListStorageNodeDisks(queryPage 
 			diskShortName := strings.Split(diskList.Items[i].Spec.DevicePath, "/dev/")[1]
 			disk.DiskPathShort = diskShortName
 
-			fmt.Println("ListStorageNodeDisks queryPage.DiskState = %v", queryPage.DiskState)
+			log.Infof("ListStorageNodeDisks queryPage.DiskState = %v", queryPage.DiskState)
 			if queryPage.DiskState == "" || (queryPage.DiskState != "" && queryPage.DiskState == disk.Status.State) {
 				disks = append(disks, disk)
 			}
@@ -431,13 +430,13 @@ func (lsnController *LocalStorageNodeController) GetStorageNodeVolumeMigrateYaml
 	if err := lsnController.Client.List(context.Background(), &lvmList, &client.ListOptions{}); err != nil {
 		return nil, err
 	}
-	fmt.Println("GetStorageNodeVolumeMigrateYamlStr lvmList = %v", lvmList)
+	log.Infof("GetStorageNodeVolumeMigrateYamlStr lvmList = %v", lvmList)
 	var resourceYamlStr string
 	var err error
 	for _, item := range lvmList.Items {
 		if item.Name == resourceName {
 			resourceYamlStr, err = lsnController.getResourceYaml(&item)
-			fmt.Println("GetLocalVolumeMigrateYamlStr resourceYamlStr = %v", resourceYamlStr)
+			log.Infof("GetLocalVolumeMigrateYamlStr resourceYamlStr = %v", resourceYamlStr)
 
 			if err != nil {
 				log.WithError(err).Error("Failed to getResourceYaml")
@@ -456,7 +455,7 @@ func (lsnController *LocalStorageNodeController) GetStorageNodeVolumeMigrateYaml
 func (lsnController *LocalStorageNodeController) getResourceYaml(res *apisv1alpha1.LocalVolumeMigrate) (string, error) {
 
 	buf := new(bytes.Buffer)
-	fmt.Println("getResourceYaml res.(type) = %v", res)
+	log.Infof("getResourceYaml res.(type) = %v", res)
 
 	res.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   groupName,
@@ -488,7 +487,7 @@ func (lsnController *LocalStorageNodeController) ReserveStorageNodeDisk(queryPag
 		log.Errorf("failed to get localDisk %s", err.Error())
 		return RspBody, err
 	}
-	fmt.Println("ReserveStorageNodeDisk ld = %v", ld)
+	log.Infof("ReserveStorageNodeDisk ld = %v", ld)
 	diskHandler = diskHandler.For(ld)
 	diskHandler.ReserveDisk()
 
@@ -574,7 +573,7 @@ func (lsnController *LocalStorageNodeController) StorageNodePoolsList(queryPage 
 	nodeKey := client.ObjectKey{
 		Name: queryPage.NodeName,
 	}
-	fmt.Println("StorageNodePoolsList nodeKey = %v", nodeKey)
+	log.Infof("StorageNodePoolsList nodeKey = %v", nodeKey)
 	if lsn, err := lsnController.GetLocalStorageNode(nodeKey); err == nil {
 		for _, pool := range lsn.Status.Pools {
 			var sp = &hwameistorapi.StoragePool{}
@@ -590,10 +589,10 @@ func (lsnController *LocalStorageNodeController) StorageNodePoolsList(queryPage 
 			spl.StoragePools = append(spl.StoragePools, sp)
 		}
 	} else {
-		fmt.Println("StorageNodePoolsList err = %v", err)
+		log.Infof("StorageNodePoolsList err = %v", err)
 	}
 
-	fmt.Println("StorageNodePoolsList spl.StoragePools[0] = %v", len(spl.StoragePools))
+	log.Infof("StorageNodePoolsList spl.StoragePools[0] = %v", len(spl.StoragePools))
 
 	var pagination = &hwameistorapi.Pagination{}
 	pagination.Page = queryPage.Page
@@ -611,7 +610,7 @@ func (lsnController *LocalStorageNodeController) StorageNodePoolsList(queryPage 
 	spl.Page = pagination
 	spl.StoragePools = utils.DataPatination(spl.StoragePools, queryPage.Page, queryPage.PageSize)
 
-	fmt.Println("StorageNodePoolsList spl = %v", spl)
+	log.Infof("StorageNodePoolsList spl = %v", spl)
 	return spl, nil
 }
 
@@ -661,7 +660,7 @@ func (lsnController *LocalStorageNodeController) StorageNodePoolDisksList(page h
 					diskName := strings.Split(disk.DevPath, "/dev/")[1]
 					ldname := utils.ConvertNodeName(lsn.Spec.HostName) + "-" + diskName
 
-					fmt.Println("StorageNodePoolDisksList ldname = %v", ldname)
+					log.Infof("StorageNodePoolDisksList ldname = %v", ldname)
 					localDisk, err := diskHandler.GetLocalDisk(client.ObjectKey{Name: ldname})
 					if err != nil {
 						log.Errorf("failed to get localDisk %s", err.Error())
