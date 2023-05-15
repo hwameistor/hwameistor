@@ -2,8 +2,13 @@ package disk
 
 import (
 	"context"
+	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	crmanager "sigs.k8s.io/controller-runtime/pkg/manager"
+	"strings"
 
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/localdisk"
@@ -57,18 +62,18 @@ func (ctr *Controller) StartMonitor() {
 
 // HandleEvent
 func (ctr *Controller) HandleEvent() {
-	var DiskParser = defaultDiskParser()
+	var p = defaultDiskParser()
 	for {
 		event := ctr.Pop()
 		log.Infof("Receive disk event %+v", event)
-		DiskParser.For(*manager.NewDiskIdentifyWithName(event.DevPath, event.DevName))
+		p.For(*manager.NewDiskIdentifyWithName(event.DevPath, event.DevName))
 
 		switch event.Type {
 		case manager.ADD:
 			fallthrough
 		case manager.EXIST, manager.CHANGE:
 			// Get disk basic info
-			newDisk := DiskParser.ParseDisk()
+			newDisk := p.ParseDisk()
 			log.Debugf("Disk %v basicinfo: %v", event.DevPath, newDisk)
 			// Convert disk resource to localDisk
 			localDisk := ctr.localDiskController.ConvertDiskToLocalDisk(newDisk)
@@ -87,6 +92,28 @@ func (ctr *Controller) HandleEvent() {
 				log.WithError(err).Errorf("Create localDisk fail for disk %v", newDisk)
 				continue
 			}
+
+		case manager.REMOVE:
+			log.WithField("devPath", event.DevName).Info("Detect disk removed")
+
+			localDiskName := fmt.Sprintf("%s-%s", utils.GetNodeName(), strings.TrimPrefix(event.DevName, "/dev/"))
+			localDisk, err := ctr.localDiskController.GetLocalDisk(client.ObjectKey{Name: localDiskName})
+			if err != nil {
+				log.WithField("devPath", event.DevName).WithError(err).Error("Failed to get localdisk")
+				continue
+			}
+			if localDisk.Name == "" {
+				log.WithField("localdisk", localDiskName).Info("Ignore unmanaged disk")
+				continue
+			}
+
+			// mark disk state inactive
+			// NOTES: currently we are not doing anything about the event that the disk goes offline, just mark it here
+			localDisk.Spec.State = v1alpha1.LocalDiskInactive
+			if err = ctr.localDiskController.UpdateLocalDiskAttr(localDisk); err != nil {
+				log.WithError(err).Errorf("Failed to mark localDisk state %v to inactive", localDisk)
+			}
+			continue
 
 		default:
 			log.Infof("UNKNOWN event %v, skip it", event)
