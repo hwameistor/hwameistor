@@ -35,6 +35,10 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	v1.GET("/cluster/status", metricsController.ModuleStatus)
 	v1.GET("/cluster/operations", metricsController.OperationList)
 
+	authController := controller.NewAuthController(sm)
+	v1.POST("/cluster/auth/auth", authController.Auth)
+	v1.POST("/cluster/auth/logout", authController.Logout)
+
 	volumeController := controller.NewVolumeController(sm)
 
 	v1.GET("/cluster/volumes", volumeController.VolumeList)

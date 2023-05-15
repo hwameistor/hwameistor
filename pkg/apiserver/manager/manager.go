@@ -36,6 +36,8 @@ type ServerManager struct {
 
 	ldnController *hwameistorctr.LocalDiskNodeController
 
+	authController *hwameistorctr.AuthController
+
 	mgr mgrpkg.Manager
 
 	logger *log.Entry
@@ -77,7 +79,6 @@ func (m *ServerManager) VolumeController() *hwameistorctr.LocalVolumeController 
 }
 
 func (m *ServerManager) MetricController() *hwameistorctr.MetricController {
-
 	var recorder record.EventRecorder
 	if m.mController == nil {
 		m.mController = hwameistorctr.NewMetricController(m.mgr.GetClient(), m.clientset, recorder)
@@ -86,7 +87,6 @@ func (m *ServerManager) MetricController() *hwameistorctr.MetricController {
 }
 
 func (m *ServerManager) StoragePoolController() *hwameistorctr.LocalStoragePoolController {
-
 	var recorder record.EventRecorder
 	if m.lspController == nil {
 		m.lspController = hwameistorctr.NewLocalStoragePoolController(m.mgr.GetClient(), m.clientset, recorder)
@@ -95,7 +95,6 @@ func (m *ServerManager) StoragePoolController() *hwameistorctr.LocalStoragePoolC
 }
 
 func (m *ServerManager) SettingController() *hwameistorctr.SettingController {
-
 	var recorder record.EventRecorder
 	if m.settingController == nil {
 		m.settingController = hwameistorctr.NewSettingController(m.mgr.GetClient(), m.clientset, recorder)
@@ -104,7 +103,6 @@ func (m *ServerManager) SettingController() *hwameistorctr.SettingController {
 }
 
 func (m *ServerManager) VolumeGroupController() *hwameistorctr.VolumeGroupController {
-
 	var recorder record.EventRecorder
 	if m.vgController == nil {
 		m.vgController = hwameistorctr.NewVolumeGroupController(m.mgr.GetClient(), m.clientset, recorder)
@@ -113,7 +111,6 @@ func (m *ServerManager) VolumeGroupController() *hwameistorctr.VolumeGroupContro
 }
 
 func (m *ServerManager) LocalDiskController() *hwameistorctr.LocalDiskController {
-
 	var recorder record.EventRecorder
 	if m.ldController == nil {
 		m.ldController = hwameistorctr.NewLocalDiskController(m.mgr.GetClient(), recorder)
@@ -122,10 +119,17 @@ func (m *ServerManager) LocalDiskController() *hwameistorctr.LocalDiskController
 }
 
 func (m *ServerManager) LocalDiskNodeController() *hwameistorctr.LocalDiskNodeController {
-
 	var recorder record.EventRecorder
 	if m.ldnController == nil {
 		m.ldnController = hwameistorctr.NewLocalDiskNodeController(m.mgr.GetClient(), recorder)
 	}
 	return m.ldnController
+}
+
+func (m *ServerManager) AuthController() *hwameistorctr.AuthController {
+	var recorder record.EventRecorder
+	if m.authController == nil {
+		m.authController = hwameistorctr.NewAuthController(m.mgr.GetClient(), recorder)
+	}
+	return m.authController
 }
