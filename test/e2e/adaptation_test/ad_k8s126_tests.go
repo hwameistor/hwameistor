@@ -205,7 +205,7 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.26"), fun
 				f.ExpectNoError(err)
 			}
 			logrus.Infof("waiting for the deployment to be ready ")
-			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
+			err = wait.PollImmediate(3*time.Second, framework.PodStartSlowTimeout, func() (done bool, err error) {
 				if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(1) {
 					return false, nil
 				}
