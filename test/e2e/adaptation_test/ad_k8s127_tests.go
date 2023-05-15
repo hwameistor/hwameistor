@@ -1,4 +1,4 @@
-package E2eTest
+package adaptation_test
 
 import (
 	"context"
@@ -13,28 +13,36 @@ import (
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/wait"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("test fs volume", ginkgo.Label("periodCheck"), func() {
-
+var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.27"), func() {
 	var f *framework.Framework
 	var client ctrlclient.Client
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
-		result := utils.ConfigureEnvironment(ctx)
-		gomega.Expect(result).To(gomega.BeNil())
-		f := framework.NewDefaultFramework(clientset.AddToScheme)
+		utils.StartAdRollback("k8s1.27")
+		f = framework.NewDefaultFramework(clientset.AddToScheme)
 		client = f.GetClient()
-		err := utils.CreateLdcForLdm(ctx)
-		gomega.Expect(err).To(gomega.BeNil())
+		ctx = context.TODO()
+	})
+
+	ginkgo.It("Configure the base environment", func() {
+		result := utils.ConfigureadEnvironment(ctx, "k8s1.27")
+		gomega.Expect(result).To(gomega.BeNil())
+		utils.CreateLdc(ctx)
 
 	})
+
 	ginkgo.Context("create a StorageClass", func() {
 		ginkgo.It("create a sc", func() {
 			//create sc
@@ -42,14 +50,19 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("periodCheck"), func() {
 			waitForFirstConsumerObj := storagev1.VolumeBindingWaitForFirstConsumer
 			examplesc := &storagev1.StorageClass{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "local-storage-hdd-fs",
+					Name: "local-storage-hdd-lvm",
 				},
-				Provisioner: "disk.hwameistor.io",
+				Provisioner: "lvm.hwameistor.io",
 				Parameters: map[string]string{
-					"diskType": "HDD",
+					"replicaNumber":             "1",
+					"poolClass":                 "HDD",
+					"poolType":                  "REGULAR",
+					"volumeKind":                "LVM",
+					"striped":                   "true",
+					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,
-				AllowVolumeExpansion: utils.BoolPter(false),
+				AllowVolumeExpansion: utils.BoolPter(true),
 				VolumeBindingMode:    &waitForFirstConsumerObj,
 			}
 			err := client.Create(ctx, examplesc)
@@ -62,10 +75,10 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("periodCheck"), func() {
 	ginkgo.Context("create a PVC", func() {
 		ginkgo.It("create PVC", func() {
 			//create PVC
-			storageClassName := "local-storage-hdd-fs"
+			storageClassName := "local-storage-hdd-lvm"
 			examplePvc := &corev1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pvc-fs",
+					Name:      "pvc-lvm",
 					Namespace: "default",
 				},
 				Spec: corev1.PersistentVolumeClaimSpec{
@@ -136,7 +149,7 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("periodCheck"), func() {
 									Name: "2048-volume-lvm",
 									VolumeSource: corev1.VolumeSource{
 										PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-											ClaimName: "pvc-fs",
+											ClaimName: "pvc-lvm",
 										},
 									},
 								},
@@ -145,7 +158,10 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("periodCheck"), func() {
 					},
 				},
 			}
+			logrus.Infof("creating deploy")
+
 			err := client.Create(ctx, exampleDeployment)
+
 			if err != nil {
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
@@ -155,7 +171,7 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("periodCheck"), func() {
 		ginkgo.It("PVC STATUS should be Bound", func() {
 			pvc := &corev1.PersistentVolumeClaim{}
 			pvcKey := ctrlclient.ObjectKey{
-				Name:      "pvc-fs",
+				Name:      "pvc-lvm",
 				Namespace: "default",
 			}
 			err := client.Get(ctx, pvcKey, pvc)
@@ -165,7 +181,7 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("periodCheck"), func() {
 			}
 
 			logrus.Infof("Waiting for the PVC to be bound")
-			err = wait.PollImmediate(3*time.Second, 5*time.Minute, func() (done bool, err error) {
+			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Phase != corev1.ClaimBound {
 					return false, nil
 				}
@@ -204,6 +220,123 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("periodCheck"), func() {
 		})
 
 	})
+	ginkgo.Context("Test the volume", func() {
+		ginkgo.It("check lvg", func() {
+			lvrList := &v1alpha1.LocalVolumeReplicaList{}
+			err := client.List(ctx, lvrList)
+			if err != nil {
+				logrus.Printf("list lvr failed ：%+v ", err)
+			}
+			lvgList := &v1alpha1.LocalVolumeGroupList{}
+			err = client.List(ctx, lvgList)
+			if err != nil {
+				logrus.Printf("list lvg failed ：%+v ", err)
+			}
+			for _, lvr := range lvrList.Items {
+				for _, lvg := range lvgList.Items {
+					gomega.Expect(lvr.Spec.NodeName).To(gomega.Equal(lvg.Spec.Accessibility.Nodes[0]))
+				}
+			}
+
+		})
+		ginkgo.It("write test data", func() {
+
+			config, err := config.GetConfig()
+			if err != nil {
+				return
+			}
+
+			deployment := &appsv1.Deployment{}
+			deployKey := ctrlclient.ObjectKey{
+				Name:      utils.DeploymentName,
+				Namespace: "default",
+			}
+			err = client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
+			selector := labels.NewSelector()
+			selector = selector.Add(*apps)
+			listOption := ctrlclient.ListOptions{
+				LabelSelector: selector,
+			}
+			podlist := &corev1.PodList{}
+			err = client.List(ctx, podlist, &listOption)
+
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			containers := deployment.Spec.Template.Spec.Containers
+			for _, pod := range podlist.Items {
+				for _, container := range containers {
+					_, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && echo it-is-a-test >test", container.Name)
+					if err != nil {
+						logrus.Printf("%+v ", err)
+						f.ExpectNoError(err)
+					}
+					output, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
+					if err != nil {
+						logrus.Printf("%+v ", err)
+						f.ExpectNoError(err)
+					}
+					gomega.Expect(output).To(gomega.Equal("it-is-a-test"))
+				}
+			}
+		})
+		ginkgo.It("Delete test data", func() {
+			config, err := config.GetConfig()
+			if err != nil {
+				return
+			}
+
+			deployment := &appsv1.Deployment{}
+			deployKey := ctrlclient.ObjectKey{
+				Name:      utils.DeploymentName,
+				Namespace: "default",
+			}
+			err = client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
+			selector := labels.NewSelector()
+			selector = selector.Add(*apps)
+			listOption := ctrlclient.ListOptions{
+				LabelSelector: selector,
+			}
+			podlist := &corev1.PodList{}
+			err = client.List(ctx, podlist, &listOption)
+
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			containers := deployment.Spec.Template.Spec.Containers
+			for _, pod := range podlist.Items {
+				for _, container := range containers {
+					_, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && rm -rf test", container.Name)
+					if err != nil {
+						logrus.Printf("%+v ", err)
+						f.ExpectNoError(err)
+					}
+					output, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && ls", container.Name)
+					if err != nil {
+						logrus.Printf("%+v ", err)
+						f.ExpectNoError(err)
+					}
+					gomega.Expect(output).To(gomega.Equal(""))
+				}
+			}
+		})
+	})
 	ginkgo.Context("Clean up the environment", func() {
 		ginkgo.It("Delete test Deployment", func() {
 			//delete deploy
@@ -238,27 +371,6 @@ var _ = ginkgo.Describe("test fs volume", ginkgo.Label("periodCheck"), func() {
 		})
 		ginkgo.It("delete all pvc ", func() {
 			err := utils.DeleteAllPVC(ctx)
-			gomega.Expect(err).To(gomega.BeNil())
-		})
-		ginkgo.It("check pv", func() {
-			logrus.Printf("check pv")
-			pvList := &corev1.PersistentVolumeList{}
-
-			err := wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
-				err = client.List(ctx, pvList)
-				if err != nil {
-					logrus.Error("get pv list error", err)
-					f.ExpectNoError(err)
-				}
-				if len(pvList.Items) != 0 {
-					return false, nil
-				} else {
-					return true, nil
-				}
-			})
-			if err != nil {
-				logrus.Error(err)
-			}
 			gomega.Expect(err).To(gomega.BeNil())
 		})
 		ginkgo.It("delete all sc", func() {
