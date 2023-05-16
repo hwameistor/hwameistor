@@ -6,7 +6,24 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
 
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/kubernetes"
 )
+
+func TestNewLocalDiskVolumeHandler(t *testing.T) {
+	client, err := kubernetes.NewClient()
+	if err != nil {
+		t.Error("Failed to new kubernetes client")
+	}
+
+	recorder, err := kubernetes.NewRecorderFor("localdisk-volumemanager")
+	if err != nil {
+		t.Error("Failed to new kubernetes recorder")
+	}
+
+	if handler := NewLocalDiskVolumeHandler(client, recorder); handler == nil {
+		t.Error("Failed to new LocalDiskVolumeHandler")
+	}
+}
 
 func TestLocalDiskVolumeHandler_AppendMountPoint(t *testing.T) {
 	v := newEmptyVolumeHandler()
