@@ -5,7 +5,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/manager"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -29,7 +28,7 @@ func (n *AuthController) Auth(ctx *gin.Context) {
 	if err := ctx.ShouldBind(&req); err != nil {
 		ctx.JSON(http.StatusInternalServerError, api.RspFailBody{
 			ErrCode: 500,
-			Desc:    "Authorization Failed" + err.Error(),
+			Desc:    "Authorization Failed," + err.Error(),
 		})
 		return
 	}
@@ -80,20 +79,11 @@ func (n *AuthController) deleteToken(token string) {
 
 func (n *AuthController) GetAuthMiddleWare() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
-		//log.Infof("whitelist:%v url:%v method:%v", whiteList, ctx.Request.URL.String(), ctx.Request.Method)
-		//if method, in := whiteList[ctx.Request.URL.String()]; in && method == ctx.Request.Method {
-		//	// if this request is in whitelist, then continue return
-		//	log.Info("return")
-		//	return
-		//}
-		// this request is not in whitelist, check token
 		if !n.verifyToken(ctx.Request.Header.Get(api.AuthTokenHeaderName)) {
-			// token verify fail, abort
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, api.RspFailBody{
 				ErrCode: 401,
 				Desc:    "Fail to authorize",
 			})
-			log.Info("abort")
 		}
 	}
 }

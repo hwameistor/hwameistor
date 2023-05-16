@@ -28,19 +28,13 @@ var (
 func CollectRoute(r *gin.Engine) *gin.Engine {
 	log.Info("CollectRoute start ...")
 
-	//prefix := "/apis/hwameistor.io/v1alpha1"
-	//authMiddlewareWhiteList := controller.WhiteList{
-	//	prefix + "/cluster/auth/auth":   "POST",
-	//	prefix + "/cluster/auth/logout": "POST",
-	//}
-
 	sm, m := BuildServerMgr()
 	v1 := r.Group("/apis/hwameistor.io/v1alpha1")
 
 	authController := controller.NewAuthController(sm)
 	v1.POST("/cluster/auth/auth", authController.Auth)
 	v1.POST("/cluster/auth/logout", authController.Logout)
-	// middleware should be first be register to router
+	// middleware should be first be register to router, the previous router will not pass the middleware
 	v1.Use(authController.GetAuthMiddleWare())
 
 	metricsController := controller.NewMetricsController(sm)
