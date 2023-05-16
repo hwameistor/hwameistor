@@ -30,6 +30,10 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 
 	sm, m := BuildServerMgr()
 
+	r.Use(func(ctx *gin.Context) {
+		// auth middleWare
+	})
+
 	v1 := r.Group("/apis/hwameistor.io/v1alpha1")
 	metricsController := controller.NewMetricsController(sm)
 	v1.GET("/cluster/status", metricsController.ModuleStatus)
