@@ -27,6 +27,11 @@ spec:
               name: http
           resources: 
             {{- toYaml .Values.apiserver.resources | nindent 12 }}
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
 
 ---
 
