@@ -5,22 +5,20 @@ import (
 	"github.com/google/uuid"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/manager"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
 type IAuthController interface {
 	Auth(ctx *gin.Context)
 	Logout(ctx *gin.Context)
-	GetAuthMiddleWare(whiteList WhiteList) func(ctx *gin.Context)
+	GetAuthMiddleWare() func(ctx *gin.Context)
 }
 
 type AuthController struct {
 	m      *manager.ServerManager
 	tokens map[string]struct{}
 }
-
-// WhiteList [Url][Method]
-type WhiteList map[string]string
 
 func NewAuthController(m *manager.ServerManager) IAuthController {
 	return &AuthController{m, map[string]struct{}{}}
@@ -80,12 +78,14 @@ func (n *AuthController) deleteToken(token string) {
 	delete(n.tokens, token)
 }
 
-func (n *AuthController) GetAuthMiddleWare(whiteList WhiteList) func(ctx *gin.Context) {
+func (n *AuthController) GetAuthMiddleWare() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
-		if method, in := whiteList[ctx.Request.URL.String()]; in && method == ctx.Request.Method {
-			// if this request is in whitelist, then continue
-			return
-		}
+		//log.Infof("whitelist:%v url:%v method:%v", whiteList, ctx.Request.URL.String(), ctx.Request.Method)
+		//if method, in := whiteList[ctx.Request.URL.String()]; in && method == ctx.Request.Method {
+		//	// if this request is in whitelist, then continue return
+		//	log.Info("return")
+		//	return
+		//}
 		// this request is not in whitelist, check token
 		if !n.verifyToken(ctx.Request.Header.Get(api.AuthTokenHeaderName)) {
 			// token verify fail, abort
@@ -93,6 +93,7 @@ func (n *AuthController) GetAuthMiddleWare(whiteList WhiteList) func(ctx *gin.Co
 				ErrCode: 401,
 				Desc:    "Fail to authorize",
 			})
+			log.Info("abort")
 		}
 	}
 }
