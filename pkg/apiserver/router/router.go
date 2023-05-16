@@ -27,19 +27,22 @@ var (
 
 func CollectRoute(r *gin.Engine) *gin.Engine {
 	log.Info("CollectRoute start ...")
+	prefix := "/apis/hwameistor.io/v1alpha1"
+	authMiddlewareWhiteList := map[string]string{
+		prefix + "/cluster/auth/auth":   "POST",
+		prefix + "/cluster/auth/logout": "POST",
+	}
 
 	sm, m := BuildServerMgr()
 
-	r.Use(func(ctx *gin.Context) {
-		// auth middleWare
-	})
-
-	v1 := r.Group("/apis/hwameistor.io/v1alpha1")
+	v1 := r.Group(prefix)
 	metricsController := controller.NewMetricsController(sm)
 	v1.GET("/cluster/status", metricsController.ModuleStatus)
 	v1.GET("/cluster/operations", metricsController.OperationList)
 
 	authController := controller.NewAuthController(sm)
+	// register auth middleware with whitelist
+	r.Use(authController.GetAuthMiddleWare(authMiddlewareWhiteList))
 	v1.POST("/cluster/auth/auth", authController.Auth)
 	v1.POST("/cluster/auth/logout", authController.Logout)
 

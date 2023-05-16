@@ -27,8 +27,12 @@ func (authController *AuthController) Auth(req api.AuthReqBody) bool {
 		Namespace: utils.GetNamespace(),
 		Name:      api.AuthSecretName,
 	}
-	authController.Client.Get(context.Background(), objectKey, secretObj)
-	// TODO: return a token for authorization
+
+	// get the secret from kubernetes
+	if err := authController.Client.Get(context.Background(), objectKey, secretObj); err != nil {
+		return false
+	}
+
 	if accessId, ok := secretObj.Data[api.AuthAccessIdName]; ok {
 		if secretKey, ok := secretObj.Data[api.AuthSecretKeyName]; ok {
 			return string(accessId) == req.AccessId && string(secretKey) == req.SecretKey

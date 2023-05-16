@@ -1,9 +1,10 @@
 package api
 
 const (
-	AuthSecretName    = "hwameistor-auth"
-	AuthAccessIdName  = "AccessId"
-	AuthSecretKeyName = "SecretKey"
+	AuthSecretName      = "hwameistor-auth"
+	AuthAccessIdName    = "AccessId"
+	AuthSecretKeyName   = "SecretKey"
+	AuthTokenHeaderName = "Authorization"
 )
 
 type AuthReqBody struct {
@@ -16,9 +17,6 @@ type AuthRspBody struct {
 	Token   string `json:"token"`
 }
 
-//type LogoutReqBody struct {
-//}
-//
-//type LogoutRspBody struct {
-//	Success bool `json:"success"`
-//}
+type LogoutRspBody struct {
+	Success bool `json:"success"`
+}
