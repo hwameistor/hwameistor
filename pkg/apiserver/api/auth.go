@@ -8,15 +8,15 @@ const (
 )
 
 type AuthReqBody struct {
-	AccessId  string `json:"access_id"`
-	SecretKey string `json:"secret_key"`
+	AccessId  string `json:"access_id,omitempty"`
+	SecretKey string `json:"secret_key,omitempty"`
 }
 
 type AuthRspBody struct {
-	Success bool   `json:"success"`
-	Token   string `json:"token"`
+	Success bool   `json:"success,omitempty"`
+	Token   string `json:"token,omitempty"`
 }
 
 type LogoutRspBody struct {
-	Success bool `json:"success"`
+	Success bool `json:"success,omitempty"`
 }

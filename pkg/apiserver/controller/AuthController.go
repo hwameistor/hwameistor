@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/manager"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -53,6 +54,7 @@ func (n *AuthController) Logout(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, api.LogoutRspBody{
 			Success: true,
 		})
+		log.Infof("User logout, token:%v", token)
 		return
 	}
 	// token verify fail
