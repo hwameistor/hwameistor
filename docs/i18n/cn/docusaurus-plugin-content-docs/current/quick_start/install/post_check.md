@@ -17,7 +17,7 @@ NAME           STATUS   ROLES   AGE   VERSION
 
 ## 查看 HwameiStor 系统组件
 
-以下 Pods 必须在系统中正常运行
+以下 Pod 必须在系统中正常运行。
 
 ```console
 $ kubectl -n hwameistor get pod
@@ -43,16 +43,15 @@ hwameistor-volume-evictor-56df755847-m4h8b                1/1     Running     0 
 
 :::info
 
-`local-disk-manager` 和 `local-storage` 组件是以 `DaemonSets` 方式进行部署的，必须在每个节点上运行.
+`local-disk-manager` 和 `local-storage` 组件是以 `DaemonSets` 方式进行部署的，必须在每个节点上运行。
 :::
 
 ## 查看 HwameiStor CRDs (i.e. APIs)
 
-以下 HwameiStor CRDs 必须安装在系统上。
+以下 HwameiStor CRD 必须安装在系统上。
 
 ```console
 $ kubectl api-resources --api-group hwameistor.io
-
 NAME                       SHORTNAMES   APIVERSION               NAMESPACED   KIND
 localdiskclaims            ldc          hwameistor.io/v1alpha1   false        LocalDiskClaim
 localdisknodes             ldn          hwameistor.io/v1alpha1   false        LocalDiskNode
@@ -69,12 +68,12 @@ localvolumereplicas        lvr          hwameistor.io/v1alpha1   false        Lo
 localvolumes               lv           hwameistor.io/v1alpha1   false        LocalVolume
 ```
 
-想了解具体的 CRDs 信息，请查阅 [CRDs](../../architecture/apis.md).
+想了解具体的 CRD 信息，请查阅 [CRDs](../../architecture/apis.md)。
 
 ## 查看 `LocalDiskNode` 和 `localDisks`
 
-HwameiStor 自动扫描每个节点上的磁盘，并为每一块磁盘生成一个 CRD 资源 `LocalDisk (LD)`.
-没有被使用的磁盘，其状态被标记为 `PHASE: Available`.
+HwameiStor 自动扫描每个节点上的磁盘，并为每一块磁盘生成一个 CRD 资源 `LocalDisk (LD)`。
+没有被使用的磁盘，其状态被标记为 `PHASE: Available`。
 
 ```console
 $ kubectl get localdisknodes
@@ -103,9 +102,10 @@ NAME              NODEMATCH     PHASE
 10-6-234-42-sdg   10-6-234-42   Bound
 10-6-234-42-sdh   10-6-234-42   Bound
 ```
+
 ## 查看 `LocalStorageNodes` 及 存储池
 
-HwameiStor 为每个存储节点创建一个 CRD 资源 `LocalStorageNode (LSN)`.
+HwameiStor 为每个存储节点创建一个 CRD 资源 `LocalStorageNode (LSN)`。
 每个 LSN 将会记录该存储节点的状态，及节点上的所有存储资源，包括存储池、数据卷、及相关配置信息。
 
 ```console
@@ -116,7 +116,6 @@ NAME          IP            STATUS   AGE
 10-6-234-42   10.6.234.42   Ready    3m55s
 
 $ kubectl get lsn 10-6-234-41 -o yaml
-[root@10-6-234-40 ~]# k get lsn 10-6-234-41 -o yaml
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalStorageNode
 metadata:
@@ -172,10 +171,10 @@ status:
   state: Ready
 ```
 
-
 ## 查看 `StorageClass`
 
-HwameiStor Operator 在完成 HwameiStor 系统组件安装和系统初始化之后，会根据系统配置（例如：是否开启 HA 模块，磁盘类型，等）自动创建相应的 `StorageClass`，用于创建数据卷。
+HwameiStor Operator 在完成 HwameiStor 系统组件安装和系统初始化之后，会根据系统配置
+（例如：是否开启 HA 模块、磁盘类型等）自动创建相应的 `StorageClass` 用于创建数据卷。
 
 ```console
 $ kubectl get sc
