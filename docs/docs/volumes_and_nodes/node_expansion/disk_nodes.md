@@ -59,7 +59,7 @@ EOF
 
 ### 3. Post check
 
-Finally, check if the node has constructed the storage pool by checking the LocalDiskNode CR.
+Finally, check if the node has created the storage pool by checking the LocalDiskNode CR.
 
 ```bash
 kubectl get localstoragenode k8s-worker-2 -o yaml
