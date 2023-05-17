@@ -14,8 +14,7 @@ type AuthReqBody struct {
 }
 
 type AuthRspBody struct {
-	Success bool   `json:"success,omitempty"`
-	Token   string `json:"token,omitempty"`
+	Token string `json:"token,omitempty"`
 }
 
 type LogoutRspBody struct {

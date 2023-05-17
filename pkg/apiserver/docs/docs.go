@@ -31,18 +31,13 @@ const docTemplate = `{
                 "summary": "Authorization",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "id",
-                        "name": "access_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "key",
-                        "name": "secret_key",
-                        "in": "query",
-                        "required": true
+                        "description": "body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.AuthReqBody"
+                        }
                     }
                 ],
                 "responses": {
@@ -1522,12 +1517,20 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.AuthReqBody": {
+            "type": "object",
+            "properties": {
+                "access_id": {
+                    "type": "string"
+                },
+                "secret_key": {
+                    "type": "string"
+                }
+            }
+        },
         "api.AuthRspBody": {
             "type": "object",
             "properties": {
-                "success": {
-                    "type": "boolean"
-                },
                 "token": {
                     "type": "string"
                 }
@@ -4220,11 +4223,6 @@ const docTemplate = `{
         "v1alpha1.State": {
             "type": "string",
             "enum": [
-                "",
-                "ToBeMounted",
-                "ToBeUnMount",
-                "Mounted",
-                "NotReady",
                 "Ready",
                 "Maintain",
                 "Offline",
@@ -4258,14 +4256,14 @@ const docTemplate = `{
                 "Failed",
                 "Available",
                 "InUse",
-                "Offline"
+                "Offline",
+                "",
+                "ToBeMounted",
+                "ToBeUnMount",
+                "Mounted",
+                "NotReady"
             ],
             "x-enum-varnames": [
-                "MountPointStateEmpty",
-                "MountPointToBeMounted",
-                "MountPointToBeUnMount",
-                "MountPointMounted",
-                "MountPointNotReady",
                 "NodeStateReady",
                 "NodeStateMaintain",
                 "NodeStateOffline",
@@ -4299,7 +4297,12 @@ const docTemplate = `{
                 "OperationStateFailed",
                 "DiskStateAvailable",
                 "DiskStateInUse",
-                "DiskStateOffline"
+                "DiskStateOffline",
+                "MountPointStateEmpty",
+                "MountPointToBeMounted",
+                "MountPointToBeUnMount",
+                "MountPointMounted",
+                "MountPointNotReady"
             ]
         },
         "v1alpha1.StorageNodeCondition": {

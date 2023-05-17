@@ -29,8 +29,7 @@ func NewAuthController(m *manager.ServerManager) IAuthController {
 // @Summary     Authorization
 // @Description Authorize user, return a token if success
 // @Tags        Auth
-// @Param       access_id query string true "id"
-// @Param       secret_key query string true "key"
+// @Param       body body api.AuthReqBody true "body"
 // @Accept      application/json
 // @Produce     application/json
 // @Success     200 {object} api.AuthRspBody
@@ -46,8 +45,7 @@ func (n *AuthController) Auth(ctx *gin.Context) {
 	}
 	if authResult := n.m.AuthController().Auth(req); authResult {
 		ctx.JSON(http.StatusOK, api.AuthRspBody{
-			Success: true,
-			Token:   n.generateToken(),
+			Token: n.generateToken(),
 		})
 		return
 	}

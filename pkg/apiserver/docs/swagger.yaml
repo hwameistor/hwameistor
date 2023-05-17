@@ -1,8 +1,13 @@
 definitions:
+  api.AuthReqBody:
+    properties:
+      access_id:
+        type: string
+      secret_key:
+        type: string
+    type: object
   api.AuthRspBody:
     properties:
-      success:
-        type: boolean
       token:
         type: string
     type: object
@@ -2420,11 +2425,6 @@ definitions:
     type: object
   v1alpha1.State:
     enum:
-    - ""
-    - ToBeMounted
-    - ToBeUnMount
-    - Mounted
-    - NotReady
     - Ready
     - Maintain
     - Offline
@@ -2459,13 +2459,13 @@ definitions:
     - Available
     - InUse
     - Offline
+    - ""
+    - ToBeMounted
+    - ToBeUnMount
+    - Mounted
+    - NotReady
     type: string
     x-enum-varnames:
-    - MountPointStateEmpty
-    - MountPointToBeMounted
-    - MountPointToBeUnMount
-    - MountPointMounted
-    - MountPointNotReady
     - NodeStateReady
     - NodeStateMaintain
     - NodeStateOffline
@@ -2500,6 +2500,11 @@ definitions:
     - DiskStateAvailable
     - DiskStateInUse
     - DiskStateOffline
+    - MountPointStateEmpty
+    - MountPointToBeMounted
+    - MountPointToBeUnMount
+    - MountPointMounted
+    - MountPointNotReady
   v1alpha1.StorageNodeCondition:
     properties:
       lastTransitionTime:
@@ -2604,16 +2609,12 @@ paths:
       - application/json
       description: Authorize user, return a token if success
       parameters:
-      - description: id
-        in: query
-        name: access_id
+      - description: body
+        in: body
+        name: body
         required: true
-        type: string
-      - description: key
-        in: query
-        name: secret_key
-        required: true
-        type: string
+        schema:
+          $ref: '#/definitions/api.AuthReqBody'
       produces:
       - application/json
       responses:
