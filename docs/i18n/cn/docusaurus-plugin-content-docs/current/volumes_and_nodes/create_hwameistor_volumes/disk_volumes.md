@@ -45,7 +45,7 @@ EOF
 
 ### 3. 创建数据卷 PVC
 
-使用以下命令创建一个名称为 `hwameistor-disk-volume` 的 PVC
+使用以下命令创建一个名称为 `hwameistor-disk-volume` 的 PVC：
 
 ```console
 $ cat << EOF | kubectl apply -f -
