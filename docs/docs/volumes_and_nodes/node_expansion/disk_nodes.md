@@ -41,7 +41,7 @@ k8s-worker-2                                              Ready    21d
 
 ### 2. Add the storage node into HwameiStor
 
-Construct the storage pool of the node by adding a LocalStorageClaim CR as below:
+Create the storage pool of the node by adding a LocalStorageClaim CR as below:
 
 ```console
 $ kubectl apply -f - <<EOF
