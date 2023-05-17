@@ -57,7 +57,7 @@ spec:
 EOF
 ```
 
-## Post check
+### 3. Post check
 
 Finally, check if the node has constructed the storage pool by checking the LocalDiskNode CR.
 
