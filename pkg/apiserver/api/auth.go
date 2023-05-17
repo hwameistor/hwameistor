@@ -1,11 +1,13 @@
 package api
 
+import "time"
+
 const (
 	AuthSecretName      = "hwameistor-auth"
 	AuthAccessIdName    = "AccessId"
 	AuthSecretKeyName   = "SecretKey"
 	AuthTokenHeaderName = "Authorization"
-	AuthTokenExpireTime = 12 * 60 * 60
+	AuthTokenExpireTime = 12 * 60 * 60 * time.Second
 )
 
 type AuthReqBody struct {
@@ -17,6 +19,10 @@ type AuthRspBody struct {
 	Token string `json:"token,omitempty"`
 }
 
-type LogoutRspBody struct {
+type AuthLogoutRspBody struct {
 	Success bool `json:"success,omitempty"`
+}
+
+type AuthInfoRspBody struct {
+	Enabled bool `json:"enabled,omitempty"`
 }

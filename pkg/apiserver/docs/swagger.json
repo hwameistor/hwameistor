@@ -38,12 +38,29 @@
                 }
             }
         },
+        "/cluster/auth/info": {
+            "get": {
+                "description": "Get the status if enable authorization",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Auth info",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.AuthInfoRspBody"
+                        }
+                    }
+                }
+            }
+        },
         "/cluster/auth/logout": {
             "post": {
                 "description": "Logout the token, if verify token success, delete this token and return success",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -55,7 +72,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.LogoutRspBody"
+                            "$ref": "#/definitions/api.AuthLogoutRspBody"
                         }
                     }
                 }
@@ -1505,6 +1522,22 @@
         }
     },
     "definitions": {
+        "api.AuthInfoRspBody": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "api.AuthLogoutRspBody": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
         "api.AuthReqBody": {
             "type": "object",
             "properties": {
@@ -1661,14 +1694,6 @@
                     "items": {
                         "$ref": "#/definitions/api.LocalDiskInfo"
                     }
-                }
-            }
-        },
-        "api.LogoutRspBody": {
-            "type": "object",
-            "properties": {
-                "success": {
-                    "type": "boolean"
                 }
             }
         },
@@ -4211,6 +4236,11 @@
         "v1alpha1.State": {
             "type": "string",
             "enum": [
+                "",
+                "ToBeMounted",
+                "ToBeUnMount",
+                "Mounted",
+                "NotReady",
                 "Ready",
                 "Maintain",
                 "Offline",
@@ -4244,14 +4274,14 @@
                 "Failed",
                 "Available",
                 "InUse",
-                "Offline",
-                "",
-                "ToBeMounted",
-                "ToBeUnMount",
-                "Mounted",
-                "NotReady"
+                "Offline"
             ],
             "x-enum-varnames": [
+                "MountPointStateEmpty",
+                "MountPointToBeMounted",
+                "MountPointToBeUnMount",
+                "MountPointMounted",
+                "MountPointNotReady",
                 "NodeStateReady",
                 "NodeStateMaintain",
                 "NodeStateOffline",
@@ -4285,12 +4315,7 @@
                 "OperationStateFailed",
                 "DiskStateAvailable",
                 "DiskStateInUse",
-                "DiskStateOffline",
-                "MountPointStateEmpty",
-                "MountPointToBeMounted",
-                "MountPointToBeUnMount",
-                "MountPointMounted",
-                "MountPointNotReady"
+                "DiskStateOffline"
             ]
         },
         "v1alpha1.StorageNodeCondition": {

@@ -50,12 +50,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/cluster/auth/info": {
+            "get": {
+                "description": "Get the status if enable authorization",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Auth info",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.AuthInfoRspBody"
+                        }
+                    }
+                }
+            }
+        },
         "/cluster/auth/logout": {
             "post": {
                 "description": "Logout the token, if verify token success, delete this token and return success",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -67,7 +84,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.LogoutRspBody"
+                            "$ref": "#/definitions/api.AuthLogoutRspBody"
                         }
                     }
                 }
@@ -1517,6 +1534,22 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.AuthInfoRspBody": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "api.AuthLogoutRspBody": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
         "api.AuthReqBody": {
             "type": "object",
             "properties": {
@@ -1673,14 +1706,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/api.LocalDiskInfo"
                     }
-                }
-            }
-        },
-        "api.LogoutRspBody": {
-            "type": "object",
-            "properties": {
-                "success": {
-                    "type": "boolean"
                 }
             }
         },
@@ -4223,6 +4248,11 @@ const docTemplate = `{
         "v1alpha1.State": {
             "type": "string",
             "enum": [
+                "",
+                "ToBeMounted",
+                "ToBeUnMount",
+                "Mounted",
+                "NotReady",
                 "Ready",
                 "Maintain",
                 "Offline",
@@ -4256,14 +4286,14 @@ const docTemplate = `{
                 "Failed",
                 "Available",
                 "InUse",
-                "Offline",
-                "",
-                "ToBeMounted",
-                "ToBeUnMount",
-                "Mounted",
-                "NotReady"
+                "Offline"
             ],
             "x-enum-varnames": [
+                "MountPointStateEmpty",
+                "MountPointToBeMounted",
+                "MountPointToBeUnMount",
+                "MountPointMounted",
+                "MountPointNotReady",
                 "NodeStateReady",
                 "NodeStateMaintain",
                 "NodeStateOffline",
@@ -4297,12 +4327,7 @@ const docTemplate = `{
                 "OperationStateFailed",
                 "DiskStateAvailable",
                 "DiskStateInUse",
-                "DiskStateOffline",
-                "MountPointStateEmpty",
-                "MountPointToBeMounted",
-                "MountPointToBeUnMount",
-                "MountPointMounted",
-                "MountPointNotReady"
+                "DiskStateOffline"
             ]
         },
         "v1alpha1.StorageNodeCondition": {

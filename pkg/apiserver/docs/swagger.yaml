@@ -1,4 +1,14 @@
 definitions:
+  api.AuthInfoRspBody:
+    properties:
+      enabled:
+        type: boolean
+    type: object
+  api.AuthLogoutRspBody:
+    properties:
+      success:
+        type: boolean
+    type: object
   api.AuthReqBody:
     properties:
       access_id:
@@ -114,11 +124,6 @@ definitions:
         items:
           $ref: '#/definitions/api.LocalDiskInfo'
         type: array
-    type: object
-  api.LogoutRspBody:
-    properties:
-      success:
-        type: boolean
     type: object
   api.ModuleState:
     properties:
@@ -2425,6 +2430,11 @@ definitions:
     type: object
   v1alpha1.State:
     enum:
+    - ""
+    - ToBeMounted
+    - ToBeUnMount
+    - Mounted
+    - NotReady
     - Ready
     - Maintain
     - Offline
@@ -2459,13 +2469,13 @@ definitions:
     - Available
     - InUse
     - Offline
-    - ""
-    - ToBeMounted
-    - ToBeUnMount
-    - Mounted
-    - NotReady
     type: string
     x-enum-varnames:
+    - MountPointStateEmpty
+    - MountPointToBeMounted
+    - MountPointToBeUnMount
+    - MountPointMounted
+    - MountPointNotReady
     - NodeStateReady
     - NodeStateMaintain
     - NodeStateOffline
@@ -2500,11 +2510,6 @@ definitions:
     - DiskStateAvailable
     - DiskStateInUse
     - DiskStateOffline
-    - MountPointStateEmpty
-    - MountPointToBeMounted
-    - MountPointToBeUnMount
-    - MountPointMounted
-    - MountPointNotReady
   v1alpha1.StorageNodeCondition:
     properties:
       lastTransitionTime:
@@ -2625,10 +2630,21 @@ paths:
       summary: Authorization
       tags:
       - Auth
+  /cluster/auth/info:
+    get:
+      description: Get the status if enable authorization
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.AuthInfoRspBody'
+      summary: Auth info
+      tags:
+      - Auth
   /cluster/auth/logout:
     post:
-      consumes:
-      - application/json
       description: Logout the token, if verify token success, delete this token and
         return success
       produces:
@@ -2637,7 +2653,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.LogoutRspBody'
+            $ref: '#/definitions/api.AuthLogoutRspBody'
       summary: Logout the token
       tags:
       - Auth

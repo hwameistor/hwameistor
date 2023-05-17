@@ -13,6 +13,7 @@ import (
 type IAuthController interface {
 	Auth(ctx *gin.Context)
 	Logout(ctx *gin.Context)
+	Info(ctx *gin.Context)
 	GetAuthMiddleWare() func(ctx *gin.Context)
 }
 
@@ -59,16 +60,15 @@ func (n *AuthController) Auth(ctx *gin.Context) {
 // @Summary     Logout the token
 // @Description Logout the token, if verify token success, delete this token and return success
 // @Tags        Auth
-// @Accept      application/json
 // @Produce     application/json
-// @Success     200 {object} api.LogoutRspBody
+// @Success     200 {object} api.AuthLogoutRspBody
 // @Router      /cluster/auth/logout [post]
 func (n *AuthController) Logout(ctx *gin.Context) {
 	token := ctx.Request.Header.Get(api.AuthTokenHeaderName)
 	if n.verifyToken(token) {
 		// verify token success, continue logout
 		n.deleteToken(token)
-		ctx.JSON(http.StatusOK, api.LogoutRspBody{
+		ctx.JSON(http.StatusOK, api.AuthLogoutRspBody{
 			Success: true,
 		})
 		log.Infof("User logout, token:%v", token)
@@ -78,6 +78,20 @@ func (n *AuthController) Logout(ctx *gin.Context) {
 	ctx.JSON(http.StatusUnauthorized, api.RspFailBody{
 		ErrCode: 401,
 		Desc:    "Fail to authorize",
+	})
+}
+
+// Info godoc
+// @Summary     Auth info
+// @Description Get the status if enable authorization
+// @Tags        Auth
+// @Produce     application/json
+// @Success     200 {object} api.AuthInfoRspBody
+// @Router      /cluster/auth/info [get]
+func (n *AuthController) Info(ctx *gin.Context) {
+	// todo: check enable auth
+	ctx.JSON(http.StatusOK, api.AuthInfoRspBody{
+		Enabled: true,
 	})
 }
 
