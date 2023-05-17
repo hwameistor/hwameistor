@@ -39,7 +39,7 @@ NAME           FREECAPACITY   TOTALCAPACITY   TOTALDISK   STATUS   AGE
 k8s-worker-2                                              Ready    21d
 ```
 
-## Add the storage node into HwameiStor
+### 2. Add the storage node into HwameiStor
 
 Construct the storage pool of the node by adding a LocalStorageClaim CR as below:
 
