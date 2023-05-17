@@ -42,7 +42,7 @@ NAME                 IP           ZONE      REGION    STATUS   AGE
 k8s-worker-4   10.6.182.103       default   default   Ready    8d
 ```
 
-## Add the storage node into HwameiStor
+### 2. Add the storage node into HwameiStor
 
 Construct the storage pool of the node by adding a LocalStorageClaim CR as below:
 
