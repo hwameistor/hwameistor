@@ -26,7 +26,7 @@ func NewMetricsController(m *manager.ServerManager) IMetricsController {
 	return &MetricsController{m}
 }
 
-// Get godoc
+// ModuleStatus godoc
 // @Summary     摘要 获取基础监控指标
 // @Description get ModuleStatus
 // @Tags        Metric

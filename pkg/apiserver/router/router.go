@@ -34,7 +34,7 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	authController := controller.NewAuthController(sm)
 	v1.POST("/cluster/auth/auth", authController.Auth)
 	v1.POST("/cluster/auth/logout", authController.Logout)
-	// middleware should be first be register to router, the previous router will not pass the middleware
+	// middleware should be first be register to router, the previous route will not pass the middleware
 	v1.Use(authController.GetAuthMiddleWare())
 
 	metricsController := controller.NewMetricsController(sm)

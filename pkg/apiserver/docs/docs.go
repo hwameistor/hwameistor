@@ -16,6 +16,68 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/cluster/auth/auth": {
+            "post": {
+                "description": "Authorize user, return a token if success",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Authorization",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "access_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "key",
+                        "name": "secret_key",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.AuthRspBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/cluster/auth/logout": {
+            "post": {
+                "description": "Logout the token, if verify token success, delete this token and return success",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout the token",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LogoutRspBody"
+                        }
+                    }
+                }
+            }
+        },
         "/cluster/drbd": {
             "get": {
                 "description": "get DRBDSettingGet",
@@ -102,7 +164,7 @@ const docTemplate = `{
         },
         "/cluster/localdisks": {
             "get": {
-                "description": "get LocalDiskList 状态枚举 （Active、Inactive、Unknown、Pending、Available、Bound)",
+                "description": "get LocalDiskList 状态枚举 (Active、Inactive、Unknown、Pending、Available、Bound)",
                 "consumes": [
                     "application/json"
                 ],
@@ -1382,7 +1444,7 @@ const docTemplate = `{
                 "tags": [
                     "Volume"
                 ],
-                "summary": "摘要 获取指定数据卷操作记录信息 状态枚举 （Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed)",
+                "summary": "摘要 获取指定数据卷操作记录信息 状态枚举 (Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed)",
                 "parameters": [
                     {
                         "type": "string",
@@ -1460,6 +1522,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.AuthRspBody": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "api.DiskReqBody": {
             "type": "object",
             "properties": {
@@ -1597,6 +1670,14 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/api.LocalDiskInfo"
                     }
+                }
+            }
+        },
+        "api.LogoutRspBody": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean"
                 }
             }
         },
@@ -3166,27 +3247,6 @@ const docTemplate = `{
                 }
             }
         },
-        "v1alpha1.Disk": {
-            "type": "object",
-            "properties": {
-                "capacity": {
-                    "description": "Capacity",
-                    "type": "integer"
-                },
-                "devPath": {
-                    "description": "DevPath",
-                    "type": "string"
-                },
-                "diskType": {
-                    "description": "DiskType SSD/HDD/NVME...",
-                    "type": "string"
-                },
-                "status": {
-                    "description": "Status",
-                    "type": "string"
-                }
-            }
-        },
         "v1alpha1.DiskAttributes": {
             "type": "object",
             "properties": {
@@ -3411,7 +3471,7 @@ const docTemplate = `{
         "v1alpha1.LocalDiskNodeSpec": {
             "type": "object",
             "properties": {
-                "attachNode": {
+                "nodeName": {
                     "description": "NodeName represent where disk is attached",
                     "type": "string"
                 }
@@ -3420,16 +3480,49 @@ const docTemplate = `{
         "v1alpha1.LocalDiskNodeStatus": {
             "type": "object",
             "properties": {
-                "allocatableDisk": {
+                "conditions": {
+                    "description": "Represents the latest available observations of a localstoragenode's current state.\n+optional",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha1.StorageNodeCondition"
+                    }
+                },
+                "freeCapacity": {
+                    "description": "FreeCapacity indicates the free capacity of all the disks",
+                    "type": "integer"
+                },
+                "freeDisk": {
                     "description": "FreeDisk",
                     "type": "integer"
                 },
-                "disks": {
-                    "description": "Disks key is the name of LocalDisk",
+                "poolExtendRecords": {
+                    "description": "PoolExtendRecords record why disks are joined in the pool\n+optional",
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/v1alpha1.Disk"
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/v1alpha1.LocalDiskClaimSpec"
+                        }
                     }
+                },
+                "pools": {
+                    "description": "There may have multiple storage pools in a node.\ne.g. HDD_POOL, SSD_POOL, NVMe_POOL\nPools: poolName -\u003e LocalPool",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/v1alpha1.LocalPool"
+                    }
+                },
+                "state": {
+                    "description": "State of the Local Storage Node/Member: New, Active, Inactive, Failed",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1alpha1.State"
+                        }
+                    ]
+                },
+                "totalCapacity": {
+                    "description": "TotalCapacity indicates the capacity of all the disks",
+                    "type": "integer"
                 },
                 "totalDisk": {
                     "description": "TotalDisk",
@@ -3635,60 +3728,6 @@ const docTemplate = `{
                 }
             }
         },
-        "v1alpha1.LocalStorageNodeCondition": {
-            "type": "object",
-            "properties": {
-                "lastTransitionTime": {
-                    "description": "Last time the condition transitioned from one status to another.",
-                    "type": "string"
-                },
-                "lastUpdateTime": {
-                    "description": "The last time this condition was updated.",
-                    "type": "string"
-                },
-                "message": {
-                    "description": "A human-readable message indicating details about the transition.",
-                    "type": "string"
-                },
-                "reason": {
-                    "description": "The reason for the condition's last transition.",
-                    "type": "string"
-                },
-                "status": {
-                    "description": "Status of the condition, one of True, False, Unknown.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_hwameistor_hwameistor_pkg_apis_hwameistor_v1alpha1.ConditionStatus"
-                        }
-                    ]
-                },
-                "type": {
-                    "description": "Type of localstoragenode condition.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/v1alpha1.LocalStorageNodeConditionType"
-                        }
-                    ]
-                }
-            }
-        },
-        "v1alpha1.LocalStorageNodeConditionType": {
-            "type": "string",
-            "enum": [
-                "Available",
-                "UnAvailable",
-                "Progressing",
-                "StorageExpandFailure",
-                "StorageExpandSuccess"
-            ],
-            "x-enum-varnames": [
-                "StorageAvailable",
-                "StorageUnAvailable",
-                "StorageProgressing",
-                "StorageExpandFailure",
-                "StorageExpandSuccess"
-            ]
-        },
         "v1alpha1.LocalStorageNodeSpec": {
             "type": "object",
             "properties": {
@@ -3711,7 +3750,7 @@ const docTemplate = `{
                     "description": "Represents the latest available observations of a localstoragenode's current state.\n+optional",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1alpha1.LocalStorageNodeCondition"
+                        "$ref": "#/definitions/v1alpha1.StorageNodeCondition"
                     }
                 },
                 "poolExtendRecords": {
@@ -4261,6 +4300,60 @@ const docTemplate = `{
                 "DiskStateAvailable",
                 "DiskStateInUse",
                 "DiskStateOffline"
+            ]
+        },
+        "v1alpha1.StorageNodeCondition": {
+            "type": "object",
+            "properties": {
+                "lastTransitionTime": {
+                    "description": "Last time the condition transitioned from one status to another.",
+                    "type": "string"
+                },
+                "lastUpdateTime": {
+                    "description": "The last time this condition was updated.",
+                    "type": "string"
+                },
+                "message": {
+                    "description": "A human-readable message indicating details about the transition.",
+                    "type": "string"
+                },
+                "reason": {
+                    "description": "The reason for the condition's last transition.",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Status of the condition, one of True, False, Unknown.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_hwameistor_hwameistor_pkg_apis_hwameistor_v1alpha1.ConditionStatus"
+                        }
+                    ]
+                },
+                "type": {
+                    "description": "Type of localstoragenode condition.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1alpha1.StorageNodeConditionType"
+                        }
+                    ]
+                }
+            }
+        },
+        "v1alpha1.StorageNodeConditionType": {
+            "type": "string",
+            "enum": [
+                "Available",
+                "UnAvailable",
+                "Progressing",
+                "ExpandFailure",
+                "ExpandSuccess"
+            ],
+            "x-enum-varnames": [
+                "StorageAvailable",
+                "StorageUnAvailable",
+                "StorageProgressing",
+                "StorageExpandFailure",
+                "StorageExpandSuccess"
             ]
         },
         "v1alpha1.Topology": {

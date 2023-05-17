@@ -5,6 +5,7 @@ const (
 	AuthAccessIdName    = "AccessId"
 	AuthSecretKeyName   = "SecretKey"
 	AuthTokenHeaderName = "Authorization"
+	AuthTokenExpireTime = 12 * 60 * 60
 )
 
 type AuthReqBody struct {
