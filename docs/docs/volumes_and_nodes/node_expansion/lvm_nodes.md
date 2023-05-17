@@ -9,7 +9,7 @@ LVM storage nodes pool the disks on the node and provide LVM-type data volumes f
 
 ## Steps
 
-### 1. Prepare Storage Node
+### 1. Prepare a storage node
 
 Add the node into the Kubernetes cluster, or select a Kubernetes node.
 The node should have all the required items described in [Prerequisites](../../quick_start/install/prereq.md).
