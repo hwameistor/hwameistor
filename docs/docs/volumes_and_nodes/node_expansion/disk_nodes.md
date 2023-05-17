@@ -12,7 +12,7 @@ maintain the mapping between raw disks and raw disk data volumes on the storage 
 
 ### 1. Prepare Disk Storage Node
 
-Add the node into the Kubernetes cluster, or select a Kubernetes node.
+Add the node to the Kubernetes cluster or select a Kubernetes node.
 
 For example, the new node and disk information are as follows:
 
