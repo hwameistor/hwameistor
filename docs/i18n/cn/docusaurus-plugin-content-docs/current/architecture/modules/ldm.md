@@ -39,8 +39,7 @@ sidebar_label: "本地磁盘管理器"
     该命令用于获取集群中磁盘资源信息，获取的信息总共有四列，含义分别如下：
 
     - **NAME：** 代表磁盘在集群中的名称。
-    - **NODEMATCH：** 表明磁盘所在的节点名称。
-    - **CLAIM：** 表明这个磁盘是被哪个 `Claim` 所引用。
+    - **NODEMATCH：** 表明磁盘所在的节点名称。 
     - **PHASE：** 表明这个磁盘当前的状态。
 
     通过`kuebctl get localdisk <name> -o yaml` 查看更多关于某块磁盘的信息。
@@ -50,7 +49,20 @@ sidebar_label: "本地磁盘管理器"
     1. 创建 LocalDiskClaim
 
         ```bash
-        $ kubectl apply -f deploy/samples/hwameistor.io_v1alpha1_localdiskclaim_cr.yaml
+        cat << EOF | kubectl apply -f -
+        apiVersion: hwameistor.io/v1alpha1
+        kind: LocalDiskClaim
+        metadata:
+          name: <localDiskClaimName>
+        spec:
+          description:
+            # 比如：HDD,SSD,NVMe
+            diskType: <diskType>
+          # 磁盘所在节点
+          nodeName: <nodeName>
+          # 使用磁盘的系统名称 比如：local-storage,local-disk-manager  
+          owner: <ownerName> 
+        EOF
         ```
 
         该命令用于创建一个磁盘使用的申请请求。在这个 yaml 文件里面，您可以在 description 字段添加对申请磁盘的描述，比如磁盘类型、磁盘的容量等等。
@@ -61,18 +73,4 @@ sidebar_label: "本地磁盘管理器"
         $ kubectl get localdiskclaim <name>
         ```
 
-    3. LDC 被处理完成后，将立即被系统自动清理。处理后的结果可以在对应的 `LocalStorageNode` 里查看
-
-
-## 路线规划图
-
-| 功能                   | 状态   | 版本 | 描述                                     |
-| :--------------------- | ------ | ---- | ---------------------------------------- |
-| CSI for disk volume    | Planned |      | `Disk` 模式下创建数据卷的 `CSI` 接口     |
-| Disk management        | Planned |      | 磁盘管理、磁盘分配、磁盘事件感知处理     |
-| Disk health management | Planned |      | 磁盘健康管理，包括故障预测和状态上报等等 |
-| HA disk Volume         | Planned |      | Disk 数据卷的高可用                      |
-
-## 反馈
-
-如果您有任何的疑问和建议，请反馈至 [Issues](https://github.com/hwameistor/local-disk-manager/issues)
+    3. LDC 被处理完成后，将立即被系统自动清理。如果 `owner` 是 local-storage，处理后的结果可以在对应的 `LocalStorageNode` 里查看。

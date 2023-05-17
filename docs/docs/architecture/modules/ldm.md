@@ -38,7 +38,6 @@ LocalDiskClaim (LDC): This is a way to use disks. A user can add the disk descri
 
     - **NAME:** represents how this disk is displayed in the cluster resources.
     - **NODEMATCH:** indicates which host this disk is on.
-    - **CLAIM:** indicates which `Claim` statement this disk is used by.
     - **PHASE:** represents the current state of the disk.
 
     Use `kuebctl get localdisk <name> -o yaml` to view more information about disks.
@@ -47,24 +46,28 @@ LocalDiskClaim (LDC): This is a way to use disks. A user can add the disk descri
 
     1. Apply a LocalDiskClaim.
 
-        ```bash
-        kubectl apply -f deploy/samples/hwameistor.io_v1alpha1_localdiskclaim_cr.yaml
-        ```
+       ```bash
+       cat << EOF | kubectl apply -f -
+       apiVersion: hwameistor.io/v1alpha1
+       kind: LocalDiskClaim
+       metadata:
+         name: <localDiskClaimName>
+       spec:
+         description:
+           # e.g. HDD,SSD,NVMe
+           diskType: <diskType> 
+         # the node where disks attached
+         nodeName: <nodeName>  
+         # the owner of the allocated disks e.g. local-storage,local-disk-manager
+         owner: <ownerName>
+       EOF
+       ```  
 
         Allocate available disks by issuing a disk usage request. In the request description, you can add more requirements about the disk, such as disk type and capacity.
 
-    2. Get the LocalDiskClaim infomation.
+    2. Get the LocalDiskClaim information.
 
         ```bash
         kubectl get localdiskclaim <name>
         ```
-    3. Once the LDC is processed successfully, it will be cleanup by the system automatically. The result will be recorded in the `LocalStorageNode`.
-
-## Roadmap
-
-| Feature| Status| Release| Description
-|:----------|----------|----------|----------
-| CSI for disk volume| Planned| | `CSI` driver for provisioning Local PVs with bare `Disk`
-| Disk management| Planned| | Disk management, disk allocation, disk event aware processing
-| Disk health management| Planned| | Disk health management
-| HA disk Volume| Planned| | HA disk Volume
+    3. Once the LDC is processed successfully, it will be cleanup by the system automatically. The result will be recorded in the `LocalStorageNode` if the owner is `local-strorage`.
