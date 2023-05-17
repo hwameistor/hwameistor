@@ -5,7 +5,7 @@ sidebar_label: "Post-Check after Deployment"
 
 # Post-Check after Deployment
 
-The example below is from a 3-node kubernetes cluster:
+This page takes 3-node kubernetes cluster as an example to perform post-check after installing HwameiStor.
 
 ```console
 $ kubectl get node
@@ -51,7 +51,6 @@ HwameiStor CRDs create the following APIs.
 
 ```console
 $ kubectl api-resources --api-group hwameistor.io
-
 NAME                       SHORTNAMES   APIVERSION               NAMESPACED   KIND
 localdiskclaims            ldc          hwameistor.io/v1alpha1   false        LocalDiskClaim
 localdisknodes             ldn          hwameistor.io/v1alpha1   false        LocalDiskNode
@@ -102,10 +101,11 @@ NAME              NODEMATCH     PHASE
 10-6-234-42-sdg   10-6-234-42   Bound
 10-6-234-42-sdh   10-6-234-42   Bound
 ```
+
 ## Check `LocalStorageNodes` and Storage Pools
 
 HwameiStor automatically generates the LocalStorageNode (i.e. LSN) resource for each node.
-Each LSN will record the resources and status of the node, including Storage Pool, Volumes, etc..
+Each LSN will record the resources and status of the node, including Storage Pool, Volumes, etc.
 
 ```console
 $ kubectl get lsn
@@ -115,7 +115,6 @@ NAME          IP            STATUS   AGE
 10-6-234-42   10.6.234.42   Ready    3m55s
 
 $ kubectl get lsn 10-6-234-41 -o yaml
-[root@10-6-234-40 ~]# k get lsn 10-6-234-41 -o yaml
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalStorageNode
 metadata:
@@ -171,10 +170,9 @@ status:
   state: Ready
 ```
 
-
 ## Check `StorageClass`
 
-The Operator will automatically create the StorageClasses as following according to the HwameiStor system's configuration (e.g. HA enabled, disk type, etc ..).
+The Operator will automatically create the StorageClasses as following according to the HwameiStor system's configuration (e.g. HA enabled or not, disk type, and more.)
 
 ```console
 $ kubectl get sc
