@@ -15,7 +15,7 @@ The following example demonstrates how to create a simple non-HA type data volum
 
 ### 1. Prepare LVM Storage Node
 
-It is necessary to ensure that the storage node has available capacity. If there is not enough capacity, 
+Ensure that the storage node has sufficient available capacity. If there is not enough capacity, 
 please refer to [Expanding LVM Storage Nodes](../node_expansion/lvm_nodes.md).
 
 Check for available capacity using the following command:
