@@ -14,7 +14,7 @@ maintain the mapping between raw disks and raw disk data volumes on the storage 
 
 Add the node to the Kubernetes cluster or select a Kubernetes node.
 
-For example, the new node and disk information are as follows:
+For example, suppose you have a new node with the following information:
 
 - name: k8s-worker-2
 - devPath: /dev/sdb
