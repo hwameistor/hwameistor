@@ -5,9 +5,9 @@ sidebar_label: "LVM Volume"
 
 # LVM Volume
 
-HwameiStor provides LVM-based data volumes. 
-This type of data volume provides read and write performance close to that of native disks, 
-and also offers advanced features such as data volume expansion, migration, high availability, and more.
+HwameiStor provides LVM-based data volumes,
+which offer read and write performance comparable to that of native disks.
+These data volumes also provide advanced features such as data volume expansion, migration, high availability, and more.
 
 The following example will demonstrate how to create a simple non-HA type data volume.
 
