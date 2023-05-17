@@ -70,7 +70,7 @@ EOF
 
 ### 4. 使用数据卷
 
-使用以下命令创建一个 `nginx` 应用并使用数据卷 `hwameistor-lvm-volume`
+使用以下命令创建一个 `nginx` 应用并使用数据卷 `hwameistor-lvm-volume`：
 
 ```console
 $ cat << EOF | kubectl apply -f -
