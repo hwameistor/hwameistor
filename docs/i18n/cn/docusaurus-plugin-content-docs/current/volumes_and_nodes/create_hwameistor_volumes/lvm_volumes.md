@@ -80,17 +80,18 @@ metadata:
   name: nginx
   namespace: default
 spec:
-containers:
-- name: volume-test
-  image: docker.io/library/nginx:latest
-  imagePullPolicy: IfNotPresent
-  volumeMounts:
-  - name: data
-    mountPath: /data
-  ports:
-  - containerPort: 80
+  containers:
+  - name: nginx
+    image: docker.io/library/nginx:latest
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+    - name: data
+      mountPath: /data
+    ports:
+    - containerPort: 80
   volumes:
   - name: data
     persistentVolumeClaim:
-      claimName: hwameistor-disk-volume
+      claimName: hwameistor-lvm-volume
+EOF
 ```

@@ -76,7 +76,7 @@ spec:
   nodeName: k8s-worker-2
 status:
   pools:
-    LocalStorage_PoolSSD:
+    LocalDisk_PoolSSD:
       class: SSD
       disks:
         - capacityBytes: 214744170496
