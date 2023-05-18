@@ -28,7 +28,7 @@ func NewAuthController(m *manager.ServerManager) IAuthController {
 
 // Auth godoc
 // @Summary     Authorization
-// @Description Authorize user, return a token if success
+// @Description Authorize user, return a token and expireAt if success
 // @Tags        Auth
 // @Param       body body api.AuthReqBody true "body"
 // @Accept      application/json
@@ -45,8 +45,10 @@ func (n *AuthController) Auth(ctx *gin.Context) {
 		return
 	}
 	if authResult := n.m.AuthController().Auth(req); authResult {
+		token, expireAt := n.generateToken()
 		ctx.JSON(http.StatusOK, api.AuthRspBody{
-			Token: n.generateToken(),
+			Token:    token,
+			ExpireAt: expireAt,
 		})
 		return
 	}
@@ -94,14 +96,15 @@ func (n *AuthController) Info(ctx *gin.Context) {
 	})
 }
 
-func (n *AuthController) generateToken() string {
+func (n *AuthController) generateToken() (string, int64) {
 	token := uuid.New().String()
+	expireAt := time.Now().Add(api.AuthTokenExpireTime)
 	n.tokens[token] = struct{}{}
-	// token expire
+	// token expire todo: no new goroutine, save tokens to secret/configmap
 	time.AfterFunc(api.AuthTokenExpireTime, func() {
 		n.deleteToken(token)
 	})
-	return token
+	return token, expireAt.Unix()
 }
 
 func (n *AuthController) verifyToken(token string) bool {

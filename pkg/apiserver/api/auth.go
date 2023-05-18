@@ -7,7 +7,7 @@ const (
 	AuthAccessIdName    = "AccessId"
 	AuthSecretKeyName   = "SecretKey"
 	AuthTokenHeaderName = "Authorization"
-	AuthTokenExpireTime = 12 * 60 * 60 * time.Second
+	AuthTokenExpireTime = 7 * 24 * time.Hour
 	AuthEnableEnvName   = "EnableAuth"
 )
 
@@ -17,13 +17,14 @@ type AuthReqBody struct {
 }
 
 type AuthRspBody struct {
-	Token string `json:"token,omitempty"`
+	Token    string `json:"token"`
+	ExpireAt int64  `json:"expire_at"`
 }
 
 type AuthLogoutRspBody struct {
-	Success bool `json:"success,omitempty"`
+	Success bool `json:"success"`
 }
 
 type AuthInfoRspBody struct {
-	Enabled bool `json:"enabled,omitempty"`
+	Enabled bool `json:"enabled"`
 }

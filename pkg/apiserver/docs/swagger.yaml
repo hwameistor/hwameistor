@@ -18,6 +18,8 @@ definitions:
     type: object
   api.AuthRspBody:
     properties:
+      expire_at:
+        type: integer
       token:
         type: string
     type: object
@@ -2430,11 +2432,6 @@ definitions:
     type: object
   v1alpha1.State:
     enum:
-    - ""
-    - ToBeMounted
-    - ToBeUnMount
-    - Mounted
-    - NotReady
     - Ready
     - Maintain
     - Offline
@@ -2469,13 +2466,13 @@ definitions:
     - Available
     - InUse
     - Offline
+    - ""
+    - ToBeMounted
+    - ToBeUnMount
+    - Mounted
+    - NotReady
     type: string
     x-enum-varnames:
-    - MountPointStateEmpty
-    - MountPointToBeMounted
-    - MountPointToBeUnMount
-    - MountPointMounted
-    - MountPointNotReady
     - NodeStateReady
     - NodeStateMaintain
     - NodeStateOffline
@@ -2510,6 +2507,11 @@ definitions:
     - DiskStateAvailable
     - DiskStateInUse
     - DiskStateOffline
+    - MountPointStateEmpty
+    - MountPointToBeMounted
+    - MountPointToBeUnMount
+    - MountPointMounted
+    - MountPointNotReady
   v1alpha1.StorageNodeCondition:
     properties:
       lastTransitionTime:
@@ -2612,7 +2614,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Authorize user, return a token if success
+      description: Authorize user, return a token and expireAt if success
       parameters:
       - description: body
         in: body

@@ -18,7 +18,7 @@ const docTemplate = `{
     "paths": {
         "/cluster/auth/auth": {
             "post": {
-                "description": "Authorize user, return a token if success",
+                "description": "Authorize user, return a token and expireAt if success",
                 "consumes": [
                     "application/json"
                 ],
@@ -1564,6 +1564,9 @@ const docTemplate = `{
         "api.AuthRspBody": {
             "type": "object",
             "properties": {
+                "expire_at": {
+                    "type": "integer"
+                },
                 "token": {
                     "type": "string"
                 }
@@ -4248,11 +4251,6 @@ const docTemplate = `{
         "v1alpha1.State": {
             "type": "string",
             "enum": [
-                "",
-                "ToBeMounted",
-                "ToBeUnMount",
-                "Mounted",
-                "NotReady",
                 "Ready",
                 "Maintain",
                 "Offline",
@@ -4286,14 +4284,14 @@ const docTemplate = `{
                 "Failed",
                 "Available",
                 "InUse",
-                "Offline"
+                "Offline",
+                "",
+                "ToBeMounted",
+                "ToBeUnMount",
+                "Mounted",
+                "NotReady"
             ],
             "x-enum-varnames": [
-                "MountPointStateEmpty",
-                "MountPointToBeMounted",
-                "MountPointToBeUnMount",
-                "MountPointMounted",
-                "MountPointNotReady",
                 "NodeStateReady",
                 "NodeStateMaintain",
                 "NodeStateOffline",
@@ -4327,7 +4325,12 @@ const docTemplate = `{
                 "OperationStateFailed",
                 "DiskStateAvailable",
                 "DiskStateInUse",
-                "DiskStateOffline"
+                "DiskStateOffline",
+                "MountPointStateEmpty",
+                "MountPointToBeMounted",
+                "MountPointToBeUnMount",
+                "MountPointMounted",
+                "MountPointNotReady"
             ]
         },
         "v1alpha1.StorageNodeCondition": {
