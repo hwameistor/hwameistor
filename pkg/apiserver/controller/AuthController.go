@@ -89,9 +89,8 @@ func (n *AuthController) Logout(ctx *gin.Context) {
 // @Success     200 {object} api.AuthInfoRspBody
 // @Router      /cluster/auth/info [get]
 func (n *AuthController) Info(ctx *gin.Context) {
-	// todo: check enable auth
 	ctx.JSON(http.StatusOK, api.AuthInfoRspBody{
-		Enabled: true,
+		Enabled: n.m.AuthController().IsEnableAuth(),
 	})
 }
 
@@ -116,7 +115,8 @@ func (n *AuthController) deleteToken(token string) {
 
 func (n *AuthController) GetAuthMiddleWare() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
-		if !n.verifyToken(ctx.Request.Header.Get(api.AuthTokenHeaderName)) {
+		// if enable auth and verify token fail, return 401
+		if n.m.AuthController().IsEnableAuth() && !n.verifyToken(ctx.Request.Header.Get(api.AuthTokenHeaderName)) {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, api.RspFailBody{
 				ErrCode: 401,
 				Desc:    "Fail to authorize",

@@ -8,6 +8,7 @@ const (
 	AuthSecretKeyName   = "SecretKey"
 	AuthTokenHeaderName = "Authorization"
 	AuthTokenExpireTime = 12 * 60 * 60 * time.Second
+	AuthEnableEnvName   = "EnableAuth"
 )
 
 type AuthReqBody struct {

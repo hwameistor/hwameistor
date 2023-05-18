@@ -27,6 +27,9 @@ spec:
               name: http
           resources: 
             {{- toYaml .Values.apiserver.resources | nindent 12 }}
+          env:
+            - name: EnableAuth
+              value: False
 
 ---
 
