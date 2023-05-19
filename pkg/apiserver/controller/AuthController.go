@@ -2,12 +2,10 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/manager"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"time"
 )
 
 type IAuthController interface {
@@ -40,21 +38,29 @@ func (n *AuthController) Auth(ctx *gin.Context) {
 	if err := ctx.ShouldBind(&req); err != nil {
 		ctx.JSON(http.StatusInternalServerError, api.RspFailBody{
 			ErrCode: 500,
-			Desc:    "Authorization Failed," + err.Error(),
+			Desc:    "Authorization Failed, " + err.Error(),
 		})
 		return
 	}
-	if authResult := n.m.AuthController().Auth(req); authResult {
-		token, expireAt := n.generateToken()
-		ctx.JSON(http.StatusOK, api.AuthRspBody{
-			Token:    token,
-			ExpireAt: expireAt,
+	if len(req.AccessId) == 0 || len(req.SecretKey) == 0 {
+		ctx.JSON(http.StatusUnauthorized, api.RspFailBody{
+			ErrCode: 401,
+			Desc:    "Fail to authorize, AccessId or SecretKey cant be nil",
 		})
 		return
 	}
-	ctx.JSON(http.StatusUnauthorized, api.RspFailBody{
-		ErrCode: 401,
-		Desc:    "Fail to authorize",
+	token, expireAt, err := n.m.AuthController().Auth(req)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, api.RspFailBody{
+			ErrCode: 401,
+			Desc:    "Fail to authorize, " + err.Error(),
+		})
+		return
+	}
+	// auth success
+	ctx.JSON(http.StatusOK, api.AuthRspBody{
+		Token:    token,
+		ExpireAt: expireAt,
 	})
 }
 
@@ -67,20 +73,18 @@ func (n *AuthController) Auth(ctx *gin.Context) {
 // @Router      /cluster/auth/logout [post]
 func (n *AuthController) Logout(ctx *gin.Context) {
 	token := ctx.Request.Header.Get(api.AuthTokenHeaderName)
-	if n.verifyToken(token) {
-		// verify token success, continue logout
-		n.deleteToken(token)
-		ctx.JSON(http.StatusOK, api.AuthLogoutRspBody{
-			Success: true,
+	err := n.m.AuthController().Logout(token)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, api.RspFailBody{
+			ErrCode: 401,
+			Desc:    "Fail to authorize, " + err.Error(),
 		})
-		log.Infof("User logout, token:%v", token)
 		return
 	}
-	// token verify fail
-	ctx.JSON(http.StatusUnauthorized, api.RspFailBody{
-		ErrCode: 401,
-		Desc:    "Fail to authorize",
+	ctx.JSON(http.StatusOK, api.AuthLogoutRspBody{
+		Success: true,
 	})
+	log.Infof("User logout, token:%v", token)
 }
 
 // Info godoc
@@ -96,30 +100,10 @@ func (n *AuthController) Info(ctx *gin.Context) {
 	})
 }
 
-func (n *AuthController) generateToken() (string, int64) {
-	token := uuid.New().String()
-	expireAt := time.Now().Add(api.AuthTokenExpireTime)
-	n.tokens[token] = struct{}{}
-	// token expire todo: no new goroutine, save tokens to secret/configmap
-	time.AfterFunc(api.AuthTokenExpireTime, func() {
-		n.deleteToken(token)
-	})
-	return token, expireAt.Unix()
-}
-
-func (n *AuthController) verifyToken(token string) bool {
-	_, in := n.tokens[token]
-	return in
-}
-
-func (n *AuthController) deleteToken(token string) {
-	delete(n.tokens, token)
-}
-
 func (n *AuthController) GetAuthMiddleWare() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 		// if enable auth and verify token fail, return 401
-		if n.m.AuthController().IsEnableAuth() && !n.verifyToken(ctx.Request.Header.Get(api.AuthTokenHeaderName)) {
+		if n.m.AuthController().IsEnableAuth() && !n.m.AuthController().VerifyToken(ctx.Request.Header.Get(api.AuthTokenHeaderName)) {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, api.RspFailBody{
 				ErrCode: 401,
 				Desc:    "Fail to authorize",

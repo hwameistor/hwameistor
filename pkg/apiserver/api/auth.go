@@ -4,9 +4,12 @@ import "time"
 
 const (
 	AuthSecretName      = "hwameistor-auth"
+	AuthTokenSecretName = "hwameistor-auth-tokens"
+
 	AuthAccessIdName    = "AccessId"
 	AuthSecretKeyName   = "SecretKey"
 	AuthTokenHeaderName = "Authorization"
+
 	AuthTokenExpireTime = 7 * 24 * time.Hour
 	AuthEnableEnvName   = "EnableAuth"
 )
