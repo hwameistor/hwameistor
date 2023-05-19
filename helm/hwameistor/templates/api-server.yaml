@@ -32,6 +32,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: NODENAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
 
 ---
 
@@ -48,4 +52,3 @@ spec:
   ports:
     - port: 80
       targetPort: http
-
