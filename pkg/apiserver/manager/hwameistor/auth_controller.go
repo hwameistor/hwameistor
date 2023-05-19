@@ -3,6 +3,7 @@ package hwameistor
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	utils "github.com/hwameistor/hwameistor/pkg/apiserver/util"
@@ -102,9 +103,7 @@ func newTokenManager(c client.Client) *tokenManager {
 		}
 		c.Get(context.Background(), objKey, tm.tokensSecret)
 	}
-	if tm.tokensSecret.Data == nil {
-		tm.tokensSecret.Data = map[string][]byte{}
-	}
+	go tm.checkTokenExpire()
 	return tm
 }
 
@@ -112,23 +111,47 @@ func newTokenManager(c client.Client) *tokenManager {
 func (tm *tokenManager) generateToken() (string, int64) {
 	token := uuid.New().String()
 	expireAt := time.Now().Add(api.AuthTokenExpireTime)
-	tm.tokensSecret.Data[token] = []byte(expireAt.String())
+	if tm.tokensSecret.Data == nil {
+		tm.tokensSecret.Data = map[string][]byte{}
+	}
+	tm.tokensSecret.Data[token] = []byte(fmt.Sprintf("%v", expireAt.Unix()))
 	tm.save()
+	log.Infof("Generate a new token, token count:%v", len(tm.tokensSecret.Data))
 	return token, expireAt.Unix()
 }
 
 func (tm *tokenManager) verifyToken(token string) bool {
-	_, in := tm.tokensSecret.Data[token]
+	expireAt, in := tm.tokensSecret.Data[token]
+	if in {
+		expireTime := time.Unix(utils.ConvertByteToInt64(expireAt), 0)
+		if time.Now().After(expireTime) {
+			// token expired
+			tm.removeToken(token)
+			return false
+		}
+	}
 	return in
 }
 
 func (tm *tokenManager) removeToken(token string) {
 	delete(tm.tokensSecret.Data, token)
 	tm.save()
+	log.Infof("Remove token:%v", token)
 }
 
 func (tm *tokenManager) checkTokenExpire() {
-	// todo:check expire token
+	time.Sleep(time.Second)
+	for {
+		log.Infof("Start to check tokens expire status")
+		for token, expireAt := range tm.tokensSecret.Data {
+			expireTime := time.Unix(utils.ConvertByteToInt64(expireAt), 0)
+			if time.Now().After(expireTime) {
+				// this token expired, delete it
+				tm.removeToken(token)
+			}
+		}
+		time.Sleep(api.CheckTokenExpireTime)
+	}
 }
 
 // save to kubernetes secret

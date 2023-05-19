@@ -12,6 +12,8 @@ const (
 
 	AuthTokenExpireTime = 7 * 24 * time.Hour
 	AuthEnableEnvName   = "EnableAuth"
+
+	CheckTokenExpireTime = 2 * time.Hour
 )
 
 type AuthReqBody struct {

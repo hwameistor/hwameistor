@@ -62,6 +62,7 @@ func (n *AuthController) Auth(ctx *gin.Context) {
 		Token:    token,
 		ExpireAt: expireAt,
 	})
+	log.Infof("User auth success, expireAt:%v", expireAt)
 }
 
 // Logout godoc
