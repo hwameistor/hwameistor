@@ -3,17 +3,17 @@ package api
 import "time"
 
 const (
-	AuthTokenSecretName = "hwameistor-auth-tokens"
+	AuthTokenSecretName    = "hwameistor-auth-tokens"
+	AuthTokenSecretKeyName = "auth-tokens"
 
+	AuthEnableEnvName    = "EnableAuth"
 	AuthAccessIdEnvName  = "AuthAccessId"
 	AuthSecretKeyEnvName = "AuthSecretKey"
 
 	AuthTokenHeaderName = "Authorization"
 
-	AuthTokenExpireTime = 7 * 24 * time.Hour
-	AuthEnableEnvName   = "EnableAuth"
-
-	CheckTokenExpireTime = 2 * time.Hour
+	AuthTokenExpireTime  = 7 * 24 * time.Hour
+	CheckTokenExpireTime = time.Hour
 )
 
 type AuthReqBody struct {

@@ -78,13 +78,3 @@ func DataPatination[T any](origin []T, page, pageSize int32) []T {
 func ConvertNodeName(node string) string {
 	return strings.Replace(node, ".", "-", -1)
 }
-
-// ConvertByteToInt64 Convert []byte to int64
-func ConvertByteToInt64(b []byte) int64 {
-	i, err := strconv.Atoi(string(b))
-	if err != nil {
-		log.Errorf("Fail to convert %v to int64", b)
-		return 0
-	}
-	return int64(i)
-}

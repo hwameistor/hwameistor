@@ -2,8 +2,8 @@ package hwameistor
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	utils "github.com/hwameistor/hwameistor/pkg/apiserver/util"
@@ -70,39 +70,18 @@ func (authController *AuthController) VerifyToken(token string) bool {
 
 type tokenManager struct {
 	client.Client
+	tokens       map[string]int64
 	tokensSecret *v1.Secret
 }
-
-// TokenData token : expireAt
-type TokenData map[string]int64
 
 // init tokenManager, get the tokens from secret
 func newTokenManager(c client.Client) *tokenManager {
 	tm := &tokenManager{
 		Client:       c,
+		tokens:       map[string]int64{},
 		tokensSecret: &v1.Secret{},
 	}
-	objKey := client.ObjectKey{
-		Namespace: utils.GetNamespace(),
-		Name:      api.AuthTokenSecretName,
-	}
-	if err := c.Get(context.Background(), objKey, tm.tokensSecret); err != nil {
-		log.Infof("Fail to get auth token secret:%v in nameSpace:%v, create the secret now", api.AuthTokenSecretName, utils.GetNamespace())
-		err := c.Create(context.Background(), &v1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: objKey.Namespace,
-				Name:      objKey.Name,
-			},
-		})
-		if err != nil {
-			log.Errorf("Fail to create auth token secret:%v, err:%v", api.AuthTokenSecretName, err)
-			return nil
-		}
-		if err := c.Get(context.Background(), objKey, tm.tokensSecret); err != nil {
-			log.Errorf("Fail to get new auth token secret:%v, err:%v", api.AuthTokenSecretName, err)
-			return nil
-		}
-	}
+	tm.load()
 	go tm.checkTokenExpire()
 	return tm
 }
@@ -111,19 +90,16 @@ func newTokenManager(c client.Client) *tokenManager {
 func (tm *tokenManager) generateToken() (string, int64) {
 	token := uuid.New().String()
 	expireAt := time.Now().Add(api.AuthTokenExpireTime)
-	if tm.tokensSecret.Data == nil {
-		tm.tokensSecret.Data = map[string][]byte{}
-	}
-	tm.tokensSecret.Data[token] = []byte(fmt.Sprintf("%v", expireAt.Unix()))
+	tm.tokens[token] = expireAt.Unix()
 	tm.save()
 	log.Infof("Generate a new token, token count:%v", len(tm.tokensSecret.Data))
 	return token, expireAt.Unix()
 }
 
 func (tm *tokenManager) verifyToken(token string) bool {
-	expireAt, in := tm.tokensSecret.Data[token]
+	expireAt, in := tm.tokens[token]
 	if in {
-		expireTime := time.Unix(utils.ConvertByteToInt64(expireAt), 0)
+		expireTime := time.Unix(expireAt, 0)
 		if time.Now().After(expireTime) {
 			// token expired
 			tm.removeToken(token)
@@ -134,17 +110,17 @@ func (tm *tokenManager) verifyToken(token string) bool {
 }
 
 func (tm *tokenManager) removeToken(token string) {
-	delete(tm.tokensSecret.Data, token)
+	delete(tm.tokens, token)
 	tm.save()
-	log.Infof("Remove token:%v", token)
+	log.Infof("Remove token:%v, token count:%v", token, len(tm.tokens))
 }
 
 func (tm *tokenManager) checkTokenExpire() {
 	time.Sleep(time.Second)
 	for {
 		log.Infof("Start to check tokens expire status")
-		for token, expireAt := range tm.tokensSecret.Data {
-			expireTime := time.Unix(utils.ConvertByteToInt64(expireAt), 0)
+		for token, expireAt := range tm.tokens {
+			expireTime := time.Unix(expireAt, 0)
 			if time.Now().After(expireTime) {
 				// this token expired, delete it
 				tm.removeToken(token)
@@ -154,10 +130,57 @@ func (tm *tokenManager) checkTokenExpire() {
 	}
 }
 
-// save to kubernetes secret
+// load tokensSecret from kubernetes
+func (tm *tokenManager) load() {
+	authTokensObjKey := client.ObjectKey{
+		Namespace: utils.GetNamespace(),
+		Name:      api.AuthTokenSecretName,
+	}
+	// get the kubernetes secret object, create a new one if its nil
+	if err := tm.Client.Get(context.Background(), authTokensObjKey, tm.tokensSecret); err != nil {
+		log.Infof("Fail to get auth token secret:%v in nameSpace:%v, create the secret now", api.AuthTokenSecretName, utils.GetNamespace())
+		err = tm.Client.Create(context.Background(), &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: authTokensObjKey.Namespace,
+				Name:      authTokensObjKey.Name,
+			},
+		})
+		if err != nil {
+			log.Errorf("Fail to create auth token secret:%v, err:%v", api.AuthTokenSecretName, err)
+			return
+		}
+		if err = tm.Client.Get(context.Background(), authTokensObjKey, tm.tokensSecret); err != nil {
+			log.Errorf("Fail to get new auth token secret:%v, err:%v", api.AuthTokenSecretName, err)
+			return
+		}
+	}
+	// load tokens data
+	if tm.tokensSecret.Data != nil {
+		tokensJsonData, ok := tm.tokensSecret.Data[api.AuthTokenSecretKeyName]
+		if ok {
+			// unmarshal data
+			err := json.Unmarshal(tokensJsonData, &tm.tokens)
+			if err != nil {
+				log.Errorf("Fail to unmarshal token json data, err:%v", err)
+				return
+			}
+		}
+	}
+}
+
+// save tokensSecret to kubernetes
 func (tm *tokenManager) save() {
-	err := tm.Client.Update(context.Background(), tm.tokensSecret)
+	tokensJsonData, err := json.Marshal(tm.tokens)
+	if err != nil {
+		log.Errorf("Fail to marshal tokens to json, err:%v", err)
+		return
+	}
+	tm.tokensSecret.Data = map[string][]byte{
+		api.AuthTokenSecretKeyName: tokensJsonData,
+	}
+	err = tm.Client.Update(context.Background(), tm.tokensSecret)
 	if err != nil {
 		log.Errorf("Fail to save token secret, err:%v", err)
+		return
 	}
 }
