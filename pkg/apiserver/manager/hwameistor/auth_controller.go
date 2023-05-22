@@ -68,17 +68,21 @@ func (authController *AuthController) VerifyToken(token string) bool {
 	return authController.tm.verifyToken(token)
 }
 
+type tokenParameter struct {
+	ExpireAt int64 `json:"ExpireAt"`
+}
+
 type tokenManager struct {
-	client.Client
-	tokens       map[string]int64
+	client       client.Client
+	tokens       map[string]tokenParameter
 	tokensSecret *v1.Secret
 }
 
-// init tokenManager, get the tokens from secret
+// init tokenManager, get the tokens from secret, in each change, it will save "tokens" to "tokensSecret" in kubernetes
 func newTokenManager(c client.Client) *tokenManager {
 	tm := &tokenManager{
-		Client:       c,
-		tokens:       map[string]int64{},
+		client:       c,
+		tokens:       map[string]tokenParameter{},
 		tokensSecret: &v1.Secret{},
 	}
 	tm.load()
@@ -89,17 +93,18 @@ func newTokenManager(c client.Client) *tokenManager {
 // generate a new token with expire time
 func (tm *tokenManager) generateToken() (string, int64) {
 	token := uuid.New().String()
-	expireAt := time.Now().Add(api.AuthTokenExpireTime)
-	tm.tokens[token] = expireAt.Unix()
+	tm.tokens[token] = tokenParameter{
+		ExpireAt: time.Now().Add(api.AuthTokenExpireTime).Unix(),
+	}
 	tm.save()
 	log.Infof("Generate a new token, token count:%v", len(tm.tokensSecret.Data))
-	return token, expireAt.Unix()
+	return token, tm.tokens[token].ExpireAt
 }
 
 func (tm *tokenManager) verifyToken(token string) bool {
-	expireAt, in := tm.tokens[token]
+	parameter, in := tm.tokens[token]
 	if in {
-		expireTime := time.Unix(expireAt, 0)
+		expireTime := time.Unix(parameter.ExpireAt, 0)
 		if time.Now().After(expireTime) {
 			// token expired
 			tm.removeToken(token)
@@ -119,8 +124,8 @@ func (tm *tokenManager) checkTokenExpire() {
 	time.Sleep(time.Second)
 	for {
 		log.Infof("Start to check tokens expire status")
-		for token, expireAt := range tm.tokens {
-			expireTime := time.Unix(expireAt, 0)
+		for token, parameter := range tm.tokens {
+			expireTime := time.Unix(parameter.ExpireAt, 0)
 			if time.Now().After(expireTime) {
 				// this token expired, delete it
 				tm.removeToken(token)
@@ -137,9 +142,9 @@ func (tm *tokenManager) load() {
 		Name:      api.AuthTokenSecretName,
 	}
 	// get the kubernetes secret object, create a new one if its nil
-	if err := tm.Client.Get(context.Background(), authTokensObjKey, tm.tokensSecret); err != nil {
+	if err := tm.client.Get(context.Background(), authTokensObjKey, tm.tokensSecret); err != nil {
 		log.Infof("Fail to get auth token secret:%v in nameSpace:%v, create the secret now", api.AuthTokenSecretName, utils.GetNamespace())
-		err = tm.Client.Create(context.Background(), &v1.Secret{
+		err = tm.client.Create(context.Background(), &v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: authTokensObjKey.Namespace,
 				Name:      authTokensObjKey.Name,
@@ -149,36 +154,38 @@ func (tm *tokenManager) load() {
 			log.Errorf("Fail to create auth token secret:%v, err:%v", api.AuthTokenSecretName, err)
 			return
 		}
-		if err = tm.Client.Get(context.Background(), authTokensObjKey, tm.tokensSecret); err != nil {
+		if err = tm.client.Get(context.Background(), authTokensObjKey, tm.tokensSecret); err != nil {
 			log.Errorf("Fail to get new auth token secret:%v, err:%v", api.AuthTokenSecretName, err)
 			return
 		}
 	}
 	// load tokens data
 	if tm.tokensSecret.Data != nil {
-		tokensJsonData, ok := tm.tokensSecret.Data[api.AuthTokenSecretKeyName]
-		if ok {
-			// unmarshal data
-			err := json.Unmarshal(tokensJsonData, &tm.tokens)
+		for token, parameterData := range tm.tokensSecret.Data {
+			parameter := tokenParameter{}
+			err := json.Unmarshal(parameterData, &parameter)
 			if err != nil {
-				log.Errorf("Fail to unmarshal token json data, err:%v", err)
+				log.Errorf("Fail to unmarshal token parameter data, err:%v", err)
 				return
 			}
+			tm.tokens[token] = parameter
 		}
 	}
 }
 
 // save tokensSecret to kubernetes
 func (tm *tokenManager) save() {
-	tokensJsonData, err := json.Marshal(tm.tokens)
-	if err != nil {
-		log.Errorf("Fail to marshal tokens to json, err:%v", err)
-		return
+	tm.tokensSecret.Data = map[string][]byte{}
+	for token, parameter := range tm.tokens {
+		parameterData, err := json.Marshal(parameter)
+		if err != nil {
+			log.Errorf("Fail to marshal token parameter to json, err:%v", err)
+			return
+		}
+		tm.tokensSecret.Data[token] = parameterData
 	}
-	tm.tokensSecret.Data = map[string][]byte{
-		api.AuthTokenSecretKeyName: tokensJsonData,
-	}
-	err = tm.Client.Update(context.Background(), tm.tokensSecret)
+
+	err := tm.client.Update(context.Background(), tm.tokensSecret)
 	if err != nil {
 		log.Errorf("Fail to save token secret, err:%v", err)
 		return
