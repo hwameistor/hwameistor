@@ -11,14 +11,14 @@ definitions:
     type: object
   api.AuthReqBody:
     properties:
-      access_id:
+      accessId:
         type: string
-      secret_key:
+      secretKey:
         type: string
     type: object
   api.AuthRspBody:
     properties:
-      expire_at:
+      expireAt:
         type: integer
       token:
         type: string

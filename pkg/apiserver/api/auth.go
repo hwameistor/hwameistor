@@ -3,11 +3,11 @@ package api
 import "time"
 
 const (
-	AuthSecretName      = "hwameistor-auth"
 	AuthTokenSecretName = "hwameistor-auth-tokens"
 
-	AuthAccessIdName    = "AccessId"
-	AuthSecretKeyName   = "SecretKey"
+	AuthAccessIdEnvName  = "AuthAccessId"
+	AuthSecretKeyEnvName = "AuthSecretKey"
+
 	AuthTokenHeaderName = "Authorization"
 
 	AuthTokenExpireTime = 7 * 24 * time.Hour
@@ -17,13 +17,13 @@ const (
 )
 
 type AuthReqBody struct {
-	AccessId  string `json:"access_id,omitempty"`
-	SecretKey string `json:"secret_key,omitempty"`
+	AccessId  string `json:"accessId,omitempty"`
+	SecretKey string `json:"secretKey,omitempty"`
 }
 
 type AuthRspBody struct {
 	Token    string `json:"token"`
-	ExpireAt int64  `json:"expire_at"`
+	ExpireAt int64  `json:"expireAt"`
 }
 
 type AuthLogoutRspBody struct {

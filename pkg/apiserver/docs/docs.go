@@ -1553,10 +1553,10 @@ const docTemplate = `{
         "api.AuthReqBody": {
             "type": "object",
             "properties": {
-                "access_id": {
+                "accessId": {
                     "type": "string"
                 },
-                "secret_key": {
+                "secretKey": {
                     "type": "string"
                 }
             }
@@ -1564,7 +1564,7 @@ const docTemplate = `{
         "api.AuthRspBody": {
             "type": "object",
             "properties": {
-                "expire_at": {
+                "expireAt": {
                     "type": "integer"
                 },
                 "token": {

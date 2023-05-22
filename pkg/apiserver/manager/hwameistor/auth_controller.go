@@ -32,19 +32,13 @@ func NewAuthController(c client.Client, recorder record.EventRecorder) *AuthCont
 }
 
 func (authController *AuthController) Auth(req api.AuthReqBody) (string, int64, error) {
-	objKey := client.ObjectKey{
-		Namespace: utils.GetNamespace(),
-		Name:      api.AuthSecretName,
-	}
-	secretObj := &v1.Secret{}
-	// get the secret
-	if err := authController.Client.Get(context.Background(), objKey, secretObj); err != nil {
-		return "", 0, err
-	}
-	accessId, ok1 := secretObj.Data[api.AuthAccessIdName]
-	secretKey, ok2 := secretObj.Data[api.AuthSecretKeyName]
+	accessId, ok1 := os.LookupEnv(api.AuthAccessIdEnvName)
+	secretKey, ok2 := os.LookupEnv(api.AuthSecretKeyEnvName)
 	if ok1 && ok2 {
-		if string(accessId) == req.AccessId && string(secretKey) == req.SecretKey {
+		if len(accessId) == 0 || len(secretKey) == 0 {
+			return "", 0, errors.New("accessId and secretKey env cant be nil")
+		}
+		if accessId == req.AccessId && secretKey == req.SecretKey {
 			// authorization success
 			token, expireAt := authController.tm.generateToken()
 			return token, expireAt, nil
@@ -52,7 +46,7 @@ func (authController *AuthController) Auth(req api.AuthReqBody) (string, int64, 
 			return "", 0, errors.New("wrong accessId or secretKey")
 		}
 	} else {
-		return "", 0, errors.New("wrong auth secret")
+		return "", 0, errors.New("there is no set auth env")
 	}
 }
 
@@ -79,6 +73,9 @@ type tokenManager struct {
 	tokensSecret *v1.Secret
 }
 
+// TokenData token : expireAt
+type TokenData map[string]int64
+
 // init tokenManager, get the tokens from secret
 func newTokenManager(c client.Client) *tokenManager {
 	tm := &tokenManager{
@@ -101,7 +98,10 @@ func newTokenManager(c client.Client) *tokenManager {
 			log.Errorf("Fail to create auth token secret:%v, err:%v", api.AuthTokenSecretName, err)
 			return nil
 		}
-		c.Get(context.Background(), objKey, tm.tokensSecret)
+		if err := c.Get(context.Background(), objKey, tm.tokensSecret); err != nil {
+			log.Errorf("Fail to get new auth token secret:%v, err:%v", api.AuthTokenSecretName, err)
+			return nil
+		}
 	}
 	go tm.checkTokenExpire()
 	return tm

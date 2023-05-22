@@ -30,6 +30,10 @@ spec:
           env:
             - name: EnableAuth
               value: False
+            - name: AuthAccessId
+              value: name
+            - name: AuthSecretKey
+              value: pwd
 
 ---
 
