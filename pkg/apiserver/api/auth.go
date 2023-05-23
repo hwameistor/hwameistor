@@ -3,8 +3,7 @@ package api
 import "time"
 
 const (
-	AuthTokenSecretName    = "hwameistor-auth-tokens"
-	AuthTokenSecretKeyName = "auth-tokens"
+	AuthTokenSecretName = "hwameistor-auth-tokens"
 
 	AuthEnableEnvName    = "EnableAuth"
 	AuthAccessIdEnvName  = "AuthAccessId"

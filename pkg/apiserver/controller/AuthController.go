@@ -35,7 +35,8 @@ func NewAuthController(m *manager.ServerManager) IAuthController {
 // @Router      /cluster/auth/auth [post]
 func (n *AuthController) Auth(ctx *gin.Context) {
 	var req api.AuthReqBody
-	if err := ctx.ShouldBind(&req); err != nil {
+	err := ctx.ShouldBind(&req)
+	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, api.RspFailBody{
 			ErrCode: 500,
 			Desc:    "Authorization Failed, " + err.Error(),
@@ -105,6 +106,7 @@ func (n *AuthController) GetAuthMiddleWare() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 		// if enable auth and verify token fail, return 401
 		if n.m.AuthController().IsEnableAuth() && !n.m.AuthController().VerifyToken(ctx.Request.Header.Get(api.AuthTokenHeaderName)) {
+			// abort request and return 401
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, api.RspFailBody{
 				ErrCode: 401,
 				Desc:    "Fail to authorize",

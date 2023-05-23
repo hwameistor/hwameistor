@@ -23,11 +23,11 @@ type AuthController struct {
 	tm *tokenManager
 }
 
-func NewAuthController(c client.Client, recorder record.EventRecorder) *AuthController {
+func NewAuthController(client client.Client, recorder record.EventRecorder) *AuthController {
 	return &AuthController{
-		Client:        c,
+		Client:        client,
 		EventRecorder: recorder,
-		tm:            newTokenManager(c),
+		tm:            newTokenManager(client),
 	}
 }
 
@@ -141,8 +141,10 @@ func (tm *tokenManager) load() {
 		Namespace: utils.GetNamespace(),
 		Name:      api.AuthTokenSecretName,
 	}
+
 	// get the kubernetes secret object, create a new one if its nil
-	if err := tm.client.Get(context.Background(), authTokensObjKey, tm.tokensSecret); err != nil {
+	err := tm.client.Get(context.Background(), authTokensObjKey, tm.tokensSecret)
+	if err != nil {
 		log.Infof("Fail to get auth token secret:%v in nameSpace:%v, create the secret now", api.AuthTokenSecretName, utils.GetNamespace())
 		err = tm.client.Create(context.Background(), &v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -154,16 +156,19 @@ func (tm *tokenManager) load() {
 			log.Errorf("Fail to create auth token secret:%v, err:%v", api.AuthTokenSecretName, err)
 			return
 		}
-		if err = tm.client.Get(context.Background(), authTokensObjKey, tm.tokensSecret); err != nil {
+		// get the new tokenSecret object
+		err = tm.client.Get(context.Background(), authTokensObjKey, tm.tokensSecret)
+		if err != nil {
 			log.Errorf("Fail to get new auth token secret:%v, err:%v", api.AuthTokenSecretName, err)
 			return
 		}
 	}
+
 	// load tokens data
 	if tm.tokensSecret.Data != nil {
 		for token, parameterData := range tm.tokensSecret.Data {
 			parameter := tokenParameter{}
-			err := json.Unmarshal(parameterData, &parameter)
+			err = json.Unmarshal(parameterData, &parameter)
 			if err != nil {
 				log.Errorf("Fail to unmarshal token parameter data, err:%v", err)
 				return
