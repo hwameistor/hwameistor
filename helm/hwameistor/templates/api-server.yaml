@@ -30,10 +30,18 @@ spec:
           env:
             - name: EnableAuth
               value: False
-            - name: AuthAccessId
-              value: name
-            - name: AuthSecretKey
-              value: pwd
+          # - name: AuthAccessId
+          #   value: accessId
+          # - name: AuthSecretKey
+          #   value: secretKey
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NODENAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
 
 ---
 
@@ -50,4 +58,3 @@ spec:
   ports:
     - port: 80
       targetPort: http
-

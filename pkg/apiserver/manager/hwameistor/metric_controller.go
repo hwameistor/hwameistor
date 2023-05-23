@@ -24,7 +24,6 @@ import (
 const (
 	hwameistorPrefix    = "hwameistor"
 	nodeStorageSortNum  = 5
-	OperatorClusterName = "cluster-sample"
 )
 
 // MetricController
@@ -477,11 +476,10 @@ func (mController *MetricController) getHwameistorOperatorStatusMetric() (*hwame
 		return moduleStatus, err
 	}
 
-	for _, cluster := range clusterList.Items {
-		if cluster.Name == OperatorClusterName {
-			moduleStatus.ClusterStatus = cluster.Status
-		}
+	if len(clusterList.Items) > 0 {
+		moduleStatus.ClusterStatus = clusterList.Items[0].Status
 	}
+
 	return moduleStatus, nil
 }
 

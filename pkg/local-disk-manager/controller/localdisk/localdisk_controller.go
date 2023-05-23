@@ -3,6 +3,7 @@ package localdisk
 import (
 	"context"
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/registry"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -269,19 +270,23 @@ func (r *ReconcileLocalDisk) checkAndCorrectSpec(disk *v1alpha1.LocalDisk) (bool
 
 func (r *ReconcileLocalDisk) checkAndCorrectOwner(disk *v1alpha1.LocalDisk) (bool, error) {
 	switch disk.Status.State {
-	case v1alpha1.LocalDiskBound:
-		if disk.Spec.Owner != "" {
-			return false, nil
-		}
-
-		log.WithField("disk", disk.GetName()).Info("Start to populate disk owner")
-		if actualOwner, err := findDiskOwner(r.Client, disk.Spec.NodeName, disk.Spec.DevicePath); err != nil {
-			return false, err
-		} else {
-			if actualOwner != disk.Spec.Owner {
-				log.WithField("disk", disk.GetName()).Infof("Try to update owner(actual owner: %s, origin owner: %s)",
-					actualOwner, disk.Spec.Owner)
-				return true, r.diskHandler.PatchDiskOwner(actualOwner)
+	case v1alpha1.LocalDiskBound, v1alpha1.LocalDiskAvailable:
+		if disk.Spec.Owner == "" || disk.Spec.Owner == v1alpha1.System {
+			log.WithField("disk", disk.GetName()).Info("Start to populate disk owner")
+			if actualOwner, err := findDiskOwner(r.Client, disk.Spec.NodeName, disk.Spec.DevicePath); err != nil {
+				return false, err
+			} else if disk.Status.State == v1alpha1.LocalDiskAvailable {
+				if actualOwner != disk.Spec.Owner && actualOwner != v1alpha1.System {
+					log.WithField("disk", disk.GetName()).Infof("Try to update owner(actual owner: %s, origin owner: %s)",
+						actualOwner, disk.Spec.Owner)
+					return true, r.diskHandler.PatchDiskOwner(actualOwner)
+				}
+			} else if disk.Status.State == v1alpha1.LocalDiskBound {
+				if actualOwner != disk.Spec.Owner {
+					log.WithField("disk", disk.GetName()).Infof("Try to update owner(actual owner: %s, origin owner: %s)",
+						actualOwner, disk.Spec.Owner)
+					return true, r.diskHandler.PatchDiskOwner(actualOwner)
+				}
 			}
 		}
 	default:
@@ -299,9 +304,15 @@ func findDiskOwner(cli client.Client, nodeName, devPath string) (string, error) 
 	if err != nil {
 		return "", err
 	}
-
 	if _, found := utils.StrFind(lsDisks, devPath); found {
 		return v1alpha1.LocalStorage, nil
+	}
+
+	// list disks managed by local-disk-manager
+	// discovery from local pool path(/dev/LocalDisk_Pool/...) which managed by local-disk-manager
+	ldmDisks, _ := listDisksOwnedByLocalDiskManager()
+	if _, found := utils.StrFind(ldmDisks, devPath); found {
+		return v1alpha1.LocalDiskManager, nil
 	}
 
 	return v1alpha1.System, nil
@@ -327,4 +338,13 @@ func listDisksOwnedByLocalStorage(cli client.Client, nodeName string) ([]string,
 	}
 
 	return poolDisks, nil
+}
+
+// find disks exist in /dev/LocalDisk_Pool/disks/<disk_type>/<disk_name>
+func listDisksOwnedByLocalDiskManager() ([]string, error) {
+	var ldmDisks []string
+	for _, disk := range registry.New().ListDisks() {
+		ldmDisks = append(ldmDisks, disk.DevPath)
+	}
+	return ldmDisks, nil
 }

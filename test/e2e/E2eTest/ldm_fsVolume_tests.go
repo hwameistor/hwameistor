@@ -21,7 +21,7 @@ import (
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("test fs volume", ginkgo.Label("testfs"), func() {
+var _ = ginkgo.Describe("test fs volume", ginkgo.Label("periodCheck"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client

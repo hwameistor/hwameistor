@@ -25,19 +25,19 @@ import (
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.26"), func() {
+var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.27"), func() {
 	var f *framework.Framework
 	var client ctrlclient.Client
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
-		utils.StartAdRollback("k8s1.26")
+		utils.StartAdRollback("k8s1.27")
 		f = framework.NewDefaultFramework(clientset.AddToScheme)
 		client = f.GetClient()
 		ctx = context.TODO()
 	})
 
 	ginkgo.It("Configure the base environment", func() {
-		result := utils.ConfigureadEnvironment(ctx, "k8s1.26")
+		result := utils.ConfigureadEnvironment(ctx, "k8s1.27")
 		gomega.Expect(result).To(gomega.BeNil())
 		utils.CreateLdc(ctx)
 

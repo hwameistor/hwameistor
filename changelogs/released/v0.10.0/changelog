@@ -1,0 +1,25 @@
+v0.10.0 / 2023-5-17
+========================
+
+
+## LocalDiskManager
+* recognize and setup disks managed by local-disk-manager owner #840(@SSmallMonster )
+* [Feat] mark disk state to inactive when receive remove events #841(@SSmallMonster )
+* update disk smart pannels #856(@SSmallMonster )
+* [Feat] Implement LocalDisk_Pool{HDD,SSD,NVMe} #701 (@SSmallMonster )
+
+## Apiserver
+* regard lv in use only when publishedNode is the same as srcNode in mi… #829 (@buffalo1024 )
+* update update_non-standard_code #851 (@Vacant2333 )
+* fix bug of apiserver showing components status #860 (@buffalo1024 )
+
+
+
+## Other
+* Add more tests ( update e2e #842 update e2e #843 update Period check go version #845 update ad e2e #847 update ad e2e #852 @FloatXD )
+* Update Docs (remove step which apply cluster cr in operator.md doc #826 @buffalo1024 [documents] update quickstart with operator #832 revert doc of installing by operator #835 @SAMZONG update /create_stateful/basic/local.md #837 update a command in post_check.md #863 @windsonsea [Docs] sync ldm module description #858 [Docs] Add Volumes and Nodes #861 fix typo #865@SSmallMonster ）
+* updated the roadmap with the new features #827 (@sun7927 )
+* add namespace env #862 (@Vacant2333 )
+
+## LocalStorage,Admission,Apiserver,Scheduler,Evictor,Exporter
+N/A

@@ -43,8 +43,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "Gjcc2df4z"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -90,7 +89,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Maintain"
+              "options": "Not Ready"
             },
             "properties": [
               {
@@ -116,21 +115,6 @@
                 "id": "color",
                 "value": {
                   "fixedColor": "text",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Offline"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "dark-red",
                   "mode": "fixed"
                 }
               }
@@ -173,10 +157,10 @@
           "editorMode": "code",
           "exemplar": false,
           "expr": "sum(hwameistor_localstoragenode_status)",
-          "format": "table",
+          "format": "time_series",
           "hide": false,
           "instant": true,
-          "legendFormat": "Auto",
+          "legendFormat": "Total",
           "range": false,
           "refId": "A"
         },
@@ -188,10 +172,9 @@
           "editorMode": "code",
           "exemplar": false,
           "expr": "sum(hwameistor_localstoragenode_status{status=\"Ready\"})",
-          "format": "table",
           "hide": false,
           "instant": true,
-          "legendFormat": "Auto",
+          "legendFormat": "Ready",
           "range": false,
           "refId": "B"
         },
@@ -202,56 +185,21 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(hwameistor_localstoragenode_status{status=\"Maintain\"})",
-          "format": "table",
+          "expr": "sum(hwameistor_localstoragenode_status) - sum(hwameistor_localstoragenode_status{status=\"Ready\"})",
           "hide": false,
           "instant": true,
-          "legendFormat": "Auto",
+          "legendFormat": "Not Ready",
           "range": false,
           "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "Gjcc2df4z"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "sum(hwameistor_localstoragenode_status{status=\"Offline\"})",
-          "format": "table",
-          "hide": false,
-          "instant": true,
-          "legendFormat": "Auto",
-          "range": false,
-          "refId": "D"
         }
       ],
-      "title": "Summary",
-      "transformations": [
-        {
-          "id": "merge",
-          "options": {}
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {},
-            "indexByName": {},
-            "renameByName": {
-              "Value #A": "Total",
-              "Value #B": "Ready",
-              "Value #C": "Maintain",
-              "Value #D": "Offline"
-            }
-          }
-        }
-      ],
+      "title": "Nodes Summary",
+      "transformations": [],
       "type": "stat"
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "Gjcc2df4z"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -274,6 +222,9 @@
             "lineWidth": 2,
             "scaleDistribution": {
               "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
             }
           },
           "mappings": [],
@@ -358,7 +309,7 @@
           "refId": "B"
         }
       ],
-      "title": "Storage Usage",
+      "title": "Nodes Storage Usage",
       "transformations": [
         {
           "id": "groupBy",
@@ -404,8 +355,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "Gjcc2df4z"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -598,7 +548,7 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "9.1.0",
+      "pluginVersion": "9.3.2",
       "targets": [
         {
           "datasource": {
@@ -705,7 +655,7 @@
           "refId": "G"
         }
       ],
-      "title": "Storage Usage Details",
+      "title": "Node Storage Usage Details",
       "transformations": [
         {
           "id": "groupBy",
@@ -846,8 +796,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "Gjcc2df4z"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -924,7 +873,7 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 9,
+        "w": 12,
         "x": 0,
         "y": 16
       },
@@ -947,7 +896,7 @@
         },
         "textMode": "value_and_name"
       },
-      "pluginVersion": "9.1.0",
+      "pluginVersion": "9.3.2",
       "targets": [
         {
           "datasource": {
@@ -993,14 +942,13 @@
           "refId": "C"
         }
       ],
-      "title": "Status Summary",
+      "title": "Volumes Status Summary",
       "transformations": [],
       "type": "stat"
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "Gjcc2df4z"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -1026,8 +974,8 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 9,
-        "x": 9,
+        "w": 11,
+        "x": 12,
         "y": 16
       },
       "id": 30,
@@ -1045,7 +993,7 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.1.0",
+      "pluginVersion": "9.3.2",
       "targets": [
         {
           "datasource": {
@@ -1107,7 +1055,7 @@
           "refId": "D"
         }
       ],
-      "title": "Type Summary",
+      "title": "Volumes Type Summary",
       "transformations": [
         {
           "id": "merge",
@@ -1131,8 +1079,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "Gjcc2df4z"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -1246,43 +1193,6 @@
                 "value": 126
               }
             ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Mounted"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "short"
-              },
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "options": {
-                      "1": {
-                        "index": 0,
-                        "text": "Yes"
-                      }
-                    },
-                    "type": "value"
-                  },
-                  {
-                    "options": {
-                      "from": 2,
-                      "result": {
-                        "index": 1,
-                        "text": "no"
-                      },
-                      "to": 1000000
-                    },
-                    "type": "range"
-                  }
-                ]
-              }
-            ]
           }
         ]
       },
@@ -1310,7 +1220,7 @@
           }
         ]
       },
-      "pluginVersion": "9.1.0",
+      "pluginVersion": "9.3.2",
       "targets": [
         {
           "datasource": {
@@ -1332,7 +1242,7 @@
             "type": "prometheus",
             "uid": "Gjcc2df4z"
           },
-          "editorMode": "code",
+          "editorMode": "builder",
           "exemplar": false,
           "expr": "hwameistor_localvolume_capacity{kind=\"Allocated\"}",
           "format": "table",
@@ -1347,7 +1257,7 @@
             "type": "prometheus",
             "uid": "Gjcc2df4z"
           },
-          "editorMode": "code",
+          "editorMode": "builder",
           "exemplar": false,
           "expr": "hwameistor_localvolume_capacity{kind=\"Used\"}",
           "format": "table",
@@ -1358,7 +1268,7 @@
           "refId": "C"
         }
       ],
-      "title": "Details",
+      "title": "Volumes Details",
       "transformations": [
         {
           "id": "groupBy",
@@ -1416,55 +1326,20 @@
           "options": {}
         },
         {
-          "id": "calculateField",
-          "options": {
-            "alias": "Capacity Usage %",
-            "binary": {
-              "left": "Value #C (lastNotNull)",
-              "operator": "/",
-              "reducer": "sum",
-              "right": "Value #B (lastNotNull)"
-            },
-            "mode": "binary",
-            "reduce": {
-              "reducer": "sum"
-            }
-          }
-        },
-        {
-          "id": "calculateField",
-          "options": {
-            "alias": "Mounted",
-            "mode": "reduceRow",
-            "reduce": {
-              "include": [
-                "mountedOn (lastNotNull)",
-                "nodeName"
-              ],
-              "reducer": "distinctCount"
-            }
-          }
-        },
-        {
           "id": "organize",
           "options": {
-            "excludeByName": {
-              "mountedOn (lastNotNull)": true
-            },
+            "excludeByName": {},
             "indexByName": {
-              "Capacity Usage %": 9,
-              "Mounted": 3,
-              "Value #B (lastNotNull)": 7,
-              "Value #C (lastNotNull)": 8,
+              "Value #B (lastNotNull)": 6,
+              "Value #C (lastNotNull)": 7,
               "mountedOn (lastNotNull)": 2,
               "nodeName": 1,
-              "poolName (lastNotNull)": 5,
-              "status (lastNotNull)": 4,
-              "type (lastNotNull)": 6,
+              "poolName (lastNotNull)": 4,
+              "status (lastNotNull)": 3,
+              "type (lastNotNull)": 5,
               "volumeName": 0
             },
             "renameByName": {
-              "Mounted": "Mounted",
               "Value #B (lastNotNull)": "Allocated Capacity",
               "Value #C (lastNotNull)": "Used Capacity",
               "mountedOn (lastNotNull)": "In Use",
@@ -1473,6 +1348,22 @@
               "status (lastNotNull)": "Status",
               "type (lastNotNull)": "Type",
               "volumeName": "Volume"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Capacity Usage %",
+            "binary": {
+              "left": "Used Capacity",
+              "operator": "/",
+              "reducer": "sum",
+              "right": "Allocated Capacity"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
             }
           }
         },
@@ -1506,8 +1397,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "Gjcc2df4z"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -1559,8 +1449,8 @@
         ]
       },
       "gridPos": {
-        "h": 6,
-        "w": 9,
+        "h": 5,
+        "w": 12,
         "x": 0,
         "y": 32
       },
@@ -1579,7 +1469,7 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.1.0",
+      "pluginVersion": "9.3.2",
       "targets": [
         {
           "datasource": {
@@ -1651,13 +1541,13 @@
           "refId": "C"
         }
       ],
-      "title": "Status Overview",
+      "title": "Disks Status Overview",
       "type": "stat"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "Gjcc2df4z"
+        "uid": "sLzy3184k"
       },
       "fieldConfig": {
         "defaults": {
@@ -1712,9 +1602,9 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 8,
-        "x": 9,
+        "h": 5,
+        "w": 11,
+        "x": 12,
         "y": 32
       },
       "id": 26,
@@ -1730,13 +1620,20 @@
           "sort": "none"
         }
       },
-      "title": "Health Overview",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "refId": "A"
+        }
+      ],
+      "title": "Disks Health Overview",
       "type": "timeseries"
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "Gjcc2df4z"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -1767,10 +1664,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 10,
-        "w": 17,
+        "h": 6,
+        "w": 23,
         "x": 0,
-        "y": 38
+        "y": 37
       },
       "id": 20,
       "options": {
@@ -1783,7 +1680,7 @@
         },
         "showHeader": true
       },
-      "pluginVersion": "9.1.0",
+      "pluginVersion": "9.3.2",
       "targets": [
         {
           "datasource": {
@@ -1800,7 +1697,7 @@
           "refId": "A"
         }
       ],
-      "title": "Details",
+      "title": "Disks Details",
       "transformations": [
         {
           "id": "groupBy",
@@ -1898,6 +1795,465 @@
         }
       ],
       "type": "table"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sLzy3184k"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 23,
+        "x": 0,
+        "y": 43
+      },
+      "hiddenSeries": false,
+      "id": 8,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": true,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.3.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "ata_smart_attribute{attribute_name=\"Temperature_Celsius\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "{{device}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Disk Temperature",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 0,
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sLzy3184k"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 6,
+        "w": 11,
+        "x": 0,
+        "y": 50
+      },
+      "hiddenSeries": false,
+      "id": 14,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": true,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.3.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "ata_smart_attribute{attribute_name=\"Reallocated_Sector_Ct\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "{{device}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Reallocated Sector Ct",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 0,
+          "format": "short",
+          "logBase": 1,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sLzy3184k"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 11,
+        "y": 50
+      },
+      "hiddenSeries": false,
+      "id": 16,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": true,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.3.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "ata_smart_attribute{attribute_name=\"UDMA_CRC_Error_Count\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "{{device}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "UDMA CRC Error Count",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 0,
+          "format": "short",
+          "logBase": 1,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sLzy3184k"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 6,
+        "w": 11,
+        "x": 0,
+        "y": 56
+      },
+      "hiddenSeries": false,
+      "id": 10,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": true,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.3.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "ata_smart_attribute{attribute_name=\"Raw_Read_Error_Rate\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "{{device}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Raw Read Error Rate",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 0,
+          "format": "short",
+          "logBase": 1,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sLzy3184k"
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 11,
+        "y": 56
+      },
+      "hiddenSeries": false,
+      "id": 12,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": true,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.3.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "ata_smart_attribute{attribute_name=\"Reallocated_Event_Count\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "{{device}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Reallocated Event Count",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 0,
+          "format": "short",
+          "logBase": 1,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
     }
   ],
   "schemaVersion": 37,
@@ -1907,13 +2263,13 @@
     "list": []
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "HwameiStor Metrics",
   "uid": "L9482OfVz",
-  "version": 47,
+  "version": 6,
   "weekStart": ""
 }
