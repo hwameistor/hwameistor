@@ -1,9 +1,24 @@
+v0.10.2 / 2023-5-25
+========================
+## LocalDiskManager
+* [Fix] Sanitize nodeName #875(@SSmallMonster )
+
+## ApiServer
+* Add auth to apiserver #864(@Vacant2333)
+
+## Other
+* fix get node name #872(@Vacant2333 )
+
+##  LocalStorage,LocalDiskManager,Admission,Scheduler,Evictor,Exporter
+N/A
+
+
 v0.10.1 / 2023-5-18
 ========================
 
 
 ## Other
-* #869 (@FloatXD )
+* update helm for ui tag #869 (@FloatXD )
 
 ##  LocalStorage,LocalDiskManager,Admission,Apiserver,Scheduler,Evictor,Exporter
 N/A
