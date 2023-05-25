@@ -1,4 +1,28 @@
 definitions:
+  api.AuthInfoRspBody:
+    properties:
+      enabled:
+        type: boolean
+    type: object
+  api.AuthLogoutRspBody:
+    properties:
+      success:
+        type: boolean
+    type: object
+  api.AuthReqBody:
+    properties:
+      accessId:
+        type: string
+      secretKey:
+        type: string
+    type: object
+  api.AuthRspBody:
+    properties:
+      expireAt:
+        type: integer
+      token:
+        type: string
+    type: object
   api.DiskReqBody:
     properties:
       reserve:
@@ -1616,21 +1640,6 @@ definitions:
       workloadType:
         type: string
     type: object
-  v1alpha1.Disk:
-    properties:
-      capacity:
-        description: Capacity
-        type: integer
-      devPath:
-        description: DevPath
-        type: string
-      diskType:
-        description: DiskType SSD/HDD/NVME...
-        type: string
-      status:
-        description: Status
-        type: string
-    type: object
   v1alpha1.DiskAttributes:
     properties:
       devType:
@@ -1818,20 +1827,50 @@ definitions:
     type: object
   v1alpha1.LocalDiskNodeSpec:
     properties:
-      attachNode:
-        description: AttachNode represent where disk is attached
+      nodeName:
+        description: NodeName represent where disk is attached
         type: string
     type: object
   v1alpha1.LocalDiskNodeStatus:
     properties:
-      allocatableDisk:
-        description: AllocatableDisk
+      conditions:
+        description: |-
+          Represents the latest available observations of a localstoragenode's current state.
+          +optional
+        items:
+          $ref: '#/definitions/v1alpha1.StorageNodeCondition'
+        type: array
+      freeCapacity:
+        description: FreeCapacity indicates the free capacity of all the disks
         type: integer
-      disks:
+      freeDisk:
+        description: FreeDisk
+        type: integer
+      poolExtendRecords:
         additionalProperties:
-          $ref: '#/definitions/v1alpha1.Disk'
-        description: Disks key is the name of LocalDisk
+          items:
+            $ref: '#/definitions/v1alpha1.LocalDiskClaimSpec'
+          type: array
+        description: |-
+          PoolExtendRecords record why disks are joined in the pool
+          +optional
         type: object
+      pools:
+        additionalProperties:
+          $ref: '#/definitions/v1alpha1.LocalPool'
+        description: |-
+          There may have multiple storage pools in a node.
+          e.g. HDD_POOL, SSD_POOL, NVMe_POOL
+          Pools: poolName -> LocalPool
+        type: object
+      state:
+        allOf:
+        - $ref: '#/definitions/v1alpha1.State'
+        description: 'State of the Local Storage Node/Member: New, Active, Inactive,
+          Failed'
+      totalCapacity:
+        description: TotalCapacity indicates the capacity of all the disks
+        type: integer
       totalDisk:
         description: TotalDisk
         type: integer
@@ -2002,43 +2041,6 @@ definitions:
       status:
         $ref: '#/definitions/v1alpha1.LocalStorageNodeStatus'
     type: object
-  v1alpha1.LocalStorageNodeCondition:
-    properties:
-      lastTransitionTime:
-        description: Last time the condition transitioned from one status to another.
-        type: string
-      lastUpdateTime:
-        description: The last time this condition was updated.
-        type: string
-      message:
-        description: A human-readable message indicating details about the transition.
-        type: string
-      reason:
-        description: The reason for the condition's last transition.
-        type: string
-      status:
-        allOf:
-        - $ref: '#/definitions/github_com_hwameistor_hwameistor_pkg_apis_hwameistor_v1alpha1.ConditionStatus'
-        description: Status of the condition, one of True, False, Unknown.
-      type:
-        allOf:
-        - $ref: '#/definitions/v1alpha1.LocalStorageNodeConditionType'
-        description: Type of localstoragenode condition.
-    type: object
-  v1alpha1.LocalStorageNodeConditionType:
-    enum:
-    - Available
-    - UnAvailable
-    - Progressing
-    - StorageExpandFailure
-    - StorageExpandSuccess
-    type: string
-    x-enum-varnames:
-    - StorageAvailable
-    - StorageUnAvailable
-    - StorageProgressing
-    - StorageExpandFailure
-    - StorageExpandSuccess
   v1alpha1.LocalStorageNodeSpec:
     properties:
       hostname:
@@ -2056,7 +2058,7 @@ definitions:
           Represents the latest available observations of a localstoragenode's current state.
           +optional
         items:
-          $ref: '#/definitions/v1alpha1.LocalStorageNodeCondition'
+          $ref: '#/definitions/v1alpha1.StorageNodeCondition'
         type: array
       poolExtendRecords:
         additionalProperties:
@@ -2430,11 +2432,6 @@ definitions:
     type: object
   v1alpha1.State:
     enum:
-    - ""
-    - ToBeMounted
-    - ToBeUnMount
-    - Mounted
-    - NotReady
     - Ready
     - Maintain
     - Offline
@@ -2469,13 +2466,13 @@ definitions:
     - Available
     - InUse
     - Offline
+    - ""
+    - ToBeMounted
+    - ToBeUnMount
+    - Mounted
+    - NotReady
     type: string
     x-enum-varnames:
-    - MountPointStateEmpty
-    - MountPointToBeMounted
-    - MountPointToBeUnMount
-    - MountPointMounted
-    - MountPointNotReady
     - NodeStateReady
     - NodeStateMaintain
     - NodeStateOffline
@@ -2510,6 +2507,48 @@ definitions:
     - DiskStateAvailable
     - DiskStateInUse
     - DiskStateOffline
+    - MountPointStateEmpty
+    - MountPointToBeMounted
+    - MountPointToBeUnMount
+    - MountPointMounted
+    - MountPointNotReady
+  v1alpha1.StorageNodeCondition:
+    properties:
+      lastTransitionTime:
+        description: Last time the condition transitioned from one status to another.
+        type: string
+      lastUpdateTime:
+        description: The last time this condition was updated.
+        type: string
+      message:
+        description: A human-readable message indicating details about the transition.
+        type: string
+      reason:
+        description: The reason for the condition's last transition.
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/github_com_hwameistor_hwameistor_pkg_apis_hwameistor_v1alpha1.ConditionStatus'
+        description: Status of the condition, one of True, False, Unknown.
+      type:
+        allOf:
+        - $ref: '#/definitions/v1alpha1.StorageNodeConditionType'
+        description: Type of localstoragenode condition.
+    type: object
+  v1alpha1.StorageNodeConditionType:
+    enum:
+    - Available
+    - UnAvailable
+    - Progressing
+    - ExpandFailure
+    - ExpandSuccess
+    type: string
+    x-enum-varnames:
+    - StorageAvailable
+    - StorageUnAvailable
+    - StorageProgressing
+    - StorageExpandFailure
+    - StorageExpandSuccess
   v1alpha1.Topology:
     properties:
       region:
@@ -2571,6 +2610,55 @@ definitions:
 info:
   contact: {}
 paths:
+  /cluster/auth/auth:
+    post:
+      consumes:
+      - application/json
+      description: Authorize user, return a token and expireAt if success
+      parameters:
+      - description: body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.AuthReqBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.AuthRspBody'
+      summary: Authorization
+      tags:
+      - Auth
+  /cluster/auth/info:
+    get:
+      description: Get the status if enable authorization
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.AuthInfoRspBody'
+      summary: Auth info
+      tags:
+      - Auth
+  /cluster/auth/logout:
+    post:
+      description: Logout the token, if verify token success, delete this token and
+        return success
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.AuthLogoutRspBody'
+      summary: Logout the token
+      tags:
+      - Auth
   /cluster/drbd:
     get:
       consumes:
@@ -2630,7 +2718,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: get LocalDiskList 状态枚举 （Active、Inactive、Unknown、Pending、Available、Bound)
+      description: get LocalDiskList 状态枚举 (Active、Inactive、Unknown、Pending、Available、Bound)
       produces:
       - application/json
       responses:
@@ -3499,7 +3587,7 @@ paths:
           description: 成功
           schema:
             $ref: '#/definitions/api.VolumeOperationByVolume'
-      summary: 摘要 获取指定数据卷操作记录信息 状态枚举 （Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed)
+      summary: 摘要 获取指定数据卷操作记录信息 状态枚举 (Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed)
       tags:
       - Volume
   /cluster/volumes/{volumeName}/replicas:
