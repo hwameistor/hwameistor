@@ -76,7 +76,7 @@ apiserver:
 ui:
   replicas: 1
   imageRepository: hwameistor/hwameistor-ui
-  tag: v0.9.3
+  tag: v0.10.0
   resources: {}
 
 localDiskManager:
