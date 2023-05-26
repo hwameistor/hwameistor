@@ -1,3 +1,15 @@
+v0.10.3 / 2023-5-26
+========================
+## ApiServer
+* update_apiserver_auth_helm_setting #878(@Vacant2333)
+
+## Other
+* update hwameistor-ui version #879(@Vacant2333 )
+
+##  LocalStorage,LocalDiskManager,Admission,Scheduler,Evictor,Exporter
+N/A
+
+
 v0.10.2 / 2023-5-25
 ========================
 ## LocalDiskManager
@@ -9,19 +21,18 @@ v0.10.2 / 2023-5-25
 ## Other
 * fix get node name #872(@Vacant2333 )
 
-##  LocalStorage,LocalDiskManager,Admission,Scheduler,Evictor,Exporter
+##  LocalStorage,Admission,Scheduler,Evictor,Exporter
 N/A
 
 
 v0.10.1 / 2023-5-18
 ========================
-
-
 ## Other
 * update helm for ui tag #869 (@FloatXD )
 
 ##  LocalStorage,LocalDiskManager,Admission,Apiserver,Scheduler,Evictor,Exporter
 N/A
+
 
 v0.10.0 / 2023-5-17
 ========================
