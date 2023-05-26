@@ -29,11 +29,11 @@ spec:
             {{- toYaml .Values.apiserver.resources | nindent 12 }}
           env:
             - name: EnableAuth
-              value: False
-          # - name: AuthAccessId
-          #   value: accessId
-          # - name: AuthSecretKey
-          #   value: secretKey
+              value: {{ .Values.apiserver.Auth.EnableAuth}}
+            - name: AuthAccessId
+              value: {{ .Values.apiserver.Auth.AccessId}}
+            - name: AuthSecretKey
+              value: {{ .Values.apiserver.Auth.SecretKey}}
             - name: NAMESPACE
               valueFrom:
                 fieldRef:

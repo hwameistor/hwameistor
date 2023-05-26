@@ -67,6 +67,11 @@ apiserver:
   imageRepository: hwameistor/apiserver
   tag: ""
   resources: {}
+  Auth:
+    # If user enable authentication, he should set a AccessId and SecretKey
+    EnableAuth: False
+    AccessId: admin
+    SecretKey: admin
 
 ui:
   replicas: 1
