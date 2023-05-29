@@ -12,8 +12,8 @@ sidebar_label: "Prerequisites"
 
 ### Unsupported platforms
 
-- OpenShift
-- Rancher
+1. OpenShift
+2. Rancher
 
 :::note
 Above platforms are not supported currently but will be in the future.
@@ -31,7 +31,7 @@ Above platforms are not supported currently but will be in the future.
 ### Processor architecture
 
 1. x86_64
-1. ARM64
+2. ARM64
 
 ### Package dependencies
 

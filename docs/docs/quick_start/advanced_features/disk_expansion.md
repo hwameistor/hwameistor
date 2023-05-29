@@ -33,7 +33,7 @@ After the new disk is added into the storage node `k8s-worker-4`, you can check 
     sdc        8:32     0     20G  1 disk
     ```
 
-1. Check if the LocalDisk CR already exists for the new disk and the status is "Unclaimed"
+2. Check if the LocalDisk CR already exists for the new disk and the status is "Unclaimed"
 
     ```bash
     kubectl get localdisk | grep k8s-worker-4 | grep sdc

@@ -20,7 +20,7 @@ please refer to [Expanding LVM Storage Nodes](../node_expansion/disk_nodes.md).
 Check for available capacity using the following command:
 
 ```shell
-$ kubectl get loaldisknodes
+$ kubectl get localdisknodes
 NAME           FREECAPACITY   TOTALCAPACITY   TOTALDISK   STATUS   AGE
 k8s-worker-2   1073741824     1073741824      1           Ready    19d
 ```
@@ -66,7 +66,7 @@ EOF
 
 ### 4. Use Volume
 
-Create an nginx application and use `hwameistor-disk-volume` volume using the following command:
+Create a nginx application and use `hwameistor-disk-volume` volume using the following command:
 
 ```console
 $ cat << EOF | kubectl apply -f -

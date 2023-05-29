@@ -23,10 +23,33 @@ Hwameistor-Operator 负责自动化安装并管理 HwameiStor 系统。
 
 ## 安装步骤
 
-1. 安装 hwameistor-operator
+1. 添加 hwameistor-operator Helm Repo
 
    ```console
    helm repo add hwameistor-operator https://hwameistor.io/hwameistor-operator
    helm repo update hwameistor-operator
+   ```
+   
+2. 部署hwameistor-operator
+  
+   ```console
    helm install hwameistor-operator hwameistor-operator/hwameistor-operator
    ```
+  
+可选参数:
+- 开启验证:
+  ```console
+  helm install hwameistor-operator hwameistor-operator/hwameistor-operator \
+  --set apiserver.authentication.enable=true \
+  --set apiserver.authentication.accessId={用户名} \
+  --set apiserver.authentication.secretKey={密码}
+  ```
+  您也可以在安装后通过修改deployment/apiserver来开启验证。
+
+
+- 使用国内源:
+  ```console
+  helm install hwameistor-operator hwameistor-operator/hwameistor-operator \
+  --set global.hwameistorImageRegistry=ghcr.m.daocloud.io \
+  --set global.k8sImageRegistry=m.daocloud.io/registry.k8s.io
+  ```

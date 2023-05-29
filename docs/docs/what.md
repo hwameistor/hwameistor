@@ -14,7 +14,7 @@ services with local volumes, and provides data persistence capabilities for
 stateful cloud-native workloads or components.
 
 HwameiStor is an open source, lightweight, and cost-efficient local storage system
-that can replace expensive traditional SAN storage. The system architecture of HwameStor is as follows.
+that can replace expensive traditional SAN storage. The system architecture of HwameiStor is as follows.
 
 ![System architecture](img/architecture.png)
 
@@ -34,16 +34,16 @@ HwameiStor is easy to deploy and ready to go.
     Smart scheduling of applications and data based on affinity. Automatically
     monitor disk status and give early warning.
 
-1. High Availability
+2. High Availability
 
     Use cross-node replicas to synchronize data for high availability.
     When a problem occurs, the application will be automatically scheduled to
     the high-availability data node to ensure the continuity of the application.
 
-1. Full-Range support of Storage Medium
+3. Full-Range support of Storage Medium
 
    Aggregate HDD, SSD, and NVMe disks to provide low-latency, high-throughput data services.
 
-1. Agile Linear Scalability
+4. Agile Linear Scalability
 
    Dynamically expand the cluster according to flexibly meet the data persistence requirements of the application.

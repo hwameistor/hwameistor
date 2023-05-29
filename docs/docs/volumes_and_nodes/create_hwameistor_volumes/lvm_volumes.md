@@ -21,7 +21,7 @@ please refer to [Expanding LVM Storage Nodes](../node_expansion/lvm_nodes.md).
 Check for available capacity using the following command:
 
 ```console
-$ kubectl get loalstoragenodes k8s-worker-2 -oyaml | grep freeCapacityBytes
+$ kubectl get localstoragenodes k8s-worker-2 -oyaml | grep freeCapacityBytes
 freeCapacityBytes: 10523508736
 ```
 
@@ -72,7 +72,7 @@ EOF
 
 ### 4. Use Volume
 
-Create an nginx application and use `hwameistor-lvm-volume` volume using the following command:
+Create a nginx application and use `hwameistor-lvm-volume` volume using the following command:
 
 ```console
 $ cat << EOF | kubectl apply -f -
