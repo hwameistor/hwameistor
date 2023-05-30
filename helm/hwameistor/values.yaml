@@ -69,7 +69,7 @@ apiserver:
   resources: {}
   auth:
     # If user enable authentication, he should set a AccessId and SecretKey
-    enableAuth: False
+    enableAuth: false
     accessId: admin
     secretKey: admin
 
