@@ -3,6 +3,7 @@ package hwameistor
 import (
 	"context"
 	"math"
+	"sort"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -93,6 +94,9 @@ func (lspController *LocalStoragePoolController) makeStoragePoolNodesCollectionM
 		log.WithError(err).Error("Failed to list LocalStorageNodes")
 		return nil, err
 	}
+	sort.Slice(lsnList.Items, func(i, j int) bool {
+		return lsnList.Items[i].CreationTimestamp.String() > lsnList.Items[j].CreationTimestamp.String()
+	})
 
 	var storagePoolNodesCollectionMap = make(map[string]*hwameistorapi.StoragePoolNodesCollection)
 	for _, lsn := range lsnList.Items {
