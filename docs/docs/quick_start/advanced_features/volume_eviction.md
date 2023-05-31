@@ -22,7 +22,7 @@ rescheduled to the new pod, mount the new volume afterwards.
 
 In a Kubernetes cluster, a node can be drained by using the following procedure.
 So that, all the pods and volume replicas on this node will be evicted, and then
-continue the services on other avaliable nodes.
+continue the services on other available nodes.
 
 ```bash
 kubectl drain k8s-node-1 --ignore-daemonsets=true

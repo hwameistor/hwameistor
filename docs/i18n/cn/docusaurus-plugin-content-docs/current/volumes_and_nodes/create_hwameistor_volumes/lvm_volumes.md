@@ -19,13 +19,13 @@ HwameiStor 提供了基于 LVM 的数据卷。
 通过以下命令查看是否有可用容量：
 
 ```shell
-$ kubectl get loalstoragenodes k8s-worker-2 -oyaml|grep freeCapacityBytes
+$ kubectl get localstoragenodes k8s-worker-2 -oyaml | grep freeCapacityBytes
 freeCapacityBytes: 10523508736
 ```
 
 ### 2. 准备 StorageClass
 
-使用以下命令创建一个名称为 `hwameistor-storage-disk-ssd` 的 StorageClass：
+使用以下命令创建一个名称为 `hwameistor-storage-lvm-ssd` 的 StorageClass：
 
 ```console
 $ cat << EOF | kubectl apply -f - 

@@ -19,7 +19,7 @@ HwameiStor 提供的另一种类型数据卷是裸磁盘数据卷。
 通过以下命令查看是否有空闲磁盘：
 
 ```shell
-$ kubectl get loaldisknodes
+$ kubectl get localdisknodes
 NAME           FREECAPACITY   TOTALCAPACITY   TOTALDISK   STATUS   AGE
 k8s-worker-2   1073741824     1073741824      1           Ready    19d
 ```

@@ -13,7 +13,7 @@ sidebar_label: "准备工作"
 ### 不支持的平台
 
 1. Openshift
-1. Rancher
+2. Rancher
 
 :::note
 暂时不支持以上平台，但是计划未来支持。
@@ -31,7 +31,7 @@ sidebar_label: "准备工作"
 ### 处理器架构
 
 1. x86_64
-1. ARM64
+2. ARM64
 
 ### 软件依赖
 

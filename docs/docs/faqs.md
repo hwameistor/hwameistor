@@ -94,7 +94,7 @@ Follow these steps to remove a node:
     ```
 
     At the same time, HwameiStor will automatically reschedule the evicted Pods
-    to the other node which has the associated volume' replica, and continue to run.
+    to the other node which has the associated volume replica, and continue to run.
 
 3. Remove the NODE from the cluster.
 
@@ -104,7 +104,7 @@ Follow these steps to remove a node:
 
 ### Reboot a node
 
-It ususally takes a long time (~10mins) to reboot a node. All the Pods and volumes on
+It usually takes a long time (~10minutes) to reboot a node. All the Pods and volumes on
 the node will not work until the node is back online. For some applications like DataBase,
 the long downtime is very costly and even unacceptable.
 
