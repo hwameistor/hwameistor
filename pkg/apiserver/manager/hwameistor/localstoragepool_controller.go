@@ -95,7 +95,7 @@ func (lspController *LocalStoragePoolController) makeStoragePoolNodesCollectionM
 		return nil, err
 	}
 	sort.Slice(lsnList.Items, func(i, j int) bool {
-		return lsnList.Items[i].CreationTimestamp.String() > lsnList.Items[j].CreationTimestamp.String()
+		return lsnList.Items[i].CreationTimestamp.After(lsnList.Items[j].CreationTimestamp.Time)
 	})
 
 	var storagePoolNodesCollectionMap = make(map[string]*hwameistorapi.StoragePoolNodesCollection)
