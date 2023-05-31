@@ -98,7 +98,7 @@ EOF
 ## Step 6: Check migration Status
 
 ```console
-$ kubectl  get LocalVolumeMigrate localvolumemigrate-1 -o yaml
+$ kubectl get LocalVolumeMigrate localvolumemigrate-1 -o yaml
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalVolumeMigrate
 metadata:
@@ -124,7 +124,7 @@ status:
 ## Step 7: Verify migration results
 
 ```console
-[root@172-30-45-222 deploy]# kubectl  get lvr
+[root@172-30-45-222 deploy]# kubectl get lvr
 NAME                                              CAPACITY     NODE                STATE   SYNCED   DEVICE                                                                  AGE
 pvc-1a0913ac-32b9-46fe-8258-39b4e3b696a4-9cdkkn   1073741824   k8s-172-30-45-223   Ready   true     /dev/LocalStorage_PoolHDD-HA/pvc-1a0913ac-32b9-46fe-8258-39b4e3b696a4   77s
 pvc-d9d3ae9f-64af-44de-baad-4c69b9e0744a-7ppmrx   1073741824   k8s-172-30-45-223   Ready   true     /dev/LocalStorage_PoolHDD-HA/pvc-d9d3ae9f-64af-44de-baad-4c69b9e0744a   77s
