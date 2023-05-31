@@ -31,6 +31,8 @@ Hwameistor-Operator 负责自动化安装并管理 HwameiStor 系统。
    ```
    
 2. 部署hwameistor-operator
+
+   注意：如果没有可用的干净磁盘，operator就不会自动创建storageclass。operator会在安装过程中自动纳管磁盘，可用的磁盘会被添加到localstorage的pool里。如果可用盘是在安装后提供的，则需要手动下发localdiskclaim将磁盘纳管到localstoragenode里。一旦localstoragenode的pool里有磁盘，operator就会自动创建storageclass，也就是说，如果没有容量，就不会自动创建storageclass。
   
    ```console
    helm install hwameistor-operator hwameistor-operator/hwameistor-operator

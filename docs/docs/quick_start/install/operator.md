@@ -32,6 +32,12 @@ You can use hwameistor-operator to deploy and manage HwameiStor system.
 
 2. Install hwameistor-operator
 
+   Note:If no available clean disk provided, operator will not create storageclass automaticlly.
+   Operator will claim disk automaticlly while installing, the available disks will be added into
+   pool of localstoragenode. If available clean disk provided after installing, it's needed to apply 
+   a localdiskclaim manually to added the disk into pool of localstoragenode. Once localstoragenode has
+   pool holding disks, the operator will create storageclass automaticlly, that means, no capacity, no storageclass.
+
    ```console
    helm install hwameistor-operator hwameistor-operator/hwameistor-operator
    ```
