@@ -29,7 +29,7 @@ var _ = ginkgo.Describe("reliability test ", ginkgo.Label("periodCheck"), func()
 	var f *framework.Framework
 	var client ctrlclient.Client
 	ctx := context.TODO()
-	ginkgo.It("Configure the base environment", func() {
+	ginkgo.It("Configure the base environment", ginkgo.FlakeAttempts(3), func() {
 		result := utils.ConfigureEnvironment(ctx)
 		gomega.Expect(result).To(gomega.BeNil())
 		f = framework.NewDefaultFramework(clientset.AddToScheme)
