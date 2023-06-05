@@ -39,10 +39,10 @@ sidebar_label: "本地磁盘管理器"
     该命令用于获取集群中磁盘资源信息，获取的信息总共有四列，含义分别如下：
 
     - **NAME：** 代表磁盘在集群中的名称。
-    - **NODEMATCH：** 表明磁盘所在的节点名称。 
+    - **NODEMATCH：** 表明磁盘所在的节点名称。
     - **PHASE：** 表明这个磁盘当前的状态。
 
-    通过`kuebctl get localdisk <name> -o yaml` 查看更多关于某块磁盘的信息。
+    通过 `kubectl get localdisk <name> -o yaml` 查看更多关于某块磁盘的信息。
 
 2. 申请可用磁盘
 
@@ -60,8 +60,8 @@ sidebar_label: "本地磁盘管理器"
             diskType: <diskType>
           # 磁盘所在节点
           nodeName: <nodeName>
-          # 使用磁盘的系统名称 比如：local-storage,local-disk-manager  
-          owner: <ownerName> 
+          # 使用磁盘的系统名称 比如：local-storage,local-disk-manager
+          owner: <ownerName>
         EOF
         ```
 
