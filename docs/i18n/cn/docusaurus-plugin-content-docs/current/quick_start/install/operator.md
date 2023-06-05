@@ -29,27 +29,36 @@ Hwameistor-Operator 负责自动化安装并管理 HwameiStor 系统。
    helm repo add hwameistor-operator https://hwameistor.io/hwameistor-operator
    helm repo update hwameistor-operator
    ```
-   
-2. 部署hwameistor-operator
 
-   注意：如果没有可用的干净磁盘，operator就不会自动创建storageclass。operator会在安装过程中自动纳管磁盘，可用的磁盘会被添加到localstorage的pool里。如果可用盘是在安装后提供的，则需要手动下发localdiskclaim将磁盘纳管到localstoragenode里。一旦localstoragenode的pool里有磁盘，operator就会自动创建storageclass，也就是说，如果没有容量，就不会自动创建storageclass。
+2. 部署 hwameistor-operator
+
+   :::note
+   如果没有可用的干净磁盘，Operator 就不会自动创建 StorageClass。
+   Operator 会在安装过程中自动纳管磁盘，可用的磁盘会被添加到 LocalStorage 的 pool 里。
+   如果可用磁盘是在安装后提供的，则需要手动下发 LocalDiskClaim 将磁盘纳管到 LocalStorageNode 里。
+   一旦 LocalStorageNode 的 pool 里有磁盘，Operator 就会自动创建 StorageClass。
+   也就是说，如果没有容量，就不会自动创建 StorageClass。
+   :::
   
    ```console
    helm install hwameistor-operator hwameistor-operator/hwameistor-operator
    ```
   
 可选参数:
+
 - 开启验证:
+
   ```console
   helm install hwameistor-operator hwameistor-operator/hwameistor-operator \
   --set apiserver.authentication.enable=true \
   --set apiserver.authentication.accessId={用户名} \
   --set apiserver.authentication.secretKey={密码}
   ```
-  您也可以在安装后通过修改deployment/apiserver来开启验证。
 
+  您也可以在安装后通过修改 deployment/apiserver 来开启验证。
 
 - 使用国内源:
+
   ```console
   helm install hwameistor-operator hwameistor-operator/hwameistor-operator \
   --set global.hwameistorImageRegistry=ghcr.m.daocloud.io \
