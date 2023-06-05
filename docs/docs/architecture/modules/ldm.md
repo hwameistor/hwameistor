@@ -18,7 +18,7 @@ LocalDisk (LD): LDM abstracts disk resources into objects in kubernetes. An `LD`
 LocalDiskClaim (LDC): This is a way to use disks. A user can add the disk description to select a disk for use.
 
 > At present, LDC supports the following options to describe disk:
-> 
+>
 > - NodeName
 > - Capacity
 > - DiskType (such as HDD/SSD/NVMe)
@@ -40,7 +40,7 @@ LocalDiskClaim (LDC): This is a way to use disks. A user can add the disk descri
     - **NODEMATCH:** indicates which host this disk is on.
     - **PHASE:** represents the current state of the disk.
 
-    Use `kuebctl get localdisk <name> -o yaml` to view more information about disks.
+    Use `kubectl get localdisk <name> -o yaml` to view more information about disks.
 
 2. Claim available disks.
 
@@ -55,13 +55,13 @@ LocalDiskClaim (LDC): This is a way to use disks. A user can add the disk descri
        spec:
          description:
            # e.g. HDD,SSD,NVMe
-           diskType: <diskType> 
+           diskType: <diskType>
          # the node where disks attached
-         nodeName: <nodeName>  
+         nodeName: <nodeName>
          # the owner of the allocated disks e.g. local-storage,local-disk-manager
          owner: <ownerName>
        EOF
-       ```  
+       ```
 
         Allocate available disks by issuing a disk usage request. In the request description, you can add more requirements about the disk, such as disk type and capacity.
 
@@ -70,4 +70,4 @@ LocalDiskClaim (LDC): This is a way to use disks. A user can add the disk descri
         ```bash
         kubectl get localdiskclaim <name>
         ```
-    3. Once the LDC is processed successfully, it will be cleanup by the system automatically. The result will be recorded in the `LocalStorageNode` if the owner is `local-strorage`.
+    3. Once the LDC is processed successfully, it will be cleanup by the system automatically. The result will be recorded in the `LocalStorageNode` if the owner is `local-storage`.
