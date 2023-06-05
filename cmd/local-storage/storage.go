@@ -93,7 +93,7 @@ func main() {
 	}
 
 	if *csiSockAddr == "" {
-		log.WithFields(log.Fields{"endpoint": *csiSockAddr}).Error("Invalid CSI endpint")
+		log.WithFields(log.Fields{"endpoint": *csiSockAddr}).Error("Invalid CSI endpoint")
 		os.Exit(1)
 	}
 
