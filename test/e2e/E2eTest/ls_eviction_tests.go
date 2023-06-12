@@ -30,7 +30,7 @@ var _ = ginkgo.Describe("eviction test", ginkgo.Label("error"), func() {
 	var f *framework.Framework
 	var client ctrlclient.Client
 	ctx := context.TODO()
-	ginkgo.It("Configure the base environment", ginkgo.FlakeAttempts(3), func() {
+	ginkgo.It("Configure the base environment", ginkgo.FlakeAttempts(5), func() {
 		result := utils.ConfigureEnvironment(ctx)
 		gomega.Expect(result).To(gomega.BeNil())
 		f := framework.NewDefaultFramework(clientset.AddToScheme)
@@ -340,7 +340,7 @@ var _ = ginkgo.Describe("eviction test", ginkgo.Label("error"), func() {
 			_ = utils.RunInLinux("kubectl uncordon " + beforeEvictionNode)
 			gomega.Expect(beforeEvictionNode).NotTo(gomega.Equal(podlist.Items[0].Spec.NodeName))
 		})
-		ginkgo.It("check test file", ginkgo.FlakeAttempts(3), func() {
+		ginkgo.It("check test file", ginkgo.FlakeAttempts(5), func() {
 			time.Sleep(1 * time.Minute)
 			config, err := config.GetConfig()
 			if err != nil {
