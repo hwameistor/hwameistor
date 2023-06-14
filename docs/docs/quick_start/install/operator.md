@@ -42,7 +42,7 @@ You can use hwameistor-operator to deploy and manage HwameiStor system.
    :::
 
    ```console
-   helm install hwameistor-operator hwameistor-operator/hwameistor-operator
+   helm install hwameistor-operator hwameistor-operator/hwameistor-operator -n hwameistor --create-namespace
    ```
 
 Optional installation parameters:
@@ -50,7 +50,7 @@ Optional installation parameters:
 - Enable authentication
 
   ```console
-  helm install hwameistor-operator hwameistor-operator/hwameistor-operator \
+  helm install hwameistor-operator hwameistor-operator/hwameistor-operator  -n hwameistor --create-namespace\
   --set apiserver.authentication.enable=true \
   --set apiserver.authentication.accessId={YourName} \
   --set apiserver.authentication.secretKey={YourPassword}
@@ -61,7 +61,7 @@ Optional installation parameters:
 - Install operator by using DaoCloud image registry:
 
   ```console
-  helm install hwameistor-operator hwameistor-operator/hwameistor-operator \
+  helm install hwameistor-operator hwameistor-operator/hwameistor-operator  -n hwameistor --create-namespace \
   --set global.hwameistorImageRegistry=ghcr.m.daocloud.io \
   --set global.k8sImageRegistry=m.daocloud.io/registry.k8s.io
   ```
