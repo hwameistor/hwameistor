@@ -2,8 +2,8 @@
 # simple scripts mng machine
 # link hosts
 export GOVC_INSECURE=1
-export GOVC_RESOURCE_POOL="e2e"
-export hosts="fupan-e2e-k8s-master fupan-e2e-k8s-node1 fupan-e2e-k8s-node2"
+export GOVC_RESOURCE_POOL="fupan-k8s"
+export hosts="fupan-k8s-master-1 fupan-k8s-work-1 fupan-k8s-work-2"
 export snapshot="e2etest"
 # for h in hosts; do govc vm.power -off -force $h; done
 # for h in hosts; do govc snapshot.revert -vm $h "机器配置2"; done
