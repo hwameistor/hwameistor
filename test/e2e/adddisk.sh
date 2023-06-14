@@ -13,7 +13,7 @@ export hosts="fupan-k8s-work-1"
 # govc vm.info $hosts
 for h in $hosts; do
   ##创建硬盘
-  govc vm.disk.create -vm $h -name $h/newdisk -ds="esxi-d01-04-datastore" -size 10G
+  govc vm.disk.create -vm $h -name $h/newdisk -ds="LOCAL-RAID5-10-6-10-8" -size 10G
   ##查看硬盘序号
   #govc device.ls -vm $h
   ##删除硬盘
