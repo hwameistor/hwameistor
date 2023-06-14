@@ -16,7 +16,7 @@ $ kubectl get cluster.hwameistor.io
 NAME             AGE
 cluster-sample   21m
 
-$ kubectl delete cluster cluster-sample
+$ kubectl delete clusters.hwameistor.io  hwameistor-cluster
 ```
 
 Finally, all the HwameiStor's components (i.e. Pods) will be deleted. Check by
@@ -46,7 +46,7 @@ If you confirm to delete your data volumes and uninstall HwameiStor, perform the
    1. Delete HwameiStor components
 
       ```console
-      $ kubectl delete cluster cluster-sample
+      $ kubectl delete clusters.hwameistor.io  hwameistor-cluster
       ```
       
    2. Delete hwameistor namespace
@@ -70,5 +70,11 @@ If you confirm to delete your data volumes and uninstall HwameiStor, perform the
         | grep hwameistor-storage-lvm- \
         | xargs -t kubectl delete
       ```
+      
+   5. Delete hwameistor operator
 
+      ```bash
+      helm uninstall hwameistor-operator -n hwameistor
+      ```
+      
 Finally, you still need to clean up the LVM configuration on each node, and also data on the disks by tools like `wipefs`.

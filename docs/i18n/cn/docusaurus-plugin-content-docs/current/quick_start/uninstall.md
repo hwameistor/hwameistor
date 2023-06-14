@@ -16,7 +16,7 @@ $ kubectl get cluster.hwameistor.io
 NAME             AGE
 cluster-sample   21m
 
-$ kubectl delete cluster cluster-sample
+$ kubectl delete clusters.hwameistor.io  hwameistor-cluster
 ```
 
 最终，所有的 HwameiStor 系统组件（Pods）将被删除。用下列命令检查，结果为空
@@ -46,7 +46,7 @@ $ kubectl -n hwameistor get pod
    1. 删除 HwameiStor 组件
 
       ```console
-      $ kubectl delete cluster cluster-sample
+      $ kubectl delete clusters.hwameistor.io  hwameistor-cluster
       ```
       
    2. 删除 HwameiStor 系统空间
@@ -69,6 +69,12 @@ $ kubectl -n hwameistor get pod
       kubectl get sc -o name \
         | grep hwameistor-storage-lvm- \
         | xargs -t kubectl delete
+      ```
+
+   5. 删除 hwameistor operator
+
+      ```bash
+      helm uninstall hwameistor-operator -n hwameistor
       ```
 
 最后，你仍然需要清理每个节点上的 LVM 配置，并采用额外的系统工具（例如：wipefs）清除磁盘上的所有数据
