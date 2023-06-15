@@ -145,3 +145,11 @@ localStorageCSIController:
     imageRepository: sig-storage/csi-external-health-monitor-controller
     tag: v0.8.0
     resources: {}
+  snapshotController:
+    imageRepository: sig-storage/snapshot-controller
+    tag: v6.0.0
+    resources: {}
+  snapshotter:
+    imageRepository: sig-storage/csi-snapshotter
+    tag: v6.0.0
+    resources: {}
