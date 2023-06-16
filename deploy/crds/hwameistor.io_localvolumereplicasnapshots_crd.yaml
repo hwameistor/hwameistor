@@ -68,9 +68,11 @@ spec:
                 - LocalStorage_PoolSSD
                 - LocalStorage_PoolNVMe
                 type: string
-              snapSize:
-                description: SnapSize specifies the space reserved for the snapshot
+              requiredCapacityBytes:
+                description: RequiredCapacityBytes specifies the space reserved for
+                  the snapshot
                 format: int64
+                minimum: 4194304
                 type: integer
               sourceVolume:
                 description: SourceVolume specifies the source volume name of the
@@ -83,7 +85,7 @@ spec:
             required:
             - nodeName
             - poolName
-            - snapSize
+            - requiredCapacityBytes
             - sourceVolume
             - sourceVolumeReplica
             type: object
@@ -96,6 +98,16 @@ spec:
                   in bytes
                 format: int64
                 type: integer
+              attr:
+                description: Attribute indicates attr on snapshot
+                properties:
+                  invalid:
+                    description: Invalid set true if snapshot is expiration
+                    type: boolean
+                  merging:
+                    description: Merging set true if snapshot is merging now
+                    type: boolean
+                type: object
               reason:
                 description: Message error message to describe some states
                 type: string

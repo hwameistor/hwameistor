@@ -24,9 +24,10 @@ type LocalVolumeReplicaSnapshotSpec struct {
 	// +kubebuilder:validation:Enum:=LocalStorage_PoolHDD;LocalStorage_PoolSSD;LocalStorage_PoolNVMe
 	PoolName string `json:"poolName"`
 
-	// SnapSize specifies the space reserved for the snapshot
+	// RequiredCapacityBytes specifies the space reserved for the snapshot
 	// +kubebuilder:validation:Required
-	SnapSize int64 `json:"snapSize"`
+	// +kubebuilder:validation:Minimum:=4194304
+	RequiredCapacityBytes int64 `json:"requiredCapacityBytes"`
 }
 
 // LocalVolumeReplicaSnapshotStatus defines the observed state of LocalVolumeReplicaSnapshot
@@ -34,11 +35,26 @@ type LocalVolumeReplicaSnapshotStatus struct {
 	// AllocatedCapacityBytes is the real allocated capacity in bytes
 	AllocatedCapacityBytes int64 `json:"allocatedCapacityBytes,omitempty"`
 
+	// CreationTimestamp is the host real snapshot creation time
+	CreationTimestamp metav1.Time `json:"creationTimestamp,omitempty"`
+
+	// Attribute indicates attr on snapshot
+	Attribute VolumeSnapshotAttr `json:"attr,omitempty"`
+
 	// State is the phase of volume replica, e.g. Creating, Ready, NotReady, ToBeDeleted, Deleted
 	State State `json:"state,omitempty"`
 
 	// Message error message to describe some states
 	Message string `json:"reason,omitempty"`
+}
+
+// VolumeSnapshotAttr defines attrs of volume, e.g. invalid, merging...
+type VolumeSnapshotAttr struct {
+	// Merging set true if snapshot is merging now
+	Merging bool `json:"merging,omitempty"`
+
+	// Invalid set true if snapshot is expiration
+	Invalid bool `json:"invalid,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
