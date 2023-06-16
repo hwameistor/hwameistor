@@ -226,7 +226,7 @@ spec:
                 type: integer
               usedCapacityBytes:
                 description: UsedCapacityBytes is the used capacity in bytes of the
-                  volume, which is avaiable only for filesystem
+                  volume, which is available only for filesystem
                 format: int64
                 type: integer
               usedInode:
