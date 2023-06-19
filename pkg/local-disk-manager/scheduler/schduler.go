@@ -38,6 +38,10 @@ func NewDiskVolumeSchedulerPlugin(scLister storagev1lister.StorageClassLister) *
 // 1. If the pod uses a created volume, we need to ensure that the volume is located at the scheduled node.
 // 2. If the pod uses a pending volume, we need to ensure that the scheduled node can meet the requirements of the volume.
 func (s *diskVolumeSchedulerPlugin) Filter(boundVolumes []string, pendingVolumes []*v1.PersistentVolumeClaim, node *v1.Node) (bool, error) {
+	// return directly if no disk volume
+	if len(boundVolumes) == 0 && len(pendingVolumes) == 0 {
+		return true, nil
+	}
 	logCtx := log.Fields{
 		"node":           node.GetName(),
 		"boundVolumes":   strings.Join(boundVolumes, ","),

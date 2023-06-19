@@ -157,7 +157,7 @@ func (r *resources) predicate(vol *apisv1alpha1.LocalVolume, nodeName string) er
 	logCtx.Debug("predicate node for volume")
 
 	if strings.Contains(strings.Join(vol.Spec.Accessibility.Nodes, ","), nodeName) {
-		if vol.Spec.RequiredCapacityBytes > nodeAllocatedCapacity-nodeAllocatedCapacity {
+		if vol.Spec.RequiredCapacityBytes > (nodeTotalCapacity - nodeAllocatedCapacity) {
 			logCtx.Error("No enough storage capacity on accessibility node")
 			return fmt.Errorf("no enough storage capacity on accessibility node")
 		}
