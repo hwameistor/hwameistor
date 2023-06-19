@@ -142,13 +142,22 @@ func (r *resources) predicate(vol *apisv1alpha1.LocalVolume, nodeName string) er
 	if !ok {
 		return fmt.Errorf("storage node %s not exists", nodeName)
 	}
-	logCtx := r.logger.WithField("volume", vol.Name)
 
 	totalPool := r.totalStorages.pools[vol.Spec.PoolName]
 	allocatedPool := r.allocatedStorages.pools[vol.Spec.PoolName]
+	nodeTotalCapacity := totalPool.capacities[nodeName]
+	nodeAllocatedCapacity := allocatedPool.capacities[nodeName]
+	logCtx := r.logger.WithFields(log.Fields{
+		"volume":                vol.Name,
+		"nodeName":              nodeName,
+		"poolName":              vol.Spec.PoolName,
+		"nodeTotalCapacity":     nodeTotalCapacity,
+		"nodeAllocatedCapacity": nodeAllocatedCapacity,
+	})
+	logCtx.Debug("predicate node for volume")
 
 	if strings.Contains(strings.Join(vol.Spec.Accessibility.Nodes, ","), nodeName) {
-		if vol.Spec.RequiredCapacityBytes > totalPool.capacities[nodeName]-allocatedPool.capacities[nodeName] {
+		if vol.Spec.RequiredCapacityBytes > (nodeTotalCapacity - nodeAllocatedCapacity) {
 			logCtx.Error("No enough storage capacity on accessibility node")
 			return fmt.Errorf("no enough storage capacity on accessibility node")
 		}
@@ -240,6 +249,7 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 			logCtx.WithError(err).WithField("node", node.Name).Debug("filter out a candidate node for score fail")
 			continue
 		}
+		logCtx.WithField("node", node.Name).Debug("filter in a candidate node for LocalVolume")
 		heap.Push(
 			&pq,
 			&PriorityItem{
@@ -253,7 +263,7 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 	for pq.Len() > 0 {
 		item := heap.Pop(&pq).(*PriorityItem)
 		candidates = append(candidates, r.storageNodes[item.name])
-		r.logger.WithFields(log.Fields{"node": item.name, "total": pq.Len()}).Debug("Adding a candidate")
+		logCtx.WithFields(log.Fields{"node": item.name, "remains": pq.Len()}).Debug("Adding a candidate")
 	}
 
 	return candidates, nil

@@ -47,12 +47,12 @@ func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) (qualifi
 
 	// show available node candidates for debug
 	defer func() {
-		logCtx.Debugf("matchable node candidates %v", func() (ns []string) {
+		logCtx.WithField("candidates", func() (ns string) {
 			for _, node := range qualifiedNodes {
-				ns = append(ns, node.Name)
+				ns = ns + "," + node.GetName()
 			}
-			return
-		}())
+			return strings.TrimPrefix(ns, ",")
+		}()).Debugf("matchable node candidates")
 	}()
 
 	// init all available nodes resources
@@ -226,9 +226,9 @@ func unionSet(strs1 []*apisv1alpha1.LocalStorageNode, strs2 []*apisv1alpha1.Loca
 	return strs
 }
 
-func lvString(vols []*apisv1alpha1.LocalVolume) (vs []string) {
+func lvString(vols []*apisv1alpha1.LocalVolume) (vs string) {
 	for _, vol := range vols {
-		strings.Join(vs, vol.Name)
+		vs = vs + "," + vol.GetName()
 	}
-	return
+	return strings.TrimPrefix(vs, ",")
 }
