@@ -472,13 +472,16 @@ func (lvController *LocalVolumeController) CreateVolumeMigrate(volName, srcNode,
 			APIVersion: LocalVolumeMigrateAPIVersion,
 		},
 		Spec: apisv1alpha1.LocalVolumeMigrateSpec{
-			VolumeName: volName,
-			SourceNode: srcNode,
-			// don't specify the target nodes, so the scheduler will select from the avaliables
-			TargetNodesSuggested: []string{selectedNode},
+			VolumeName:           volName,
+			SourceNode:           srcNode,
 			MigrateAllVols:       true,
 			Abort:                abort,
+			TargetNodesSuggested: []string{},
 		},
+	}
+	// don't specify the target nodes, so the scheduler will select from the available nodes
+	if selectedNode != "" {
+		lvm.Spec.TargetNodesSuggested = append(lvm.Spec.TargetNodesSuggested, selectedNode)
 	}
 	if abort == false {
 		if err := lvController.Client.Create(context.Background(), lvm); err != nil {
