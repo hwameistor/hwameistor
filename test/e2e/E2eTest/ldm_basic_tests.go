@@ -48,7 +48,7 @@ var _ = ginkgo.Describe("Local Disk Manager basic tests", ginkgo.Label("periodCh
 					logrus.Error("add disk failed")
 					logrus.Error(err)
 				}
-				if len(localDiskList.Items) != 10 {
+				if len(localDiskList.Items) != 7 {
 					return false, nil
 				} else {
 					logrus.Infof("There are %d local volumes ", len(localDiskList.Items))
