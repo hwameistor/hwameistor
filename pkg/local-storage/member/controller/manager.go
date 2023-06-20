@@ -52,6 +52,8 @@ type manager struct {
 
 	volumeMigrateTaskQueue *common.TaskQueue
 
+	volumeSnapshotTaskQueue *common.TaskQueue
+
 	volumeGroupMigrateTaskQueue *common.TaskQueue
 
 	volumeConvertTaskQueue *common.TaskQueue
@@ -117,6 +119,7 @@ func (m *manager) start(stopCh <-chan struct{}) {
 		go m.startVolumeExpandTaskWorker(stopCh)
 		go m.startVolumeMigrateTaskWorker(stopCh)
 		go m.startVolumeConvertTaskWorker(stopCh)
+		go m.startVolumeSnapshotTaskWorker(stopCh)
 
 		go m.startK8sNodeTaskWorker(stopCh)
 

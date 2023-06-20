@@ -1499,6 +1499,7 @@ func (in *LocalVolumeSnapshotStatus) DeepCopyInto(out *LocalVolumeSnapshotStatus
 		copy(*out, *in)
 	}
 	in.CreationTimestamp.DeepCopyInto(&out.CreationTimestamp)
+	out.Attribute = in.Attribute
 	return
 }
 

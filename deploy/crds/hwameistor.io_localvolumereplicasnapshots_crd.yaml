@@ -56,6 +56,8 @@ spec:
             description: LocalVolumeReplicaSnapshotSpec represents the actual localvolume
               snapshot object in lvm
             properties:
+              delete:
+                type: boolean
               nodeName:
                 description: NodeName specifies which node the snapshot will be placed
                 type: string
@@ -83,6 +85,7 @@ spec:
                   of the snapshot
                 type: string
             required:
+            - delete
             - nodeName
             - poolName
             - requiredCapacityBytes

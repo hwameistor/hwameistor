@@ -61,6 +61,8 @@ type manager struct {
 
 	volumeTaskQueue *common.TaskQueue
 
+	replicaSnapshotTaskQueue *common.TaskQueue
+
 	rcloneVolumeMountTaskQueue *common.TaskQueue
 
 	volumeReplicaTaskQueue *common.TaskQueue
@@ -131,6 +133,8 @@ func (m *manager) Run(stopCh <-chan struct{}) {
 	go m.startDiskEventWorker(stopCh)
 
 	go m.startRcloneVolumeMountTaskWorker(stopCh)
+
+	go m.startVolumeReplicaSnapshotTaskWorker(stopCh)
 
 	go diskmonitor.New(m.diskEventQueue).Run(stopCh)
 

@@ -16,6 +16,9 @@ type LocalVolumeSnapshotSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Minimum:=4194304
 	RequiredCapacityBytes int64 `json:"requiredCapacityBytes"`
+
+	// +kubebuilder:default:=false
+	Delete bool `json:"abort,omitempty"`
 }
 
 // LocalVolumeSnapshotStatus defines the observed state of LocalVolumeSnapshot
@@ -30,6 +33,9 @@ type LocalVolumeSnapshotStatus struct {
 	// CreationTimestamp is the host real snapshot creation time
 	// In case of HA volume with multiple replicas, the value is equal to the one of a replica's snapshot creation time
 	CreationTimestamp metav1.Time `json:"creationTimestamp,omitempty" protobuf:"bytes,8,opt,name=creationTimestamp"`
+
+	// Attribute indicates attr on snapshot
+	Attribute VolumeSnapshotAttr `json:"attr,omitempty"`
 
 	// State is the phase of volume replica, e.g. Creating, Ready, NotReady, ToBeDeleted, Deleted
 	State State `json:"state,omitempty"`

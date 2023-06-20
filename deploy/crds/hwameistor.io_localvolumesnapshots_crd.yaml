@@ -48,6 +48,9 @@ spec:
             description: LocalVolumeSnapshotSpec describes the common attributes of
               a localvolume snapshot.
             properties:
+              abort:
+                default: false
+                type: boolean
               requiredCapacityBytes:
                 description: RequiredCapacityBytes specifies the space reserved for
                   the snapshot
@@ -70,6 +73,16 @@ spec:
                   is equal to the one of a replica's snapshot size
                 format: int64
                 type: integer
+              attr:
+                description: Attribute indicates attr on snapshot
+                properties:
+                  invalid:
+                    description: Invalid set true if snapshot is expiration
+                    type: boolean
+                  merging:
+                    description: Merging set true if snapshot is merging now
+                    type: boolean
+                type: object
               message:
                 description: Message error message to describe some states
                 type: string
