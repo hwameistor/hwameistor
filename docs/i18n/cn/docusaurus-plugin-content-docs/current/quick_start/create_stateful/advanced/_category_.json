@@ -1,8 +1,8 @@
 {
-  "label": "Advanced Operations",
+  "label": "高级功能",
   "position": 2,
   "link" : {
     "type": "generated-index",
-    "description": "In this section, we will introduce the following concepts:"
+    "description": "本章节介绍以下内容："
   }
 }
