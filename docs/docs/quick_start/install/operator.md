@@ -50,7 +50,7 @@ Optional installation parameters:
 - Enable authentication
 
   ```console
-  helm install hwameistor-operator hwameistor-operator/hwameistor-operator  -n hwameistor --create-namespace\
+  helm install hwameistor-operator hwameistor-operator/hwameistor-operator  -n hwameistor --create-namespace \
   --set apiserver.authentication.enable=true \
   --set apiserver.authentication.accessId={YourName} \
   --set apiserver.authentication.secretKey={YourPassword}

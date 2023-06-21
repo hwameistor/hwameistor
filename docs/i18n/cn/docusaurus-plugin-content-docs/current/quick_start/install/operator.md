@@ -49,7 +49,7 @@ Hwameistor-Operator 负责自动化安装并管理 HwameiStor 系统。
 - 开启验证:
 
   ```console
-  helm install hwameistor-operator hwameistor-operator/hwameistor-operator -n hwameistor --create-namespace\
+  helm install hwameistor-operator hwameistor-operator/hwameistor-operator -n hwameistor --create-namespace \
   --set apiserver.authentication.enable=true \
   --set apiserver.authentication.accessId={用户名} \
   --set apiserver.authentication.secretKey={密码}
@@ -60,7 +60,7 @@ Hwameistor-Operator 负责自动化安装并管理 HwameiStor 系统。
 - 使用国内源:
 
   ```console
-  helm install hwameistor-operator hwameistor-operator/hwameistor-operator -n hwameistor --create-namespace\
+  helm install hwameistor-operator hwameistor-operator/hwameistor-operator -n hwameistor --create-namespace \
   --set global.hwameistorImageRegistry=ghcr.m.daocloud.io \
   --set global.k8sImageRegistry=m.daocloud.io/registry.k8s.io
   ```
