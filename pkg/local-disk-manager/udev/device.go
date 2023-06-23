@@ -32,7 +32,7 @@ func (d CDevice) FilterDisk() bool {
 	log.Debugf("Device info in udev is:%+v", *device)
 
 	// virtual block device like loop device will be filter out
-	if device.IDPath == "" {
+	if strings.Contains(device.DevPath, "/virtual/") {
 		return false
 	}
 
@@ -85,9 +85,6 @@ type Device struct {
 
 	// ID_TYPE
 	IDType string `json:"id_type"`
-
-	// ID_PATH
-	IDPath string `json:"id_path"`
 
 	// PartName such as EFI System Partition
 	PartName string `json:"partName"`
