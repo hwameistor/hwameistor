@@ -176,7 +176,7 @@ spec:
           type: ""
         name: host-dev
       - hostPath:
-          path: /etc/drbd.d
+          path: {{ .Values.localStorage.hostPaths.drbdDir }}
           type: DirectoryOrCreate
         name: host-etc-drbd
       - hostPath:
@@ -184,7 +184,7 @@ spec:
           type: DirectoryOrCreate
         name: pods-mount-dir
       - hostPath:
-          path: /root/.ssh
+          path: {{ .Values.localStorage.hostPaths.sshDir }}
           type: DirectoryOrCreate
         name: ssh-dir
       - hostPath:
