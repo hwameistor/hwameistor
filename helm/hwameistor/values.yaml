@@ -125,6 +125,9 @@ localStorage:
       # can use daocloud.io/daocloud/hwameistor-migrate-rclone:v1.1.2 which is exactly same as the following
       imageRepository: rclone/rclone
       tag: 1.53.2
+  hostPaths:
+    sshDir: /root/.ssh
+    drbdDir: /etc/drbd.d
 
 localStorageCSIController:
   replicas: 1
