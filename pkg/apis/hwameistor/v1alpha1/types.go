@@ -114,6 +114,11 @@ const (
 	VolumeParameterConvertible      = "convertible"
 )
 
+// consts for snapshot class
+const (
+	SnapshotParameterSizeKey = "snapsize"
+)
+
 // misc
 const (
 	CSIDriverName = "lvm.hwameistor.io"
