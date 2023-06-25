@@ -14,6 +14,9 @@ type LocalVolumeSpec struct {
 	// +kubebuilder:validation:Minimum:=4194304
 	RequiredCapacityBytes int64 `json:"requiredCapacityBytes,omitempty"`
 
+	// VolumeQoS is the QoS of the volume
+	VolumeQoS VolumeQoS `json:"volumeQoS,omitempty"`
+
 	// PoolName is the name of the storage pool, e.g. LocalStorage_PoolHDD, LocalStorage_PoolSSD, etc..
 	PoolName string `json:"poolName,omitempty"`
 
@@ -48,6 +51,14 @@ type LocalVolumeSpec struct {
 	// The purpose is to protect it from any mistakes
 	// +kubebuilder:default:=false
 	Delete bool `json:"delete,omitempty"`
+}
+
+// VolumeQoS is the QoS of the volume
+type VolumeQoS struct {
+	// Throughput defines the throughput of the volume
+	Throughput string `json:"throughput,omitempty"`
+	// IOPS defines the IOPS of the volume
+	IOPS string `json:"iops,omitempty"`
 }
 
 // AccessibilityTopology of the volume

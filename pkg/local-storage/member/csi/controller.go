@@ -80,6 +80,10 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 			vol.Spec.PersistentVolumeClaimNamespace = params.pvcNamespace
 			vol.Spec.VolumeGroup = lvg.Name
 			vol.Spec.Accessibility.Nodes = lvg.Spec.Accessibility.Nodes
+			vol.Spec.VolumeQoS = apisv1alpha1.VolumeQoS{
+				Throughput: params.throughput,
+				IOPS:       params.iops,
+			}
 
 			p.logger.WithFields(log.Fields{"volume": vol}).Debug("Creating a volume")
 			if err := p.apiClient.Create(ctx, vol); err != nil {
