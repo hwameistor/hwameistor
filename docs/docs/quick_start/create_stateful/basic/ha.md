@@ -98,7 +98,7 @@ pvc-5236ee6f-8212-4628-9876-1b620a4c4c36   LocalStorage_PoolHDD   1          107
 `LocalVolumeReplica (LVR)` further shows the backend logical volume devices on each node.
 
 ```concole
-kubectl get lvr
+$ kubectl get lvr
 NAME                                          CAPACITY     NODE           STATE   SYNCED   DEVICE                                                              AGE
 5236ee6f-8212-4628-9876-1b620a4c4c36-d2kn55   1073741824   k8s-worker-1   Ready   true     /dev/LocalStorage_PoolHDD-HA/5236ee6f-8212-4628-9876-1b620a4c4c36   4m
 5236ee6f-8212-4628-9876-1b620a4c4c36-glm7rf   1073741824   k8s-worker-3   Ready   true     /dev/LocalStorage_PoolHDD-HA/5236ee6f-8212-4628-9876-1b620a4c4c36   4m
