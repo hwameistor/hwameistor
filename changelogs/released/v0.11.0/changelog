@@ -1,0 +1,24 @@
+v0.11.0 / 2023-6-25
+========================
+
+## LocalStorage
+* LocalVolume implement IO Throttling or QoS #803 (@carlory )
+* fix typo #898 (@panguicai008 )
+* optimize(log): make funcs - candidate predicate log readable #913  (@SSmallMonster )
+
+## LocalDiskManager
+* Use */virtual/* detection for identifying virtual block devices #924 (@LucaDev )
+
+## Apiserver
+* list storagepool createtime field inconsistent #894  (@panguicai008 )
+* fix ui migrate error #915  (@Vacant2333 )
+
+## Other
+* Add more tests   ( Hwameistor was installed by Operator ,some probelem happened when uninstalled  #887 update e2e for FlakeAttempts #905 update doc #907 update e2e #908 fix e2e test #911 fix pr e2e #927@FloatXD )
+* Update Docs (Command format optimization #882 @my-git9 [docs] fix docs translations,add installation ways #883 @Vacant2333 add description of auto creating storageclass #895 @buffalo1024 Change some text in /operator.md #899 [docs] update section intro #916 add zh readme #922 update maintainer list #923 @windsonsea fix kubectl and storage typo #900 @panguicai008 ）
+* fix apiserver deploy yaml #892 (@Vacant2333 )
+* Fix scheduler config template, made hostpaths configurable in Helm Chart #925  (@LucaDev )
+
+##  Admission,Scheduler,Evictor,Exporter
+N/A
+
