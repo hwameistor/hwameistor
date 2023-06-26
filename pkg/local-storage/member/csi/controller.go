@@ -662,9 +662,20 @@ func (p *plugin) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequ
 			return nil, status.Errorf(codes.Internal, "Failed to get snapshot size: %v", err)
 		}
 
+		// NOTE: We only take snapshots on the volume replica that exist at the moment!
+		// For those volume replicas that created later but belong to this volume won't take snapshots.
+
+		accessTopology, err := getVolumeAccessibility(req.SourceVolumeId, p.apiClient)
+		if err != nil {
+			logCtx.WithError(err).Error("Failed to get volume access topology")
+			return nil, status.Errorf(codes.Internal, "Failed to get volume access topology: %v", err)
+		}
+
 		snapshot.Name = req.Name
+		snapshot.Spec.Accessibility = accessTopology
 		snapshot.Spec.RequiredCapacityBytes = snapsize
 		snapshot.Spec.SourceVolume = req.SourceVolumeId
+
 		if err = p.apiClient.Create(ctx, snapshot); err != nil {
 			logCtx.WithError(err).Error("Failed to create LocalVolumeSnapshot")
 			return nil, status.Errorf(codes.Internal, "Failed to create LocalVolumeSnapshot: %v", err)
@@ -840,4 +851,14 @@ func getVolumeAllocatedCapacity(volumeName string, apiClient client.Client) (int
 
 	// use the source volume allocated size in status rather than the capacity in spec
 	return volume.Status.AllocatedCapacityBytes, nil
+}
+
+// getVolumeAccessibility returns the access topology from the given volume
+func getVolumeAccessibility(volumeName string, apiClient client.Client) (apisv1alpha1.AccessibilityTopology, error) {
+	volume := apisv1alpha1.LocalVolume{}
+	if err := apiClient.Get(context.Background(), types.NamespacedName{Name: volumeName}, &volume); err != nil {
+		return apisv1alpha1.AccessibilityTopology{}, err
+	}
+
+	return volume.Spec.Accessibility, nil
 }

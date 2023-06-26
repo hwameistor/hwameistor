@@ -12,6 +12,10 @@ type LocalVolumeSnapshotSpec struct {
 	// +kubebuilder:validation:Required
 	SourceVolume string `json:"sourceVolume"`
 
+	// NOTE: We only take snapshots on the volume replica exist at the moment!
+	// Accessibility is the topology requirement of the volume snapshot. It describes how to locate and distribute the volume replicas snapshot.
+	Accessibility AccessibilityTopology `json:"accessibility"`
+
 	// RequiredCapacityBytes specifies the space reserved for the snapshot
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Minimum:=4194304

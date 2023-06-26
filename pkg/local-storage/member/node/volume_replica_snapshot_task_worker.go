@@ -13,24 +13,24 @@ func (m *manager) startVolumeReplicaSnapshotTaskWorker(stopCh <-chan struct{}) {
 	m.logger.Debug("VolumeReplica Snapshot Worker is working now")
 	go func() {
 		for {
-			task, shutdown := m.replicaSnapshotTaskQueue.Get()
+			task, shutdown := m.volumeReplicaSnapshotTaskQueue.Get()
 			if shutdown {
 				m.logger.WithFields(log.Fields{"task": task}).Debug("Stop the VolumeReplica Snapshot worker")
 				break
 			}
 			if err := m.processReplicaSnapshot(task); err != nil {
-				m.logger.WithFields(log.Fields{"task": task, "attempts": m.replicaSnapshotTaskQueue.NumRequeues(task), "error": err.Error()}).Error("Failed to process VolumeReplica Snapshot task, retry later")
-				m.replicaSnapshotTaskQueue.AddRateLimited(task)
+				m.logger.WithFields(log.Fields{"task": task, "attempts": m.volumeReplicaSnapshotTaskQueue.NumRequeues(task), "error": err.Error()}).Error("Failed to process VolumeReplica Snapshot task, retry later")
+				m.volumeReplicaSnapshotTaskQueue.AddRateLimited(task)
 			} else {
 				m.logger.WithFields(log.Fields{"task": task}).Debug("Completed a VolumeReplica Snapshot task.")
-				m.replicaSnapshotTaskQueue.Forget(task)
+				m.volumeReplicaSnapshotTaskQueue.Forget(task)
 			}
-			m.replicaSnapshotTaskQueue.Done(task)
+			m.volumeReplicaSnapshotTaskQueue.Done(task)
 		}
 	}()
 
 	<-stopCh
-	m.replicaSnapshotTaskQueue.Shutdown()
+	m.volumeReplicaSnapshotTaskQueue.Shutdown()
 }
 
 func (m *manager) processReplicaSnapshot(replicaSnapName string) error {
@@ -83,7 +83,13 @@ func (m *manager) volumeReplicaSnapshotCreate(snapshot *apisv1alpha1.LocalVolume
 	logCtx := m.logger.WithFields(log.Fields{"Snapshot": snapshot.Name, "Spec": snapshot.Spec})
 	logCtx.Debug("Create a VolumeReplica Snapshot")
 
-	snapshot.Status.State = apisv1alpha1.VolumeStateNotReady
+	snapShotUpdated, err := m.storageMgr.VolumeReplicaSnapshotManager().CreateVolumeReplicaSnapshot(snapshot)
+	if err != nil {
+		logCtx.WithError(err).Error("Failed to create VolumeReplica Snapshot")
+		return err
+	}
+
+	snapShotUpdated.Status.State = apisv1alpha1.VolumeStateNotReady
 	return m.apiClient.Status().Update(context.TODO(), snapshot)
 }
 

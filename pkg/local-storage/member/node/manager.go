@@ -61,11 +61,13 @@ type manager struct {
 
 	volumeTaskQueue *common.TaskQueue
 
-	replicaSnapshotTaskQueue *common.TaskQueue
+	volumeSnapshotTaskQueue *common.TaskQueue
 
 	rcloneVolumeMountTaskQueue *common.TaskQueue
 
 	volumeReplicaTaskQueue *common.TaskQueue
+
+	volumeReplicaSnapshotTaskQueue *common.TaskQueue
 
 	localDiskClaimTaskQueue *common.TaskQueue
 
@@ -92,16 +94,16 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 		return nil, err
 	}
 	return &manager{
-		name:                       name,
-		namespace:                  namespace,
-		apiClient:                  cli,
-		informersCache:             informersCache,
-		replicaRecords:             map[string]string{},
-		volumeTaskQueue:            common.NewTaskQueue("VolumeTask", maxRetries),
-		rcloneVolumeMountTaskQueue: common.NewTaskQueue("RcloneVolumeMount", maxRetries),
-		volumeReplicaTaskQueue:     common.NewTaskQueue("VolumeReplicaTask", maxRetries),
-		localDiskClaimTaskQueue:    common.NewTaskQueue("LocalDiskClaim", maxRetries),
-		localDiskTaskQueue:         common.NewTaskQueue("localDisk", maxRetries),
+		name:                           name,
+		namespace:                      namespace,
+		apiClient:                      cli,
+		informersCache:                 informersCache,
+		replicaRecords:                 map[string]string{},
+		volumeTaskQueue:                common.NewTaskQueue("VolumeTask", maxRetries),
+		rcloneVolumeMountTaskQueue:     common.NewTaskQueue("RcloneVolumeMount", maxRetries),
+		volumeReplicaTaskQueue:         common.NewTaskQueue("VolumeReplicaTask", maxRetries),
+		volumeSnapshotTaskQueue:        common.NewTaskQueue("VolumeSnapshotTask", maxRetries),
+		volumeReplicaSnapshotTaskQueue: common.NewTaskQueue("VolumeReplicaSnapshotTask", maxRetries),
 		// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 		diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 		configManager:  configManager,
