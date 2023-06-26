@@ -114,10 +114,10 @@ please check the [adopters list](./adopters.md).
 | HwameiStor Operator       | Completed | v0.9.0  | Operator for HwameiStor install, maintain, etc.   |
 | Observability             | Completed | v0.9.2  | Observability, such as metrics, logs, etc.        |
 | Failover                  | Planed    |         | Fail over the pod with HwameiStor volume          |
-| IO throttling             | In Progress    |    | Limit IO bandwith to access the HwameiStor volume |
+| IO throttling             | Completed | v0.11.0 | Limit IO bandwith to access the HwameiStor volume |
 | Disk replacement          | Planed    |         | Replace disk which fails or will fail soon        |
-| LVM volume auto-expansion | In Progress    |         | Expand LVM volume automatically                   |
-| LVM volume snapshot       | In Progress    |         | Snapshot of LVM volume                            |
+| LVM volume auto-expansion | In Progress |         | Expand LVM volume automatically                   |
+| LVM volume snapshot       | In Progress |         | Snapshot of LVM volume                            |
 | LVM volume clone          | Planed  |         | Clone LVM volume                                  |
 | LVM volume thin provision | Unplaned  |         | LVM volume thin provision                         |
 | LVM volume stripe mode    | Unplaned  |         | LVM volume stripe read/write                      |
