@@ -111,7 +111,7 @@ Exporter 将收集系统指标，包括节点、存储池、卷、磁盘等。�
 | HwameiStor Operator | 已完成   | v0.9.0 | HwameiStor Operator 用于安装和维护等 |
 | 可观测性            | 已完成   | v0.9.2 | 支持指标、日志等可观测性             |
 | 故障转移            | 计划中   |        | HwameiStor 卷对 Pod 进行故障转移     |
-| IO 节流             | 正在开发 |        | 限制访问 HwameiStor 卷的 IO 带宽     |
+| IO 节流             | 已完成   | v0.11.0 | 限制访问 HwameiStor 卷的 IO 带宽    |
 | 换盘                | 计划中   |        | 更换故障或即将故障的磁盘             |
 | LVM 卷自动扩容      | 正在开发 |        | 自动扩展 LVM 卷                      |
 | LVM 卷快照          | 正在开发 |        | LVM 卷快照                           |
