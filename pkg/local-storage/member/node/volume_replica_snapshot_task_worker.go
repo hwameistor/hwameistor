@@ -83,21 +83,27 @@ func (m *manager) volumeReplicaSnapshotCreate(snapshot *apisv1alpha1.LocalVolume
 	logCtx := m.logger.WithFields(log.Fields{"Snapshot": snapshot.Name, "Spec": snapshot.Spec})
 	logCtx.Debug("Create a VolumeReplica Snapshot")
 
-	snapShotUpdated, err := m.storageMgr.VolumeReplicaSnapshotManager().CreateVolumeReplicaSnapshot(snapshot)
+	err := m.storageMgr.VolumeReplicaSnapshotManager().CreateVolumeReplicaSnapshot(snapshot)
 	if err != nil {
 		logCtx.WithError(err).Error("Failed to create VolumeReplica Snapshot")
 		return err
 	}
 
-	snapShotUpdated.Status.State = apisv1alpha1.VolumeStateNotReady
+	snapshot.Status.State = apisv1alpha1.VolumeStateNotReady
 	return m.apiClient.Status().Update(context.TODO(), snapshot)
 }
 
 func (m *manager) volumeReplicaSnapshotReadyOrNot(snapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error {
 	logCtx := m.logger.WithFields(log.Fields{"Snapshot": snapshot.Name, "Spec": snapshot.Spec})
-	logCtx.Debug("Check a VolumeReplica Snapshot status in progress")
+	logCtx.Debug("Check a VolumeReplica Snapshot status")
 
-	snapshot.Status.State = apisv1alpha1.VolumeStateReady
+	snapRealStatus, err := m.storageMgr.VolumeReplicaSnapshotManager().GetVolumeReplicaSnapshot(snapshot)
+	if err != nil {
+		logCtx.WithError(err).Error("Failed to get VolumeReplica Snapshot")
+		return err
+	}
+
+	snapshot.Status = *snapRealStatus
 	return m.apiClient.Status().Update(context.TODO(), snapshot)
 }
 

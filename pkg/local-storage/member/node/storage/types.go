@@ -9,11 +9,14 @@ import (
 var (
 	ErrorPoolNotFound                   = errors.New("not found pool")
 	ErrorReplicaNotFound                = errors.New("not found replica")
+	ErrorSnapshotNotFound               = errors.New("not found snapshot")
 	ErrorReplicaExists                  = errors.New("already exists replica")
 	ErrorLocalVolumeExistsInVolumeGroup = errors.New("already exists in volume group")
 	ErrorInsufficientRequestResources   = errors.New("insufficient request resources")
 	ErrorOverLimitedRequestResource     = errors.New("over limited request resources")
 )
+
+/* A set of interface for Hwameistor Local Object */
 
 // LocalPoolManager is an interface to manage local storage pools
 //go:generate mockgen -source=types.go -destination=../../../member/node/storage/pools_mock.go  -package=storage
@@ -44,10 +47,10 @@ type LocalVolumeReplicaManager interface {
 // LocalVolumeReplicaSnapshotManager interface
 //go:generate mockgen -source=types.go -destination=../../../member/node/storage/replica_mock.go  -package=storage
 type LocalVolumeReplicaSnapshotManager interface {
-	CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshot, error)
+	CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error
 	DeleteVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error
-	ExpandVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplica, error)
-	GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplica, error)
+	UpdateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error)
+	GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error)
 }
 
 // LocalRegistry interface
@@ -65,6 +68,8 @@ type LocalRegistry interface {
 	UpdatePoolExtendRecord(pool string, record apisv1alpha1.LocalDiskClaimSpec) error
 }
 
+/* A set of interface for executor to implement the above Hwameistor Local Object interface */
+
 // LocalVolumeExecutor interface
 //go:generate mockgen -source=types.go -destination=../../../member/node/storage/replica_executor_mock.go  -package=storage
 type LocalVolumeExecutor interface {
@@ -78,6 +83,13 @@ type LocalVolumeExecutor interface {
 	// ConsistencyCheck on all volume replicas by comparing VolumeReplica and underlying volumes
 	// will log all the check results for alerting or other purpose, but not block anything
 	ConsistencyCheck(crdReplicas map[string]*apisv1alpha1.LocalVolumeReplica)
+}
+
+type LocalVolumeReplicaSnapshotExecutor interface {
+	CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error
+	DeleteVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error
+	UpdateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error)
+	GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error)
 }
 
 // LocalPoolExecutor interface

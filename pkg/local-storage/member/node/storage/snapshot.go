@@ -6,36 +6,31 @@ import (
 )
 
 type localVolumeReplicaSnapshotManager struct {
-	cmdExec  LocalVolumeExecutor
-	registry LocalRegistry
-	logger   *log.Entry
-	lm       *LocalManager
+	cmdExec LocalVolumeReplicaSnapshotExecutor
+	logger  *log.Entry
 }
 
 func newLocalVolumeReplicaSnapshotManager(lm *LocalManager) LocalVolumeReplicaSnapshotManager {
 	return &localVolumeReplicaSnapshotManager{
-		cmdExec:  newLVMExecutor(lm),
-		registry: lm.Registry(),
-		lm:       lm,
-		logger:   log.WithField("Module", "NodeManager/LocalVolumeReplicaSnapshotManager"),
+		cmdExec: newLVMExecutor(lm),
+		logger:  log.WithField("Module", "NodeManager/LocalVolumeReplicaSnapshotManager"),
 	}
 }
 
-func (l localVolumeReplicaSnapshotManager) CreateVolumeReplicaSnapshot(replicaSnapshot *v1alpha1.LocalVolumeReplicaSnapshot) (*v1alpha1.LocalVolumeReplicaSnapshot, error) {
-	return nil, nil
+func (snapMgr *localVolumeReplicaSnapshotManager) CreateVolumeReplicaSnapshot(replicaSnapshot *v1alpha1.LocalVolumeReplicaSnapshot) error {
+	return snapMgr.cmdExec.CreateVolumeReplicaSnapshot(replicaSnapshot)
 }
 
-func (l localVolumeReplicaSnapshotManager) DeleteVolumeReplicaSnapshot(replicaSnapshot *v1alpha1.LocalVolumeReplicaSnapshot) error {
+func (snapMgr *localVolumeReplicaSnapshotManager) DeleteVolumeReplicaSnapshot(replicaSnapshot *v1alpha1.LocalVolumeReplicaSnapshot) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (l localVolumeReplicaSnapshotManager) ExpandVolumeReplicaSnapshot(replicaSnapshot *v1alpha1.LocalVolumeReplicaSnapshot) (*v1alpha1.LocalVolumeReplica, error) {
+func (snapMgr *localVolumeReplicaSnapshotManager) UpdateVolumeReplicaSnapshot(replicaSnapshot *v1alpha1.LocalVolumeReplicaSnapshot) (*v1alpha1.LocalVolumeReplicaSnapshotStatus, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (l localVolumeReplicaSnapshotManager) GetVolumeReplicaSnapshot(replicaSnapshot *v1alpha1.LocalVolumeReplicaSnapshot) (*v1alpha1.LocalVolumeReplica, error) {
-	//TODO implement me
-	panic("implement me")
+func (snapMgr *localVolumeReplicaSnapshotManager) GetVolumeReplicaSnapshot(replicaSnapshot *v1alpha1.LocalVolumeReplicaSnapshot) (*v1alpha1.LocalVolumeReplicaSnapshotStatus, error) {
+	return snapMgr.cmdExec.GetVolumeReplicaSnapshot(replicaSnapshot)
 }
