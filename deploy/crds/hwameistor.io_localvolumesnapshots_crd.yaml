@@ -51,6 +51,35 @@ spec:
               abort:
                 default: false
                 type: boolean
+              accessibility:
+                description: 'NOTE: We only take snapshots on the volume replica exist
+                  at the moment! Accessibility is the topology requirement of the
+                  volume snapshot. It describes how to locate and distribute the volume
+                  replicas snapshot.'
+                properties:
+                  nodes:
+                    description: Nodes is the collection of storage nodes the volume
+                      replicas must locate at
+                    items:
+                      type: string
+                    type: array
+                  regions:
+                    default:
+                    - default
+                    description: regions where the volume replicas should be distributed
+                      across, it's Optional
+                    items:
+                      type: string
+                    type: array
+                  zones:
+                    default:
+                    - default
+                    description: zones where the volume replicas should be distributed
+                      across, it's Optional
+                    items:
+                      type: string
+                    type: array
+                type: object
               requiredCapacityBytes:
                 description: RequiredCapacityBytes specifies the space reserved for
                   the snapshot
@@ -61,6 +90,7 @@ spec:
                 description: SourceVolume specifies the source volume of the snapshot
                 type: string
             required:
+            - accessibility
             - requiredCapacityBytes
             - sourceVolume
             type: object
