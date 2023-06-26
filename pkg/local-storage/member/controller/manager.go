@@ -189,6 +189,34 @@ func (m *manager) setupInformers(stopCh <-chan struct{}) {
 		AddFunc:    m.handlePodAddEvent,
 		UpdateFunc: m.handlePodUpdateEvent,
 	})
+
+	// setup LocalVolumeSnapshot informer
+	volumeSnapshotInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolumeSnapshot{})
+	if err != nil {
+		// error happens, crash the node
+		m.logger.WithError(err).Fatal("Failed to get informer for LocalVolumeSnapshot")
+	}
+	volumeSnapshotInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.handleVolumeSnapshotAddEvent,
+		UpdateFunc: m.handleVolumeSnapshotUpdateEvent,
+		DeleteFunc: m.handleVolumeSnapshotDeleteEvent,
+	})
+}
+
+func (m *manager) handleVolumeSnapshotDeleteEvent(newObj interface{}) {
+	m.handleVolumeSnapshotAddEvent(newObj)
+}
+
+func (m *manager) handleVolumeSnapshotUpdateEvent(oldObj, newObj interface{}) {
+	m.handleVolumeSnapshotAddEvent(newObj)
+}
+
+func (m *manager) handleVolumeSnapshotAddEvent(newObject interface{}) {
+	volumeSnapshot, ok := newObject.(*apisv1alpha1.LocalVolumeSnapshot)
+	if !ok {
+		return
+	}
+	m.volumeSnapshotTaskQueue.Add(volumeSnapshot.Name)
 }
 
 // VolumeScheduler retrieve the volume scheduler instance
