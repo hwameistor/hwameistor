@@ -11,10 +11,9 @@ persistence capabilities for stateful cloud-native workloads or components.
 
 ## Current Status
 
-HwameiStor is a cloud-native storage project listed in [CNCF Landscape](https://landscape.cncf.io/?selected=hwamei-stor),
-with capabilities to support for your production environment.
+<img src="https://github.com/cncf/artwork/blob/master/other/illustrations/ashley-mcnamara/transparent/cncf-cloud-gophers-transparent.png" style="width:600px;" />
 
-> At present, HwameiStor is still in the alpha stage.
+**HwameiStor is a [Cloud Native Computing Foundation](https://cncf.io/) sandbox project.**
 
 The latest release of HwameiStor is [![hwameistor-releases](https://img.shields.io/github/v/release/hwameistor/hwameistor.svg?include_prereleases)](https://github.com/hwameistor/hwameistor/releases)
 
@@ -166,3 +165,9 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 <http://www.apache.org/licenses/LICENSE-2.0>
+
+<p align="center">
+<img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
+<br/><br/>
+HwameiStor enriches the <a href="https://landscape.cncf.io/?selected=hwamei-stor">CNCF CLOUD NATIVE Landscape.</a>
+</p>
