@@ -9,10 +9,9 @@ HwameiStor 是一款 Kubernetes 原生的容器附加存储 (CAS) 解决方案�
 
 ## 目前状态
 
-HwameiStor 已作为云原生存储项目入选 [CNCF 全景图](https://landscape.cncf.io/?selected=hwamei-stor)，
-具备支持生产环境的能力。
+<img src="https://github.com/cncf/artwork/blob/master/other/illustrations/ashley-mcnamara/transparent/cncf-cloud-gophers-transparent.png" style="width:600px;" />
 
-> 目前 HwameiStor 仍处于 Alpha 阶段。
+**HwameiStor 是一个[云原生计算基金会 (CNCF)](https://cncf.io/) 沙箱孵化项目。**
 
 HwameiStor 的最新版本为 [![hwameistor-releases](https://img.shields.io/github/v/release/hwameistor/hwameistor.svg?include_prereleases)](https://github.com/hwameistor/hwameistor/releases)
 
@@ -158,3 +157,9 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 <http://www.apache.org/licenses/LICENSE-2.0>
+
+<p align="center">
+<img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
+<br/><br/>
+HwameiStor 位列 <a href="https://landscape.cncf.io/?selected=hwamei-stor">CNCF 云原生全景图。</a>
+</p>
