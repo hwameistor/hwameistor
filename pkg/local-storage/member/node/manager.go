@@ -102,6 +102,8 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 		volumeTaskQueue:                common.NewTaskQueue("VolumeTask", maxRetries),
 		rcloneVolumeMountTaskQueue:     common.NewTaskQueue("RcloneVolumeMount", maxRetries),
 		volumeReplicaTaskQueue:         common.NewTaskQueue("VolumeReplicaTask", maxRetries),
+		localDiskClaimTaskQueue:        common.NewTaskQueue("LocalDiskClaim", maxRetries),
+		localDiskTaskQueue:             common.NewTaskQueue("LocalDisk", maxRetries),
 		volumeSnapshotTaskQueue:        common.NewTaskQueue("VolumeSnapshotTask", maxRetries),
 		volumeReplicaSnapshotTaskQueue: common.NewTaskQueue("VolumeReplicaSnapshotTask", maxRetries),
 		// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),

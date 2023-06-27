@@ -89,6 +89,7 @@ func New(name string, namespace string, cli client.Client, scheme *runtime.Schem
 		volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 		volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
 		volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
+		volumeSnapshotTaskQueue:     common.NewTaskQueue("VolumeSnapshotTask", maxRetries),
 		localNodes:                  map[string]apisv1alpha1.State{},
 		logger:                      log.WithField("Module", "ControllerManager"),
 		dataCopyManager:             dcm,
