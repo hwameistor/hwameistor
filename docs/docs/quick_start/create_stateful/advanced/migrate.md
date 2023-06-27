@@ -58,7 +58,7 @@ $ kubectl -n hwameistor scale --current-replicas=1 --replicas=0 deployment/nginx
 ## Step 5: Create migration tasks
 
 ```console
-cat << EOF | kubectl apply -f -
+$ cat << EOF | kubectl apply -f -
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalVolumeMigrate
 metadata:
@@ -81,7 +81,7 @@ Attentions:
 2) If targetNodesSuggested is emtpy or not set, HwameiStore will automatically select a propriate node for the migrate. If there is no valid candidate, the migrate will fail.
 
 ```console
-cat << EOF | kubectl apply -f -
+$ cat << EOF | kubectl apply -f -
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalVolumeMigrate
 metadata:
@@ -124,7 +124,7 @@ status:
 ## Step 7: Verify migration results
 
 ```console
-[root@172-30-45-222 deploy]# kubectl get lvr
+$ kubectl get lvr
 NAME                                              CAPACITY     NODE                STATE   SYNCED   DEVICE                                                                  AGE
 pvc-1a0913ac-32b9-46fe-8258-39b4e3b696a4-9cdkkn   1073741824   k8s-172-30-45-223   Ready   true     /dev/LocalStorage_PoolHDD-HA/pvc-1a0913ac-32b9-46fe-8258-39b4e3b696a4   77s
 pvc-d9d3ae9f-64af-44de-baad-4c69b9e0744a-7ppmrx   1073741824   k8s-172-30-45-223   Ready   true     /dev/LocalStorage_PoolHDD-HA/pvc-d9d3ae9f-64af-44de-baad-4c69b9e0744a   77s

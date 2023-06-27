@@ -42,13 +42,13 @@ allowVolumeExpansion: true
 
 ## Create `StatefulSet`
 
-在 HwameiStor 和 `StorageClass` 就绪后, 一条命令就能创建 MySQL 容器和它的数据卷:
+在 HwameiStor 和 `StorageClass` 就绪后, 一条命令就能创建 MySQL 容器和它的数据卷：
 
 ```Console
 $ kubectl apply -f exapmles/sts-mysql_ha.yaml
 ```
 
-请注意 `volumeClaimTemplates` 使用 `storageClassName: hwameistor-storage-lvm-hdd-ha`:
+请注意 `volumeClaimTemplates` 使用 `storageClassName: hwameistor-storage-lvm-hdd-ha`：
 
 ```yaml
 spec:
@@ -82,7 +82,7 @@ data-sts-mysql-ha-0   Bound    pvc-5236ee6f-8212-4628-9876-1b620a4c4c36   1Gi   
 
 # 查看 `LocalVolume` and `LocalVolumeReplica` 对象
 
-通过查看和 `PV` 同名的 `LocalVolume(LV)`, 可以看到本地卷创建在了节点 `k8s-worker-1` 和节点 `k8s-worker-2`.
+通过查看和 `PV` 同名的 `LocalVolume(LV)`, 可以看到本地卷创建在了节点 `k8s-worker-1` 和节点 `k8s-worker-2`。
 
 ```console
 $ kubectl get lv pvc-5236ee6f-8212-4628-9876-1b620a4c4c36
@@ -94,7 +94,7 @@ pvc-5236ee6f-8212-4628-9876-1b620a4c4c36   LocalStorage_PoolHDD   1          107
 `LocalVolumeReplica (LVR)` 进一步显示每个节点上的后端逻辑卷设备：
 
 ```console
-kubectl get lvr
+$ kubectl get lvr
 NAME                                          CAPACITY     NODE           STATE   SYNCED   DEVICE                                                              AGE
 5236ee6f-8212-4628-9876-1b620a4c4c36-d2kn55   1073741824   k8s-worker-1   Ready   true     /dev/LocalStorage_PoolHDD-HA/5236ee6f-8212-4628-9876-1b620a4c4c36   4m
 5236ee6f-8212-4628-9876-1b620a4c4c36-glm7rf   1073741824   k8s-worker-3   Ready   true     /dev/LocalStorage_PoolHDD-HA/5236ee6f-8212-4628-9876-1b620a4c4c36   4m

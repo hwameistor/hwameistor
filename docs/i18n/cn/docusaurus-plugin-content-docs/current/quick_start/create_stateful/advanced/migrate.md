@@ -48,7 +48,7 @@ kubectl -n hwameistor scale --current-replicas=1 --replicas=0 deployment/nginx-l
 ## 步骤 5: 创建迁移任务
 
 ```console
-cat << EOF | kubectl apply -f -
+$ cat << EOF | kubectl apply -f -
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalVolumeMigrate
 metadata:
@@ -71,7 +71,7 @@ EOF
 2）如果不指定 targetNodesSuggested，系统会根据容量平衡原则自动选择一个适合的节点进行迁移。
 
 ```console
-cat << EOF | kubectl apply -f -
+$ cat << EOF | kubectl apply -f -
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalVolumeMigrate
 metadata:
@@ -115,7 +115,7 @@ status:
 ## 步骤 7: 查看迁移成功状态
 
 ```console
-[root@172-30-45-222 deploy]# kubectl  get lvr
+$ kubectl  get lvr
 NAME                                              CAPACITY     NODE            STATE   SYNCED   DEVICE                                                                  AGE
 pvc-1a0913ac-32b9-46fe-8258-39b4e3b696a4-9cdkkn   1073741824   172-30-45-223   Ready   true     /dev/LocalStorage_PoolHDD-HA/pvc-1a0913ac-32b9-46fe-8258-39b4e3b696a4   77s
 pvc-d9d3ae9f-64af-44de-baad-4c69b9e0744a-7ppmrx   1073741824   172-30-45-223   Ready   true     /dev/LocalStorage_PoolHDD-HA/pvc-d9d3ae9f-64af-44de-baad-4c69b9e0744a   77s
