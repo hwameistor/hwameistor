@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"sort"
 )
 
 func (m *manager) startVolumeSnapshotTaskWorker(stopCh <-chan struct{}) {
@@ -42,7 +44,7 @@ func (m *manager) processVolumeSnapshot(snapName string) error {
 			logCtx.WithError(err).Error("Failed to get Volume Snapshot from cache")
 			return err
 		}
-		logCtx.Info("Not found the VolumeSnapshot from cache, should be deleted already.")
+		logCtx.Info("Not found the VolumeSnapshot from cache, should be deleted already")
 		return nil
 	}
 
@@ -91,7 +93,37 @@ func (m *manager) volumeSnapshotReadyOrNot(snapshot *apisv1alpha1.LocalVolumeSna
 	logCtx := m.logger.WithFields(log.Fields{"Snapshot": snapshot.Name, "Spec": snapshot.Spec})
 	logCtx.Debug("Check a VolumeSnapshot status in progress")
 
-	snapshot.Status.State = apisv1alpha1.VolumeStateReady
+	// list all replicas snapshots, update status if all replicas snapshots are ready
+	replicaSnapshotList := &apisv1alpha1.LocalVolumeReplicaSnapshotList{}
+	if err := m.apiClient.List(context.TODO(), replicaSnapshotList); err != nil {
+		logCtx.WithError(err).Error("Failed to list VolumeReplicas")
+		return err
+	}
+
+	var volumeReplicaSnapshots, specifiedNodeReadySnapshots []string
+	for _, replicaSnapshot := range replicaSnapshotList.Items {
+		if replicaSnapshot.Spec.VolumeSnapshotName == snapshot.Name {
+			volumeReplicaSnapshots = append(volumeReplicaSnapshots, replicaSnapshot.Name)
+		}
+		if _, exist := utils.StrFind(snapshot.Spec.Accessibility.Nodes, replicaSnapshot.Spec.NodeName); !exist {
+			continue
+		}
+		if replicaSnapshot.Status.State == apisv1alpha1.VolumeReplicaStateReady {
+			specifiedNodeReadySnapshots = append(specifiedNodeReadySnapshots, replicaSnapshot.Name)
+		}
+	}
+	// keep sort to avoid useless reconcile
+	sort.Strings(volumeReplicaSnapshots)
+	snapshot.Status.ReplicaSnapshots = volumeReplicaSnapshots
+
+	if len(snapshot.Spec.Accessibility.Nodes) > len(specifiedNodeReadySnapshots) {
+		logCtx.WithField("specifiedNodeReadySnapshots", specifiedNodeReadySnapshots).Debug("Not all VolumeReplicas Snapshots are ready")
+		snapshot.Status.State = apisv1alpha1.VolumeStateNotReady
+	} else {
+		logCtx.WithField("specifiedNodeReadySnapshots", specifiedNodeReadySnapshots).Debug("All VolumeReplicas Snapshots are ready")
+		snapshot.Status.State = apisv1alpha1.VolumeStateReady
+	}
+
 	return m.apiClient.Status().Update(context.TODO(), snapshot)
 }
 

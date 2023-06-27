@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
@@ -643,14 +644,15 @@ func (p *plugin) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequ
 		return nil, err
 	}
 
-	// snapshot name format: <sourceVolumeName>-snap-<reqName> e.g. pvc-d0f02c1f-cb1a-41c9-9861-46d0c5fb0a9d-snap-afe769f5-19b8-4316-991a-3264ad1c8c91
-	resp := &csi.CreateSnapshotResponse{}
+	resp := &csi.CreateSnapshotResponse{Snapshot: &csi.Snapshot{}}
 	resp.Snapshot.SourceVolumeId = req.SourceVolumeId
-	resp.Snapshot.SnapshotId = req.SourceVolumeId + "-snap" + req.Name
+	// the underlying snapshot name is consistent with snapshotcontent name
+	snapshotID := strings.Replace(req.Name, "snapshot", "snapcontent", 1)
+	resp.Snapshot.SnapshotId = snapshotID
 
 	// 1. create snapshot if not exist
 	snapshot := &apisv1alpha1.LocalVolumeSnapshot{}
-	if err = p.apiClient.Get(ctx, types.NamespacedName{Name: req.Name}, snapshot); err != nil {
+	if err = p.apiClient.Get(ctx, types.NamespacedName{Name: snapshotID}, snapshot); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get LocalVolumeSnapshot")
 			return nil, status.Errorf(codes.Internal, "Failed to get LocalVolumeSnapshot: %v", err)
@@ -671,7 +673,7 @@ func (p *plugin) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequ
 			return nil, status.Errorf(codes.Internal, "Failed to get volume access topology: %v", err)
 		}
 
-		snapshot.Name = req.Name
+		snapshot.Name = snapshotID
 		snapshot.Spec.Accessibility = accessTopology
 		snapshot.Spec.RequiredCapacityBytes = snapsize
 		snapshot.Spec.SourceVolume = req.SourceVolumeId
@@ -686,7 +688,7 @@ func (p *plugin) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequ
 	return resp, wait.PollImmediateUntil(time.Second, func() (bool, error) {
 
 		logCtx.Debug("Checking if snapshot ready to use")
-		if err = p.apiClient.Get(ctx, types.NamespacedName{Name: req.Name}, snapshot); err != nil {
+		if err = p.apiClient.Get(ctx, types.NamespacedName{Name: snapshotID}, snapshot); err != nil {
 			logCtx.WithError(err).Error("Failed to get LocalVolumeSnapshot")
 			return false, status.Errorf(codes.Internal, "Failed to get LocalVolumeSnapshot: %v", err)
 		}

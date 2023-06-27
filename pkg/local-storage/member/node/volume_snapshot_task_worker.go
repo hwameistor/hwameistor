@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	errReplicaNotFound = fmt.Errorf("there is no replica found on the host")
+	errReplicaNotFound         = fmt.Errorf("there is no replica found on the host")
+	errReplicaSnapshotNotFound = fmt.Errorf("there is no replica snapshot found on the host")
 )
 
 func (m *manager) startVolumeSnapshotTaskWorker(stopCh <-chan struct{}) {
@@ -52,16 +53,29 @@ func (m *manager) processVolumeSnapshotTaskAssignment(volumeSnapshotName string)
 	}
 
 	// create,{cleanup,delete} replica snapshot according to volume snapshot spec/status
-	if _, exist := utils.StrFind(volumeSnapshot.Spec.Accessibility.Nodes, m.name); exist {
-		logCtx.WithField("node", m.name).Debug("Node is already assigned to this volume snapshot")
+	if _, exist := utils.StrFind(volumeSnapshot.Spec.Accessibility.Nodes, m.name); !exist {
+		return m.cleanupVolumeReplicaSnapshot(volumeSnapshot)
+	}
+
+	// create replica snapshot is not exist
+	replicaSnapshot, err := m.getOnHostVolumeReplicaSnapshot(volumeSnapshot.Name)
+	if err != nil {
+		if err != errReplicaSnapshotNotFound {
+			logCtx.WithError(err).Error("Failed to get on-host volume replica snapshot")
+			return err
+		}
 		return m.createVolumeReplicaSnapshot(volumeSnapshot)
 	}
 
-	return m.cleanupVolumeReplicaSnapshot(volumeSnapshot)
+	logCtx.WithFields(log.Fields{"node": m.name, "replicaSnapshot": replicaSnapshot.Name}).Debug("VolumeReplicaSnapshot is already exist on the node")
+	return nil
 }
 
 // createVolumeReplicaSnapshot create on-host volume replica snapshot
 func (m *manager) createVolumeReplicaSnapshot(volumeSnapshot apisv1alpha.LocalVolumeSnapshot) error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
 	logCtx := m.logger.WithField("volumeSnapshot", volumeSnapshot.Name)
 	logCtx.Debug("Creating Volume Replica Snapshot")
 
@@ -124,4 +138,27 @@ func (m *manager) getOnHostVolumeReplica(volumeName string) (apisv1alpha.LocalVo
 	}
 
 	return apisv1alpha.LocalVolumeReplica{}, errReplicaNotFound
+}
+
+// getOnHostVolumeReplicaSnapshot returns the on-host volume replica snapshot according to the given volume snapshot
+func (m *manager) getOnHostVolumeReplicaSnapshot(volumeSnapshotName string) (apisv1alpha.LocalVolumeReplicaSnapshot, error) {
+	volumeSnapshot := apisv1alpha.LocalVolumeSnapshot{}
+	err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: volumeSnapshotName}, &volumeSnapshot)
+	if err != nil {
+		return apisv1alpha.LocalVolumeReplicaSnapshot{}, err
+	}
+
+	for _, replicaSnapshotName := range volumeSnapshot.Status.ReplicaSnapshots {
+		replicaSnapshot := apisv1alpha.LocalVolumeReplicaSnapshot{}
+		err = m.apiClient.Get(context.Background(), client.ObjectKey{Name: replicaSnapshotName}, &replicaSnapshot)
+		if err != nil {
+			return apisv1alpha.LocalVolumeReplicaSnapshot{}, err
+		}
+
+		if replicaSnapshot.Spec.NodeName == m.name {
+			return replicaSnapshot, nil
+		}
+	}
+
+	return apisv1alpha.LocalVolumeReplicaSnapshot{}, errReplicaSnapshotNotFound
 }

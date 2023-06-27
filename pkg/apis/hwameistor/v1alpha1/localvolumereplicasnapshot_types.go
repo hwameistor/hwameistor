@@ -10,6 +10,10 @@ type LocalVolumeReplicaSnapshotSpec struct {
 	// +kubebuilder:validation:Required
 	NodeName string `json:"nodeName"`
 
+	// VolumeSnapshotName represents the name of volume snapshot
+	// +kubebuilder:validation:Required
+	VolumeSnapshotName string `json:"volumeSnapshotName"`
+
 	// SourceVolume specifies the source volume name of the snapshot
 	// +kubebuilder:validation:Required
 	SourceVolume string `json:"sourceVolume"`

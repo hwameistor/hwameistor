@@ -202,6 +202,11 @@ func (m *manager) setupInformers(stopCh <-chan struct{}) {
 		UpdateFunc: m.handleVolumeSnapshotUpdateEvent,
 		DeleteFunc: m.handleVolumeSnapshotDeleteEvent,
 	})
+	volumeSnapshotInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.handleVolumeSnapshotAddEvent,
+		UpdateFunc: m.handleVolumeSnapshotUpdateEvent,
+		DeleteFunc: m.handleVolumeSnapshotDeleteEvent,
+	})
 }
 
 func (m *manager) handleVolumeSnapshotDeleteEvent(newObj interface{}) {
@@ -214,10 +219,16 @@ func (m *manager) handleVolumeSnapshotUpdateEvent(oldObj, newObj interface{}) {
 
 func (m *manager) handleVolumeSnapshotAddEvent(newObject interface{}) {
 	volumeSnapshot, ok := newObject.(*apisv1alpha1.LocalVolumeSnapshot)
-	if !ok {
+	if ok {
+		m.volumeSnapshotTaskQueue.Add(volumeSnapshot.Name)
 		return
 	}
-	m.volumeSnapshotTaskQueue.Add(volumeSnapshot.Name)
+	volumeReplicaSnapshot, ok := newObject.(*apisv1alpha1.LocalVolumeReplicaSnapshot)
+	if ok {
+		m.volumeSnapshotTaskQueue.Add(volumeReplicaSnapshot.Spec.VolumeSnapshotName)
+		return
+	}
+	return
 }
 
 // VolumeScheduler retrieve the volume scheduler instance

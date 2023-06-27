@@ -51,6 +51,9 @@ type manager struct {
 	// to record all the replicas located at this node, volumeName -> replicaName
 	replicaRecords map[string]string
 
+	// to record all the volume replica snapshot located at this node, volumeSnapshotName -> volumeReplicaSnapshotName
+	replicaSnapshotsRecords map[string]string
+
 	storageMgr *storage.LocalManager
 
 	// if there is any suspicious volume replica, put it in this queue to check health

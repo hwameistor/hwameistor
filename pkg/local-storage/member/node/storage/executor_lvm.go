@@ -489,12 +489,12 @@ func (lvm *lvmExecutor) CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha
 		return err
 	}
 
-	if _, ok := existReplicas[replicaSnapshot.Spec.SourceVolumeReplica]; !ok {
+	if _, ok := existReplicas[replicaSnapshot.Spec.SourceVolume]; !ok {
 		logCtx.WithError(err).Error("Failed to get source volume replica on host")
 		return ErrReplicaNotFound
 	}
 
-	if err = lvm.lvSnapCreate(replicaSnapshot.Name, path.Join(replicaSnapshot.Spec.PoolName, replicaSnapshot.Spec.SourceVolumeReplica),
+	if err = lvm.lvSnapCreate(replicaSnapshot.Name, path.Join(replicaSnapshot.Spec.PoolName, replicaSnapshot.Spec.SourceVolume),
 		replicaSnapshot.Spec.RequiredCapacityBytes); err != nil {
 		lvm.logger.WithError(err).Error("Failed to create volume replica snapshot")
 		return err
