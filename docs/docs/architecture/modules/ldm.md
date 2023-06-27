@@ -34,7 +34,7 @@ LocalDiskClaim (LDC): This is a way to use disks. A user can add the disk descri
     10-6-118-11-sdb    10-6-118-11      Available
     ```
 
-    Get locally discovered disk resource information with four columns displayed.
+    Get locally discovered disk resource information with three columns displayed.
 
     - **NAME:** represents how this disk is displayed in the cluster resources.
     - **NODEMATCH:** indicates which host this disk is on.
