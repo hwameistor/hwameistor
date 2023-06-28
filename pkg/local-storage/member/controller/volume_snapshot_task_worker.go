@@ -102,17 +102,20 @@ func (m *manager) volumeSnapshotReadyOrNot(snapshot *apisv1alpha1.LocalVolumeSna
 
 	var volumeReplicaSnapshots, specifiedNodeReadySnapshots []string
 	for _, replicaSnapshot := range replicaSnapshotList.Items {
-		if replicaSnapshot.Spec.VolumeSnapshotName == snapshot.Name {
-			volumeReplicaSnapshots = append(volumeReplicaSnapshots, replicaSnapshot.Name)
-		}
-		if _, exist := utils.StrFind(snapshot.Spec.Accessibility.Nodes, replicaSnapshot.Spec.NodeName); !exist {
+		if replicaSnapshot.Spec.VolumeSnapshotName != snapshot.Name {
 			continue
 		}
-		if replicaSnapshot.Status.State == apisv1alpha1.VolumeReplicaStateReady {
+		// collect all replicas snapshots belong to the volume snapshot
+		volumeReplicaSnapshots = append(volumeReplicaSnapshots, replicaSnapshot.Name)
+
+		// collect all specified node replicas ready snapshots
+		if _, exist := utils.StrFind(snapshot.Spec.Accessibility.Nodes, replicaSnapshot.Spec.NodeName); exist &&
+			replicaSnapshot.Status.State == apisv1alpha1.VolumeReplicaStateReady {
 			specifiedNodeReadySnapshots = append(specifiedNodeReadySnapshots, replicaSnapshot.Name)
 		}
+		continue
 	}
-	// keep sort to avoid useless reconcile
+	// keep sorted to avoid useless reconcile
 	sort.Strings(volumeReplicaSnapshots)
 	snapshot.Status.ReplicaSnapshots = volumeReplicaSnapshots
 
@@ -136,7 +139,34 @@ func (m *manager) volumeSnapshotCleanup(snapshot *apisv1alpha1.LocalVolumeSnapsh
 
 func (m *manager) volumeSnapshotDelete(snapshot *apisv1alpha1.LocalVolumeSnapshot) error {
 	logCtx := m.logger.WithFields(log.Fields{"Snapshot": snapshot.Name, "Spec": snapshot.Spec})
-	logCtx.Debug("Abort a VolumeSnapshot")
+	logCtx.Debug("Delete a VolumeSnapshot")
+
+	// check all volume replica snapshots in status.replicaSnapshots are deleted, try deleting if exist
+	var existVolumeReplicaSnapshots []string
+	for _, replicaSnapName := range snapshot.Status.ReplicaSnapshots {
+		replicaSnapshot := &apisv1alpha1.LocalVolumeReplicaSnapshot{}
+		if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: replicaSnapName}, replicaSnapshot); err != nil {
+			if !errors.IsNotFound(err) {
+				logCtx.WithError(err).Error("Failed to get VolumeReplicaSnapshot from cache")
+				return err
+			}
+			logCtx.WithField("volumeReplicaSnapshot", replicaSnapshot.Name).Info("Not found the VolumeReplicaSnapshot from cache, should be deleted already")
+			continue
+		}
+
+		// try to set up delete true on the volume replica snapshot
+		replicaSnapshot.Spec.Delete = true
+		if err := m.apiClient.Update(context.TODO(), replicaSnapshot); err != nil {
+			logCtx.WithField("volumeReplicaSnapshot", replicaSnapshot.Name).WithError(err).Error("Failed to delete VolumeReplicaSnapshot")
+			return err
+		}
+		existVolumeReplicaSnapshots = append(existVolumeReplicaSnapshots, replicaSnapName)
+	}
+
+	if len(existVolumeReplicaSnapshots) > 0 {
+		logCtx.WithField("existVolumeReplicaSnapshots", existVolumeReplicaSnapshots).Debug("Not all VolumeReplicas Snapshots are deleted")
+		return fmt.Errorf("not all VolumeReplicas Snapshots are deleted")
+	}
 
 	snapshot.Status.State = apisv1alpha1.VolumeStateDeleted
 	return m.apiClient.Status().Update(context.TODO(), snapshot)

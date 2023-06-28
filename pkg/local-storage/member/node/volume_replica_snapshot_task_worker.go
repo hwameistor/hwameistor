@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -83,10 +84,25 @@ func (m *manager) volumeReplicaSnapshotCreate(snapshot *apisv1alpha1.LocalVolume
 	logCtx := m.logger.WithFields(log.Fields{"Snapshot": snapshot.Name, "Spec": snapshot.Spec})
 	logCtx.Debug("Create a VolumeReplica Snapshot")
 
-	err := m.storageMgr.VolumeReplicaSnapshotManager().CreateVolumeReplicaSnapshot(snapshot)
+	snapshotExistOnHost := func() (bool, error) {
+		_, err := m.storageMgr.VolumeReplicaSnapshotManager().GetVolumeReplicaSnapshot(snapshot)
+		if err != nil && err != storage.ErrorSnapshotNotFound {
+			logCtx.WithError(err).Error("Failed to get VolumeReplica Snapshot")
+			return false, err
+		}
+		return !(err == storage.ErrorSnapshotNotFound), nil
+	}
+
+	exist, err := snapshotExistOnHost()
 	if err != nil {
-		logCtx.WithError(err).Error("Failed to create VolumeReplica Snapshot")
 		return err
+	}
+
+	if !exist {
+		if err = m.storageMgr.VolumeReplicaSnapshotManager().CreateVolumeReplicaSnapshot(snapshot); err != nil {
+			logCtx.WithError(err).Error("Failed to create VolumeReplica Snapshot")
+			return err
+		}
 	}
 
 	snapshot.Status.State = apisv1alpha1.VolumeStateNotReady
@@ -117,6 +133,18 @@ func (m *manager) volumeReplicaSnapshotCleanup(snapshot *apisv1alpha1.LocalVolum
 func (m *manager) volumeReplicaSnapshotDelete(snapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error {
 	logCtx := m.logger.WithFields(log.Fields{"Snapshot": snapshot.Name, "Spec": snapshot.Spec})
 	logCtx.Debug("Delete a VolumeReplica Snapshot")
+
+	if _, err := m.storageMgr.VolumeReplicaSnapshotManager().GetVolumeReplicaSnapshot(snapshot); err == nil {
+		// delete the volume replica snapshot from the node
+		err = m.storageMgr.VolumeReplicaSnapshotManager().DeleteVolumeReplicaSnapshot(snapshot)
+		if err != nil {
+			logCtx.WithError(err).Error("Failed to delete VolumeReplica Snapshot")
+			return err
+		}
+	} else if err != storage.ErrorSnapshotNotFound {
+		logCtx.WithError(err).Error("Failed to get VolumeReplica Snapshot from host")
+		return err
+	}
 
 	snapshot.Status.State = apisv1alpha1.VolumeStateDeleted
 	return m.apiClient.Status().Update(context.TODO(), snapshot)

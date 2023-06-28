@@ -202,7 +202,10 @@ func (m *manager) setupInformers(stopCh <-chan struct{}) {
 		UpdateFunc: m.handleVolumeSnapshotUpdateEvent,
 		DeleteFunc: m.handleVolumeSnapshotDeleteEvent,
 	})
-	volumeSnapshotInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+
+	// setup LocalVolumeReplicaSnapshot informer
+	volumeReplicaSnapshotInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolumeReplicaSnapshot{})
+	volumeReplicaSnapshotInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    m.handleVolumeSnapshotAddEvent,
 		UpdateFunc: m.handleVolumeSnapshotUpdateEvent,
 		DeleteFunc: m.handleVolumeSnapshotDeleteEvent,

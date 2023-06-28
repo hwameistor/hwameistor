@@ -32,7 +32,7 @@ type LocalVolumeSnapshotStatus struct {
 	AllocatedCapacityBytes int64 `json:"allocatedCapacityBytes,omitempty"`
 
 	// ReplicaSnapshots represents the actual snapshots of replica
-	ReplicaSnapshots []string `json:"snapshots,omitempty"`
+	ReplicaSnapshots []string `json:"replicaSnapshots,omitempty"`
 
 	// CreationTimestamp is the host real snapshot creation time
 	// In case of HA volume with multiple replicas, the value is equal to the one of a replica's snapshot creation time

@@ -22,8 +22,7 @@ func (snapMgr *localVolumeReplicaSnapshotManager) CreateVolumeReplicaSnapshot(re
 }
 
 func (snapMgr *localVolumeReplicaSnapshotManager) DeleteVolumeReplicaSnapshot(replicaSnapshot *v1alpha1.LocalVolumeReplicaSnapshot) error {
-	//TODO implement me
-	panic("implement me")
+	return snapMgr.cmdExec.DeleteVolumeReplicaSnapshot(replicaSnapshot)
 }
 
 func (snapMgr *localVolumeReplicaSnapshotManager) UpdateVolumeReplicaSnapshot(replicaSnapshot *v1alpha1.LocalVolumeReplicaSnapshot) (*v1alpha1.LocalVolumeReplicaSnapshotStatus, error) {

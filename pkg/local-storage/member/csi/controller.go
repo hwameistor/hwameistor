@@ -684,8 +684,8 @@ func (p *plugin) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequ
 		}
 	}
 
-	// 2. check if snapshot ready to use per second
-	return resp, wait.PollImmediateUntil(time.Second, func() (bool, error) {
+	// 2. check if snapshot ready to use per 5 seconds
+	return resp, wait.PollImmediateUntil(time.Second*5, func() (bool, error) {
 
 		logCtx.Debug("Checking if snapshot ready to use")
 		if err = p.apiClient.Get(ctx, types.NamespacedName{Name: snapshotID}, snapshot); err != nil {
@@ -694,7 +694,7 @@ func (p *plugin) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequ
 		}
 
 		if snapshot.Status.State != apisv1alpha1.VolumeStateReady {
-			return false, nil
+			return false, status.Errorf(codes.Internal, "LocalVolumeSnapshot is NotReady")
 		}
 
 		resp.Snapshot.ReadyToUse = true
@@ -709,12 +709,26 @@ func (p *plugin) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequ
 
 // DeleteSnapshot implementation, idempotent
 func (p *plugin) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
-	p.logger.WithFields(log.Fields{
+	logCtx := p.logger.WithFields(log.Fields{
 		"id":      req.SnapshotId,
 		"secrets": req.Secrets,
-	}).Debug("DeleteSnapshot")
+	})
+	logCtx.Debug("DeleteSnapshot")
 
-	return nil, fmt.Errorf("not Implemented")
+	resp := &csi.DeleteSnapshotResponse{}
+	snapshot := &apisv1alpha1.LocalVolumeSnapshot{}
+	if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.SnapshotId}, snapshot); err != nil {
+		if errors.IsNotFound(err) {
+			logCtx.Debug("Snapshot already deleted")
+			return resp, nil
+		}
+		logCtx.WithError(err).Error("Failed to get LocalVolumeSnapshot")
+		return resp, status.Errorf(codes.Internal, "Failed to get LocalVolumeSnapshot: %v", err)
+	}
+
+	// delete snapshot by setting delete true in snapshot's spec
+	snapshot.Spec.Delete = true
+	return resp, p.apiClient.Update(ctx, snapshot)
 }
 
 // ListSnapshots implementation, idempotent

@@ -116,7 +116,7 @@ spec:
               message:
                 description: Message error message to describe some states
                 type: string
-              snapshots:
+              replicaSnapshots:
                 description: ReplicaSnapshots represents the actual snapshots of replica
                 items:
                   type: string

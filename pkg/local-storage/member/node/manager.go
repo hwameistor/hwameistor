@@ -102,6 +102,7 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 		apiClient:                      cli,
 		informersCache:                 informersCache,
 		replicaRecords:                 map[string]string{},
+		replicaSnapshotsRecords:        map[string]string{},
 		volumeTaskQueue:                common.NewTaskQueue("VolumeTask", maxRetries),
 		rcloneVolumeMountTaskQueue:     common.NewTaskQueue("RcloneVolumeMount", maxRetries),
 		volumeReplicaTaskQueue:         common.NewTaskQueue("VolumeReplicaTask", maxRetries),
@@ -302,7 +303,7 @@ func (m *manager) handleVolumeReplicaSnapshotDeleteEvent(newObj interface{}) {
 }
 
 func (m *manager) handleVolumeReplicaSnapshotUpdateEvent(oldObj, newObj interface{}) {
-	m.handleVolumeSnapshotAddEvent(newObj)
+	m.handleVolumeReplicaSnapshotAddEvent(newObj)
 }
 
 func (m *manager) handleVolumeReplicaSnapshotAddEvent(newObject interface{}) {

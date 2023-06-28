@@ -27,6 +27,7 @@ const (
 var (
 	ErrNotLVMByteNum   = errors.New("LVM byte format unrecognised")
 	ErrReplicaNotFound = errors.New("volume replica not found on host")
+	LVMTimeLayout      = "2006-01-02 15:04:05 -0700"
 )
 
 // for PV/disk
@@ -494,7 +495,8 @@ func (lvm *lvmExecutor) CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha
 		return ErrReplicaNotFound
 	}
 
-	if err = lvm.lvSnapCreate(replicaSnapshot.Name, path.Join(replicaSnapshot.Spec.PoolName, replicaSnapshot.Spec.SourceVolume),
+	// use volume snapshot name as snapshot volume key - avoid duplicate volume replica snapshot with the same snapshot
+	if err = lvm.lvSnapCreate(replicaSnapshot.Spec.VolumeSnapshotName, path.Join(replicaSnapshot.Spec.PoolName, replicaSnapshot.Spec.SourceVolume),
 		replicaSnapshot.Spec.RequiredCapacityBytes); err != nil {
 		lvm.logger.WithError(err).Error("Failed to create volume replica snapshot")
 		return err
@@ -505,8 +507,20 @@ func (lvm *lvmExecutor) CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha
 }
 
 func (lvm *lvmExecutor) DeleteVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error {
-	//TODO implement me
-	panic("implement me")
+	logCtx := lvm.logger.WithFields(log.Fields{
+		"snapshot":            replicaSnapshot.Name,
+		"sourceVolume":        replicaSnapshot.Spec.SourceVolume,
+		"sourceVolumeReplica": replicaSnapshot.Spec.SourceVolumeReplica,
+	})
+	logCtx.Debug("Start deleting volume replica snapshot")
+
+	if err := lvm.lvremove(path.Join(replicaSnapshot.Spec.PoolName, replicaSnapshot.Spec.VolumeSnapshotName), []string{}); err != nil {
+		logCtx.WithError(err).Error("Failed to delete volume replica snapshot from host")
+		return err
+	}
+
+	lvm.logger.Debugf("Volume replica snapshot deleted: %s", replicaSnapshot.Name)
+	return nil
 }
 
 func (lvm *lvmExecutor) UpdateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error) {
@@ -518,6 +532,7 @@ func (lvm *lvmExecutor) UpdateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha
 func (lvm *lvmExecutor) GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error) {
 	logCtx := lvm.logger.WithFields(log.Fields{
 		"snapshot":            replicaSnapshot.Name,
+		"volumeSnapshot":      replicaSnapshot.Spec.VolumeSnapshotName,
 		"sourceVolume":        replicaSnapshot.Spec.SourceVolume,
 		"sourceVolumeReplica": replicaSnapshot.Spec.SourceVolumeReplica,
 	})
@@ -530,7 +545,7 @@ func (lvm *lvmExecutor) GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.L
 	}
 
 	actualSnapshotStatus := apisv1alpha1.LocalVolumeReplicaSnapshotStatus{}
-	snapshotVolume, ok := lvmState.lvs[replicaSnapshot.Name]
+	snapshotVolume, ok := lvmState.lvs[replicaSnapshot.Spec.VolumeSnapshotName]
 	if !ok {
 		return nil, ErrorSnapshotNotFound
 	}
@@ -542,13 +557,13 @@ func (lvm *lvmExecutor) GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.L
 	}
 
 	// parse lv create time to UTC time
-	cTime, err := time.Parse(time.RFC3339, snapshotVolume.LVTime)
+	cTime, err := time.Parse(LVMTimeLayout, snapshotVolume.LVTime)
 	if err != nil {
 		logCtx.WithError(err).Errorf("Failed to convert replica snapshot creation time to UTC Time, unrecognizied params %s", snapshotVolume.LVTime)
 		return nil, err
 	}
 
-	actualSnapshotStatus.CreationTimestamp = metav1.NewTime(cTime.UTC())
+	actualSnapshotStatus.CreationTimestamp = metav1.NewTime(cTime.Local())
 	actualSnapshotStatus.AllocatedCapacityBytes = capacity
 	actualSnapshotStatus.Attribute.Invalid = len(snapshotVolume.LVSnapInvalid) > 0
 	actualSnapshotStatus.Attribute.Merging = len(snapshotVolume.LVMerging) > 0
@@ -821,7 +836,7 @@ func (lvm *lvmExecutor) lvs() (*lvsReport, error) {
 	params := exechelper.ExecParams{
 		CmdName: "lvs",
 		CmdArgs: []string{"-o", "lv_path,lv_name,vg_name,lv_attr,lv_size,pool_lv,origin,data_percent,metadata_percent,move_pv,mirror_log,copy_percent,convert_lv," +
-			"lv_snapshot_invalid,lv_merge_failed,snap_percent,lv_device_open,lv_merging,lv_converting", "--reportformat", "json", "--units", "B"},
+			"lv_snapshot_invalid,lv_merge_failed,snap_percent,lv_device_open,lv_merging,lv_converting,lv_time", "--reportformat", "json", "--units", "B"},
 	}
 	res := lvm.cmdExec.RunCommand(params)
 	if res.ExitCode != 0 {

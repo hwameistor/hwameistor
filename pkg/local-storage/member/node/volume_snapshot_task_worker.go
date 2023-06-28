@@ -58,16 +58,12 @@ func (m *manager) processVolumeSnapshotTaskAssignment(volumeSnapshotName string)
 	}
 
 	// create replica snapshot is not exist
-	replicaSnapshot, err := m.getOnHostVolumeReplicaSnapshot(volumeSnapshot.Name)
-	if err != nil {
-		if err != errReplicaSnapshotNotFound {
-			logCtx.WithError(err).Error("Failed to get on-host volume replica snapshot")
-			return err
-		}
+	replicaSnapshotName, created := m.getOnHostVolumeReplicaSnapshotFromCache(volumeSnapshot.Name)
+	if !created {
 		return m.createVolumeReplicaSnapshot(volumeSnapshot)
 	}
 
-	logCtx.WithFields(log.Fields{"node": m.name, "replicaSnapshot": replicaSnapshot.Name}).Debug("VolumeReplicaSnapshot is already exist on the node")
+	logCtx.WithFields(log.Fields{"node": m.name, "replicaSnapshot": replicaSnapshotName}).Debug("VolumeReplicaSnapshot is already exist on the node")
 	return nil
 }
 
@@ -95,6 +91,7 @@ func (m *manager) createVolumeReplicaSnapshot(volumeSnapshot apisv1alpha.LocalVo
 			NodeName:              m.name,
 			SourceVolumeReplica:   replica.Name,
 			PoolName:              replica.Spec.PoolName,
+			VolumeSnapshotName:    volumeSnapshot.Name,
 			Delete:                volumeSnapshot.Spec.Delete,
 			SourceVolume:          volumeSnapshot.Spec.SourceVolume,
 			RequiredCapacityBytes: volumeSnapshot.Spec.RequiredCapacityBytes,
@@ -108,6 +105,7 @@ func (m *manager) createVolumeReplicaSnapshot(volumeSnapshot apisv1alpha.LocalVo
 		return err
 	}
 
+	m.replicaSnapshotsRecords[volumeSnapshot.Name] = replicaSnapshot.Name
 	logCtx.Debug("Created volume replica snapshot")
 	return nil
 }
@@ -161,4 +159,12 @@ func (m *manager) getOnHostVolumeReplicaSnapshot(volumeSnapshotName string) (api
 	}
 
 	return apisv1alpha.LocalVolumeReplicaSnapshot{}, errReplicaSnapshotNotFound
+}
+
+func (m *manager) getOnHostVolumeReplicaSnapshotFromCache(volumeSnapshotName string) (string, bool) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	replicaSnapshot, ok := m.replicaSnapshotsRecords[volumeSnapshotName]
+	return replicaSnapshot, ok
 }

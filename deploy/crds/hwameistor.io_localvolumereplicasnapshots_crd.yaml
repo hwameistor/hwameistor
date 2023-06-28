@@ -14,14 +14,18 @@ spec:
   scope: Cluster
   versions:
   - additionalPrinterColumns:
-    - description: Name of the snapshot's source volume replica
-      jsonPath: .spec.sourceVolumeReplica
-      name: SourceVolumeReplica
+    - description: Name of the snapshot's source volume
+      jsonPath: .spec.sourceVolume
+      name: SourceVolume
       type: string
     - description: Allocated capacity of the snapshot
       jsonPath: .status.allocatedCapacityBytes
       name: Capacity
       type: integer
+    - description: Node where snapshot is located
+      jsonPath: .spec.nodeName
+      name: NodeName
+      type: string
     - description: State of the snapshot
       jsonPath: .status.state
       name: State
@@ -29,9 +33,9 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
-    - description: Name of the snapshot's source volume
-      jsonPath: .spec.sourceVolume
-      name: SourceVolume
+    - description: Name of the snapshot's source volume replica
+      jsonPath: .spec.sourceVolumeReplica
+      name: SourceVolumeReplica
       priority: 1
       type: string
     name: v1alpha1
@@ -84,6 +88,9 @@ spec:
                 description: SourceVolume specifies the source volume replica name
                   of the snapshot
                 type: string
+              volumeSnapshotName:
+                description: VolumeSnapshotName represents the name of volume snapshot
+                type: string
             required:
             - delete
             - nodeName
@@ -91,6 +98,7 @@ spec:
             - requiredCapacityBytes
             - sourceVolume
             - sourceVolumeReplica
+            - volumeSnapshotName
             type: object
           status:
             description: LocalVolumeReplicaSnapshotStatus defines the observed state
