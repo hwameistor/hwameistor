@@ -102,11 +102,6 @@ const config = {
             ],
           },
         ],
-        logo: {
-          alt: 'CNCF Sandbox Project',
-          src: 'https://landscape.cncf.io/images/right-logo.svg',
-          href: 'https://www.cncf.io',
-        },
         copyright: `Copyright © ${new Date().getFullYear()} HwameiStor, All Rights Reserved.`,
       },
       prism: {
