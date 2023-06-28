@@ -2,6 +2,7 @@ import React from 'react';
 import clsx from 'clsx';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
+import Translate, { translate } from '@docusaurus/Translate';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import styles from './index.module.css';
 import HomepageFeatures from '@site/src/components/HomepageFeatures';
@@ -35,6 +36,12 @@ export default function Home() {
       <main>
         <HomepageFeatures />
       </main>
+      <div className="container text--center">
+      <div className={clsx('cncf-logo', styles.cncfLogo)} />
+        <h2 className="hero__subtitle">
+              <Translate>HwameiStor is a</Translate> <a href="https://cncf.io/">CNCF (Cloud Native Computing Foundation)</a> <Translate>sandbox project</Translate>
+        </h2>
+      </div>
     </Layout>
   );
 }

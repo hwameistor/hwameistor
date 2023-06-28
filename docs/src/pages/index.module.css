@@ -21,3 +21,13 @@
   align-items: center;
   justify-content: center;
 }
+
+.cncfLogo {
+  height: 90px;
+}
+
+@media screen and (max-width: 768px) {
+  .cncfLogo {
+    height: 64px;
+  }
+}

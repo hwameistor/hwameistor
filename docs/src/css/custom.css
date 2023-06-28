@@ -37,3 +37,11 @@
 [data-theme='dark'] .docusaurus-highlight-code-line {
   background-color: rgba(0, 0, 0, 0.3);
 }
+
+.cncf-logo {
+  background: center no-repeat url('/img/cncf-color.svg');
+}
+
+html[data-theme='dark'] .cncf-logo {
+  background: center no-repeat url('/img/cncf-white.svg');
+}
