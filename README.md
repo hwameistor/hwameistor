@@ -137,7 +137,8 @@ Please follow our [weekly blogs](https://hwameistor.io/blog).
 
 ### Slack
 
-Welcome to join our [slack channel](https://join.slack.com/t/hwameistor/shared_invite/zt-1dkabcq2c-KIRBJDBc_GgZZfeLrooK6g)
+If you want to join the hwameistor channel on CNCF slack, please **[get invite to CNCF slack](https://slack.cncf.io/)** 
+and then join the [#hwameistor](https://cloud-native.slack.com/messages/hwameistor) channel.
 
 ### WeChat
 
