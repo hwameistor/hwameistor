@@ -2,8 +2,13 @@ package csi
 
 import (
 	"fmt"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
@@ -631,37 +636,141 @@ func (p *plugin) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (
 
 // CreateSnapshot implementation, idempotent
 func (p *plugin) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) {
-	p.logger.WithFields(log.Fields{
+	logCtx := p.logger.WithFields(log.Fields{
 		"name":         req.Name,
 		"sourceVolume": req.SourceVolumeId,
 		"parameters":   req.Parameters,
 		"secrets":      req.Secrets,
-	}).Debug("CreateSnapshot")
+	})
+	logCtx.Debug("CreateSnapshot")
+	err := validateSnapshotRequest(req)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, fmt.Errorf("not Implemented")
+	resp := &csi.CreateSnapshotResponse{Snapshot: &csi.Snapshot{}}
+	resp.Snapshot.SourceVolumeId = req.SourceVolumeId
+	// the underlying snapshot name is consistent with snapshotcontent name
+	snapshotID := strings.Replace(req.Name, "snapshot", "snapcontent", 1)
+	resp.Snapshot.SnapshotId = snapshotID
+
+	// 1. create snapshot if not exist
+	snapshot := &apisv1alpha1.LocalVolumeSnapshot{}
+	if err = p.apiClient.Get(ctx, types.NamespacedName{Name: snapshotID}, snapshot); err != nil {
+		if !errors.IsNotFound(err) {
+			logCtx.WithError(err).Error("Failed to get LocalVolumeSnapshot")
+			return nil, status.Errorf(codes.Internal, "Failed to get LocalVolumeSnapshot: %v", err)
+		}
+
+		snapsize, err := getSnapshotSize(req.SourceVolumeId, req.Parameters, p.apiClient)
+		if err != nil {
+			logCtx.WithError(err).Error("Failed to get snapshot size")
+			return nil, status.Errorf(codes.Internal, "Failed to get snapshot size: %v", err)
+		}
+
+		// NOTE: We only take snapshots on the volume replica that exist at the moment!
+		// For those volume replicas that created later but belong to this volume won't take snapshots.
+
+		accessTopology, err := getVolumeAccessibility(req.SourceVolumeId, p.apiClient)
+		if err != nil {
+			logCtx.WithError(err).Error("Failed to get volume access topology")
+			return nil, status.Errorf(codes.Internal, "Failed to get volume access topology: %v", err)
+		}
+
+		snapshot.Name = snapshotID
+		snapshot.Spec.Accessibility = accessTopology
+		snapshot.Spec.RequiredCapacityBytes = snapsize
+		snapshot.Spec.SourceVolume = req.SourceVolumeId
+
+		if err = p.apiClient.Create(ctx, snapshot); err != nil {
+			logCtx.WithError(err).Error("Failed to create LocalVolumeSnapshot")
+			return nil, status.Errorf(codes.Internal, "Failed to create LocalVolumeSnapshot: %v", err)
+		}
+	}
+
+	// 2. check if snapshot ready to use per 5 seconds
+	return resp, wait.PollImmediateUntil(time.Second*5, func() (bool, error) {
+
+		logCtx.Debug("Checking if snapshot ready to use")
+		if err = p.apiClient.Get(ctx, types.NamespacedName{Name: snapshotID}, snapshot); err != nil {
+			logCtx.WithError(err).Error("Failed to get LocalVolumeSnapshot")
+			return false, status.Errorf(codes.Internal, "Failed to get LocalVolumeSnapshot: %v", err)
+		}
+
+		if snapshot.Status.State != apisv1alpha1.VolumeStateReady {
+			return false, status.Errorf(codes.Internal, "LocalVolumeSnapshot is NotReady")
+		}
+
+		resp.Snapshot.ReadyToUse = true
+		resp.Snapshot.SizeBytes = snapshot.Status.AllocatedCapacityBytes
+		resp.Snapshot.CreationTime = &timestamp.Timestamp{
+			Seconds: int64(snapshot.Status.CreationTimestamp.Second()),
+			Nanos:   int32(snapshot.Status.CreationTimestamp.Nanosecond()),
+		}
+		return true, nil
+	}, ctx.Done())
 }
 
 // DeleteSnapshot implementation, idempotent
 func (p *plugin) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
-	p.logger.WithFields(log.Fields{
+	logCtx := p.logger.WithFields(log.Fields{
 		"id":      req.SnapshotId,
 		"secrets": req.Secrets,
-	}).Debug("DeleteSnapshot")
+	})
+	logCtx.Debug("DeleteSnapshot")
 
-	return nil, fmt.Errorf("not Implemented")
+	resp := &csi.DeleteSnapshotResponse{}
+	snapshot := &apisv1alpha1.LocalVolumeSnapshot{}
+	if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.SnapshotId}, snapshot); err != nil {
+		if errors.IsNotFound(err) {
+			logCtx.Debug("Snapshot already deleted")
+			return resp, nil
+		}
+		logCtx.WithError(err).Error("Failed to get LocalVolumeSnapshot")
+		return resp, status.Errorf(codes.Internal, "Failed to get LocalVolumeSnapshot: %v", err)
+	}
+
+	// delete snapshot by setting delete true in snapshot's spec
+	snapshot.Spec.Delete = true
+	return resp, p.apiClient.Update(ctx, snapshot)
 }
 
 // ListSnapshots implementation, idempotent
 func (p *plugin) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRequest) (*csi.ListSnapshotsResponse, error) {
-	p.logger.WithFields(log.Fields{
+	logCtx := p.logger.WithFields(log.Fields{
 		"sourceVolume": req.SourceVolumeId,
 		"snapshotID":   req.SnapshotId,
 		"secrets":      req.Secrets,
 		"maxEntries":   req.MaxEntries,
 		"token":        req.StartingToken,
-	}).Debug("ValidateVolumeCapabilities")
+	})
 
-	return nil, fmt.Errorf("not Implemented")
+	logCtx.Debug("ListSnapshots")
+
+	resp := &csi.ListSnapshotsResponse{}
+	snapshots := apisv1alpha1.LocalVolumeSnapshotList{}
+	err := p.apiClient.List(ctx, &snapshots)
+	if err != nil {
+		logCtx.WithError(err).Error("Failed to list LocalVolumeSnapshot")
+		return nil, status.Errorf(codes.Internal, "Failed to list LocalVolumeSnapshot: %v", err)
+	}
+
+	for _, snap := range snapshots.Items {
+		resp.Entries = append(resp.Entries, &csi.ListSnapshotsResponse_Entry{
+			Snapshot: &csi.Snapshot{
+				SnapshotId:     snap.Name,
+				SourceVolumeId: snap.Spec.SourceVolume,
+				SizeBytes:      snap.Status.AllocatedCapacityBytes,
+				ReadyToUse:     snap.Status.State == apisv1alpha1.VolumeStateReady,
+				CreationTime: &timestamp.Timestamp{
+					Seconds: int64(snap.Status.CreationTimestamp.Second()),
+					Nanos:   int32(snap.Status.CreationTimestamp.Nanosecond()),
+				},
+			},
+		})
+	}
+
+	return resp, nil
 }
 
 // ControllerExpandVolume - it will expand volume size in storage pool, idempotent
@@ -722,4 +831,54 @@ func (p *plugin) ControllerExpandVolume(ctx context.Context, req *csi.Controller
 
 	logCtx.WithFields(log.Fields{"spec": expand.Spec, "status": expand.Status}).Debug("Volume expansion is still in progress")
 	return resp, fmt.Errorf("volume expansion in progress")
+}
+
+// validateSnapshotRequest is used to validate a snapshot request against the volume specification and validate
+func validateSnapshotRequest(req *csi.CreateSnapshotRequest) error {
+	if len(req.Name) == 0 {
+		return status.Errorf(
+			codes.InvalidArgument,
+			"snapshot name must be provided",
+		)
+	}
+	if len(req.SourceVolumeId) == 0 {
+		return status.Errorf(
+			codes.InvalidArgument,
+			"source volumeID must be provided",
+		)
+	}
+	return nil
+}
+
+// getSnapshotSize is used to get the size from the snapshot specification if exists. return the source volume size if not specified.
+func getSnapshotSize(sourceVolume string, params map[string]string, apiClient client.Client) (int64, error) {
+	// 1. get snapshot size from the volume specification
+	snapSize, ok := params[apisv1alpha1.SnapshotParameterSizeKey]
+	if ok {
+		snapSizeInt, err := strconv.Atoi(snapSize)
+		return int64(snapSizeInt), err
+	}
+
+	// 2. find the source volume size
+	return getVolumeAllocatedCapacity(sourceVolume, apiClient)
+}
+
+func getVolumeAllocatedCapacity(volumeName string, apiClient client.Client) (int64, error) {
+	volume := apisv1alpha1.LocalVolume{}
+	if err := apiClient.Get(context.Background(), types.NamespacedName{Name: volumeName}, &volume); err != nil {
+		return 0, err
+	}
+
+	// use the source volume allocated size in status rather than the capacity in spec
+	return volume.Status.AllocatedCapacityBytes, nil
+}
+
+// getVolumeAccessibility returns the access topology from the given volume
+func getVolumeAccessibility(volumeName string, apiClient client.Client) (apisv1alpha1.AccessibilityTopology, error) {
+	volume := apisv1alpha1.LocalVolume{}
+	if err := apiClient.Get(context.Background(), types.NamespacedName{Name: volumeName}, &volume); err != nil {
+		return apisv1alpha1.AccessibilityTopology{}, err
+	}
+
+	return volume.Spec.Accessibility, nil
 }

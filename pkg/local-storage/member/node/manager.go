@@ -51,6 +51,9 @@ type manager struct {
 	// to record all the replicas located at this node, volumeName -> replicaName
 	replicaRecords map[string]string
 
+	// to record all the volume replica snapshot located at this node, volumeSnapshotName -> volumeReplicaSnapshotName
+	replicaSnapshotsRecords map[string]string
+
 	storageMgr *storage.LocalManager
 
 	// if there is any suspicious volume replica, put it in this queue to check health
@@ -61,9 +64,13 @@ type manager struct {
 
 	volumeTaskQueue *common.TaskQueue
 
+	volumeSnapshotTaskQueue *common.TaskQueue
+
 	rcloneVolumeMountTaskQueue *common.TaskQueue
 
 	volumeReplicaTaskQueue *common.TaskQueue
+
+	volumeReplicaSnapshotTaskQueue *common.TaskQueue
 
 	localDiskClaimTaskQueue *common.TaskQueue
 
@@ -90,16 +97,19 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 		return nil, err
 	}
 	return &manager{
-		name:                       name,
-		namespace:                  namespace,
-		apiClient:                  cli,
-		informersCache:             informersCache,
-		replicaRecords:             map[string]string{},
-		volumeTaskQueue:            common.NewTaskQueue("VolumeTask", maxRetries),
-		rcloneVolumeMountTaskQueue: common.NewTaskQueue("RcloneVolumeMount", maxRetries),
-		volumeReplicaTaskQueue:     common.NewTaskQueue("VolumeReplicaTask", maxRetries),
-		localDiskClaimTaskQueue:    common.NewTaskQueue("LocalDiskClaim", maxRetries),
-		localDiskTaskQueue:         common.NewTaskQueue("localDisk", maxRetries),
+		name:                           name,
+		namespace:                      namespace,
+		apiClient:                      cli,
+		informersCache:                 informersCache,
+		replicaRecords:                 map[string]string{},
+		replicaSnapshotsRecords:        map[string]string{},
+		volumeTaskQueue:                common.NewTaskQueue("VolumeTask", maxRetries),
+		rcloneVolumeMountTaskQueue:     common.NewTaskQueue("RcloneVolumeMount", maxRetries),
+		volumeReplicaTaskQueue:         common.NewTaskQueue("VolumeReplicaTask", maxRetries),
+		localDiskClaimTaskQueue:        common.NewTaskQueue("LocalDiskClaim", maxRetries),
+		localDiskTaskQueue:             common.NewTaskQueue("LocalDisk", maxRetries),
+		volumeSnapshotTaskQueue:        common.NewTaskQueue("VolumeSnapshotTask", maxRetries),
+		volumeReplicaSnapshotTaskQueue: common.NewTaskQueue("VolumeReplicaSnapshotTask", maxRetries),
 		// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 		diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
 		configManager:  configManager,
@@ -131,6 +141,10 @@ func (m *manager) Run(stopCh <-chan struct{}) {
 	go m.startDiskEventWorker(stopCh)
 
 	go m.startRcloneVolumeMountTaskWorker(stopCh)
+
+	go m.startVolumeSnapshotTaskWorker(stopCh)
+
+	go m.startVolumeReplicaSnapshotTaskWorker(stopCh)
 
 	go diskmonitor.New(m.diskEventQueue).Run(stopCh)
 
@@ -241,6 +255,63 @@ func (m *manager) setupInformers() {
 		AddFunc:    m.handleConfigMapAddEvent,
 		DeleteFunc: m.handleConfigMapDeleteEvent,
 	})
+
+	// setup LocalVolumeSnapshot informer
+	volumeSnapshotInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolumeSnapshot{})
+	if err != nil {
+		// error happens, crash the node
+		m.logger.WithError(err).Fatal("Failed to get informer for LocalVolumeSnapshot")
+	}
+	volumeSnapshotInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.handleVolumeSnapshotAddEvent,
+		UpdateFunc: m.handleVolumeSnapshotUpdateEvent,
+		DeleteFunc: m.handleVolumeSnapshotDeleteEvent,
+	})
+
+	// setup LocalVolumeReplicaSnapshot informer
+	volumeReplicaSnapshotInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolumeReplicaSnapshot{})
+	if err != nil {
+		// error happens, crash the node
+		m.logger.WithError(err).Fatal("Failed to get informer for LocalVolumeReplicaSnapshot")
+	}
+	volumeReplicaSnapshotInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.handleVolumeReplicaSnapshotAddEvent,
+		UpdateFunc: m.handleVolumeReplicaSnapshotUpdateEvent,
+		DeleteFunc: m.handleVolumeReplicaSnapshotDeleteEvent,
+	})
+}
+
+func (m *manager) handleVolumeSnapshotDeleteEvent(newObj interface{}) {
+	m.handleVolumeSnapshotAddEvent(newObj)
+}
+
+func (m *manager) handleVolumeSnapshotUpdateEvent(oldObj, newObj interface{}) {
+	m.handleVolumeSnapshotAddEvent(newObj)
+}
+
+func (m *manager) handleVolumeSnapshotAddEvent(newObject interface{}) {
+	volumeSnapshot, ok := newObject.(*apisv1alpha1.LocalVolumeSnapshot)
+	if !ok {
+		return
+	}
+	// don't judge node information here - snapshot can be removed by removing node in topology of snapshot's spec
+	m.volumeSnapshotTaskQueue.Add(volumeSnapshot.Name)
+}
+
+func (m *manager) handleVolumeReplicaSnapshotDeleteEvent(newObj interface{}) {
+	m.handleVolumeSnapshotAddEvent(newObj)
+}
+
+func (m *manager) handleVolumeReplicaSnapshotUpdateEvent(oldObj, newObj interface{}) {
+	m.handleVolumeReplicaSnapshotAddEvent(newObj)
+}
+
+func (m *manager) handleVolumeReplicaSnapshotAddEvent(newObject interface{}) {
+	volumeReplicaSnapshot, ok := newObject.(*apisv1alpha1.LocalVolumeReplicaSnapshot)
+	if !ok || volumeReplicaSnapshot.Spec.NodeName != m.name {
+		return
+	}
+	m.volumeReplicaSnapshotTaskQueue.Add(volumeReplicaSnapshot.Name)
 }
 
 func (m *manager) Storage() *storage.LocalManager {

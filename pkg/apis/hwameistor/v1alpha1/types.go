@@ -116,6 +116,11 @@ const (
 	VolumeParameterIOPS             = "provision-iops-on-creation"
 )
 
+// consts for snapshot class
+const (
+	SnapshotParameterSizeKey = "snapsize"
+)
+
 // misc
 const (
 	CSIDriverName = "lvm.hwameistor.io"

@@ -35,11 +35,12 @@ func (m *MockLocalPoolManager) EXPECT() *MockLocalPoolManagerMockRecorder {
 }
 
 // ExtendPools mocks base method.
-func (m *MockLocalPoolManager) ExtendPools(localDisks []*v1alpha1.LocalDevice) error {
+func (m *MockLocalPoolManager) ExtendPools(localDisks []*v1alpha1.LocalDevice) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendPools", localDisks)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // ExtendPools indicates an expected call of ExtendPools.
@@ -48,19 +49,19 @@ func (mr *MockLocalPoolManagerMockRecorder) ExtendPools(localDisks interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendPools", reflect.TypeOf((*MockLocalPoolManager)(nil).ExtendPools), localDisks)
 }
 
-// ExtendPoolsInfo mocks base method.
-func (m *MockLocalPoolManager) ExtendPoolsInfo(localDisks map[string]*v1alpha1.LocalDevice) (map[string]*v1alpha1.LocalPool, error) {
+// GetPools mocks base method.
+func (m *MockLocalPoolManager) GetPools() (map[string]*v1alpha1.LocalPool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPools", localDisks)
+	ret := m.ctrl.Call(m, "GetPools")
 	ret0, _ := ret[0].(map[string]*v1alpha1.LocalPool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ExtendPoolsInfo indicates an expected call of ExtendPoolsInfo.
-func (mr *MockLocalPoolManagerMockRecorder) ExtendPoolsInfo(localDisks interface{}) *gomock.Call {
+// GetPools indicates an expected call of GetPools.
+func (mr *MockLocalPoolManagerMockRecorder) GetPools() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPools", reflect.TypeOf((*MockLocalPoolManager)(nil).ExtendPoolsInfo), localDisks)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPools", reflect.TypeOf((*MockLocalPoolManager)(nil).GetPools))
 }
 
 // GetReplicas mocks base method.
@@ -76,6 +77,20 @@ func (m *MockLocalPoolManager) GetReplicas() (map[string]*v1alpha1.LocalVolumeRe
 func (mr *MockLocalPoolManagerMockRecorder) GetReplicas() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReplicas", reflect.TypeOf((*MockLocalPoolManager)(nil).GetReplicas))
+}
+
+// ResizePhysicalVolumes mocks base method.
+func (m *MockLocalPoolManager) ResizePhysicalVolumes(localDisks map[string]*v1alpha1.LocalDevice) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResizePhysicalVolumes", localDisks)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResizePhysicalVolumes indicates an expected call of ResizePhysicalVolumes.
+func (mr *MockLocalPoolManagerMockRecorder) ResizePhysicalVolumes(localDisks interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResizePhysicalVolumes", reflect.TypeOf((*MockLocalPoolManager)(nil).ResizePhysicalVolumes), localDisks)
 }
 
 // MockLocalVolumeReplicaManager is a mock of LocalVolumeReplicaManager interface.
@@ -187,6 +202,88 @@ func (mr *MockLocalVolumeReplicaManagerMockRecorder) TestVolumeReplica(replica i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TestVolumeReplica", reflect.TypeOf((*MockLocalVolumeReplicaManager)(nil).TestVolumeReplica), replica)
 }
 
+// MockLocalVolumeReplicaSnapshotManager is a mock of LocalVolumeReplicaSnapshotManager interface.
+type MockLocalVolumeReplicaSnapshotManager struct {
+	ctrl     *gomock.Controller
+	recorder *MockLocalVolumeReplicaSnapshotManagerMockRecorder
+}
+
+// MockLocalVolumeReplicaSnapshotManagerMockRecorder is the mock recorder for MockLocalVolumeReplicaSnapshotManager.
+type MockLocalVolumeReplicaSnapshotManagerMockRecorder struct {
+	mock *MockLocalVolumeReplicaSnapshotManager
+}
+
+// NewMockLocalVolumeReplicaSnapshotManager creates a new mock instance.
+func NewMockLocalVolumeReplicaSnapshotManager(ctrl *gomock.Controller) *MockLocalVolumeReplicaSnapshotManager {
+	mock := &MockLocalVolumeReplicaSnapshotManager{ctrl: ctrl}
+	mock.recorder = &MockLocalVolumeReplicaSnapshotManagerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockLocalVolumeReplicaSnapshotManager) EXPECT() *MockLocalVolumeReplicaSnapshotManagerMockRecorder {
+	return m.recorder
+}
+
+// CreateVolumeReplicaSnapshot mocks base method.
+func (m *MockLocalVolumeReplicaSnapshotManager) CreateVolumeReplicaSnapshot(replicaSnapshot *v1alpha1.LocalVolumeReplicaSnapshot) (*v1alpha1.LocalVolumeReplicaSnapshot, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateVolumeReplicaSnapshot", replicaSnapshot)
+	ret0, _ := ret[0].(*v1alpha1.LocalVolumeReplicaSnapshot)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateVolumeReplicaSnapshot indicates an expected call of CreateVolumeReplicaSnapshot.
+func (mr *MockLocalVolumeReplicaSnapshotManagerMockRecorder) CreateVolumeReplicaSnapshot(replicaSnapshot interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateVolumeReplicaSnapshot", reflect.TypeOf((*MockLocalVolumeReplicaSnapshotManager)(nil).CreateVolumeReplicaSnapshot), replicaSnapshot)
+}
+
+// DeleteVolumeReplicaSnapshot mocks base method.
+func (m *MockLocalVolumeReplicaSnapshotManager) DeleteVolumeReplicaSnapshot(replicaSnapshot *v1alpha1.LocalVolumeReplicaSnapshot) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteVolumeReplicaSnapshot", replicaSnapshot)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteVolumeReplicaSnapshot indicates an expected call of DeleteVolumeReplicaSnapshot.
+func (mr *MockLocalVolumeReplicaSnapshotManagerMockRecorder) DeleteVolumeReplicaSnapshot(replicaSnapshot interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVolumeReplicaSnapshot", reflect.TypeOf((*MockLocalVolumeReplicaSnapshotManager)(nil).DeleteVolumeReplicaSnapshot), replicaSnapshot)
+}
+
+// ExpandVolumeReplicaSnapshot mocks base method.
+func (m *MockLocalVolumeReplicaSnapshotManager) ExpandVolumeReplicaSnapshot(replicaSnapshot *v1alpha1.LocalVolumeReplicaSnapshot) (*v1alpha1.LocalVolumeReplica, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExpandVolumeReplicaSnapshot", replicaSnapshot)
+	ret0, _ := ret[0].(*v1alpha1.LocalVolumeReplica)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExpandVolumeReplicaSnapshot indicates an expected call of ExpandVolumeReplicaSnapshot.
+func (mr *MockLocalVolumeReplicaSnapshotManagerMockRecorder) ExpandVolumeReplicaSnapshot(replicaSnapshot interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExpandVolumeReplicaSnapshot", reflect.TypeOf((*MockLocalVolumeReplicaSnapshotManager)(nil).ExpandVolumeReplicaSnapshot), replicaSnapshot)
+}
+
+// GetVolumeReplicaSnapshot mocks base method.
+func (m *MockLocalVolumeReplicaSnapshotManager) GetVolumeReplicaSnapshot(replicaSnapshot *v1alpha1.LocalVolumeReplicaSnapshot) (*v1alpha1.LocalVolumeReplica, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVolumeReplicaSnapshot", replicaSnapshot)
+	ret0, _ := ret[0].(*v1alpha1.LocalVolumeReplica)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVolumeReplicaSnapshot indicates an expected call of GetVolumeReplicaSnapshot.
+func (mr *MockLocalVolumeReplicaSnapshotManagerMockRecorder) GetVolumeReplicaSnapshot(replicaSnapshot interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVolumeReplicaSnapshot", reflect.TypeOf((*MockLocalVolumeReplicaSnapshotManager)(nil).GetVolumeReplicaSnapshot), replicaSnapshot)
+}
+
 // MockLocalRegistry is a mock of LocalRegistry interface.
 type MockLocalRegistry struct {
 	ctrl     *gomock.Controller
@@ -264,18 +361,32 @@ func (mr *MockLocalRegistryMockRecorder) Pools() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Pools", reflect.TypeOf((*MockLocalRegistry)(nil).Pools))
 }
 
-// SyncResourcesToNodeCRD mocks base method.
-func (m *MockLocalRegistry) SyncResourcesToNodeCRD(localDisks map[string]*v1alpha1.LocalDevice) error {
+// SyncNodeResources mocks base method.
+func (m *MockLocalRegistry) SyncNodeResources() error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SyncNodeResources", localDisks)
+	ret := m.ctrl.Call(m, "SyncNodeResources")
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SyncResourcesToNodeCRD indicates an expected call of SyncResourcesToNodeCRD.
-func (mr *MockLocalRegistryMockRecorder) SyncResourcesToNodeCRD(localDisks interface{}) *gomock.Call {
+// SyncNodeResources indicates an expected call of SyncNodeResources.
+func (mr *MockLocalRegistryMockRecorder) SyncNodeResources() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncNodeResources", reflect.TypeOf((*MockLocalRegistry)(nil).SyncResourcesToNodeCRD), localDisks)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncNodeResources", reflect.TypeOf((*MockLocalRegistry)(nil).SyncNodeResources))
+}
+
+// UpdateCondition mocks base method.
+func (m *MockLocalRegistry) UpdateCondition(condition v1alpha1.StorageNodeCondition) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateCondition", condition)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateCondition indicates an expected call of UpdateCondition.
+func (mr *MockLocalRegistryMockRecorder) UpdateCondition(condition interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCondition", reflect.TypeOf((*MockLocalRegistry)(nil).UpdateCondition), condition)
 }
 
 // UpdateNodeForVolumeReplica mocks base method.
@@ -288,6 +399,20 @@ func (m *MockLocalRegistry) UpdateNodeForVolumeReplica(replica *v1alpha1.LocalVo
 func (mr *MockLocalRegistryMockRecorder) UpdateNodeForVolumeReplica(replica interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateNodeForVolumeReplica", reflect.TypeOf((*MockLocalRegistry)(nil).UpdateNodeForVolumeReplica), replica)
+}
+
+// UpdatePoolExtendRecord mocks base method.
+func (m *MockLocalRegistry) UpdatePoolExtendRecord(pool string, record v1alpha1.LocalDiskClaimSpec) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePoolExtendRecord", pool, record)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePoolExtendRecord indicates an expected call of UpdatePoolExtendRecord.
+func (mr *MockLocalRegistryMockRecorder) UpdatePoolExtendRecord(pool, record interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePoolExtendRecord", reflect.TypeOf((*MockLocalRegistry)(nil).UpdatePoolExtendRecord), pool, record)
 }
 
 // VolumeReplicas mocks base method.
@@ -437,11 +562,12 @@ func (m *MockLocalPoolExecutor) EXPECT() *MockLocalPoolExecutorMockRecorder {
 }
 
 // ExtendPools mocks base method.
-func (m *MockLocalPoolExecutor) ExtendPools(localDisks []*v1alpha1.LocalDevice) error {
+func (m *MockLocalPoolExecutor) ExtendPools(localDisks []*v1alpha1.LocalDevice) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtendPools", localDisks)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // ExtendPools indicates an expected call of ExtendPools.
@@ -450,19 +576,19 @@ func (mr *MockLocalPoolExecutorMockRecorder) ExtendPools(localDisks interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtendPools", reflect.TypeOf((*MockLocalPoolExecutor)(nil).ExtendPools), localDisks)
 }
 
-// ExtendPoolsInfo mocks base method.
-func (m *MockLocalPoolExecutor) ExtendPoolsInfo(localDisks map[string]*v1alpha1.LocalDevice) (map[string]*v1alpha1.LocalPool, error) {
+// GetPools mocks base method.
+func (m *MockLocalPoolExecutor) GetPools() (map[string]*v1alpha1.LocalPool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPools", localDisks)
+	ret := m.ctrl.Call(m, "GetPools")
 	ret0, _ := ret[0].(map[string]*v1alpha1.LocalPool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ExtendPoolsInfo indicates an expected call of ExtendPoolsInfo.
-func (mr *MockLocalPoolExecutorMockRecorder) ExtendPoolsInfo(localDisks interface{}) *gomock.Call {
+// GetPools indicates an expected call of GetPools.
+func (mr *MockLocalPoolExecutorMockRecorder) GetPools() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPools", reflect.TypeOf((*MockLocalPoolExecutor)(nil).ExtendPoolsInfo), localDisks)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPools", reflect.TypeOf((*MockLocalPoolExecutor)(nil).GetPools))
 }
 
 // GetReplicas mocks base method.
@@ -478,4 +604,18 @@ func (m *MockLocalPoolExecutor) GetReplicas() (map[string]*v1alpha1.LocalVolumeR
 func (mr *MockLocalPoolExecutorMockRecorder) GetReplicas() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReplicas", reflect.TypeOf((*MockLocalPoolExecutor)(nil).GetReplicas))
+}
+
+// ResizePhysicalVolumes mocks base method.
+func (m *MockLocalPoolExecutor) ResizePhysicalVolumes(localDisks map[string]*v1alpha1.LocalDevice) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResizePhysicalVolumes", localDisks)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResizePhysicalVolumes indicates an expected call of ResizePhysicalVolumes.
+func (mr *MockLocalPoolExecutorMockRecorder) ResizePhysicalVolumes(localDisks interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResizePhysicalVolumes", reflect.TypeOf((*MockLocalPoolExecutor)(nil).ResizePhysicalVolumes), localDisks)
 }

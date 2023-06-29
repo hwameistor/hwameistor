@@ -123,8 +123,8 @@ func (p *plugin) initControllerServiceCapabilities() {
 		// for storage capacity
 		//csi.ControllerServiceCapability_RPC_GET_CAPACITY, // don't support it as the scheduler will take care of it
 		// for snapshot
-		//csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
-		//csi.ControllerServiceCapability_RPC_LIST_SNAPSHOTS,
+		csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
+		csi.ControllerServiceCapability_RPC_LIST_SNAPSHOTS,
 		// for clone
 		//csi.ControllerServiceCapability_RPC_CLONE_VOLUME,
 	}

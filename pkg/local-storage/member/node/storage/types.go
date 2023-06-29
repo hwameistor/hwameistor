@@ -2,9 +2,6 @@ package storage
 
 import (
 	"errors"
-	"os"
-	"syscall"
-
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
@@ -12,14 +9,17 @@ import (
 var (
 	ErrorPoolNotFound                   = errors.New("not found pool")
 	ErrorReplicaNotFound                = errors.New("not found replica")
+	ErrorSnapshotNotFound               = errors.New("not found snapshot")
 	ErrorReplicaExists                  = errors.New("already exists replica")
 	ErrorLocalVolumeExistsInVolumeGroup = errors.New("already exists in volume group")
 	ErrorInsufficientRequestResources   = errors.New("insufficient request resources")
 	ErrorOverLimitedRequestResource     = errors.New("over limited request resources")
 )
 
+/* A set of interface for Hwameistor Local Object */
+
 // LocalPoolManager is an interface to manage local storage pools
-////go:generate mockgen -source=types.go -destination=../../../member/node/storage/pools_mock.go  -package=storage
+//go:generate mockgen -source=types.go -destination=../../../member/node/storage/pools_mock.go  -package=storage
 type LocalPoolManager interface {
 	ExtendPools(localDisks []*apisv1alpha1.LocalDevice) (bool, error)
 
@@ -39,20 +39,22 @@ type LocalVolumeReplicaManager interface {
 	GetVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error)
 	TestVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error)
 
-	// consistencyCheck on all volume replicas by comparing VolumeReplica and underlying volumes
+	// ConsistencyCheck  on all volume replicas by comparing VolumeReplica and underlying volumes
 	// will log all the check results for alerting or other purpose, but not block anything
 	ConsistencyCheck()
 }
 
-// LocalDiskManager is an interface to manage local disks
-type LocalDiskManager interface {
-	// Discover all disks including HDD, SSD, NVMe, etc..
-	DiscoverAvailableDisks() ([]*apisv1alpha1.LocalDevice, error)
-	GetLocalDisks() (map[string]*apisv1alpha1.LocalDevice, error)
+// LocalVolumeReplicaSnapshotManager interface
+//go:generate mockgen -source=types.go -destination=../../../member/node/storage/replica_mock.go  -package=storage
+type LocalVolumeReplicaSnapshotManager interface {
+	CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error
+	DeleteVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error
+	UpdateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error)
+	GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error)
 }
 
 // LocalRegistry interface
-////go:generate mockgen -source=types.go -destination=../../../member/node/storage/registry_mock.go  -package=storage
+//go:generate mockgen -source=types.go -destination=../../../member/node/storage/registry_mock.go  -package=storage
 type LocalRegistry interface {
 	Init()
 
@@ -66,19 +68,10 @@ type LocalRegistry interface {
 	UpdatePoolExtendRecord(pool string, record apisv1alpha1.LocalDiskClaimSpec) error
 }
 
-// DeviceInfo struct
-type DeviceInfo struct {
-	OSFileInfo   os.FileInfo
-	SysTStat     *syscall.Stat_t
-	Path         string
-	Name         string
-	Major        uint32
-	Minor        uint32
-	MajMinString string
-}
+/* A set of interface for executor to implement the above Hwameistor Local Object interface */
 
 // LocalVolumeExecutor interface
-////go:generate mockgen -source=types.go -destination=../../../member/node/storage/replica_executor_mock.go  -package=storage
+//go:generate mockgen -source=types.go -destination=../../../member/node/storage/replica_executor_mock.go  -package=storage
 type LocalVolumeExecutor interface {
 	CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error)
 	DeleteVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) error
@@ -87,13 +80,20 @@ type LocalVolumeExecutor interface {
 	// GetReplicas return all replicas
 	GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error)
 
-	// consistencyCheck on all volume replicas by comparing VolumeReplica and underlying volumes
+	// ConsistencyCheck on all volume replicas by comparing VolumeReplica and underlying volumes
 	// will log all the check results for alerting or other purpose, but not block anything
 	ConsistencyCheck(crdReplicas map[string]*apisv1alpha1.LocalVolumeReplica)
 }
 
+type LocalVolumeReplicaSnapshotExecutor interface {
+	CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error
+	DeleteVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error
+	UpdateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error)
+	GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error)
+}
+
 // LocalPoolExecutor interface
-////go:generate mockgen -source=types.go -destination=../../../member/node/storage/pools_executor_mock.go  -package=storage
+//go:generate mockgen -source=types.go -destination=../../../member/node/storage/pools_executor_mock.go  -package=storage
 type LocalPoolExecutor interface {
 	ExtendPools(localDisks []*apisv1alpha1.LocalDevice) (bool, error)
 	GetPools() (map[string]*apisv1alpha1.LocalPool, error)
