@@ -29,7 +29,7 @@ sdc        8:32     0     20G  1 disk
 
 # 2. 检查 HwameiStor 是否为新增磁盘正确创建资源 LocalDisk，并且状态为 `Unclaimed`
 $ kubectl get localdisk | grep k8s-worker-4 | grep sdc
-k8s-worker-4-sdc   k8s-worker-4       Unclaimed 
+k8s-worker-4-sdc   k8s-worker-4       Available 
 ```
 
 ### 2. 将新增磁盘加入到节点的存储池
