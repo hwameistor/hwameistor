@@ -5,11 +5,13 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/containerd/cgroups/v3"
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/exechelper"
 	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 // getDeviceNumber return the major and minor of a device according to the devicePath.
@@ -59,14 +61,6 @@ func (m *manager) configureQoS(replica *apisv1alpha1.LocalVolumeReplica) error {
 			return err
 		}
 	}
-	err = m.writeBlkioFile("blkio.throttle.read_bps_device", fmt.Sprintf("%d:%d %d", major, minor, throughput.Value()))
-	if err != nil {
-		return err
-	}
-	err = m.writeBlkioFile("blkio.throttle.write_bps_device", fmt.Sprintf("%d:%d %d", major, minor, throughput.Value()))
-	if err != nil {
-		return err
-	}
 
 	iops := resource.MustParse("0")
 	if replica.Spec.VolumeQoS.IOPS != "" {
@@ -76,14 +70,36 @@ func (m *manager) configureQoS(replica *apisv1alpha1.LocalVolumeReplica) error {
 			return err
 		}
 	}
-	err = m.writeBlkioFile("blkio.throttle.read_iops_device", fmt.Sprintf("%d:%d %d", major, minor, iops.Value()))
+
+	switch cgroups.Mode() {
+	case cgroups.Legacy:
+		return m.configureQoSForCgroupV1(major, minor, iops.Value(), throughput.Value())
+	case cgroups.Unified, cgroups.Hybrid:
+		// TODO: implement
+		return nil
+	case cgroups.Unavailable:
+		return fmt.Errorf("cgroups is not available")
+	}
+	return nil
+}
+
+func (m *manager) configureQoSForCgroupV1(major, minor uint64, iops, throughput int64) error {
+	err := m.writeBlkioFile("blkio.throttle.read_bps_device", fmt.Sprintf("%d:%d %d", major, minor, throughput))
 	if err != nil {
 		return err
 	}
-	err = m.writeBlkioFile("blkio.throttle.write_iops_device", fmt.Sprintf("%d:%d %d", major, minor, iops.Value()))
+	err = m.writeBlkioFile("blkio.throttle.write_bps_device", fmt.Sprintf("%d:%d %d", major, minor, throughput))
 	if err != nil {
 		return err
 	}
 
+	err = m.writeBlkioFile("blkio.throttle.read_iops_device", fmt.Sprintf("%d:%d %d", major, minor, iops))
+	if err != nil {
+		return err
+	}
+	err = m.writeBlkioFile("blkio.throttle.write_iops_device", fmt.Sprintf("%d:%d %d", major, minor, iops))
+	if err != nil {
+		return err
+	}
 	return nil
 }
