@@ -20,7 +20,7 @@ require (
 	github.com/container-storage-interface/spec v1.3.0
 	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/golang/mock v1.6.0
-	github.com/google/uuid v1.1.2 // indirect
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.8.0
 	github.com/kubernetes-csi/csi-lib-utils v0.7.1
 	github.com/onsi/ginkgo/v2 v2.1.4
@@ -37,6 +37,7 @@ require (
 require github.com/go-logr/zapr v0.4.0 // indirect
 
 require (
+	github.com/containerd/cgroups/v3 v3.0.2
 	github.com/gin-gonic/gin v1.8.1
 	github.com/hwameistor/hwameistor-operator v0.8.1-rc.4
 	github.com/jinzhu/gorm v1.9.16

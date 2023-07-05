@@ -44,6 +44,9 @@ github.com/cespare/xxhash/v2
 # github.com/container-storage-interface/spec v1.3.0
 ## explicit
 github.com/container-storage-interface/spec/lib/go/csi
+# github.com/containerd/cgroups/v3 v3.0.2
+## explicit; go 1.18
+github.com/containerd/cgroups/v3
 # github.com/coreos/go-semver v0.3.0
 ## explicit
 github.com/coreos/go-semver/semver
