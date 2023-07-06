@@ -44,6 +44,7 @@ metadata:
   name: k8s-worker-4-expand
 spec:
   nodeName: k8s-worker-4
+  owner: local-storage
   description:
     diskType: SSD
 EOF
