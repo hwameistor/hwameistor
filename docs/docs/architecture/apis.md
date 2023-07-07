@@ -7,7 +7,7 @@ sidebar_label: "APIs"
 
 ## CRD Object Classes
 
-Hwameistor defines some object classes to associate PV/PVC with local disks.
+HwameiStor defines some object classes to associate PV/PVC with local disks.
 
 | Kind              | Abbr     | Function                                                             |
 |-------------------|----------|----------------------------------------------------------------------|
