@@ -2,7 +2,6 @@ package E2eTest
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
@@ -15,7 +14,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
-	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -126,12 +124,22 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("qos"), func()
 							Containers: []corev1.Container{
 								{
 									Name:  "web",
-									Image: "172.30.45.210/hwameistor/dao-2048:v1.2.0",
+									Image: "daocloud.io/daocloud/testtools:latest",
 									Ports: []corev1.ContainerPort{
 										{
 											Name:          "http",
 											Protocol:      corev1.ProtocolTCP,
 											ContainerPort: 80,
+										},
+									},
+									Resources: corev1.ResourceRequirements{
+										Limits: corev1.ResourceList{
+											"cpu":    resource.MustParse("1000m"),
+											"memory": resource.MustParse("4Gi"),
+										},
+										Requests: corev1.ResourceList{
+											"cpu":    resource.MustParse("1000m"),
+											"memory": resource.MustParse("4Gi"),
 										},
 									},
 									VolumeMounts: []corev1.VolumeMount{
@@ -269,60 +277,16 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("qos"), func()
 			containers := deployment.Spec.Template.Spec.Containers
 			for _, pod := range podlist.Items {
 				for _, container := range containers {
-					output, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "dd if=/dev/zero of=/data/test bs=5000k count=3 oflag=direct", container.Name)
+					output, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "fio -direct=1  -iodepth=128 -rw=randwrite -ioengine=libaio -bs=4K -size=1G -numjobs=1 -runtime=600 -group_reporting -filename=/data/file.txt -name=Rand_Write_IOPS_Test", container.Name)
 					if err != nil {
 						logrus.Printf("%+v ", err)
 						f.ExpectNoError(err)
 					}
-					throughput := strings.Split(output, ",")
+					//throughput := strings.Split(output, ",")
 					logrus.Printf("qos test:" + output)
-					logrus.Printf(throughput[0])
+					//logrus.Printf(throughput[0])
 				}
 			}
-		})
-	})
-	ginkgo.Context("Clean up the environment", func() {
-		ginkgo.It("Delete test Deployment", func() {
-			//delete deploy
-			deployment := &appsv1.Deployment{}
-			deployKey := ctrlclient.ObjectKey{
-				Name:      utils.DeploymentName,
-				Namespace: "default",
-			}
-			err := client.Get(ctx, deployKey, deployment)
-			if err != nil {
-				logrus.Error(err)
-				f.ExpectNoError(err)
-			}
-			logrus.Infof("deleting test Deployment ")
-
-			err = client.Delete(ctx, deployment)
-			if err != nil {
-				logrus.Error(err)
-				f.ExpectNoError(err)
-			}
-			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
-				if err := client.Get(ctx, deployKey, deployment); !k8serror.IsNotFound(err) {
-					return false, nil
-				}
-				return true, nil
-			})
-			if err != nil {
-				logrus.Error(err)
-			}
-			gomega.Expect(err).To(gomega.BeNil())
-
-		})
-		ginkgo.It("delete all pvc ", func() {
-			err := utils.DeleteAllPVC(ctx)
-			gomega.Expect(err).To(gomega.BeNil())
-		})
-		ginkgo.It("delete all sc", func() {
-			err := utils.DeleteAllSC(ctx)
-			gomega.Expect(err).To(gomega.BeNil())
-		})
-		ginkgo.It("delete helm", func() {
-			utils.UninstallHelm()
 		})
 	})
 
