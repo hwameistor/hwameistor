@@ -44,7 +44,7 @@ k8s-worker-2                                              Ready    21d
 First, change the `owner` information of the disk sdb to local-disk-manager as below:
 
 ```console
-$ kubectl edit ld  - <<EOF
+$ kubectl edit ld k8s-worker-2-sdb
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalDisk
 metadata:
