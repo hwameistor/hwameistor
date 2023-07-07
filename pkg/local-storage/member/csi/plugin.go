@@ -10,6 +10,7 @@ import (
 	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
 	"github.com/hwameistor/hwameistor/pkg/exechelper"
 	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/qos"
 )
 
 const (
@@ -39,6 +40,8 @@ type plugin struct {
 	lock      sync.Mutex
 	apiClient client.Client
 
+	volumeQoSManager *qos.VolumeQoSManager
+
 	cmdExecutor exechelper.Executor
 	logger      *log.Entry
 
@@ -53,18 +56,24 @@ func New(nodeName string, namespace string, driverName string, sockAddr string, 
 
 	logger := log.WithField("Module", "CSIPlugin")
 
+	volumeQoSManager, err := qos.NewVolumeQoSManager(nodeName, cli)
+	if err != nil {
+		panic(err)
+	}
+
 	return &plugin{
-		name:          driverName,
-		version:       driverVersion,
-		nodeName:      nodeName,
-		namespace:     namespace,
-		sockAddr:      sockAddr,
-		grpcServer:    NewGRPCServer(logger),
-		storageMember: storageMember,
-		mounter:       NewLinuxMounter(logger),
-		cmdExecutor:   nsexecutor.New(),
-		apiClient:     cli,
-		logger:        logger,
+		name:             driverName,
+		version:          driverVersion,
+		nodeName:         nodeName,
+		namespace:        namespace,
+		sockAddr:         sockAddr,
+		grpcServer:       NewGRPCServer(logger),
+		storageMember:    storageMember,
+		mounter:          NewLinuxMounter(logger),
+		cmdExecutor:      nsexecutor.New(),
+		apiClient:        cli,
+		volumeQoSManager: volumeQoSManager,
+		logger:           logger,
 	}
 }
 

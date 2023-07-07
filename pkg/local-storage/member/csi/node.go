@@ -126,6 +126,12 @@ func (p *plugin) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 		return resp, fmt.Errorf("invalid access type")
 	}
 
+	err := p.volumeQoSManager.RefreshQoSForLocalVolumeName(req.VolumeId)
+	if err != nil {
+		p.logger.WithFields(log.Fields{"volume": req.VolumeId, "error": err.Error()}).Error("Failed to refresh QoS for LocalVolume")
+		return resp, err
+	}
+
 	return resp, nil
 }
 

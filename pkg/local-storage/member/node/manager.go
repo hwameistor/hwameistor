@@ -24,6 +24,7 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-storage/common"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/csi"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/diskmonitor"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/qos"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils/datacopy"
@@ -71,6 +72,8 @@ type manager struct {
 
 	configManager *configManager
 
+	volumeQoSManager *qos.VolumeQoSManager
+
 	logger *log.Entry
 
 	lock sync.Mutex
@@ -89,6 +92,11 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 	if err != nil {
 		return nil, err
 	}
+	volumeQoSManager, err := qos.NewVolumeQoSManager(name, cli)
+	if err != nil {
+		return nil, err
+	}
+
 	return &manager{
 		name:                       name,
 		namespace:                  namespace,
@@ -101,12 +109,13 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 		localDiskClaimTaskQueue:    common.NewTaskQueue("LocalDiskClaim", maxRetries),
 		localDiskTaskQueue:         common.NewTaskQueue("localDisk", maxRetries),
 		// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
-		diskEventQueue: diskmonitor.NewEventQueue("DiskEvents"),
-		configManager:  configManager,
-		logger:         log.WithField("Module", "NodeManager"),
-		scheme:         scheme,
-		recorder:       recorder,
-		mounter:        csi.NewLinuxMounter(log.WithField("Module", "NodeManager")),
+		diskEventQueue:   diskmonitor.NewEventQueue("DiskEvents"),
+		configManager:    configManager,
+		volumeQoSManager: volumeQoSManager,
+		logger:           log.WithField("Module", "NodeManager"),
+		scheme:           scheme,
+		recorder:         recorder,
+		mounter:          csi.NewLinuxMounter(log.WithField("Module", "NodeManager")),
 	}, nil
 }
 
