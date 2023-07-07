@@ -151,8 +151,6 @@ $ kubectl edit localvolume pvc-cac82087-6f6c-493a-afcd-09480de712ed
 
 最后，保存更改并退出编辑器。 设置将在几秒钟后生效。
 
-**Note**: In the future, we will allow users to modify the maximum IOPS and throughput of a volume directly once the Kubernetes supports [it].
-
 **注意**：将来，一旦 Kubernetes 支持[它](https://github.com/kubernetes/enhancements/tree/master/keps/sig-storage/3751-volume-attributes-class#motivation)，我们将允许用户直接修改卷的最大 IOPS 和吞吐量。
 
 ## 如何检查数据卷的实际 IOPS 和吞吐量
