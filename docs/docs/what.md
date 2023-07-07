@@ -6,7 +6,7 @@ sidebar_label: "What is HwameiStor"
 
 # What is HwameiStor
 
-Hwameistor is an HA local storage system for cloud-native stateful workloads.
+HwameiStor is an HA local storage system for cloud-native stateful workloads.
 
 HwameiStor creates a local storage resource pool for centrally managing all disks
 such as HDD, SSD, and NVMe. It uses the CSI architecture to provide distributed

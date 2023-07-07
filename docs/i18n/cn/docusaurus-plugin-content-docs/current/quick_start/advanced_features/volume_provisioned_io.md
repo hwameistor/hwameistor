@@ -3,15 +3,15 @@ sidebar_position: 4
 sidebar_label: "数据卷IO限速"
 ---
 
-# 数据卷IO限速
+# 数据卷 IO 限速
 
-在 Hwameistor 中，它允许用户指定 Kuberentes 集群上卷的最大 IOPS 和吞吐量。
+在 HwameiStor 中，它允许用户指定 Kuberentes 集群上卷的最大 IOPS 和吞吐量。
 
 请按照以下步骤创建具有最大 IOPS 和吞吐量的卷并创建工作负载来使用它。
 
 ## 使用最大 IOPS 和吞吐量参数创建新的 StorageClass
 
-默认情况下，Hwameistor在安装过程中不会自动创建这样的StorageClass，因此您需要手动创建它。
+默认情况下，HwameiStor 在安装过程中不会自动创建这样的 StorageClass，因此您需要手动创建 StorageClass。
 
 示例 StorageClass 如下：
 
@@ -36,12 +36,12 @@ reclaimPolicy: Delete
 volumeBindingMode: WaitForFirstConsumer
 ```
 
-与 Hwameistor 安装程序创建的常规 StorageClass 相比，添加了以下参数：
+与 HwameiStor 安装程序创建的常规 StorageClass 相比，添加了以下参数：
 
 - Provision-iops-on-creation：指定创建时卷的最大 IOPS。
 - Provision-throughput-on-creation：它指定创建时卷的最大吞吐量。
 
-创建StorageClass后，您可以使用它来创建PVC。
+创建 StorageClass 后，您可以使用它来创建 PVC。
 
 ## 使用 StorageClass 创建 PVC
 
@@ -61,7 +61,7 @@ spec:
   storageClassName: hwameistor-storage-lvm-hdd-sample
 ```
 
-创建 PVC 后，您可以创建 Deployment 来使用它。
+创建 PVC 后，您可以创建 Deployment 来使用 PVC。
 
 ## 创建带有 PVC 的 Deployment
 
@@ -111,20 +111,20 @@ $ kubectl exec -it pod-sample-5f5f8f6f6f-5q4q5 -- /bin/sh
 $ dd if=/dev/zero of=/data/test bs=4k count=1000000 oflag=direct
 ```
 
-**注意**：由于cgroupv1限制，最大IOPS和吞吐量的设置可能对非直接IO不生效。
+**注意**：由于 cgroupv1 限制，最大 IOPS 和吞吐量的设置可能对非直接 IO 不生效。
 
 ## 如何更改数据卷的最大 IOPS 和吞吐量
 
 最大 IOPS 和吞吐量在 StorageClass 的参数上指定，您不能直接更改它，因为它现在是不可变的。
 
-与其他存储厂商不同的是，Hwameistor是一个基于 Kubernetes 的存储解决方案，它定义了一组操作原语
-基于 Kubernetes CRD。 这意味着您可以修改相关的CRD来更改卷的实际最大IOPS和吞吐量。
+与其他存储厂商不同的是，HwameiStor 是一个基于 Kubernetes 的存储解决方案，它定义了一组操作原语
+基于 Kubernetes CRD。 这意味着您可以修改相关的 CRD 来更改卷的实际最大 IOPS 和吞吐量。
 
 以下步骤显示如何更改数据卷的最大 IOPS 和吞吐量。
 
 ### 查找给定 PVC 对应的 LocalVolume CR
 
-```
+```console
 $ kubectl get pvc pvc-sample
 
 NAME             STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS                        AGE
@@ -141,7 +141,7 @@ pvc-cac82087-6f6c-493a-afcd-09480de712ed   LocalStorage_PoolHDD   1          107
 
 根据打印输出，PVC 的 LocalVolume CR 为 `pvc-cac82087-6f6c-493a-afcd-09480de712ed`。
 
-### 修改LocalVolume CR
+### 修改 LocalVolume CR
 
 ```
 $ kubectl edit localvolume pvc-cac82087-6f6c-493a-afcd-09480de712ed
@@ -149,13 +149,14 @@ $ kubectl edit localvolume pvc-cac82087-6f6c-493a-afcd-09480de712ed
 
 在编辑器中，找到 `spec.volumeQoS` 部分并修改 `iops` 和 `throughput` 字段。 顺便说一下，空值意味着没有限制。
 
-最后，保存更改并退出编辑器。 设置将在几秒钟后生效。
+最后，保存更改并退出编辑器。设置将在几秒钟后生效。
 
 **注意**：将来，一旦 Kubernetes 支持[它](https://github.com/kubernetes/enhancements/tree/master/keps/sig-storage/3751-volume-attributes-class#motivation)，我们将允许用户直接修改卷的最大 IOPS 和吞吐量。
 
 ## 如何检查数据卷的实际 IOPS 和吞吐量
 
-Hwameistor 使用 [cgroupv1](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt) 来限制数据卷的 IOPS 和吞吐量，因此您可以使用以下命令来检查数据卷的实际 IOPS 和吞吐量。
+HwameiStor 使用 [cgroupv1](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)
+来限制数据卷的 IOPS 和吞吐量，因此您可以使用以下命令来检查数据卷的实际 IOPS 和吞吐量。
 
 ```
 $ lsblk
