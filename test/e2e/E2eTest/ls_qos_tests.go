@@ -275,8 +275,8 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("qos"), func()
 						f.ExpectNoError(err)
 					}
 					throughput := strings.Split(output, ",")
-					logrus.Printf(output)
-					logrus.Printf(throughput[2])
+					logrus.Printf("qos test:" + output)
+					logrus.Printf(throughput[0])
 				}
 			}
 		})
