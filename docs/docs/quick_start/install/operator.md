@@ -17,7 +17,7 @@ You can use hwameistor-operator to deploy and manage HwameiStor system.
     - HA module
     - Apiserver
     - Graph UI
-- Configure the disks for different purpose
+- Configure the disks for different purposes
 - Set up the storage pools automatically by discovering the underlying disks' type (e.g. HDD, SSD)
 - Set up the StorageClasses automatically according to the Hwameistor's configurations and capabilities
 
