@@ -148,7 +148,7 @@ var _ = ginkgo.Describe("Bulk delete tests", ginkgo.Label("stress-test"), func()
 								Containers: []apiv1.Container{
 									{
 										Name:  "web",
-										Image: "172.30.45.210/hwameistor/dao-2048:v1.2.0",
+										Image: "10.6.112.120/hwameistor/dao-2048:v1.2.0",
 										Ports: []apiv1.ContainerPort{
 											{
 												Name:          "http",
