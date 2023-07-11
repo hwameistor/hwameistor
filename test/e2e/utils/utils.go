@@ -96,7 +96,7 @@ func installHwameiStorByHelm() {
 
 func installHwameiStorByHelm_offline() {
 	logrus.Infof("helm install hwameistor")
-	_ = RunInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace --set global.k8sImageRegistry=172.30.45.210")
+	_ = RunInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace --set global.k8sImageRegistry=10.6.112.210")
 }
 
 func StartAdRollback(k8s string) error {
