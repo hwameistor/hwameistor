@@ -420,5 +420,4 @@ func (r *resources) handleVolumeUpdate(oldObj, newObj interface{}) {
 	} else if !nVol.Spec.Config.Convertible && len(nVol.Spec.Config.Replicas) < 2 {
 		r.recycleResourceID(nVol)
 	}
-
 }
