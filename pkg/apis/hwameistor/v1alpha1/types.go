@@ -117,8 +117,20 @@ const (
 )
 
 // consts for snapshot class
+
 const (
 	SnapshotParameterSizeKey = "snapsize"
+)
+
+type RestoreType string
+
+// consts for snapshot restore
+
+const (
+	// RestoreTypeMerge is used to merge snapshot to existing volume
+	RestoreTypeMerge RestoreType = "merge"
+	// RestoreTypeCreate is used to create a new volume from existing snapshot
+	RestoreTypeCreate RestoreType = "create"
 )
 
 // misc
