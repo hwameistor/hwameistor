@@ -7,7 +7,7 @@ sidebar_label:  "高可用卷"
 
 当 HwameiStor 的 HA 模块被开启后，HwameiStor Operator 会自动创建一个 HA 的 StorageClass 用于创建 HA 数据卷。
 
-这里我们使用一个 MySQL 应用作为例子。
+我们通过创建高可用 HA 卷来部署一个 MySQL 应用作为例子。
 
 :::note
 下面的 MySQL Yaml 文件来自于 [Kubernetes 的官方 Repo](https://github.com/kubernetes/website/blob/main/content/en/examples/application/mysql/mysql-statefulset.yaml)
@@ -40,7 +40,7 @@ volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: true
 ```
 
-## Create `StatefulSet`
+## 创建 `StatefulSet`
 
 在 HwameiStor 和 `StorageClass` 就绪后, 一条命令就能创建 MySQL 容器和它的数据卷：
 
@@ -66,7 +66,7 @@ spec:
           storage: 1Gi
 ```
 
-## 查看 MySQL Pod and `PVC/PV`
+## 查看 MySQL Pod 和 `PVC/PV`
 
 在这个例子里，MySQL 容器被调度到了节点 `k8s-worker-3`。
 
@@ -80,7 +80,7 @@ NAME                     STATUS   VOLUME                                     CAP
 data-sts-mysql-ha-0   Bound    pvc-5236ee6f-8212-4628-9876-1b620a4c4c36   1Gi        RWO            hwameistor-storage-lvm-hdd    3m   Filesystem
 ```
 
-# 查看 `LocalVolume` and `LocalVolumeReplica` 对象
+## 查看 `LocalVolume` 和 `LocalVolumeReplica` 对象
 
 通过查看和 `PV` 同名的 `LocalVolume(LV)`, 可以看到本地卷创建在了节点 `k8s-worker-1` 和节点 `k8s-worker-2`。
 

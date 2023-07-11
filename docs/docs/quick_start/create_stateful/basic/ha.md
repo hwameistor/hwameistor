@@ -7,7 +7,7 @@ sidebar_label:  "HA Volumes"
 
 When the HA module is enabled, HwameiStor Operator will generate a StorageClass of HA automatically.
 
-Here takes MySQL as an example for demonstration.
+As an example, we will deploy a MySQL application by creating a highly available (HA) volume.
 
 :::note
 The yaml file for MySQL is learnt from
