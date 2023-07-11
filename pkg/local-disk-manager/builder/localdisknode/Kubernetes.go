@@ -22,14 +22,14 @@ type Kubeclient struct {
 
 // NewKubeclient
 func NewKubeclient() (*Kubeclient, error) {
-	client := &Kubeclient{}
+	c := &Kubeclient{}
 	if cli, err := buildInClusterClientset(); err != nil {
 		return nil, err
 	} else {
-		client.clientset = cli
+		c.clientset = cli
 	}
 
-	return client, nil
+	return c, nil
 }
 
 // buildInClusterClientset builds a kubernetes in-cluster clientset

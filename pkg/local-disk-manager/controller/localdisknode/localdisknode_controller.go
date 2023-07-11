@@ -112,7 +112,7 @@ type ReconcileLocalDiskNode struct {
 }
 
 // Reconcile reads that state of the cluster for a LocalDiskNode object and makes changes based on the state read
-func (r *ReconcileLocalDiskNode) Reconcile(_ context.Context, request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileLocalDiskNode) Reconcile(_ context.Context, _ reconcile.Request) (reconcile.Result, error) {
 	// NOTE: Do nothing here, all events will br processed at member/node/manager.go
 	return reconcile.Result{}, nil
 }

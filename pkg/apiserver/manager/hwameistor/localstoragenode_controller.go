@@ -473,7 +473,6 @@ func (lsnController *LocalStorageNodeController) getResourceYaml(res *apisv1alph
 
 // ReserveStorageNodeDisk
 func (lsnController *LocalStorageNodeController) ReserveStorageNodeDisk(queryPage hwameistorapi.QueryPage, diskHandler *localdisk.Handler) (*hwameistorapi.DiskReservedRspBody, error) {
-
 	var RspBody = &hwameistorapi.DiskReservedRspBody{}
 	var diskReservedRsp hwameistorapi.DiskReservedRsp
 	deviceShortPath := queryPage.DeviceShortPath
@@ -506,7 +505,6 @@ func (lsnController *LocalStorageNodeController) ReserveStorageNodeDisk(queryPag
 
 // ReleaseReserveStorageNodeDisk
 func (lsnController *LocalStorageNodeController) ReleaseReserveStorageNodeDisk(queryPage hwameistorapi.QueryPage, diskHandler *localdisk.Handler) (*hwameistorapi.DiskRemoveReservedRspBody, error) {
-
 	var RspBody = &hwameistorapi.DiskRemoveReservedRspBody{}
 	var diskRemoveReservedRsp hwameistorapi.DiskRemoveReservedRsp
 	//nodeName := queryPage.NodeName
@@ -538,7 +536,6 @@ func (lsnController *LocalStorageNodeController) ReleaseReserveStorageNodeDisk(q
 
 // GetStorageNodeDisk
 func (lsnController *LocalStorageNodeController) GetStorageNodeDisk(page hwameistorapi.QueryPage, diskHandler *localdisk.Handler) (*hwameistorapi.LocalDiskInfo, error) {
-
 	var ldi = &hwameistorapi.LocalDiskInfo{}
 	nodeKey := client.ObjectKey{
 		Name: page.NodeName,

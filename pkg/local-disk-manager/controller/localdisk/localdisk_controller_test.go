@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
 )
 
@@ -60,16 +60,25 @@ func TestReconcileLocalDisk_Reconcile(t *testing.T) {
 	doNothing := func(ld *v1alpha1.LocalDisk, ldc *v1alpha1.LocalDiskClaim) {}
 
 	testCases := []struct {
-		description string
-		ld          *v1alpha1.LocalDisk
-		ldc         *v1alpha1.LocalDiskClaim
-		pre         func(*v1alpha1.LocalDisk, *v1alpha1.LocalDiskClaim)
-		wantState   v1alpha1.LocalDiskState
-		post        func(client.Client, *v1alpha1.LocalDisk, *v1alpha1.LocalDiskClaim) error
+		description          string
+		ld                   *v1alpha1.LocalDisk
+		ldc                  *v1alpha1.LocalDiskClaim
+		pre                  func(*v1alpha1.LocalDisk, *v1alpha1.LocalDiskClaim)
+		wantState            v1alpha1.LocalDiskState
+		post                 func(client.Client, *v1alpha1.LocalDisk, *v1alpha1.LocalDiskClaim) error
+		expectReconcileError string
 	}{
 		{
-			description: "Claimed by a LocalDiskClaim",
-			ld:          GenFakeLocalDiskObject(),
+			description: "Claimed by a LocalDiskClaim 1",
+			ld:          GenFakeLocalDiskObject(v1alpha1.LocalDiskPending, ""),
+			ldc:         GenFakeLocalDiskClaimObject(),
+			pre:         setClaimRef,
+			wantState:   v1alpha1.LocalDiskBound,
+			post:        cleanResource,
+		},
+		{
+			description: "Claimed by a LocalDiskClaim 2",
+			ld:          GenFakeLocalDiskObject(v1alpha1.LocalDiskAvailable, ""),
 			ldc:         GenFakeLocalDiskClaimObject(),
 			pre:         setClaimRef,
 			wantState:   v1alpha1.LocalDiskBound,
@@ -77,10 +86,43 @@ func TestReconcileLocalDisk_Reconcile(t *testing.T) {
 		},
 		{
 			description: "Available by any LocalDiskClaim",
-			ld:          GenFakeLocalDiskObject(),
+			ld:          GenFakeLocalDiskObject(v1alpha1.LocalDiskPending, ""),
 			ldc:         GenFakeLocalDiskClaimObject(),
 			pre:         doNothing,
 			wantState:   v1alpha1.LocalDiskAvailable,
+			post:        cleanResource,
+		},
+		{
+			description: "Empty disk state",
+			ld:          GenFakeLocalDiskObject("", ""),
+			ldc:         GenFakeLocalDiskClaimObject(),
+			pre:         doNothing,
+			wantState:   v1alpha1.LocalDiskPending,
+			post:        cleanResource,
+		},
+		{
+			description: "Disk bound but no claim",
+			ld:          GenFakeLocalDiskObject(v1alpha1.LocalDiskBound, ""),
+			ldc:         GenFakeLocalDiskClaimObject(),
+			pre:         doNothing,
+			wantState:   v1alpha1.LocalDiskAvailable,
+			post:        cleanResource,
+		},
+		{
+			description:          "Invalid disk state",
+			ld:                   GenFakeLocalDiskObject("invalid", ""),
+			ldc:                  GenFakeLocalDiskClaimObject(),
+			pre:                  doNothing,
+			wantState:            "invalid",
+			post:                 cleanResource,
+			expectReconcileError: "invalid disk state: invalid",
+		},
+		{
+			description: "Disk bound with claim",
+			ld:          GenFakeLocalDiskObject(v1alpha1.LocalDiskBound, "test"),
+			ldc:         GenFakeLocalDiskClaimObject(),
+			pre:         setClaimRef,
+			wantState:   v1alpha1.LocalDiskBound,
 			post:        cleanResource,
 		},
 	}
@@ -103,7 +145,9 @@ func TestReconcileLocalDisk_Reconcile(t *testing.T) {
 
 			// reconcile for LocalDisk
 			if _, err = r.Reconcile(context.TODO(), request); err != nil {
-				t.Error(err)
+				if testCase.expectReconcileError == "" || err.Error() != testCase.expectReconcileError {
+					t.Error(err)
+				}
 			}
 
 			// refresh localDisk
@@ -121,7 +165,7 @@ func TestReconcileLocalDisk_Reconcile(t *testing.T) {
 
 // CreateFakeClient Create localDisk and LocalDiskClaim resource
 func CreateFakeClient() (client.Client, *runtime.Scheme) {
-	disk := GenFakeLocalDiskObject()
+	disk := GenFakeLocalDiskObject(v1alpha1.LocalDiskPending, "")
 	diskList := &v1alpha1.LocalDiskList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       localDiskKind,
@@ -147,7 +191,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 
 // GenFakeLocalDiskObject Create disk
 // By default, disk can be claimed by the sample calim
-func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
+func GenFakeLocalDiskObject(state v1alpha1.LocalDiskState, owner string) *v1alpha1.LocalDisk {
 	ld := &v1alpha1.LocalDisk{}
 
 	TypeMeta := metav1.TypeMeta{
@@ -177,10 +221,11 @@ func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 			Vendor:   vendorVMware,
 			Protocol: proSCSI,
 		},
+		Owner: owner,
 		State: v1alpha1.LocalDiskActive,
 	}
 
-	Status := v1alpha1.LocalDiskStatus{State: v1alpha1.LocalDiskPending}
+	Status := v1alpha1.LocalDiskStatus{State: state}
 
 	ld.TypeMeta = TypeMeta
 	ld.ObjectMeta = ObjectMata
