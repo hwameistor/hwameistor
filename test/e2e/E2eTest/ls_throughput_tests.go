@@ -50,13 +50,13 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("periodCheck")
 				},
 				Provisioner: "lvm.hwameistor.io",
 				Parameters: map[string]string{
-					"replicaNumber":              "1",
-					"poolClass":                  "HDD",
-					"poolType":                   "REGULAR",
-					"volumeKind":                 "LVM",
-					"striped":                    "true",
-					"csi.storage.k8s.io/fstype":  "xfs",
-					"provision-iops-on-creation": "100",
+					"replicaNumber":                    "1",
+					"poolClass":                        "HDD",
+					"poolType":                         "REGULAR",
+					"volumeKind":                       "LVM",
+					"striped":                          "true",
+					"csi.storage.k8s.io/fstype":        "xfs",
+					"provision-throughput-on-creation": "900Ki",
 				},
 				ReclaimPolicy:        &deleteObj,
 				AllowVolumeExpansion: utils.BoolPter(true),
@@ -287,19 +287,21 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("periodCheck")
 					throughput := strings.Split(output, " ")
 
 					for i := range throughput {
-						if strings.Contains(throughput[i], "IOPS=") {
-							iops := strings.Split(strings.Split(throughput[i], "=")[1], ",")[0]
-							logrus.Printf("IOPS=" + iops)
-							iop, err := strconv.Atoi(iops)
+						if strings.Contains(throughput[i], "BW=") {
+
+							BW := strings.Split(strings.Split(throughput[i], "=")[1], "KiB")[0]
+							logrus.Printf("BW=" + BW)
+							bw, err := strconv.Atoi(BW)
 							if err != nil {
 								logrus.Error(err)
 								f.ExpectNoError(err)
 							}
-							logrus.Printf(strconv.Itoa(iop))
+							logrus.Printf(strconv.Itoa(bw))
 
-							if iop <= 110 {
+							if bw <= 920 {
 								result = true
 							}
+
 							break
 
 						}
