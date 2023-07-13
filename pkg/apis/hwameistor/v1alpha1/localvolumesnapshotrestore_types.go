@@ -17,12 +17,13 @@ type LocalVolumeSnapshotRestoreSpec struct {
 	// +kubebuilder:validation:Required
 	SourceVolumeSnapshot string `json:"sourceVolumeSnapshot"`
 
-	// RestoreType is the type about how to restore the volume, e.g. create, merge.
+	// RestoreType is the type about how to restore the volume, e.g. create, merge. By default create.
+	// +kubebuilder:default:=create
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum:=merge;create
 	RestoreType RestoreType `json:"restoreType"`
 
-	// +kubebuilder:default:=false
+	// Abort can be used to abort the restore operation and clean up sub resources created by the restore operation automatically
 	Abort bool `json:"abort,omitempty"`
 }
 
@@ -39,7 +40,7 @@ type LocalVolumeSnapshotRestoreStatus struct {
 
 // LocalVolumeSnapshotRestore is user's request for either restoring a local volume snapshot to a new volume, or merging into the old volume.
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:path=localvolumesnapshotrestores,scope=Cluster,shortName=lvsrestore,lvsnaprestore
+// +kubebuilder:resource:path=localvolumesnapshotrestores,scope=Cluster,shortName=lvsrestore;lvsnaprestore
 // +kubebuilder:printcolumn:name="targetvolume",type=string,JSONPath=`.spec.targetVolume`,description="Target for the restore"
 // +kubebuilder:printcolumn:name="sourcesnapshot",type=string,JSONPath=`.spec.sourceVolumeSnapshot`,description="Source snapshot for the restore"
 // +kubebuilder:printcolumn:name="state",type=string,JSONPath=`.status.state`,description="State of the restore"
