@@ -56,6 +56,9 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	})
 	logCtx.Debug("CreateVolume")
 
+	// create a new empty volume
+	p.createNormalVolume(ctx, req)
+
 	resp := &csi.CreateVolumeResponse{}
 	params, err := parseParameters(req)
 	if err != nil {
@@ -106,6 +109,52 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		time.Sleep(5 * time.Second)
 	}
 	return resp, fmt.Errorf("volume is still in creating")
+}
+
+// createNormalVolume creates a volume with the given request - without snapshot and clone
+func (p *plugin) createNormalVolume(ctx context.Context, req *csi.CreateVolumeRequest) error {
+	params, err := parseParameters(req)
+	if err != nil {
+		p.logger.WithError(err).Error("Failed to parse parameters")
+		return err
+	}
+
+	lvg, err := p.getLocalVolumeGroupOrCreate(req, params)
+	if err != nil {
+		p.logger.WithError(err).Error("Failed to get or create LocalVolumeGroup")
+		return err
+	}
+
+	vol := &apisv1alpha1.LocalVolume{}
+	if err = p.apiClient.Get(ctx, types.NamespacedName{Name: req.Name}, vol); err != nil {
+		if !errors.IsNotFound(err) {
+			p.logger.WithFields(log.Fields{"volName": req.Name, "error": err.Error()}).Error("Failed to query volume")
+			return err
+		}
+
+		// create volume if not exist
+		vol.Name = req.Name
+		vol.Spec.PoolName = params.poolName
+		vol.Spec.ReplicaNumber = params.replicaNumber
+		vol.Spec.RequiredCapacityBytes = req.CapacityRange.RequiredBytes
+		vol.Spec.Convertible = params.convertible
+		vol.Spec.PersistentVolumeClaimName = params.pvcName
+		vol.Spec.PersistentVolumeClaimNamespace = params.pvcNamespace
+		vol.Spec.VolumeGroup = lvg.Name
+		vol.Spec.Accessibility.Nodes = lvg.Spec.Accessibility.Nodes
+		vol.Spec.VolumeQoS = apisv1alpha1.VolumeQoS{
+			Throughput: params.throughput,
+			IOPS:       params.iops,
+		}
+
+		p.logger.WithFields(log.Fields{"volume": vol}).Debug("Creating a volume")
+		if err = p.apiClient.Create(ctx, vol); err != nil {
+			p.logger.WithFields(log.Fields{"volume": vol, "error": err.Error()}).Error("Failed to create a volume")
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, params *volumeParameters) (*apisv1alpha1.LocalVolumeGroup, error) {
@@ -294,6 +343,7 @@ func buildStoragePoolName(poolClass string, poolType string) (string, error) {
 	return "", fmt.Errorf("invalid pool info")
 }
 
+// restoreVolumeFromSnapshot creates a new volume from the snapshot
 func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	logCtx := p.logger.WithFields(log.Fields{
 		"volume":           req.Name,
@@ -306,7 +356,45 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 	})
 	logCtx.Debug("restoreVolumeFromSnapshot")
 
+	err := p.validateVolumeCreateRequestForSnapshot(ctx, req)
+	if err != nil {
+		logCtx.WithError(err).Error("failed to validate CreateVolumeRequest")
+		return &csi.CreateVolumeResponse{}, status.Errorf(codes.InvalidArgument, "failed to validate CreateVolumeRequest %v", err)
+	}
+
+	// create LocalVolumeSnapshotRestore instance
+	volumeSnapshotRestore := apisv1alpha1.LocalVolumeSnapshotRestore{}
+	volumeSnapshotRestore.Name = fmt.Sprintf("snaprestore-%s", req.GetName())
+	volumeSnapshotRestore.Spec.TargetVolume = req.GetName()
+
 	return &csi.CreateVolumeResponse{}, fmt.Errorf("not implemented")
+}
+
+func (p *plugin) validateVolumeCreateRequestForSnapshot(ctx context.Context, req *csi.CreateVolumeRequest) error {
+	if req.VolumeContentSource == nil || req.VolumeContentSource.GetSnapshot() == nil {
+		return fmt.Errorf("snapshot must be provided")
+	}
+	if req.CapacityRange == nil || req.CapacityRange.RequiredBytes <= 0 {
+		return fmt.Errorf("required capacity must be provided")
+	}
+	volumeSnapshotId := req.VolumeContentSource.GetSnapshot().SnapshotId
+	requiredCapacityBytes := req.CapacityRange.RequiredBytes
+
+	// fetch source volume by snapshotId
+	volumeSnapshot := apisv1alpha1.LocalVolumeSnapshot{}
+	if err := p.apiClient.Get(ctx, client.ObjectKey{Name: volumeSnapshotId}, &volumeSnapshot); err != nil {
+		return err
+	}
+	sourceVolume := apisv1alpha1.LocalVolume{}
+	if err := p.apiClient.Get(ctx, client.ObjectKey{Name: volumeSnapshot.Spec.SourceVolume}, &sourceVolume); err != nil {
+		return err
+	}
+
+	if requiredCapacityBytes < sourceVolume.Spec.RequiredCapacityBytes {
+		return fmt.Errorf("the new volume required capacity must be greater than the existing volume required capacity")
+	}
+
+	return nil
 }
 
 func (p *plugin) cloneVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
