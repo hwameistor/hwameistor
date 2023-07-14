@@ -46,6 +46,36 @@ Hwameistor-Operator 负责自动化安装并管理 HwameiStor 系统。
   
 可选参数:
 
+- 磁盘预留
+  可用的干净磁盘默认会被纳管并且添加到 LocalStorageNode 的 pool 里。如果你想在安装前预留一部分磁盘留作他用，你可以通过helm的values来设置磁盘预留配置。
+
+  方式 1:
+  ```console
+  helm install hwameistor-operator hwameistor-operator/hwameistor-operator  -n hwameistor --create-namespace \
+  --set diskReserve\[0\].nodeName=node1 \
+  --set diskReserve\[0\].devices={/dev/sdc\,/dev/sdd} \
+  --set diskReserve\[1\].nodeName=node2 \
+  --set diskReserve\[1\].devices={/dev/sdc\,/dev/sde}
+  ```
+  这个例子展示了在helm install时通过--set选项来设置磁盘预留配置，可能比较棘手。我们更建议把磁盘预留的配置写到一个文件里。
+
+  方式 2:
+  ```console
+  diskReserve: 
+  - nodeName: node1
+    devices:
+    - /dev/sdc
+    - /dev/sdd
+  - nodeName: node2
+    devices:
+    - /dev/sdc
+    - /dev/sde
+  ```
+  比如，你可以把如上的helm values写到一个叫diskReserve.yaml的文件里，并在helm install时apply。
+  ```console
+  helm install hwameistor-operator hwameistor-operator/hwameistor-operator -n hwameistor --create-namespace -f diskReserve.yaml
+  ```
+
 - 开启验证:
 
   ```console
