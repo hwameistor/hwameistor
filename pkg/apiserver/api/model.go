@@ -232,7 +232,6 @@ func VolumeStatefuzzyConvert(state string) apisv1alpha1.State {
 
 // NodeStatefuzzyConvert
 func NodeStatefuzzyConvert(state string) State {
-
 	if state == "" {
 		return NodeStateEmpty
 	}
@@ -259,7 +258,6 @@ func NodeStatefuzzyConvert(state string) State {
 
 // OperationStatefuzzyConvert
 func OperationStatefuzzyConvert(state string) apisv1alpha1.State {
-
 	if state == "" {
 		return apisv1alpha1.VolumeStateEmpty
 	}
@@ -309,7 +307,9 @@ func OperationStatefuzzyConvert(state string) apisv1alpha1.State {
 
 // DriverStatefuzzyConvert
 func DriverStatefuzzyConvert(state string) apisv1alpha1.State {
-
+	if state == "" {
+		return ""
+	}
 	if strings.Contains("Ready", state) {
 		return apisv1alpha1.NodeStateReady
 	}
