@@ -200,7 +200,6 @@ func (m *manager) setupInformers(stopCh <-chan struct{}) {
 	volumeSnapshotInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    m.handleVolumeSnapshotAddEvent,
 		UpdateFunc: m.handleVolumeSnapshotUpdateEvent,
-		DeleteFunc: m.handleVolumeSnapshotDeleteEvent,
 	})
 
 	// setup LocalVolumeReplicaSnapshot informer

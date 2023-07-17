@@ -40,7 +40,7 @@ func (m *manager) startVolumeSnapshotTaskWorker(stopCh <-chan struct{}) {
 	m.volumeSnapshotTaskQueue.Shutdown()
 }
 
-// processVolumeSnapshotTaskAssignment create or delete on-host volume replica snapshot according to the volume snapshot
+// processVolumeSnapshotTaskAssignment create or cleanup on-host volume replica snapshot according to the volume snapshot
 func (m *manager) processVolumeSnapshotTaskAssignment(volumeSnapshotName string) error {
 	logCtx := m.logger.WithField("volumeSnapshot", volumeSnapshotName)
 	logCtx.Debug("Processing Volume Snapshot Task Assignment")
@@ -52,7 +52,13 @@ func (m *manager) processVolumeSnapshotTaskAssignment(volumeSnapshotName string)
 		return err
 	}
 
-	// create,{cleanup,delete} replica snapshot according to volume snapshot spec/status
+	// return directly if the volume is being deleted
+	// Tips: the volume replica snapshot normal process is under: pkg/local-storage/member/controller/volume_snapshot_task_worker.go
+	if volumeSnapshot.Spec.Delete {
+		return nil
+	}
+
+	// cleanup replica snapshot according to volume snapshot if the node is removed from accessibility
 	if _, exist := utils.StrFind(volumeSnapshot.Spec.Accessibility.Nodes, m.name); !exist {
 		return m.cleanupVolumeReplicaSnapshot(volumeSnapshot)
 	}

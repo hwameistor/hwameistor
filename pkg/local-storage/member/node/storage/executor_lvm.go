@@ -479,9 +479,10 @@ func (lvm *lvmExecutor) ConsistencyCheck(crdReplicas map[string]*apisv1alpha1.Lo
 // CreateVolumeReplicaSnapshot creates a new COW volume replica snapshot
 func (lvm *lvmExecutor) CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error {
 	logCtx := lvm.logger.WithFields(log.Fields{
-		"snapshot":            replicaSnapshot.Name,
-		"sourceVolume":        replicaSnapshot.Spec.SourceVolume,
-		"sourceVolumeReplica": replicaSnapshot.Spec.SourceVolumeReplica,
+		"volumeSnapshot":        replicaSnapshot.Spec.VolumeSnapshotName,
+		"volumeReplicaSnapshot": replicaSnapshot.Name,
+		"sourceVolume":          replicaSnapshot.Spec.SourceVolume,
+		"sourceVolumeReplica":   replicaSnapshot.Spec.SourceVolumeReplica,
 	})
 	logCtx.Debug("Start creating volume replica snapshot")
 
@@ -508,9 +509,10 @@ func (lvm *lvmExecutor) CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha
 
 func (lvm *lvmExecutor) DeleteVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error {
 	logCtx := lvm.logger.WithFields(log.Fields{
-		"snapshot":            replicaSnapshot.Name,
-		"sourceVolume":        replicaSnapshot.Spec.SourceVolume,
-		"sourceVolumeReplica": replicaSnapshot.Spec.SourceVolumeReplica,
+		"volumeSnapshot":        replicaSnapshot.Spec.VolumeSnapshotName,
+		"volumeReplicaSnapshot": replicaSnapshot.Name,
+		"sourceVolume":          replicaSnapshot.Spec.SourceVolume,
+		"sourceVolumeReplica":   replicaSnapshot.Spec.SourceVolumeReplica,
 	})
 	logCtx.Debug("Start deleting volume replica snapshot")
 
@@ -531,10 +533,10 @@ func (lvm *lvmExecutor) UpdateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha
 // GetVolumeReplicaSnapshot returns a volume replica snapshot attribute including state and creation time
 func (lvm *lvmExecutor) GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error) {
 	logCtx := lvm.logger.WithFields(log.Fields{
-		"snapshot":            replicaSnapshot.Name,
-		"volumeSnapshot":      replicaSnapshot.Spec.VolumeSnapshotName,
-		"sourceVolume":        replicaSnapshot.Spec.SourceVolume,
-		"sourceVolumeReplica": replicaSnapshot.Spec.SourceVolumeReplica,
+		"volumeSnapshot":        replicaSnapshot.Spec.VolumeSnapshotName,
+		"volumeReplicaSnapshot": replicaSnapshot.Name,
+		"sourceVolume":          replicaSnapshot.Spec.SourceVolume,
+		"sourceVolumeReplica":   replicaSnapshot.Spec.SourceVolumeReplica,
 	})
 	logCtx.Debug("Getting a volume replica snapshot")
 

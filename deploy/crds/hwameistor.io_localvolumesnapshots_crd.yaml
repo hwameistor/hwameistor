@@ -48,9 +48,6 @@ spec:
             description: LocalVolumeSnapshotSpec describes the common attributes of
               a localvolume snapshot.
             properties:
-              abort:
-                default: false
-                type: boolean
               accessibility:
                 description: 'NOTE: We only take snapshots on the volume replica exist
                   at the moment! Accessibility is the topology requirement of the
@@ -80,6 +77,9 @@ spec:
                       type: string
                     type: array
                 type: object
+              delete:
+                default: false
+                type: boolean
               requiredCapacityBytes:
                 description: RequiredCapacityBytes specifies the space reserved for
                   the snapshot

@@ -33,7 +33,9 @@ type LocalVolumeReplicaSnapshotSpec struct {
 	// +kubebuilder:validation:Minimum:=4194304
 	RequiredCapacityBytes int64 `json:"requiredCapacityBytes"`
 
-	Delete bool `json:"delete"`
+	// Delete this snapshot if it is true
+	// +kubebuilder:default:=false
+	Delete bool `json:"delete,omitempty"`
 }
 
 // LocalVolumeReplicaSnapshotStatus defines the observed state of LocalVolumeReplicaSnapshot

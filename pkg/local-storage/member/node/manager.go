@@ -199,6 +199,18 @@ func (m *manager) initCache() {
 			m.replicaRecords[replica.Spec.VolumeName] = replica.Name
 		}
 	}
+
+	// initialize replica snapshot records
+	m.logger.Debug("Initializing replica snapshots records in cache")
+	replicaSnapshotList := &apisv1alpha1.LocalVolumeReplicaSnapshotList{}
+	if err := m.apiClient.List(context.TODO(), replicaSnapshotList); err != nil {
+		m.logger.WithError(err).Fatal("Failed to list replicas")
+	}
+	for _, replicaSnapshot := range replicaSnapshotList.Items {
+		if replicaSnapshot.Spec.NodeName == m.name {
+			m.replicaSnapshotsRecords[replicaSnapshot.Spec.VolumeSnapshotName] = replicaSnapshot.Name
+		}
+	}
 }
 
 func (m *manager) setupInformers() {
@@ -265,7 +277,6 @@ func (m *manager) setupInformers() {
 	volumeSnapshotInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    m.handleVolumeSnapshotAddEvent,
 		UpdateFunc: m.handleVolumeSnapshotUpdateEvent,
-		DeleteFunc: m.handleVolumeSnapshotDeleteEvent,
 	})
 
 	// setup LocalVolumeReplicaSnapshot informer

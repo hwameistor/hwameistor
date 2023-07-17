@@ -61,6 +61,8 @@ spec:
               snapshot object in lvm
             properties:
               delete:
+                default: false
+                description: Delete this snapshot if it is true
                 type: boolean
               nodeName:
                 description: NodeName specifies which node the snapshot will be placed
@@ -92,7 +94,6 @@ spec:
                 description: VolumeSnapshotName represents the name of volume snapshot
                 type: string
             required:
-            - delete
             - nodeName
             - poolName
             - requiredCapacityBytes

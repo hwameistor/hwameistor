@@ -22,7 +22,7 @@ type LocalVolumeSnapshotSpec struct {
 	RequiredCapacityBytes int64 `json:"requiredCapacityBytes"`
 
 	// +kubebuilder:default:=false
-	Delete bool `json:"abort,omitempty"`
+	Delete bool `json:"delete,omitempty"`
 }
 
 // LocalVolumeSnapshotStatus defines the observed state of LocalVolumeSnapshot

@@ -7,6 +7,10 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+const (
+	SourceVolumeSnapshotAnnoKey = "hwameistor.io/source-snapshot"
+)
+
 // LocalVolumeSnapshotRestoreSpec defines the desired state of LocalVolumeSnapshotRestore
 type LocalVolumeSnapshotRestoreSpec struct {
 	// TargetVolume is the name of the volume to restore to
@@ -24,6 +28,7 @@ type LocalVolumeSnapshotRestoreSpec struct {
 	RestoreType RestoreType `json:"restoreType"`
 
 	// Abort can be used to abort the restore operation and clean up sub resources created by the restore operation automatically
+	// +kubebuilder:default:=false
 	Abort bool `json:"abort,omitempty"`
 }
 

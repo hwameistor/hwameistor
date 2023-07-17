@@ -53,6 +53,7 @@ spec:
               of LocalVolumeSnapshotRestore
             properties:
               abort:
+                default: false
                 description: Abort can be used to abort the restore operation and
                   clean up sub resources created by the restore operation automatically
                 type: boolean
@@ -84,7 +85,7 @@ spec:
                 description: Message error message to describe some states
                 type: string
               state:
-                description: State is the phase of volume replica, e.g. submitted,
+                description: State is the phase of restore volume snapshot, e.g. submitted,
                   started, completed, abort, ...
                 type: string
             type: object
