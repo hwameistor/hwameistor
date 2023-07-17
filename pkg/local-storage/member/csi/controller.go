@@ -3,6 +3,7 @@ package csi
 import (
 	"fmt"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -29,6 +30,8 @@ var _ csi.ControllerServer = (*plugin)(nil)
 
 const (
 	RetryInterval = 2 * time.Second
+
+	pvcCreateFinalizer = "provisioner.hwameistor.io/restoring-protection"
 )
 
 // ControllerGetCapabilities implementation
@@ -76,7 +79,7 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		}
 	}
 
-	// 2. check if volume is ready to use per 3 seconds
+	// 2. check if volume is ready to use per 2 seconds
 	return resp, wait.PollUntil(RetryInterval, func() (done bool, err error) {
 		logCtx.Debug("Checking if LocalVolume ready to use")
 		if err = p.apiClient.Get(ctx, client.ObjectKey{Name: req.Name}, &volume); err != nil {
@@ -380,6 +383,8 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 	volumeSnapshotRestore := apisv1alpha1.LocalVolumeSnapshotRestore{}
 	volumeSnapshotRestore.Name = snapshotRestoreName
 	volumeSnapshotRestore.Spec.TargetVolume = req.GetName()
+	// protection finalizer to prevent objects to be deleted
+	volumeSnapshotRestore.SetFinalizers([]string{pvcCreateFinalizer})
 	volumeSnapshotRestore.Spec.RestoreType = apisv1alpha1.RestoreTypeCreate
 	volumeSnapshotRestore.Spec.SourceVolumeSnapshot = req.VolumeContentSource.GetSnapshot().SnapshotId
 	if err := p.apiClient.Create(ctx, &volumeSnapshotRestore); err != nil {
@@ -391,7 +396,6 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 
 	// 4. wait for LocalVolumeSnapshotRestore completed
 	//
-	// How we judge whether LocalVolumeSnapshotRestore is already completed is key.
 	// The LocalVolumeSnapshotRestore is an operation on the VolumeSnapshot, so it will be deleted when the operation is completed.
 	// Thus, we need to hung up the delete operation before we confirm that the operation is completed.
 	logCtx.Debugf("Step4: Checking if LocalVolumeSnapshotRestore %s ready to use", snapshotRestoreName)
@@ -403,8 +407,9 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 		if volumeSnapshotRestore.Status.State != apisv1alpha1.OperationStateCompleted {
 			return false, status.Errorf(codes.Internal, "LocalVolumeSnapshotRestore %s is NotReady", volumeSnapshotRestore.Name)
 		}
-		// LocalVolumeSnapshotRestore is ready, return immediately
-		return true, nil
+		// LocalVolumeSnapshotRestore is ready, remove the protection finalizer from the object
+		volumeSnapshotRestore.SetFinalizers(utils.RemoveStringItem(volumeSnapshotRestore.Finalizers, pvcCreateFinalizer))
+		return true, p.apiClient.Update(ctx, &volumeSnapshotRestore)
 	}, ctx.Done()); err != nil {
 		logCtx.WithError(err).Errorf("LocalVolumeSnapshotRestore %s is not completed", snapshotRestoreName)
 		return resp, err
