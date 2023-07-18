@@ -2,16 +2,16 @@ package qos
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"syscall"
 
 	"github.com/containerd/cgroups/v3"
-	"github.com/hwameistor/hwameistor/pkg/exechelper"
-	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
 )
 
 const (
 	blkioPath = "/sys/fs/cgroup/blkio"
+	ioMaxFile = "/sys/fs/cgroup/kubepods/io.max"
 )
 
 // VolumeCgroupsManager is the interface to configure QoS for a volume.
@@ -25,10 +25,9 @@ func NewVolumeCgroupsManager() (VolumeCgroupsManager, error) {
 	mode := cgroups.Mode()
 	switch mode {
 	case cgroups.Legacy:
-		return &cgroupV1{nsexecutor.New()}, nil
+		return &cgroupV1{}, nil
 	case cgroups.Unified, cgroups.Hybrid:
-		// TODO: support cgroup v2
-		return &noop{}, nil
+		return &cgroupV2{}, nil
 	case cgroups.Unavailable:
 		return &noop{}, fmt.Errorf("cgroups is not available")
 	}
@@ -38,9 +37,7 @@ func NewVolumeCgroupsManager() (VolumeCgroupsManager, error) {
 var _ VolumeCgroupsManager = &cgroupV1{}
 
 // cgroupV1 is the implementation of VolumeCgroupsManager for cgroup v1.
-type cgroupV1 struct {
-	exec exechelper.Executor
-}
+type cgroupV1 struct{}
 
 // ConfigureQoSForDevice configures the QoS for a volume.
 func (c *cgroupV1) ConfigureQoSForDevice(devPath string, iops, throughput int64) error {
@@ -50,25 +47,25 @@ func (c *cgroupV1) ConfigureQoSForDevice(devPath string, iops, throughput int64)
 	}
 
 	filename := filepath.Join(blkioPath, "blkio.throttle.read_bps_device")
-	err = writeFile(c.exec, filename, fmt.Sprintf("%d:%d %d", major, minor, throughput))
+	err = writeFile(filename, fmt.Sprintf("%d:%d %d", major, minor, throughput))
 	if err != nil {
 		return err
 	}
 
 	filename = filepath.Join(blkioPath, "blkio.throttle.write_bps_device")
-	err = writeFile(c.exec, filename, fmt.Sprintf("%d:%d %d", major, minor, throughput))
+	err = writeFile(filename, fmt.Sprintf("%d:%d %d", major, minor, throughput))
 	if err != nil {
 		return err
 	}
 
 	filename = filepath.Join(blkioPath, "blkio.throttle.read_iops_device")
-	err = writeFile(c.exec, filename, fmt.Sprintf("%d:%d %d", major, minor, iops))
+	err = writeFile(filename, fmt.Sprintf("%d:%d %d", major, minor, iops))
 	if err != nil {
 		return err
 	}
 
 	filename = filepath.Join(blkioPath, "blkio.throttle.write_iops_device")
-	err = writeFile(c.exec, filename, fmt.Sprintf("%d:%d %d", major, minor, iops))
+	err = writeFile(filename, fmt.Sprintf("%d:%d %d", major, minor, iops))
 	if err != nil {
 		return err
 	}
@@ -79,7 +76,26 @@ var _ VolumeCgroupsManager = &noop{}
 
 type noop struct{}
 
-func (n *noop) ConfigureQoSForDevice(devPath string, iops, throughput int64) error {
+func (n *noop) ConfigureQoSForDevice(string, int64, int64) error {
+	return nil
+}
+
+// cgroupV2 is the implementation of VolumeCgroupsManager for cgroup v2.
+type cgroupV2 struct{}
+
+// ConfigureQoSForDevice configures the QoS for a volume.
+func (c *cgroupV2) ConfigureQoSForDevice(devPath string, iops, throughput int64) error {
+	major, minor, err := getDeviceNumber(devPath)
+	if err != nil {
+		return err
+	}
+
+	filename := filepath.Join(ioMaxFile)
+	err = writeFile(filename, fmt.Sprintf("%d:%d rbps=%d wbps=%d riops=%d wiops=%d", major, minor, throughput, throughput, iops, iops))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -95,10 +111,18 @@ func getDeviceNumber(devicePath string) (uint64, uint64, error) {
 	return maj, min, nil
 }
 
-func writeFile(exec exechelper.Executor, filename, value string) error {
-	result := exec.RunCommand(exechelper.ExecParams{
-		CmdName: "sh",
-		CmdArgs: []string{"-c", fmt.Sprintf("echo %s >> %s", value, filename)},
-	})
-	return result.Error
+func writeFile(filename, value string) error {
+	file, err := os.OpenFile(filename, os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+
+	_, err = file.WriteString(value)
+	if err != nil {
+		return err
+	}
+
+	err = file.Close()
+
+	return err
 }
