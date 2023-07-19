@@ -51,20 +51,19 @@ HwameiStor CRDs create the following APIs.
 
 ```console
 $ kubectl api-resources --api-group hwameistor.io
-NAME                       SHORTNAMES   APIVERSION               NAMESPACED   KIND
-localdiskclaims            ldc          hwameistor.io/v1alpha1   false        LocalDiskClaim
-localdisknodes             ldn          hwameistor.io/v1alpha1   false        LocalDiskNode
-localdisks                 ld           hwameistor.io/v1alpha1   false        LocalDisk
-localdiskvolumes           ldv          hwameistor.io/v1alpha1   false        LocalDiskVolume
-localstoragenodes          lsn          hwameistor.io/v1alpha1   false        LocalStorageNode
-localvolumeconverts        lvconvert    hwameistor.io/v1alpha1   true         LocalVolumeConvert
-localvolumeexpands         lvexpand     hwameistor.io/v1alpha1   false        LocalVolumeExpand
-localvolumegroupconverts   lvgconvert   hwameistor.io/v1alpha1   true         LocalVolumeGroupConvert
-localvolumegroupmigrates   lvgmigrate   hwameistor.io/v1alpha1   true         LocalVolumeGroupMigrate
-localvolumegroups          lvg          hwameistor.io/v1alpha1   true         LocalVolumeGroup
-localvolumemigrates        lvmigrate    hwameistor.io/v1alpha1   true         LocalVolumeMigrate
-localvolumereplicas        lvr          hwameistor.io/v1alpha1   false        LocalVolumeReplica
-localvolumes               lv           hwameistor.io/v1alpha1   false        LocalVolume
+NAME                  SHORTNAMES   APIVERSION               NAMESPACED   KIND
+clusters              hmcluster    hwameistor.io/v1alpha1   false        Cluster
+localdiskclaims       ldc          hwameistor.io/v1alpha1   false        LocalDiskClaim
+localdisknodes        ldn          hwameistor.io/v1alpha1   false        LocalDiskNode
+localdisks            ld           hwameistor.io/v1alpha1   false        LocalDisk
+localdiskvolumes      ldv          hwameistor.io/v1alpha1   false        LocalDiskVolume
+localstoragenodes     lsn          hwameistor.io/v1alpha1   false        LocalStorageNode
+localvolumeconverts   lvconvert    hwameistor.io/v1alpha1   false        LocalVolumeConvert
+localvolumeexpands    lvexpand     hwameistor.io/v1alpha1   false        LocalVolumeExpand
+localvolumegroups     lvg          hwameistor.io/v1alpha1   false        LocalVolumeGroup
+localvolumemigrates   lvmigrate    hwameistor.io/v1alpha1   false        LocalVolumeMigrate
+localvolumereplicas   lvr          hwameistor.io/v1alpha1   false        LocalVolumeReplica
+localvolumes          lv           hwameistor.io/v1alpha1   false        LocalVolume
 ```
 
 For the details about CRDs, please also refer to [CRDs](../../architecture/apis.md).
