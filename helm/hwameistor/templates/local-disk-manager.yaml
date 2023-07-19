@@ -61,6 +61,8 @@ spec:
             readOnly: true
           - name: devmount
             mountPath: /dev
+          - name: etcmount
+            mountPath: /etc
           - name: registration-dir
             mountPath: {{ template "hwameistor.kubeletRootDir" . }}/plugins_registry
           - name: plugin-dir
@@ -108,6 +110,10 @@ spec:
         # are connected at runtime of the pod.
         hostPath:
           path: /dev
+          type: Directory
+      - name: etcmount
+        hostPath:
+          path: /etc
           type: Directory
       - name: socket-dir
         hostPath:
