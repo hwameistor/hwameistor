@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("periodCheck"), func() {
+var _ = ginkgo.Describe("localstorage volume throughput  test ", ginkgo.Label("periodCheck"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
@@ -224,7 +224,7 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("periodCheck")
 		})
 
 	})
-	ginkgo.Context("Test the qos of the volume", func() {
+	ginkgo.Context("Test the throughput of the volume", func() {
 		ginkgo.It("check lvg", func() {
 			lvrList := &v1alpha1.LocalVolumeReplicaList{}
 			err := client.List(ctx, lvrList)
@@ -243,7 +243,7 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("periodCheck")
 			}
 
 		})
-		ginkgo.It("Test the qos", func() {
+		ginkgo.It("Test the throughput", func() {
 
 			config, err := config.GetConfig()
 			if err != nil {
@@ -298,7 +298,7 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("periodCheck")
 							}
 							logrus.Printf(strconv.Itoa(bw))
 
-							if bw <= 920 {
+							if bw <= 900 {
 								result = true
 							}
 
