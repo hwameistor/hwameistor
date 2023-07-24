@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("periodCheck"), func() {
+var _ = ginkgo.Describe("localstorage volume IOPS test ", ginkgo.Label("periodCheck"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
@@ -224,7 +224,7 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("periodCheck")
 		})
 
 	})
-	ginkgo.Context("Test the qos of the volume", func() {
+	ginkgo.Context("Test the IOPS of the volume", func() {
 		ginkgo.It("check lvg", func() {
 			lvrList := &v1alpha1.LocalVolumeReplicaList{}
 			err := client.List(ctx, lvrList)
@@ -243,7 +243,7 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("periodCheck")
 			}
 
 		})
-		ginkgo.It("Test the qos", func() {
+		ginkgo.It("Test the IOPS", func() {
 
 			config, err := config.GetConfig()
 			if err != nil {
@@ -297,7 +297,7 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("periodCheck")
 							}
 							logrus.Printf(strconv.Itoa(iop))
 
-							if iop <= 110 {
+							if iop <= 100 {
 								result = true
 							}
 							break
