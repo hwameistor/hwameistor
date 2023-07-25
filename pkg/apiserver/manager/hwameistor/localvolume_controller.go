@@ -229,7 +229,6 @@ func (lvController *LocalVolumeController) GetVolumeReplicas(queryPage hwameisto
 
 // GetVolumeOperation
 func (lvController *LocalVolumeController) GetVolumeOperation(queryPage hwameistorapi.QueryPage) (*hwameistorapi.VolumeOperationByVolume, error) {
-
 	var volumeOperation = &hwameistorapi.VolumeOperationByVolume{}
 	var volumeMigrateOperations = []*hwameistorapi.VolumeMigrateOperation{}
 	lvmList := apisv1alpha1.LocalVolumeMigrateList{}
@@ -388,7 +387,6 @@ func (lvController *LocalVolumeController) GetLocalVolumeYamlStr(resourceName st
 
 // getLVMResourceYaml
 func (lvController *LocalVolumeController) getLVMResourceYaml(lvm *apisv1alpha1.LocalVolumeMigrate) (string, error) {
-
 	buf := new(bytes.Buffer)
 
 	lvm.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{
@@ -407,7 +405,6 @@ func (lvController *LocalVolumeController) getLVMResourceYaml(lvm *apisv1alpha1.
 
 // getLVRResourceYaml
 func (lvController *LocalVolumeController) getLVRResourceYaml(lvr *apisv1alpha1.LocalVolumeReplica) (string, error) {
-
 	buf := new(bytes.Buffer)
 
 	lvr.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{
@@ -426,7 +423,6 @@ func (lvController *LocalVolumeController) getLVRResourceYaml(lvr *apisv1alpha1.
 
 // getLVResourceYaml
 func (lvController *LocalVolumeController) getLVResourceYaml(lv *apisv1alpha1.LocalVolume) (string, error) {
-
 	buf := new(bytes.Buffer)
 
 	lv.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{
@@ -445,7 +441,6 @@ func (lvController *LocalVolumeController) getLVResourceYaml(lv *apisv1alpha1.Lo
 
 // CreateVolumeMigrate
 func (lvController *LocalVolumeController) CreateVolumeMigrate(volName, srcNode, selectedNode string, abort bool) (*hwameistorapi.VolumeMigrateRspBody, error) {
-
 	lvmName := fmt.Sprintf("migrate-%s", volName)
 
 	lvm := &apisv1alpha1.LocalVolumeMigrate{}
@@ -560,7 +555,6 @@ func (lvController *LocalVolumeController) CreateVolumeConvert(volName string, a
 
 // GetTargetNodesByManualTargetNodeType
 func (lvController *LocalVolumeController) GetTargetNodesByManualTargetNodeType() ([]string, error) {
-
 	lsnList := &apisv1alpha1.LocalStorageNodeList{}
 	if err := lvController.Client.List(context.TODO(), lsnList); err != nil {
 		log.WithError(err).Error("Failed to list LocalStorageNodes")
@@ -579,7 +573,6 @@ func (lvController *LocalVolumeController) GetTargetNodesByManualTargetNodeType(
 
 // GetVolumeConvert
 func (lvController *LocalVolumeController) GetVolumeConvert(lvname string) (*hwameistorapi.VolumeConvertOperation, error) {
-
 	var vcp = &hwameistorapi.VolumeConvertOperation{}
 
 	lvcList := apisv1alpha1.LocalVolumeConvertList{}
@@ -598,7 +591,6 @@ func (lvController *LocalVolumeController) GetVolumeConvert(lvname string) (*hwa
 
 // GetVolumeMigrate
 func (lvController *LocalVolumeController) GetVolumeMigrate(lvname string) (hwameistorapi.VolumeMigrateOperation, error) {
-
 	var vcp hwameistorapi.VolumeMigrateOperation
 
 	lvmList := apisv1alpha1.LocalVolumeMigrateList{}

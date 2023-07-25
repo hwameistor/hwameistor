@@ -33,7 +33,7 @@ func NewSettingController(m *manager.ServerManager) ISettingController {
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.DrbdEnableSettingRspBody
-// @Failure     500 {object}  api.RspFailBody "失败"
+// @Failure     500 {object}  api.RspFailBody
 // @Router      /cluster/drbd [post]
 func (n *SettingController) EnableDRBDSetting(ctx *gin.Context) {
 	var failRsp api.RspFailBody
