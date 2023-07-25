@@ -151,7 +151,7 @@ HwameiStor 技术沟通群：
 
 ## 许可证
 
-版权所有 (c) 2014-2021 HwameiStor 开发团队
+版权所有 (c) 2014-2023 HwameiStor 开发团队
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
