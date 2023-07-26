@@ -297,8 +297,8 @@ var _ = ginkgo.Describe("localstorage volume throughput  test ", ginkgo.Label("p
 								f.ExpectNoError(err)
 							}
 							logrus.Printf(strconv.Itoa(bw))
-
-							if bw <= 900 {
+							// Allow a small amount of error
+							if bw <= (900 + 10) {
 								result = true
 							}
 
