@@ -294,7 +294,6 @@ func (v *DiskVolumeHandler) AppendMountPoint(targetPath string, volCap *csi.Volu
 		mountPoint.FsTye = volCap.GetMount().FsType
 		mountPoint.MountOptions = volCap.GetMount().MountFlags
 		mountPoint.VolumeCap = v1alpha1.VolumeCapability{AccessType: v1alpha1.VolumeCapability_AccessType_Mount}
-	default:
 	}
 	v.Ldv.Status.MountPoints = append(v.Ldv.Status.MountPoints, mountPoint)
 }

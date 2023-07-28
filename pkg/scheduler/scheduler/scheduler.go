@@ -32,7 +32,6 @@ type Scheduler struct {
 
 // NewDataCache creates a cache instance
 func NewScheduler(f framework.Handle) *Scheduler {
-
 	cfg, err := rest.InClusterConfig()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to construct the cluster config")
@@ -190,10 +189,10 @@ func (s *Scheduler) Score(pod *corev1.Pod, node string) (int64, error) {
 
 // return: lvmProvisionedClaims, lvmNewClaims, diskProvisionedClaims, diskNewClaims, error
 func (s *Scheduler) getHwameiStorPVCs(pod *corev1.Pod) ([]*corev1.PersistentVolumeClaim, []*corev1.PersistentVolumeClaim, []*corev1.PersistentVolumeClaim, []*corev1.PersistentVolumeClaim, error) {
-	lvmProvisionedClaims := []*corev1.PersistentVolumeClaim{}
-	lvmNewClaims := []*corev1.PersistentVolumeClaim{}
-	diskProvisionedClaims := []*corev1.PersistentVolumeClaim{}
-	diskNewClaims := []*corev1.PersistentVolumeClaim{}
+	var lvmProvisionedClaims []*corev1.PersistentVolumeClaim
+	var lvmNewClaims []*corev1.PersistentVolumeClaim
+	var diskProvisionedClaims []*corev1.PersistentVolumeClaim
+	var diskNewClaims []*corev1.PersistentVolumeClaim
 
 	lvmCSIDriverName := s.lvmScheduler.CSIDriverName()
 	diskCSIDriverName := s.diskScheduler.CSIDriverName()
