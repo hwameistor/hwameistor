@@ -2,6 +2,10 @@
 
 package v1alpha1
 
+// EventListerExpansion allows custom methods to be added to
+// EventLister.
+type EventListerExpansion interface{}
+
 // LocalDiskListerExpansion allows custom methods to be added to
 // LocalDiskLister.
 type LocalDiskListerExpansion interface{}

@@ -8,6 +8,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// Events returns a EventInformer.
+	Events() EventInformer
 	// LocalDisks returns a LocalDiskInformer.
 	LocalDisks() LocalDiskInformer
 	// LocalDiskClaims returns a LocalDiskClaimInformer.
@@ -41,6 +43,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// Events returns a EventInformer.
+func (v *version) Events() EventInformer {
+	return &eventInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // LocalDisks returns a LocalDiskInformer.

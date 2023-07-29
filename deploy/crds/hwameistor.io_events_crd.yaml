@@ -11,7 +11,14 @@ spec:
     singular: event
   scope: Cluster
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.resourceType
+      name: type
+      type: string
+    - jsonPath: .spec.resourceName
+      name: name
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: Event is the Schema for the events API
@@ -30,6 +37,35 @@ spec:
             type: object
           spec:
             description: EventSpec defines the desired state of Event
+            properties:
+              records:
+                items:
+                  properties:
+                    action:
+                      type: string
+                    actionContent:
+                      type: string
+                    result:
+                      type: string
+                    resultContent:
+                      type: string
+                    time:
+                      format: date-time
+                      type: string
+                  type: object
+                type: array
+              resourceName:
+                type: string
+              resourceType:
+                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                  Important: Run "operator-sdk generate k8s" to regenerate code after
+                  modifying this file Add custom validation using kubebuilder tags:
+                  https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+                type: string
+            required:
+            - records
+            - resourceName
+            - resourceType
             type: object
           status:
             description: EventStatus defines the observed state of Event
