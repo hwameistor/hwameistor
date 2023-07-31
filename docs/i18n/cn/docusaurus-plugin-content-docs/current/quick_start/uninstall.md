@@ -77,4 +77,9 @@ $ kubectl -n hwameistor get pod
       helm uninstall hwameistor-operator -n hwameistor
       ```
 
-最后，您仍然需要清理每个节点上的 LVM 配置，并采用额外的系统工具（例如：wipefs）清除磁盘上的所有数据。
+3. 最后，您仍然需要清理每个节点上的 LVM 配置，并采用额外的系统工具（例如：wipefs）清除磁盘上的所有数据。
+
+   ```bash
+   wipefs -a /dev/sdx
+   blkid /dev/sdx
+   ```
