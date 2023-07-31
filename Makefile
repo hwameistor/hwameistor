@@ -328,7 +328,7 @@ compile_failover:
 	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${FAILOVER_BUILD_OUTPUT} ${FAILOVER_BUILD_INPUT}
 
 .PHONY: compile_failover_arm64
-compile_failoverr_arm64:
+compile_failover_arm64:
 	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${FAILOVER_BUILD_OUTPUT} ${FAILOVER_BUILD_INPUT}
 
 .PHONY: _enable_buildx
