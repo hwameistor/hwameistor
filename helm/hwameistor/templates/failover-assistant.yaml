@@ -6,7 +6,7 @@ metadata:
   labels:
     app: hwameistor-failover-assistant
 spec:
-  replicas: {{ .Values.failover-assistant.replicas}}
+  replicas: {{ .Values.failoverAssistant.replicas}}
   strategy:
     type: Recreate
   selector:
@@ -20,9 +20,9 @@ spec:
       serviceAccountName: hwameistor-admin
       containers:
         - name: failover-assistant
-          image: {{ .Values.global.hwameistorImageRegistry}}/{{ .Values.failover-assistant.imageRepository}}:{{ template "hwameistor.failover-assistantImageTag" . }}
+          image: {{ .Values.global.hwameistorImageRegistry}}/{{ .Values.failoverAssistant.imageRepository}}:{{ template "hwameistor.failoverAssistantImageTag" . }}
           imagePullPolicy: IfNotPresent
           args:
-            --failover-cooldown-duration-minutes={{ .Values.failover-assistant.cooldown-duration}}
+            --failover-cooldown-duration-minutes={{ .Values.failoverAssistant.cooldown-duration}}
           resources: 
-            {{- toYaml .Values.failover-assistant.resources | nindent 12 }}
+            {{- toYaml .Values.failoverAssistant.resources | nindent 12 }}
