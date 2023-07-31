@@ -22,5 +22,7 @@ spec:
         - name: failover-assistant
           image: {{ .Values.global.hwameistorImageRegistry}}/{{ .Values.failoverAssistant.imageRepository}}:{{ template "hwameistor.failoverAssistantImageTag" . }}
           imagePullPolicy: IfNotPresent
+          args:
+            --failover-cooldown-duration-minutes={{ .Values.failoverAssistant.cooldown-duration}}
           resources: 
             {{- toYaml .Values.failoverAssistant.resources | nindent 12 }}

@@ -61,6 +61,7 @@ failoverAssistant:
   imageRepository: hwameistor/failover-assistant
   tag: ""
   resources: {}
+  cooldown-duration: 15
 
 exporter:
   replicas: 1

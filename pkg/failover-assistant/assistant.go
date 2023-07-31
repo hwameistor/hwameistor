@@ -51,7 +51,7 @@ type failoverAssistant struct {
 }
 
 // New an assistant instance
-func New(clientset *kubernetes.Clientset) Assistant {
+func New(clientset *kubernetes.Clientset, failoverCoolDownDuration time.Duration) Assistant {
 	return &failoverAssistant{
 		clientset:         clientset,
 		failoverNodeQueue: common.NewTaskQueue("FailoverNodeTask", 0),
