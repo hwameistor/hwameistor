@@ -170,7 +170,7 @@ jobs:
         run: make e2e-test
   shutdown-vm:
     if: ${{ always() }}
-    needs: [ k8s1_25-test,k8s1_26-test,k8s1_27-test,k8s1_23-test,c81-test,u2204-test,kylin10_arm-test ]
+    needs: [ k8s1_25-test,k8s1_26-test,k8s1_27-test,k8s1_23-test,c81-test,u2204-test,centos7_6_offline-test]
     runs-on: [ "e2e" ]
     timeout-minutes: 180
     steps:
