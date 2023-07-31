@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"time"
 
 	failoverassistant "github.com/hwameistor/hwameistor/pkg/failover-assistant"
 
@@ -38,9 +37,7 @@ func setupLogging(debug bool) {
 func main() {
 
 	var debug bool
-	var failoverCooldownDurationMinutes time.Duration
 	flag.BoolVar(&debug, "debug", true, "debug mode")
-	flag.DurationVar(&failoverCooldownDurationMinutes, "failover-cooldown-duration-minutes", failoverCoolDownDefaultMinutes, "node failover cooldown duration in minutes")
 	flag.Parse()
 
 	setupLogging(debug)
@@ -60,7 +57,7 @@ func main() {
 	stopCh := make(chan struct{})
 
 	run := func(ctx context.Context) {
-		if err := failoverassistant.New(leClientset, failoverCooldownDurationMinutes).Run(stopCh); err != nil {
+		if err := failoverassistant.New(leClientset).Run(stopCh); err != nil {
 			log.WithFields(log.Fields{"error": err.Error()}).Error("failed to run failover assistant")
 			os.Exit(1)
 		}
