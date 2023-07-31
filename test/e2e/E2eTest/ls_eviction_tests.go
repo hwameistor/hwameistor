@@ -306,8 +306,8 @@ var _ = ginkgo.Describe("eviction test", ginkgo.Label("error"), func() {
 
 			logrus.Infof("drain  " + podlist.Items[0].Spec.NodeName)
 			beforeEvictionNode := podlist.Items[0].Spec.NodeName
-			_ = utils.RunInLinux("kubectl taint node --all node-role.kubernetes.io/master-")
-			_ = utils.RunInLinux("kubectl drain " + podlist.Items[0].Spec.NodeName + " --ignore-daemonsets=true --delete-emptydir-data")
+			_, _ = utils.RunInLinux("kubectl taint node --all node-role.kubernetes.io/master-")
+			_, _ = utils.RunInLinux("kubectl drain " + podlist.Items[0].Spec.NodeName + " --ignore-daemonsets=true --delete-emptydir-data")
 
 			deployment = &appsv1.Deployment{}
 			deployKey = ctrlclient.ObjectKey{
@@ -337,7 +337,7 @@ var _ = ginkgo.Describe("eviction test", ginkgo.Label("error"), func() {
 			}
 
 			logrus.Infof("after drain " + podlist.Items[0].Spec.NodeName)
-			_ = utils.RunInLinux("kubectl uncordon " + beforeEvictionNode)
+			_, _ = utils.RunInLinux("kubectl uncordon " + beforeEvictionNode)
 			gomega.Expect(beforeEvictionNode).NotTo(gomega.Equal(podlist.Items[0].Spec.NodeName))
 		})
 		ginkgo.It("check test file", ginkgo.FlakeAttempts(5), func() {
@@ -681,8 +681,8 @@ var _ = ginkgo.Describe("eviction test", ginkgo.Label("error"), func() {
 
 			logrus.Infof("drain  " + podlist.Items[0].Spec.NodeName)
 			beforeEvictionNode := podlist.Items[0].Spec.NodeName
-			_ = utils.RunInLinux("kubectl taint node --all node-role.kubernetes.io/master-")
-			_ = utils.RunInLinux("kubectl drain " + podlist.Items[0].Spec.NodeName + " --ignore-daemonsets=true --delete-emptydir-data")
+			_, _ = utils.RunInLinux("kubectl taint node --all node-role.kubernetes.io/master-")
+			_, _ = utils.RunInLinux("kubectl drain " + podlist.Items[0].Spec.NodeName + " --ignore-daemonsets=true --delete-emptydir-data")
 
 			deployment = &appsv1.Deployment{}
 			deployKey = ctrlclient.ObjectKey{
@@ -712,7 +712,7 @@ var _ = ginkgo.Describe("eviction test", ginkgo.Label("error"), func() {
 			}
 
 			logrus.Infof("after drain " + podlist.Items[0].Spec.NodeName)
-			_ = utils.RunInLinux("kubectl uncordon " + beforeEvictionNode)
+			_, _ = utils.RunInLinux("kubectl uncordon " + beforeEvictionNode)
 			gomega.Expect(beforeEvictionNode).NotTo(gomega.Equal(podlist.Items[0].Spec.NodeName))
 		})
 		ginkgo.It("check test file", func() {

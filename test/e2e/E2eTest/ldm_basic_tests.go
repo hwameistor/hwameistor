@@ -39,7 +39,7 @@ var _ = ginkgo.Describe("Local Disk Manager basic tests", ginkgo.Label("periodCh
 			gomega.Expect(len(localDiskList.Items)).To(gomega.Equal(6))
 		})
 		ginkgo.It("Manage new disks", func() {
-			output := utils.RunInLinux("sh adddisk.sh")
+			output, _ := utils.RunInLinux("sh adddisk.sh")
 			logrus.Info("add  disk :", output)
 			err := wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				localDiskList := &v1alpha1.LocalDiskList{}
@@ -76,7 +76,7 @@ var _ = ginkgo.Describe("Local Disk Manager basic tests", ginkgo.Label("periodCh
 		})
 	})
 	ginkgo.AfterAll(func() {
-		output := utils.RunInLinux("sh deletedisk.sh")
+		output, _ := utils.RunInLinux("sh deletedisk.sh")
 		logrus.Info("delete disk", output)
 	})
 })
