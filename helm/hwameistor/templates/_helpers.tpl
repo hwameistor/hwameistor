@@ -44,8 +44,8 @@
 {{- end -}}
 
 {{/* Allow Failover image tag to be overridden. */}}
-{{- define "hwameistor.failover-assistantImageTag" -}}
-  {{- default .Chart.Version .Values.failover-assistant.tag -}}
+{{- define "hwameistor.failoverAssistantImageTag" -}}
+  {{- default .Chart.Version .Values.failoverAssistant.tag -}}
 {{- end -}}
 
 {{/* Allow KubeletRootDir to be overridden. */}}

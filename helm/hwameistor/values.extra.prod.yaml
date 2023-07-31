@@ -28,7 +28,7 @@ evictor:
       cpu: 1m
       memory: 20Mi
 
-failover-assistant:
+failoverAssistant:
   replicas: 2
   resources:
     limits:
