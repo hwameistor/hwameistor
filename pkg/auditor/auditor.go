@@ -38,6 +38,8 @@ func (ad *auditor) Run(stopCh <-chan struct{}) error {
 	eventStore := NewEventStore()
 	eventStore.Run(lsFactory, stopCh)
 
+	newAuditorForCluster(eventStore).Run(stopCh)
+
 	newAuditorForLocalVolume(eventStore).Run(lsFactory, stopCh)
 	newAuditorForLocalVolumeMigrate(eventStore).Run(lsFactory, stopCh)
 	newAuditorForLocalVolumeConvert(eventStore).Run(lsFactory, stopCh)
