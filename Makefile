@@ -358,6 +358,10 @@ pr-test:
 relok8s-test:
 	bash test/relok8s-test.sh
 
+.PHONY: shutdownvm
+shutdownvm:
+	bash test/shutdownvm.sh
+
 .PHONY: render-chart-values
 render-chart-values:
 	${RENDER_CHART_VALUES}
