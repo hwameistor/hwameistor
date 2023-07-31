@@ -99,7 +99,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 
 		ginkgo.It("create a deployment", func() {
 			//create deployment
-			_ = utils.RunInLinux("kubectl taint node --all node-role.kubernetes.io/master-")
+			_, _ = utils.RunInLinux("kubectl taint node --all node-role.kubernetes.io/master-")
 			exampleDeployment := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      utils.HaDeploymentName,

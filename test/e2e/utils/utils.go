@@ -34,12 +34,12 @@ func Int32Ptr(i int32) *int32 { return &i }
 
 func BoolPter(i bool) *bool { return &i }
 
-func RunInLinux(cmd string) string {
+func RunInLinux(cmd string) (string, error) {
 	result, err := exec.Command("/bin/sh", "-c", cmd).Output()
 	if err != nil {
 		logrus.Printf("ERROR:%+v ", err)
 	}
-	return string(result)
+	return string(result), err
 }
 
 func nodeList() *corev1.NodeList {
@@ -89,29 +89,32 @@ func addLabels() {
 	}
 }
 
-func installHwameiStorByHelm() {
+func installHwameiStorByHelm() error {
 	logrus.Infof("helm install hwameistor")
-	_ = RunInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace --set global.k8sImageRegistry=m.daocloud.io/registry.k8s.io")
+	_, err := RunInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace --set global.k8sImageRegistry=m.daocloud.io/registry.k8s.io")
+	return err
+
 }
 
-func installHwameiStorByHelm_offline() {
+func installHwameiStorByHelm_offline() error {
 	logrus.Infof("helm install hwameistor")
-	_ = RunInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace --set global.k8sImageRegistry=10.6.112.210")
+	_, err := RunInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace --set global.k8sImageRegistry=10.6.112.210")
+	return err
 }
 
 func StartAdRollback(k8s string) error {
 	if k8s == "kylin10arm" {
 		logrus.Info("start arm_rollback")
 		run := "sh arm_rollback.sh "
-		_ = RunInLinux(run)
+		_, _ = RunInLinux(run)
 	} else {
 		logrus.Info("start ad_rollback" + k8s)
 		run := "sh ad_rollback.sh " + k8s
-		_ = RunInLinux(run)
+		_, _ = RunInLinux(run)
 	}
 
 	err := wait.PollImmediate(10*time.Second, 20*time.Minute, func() (done bool, err error) {
-		output := RunInLinux("kubectl get pod -A  |grep -v Running |wc -l")
+		output, _ := RunInLinux("kubectl get pod -A  |grep -v Running |wc -l")
 		if output != "1\n" {
 			return false, nil
 		} else {
@@ -130,9 +133,17 @@ func StartAdRollback(k8s string) error {
 func ConfigureadEnvironment(ctx context.Context, k8s string) error {
 
 	if k8s == "centos7.9_offline" {
-		installHwameiStorByHelm_offline()
+		err := installHwameiStorByHelm_offline()
+		if err != nil {
+			logrus.Printf(" installHwameiStorByHelm_offline ERROR:%+v ", err)
+			return err
+		}
 	} else {
-		installHwameiStorByHelm()
+		err := installHwameiStorByHelm()
+		if err != nil {
+			logrus.Printf(" installHwameiStorByHelm ERROR:%+v ", err)
+			return err
+		}
 	}
 
 	installDrbd()
@@ -235,10 +246,10 @@ func ConfigureadEnvironment(ctx context.Context, k8s string) error {
 
 func ConfigureEnvironment(ctx context.Context) error {
 	logrus.Info("start rollback")
-	_ = RunInLinux("sh rollback.sh")
+	_, _ = RunInLinux("sh rollback.sh")
 
 	err := wait.PollImmediate(10*time.Second, 20*time.Minute, func() (done bool, err error) {
-		output := RunInLinux("kubectl get pod -A  |grep -v Running |wc -l")
+		output, _ := RunInLinux("kubectl get pod -A  |grep -v Running |wc -l")
 		if output != "1\n" {
 			return false, nil
 		} else {
@@ -254,7 +265,11 @@ func ConfigureEnvironment(ctx context.Context) error {
 	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
 	client := f.GetClient()
 
-	installHwameiStorByHelm()
+	err = installHwameiStorByHelm()
+	if err != nil {
+		logrus.Printf(" installHwameiStorByHelm ERROR:%+v ", err)
+		return err
+	}
 	installDrbd()
 	if err != nil {
 		logrus.Error(err)
@@ -363,7 +378,7 @@ func ConfigureEnvironment(ctx context.Context) error {
 
 func ConfigureEnvironmentForPrTest(ctx context.Context) bool {
 	err := wait.PollImmediate(10*time.Second, 10*time.Minute, func() (done bool, err error) {
-		output := RunInLinux("kubectl get pod -A  |grep -v Running |wc -l")
+		output, _ := RunInLinux("kubectl get pod -A  |grep -v Running |wc -l")
 		if output != "1\n" {
 			return false, nil
 		} else {
@@ -375,7 +390,11 @@ func ConfigureEnvironmentForPrTest(ctx context.Context) bool {
 	if err != nil {
 		logrus.Error(err)
 	}
-	installHwameiStorByHelm()
+	err = installHwameiStorByHelm()
+	if err != nil {
+		logrus.Printf(" installHwameiStorByHelm_offline ERROR:%+v ", err)
+		return false
+	}
 	addLabels()
 	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
 	client := f.GetClient()
@@ -485,7 +504,7 @@ func ConfigureEnvironmentForPrTest(ctx context.Context) bool {
 
 func UninstallHelm() {
 	logrus.Printf("helm uninstall hwameistor")
-	_ = RunInLinux("helm list -A | grep 'hwameistor' | awk '{print $1}' | xargs helm uninstall -n hwameistor")
+	_, _ = RunInLinux("helm list -A | grep 'hwameistor' | awk '{print $1}' | xargs helm uninstall -n hwameistor")
 	logrus.Printf("clean all hwameistor crd")
 	f := framework.NewDefaultFramework(extv1.AddToScheme)
 	client := f.GetClient()
@@ -751,7 +770,7 @@ func ExecInPod(config *rest.Config, namespace, podName, command, containerName s
 
 func installDrbd() {
 	logrus.Printf("installing drbd")
-	_ = RunInLinux("sh install_drbd.sh")
+	_, _ = RunInLinux("sh install_drbd.sh")
 
 }
 

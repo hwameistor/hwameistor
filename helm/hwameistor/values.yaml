@@ -56,6 +56,12 @@ evictor:
   tag: ""
   resources: {}
 
+failoverAssistant:
+  replicas: 1
+  imageRepository: hwameistor/failover-assistant
+  tag: ""
+  resources: {}
+
 exporter:
   replicas: 1
   imageRepository: hwameistor/exporter

@@ -75,7 +75,7 @@ func (p *Plugin) Filter(ctx context.Context, state *framework.CycleState, pod *v
 }
 
 // Reserve is the functions invoked by the framework at "reserve" extension point.
-func (p *Plugin) Reserve(ctx context.Context, state *framework.CycleState, pod *v1.Pod, node string) *framework.Status {
+func (p *Plugin) Reserve(_ context.Context, _ *framework.CycleState, pod *v1.Pod, node string) *framework.Status {
 	if pod == nil {
 		return framework.NewStatus(framework.Unschedulable, "no pod specified")
 	}
@@ -95,7 +95,7 @@ func (p *Plugin) Reserve(ctx context.Context, state *framework.CycleState, pod *
 }
 
 // Unreserve is the functions invoked by the framework at "unreserve" extension point.
-func (p *Plugin) Unreserve(ctx context.Context, state *framework.CycleState, pod *v1.Pod, node string) {
+func (p *Plugin) Unreserve(_ context.Context, _ *framework.CycleState, pod *v1.Pod, node string) {
 	if pod == nil {
 		log.Debug("no pod specified")
 	}

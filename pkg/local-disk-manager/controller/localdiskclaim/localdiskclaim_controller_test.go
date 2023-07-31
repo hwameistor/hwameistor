@@ -60,7 +60,7 @@ func TestLocalDiskClaimController_FilterByDiskCapacity(t *testing.T) {
 		{
 			description: "Should return success, ldc state should be Pending",
 			ld:          GenFakeLocalDiskObject(),
-			ldc:         GenFakeLocalDiskClaimObject(),
+			ldc:         GenFakeLocalDiskClaimObject(v1alpha1.LocalDiskClaimStatusPending),
 			setProperty: func(claim *v1alpha1.LocalDiskClaim, disk *v1alpha1.LocalDisk) {
 				// Modify disk cap100G to meet disk requirements
 				disk.Spec.Capacity = cap100G
@@ -73,7 +73,7 @@ func TestLocalDiskClaimController_FilterByDiskCapacity(t *testing.T) {
 		{
 			description: "Should return fail, ldc state should be Pending",
 			ld:          GenFakeLocalDiskObject(),
-			ldc:         GenFakeLocalDiskClaimObject(),
+			ldc:         GenFakeLocalDiskClaimObject(v1alpha1.LocalDiskClaimStatusPending),
 			setProperty: func(claim *v1alpha1.LocalDiskClaim, disk *v1alpha1.LocalDisk) {
 				// Modify disk cap10G to do not meet disk requirements
 				disk.Spec.Capacity = cap10G
@@ -121,7 +121,7 @@ func TestReconcileLocalDiskClaim_Reconcile(t *testing.T) {
 	defer r.DeleteFakeLocalDisk(t, disk)
 
 	// Create LocalDiskClaim
-	claim := GenFakeLocalDiskClaimObject()
+	claim := GenFakeLocalDiskClaimObject(v1alpha1.LocalDiskClaimStatusPending)
 	err = r.Create(context.Background(), claim)
 	if err != nil {
 		t.Errorf("Create LocalDiskClaim fail %v", err)
@@ -169,7 +169,7 @@ func TestReconcileDiskClaim_Reconcile_WhenDiskBoundAlready(t *testing.T) {
 	defer r.DeleteFakeLocalDisk(t, disk)
 
 	// Create LocalDiskClaim
-	claim := GenFakeLocalDiskClaimObject()
+	claim := GenFakeLocalDiskClaimObject(v1alpha1.LocalDiskClaimStatusPending)
 	err = r.Create(context.Background(), claim)
 	if err != nil {
 		t.Errorf("Create LocalDiskClaim fail %v", err)
@@ -224,6 +224,91 @@ func TestReconcileDiskClaim_Reconcile_WhenDiskBoundAlready(t *testing.T) {
 
 	// Checkout claim status, it should be bound
 	r.CheckLocalDiskClaimIsBound(t, claim, true)
+}
+
+func TestReconcileDiskClaim_Reconcile_DiskStatus(t *testing.T) {
+	cli, s := CreateFakeClient()
+
+	r := ReconcileLocalDiskClaim{
+		Client:           cli,
+		diskClaimHandler: localdiskclaim.NewLocalDiskClaimHandler(cli, fakeRecorder),
+		Scheme:           s,
+		Recorder:         fakeRecorder,
+	}
+
+	testCases := []struct {
+		description    string
+		ld             *v1alpha1.LocalDisk
+		ldc            *v1alpha1.LocalDiskClaim
+		reconcileTimes int
+		expectState    v1alpha1.DiskClaimStatus
+	}{
+		{
+			description:    "Status empty to bound",
+			ld:             GenFakeLocalDiskObject(),
+			ldc:            GenFakeLocalDiskClaimObject(""),
+			reconcileTimes: 3,
+			expectState:    v1alpha1.LocalDiskClaimStatusBound,
+		},
+		{
+			description:    "Status bound",
+			ld:             GenFakeLocalDiskObject(),
+			ldc:            GenFakeLocalDiskClaimObject(v1alpha1.LocalDiskClaimStatusBound),
+			reconcileTimes: 3,
+			expectState:    v1alpha1.LocalDiskClaimStatusBound,
+		},
+		{
+			description:    "Status consumed",
+			ld:             GenFakeLocalDiskObject(),
+			ldc:            GenFakeLocalDiskClaimObject(v1alpha1.LocalDiskClaimStatusConsumed),
+			reconcileTimes: 3,
+			expectState:    v1alpha1.LocalDiskClaimStatusConsumed,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.description, func(t *testing.T) {
+			err := r.Create(context.Background(), testCase.ld)
+			if err != nil {
+				t.Errorf("Create localDisk fail %v", err)
+			}
+			defer r.DeleteFakeLocalDisk(t, testCase.ld)
+
+			err = r.Create(context.Background(), testCase.ldc)
+			if err != nil {
+				t.Errorf("Create LocalDiskClaim fail %v", err)
+			}
+			if testCase.expectState != v1alpha1.LocalDiskClaimStatusConsumed {
+				defer r.DeleteFakeLocalDiskClaim(t, testCase.ldc)
+			}
+
+			req := reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: testCase.ldc.GetNamespace(),
+					Name:      testCase.ldc.GetName(),
+				},
+			}
+
+			for i := 1; i <= testCase.reconcileTimes; i++ {
+				_, err = r.Reconcile(context.TODO(), req)
+				if err != nil {
+					t.Errorf("Reconcile fail %v, times: %v", err, i)
+				}
+			}
+
+			// refresh localDiskClaim
+			if err = r.Get(context.Background(), types.NamespacedName{
+				Namespace: testCase.ldc.GetNamespace(),
+				Name:      testCase.ldc.GetName(),
+			}, testCase.ldc); err != nil && testCase.expectState != v1alpha1.LocalDiskClaimStatusConsumed {
+				t.Errorf("Failed to refresh localDiskClaim %s for err %v", req.NamespacedName, err)
+			}
+
+			if testCase.expectState != testCase.ldc.Status.Status {
+				t.Errorf("Expected LocalDiskClaim State %v but got State %v", testCase.expectState, testCase.ldc.Status.Status)
+			}
+		})
+	}
 }
 
 // CheckLocalDiskClaimIsBound
@@ -312,7 +397,7 @@ func (r *ReconcileLocalDiskClaim) DeleteFakeLocalDiskClaim(t *testing.T, ldc *v1
 
 // GenFakeLocalDiskClaimObject Create claim request
 // By default, claim can be bound to the sample disk
-func GenFakeLocalDiskClaimObject() *v1alpha1.LocalDiskClaim {
+func GenFakeLocalDiskClaimObject(status v1alpha1.DiskClaimStatus) *v1alpha1.LocalDiskClaim {
 	ldc := &v1alpha1.LocalDiskClaim{}
 
 	TypeMeta := metav1.TypeMeta{
@@ -339,7 +424,7 @@ func GenFakeLocalDiskClaimObject() *v1alpha1.LocalDiskClaim {
 	ldc.ObjectMeta = ObjectMata
 	ldc.TypeMeta = TypeMeta
 	ldc.Spec = Spec
-	ldc.Status.Status = v1alpha1.LocalDiskClaimStatusPending
+	ldc.Status.Status = status
 	return ldc
 }
 
@@ -397,7 +482,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 		},
 	}
 
-	claim := GenFakeLocalDiskClaimObject()
+	claim := GenFakeLocalDiskClaimObject(v1alpha1.LocalDiskClaimStatusPending)
 	claimList := &v1alpha1.LocalDiskList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       localDiskClaimKind,

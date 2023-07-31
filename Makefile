@@ -24,6 +24,10 @@ EXPORTER_BUILD_INPUT = ${CMDS_DIR}/${EXPORTER_MODULE_NAME}/main.go
 APISERVER_MODULE_NAME = apiserver
 APISERVER_BUILD_INPUT = ${CMDS_DIR}/${APISERVER_MODULE_NAME}/main.go
 
+
+FAILOVER_MODULE_NAME = failover-assistant
+FAILOVER_BUILD_INPUT = ${CMDS_DIR}/${FAILOVER_MODULE_NAME}/main.go
+
 .PHONY: debug
 debug:
 	${DOCKER_DEBUG_CMD} ash
@@ -38,18 +42,18 @@ apiserver_run: apiserver_swag
 	GIN_MODE=debug go run ${BUILD_OPTIONS} ${APISERVER_BUILD_INPUT}
 
 .PHONY: compile
-compile: compile_ldm compile_ls compile_scheduler compile_admission compile_evictor compile_exporter compile_apiserver
+compile: compile_ldm compile_ls compile_scheduler compile_admission compile_evictor compile_exporter compile_apiserver compile_failover
 
 .PHONY: image
-image: build_ldm_image build_ls_image build_scheduler_image build_admission_image build_evictor_image build_exporter_image build_apiserver_image
+image: build_ldm_image build_ls_image build_scheduler_image build_admission_image build_evictor_image build_exporter_image build_apiserver_image build_failover_image
 
 
 .PHONY: arm-image
-arm-image: build_ldm_image_arm64 build_ls_image_arm64 build_scheduler_image_arm64 build_admission_image_arm64 build_evictor_image_arm64 build_exporter_image_arm64 build_apiserver_image_arm64
+arm-image: build_ldm_image_arm64 build_ls_image_arm64 build_scheduler_image_arm64 build_admission_image_arm64 build_evictor_image_arm64 build_exporter_image_arm64 build_apiserver_image_arm64 build_failover_image_arm64
 
 
 .PHONY: release
-release: release_ldm release_ls release_scheduler release_admission release_evictor release_exporter release_apiserver
+release: release_ldm release_ls release_scheduler release_admission release_evictor release_exporter release_apiserver release_failover
 
 .PHONY: unit-test
 unit-test:
@@ -138,6 +142,17 @@ release_apiserver:
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${APISERVER_IMAGE_NAME}:${RELEASE_TAG}
 
+.PHONY: release_failover
+release_failover:
+	# build for amd64 version
+	${DOCKER_MAKE_CMD} make compile_failover
+	${DOCKER_BUILDX_CMD_AMD64} -t ${FAILOVER_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${FAILOVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# build for arm64 version
+	${DOCKER_MAKE_CMD} make compile_failover_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${FAILOVER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${FAILOVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# push to a public registry
+	${MUILT_ARCH_PUSH_CMD} -i ${FAILOVER_IMAGE_NAME}:${RELEASE_TAG}
+
 
 .PHONY: build_ldm_image
 build_ldm_image:
@@ -175,12 +190,17 @@ build_exporter_image:
 	${DOCKER_MAKE_CMD} make compile_exporter
 	docker build -t ${EXPORTER_IMAGE_NAME}:${IMAGE_TAG} -f ${EXPORTER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
-
 .PHONY: build_apiserver_image
 build_apiserver_image:
 	@echo "Build hwameistor apiserver image ${APISERVER_IMAGE_NAME}:${IMAGE_TAG}"
 	${DOCKER_MAKE_CMD} make compile_apiserver
 	docker build -t ${APISERVER_IMAGE_NAME}:${IMAGE_TAG} -f ${APISERVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_failover_image
+build_failover_image:
+	@echo "Build hwameistor failover image ${FAILOVER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_failover
+	docker build -t ${FAILOVER_IMAGE_NAME}:${IMAGE_TAG} -f ${FAILOVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
 
 .PHONY: build_ldm_image_arm64
@@ -221,9 +241,15 @@ build_exporter_image_arm64:
 
 .PHONY: build_apiserver_image_arm64
 build_apiserver_image_arm64:
-	@echo "Build hwameistor apiserver image ${APISERVER_IMAGE_NAME}:${IMAGE_TAG}"
+	@echo "Build apiserver image ${APISERVER_IMAGE_NAME}:${IMAGE_TAG}"
 	${DOCKER_MAKE_CMD} make compile_apiserver_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${APISERVER_IMAGE_NAME}:${IMAGE_TAG} -f ${APISERVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_failover_image_arm64
+build_failover_image_arm64:
+	@echo "Build failover image ${FAILOVER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_failover_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${FAILOVER_IMAGE_NAME}:${IMAGE_TAG} -f ${FAILOVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
 
 .PHONY: apis
@@ -296,6 +322,14 @@ compile_apiserver:
 .PHONY: compile_apiserver_arm64
 compile_apiserver_arm64:
 	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${APISERVER_BUILD_OUTPUT} ${APISERVER_BUILD_INPUT}
+
+.PHONY: compile_failover
+compile_failover:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${FAILOVER_BUILD_OUTPUT} ${FAILOVER_BUILD_INPUT}
+
+.PHONY: compile_failover_arm64
+compile_failover_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${FAILOVER_BUILD_OUTPUT} ${FAILOVER_BUILD_INPUT}
 
 .PHONY: _enable_buildx
 _enable_buildx:
