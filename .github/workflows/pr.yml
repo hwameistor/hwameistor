@@ -8,6 +8,8 @@ on:
       - "pkg/**"
       - "cmd/**"
       - "test/**"
+      - "build/**"
+      - "helm/**"
 
 jobs:
   unit-test:
