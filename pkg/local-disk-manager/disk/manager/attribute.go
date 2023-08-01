@@ -60,4 +60,7 @@ type Attribute struct {
 
 	// DriverType such as HDD, SSD
 	DriverType string `json:"driverType"`
+
+	// DEVLINKS
+	DevLinks []string `json:"devLinks"`
 }

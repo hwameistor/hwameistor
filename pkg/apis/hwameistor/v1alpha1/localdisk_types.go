@@ -163,6 +163,9 @@ type LocalDiskSpec struct {
 	// DevicePath is the disk path in the OS
 	DevicePath string `json:"devicePath,omitempty"`
 
+	// DevLinks are symbol links for this device
+	DevLinks []string `json:"devLinks"`
+
 	// Capacity of the disk in bytes
 	Capacity int64 `json:"capacity,omitempty"`
 
@@ -205,6 +208,14 @@ type LocalDiskSpec struct {
 	// Owner represents which system owns this claim(e.g. local-storage, local-disk-manager)
 	// +optional
 	Owner string `json:"owner,omitempty"`
+
+	// Major represents drive used by the device
+	// +optional
+	Major string `json:"major,omitempty"`
+
+	// Minor is used to distinguish different devices
+	// +optional
+	Minor string `json:"minor,omitempty"`
 }
 
 // LocalDiskStatus defines the observed state of LocalDisk
@@ -219,13 +230,13 @@ type LocalDiskStatus struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // LocalDisk is the Schema for the localdisks API
-//+kubebuilder:resource:scope=Cluster,shortName=ld
-//+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
-//+kubebuilder:printcolumn:JSONPath=".spec.owner",name=Owner,type=string,priority=1
-//+kubebuilder:printcolumn:JSONPath=".status.claimState",name=Phase,type=string
-//+kubebuilder:printcolumn:JSONPath=".spec.smartInfo.overallHealth",name=Health,type=string,priority=1
-//+kubebuilder:printcolumn:JSONPath=".spec.reserved",name=Reserved,type=boolean,priority=1
+// +kubebuilder:resource:scope=Cluster,shortName=ld
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
+// +kubebuilder:printcolumn:JSONPath=".spec.owner",name=Owner,type=string,priority=1
+// +kubebuilder:printcolumn:JSONPath=".status.claimState",name=Phase,type=string
+// +kubebuilder:printcolumn:JSONPath=".spec.smartInfo.overallHealth",name=Health,type=string,priority=1
+// +kubebuilder:printcolumn:JSONPath=".spec.reserved",name=Reserved,type=boolean,priority=1
 type LocalDisk struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
