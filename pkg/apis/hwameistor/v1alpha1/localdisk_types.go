@@ -65,6 +65,12 @@ type DiskAttributes struct {
 
 	// Protocol is for data transport, such as ATA, SCSI, NVMe
 	Protocol string `json:"protocol,omitempty"`
+
+	// Major represents drive used by the device
+	Major string `json:"major,omitempty"`
+
+	// Minor is used to distinguish different devices
+	Minor string `json:"minor,omitempty"`
 }
 
 // FileSystemInfo defines the filesystem type and mountpoint of the disk if it exists
@@ -163,6 +169,9 @@ type LocalDiskSpec struct {
 	// DevicePath is the disk path in the OS
 	DevicePath string `json:"devicePath,omitempty"`
 
+	// DevLinks are symbol links for this device
+	DevLinks []string `json:"devLinks"`
+
 	// Capacity of the disk in bytes
 	Capacity int64 `json:"capacity,omitempty"`
 
@@ -219,13 +228,13 @@ type LocalDiskStatus struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // LocalDisk is the Schema for the localdisks API
-//+kubebuilder:resource:scope=Cluster,shortName=ld
-//+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
-//+kubebuilder:printcolumn:JSONPath=".spec.owner",name=Owner,type=string,priority=1
-//+kubebuilder:printcolumn:JSONPath=".status.claimState",name=Phase,type=string
-//+kubebuilder:printcolumn:JSONPath=".spec.smartInfo.overallHealth",name=Health,type=string,priority=1
-//+kubebuilder:printcolumn:JSONPath=".spec.reserved",name=Reserved,type=boolean,priority=1
+// +kubebuilder:resource:scope=Cluster,shortName=ld
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
+// +kubebuilder:printcolumn:JSONPath=".spec.owner",name=Owner,type=string,priority=1
+// +kubebuilder:printcolumn:JSONPath=".status.claimState",name=Phase,type=string
+// +kubebuilder:printcolumn:JSONPath=".spec.smartInfo.overallHealth",name=Health,type=string,priority=1
+// +kubebuilder:printcolumn:JSONPath=".spec.reserved",name=Reserved,type=boolean,priority=1
 type LocalDisk struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

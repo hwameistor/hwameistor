@@ -2,6 +2,7 @@ package localdisk
 
 import (
 	"context"
+
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -100,6 +101,7 @@ func (ctr Controller) mergeLocalDiskAttr(oldLd *v1alpha1.LocalDisk, newLd v1alph
 	oldLd.Spec.DevicePath = newLd.Spec.DevicePath
 	oldLd.Spec.UUID = newLd.Spec.UUID
 	oldLd.Spec.State = newLd.Spec.State
+	oldLd.Spec.DevLinks = newLd.Spec.DevLinks
 }
 
 func (ctr Controller) GenLocalDiskName(disk manager.DiskInfo) string {
