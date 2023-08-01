@@ -39,8 +39,8 @@ func (builder *Builder) SetupAttribute(attribute manager.Attribute) *Builder {
 	builder.disk.Spec.DiskAttributes.Protocol = attribute.Bus
 	builder.disk.Spec.DiskAttributes.SerialNumber = attribute.Serial
 	builder.disk.Spec.DiskAttributes.DevType = attribute.DevType
-	builder.disk.Spec.DiskAttributes.Major = attribute.Major
-	builder.disk.Spec.DiskAttributes.Minor = attribute.Minor
+	builder.disk.Spec.Major = attribute.Major
+	builder.disk.Spec.Minor = attribute.Minor
 	builder.disk.Spec.DevLinks = attribute.DevLinks
 
 	return builder

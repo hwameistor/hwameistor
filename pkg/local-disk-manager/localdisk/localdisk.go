@@ -101,6 +101,8 @@ func (ctr Controller) mergeLocalDiskAttr(oldLd *v1alpha1.LocalDisk, newLd v1alph
 	oldLd.Spec.DevicePath = newLd.Spec.DevicePath
 	oldLd.Spec.UUID = newLd.Spec.UUID
 	oldLd.Spec.State = newLd.Spec.State
+	oldLd.Spec.Major = newLd.Spec.Major
+	oldLd.Spec.Minor = newLd.Spec.Minor
 	oldLd.Spec.DevLinks = newLd.Spec.DevLinks
 }
 

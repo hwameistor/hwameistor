@@ -112,12 +112,6 @@ spec:
                   formFactor:
                     description: FormFactor is the disk size, like 2.5 inches
                     type: string
-                  major:
-                    description: Major represents drive used by the device
-                    type: string
-                  minor:
-                    description: Minor is used to distinguish different devices
-                    type: string
                   modelName:
                     description: ModelName is the name of disk model
                     type: string
@@ -150,6 +144,12 @@ spec:
               isRaid:
                 description: HasRAID identifies if the disk is a raid disk or not
                 type: boolean
+              major:
+                description: Major represents drive used by the device
+                type: string
+              minor:
+                description: Minor is used to distinguish different devices
+                type: string
               nodeName:
                 description: NodeName represents the node where the disk is attached
                 type: string

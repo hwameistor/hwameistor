@@ -65,12 +65,6 @@ type DiskAttributes struct {
 
 	// Protocol is for data transport, such as ATA, SCSI, NVMe
 	Protocol string `json:"protocol,omitempty"`
-
-	// Major represents drive used by the device
-	Major string `json:"major,omitempty"`
-
-	// Minor is used to distinguish different devices
-	Minor string `json:"minor,omitempty"`
 }
 
 // FileSystemInfo defines the filesystem type and mountpoint of the disk if it exists
@@ -214,6 +208,14 @@ type LocalDiskSpec struct {
 	// Owner represents which system owns this claim(e.g. local-storage, local-disk-manager)
 	// +optional
 	Owner string `json:"owner,omitempty"`
+
+	// Major represents drive used by the device
+	// +optional
+	Major string `json:"major,omitempty"`
+
+	// Minor is used to distinguish different devices
+	// +optional
+	Minor string `json:"minor,omitempty"`
 }
 
 // LocalDiskStatus defines the observed state of LocalDisk
