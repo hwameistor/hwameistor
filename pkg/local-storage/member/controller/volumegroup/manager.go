@@ -37,11 +37,11 @@ type manager struct {
 	pvcQueue              *common.TaskQueue
 	podQueue              *common.TaskQueue
 
-	// lv -> volumegroup
+	// lv -> volumeGroup
 	localVolumeToVolumeGroups map[string]string
-	// pvc[namespace/name] -> volumegroup
+	// pvc[namespace/name] -> volumeGroup
 	pvcToVolumeGroups map[string]string
-	// pod[namespace/name] -> volumegroup
+	// pod[namespace/name] -> volumeGroup
 	podToVolumeGroups map[string]string
 }
 
@@ -185,7 +185,7 @@ func (m *manager) handleLocalVolumeEventDelete(obj interface{}) {
 	}
 }
 
-func (m *manager) handleLocalVolumeEventUpdate(oldObj, newObj interface{}) {
+func (m *manager) handleLocalVolumeEventUpdate(_, newObj interface{}) {
 	instance := newObj.(*apisv1alpha1.LocalVolume)
 	if err := m.addLocalVolume(instance); err != nil {
 		m.localVolumeQueue.Add(instance.Name)
@@ -465,9 +465,7 @@ func (m *manager) updateLocalVolumeGroupAccessibility(lvg *apisv1alpha1.LocalVol
 		nLvg := lvg.DeepCopy()
 		nLvg.SetAccessibilityNodes(nodes)
 		patch := client.MergeFrom(lvg)
-		if err = m.apiClient.Patch(context.TODO(), nLvg, patch); err != nil {
-			return err
-		}
+		return m.apiClient.Patch(context.TODO(), nLvg, patch)
 	}
 
 	return nil
@@ -613,7 +611,7 @@ func (m *manager) deleteLocalVolume(lvName string) error {
 	}
 
 	modified := false
-	associatedVolumes := []apisv1alpha1.VolumeInfo{}
+	var associatedVolumes []apisv1alpha1.VolumeInfo
 	for i := range lvg.Spec.Volumes {
 		if lvg.Spec.Volumes[i].LocalVolumeName != lvName {
 			associatedVolumes = append(associatedVolumes, lvg.Spec.Volumes[i])
@@ -659,7 +657,7 @@ func (m *manager) processPVC(nn string) error {
 	return m.addPVC(instance)
 }
 
-func (m *manager) addPVC(pvc *corev1.PersistentVolumeClaim) error {
+func (m *manager) addPVC(_ *corev1.PersistentVolumeClaim) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -681,7 +679,7 @@ func (m *manager) deletePVC(namespace string, name string) error {
 	}
 
 	modified := false
-	associatedVolumes := []apisv1alpha1.VolumeInfo{}
+	var associatedVolumes []apisv1alpha1.VolumeInfo
 	for i := range lvg.Spec.Volumes {
 		if lvg.Spec.Volumes[i].PersistentVolumeClaimName != name || lvg.Spec.Namespace != namespace {
 			associatedVolumes = append(associatedVolumes, lvg.Spec.Volumes[i])
@@ -724,7 +722,7 @@ func (m *manager) processPod(nn string) error {
 	return m.addPod(instance)
 }
 
-func (m *manager) addPod(pod *corev1.Pod) error {
+func (m *manager) addPod(_ *corev1.Pod) error {
 	// no action
 
 	return nil
@@ -753,7 +751,7 @@ func (m *manager) deletePod(namespace string, name string) error {
 		return nil
 	}
 
-	newPods := []string{}
+	var newPods []string
 	for _, podName := range lvg.Spec.Pods {
 		if podName != name {
 			newPods = append(newPods, podName)

@@ -342,7 +342,7 @@ func (m *manager) handleVolumeMigrateCRDDeletedEvent(obj interface{}) {
 	}
 }
 
-func (m *manager) handlePodUpdateEvent(oObj, nObj interface{}) {
+func (m *manager) handlePodUpdateEvent(_, nObj interface{}) {
 	pod, _ := nObj.(*corev1.Pod)
 
 	// this is for the pod orphan pod which is abandoned by migration rclone job
