@@ -432,10 +432,6 @@ func (m *manager) addLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) error 
 
 func (m *manager) updateLocalVolumeGroupAccessibility(lvg *apisv1alpha1.LocalVolumeGroup) error {
 	// check if need to update group's accessibility
-	if lvg.Spec.Volumes == nil || len(lvg.Spec.Volumes) == 0 {
-		return nil
-	}
-
 	volumes, err := m.GetLocalVolumeByLocalVolumeGroup(lvg)
 	if err != nil {
 		m.logger.WithError(err).Error("Fail to get LocalVolume by Group")
