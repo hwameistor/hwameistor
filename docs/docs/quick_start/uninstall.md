@@ -78,4 +78,9 @@ If you confirm to delete your data volumes and uninstall HwameiStor, perform the
       helm uninstall hwameistor-operator -n hwameistor
       ```
 
-Finally, you still need to clean up the LVM configuration on each node, and also data on the disks by tools like `wipefs`.
+3. Finally, you still need to clean up the LVM configuration on each node, and also data on the disks by tools like `wipefs`.
+
+   ```bash
+   wipefs -a /dev/sdx
+   blkid /dev/sdx
+   ```

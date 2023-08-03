@@ -93,6 +93,11 @@ spec:
                     description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
                     type: string
                 type: object
+              devLinks:
+                description: DevLinks are symbol links for this device
+                items:
+                  type: string
+                type: array
               devicePath:
                 description: DevicePath is the disk path in the OS
                 type: string
@@ -139,6 +144,12 @@ spec:
               isRaid:
                 description: HasRAID identifies if the disk is a raid disk or not
                 type: boolean
+              major:
+                description: Major represents drive used by the device
+                type: string
+              minor:
+                description: Minor is used to distinguish different devices
+                type: string
               nodeName:
                 description: NodeName represents the node where the disk is attached
                 type: string
@@ -217,6 +228,7 @@ spec:
                 description: UUID global unique identifier of the disk
                 type: string
             required:
+            - devLinks
             - nodeName
             type: object
           status:
