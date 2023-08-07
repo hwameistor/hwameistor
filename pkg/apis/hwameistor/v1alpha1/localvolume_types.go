@@ -227,6 +227,14 @@ func (v *LocalVolume) SetReplicas(replicas []*LocalVolumeReplica) {
 	}
 }
 
+// UpdateAccessibilityNodesFromReplicas Update volume and group's accessibility node by replicas
+func (v *LocalVolume) UpdateAccessibilityNodesFromReplicas() {
+	v.Spec.Accessibility.Nodes = make([]string, 0)
+	for _, replica := range v.Spec.Config.Replicas {
+		v.Spec.Accessibility.Nodes = append(v.Spec.Accessibility.Nodes, replica.Hostname)
+	}
+}
+
 // IsHighAvailability return true if volume is HighAvailability
 func (v *LocalVolume) IsHighAvailability() bool {
 	return v.Spec.ReplicaNumber >= 2
