@@ -97,11 +97,7 @@ func (m *manager) volumeConvertSubmit(convert *apisv1alpha1.LocalVolumeConvert) 
 
 	vol := &apisv1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: convert.Spec.VolumeName}, vol); err != nil {
-		if !errors.IsNotFound(err) {
-			logCtx.WithError(err).Error("Failed to query volume")
-		} else {
-			logCtx.Error("Not found the volume")
-		}
+		logCtx.WithError(err).Error("Failed to query volume")
 		convert.Status.Message = err.Error()
 		m.apiClient.Status().Update(ctx, convert)
 		return err
@@ -111,11 +107,7 @@ func (m *manager) volumeConvertSubmit(convert *apisv1alpha1.LocalVolumeConvert) 
 
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: localVolumeGroupName}, lvg); err != nil {
-		if !errors.IsNotFound(err) {
-			logCtx.WithError(err).Error("VolumeMigrateStart: Failed to query lvg")
-		} else {
-			logCtx.Info("VolumeMigrateStart: Not found the lvg")
-		}
+		logCtx.WithError(err).Error("Failed to query lvg")
 		convert.Status.Message = err.Error()
 		m.apiClient.Status().Update(ctx, convert)
 		return err
@@ -128,7 +120,7 @@ func (m *manager) volumeConvertSubmit(convert *apisv1alpha1.LocalVolumeConvert) 
 
 			volList := &apisv1alpha1.LocalVolumeList{}
 			if err := m.apiClient.List(context.TODO(), volList); err != nil {
-				m.logger.WithError(err).Fatal("VolumeMigrateStart: Failed to list LocalVolumes")
+				m.logger.WithError(err).Error("Failed to list LocalVolumes")
 			}
 
 			for _, vol := range volList.Items {
@@ -166,40 +158,28 @@ func (m *manager) volumeConvertStart(convert *apisv1alpha1.LocalVolumeConvert) e
 
 	ctx := context.TODO()
 
-	vol := &apisv1alpha1.LocalVolume{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: convert.Spec.VolumeName}, vol); err != nil {
-		if !errors.IsNotFound(err) {
-			logCtx.WithError(err).Error("Failed to query volume")
-		} else {
-			logCtx.Info("Not found the volume")
-		}
+	vol, err := m.queryLocalVolume(ctx, convert.Spec.VolumeName)
+	if err != nil {
 		convert.Status.Message = err.Error()
 		m.apiClient.Status().Update(ctx, convert)
 		return err
 	}
 
-	localVolumeGroupName := vol.Spec.VolumeGroup
-
-	lvg := &apisv1alpha1.LocalVolumeGroup{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: localVolumeGroupName}, lvg); err != nil {
-		if !errors.IsNotFound(err) {
-			logCtx.WithError(err).Error("VolumeMigrateStart: Failed to query lvg")
-		} else {
-			logCtx.Info("VolumeMigrateStart: Not found the lvg")
-		}
+	lvg, err := m.queryLocalVolumeGroup(ctx, vol.Spec.VolumeGroup)
+	if err != nil {
 		convert.Status.Message = err.Error()
 		m.apiClient.Status().Update(ctx, convert)
 		return err
 	}
+
+	m.lock.Lock()
+	defer m.lock.Unlock()
 
 	for _, fnlr := range lvg.Finalizers {
 		if fnlr == volumeGroupFinalizer {
-			m.lock.Lock()
-			defer m.lock.Unlock()
-
 			volList := &apisv1alpha1.LocalVolumeList{}
 			if err := m.apiClient.List(context.TODO(), volList); err != nil {
-				m.logger.WithError(err).Fatal("VolumeMigrateStart: Failed to list LocalVolumes")
+				m.logger.WithError(err).Error("Failed to list LocalVolumes")
 			}
 
 			for _, vol := range volList.Items {
@@ -231,22 +211,15 @@ func (m *manager) volumeConvertInProgress(convert *apisv1alpha1.LocalVolumeConve
 
 	ctx := context.TODO()
 
-	// update volume's capacity
-	vol := &apisv1alpha1.LocalVolume{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: convert.Spec.VolumeName}, vol); err != nil {
-		logCtx.WithError(err).Error("Failed to query volume")
+	vol, err := m.queryLocalVolume(ctx, convert.Spec.VolumeName)
+	if err != nil {
+		convert.Status.Message = err.Error()
+		m.apiClient.Status().Update(ctx, convert)
 		return err
 	}
 
-	localVolumeGroupName := vol.Spec.VolumeGroup
-
-	lvg := &apisv1alpha1.LocalVolumeGroup{}
-	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: localVolumeGroupName}, lvg); err != nil {
-		if !errors.IsNotFound(err) {
-			logCtx.WithError(err).Error("VolumeMigrateStart: Failed to query lvg")
-		} else {
-			logCtx.Info("VolumeMigrateStart: Not found the lvg")
-		}
+	lvg, err := m.queryLocalVolumeGroup(ctx, vol.Spec.VolumeGroup)
+	if err != nil {
 		convert.Status.Message = err.Error()
 		m.apiClient.Status().Update(ctx, convert)
 		return err
@@ -259,7 +232,7 @@ func (m *manager) volumeConvertInProgress(convert *apisv1alpha1.LocalVolumeConve
 
 			volList := &apisv1alpha1.LocalVolumeList{}
 			if err := m.apiClient.List(context.TODO(), volList); err != nil {
-				m.logger.WithError(err).Fatal("VolumeMigrateStart: Failed to list LocalVolumes")
+				m.logger.WithError(err).Error("Failed to list LocalVolumes")
 			}
 
 			for _, vol := range volList.Items {
@@ -309,4 +282,22 @@ func (m *manager) volumeConvertCleanup(convert *apisv1alpha1.LocalVolumeConvert)
 	logCtx.Debug("Cleanup a VolumeConvert")
 
 	return m.apiClient.Delete(context.TODO(), convert)
+}
+
+func (m *manager) queryLocalVolume(ctx context.Context, volumeName string) (*apisv1alpha1.LocalVolume, error) {
+	vol := &apisv1alpha1.LocalVolume{}
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: volumeName}, vol); err != nil {
+		m.logger.WithError(err).WithField("LocalVolume", volumeName).Error("Failed to query LocalVolume")
+		return nil, err
+	}
+	return vol, nil
+}
+
+func (m *manager) queryLocalVolumeGroup(ctx context.Context, volumeGroupName string) (*apisv1alpha1.LocalVolumeGroup, error) {
+	lvg := &apisv1alpha1.LocalVolumeGroup{}
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: volumeGroupName}, lvg); err != nil {
+		m.logger.WithError(err).WithField("LocalVolumeGroup", volumeGroupName).Error("Failed to query LocalVolumeGroup")
+		return nil, err
+	}
+	return lvg, nil
 }

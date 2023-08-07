@@ -37,11 +37,11 @@ type manager struct {
 	pvcQueue              *common.TaskQueue
 	podQueue              *common.TaskQueue
 
-	// lv -> volumegroup
+	// lv -> volumeGroup
 	localVolumeToVolumeGroups map[string]string
-	// pvc[namespace/name] -> volumegroup
+	// pvc[namespace/name] -> volumeGroup
 	pvcToVolumeGroups map[string]string
-	// pod[namespace/name] -> volumegroup
+	// pod[namespace/name] -> volumeGroup
 	podToVolumeGroups map[string]string
 }
 
@@ -86,7 +86,6 @@ func (m *manager) debug() {
 }
 
 func (m *manager) Init(stopCh <-chan struct{}) {
-
 	lvInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolume{})
 	if err != nil {
 		m.logger.WithError(err).Fatal("Failed to initiate informer for LocalVolume")
@@ -132,6 +131,26 @@ func (m *manager) GetLocalVolumeGroupByName(lvgName string) (*apisv1alpha1.Local
 	return lvg, err
 }
 
+func (m *manager) GetLocalVolumeByLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) ([]*apisv1alpha1.LocalVolume, error) {
+	if len(lvg.Spec.Volumes) == 0 {
+		return nil, nil
+	}
+
+	lvList := &apisv1alpha1.LocalVolumeList{}
+	if err := m.apiClient.List(context.TODO(), lvList); err != nil {
+		return nil, err
+	}
+
+	var volumes []*apisv1alpha1.LocalVolume
+
+	for _, volume := range lvList.Items {
+		if volume.Spec.VolumeGroup == lvg.Name {
+			volumes = append(volumes, &volume)
+		}
+	}
+	return volumes, nil
+}
+
 func (m *manager) GetLocalVolumeGroupByLocalVolume(lvName string) (*apisv1alpha1.LocalVolumeGroup, error) {
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
 	err := m.apiClient.Get(
@@ -166,7 +185,7 @@ func (m *manager) handleLocalVolumeEventDelete(obj interface{}) {
 	}
 }
 
-func (m *manager) handleLocalVolumeEventUpdate(oldObj, newObj interface{}) {
+func (m *manager) handleLocalVolumeEventUpdate(_, newObj interface{}) {
 	instance := newObj.(*apisv1alpha1.LocalVolume)
 	if err := m.addLocalVolume(instance); err != nil {
 		m.localVolumeQueue.Add(instance.Name)
@@ -362,7 +381,6 @@ func (m *manager) ReconcileVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) {
 }
 
 func (m *manager) processLocalVolumeGroup(lvgName string) error {
-
 	lvg, err := m.GetLocalVolumeGroupByName(lvgName)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -378,15 +396,16 @@ func (m *manager) processLocalVolumeGroup(lvgName string) error {
 	if len(lvg.Spec.Volumes) == 0 {
 		return m.deleteLocalVolumeGroup(lvg)
 	}
+
 	return m.addLocalVolumeGroup(lvg)
 }
 
 func (m *manager) addLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 
 	for _, fnlr := range lvg.Finalizers {
 		if fnlr == volumeGroupFinalizer {
-			m.lock.Lock()
-			defer m.lock.Unlock()
 			for _, vol := range lvg.Spec.Volumes {
 				if len(vol.PersistentVolumeClaimName) > 0 {
 					m.pvcToVolumeGroups[namespacedName(lvg.Spec.Namespace, vol.PersistentVolumeClaimName)] = lvg.Name
@@ -400,17 +419,59 @@ func (m *manager) addLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) error 
 					m.podToVolumeGroups[namespacedName(lvg.Spec.Namespace, podName)] = lvg.Name
 				}
 			}
-			return nil
+
+			return m.updateLocalVolumeGroupAccessibility(lvg)
 		}
 	}
+
 	nLvg := lvg.DeepCopy()
 	nLvg.Finalizers = append(nLvg.Finalizers, volumeGroupFinalizer)
 	patch := client.MergeFrom(lvg)
 	return m.apiClient.Patch(context.TODO(), nLvg, patch)
 }
 
-func (m *manager) deleteLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) error {
+func (m *manager) updateLocalVolumeGroupAccessibility(lvg *apisv1alpha1.LocalVolumeGroup) error {
+	// check if need to update group's accessibility
+	volumes, err := m.GetLocalVolumeByLocalVolumeGroup(lvg)
+	if err != nil {
+		m.logger.WithError(err).Error("Fail to get LocalVolume by Group")
+		return err
+	}
 
+	volumeAccessNodes := map[string]int{}
+	for _, volume := range volumes {
+		if volume.Spec.Config != nil {
+			for _, replica := range volume.Spec.Config.Replicas {
+				volumeAccessNodes[replica.Hostname]++
+			}
+		}
+	}
+
+	if len(volumeAccessNodes) > len(lvg.Spec.Accessibility.Nodes) {
+		count := -1
+		var nodes []string
+		// check all volumes' replica are ready
+		for nodeName, nodeReadyVolumeCount := range volumeAccessNodes {
+			if count == -1 {
+				count = nodeReadyVolumeCount
+			} else if count != nodeReadyVolumeCount {
+				m.logger.WithFields(log.Fields{"lvg": lvg.Name, "volumeAccessNodes": volumeAccessNodes}).
+					Error("Fail to update LocalVolumeGroup's Accessibility Nodes, replicas are not all ready.")
+				return nil
+			}
+			nodes = append(nodes, nodeName)
+		}
+		// update Group's accessibility nodes
+		nLvg := lvg.DeepCopy()
+		nLvg.SetAccessibilityNodes(nodes)
+		patch := client.MergeFrom(lvg)
+		return m.apiClient.Patch(context.TODO(), nLvg, patch)
+	}
+
+	return nil
+}
+
+func (m *manager) deleteLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) error {
 	if len(lvg.Spec.Volumes) > 0 {
 		return fmt.Errorf("volumes not empty")
 	}
@@ -421,7 +482,6 @@ func (m *manager) deleteLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) err
 }
 
 func (m *manager) releaseLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) error {
-
 	m.cleanCacheForLocalVolumeGroup(lvg.Name)
 
 	for _, fnlr := range lvg.Finalizers {
@@ -503,7 +563,6 @@ func (m *manager) processLocalVolume(lvName string) error {
 }
 
 func (m *manager) addLocalVolume(lv *apisv1alpha1.LocalVolume) error {
-
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -552,7 +611,7 @@ func (m *manager) deleteLocalVolume(lvName string) error {
 	}
 
 	modified := false
-	associatedVolumes := []apisv1alpha1.VolumeInfo{}
+	var associatedVolumes []apisv1alpha1.VolumeInfo
 	for i := range lvg.Spec.Volumes {
 		if lvg.Spec.Volumes[i].LocalVolumeName != lvName {
 			associatedVolumes = append(associatedVolumes, lvg.Spec.Volumes[i])
@@ -598,7 +657,7 @@ func (m *manager) processPVC(nn string) error {
 	return m.addPVC(instance)
 }
 
-func (m *manager) addPVC(pvc *corev1.PersistentVolumeClaim) error {
+func (m *manager) addPVC(_ *corev1.PersistentVolumeClaim) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -606,7 +665,6 @@ func (m *manager) addPVC(pvc *corev1.PersistentVolumeClaim) error {
 }
 
 func (m *manager) deletePVC(namespace string, name string) error {
-
 	lvgName, exists := m.pvcToVolumeGroups[namespacedName(namespace, name)]
 	if !exists {
 		return nil
@@ -621,7 +679,7 @@ func (m *manager) deletePVC(namespace string, name string) error {
 	}
 
 	modified := false
-	associatedVolumes := []apisv1alpha1.VolumeInfo{}
+	var associatedVolumes []apisv1alpha1.VolumeInfo
 	for i := range lvg.Spec.Volumes {
 		if lvg.Spec.Volumes[i].PersistentVolumeClaimName != name || lvg.Spec.Namespace != namespace {
 			associatedVolumes = append(associatedVolumes, lvg.Spec.Volumes[i])
@@ -664,7 +722,7 @@ func (m *manager) processPod(nn string) error {
 	return m.addPod(instance)
 }
 
-func (m *manager) addPod(pod *corev1.Pod) error {
+func (m *manager) addPod(_ *corev1.Pod) error {
 	// no action
 
 	return nil
@@ -693,7 +751,7 @@ func (m *manager) deletePod(namespace string, name string) error {
 		return nil
 	}
 
-	newPods := []string{}
+	var newPods []string
 	for _, podName := range lvg.Spec.Pods {
 		if podName != name {
 			newPods = append(newPods, podName)

@@ -220,7 +220,7 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 	}
 
 	// step 2. check the required nodes firstly, if not satisfied, return error immediately
-	candidates := []*apisv1alpha1.LocalStorageNode{}
+	var candidates []*apisv1alpha1.LocalStorageNode
 	for _, nn := range vol.Spec.Accessibility.Nodes {
 		if len(nn) > 0 && !excludedNodes[nn] {
 			if err := r.predicate(vol, nn); err != nil {
@@ -390,7 +390,7 @@ func (r *resources) handleNodeAdd(obj interface{}) {
 	r.addTotalStorage(node)
 }
 
-func (r *resources) handleNodeUpdate(oldObj, newObj interface{}) {
+func (r *resources) handleNodeUpdate(_, newObj interface{}) {
 	node := newObj.(*apisv1alpha1.LocalStorageNode)
 	r.addTotalStorage(node)
 }
@@ -420,5 +420,4 @@ func (r *resources) handleVolumeUpdate(oldObj, newObj interface{}) {
 	} else if !nVol.Spec.Config.Convertible && len(nVol.Spec.Config.Replicas) < 2 {
 		r.recycleResourceID(nVol)
 	}
-
 }

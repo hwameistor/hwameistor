@@ -171,6 +171,10 @@ func (m *manager) processVolumeReadyAndNotReady(vol *apisv1alpha1.LocalVolume) e
 	// check if there are enough VolumeReplicas in ready.
 	// The new added replica should not impact the Volume health, e.g. replica migration
 	if healthyReplicaCount >= int(vol.Spec.ReplicaNumber) {
+		if err := m.updateAccessibilityNodes(vol); err != nil {
+			logCtx.WithError(err).Error("Fail to update accessibilityNodes")
+			return err
+		}
 		vol.Status.State = apisv1alpha1.VolumeStateReady
 		vol.Status.AllocatedCapacityBytes = allocatedCapacityBytes
 	} else {
@@ -257,4 +261,10 @@ func isVolumeReplicaUp(replica *apisv1alpha1.LocalVolumeReplica) bool {
 	}
 
 	return false
+}
+
+// Update volume and volumeGroup's accessibility nodes
+func (m *manager) updateAccessibilityNodes(vol *apisv1alpha1.LocalVolume) error {
+	vol.UpdateAccessibilityNodesFromReplicas()
+	return m.apiClient.Update(context.TODO(), vol)
 }
