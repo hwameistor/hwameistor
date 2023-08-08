@@ -34,6 +34,11 @@ func (ad *auditorForLocalStorageNode) Run(lsFactory localstorageinformers.Shared
 
 func (ad *auditorForLocalStorageNode) onAdd(obj interface{}) {
 	instance, _ := obj.(*localstorageapis.LocalStorageNode)
+
+	if len(instance.Status.State) != 0 {
+		return
+	}
+
 	record := &localstorageapis.EventRecord{
 		Time:          metav1.Time{Time: time.Now()},
 		Action:        ActionNodeAdd,

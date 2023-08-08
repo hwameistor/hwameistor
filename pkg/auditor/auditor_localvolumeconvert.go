@@ -34,6 +34,10 @@ func (ad *auditorForLocalVolumeConvert) Run(lsFactory localstorageinformers.Shar
 func (ad *auditorForLocalVolumeConvert) onAdd(obj interface{}) {
 	instance, _ := obj.(*localstorageapis.LocalVolumeConvert)
 
+	if len(instance.Status.State) != 0 {
+		return
+	}
+
 	record := &localstorageapis.EventRecord{
 		Time:   metav1.Time{Time: time.Now()},
 		ID:     instance.Name,

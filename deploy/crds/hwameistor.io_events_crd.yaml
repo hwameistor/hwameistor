@@ -8,6 +8,8 @@ spec:
     kind: Event
     listKind: EventList
     plural: events
+    shortNames:
+    - evt
     singular: event
   scope: Cluster
   versions:
@@ -16,10 +18,7 @@ spec:
       name: type
       type: string
     - jsonPath: .spec.resourceName
-      name: name
-      type: string
-    - jsonPath: .spec.nodeName
-      name: node
+      name: resource
       type: string
     name: v1alpha1
     schema:
@@ -41,9 +40,6 @@ spec:
           spec:
             description: EventSpec defines the desired state of Event
             properties:
-              nodeName:
-                description: Which node does the resource reside in
-                type: string
               records:
                 items:
                   properties:
@@ -78,15 +74,14 @@ spec:
                   LocalDiskNode, Pool,  LocalVolume, LocalDiskVolume, LocalDisk,'
                 enum:
                 - Cluster
-                - LocalStorageNode
-                - LocalDiskNode
+                - StorageNode
+                - DiskNode
                 - Pool
-                - LocalVolume
-                - LocalDiskVolume
-                - LocalDisk
+                - Volume
+                - DiskVolume
+                - Disk
                 type: string
             required:
-            - nodeName
             - records
             - resourceName
             - resourceType

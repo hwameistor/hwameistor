@@ -14,14 +14,14 @@ type EventSpec struct {
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
 
 	// HwameiStor resource type: Cluster, LocalStorageNode, LocalDiskNode, Pool,  LocalVolume, LocalDiskVolume, LocalDisk,
-	// +kubebuilder:validation:Enum:=Cluster;LocalStorageNode;LocalDiskNode;Pool;LocalVolume;LocalDiskVolume;LocalDisk
+	// +kubebuilder:validation:Enum:=Cluster;StorageNode;DiskNode;Pool;Volume;DiskVolume;Disk
 	ResourceType string `json:"resourceType"`
 
 	// Name of the resource
 	ResourceName string `json:"resourceName"`
 
 	// Which node does the resource reside in
-	NodeName string `json:"nodeName"`
+	// NodeName string `json:"nodeName"`
 
 	Records []EventRecord `json:"records"`
 }
@@ -57,10 +57,9 @@ type EventStatus struct {
 
 // Event is the Schema for the events API
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:path=events,scope=Cluster
+// +kubebuilder:resource:path=events,scope=Cluster,shortName=evt
 // +kubebuilder:printcolumn:JSONPath=".spec.resourceType",name=type,type=string
-// +kubebuilder:printcolumn:JSONPath=".spec.resourceName",name=name,type=string
-// +kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=node,type=string
+// +kubebuilder:printcolumn:JSONPath=".spec.resourceName",name=resource,type=string
 type Event struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

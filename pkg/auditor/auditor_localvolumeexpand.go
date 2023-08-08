@@ -33,6 +33,10 @@ func (ad *auditorForLocalVolumeExpand) Run(lsFactory localstorageinformers.Share
 func (ad *auditorForLocalVolumeExpand) onAdd(obj interface{}) {
 	instance, _ := obj.(*localstorageapis.LocalVolumeExpand)
 
+	if len(instance.Status.State) != 0 {
+		return
+	}
+
 	record := &localstorageapis.EventRecord{
 		Time:          metav1.Time{Time: time.Now()},
 		ID:            instance.Name,

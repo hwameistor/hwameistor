@@ -34,6 +34,10 @@ func (ad *auditorForLocalVolumeMigrate) Run(lsFactory localstorageinformers.Shar
 func (ad *auditorForLocalVolumeMigrate) onAdd(obj interface{}) {
 	instance, _ := obj.(*localstorageapis.LocalVolumeMigrate)
 
+	if len(instance.Status.State) != 0 {
+		return
+	}
+
 	record := &localstorageapis.EventRecord{
 		Time:          metav1.Time{Time: time.Now()},
 		ID:            instance.Name,

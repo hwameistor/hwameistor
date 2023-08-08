@@ -34,6 +34,11 @@ func (ad *auditorForLocalVolume) Run(lsFactory localstorageinformers.SharedInfor
 
 func (ad *auditorForLocalVolume) onAdd(obj interface{}) {
 	instance, _ := obj.(*localstorageapis.LocalVolume)
+
+	if len(instance.Status.State) != 0 {
+		return
+	}
+
 	record := &localstorageapis.EventRecord{
 		Time:          metav1.Time{Time: time.Now()},
 		Action:        ActionVolumeCreate,

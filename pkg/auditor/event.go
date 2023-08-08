@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	localstorageclientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned"
 	localstorageinformers "github.com/hwameistor/hwameistor/pkg/apis/client/informers/externalversions"
@@ -97,11 +98,12 @@ func (es *EventStore) createEvent(resType string, resName string) (*localstorage
 		Spec: localstorageapis.EventSpec{
 			ResourceType: resType,
 			ResourceName: resName,
+			Records:      []localstorageapis.EventRecord{},
 		},
 	}
 	return es.clientSet.HwameistorV1alpha1().Events().Create(context.TODO(), event, metav1.CreateOptions{})
 }
 
 func (es *EventStore) eventKey(resType string, resName string) string {
-	return fmt.Sprintf("%s-%s", resType, resName)
+	return strings.ToLower(fmt.Sprintf("%s-%s", resType, resName))
 }
