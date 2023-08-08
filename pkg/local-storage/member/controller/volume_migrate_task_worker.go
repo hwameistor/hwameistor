@@ -514,7 +514,6 @@ func (m *manager) checkReplicasForVolume(vol *apisv1alpha1.LocalVolume) error {
 }
 
 func (m *manager) selectMigrateTargetNode(migrate *apisv1alpha1.LocalVolumeMigrate, lvg *apisv1alpha1.LocalVolumeGroup) (string, error) {
-
 	vols, err := m.getAllVolumesInGroup(lvg)
 	if err != nil {
 		return "", fmt.Errorf("failed to get all the volumes in the group")

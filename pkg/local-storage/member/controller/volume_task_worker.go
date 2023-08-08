@@ -158,10 +158,14 @@ func (m *manager) processVolumeReadyAndNotReady(vol *apisv1alpha1.LocalVolume) e
 	healthyReplicaCount := 0
 	upReplicaCount := 0
 	allocatedCapacityBytes := int64(0)
+	// for update volume.status.replicas
+	var replicaNames []string
+
 	for _, replica := range replicas {
 		if replica.Status.State == apisv1alpha1.VolumeReplicaStateReady {
 			healthyReplicaCount++
 			allocatedCapacityBytes = replica.Status.AllocatedCapacityBytes
+			replicaNames = append(replicaNames, replica.Name)
 		}
 		if isVolumeReplicaUp(replica) {
 			upReplicaCount++
@@ -173,6 +177,7 @@ func (m *manager) processVolumeReadyAndNotReady(vol *apisv1alpha1.LocalVolume) e
 	if healthyReplicaCount >= int(vol.Spec.ReplicaNumber) {
 		vol.Status.State = apisv1alpha1.VolumeStateReady
 		vol.Status.AllocatedCapacityBytes = allocatedCapacityBytes
+		vol.Status.Replicas = replicaNames
 	} else {
 		vol.Status.State = apisv1alpha1.VolumeStateNotReady
 	}
