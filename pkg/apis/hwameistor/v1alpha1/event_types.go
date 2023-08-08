@@ -22,11 +22,14 @@ type EventSpec struct {
 type EventRecord struct {
 	Time metav1.Time `json:"time,omitempty"`
 
+	// id is unique
+	ID string `json:"id,omitempty"`
+
 	Action        string `json:"action,omitempty"`
 	ActionContent string `json:"actionContent,omitempty"`
 
-	Result        string `json:"result,omitempty"`
-	ResultContent string `json:"resultContent,omitempty"`
+	State        string `json:"state,omitempty"`
+	StateContent string `json:"stateContent,omitempty"`
 }
 
 // EventStatus defines the observed state of Event

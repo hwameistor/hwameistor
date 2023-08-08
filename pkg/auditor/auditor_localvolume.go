@@ -1,9 +1,13 @@
 package auditor
 
 import (
+	"time"
+
 	localstorageinformers "github.com/hwameistor/hwameistor/pkg/apis/client/informers/externalversions"
 	localstorageinformersv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/client/informers/externalversions/hwameistor/v1alpha1"
+	localstorageapis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -29,11 +33,46 @@ func (ad *auditorForLocalVolume) Run(lsFactory localstorageinformers.SharedInfor
 }
 
 func (ad *auditorForLocalVolume) onAdd(obj interface{}) {
-	//instance, _ := obj.(*localstorageapis.LocalVolume)
+	instance, _ := obj.(*localstorageapis.LocalVolume)
+	record := &localstorageapis.EventRecord{
+		Time:          metav1.Time{Time: time.Now()},
+		Action:        ActionVolumeCreate,
+		ActionContent: contentString(instance.Spec),
+	}
+
+	ad.events.AddRecordForResource(ResourceTypeLocalVolume, instance.Name, record)
 }
 
 func (ad *auditorForLocalVolume) onDelete(obj interface{}) {
+	instance, _ := obj.(*localstorageapis.LocalVolume)
+	record := &localstorageapis.EventRecord{
+		Time:          metav1.Time{Time: time.Now()},
+		Action:        ActionVolumeDelete,
+		ActionContent: contentString(instance.Spec),
+	}
+
+	ad.events.AddRecordForResource(ResourceTypeLocalVolume, instance.Name, record)
 }
 
 func (ad *auditorForLocalVolume) onUpdate(oldObj, newObj interface{}) {
+	oldInstance, _ := oldObj.(*localstorageapis.LocalVolume)
+	newInstance, _ := newObj.(*localstorageapis.LocalVolume)
+
+	//check for mount or umount
+	if oldInstance.Status.PublishedNodeName != newInstance.Status.PublishedNodeName {
+		record := &localstorageapis.EventRecord{Time: metav1.Time{Time: time.Now()}}
+
+		if len(newInstance.Status.PublishedNodeName) == 0 {
+			// unmount
+			record.Action = ActionVolumeUnmount
+			record.ActionContent = contentString(oldInstance.Status)
+
+		} else {
+			// mount
+			record.Action = ActionVolumeMount
+			record.ActionContent = contentString(newInstance.Status)
+		}
+
+		ad.events.AddRecordForResource(ResourceTypeLocalVolume, newInstance.Name, record)
+	}
 }

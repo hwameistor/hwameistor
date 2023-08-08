@@ -45,9 +45,12 @@ spec:
                       type: string
                     actionContent:
                       type: string
-                    result:
+                    id:
+                      description: id is unique
                       type: string
-                    resultContent:
+                    state:
+                      type: string
+                    stateContent:
                       type: string
                     time:
                       format: date-time

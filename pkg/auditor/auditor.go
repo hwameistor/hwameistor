@@ -32,13 +32,16 @@ func (ad *auditor) Run(stopCh <-chan struct{}) error {
 	}
 
 	log.Debug("start local storage informer factory")
-	lsFactory := localstorageinformers.NewSharedInformerFactory(localstorageclientset.NewForConfigOrDie(cfg), 0)
+	lsClientSet := localstorageclientset.NewForConfigOrDie(cfg)
+	lsFactory := localstorageinformers.NewSharedInformerFactory(lsClientSet, 0)
 	lsFactory.Start(stopCh)
 
 	eventStore := NewEventStore()
-	eventStore.Run(lsFactory, stopCh)
+	eventStore.Run(lsClientSet, lsFactory, stopCh)
 
 	newAuditorForCluster(eventStore).Run(stopCh)
+
+	newAuditorForLocalStorageNode(eventStore).Run(lsFactory, stopCh)
 
 	newAuditorForLocalVolume(eventStore).Run(lsFactory, stopCh)
 	newAuditorForLocalVolumeMigrate(eventStore).Run(lsFactory, stopCh)
