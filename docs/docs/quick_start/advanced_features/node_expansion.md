@@ -37,8 +37,8 @@ hwameistor-local-storage-s4zbw          2/2     Running   0     19h   192.168.14
 
 # check if LocalStorageNode exists
 $ kubectl get localstoragenode k8s-worker-4
-NAME                 IP           ZONE      REGION    STATUS   AGE
-k8s-worker-4   10.6.182.103       default   default   Ready    8d
+NAME                 IP           REGION    STATUS   AGE
+k8s-worker-4   10.6.182.103       default   Ready    8d
 ```
 
 ## Add the storage node into HwameiStor
