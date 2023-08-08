@@ -16,3 +16,4 @@
 - "{{ .global.hwameistorImageRegistry }}/{{ .exporter.imageRepository }}:{{ .exporter.tag }}"
 - "{{ .global.hwameistorImageRegistry }}/{{ .ui.imageRepository }}:{{ .ui.tag }}"
 - "{{ .global.hwameistorImageRegistry }}/{{ .failoverAssistant.imageRepository }}:{{ .failoverAssistant.tag }}"
+- "{{ .global.hwameistorImageRegistry }}/{{ .auditor.imageRepository }}:{{ .auditor.tag }}"
