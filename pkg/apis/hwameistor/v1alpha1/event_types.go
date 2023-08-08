@@ -12,23 +12,35 @@ type EventSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+
+	// HwameiStor resource type: Cluster, LocalStorageNode, LocalDiskNode, Pool,  LocalVolume, LocalDiskVolume, LocalDisk,
+	// +kubebuilder:validation:Enum:=Cluster;LocalStorageNode;LocalDiskNode;Pool;LocalVolume;LocalDiskVolume;LocalDisk
 	ResourceType string `json:"resourceType"`
 
+	// Name of the resource
 	ResourceName string `json:"resourceName"`
+
+	// Which node does the resource reside in
+	NodeName string `json:"nodeName"`
 
 	Records []EventRecord `json:"records"`
 }
 
 type EventRecord struct {
+	// The time when does the action happen
 	Time metav1.Time `json:"time,omitempty"`
 
 	// id is unique
 	ID string `json:"id,omitempty"`
 
-	Action        string `json:"action,omitempty"`
+	// The action is the operation on the resource, such as Migrate a LocalVolume
+	Action string `json:"action,omitempty"`
+	// The content of the action which is a JSON string
 	ActionContent string `json:"actionContent,omitempty"`
 
-	State        string `json:"state,omitempty"`
+	// The state of the action
+	State string `json:"state,omitempty"`
+	// The content of the action state which is a JSON string
 	StateContent string `json:"stateContent,omitempty"`
 }
 
@@ -48,6 +60,7 @@ type EventStatus struct {
 // +kubebuilder:resource:path=events,scope=Cluster
 // +kubebuilder:printcolumn:JSONPath=".spec.resourceType",name=type,type=string
 // +kubebuilder:printcolumn:JSONPath=".spec.resourceName",name=name,type=string
+// +kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=node,type=string
 type Event struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

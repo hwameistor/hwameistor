@@ -2,12 +2,18 @@ name: HwameiStor PR
 
 on:
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
     branches:
       - main
     paths:
       - "pkg/**"
       - "cmd/**"
       - "test/**"
+      - "build/**"
+      - "helm/**"
 
 jobs:
   unit-test:

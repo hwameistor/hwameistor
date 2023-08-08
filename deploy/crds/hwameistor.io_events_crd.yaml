@@ -18,6 +18,9 @@ spec:
     - jsonPath: .spec.resourceName
       name: name
       type: string
+    - jsonPath: .spec.nodeName
+      name: node
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -38,34 +41,52 @@ spec:
           spec:
             description: EventSpec defines the desired state of Event
             properties:
+              nodeName:
+                description: Which node does the resource reside in
+                type: string
               records:
                 items:
                   properties:
                     action:
+                      description: The action is the operation on the resource, such
+                        as Migrate a LocalVolume
                       type: string
                     actionContent:
+                      description: The content of the action which is a JSON string
                       type: string
                     id:
                       description: id is unique
                       type: string
                     state:
+                      description: The state of the action
                       type: string
                     stateContent:
+                      description: The content of the action state which is a JSON
+                        string
                       type: string
                     time:
+                      description: The time when does the action happen
                       format: date-time
                       type: string
                   type: object
                 type: array
               resourceName:
+                description: Name of the resource
                 type: string
               resourceType:
-                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                  Important: Run "operator-sdk generate k8s" to regenerate code after
-                  modifying this file Add custom validation using kubebuilder tags:
-                  https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+                description: 'HwameiStor resource type: Cluster, LocalStorageNode,
+                  LocalDiskNode, Pool,  LocalVolume, LocalDiskVolume, LocalDisk,'
+                enum:
+                - Cluster
+                - LocalStorageNode
+                - LocalDiskNode
+                - Pool
+                - LocalVolume
+                - LocalDiskVolume
+                - LocalDisk
                 type: string
             required:
+            - nodeName
             - records
             - resourceName
             - resourceType

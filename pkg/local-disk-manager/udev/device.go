@@ -91,6 +91,9 @@ type Device struct {
 
 	// Name is the name of the device node sda, sdb, dm-0 etc
 	Name string `json:"name"`
+
+	// DEVLINKS
+	DevLinks []string `json:"devLinks"`
 }
 
 // NewDevice
@@ -113,7 +116,7 @@ func (d *Device) ParseDeviceInfo() error {
 }
 
 // Info
-func (d *Device) Info() (map[string]string, error) {
+func (d *Device) Info() (map[string]interface{}, error) {
 	var out string
 	var err error
 	if d.DevPath != "" {
@@ -129,7 +132,7 @@ func (d *Device) Info() (map[string]string, error) {
 }
 
 // parseDiskAttribute
-func (d *Device) parseDiskAttribute(info map[string]string) error {
+func (d *Device) parseDiskAttribute(info map[string]interface{}) error {
 	// Why do we need to convert the map information into JSON data
 	// instead of directly converting the map into a structure
 	//
@@ -145,8 +148,8 @@ func (d *Device) parseDiskAttribute(info map[string]string) error {
 }
 
 // parseUdevInfo
-func parseUdevInfo(udevInfo string) map[string]string {
-	udevItems := make(map[string]string)
+func parseUdevInfo(udevInfo string) map[string]interface{} {
+	udevItems := make(map[string]interface{})
 	for _, info := range utils.ConvertShellOutputs(udevInfo) {
 		if info == "" {
 			continue
@@ -157,6 +160,10 @@ func parseUdevInfo(udevInfo string) map[string]string {
 		case 'E':
 			items := strings.Split(strings.Replace(info, "E: ", "", 1), "=")
 			if len(items) != 2 {
+				continue
+			}
+			if items[0] == "DEVLINKS" {
+				udevItems[items[0]] = strings.Split(items[1], " ")
 				continue
 			}
 			udevItems[items[0]] = items[1]

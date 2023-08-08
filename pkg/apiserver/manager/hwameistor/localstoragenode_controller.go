@@ -368,6 +368,8 @@ func (lsnController *LocalStorageNodeController) ListStorageNodeDisks(queryPage 
 				disk.LocalStoragePooLName = hwameistorapi.PoolNameForHDD
 			} else if diskList.Items[i].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameSSD {
 				disk.LocalStoragePooLName = hwameistorapi.PoolNameForSSD
+			} else if diskList.Items[i].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameNVMe {
+				disk.LocalStoragePooLName = hwameistorapi.PoolNameForNVMe
 			}
 
 			disk.TotalCapacityBytes = diskList.Items[i].Spec.Capacity

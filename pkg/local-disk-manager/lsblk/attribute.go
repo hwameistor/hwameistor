@@ -35,6 +35,7 @@ func (ap AttributeParser) ParseDiskAttr() manager.Attribute {
 		Serial:    uDevice.Serial,
 		Vendor:    uDevice.Vendor,
 		IDType:    uDevice.IDType,
+		DevLinks:  uDevice.DevLinks,
 	}
 
 	// Parse disk capacity

@@ -39,6 +39,9 @@ func (builder *Builder) SetupAttribute(attribute manager.Attribute) *Builder {
 	builder.disk.Spec.DiskAttributes.Protocol = attribute.Bus
 	builder.disk.Spec.DiskAttributes.SerialNumber = attribute.Serial
 	builder.disk.Spec.DiskAttributes.DevType = attribute.DevType
+	builder.disk.Spec.Major = attribute.Major
+	builder.disk.Spec.Minor = attribute.Minor
+	builder.disk.Spec.DevLinks = attribute.DevLinks
 
 	return builder
 }
@@ -66,7 +69,7 @@ func (builder *Builder) SetupSmartInfo(smart manager.SmartInfo) *Builder {
 	if builder.errs != nil {
 		return builder
 	}
-	
+
 	if smart.OverallHealthPassed {
 		builder.disk.Spec.SmartInfo.OverallHealth = v1alpha1.AssessPassed
 	} else {
