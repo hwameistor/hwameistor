@@ -105,7 +105,7 @@ localDiskManager:
 
 localDiskManagerCSIController:
   replicas: 1
-  priorityClassName: 
+  priorityClassName:
   provisioner:
     imageRepository: sig-storage/csi-provisioner
     tag: v2.0.3
@@ -117,7 +117,7 @@ localDiskManagerCSIController:
 
 localStorage:
   tolerationsOnMaster: true
-  priorityClassName: 
+  priorityClassName:
   registrar:
     imageRepository: sig-storage/csi-node-driver-registrar
     tag: v2.5.0
@@ -173,3 +173,8 @@ pvcAutoResizer:
   replicas: 1
   imageRepository: hwameistor/pvc-autoresizer
   tag: ""
+
+localDiskActionController:
+  imageRepository: hwameistor/local-disk-action-controller
+  tag: ""
+  resources: {}
