@@ -12,6 +12,22 @@ const (
 	LocalStorage     = "local-storage"
 	LocalDiskManager = "local-disk-manager"
 	System           = "system"
+
+	// LocalDiskObjectPrefix is used to prefix LocalDisk objects
+	LocalDiskObjectPrefix = "localdisk-"
+)
+
+type DevLinkType = string
+
+const (
+	// LinkByPath is used to identify by-path symbolic link
+	LinkByPath DevLinkType = "by-path"
+
+	// LinkByID is used to identify by-id symbolic link
+	LinkByID DevLinkType = "by-id"
+
+	// LinkByUUID is used to identify by-uuid symbolic link
+	LinkByUUID DevLinkType = "by-uuid"
 )
 
 // PartitionInfo contains partition information(e.g. FileSystem)

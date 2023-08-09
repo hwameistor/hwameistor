@@ -107,5 +107,5 @@ func (ctr Controller) mergeLocalDiskAttr(oldLd *v1alpha1.LocalDisk, newLd v1alph
 }
 
 func (ctr Controller) GenLocalDiskName(disk manager.DiskInfo) string {
-	return utils.ConvertNodeName(ctr.NodeName) + "-" + disk.Name
+	return v1alpha1.LocalDiskObjectPrefix + disk.GenerateUUID()
 }

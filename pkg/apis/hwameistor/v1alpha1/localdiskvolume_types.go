@@ -82,6 +82,9 @@ type LocalDiskVolumeStatus struct {
 	// DevPath is the disk path in the OS
 	DevPath string `json:"devPath"`
 
+	// DevLinks is the set of symlink of a disk
+	DevLinks map[DevLinkType][]string `json:"devLinks,omitempty"`
+
 	// AllocatedCapacityBytes is the real allocated capacity in bytes
 	AllocatedCapacityBytes int64 `json:"allocatedCapacityBytes,omitempty"`
 
