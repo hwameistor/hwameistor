@@ -41,6 +41,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Hwameistor().V1alpha1().Events().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("localdisks"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Hwameistor().V1alpha1().LocalDisks().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("localdiskactions"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Hwameistor().V1alpha1().LocalDiskActions().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("localdiskclaims"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Hwameistor().V1alpha1().LocalDiskClaims().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("localdisknodes"):

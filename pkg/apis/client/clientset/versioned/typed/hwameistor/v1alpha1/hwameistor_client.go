@@ -12,6 +12,7 @@ type HwameistorV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	EventsGetter
 	LocalDisksGetter
+	LocalDiskActionsGetter
 	LocalDiskClaimsGetter
 	LocalDiskNodesGetter
 	LocalDiskVolumesGetter
@@ -35,6 +36,10 @@ func (c *HwameistorV1alpha1Client) Events() EventInterface {
 
 func (c *HwameistorV1alpha1Client) LocalDisks() LocalDiskInterface {
 	return newLocalDisks(c)
+}
+
+func (c *HwameistorV1alpha1Client) LocalDiskActions() LocalDiskActionInterface {
+	return newLocalDiskActions(c)
 }
 
 func (c *HwameistorV1alpha1Client) LocalDiskClaims() LocalDiskClaimInterface {
