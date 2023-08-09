@@ -8,7 +8,7 @@ import (
 
 	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned"
 	informers "github.com/hwameistor/hwameistor/pkg/apis/client/informers/externalversions"
-	localdiskaction "github.com/hwameistor/hwameistor/pkg/local-disk-action"
+	localdiskactioncontroller "github.com/hwameistor/hwameistor/pkg/local-disk-action-controller"
 	"github.com/hwameistor/hwameistor/pkg/utils"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -48,7 +48,7 @@ func main() {
 
 	factory := informers.NewSharedInformerFactory(client, time.Second*30)
 
-	controller := localdiskaction.NewLocalDiskActionController(client,
+	controller := localdiskactioncontroller.NewLocalDiskActionController(client,
 		factory.Hwameistor().V1alpha1().LocalDisks(),
 		factory.Hwameistor().V1alpha1().LocalDiskActions())
 

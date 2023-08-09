@@ -1,4 +1,4 @@
-package localdiskaction
+package localdiskactioncontroller
 
 import (
 	"context"
