@@ -2,6 +2,7 @@ package localdiskvolume
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
@@ -74,6 +75,26 @@ func (builder *Builder) SetupDisk(devPath string) *Builder {
 	}
 
 	builder.volume.Status.DevPath = devPath
+	return builder
+}
+
+func (builder *Builder) SetupDevSymLinks(devLinks []string) *Builder {
+	if err := builder.assertVolumeNotNil(); err != nil {
+		return builder
+	}
+
+	devLinksMap := make(map[v1alpha1.DevLinkType][]string, 0)
+	for _, devLink := range devLinks {
+		if strings.Contains(devLink, v1alpha1.LinkByPath) {
+			devLinksMap[v1alpha1.LinkByPath] = append(devLinksMap[v1alpha1.LinkByPath], devLink)
+		} else if strings.Contains(devLink, v1alpha1.LinkByID) {
+			devLinksMap[v1alpha1.LinkByID] = append(devLinksMap[v1alpha1.LinkByID], devLink)
+		} else if strings.Contains(devLink, v1alpha1.LinkByUUID) {
+			devLinksMap[v1alpha1.LinkByUUID] = append(devLinksMap[v1alpha1.LinkByUUID], devLink)
+		}
+	}
+
+	builder.volume.Status.DevLinks = devLinksMap
 	return builder
 }
 
