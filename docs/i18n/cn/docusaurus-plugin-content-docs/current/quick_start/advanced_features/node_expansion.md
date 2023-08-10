@@ -10,7 +10,7 @@ sidebar_label: "节点扩展"
 ## 准备新的存储节点
 
 在 Kubernetes 集群中新增一个节点，或者，选择一个已有的集群节点（非 HwameiStor 节点）。
-该节点必须满足 [Prerequisites](../install/prereq.md) 要求的所有条件。
+该节点必须满足[准备工作](../install/prereq.md)要求的所有条件。
 本例中，所用的新增存储节点和磁盘信息如下所示：
 
 - name: k8s-worker-4
@@ -34,8 +34,8 @@ hwameistor-local-storage-s4zbw          2/2     Running   0     19h   192.168.14
 
 # 检查 LocalStorageNode 资源
 $ kubectl get localstoragenode k8s-worker-4
-NAME                 IP           REGION    STATUS   AGE
-k8s-worker-4   10.6.182.103       default   Ready    8d
+NAME                 IP           STATUS   AGE
+k8s-worker-4   10.6.182.103       Ready    8d
 ```
 
 ## 添加新增存储节点到 HwameiStor 系统
