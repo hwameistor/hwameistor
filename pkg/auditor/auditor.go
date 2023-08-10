@@ -3,6 +3,7 @@ package auditor
 import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
+	runtimecache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	localstorageclientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned"
@@ -11,7 +12,7 @@ import (
 
 // Auditor interface
 type Auditor interface {
-	Run(stopCh <-chan struct{}) error
+	Run(informerCache runtimecache.Cache, stopCh <-chan struct{}) error
 }
 
 type auditor struct {
@@ -22,7 +23,7 @@ func New(clientset *kubernetes.Clientset) Auditor {
 	return &auditor{}
 }
 
-func (ad *auditor) Run(stopCh <-chan struct{}) error {
+func (ad *auditor) Run(informersCache runtimecache.Cache, stopCh <-chan struct{}) error {
 
 	// Initialize HwameiStor LocalStorage resources
 	// Get a config to talk to the apiserver
@@ -39,7 +40,7 @@ func (ad *auditor) Run(stopCh <-chan struct{}) error {
 	eventStore := NewEventStore()
 	eventStore.Run(lsClientSet, lsFactory, stopCh)
 
-	newAuditorForCluster(eventStore).Run(stopCh)
+	newAuditorForCluster(eventStore).Run(informersCache, stopCh)
 
 	newAuditorForLocalStorageNode(eventStore).Run(lsFactory, stopCh)
 
@@ -48,7 +49,7 @@ func (ad *auditor) Run(stopCh <-chan struct{}) error {
 	newAuditorForLocalVolumeConvert(eventStore).Run(lsFactory, stopCh)
 	newAuditorForLocalVolumeExpand(eventStore).Run(lsFactory, stopCh)
 
-	newAuditorForLocalDiskClaim(eventStore).Run(lsFactory, stopCh)
+	newAuditorForLocalDisk(eventStore).Run(lsFactory, stopCh)
 
 	<-stopCh
 	return nil

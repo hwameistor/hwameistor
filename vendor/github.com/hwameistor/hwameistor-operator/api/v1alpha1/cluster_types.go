@@ -52,6 +52,8 @@ type ClusterSpec struct {
 
 	Exporter *ExporterSpec `json:"exporter,omitempty"`
 
+	UI *UISpec `json:"ui,omitempty"`
+
 	DRBD *DRBDSpec `json:"drbd,omitempty"`
 
 	RBAC *RBACSpec `json:"rbac,omitempty"`
@@ -87,6 +89,7 @@ type CSIControllerSpec struct {
 	Common *PodCommonSpec `json:"common,omitempty"`
 	Provisioner *ContainerCommonSpec `json:"provisioner,omitempty"`
 	Attacher *ContainerCommonSpec `json:"attacher,omitempty"`
+	Monitor *ContainerCommonSpec `json:"monitor,omitempty"`
 	Resizer *ContainerCommonSpec `json:"resizer,omitempty"`
 }
 
@@ -129,16 +132,23 @@ type SchedulerSpec struct {
 
 type EvictorSpec struct {
 	Disable bool `json:"disable,omitempty"`
+	Replicas int32 `json:"replicas"`
 	Common *PodCommonSpec `json:"common,omitempty"`
 	Evictor *ContainerCommonSpec `json:"evictor,omitempty"`
 }
 
 type AdmissionControllerSpec struct {
 	Disable bool `json:"disable,omitempty"`
-	Replicas int `json:"replicas,omitempty"`
+	Replicas int32 `json:"replicas,omitempty"`
 	FailurePolicy string `json:"failurePolicy,omitempty"`
 	Common *PodCommonSpec `json:"common,omitempty"`
 	Controller *ContainerCommonSpec `json:"controller,omitempty"`
+}
+
+type Authentication struct {
+	Enable bool `json:"enable,omitempty"`
+	AccessId string `json:"accessId,omitempty"`
+	SecretKey string `json:"secretKey,omitempty"`
 }
 
 type ApiServerSpec struct {
@@ -146,6 +156,7 @@ type ApiServerSpec struct {
 	Replicas int32 `json:"replicas,omitempty"`
 	Common *PodCommonSpec `json:"common,omitempty"`
 	Server *ContainerCommonSpec `json:"server,omitempty"`
+	Authentication *Authentication `json:"authentication,omitempty"`
 }
 
 type ExporterSpec struct {
@@ -153,6 +164,13 @@ type ExporterSpec struct {
 	Replicas int32 `json:"replicas,omitempty"`
 	Common *PodCommonSpec `json:"common,omitempty"`
 	Collector *ContainerCommonSpec `json:"collector,omitempty"`
+}
+
+type UISpec struct {
+	Disable bool `json:"disable,omitempty"`
+	Replicas int32 `json:"replicas"`
+	Common *PodCommonSpec `json:"common,omitempty"`
+	UI *ContainerCommonSpec `json:"ui,omitempty"`
 }
 
 type DRBDSpec struct {
@@ -188,7 +206,8 @@ type ClusterStatus struct {
 	InstalledCRDS bool `json:"installedCRDS"`
 	DRBDAdapterCreated bool `json:"drbdAdapterCreated"`
 	DRBDAdapterCreatedJobNum int `json:"drbdAdapterCreatedJobNum"`
-	DiskReserveState string `json:"diskReserveState"`
+	DiskReserveState string `json:"diskReserveState,omitempty"`
+	Phase string `json:"phase,omitempty"`
 	ComponentStatus ComponentStatus `json:"componentStatus"`
 }
 

@@ -18,7 +18,8 @@ import (
 const (
 	ResourceTypeCluster     = "Cluster"
 	ResourceTypeStorageNode = "StorageNode"
-	ResourceTypeLocalVolume = "Volume"
+	ResourceTypeVolume      = "Volume"
+	ResourceTypeDisk        = "Disk"
 
 	ActionVolumeCreate  = "Create"
 	ActionVolumeDelete  = "Delete"
@@ -37,6 +38,17 @@ const (
 	ActionNodeRemove                    = "Remove"
 	ActionNodeStateChange               = "StateChange"
 	ActionNodeStoragePoolCapacityExpand = "CapacityExpand"
+
+	ActionClusterInstall = "Install"
+	ActionClusterChange  = "Change"
+	ActionClusterUpgrade = "Upgrade"
+
+	ActionDiskAdd      = "Add"
+	ActionDiskRelocate = "Relocate"
+	ActionDiskAllocate = "Allocate"
+	ActionDiskReserve  = "Reserve"
+	ActionDiskRelease  = "Release"
+	ActionDiskChange   = "Change"
 
 	ErrMsgSuccess = "Added a record"
 	ErrMsgFailure = "Failed to add a record"

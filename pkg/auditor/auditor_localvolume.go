@@ -45,7 +45,7 @@ func (ad *auditorForLocalVolume) onAdd(obj interface{}) {
 		ActionContent: contentString(instance.Spec),
 	}
 
-	ad.events.AddRecordForResource(ResourceTypeLocalVolume, instance.Name, record)
+	ad.events.AddRecordForResource(ResourceTypeVolume, instance.Name, record)
 }
 
 func (ad *auditorForLocalVolume) onDelete(obj interface{}) {
@@ -56,7 +56,7 @@ func (ad *auditorForLocalVolume) onDelete(obj interface{}) {
 		ActionContent: contentString(instance.Spec),
 	}
 
-	ad.events.AddRecordForResource(ResourceTypeLocalVolume, instance.Name, record)
+	ad.events.AddRecordForResource(ResourceTypeVolume, instance.Name, record)
 }
 
 func (ad *auditorForLocalVolume) onUpdate(oldObj, newObj interface{}) {
@@ -78,6 +78,6 @@ func (ad *auditorForLocalVolume) onUpdate(oldObj, newObj interface{}) {
 			record.ActionContent = contentString(newInstance.Status)
 		}
 
-		ad.events.AddRecordForResource(ResourceTypeLocalVolume, newInstance.Name, record)
+		ad.events.AddRecordForResource(ResourceTypeVolume, newInstance.Name, record)
 	}
 }

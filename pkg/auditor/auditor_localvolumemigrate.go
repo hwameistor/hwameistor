@@ -46,7 +46,7 @@ func (ad *auditorForLocalVolumeMigrate) onAdd(obj interface{}) {
 		State:         ActionStateSubmit,
 	}
 
-	ad.events.AddRecordForResource(ResourceTypeLocalVolume, instance.Spec.VolumeName, record)
+	ad.events.AddRecordForResource(ResourceTypeVolume, instance.Spec.VolumeName, record)
 }
 
 func (ad *auditorForLocalVolumeMigrate) onUpdate(oldObj, newObj interface{}) {
@@ -71,5 +71,5 @@ func (ad *auditorForLocalVolumeMigrate) onUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	ad.events.AddRecordForResource(ResourceTypeLocalVolume, instance.Spec.VolumeName, record)
+	ad.events.AddRecordForResource(ResourceTypeVolume, instance.Spec.VolumeName, record)
 }
