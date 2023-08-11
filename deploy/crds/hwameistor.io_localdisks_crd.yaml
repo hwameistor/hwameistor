@@ -191,6 +191,13 @@ spec:
                 description: HasPartition represents if the disk has partitions or
                   not
                 type: boolean
+              preDevicePath:
+                description: PreDevicePath represents the last device path in the
+                  OS
+                type: string
+              preNodeName:
+                description: PreNodeName represents the node where the disk was attached
+                type: string
               raidInfo:
                 description: RAIDInfo contains RAID information
                 properties:

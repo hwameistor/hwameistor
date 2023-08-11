@@ -173,11 +173,17 @@ type LocalDiskSpec struct {
 	// +kubebuilder:validation:Required
 	NodeName string `json:"nodeName"`
 
+	// PreNodeName represents the node where the disk was attached
+	PreNodeName string `json:"preNodeName,omitempty"`
+
 	// UUID global unique identifier of the disk
 	UUID string `json:"uuid,omitempty"`
 
 	// DevicePath is the disk path in the OS
 	DevicePath string `json:"devicePath,omitempty"`
+
+	// PreDevicePath represents the last device path in the OS
+	PreDevicePath string `json:"preDevicePath,omitempty"`
 
 	// DevLinks are symbol links for this device
 	DevLinks []string `json:"devLinks"`

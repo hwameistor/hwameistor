@@ -598,7 +598,7 @@ func (in *LocalDiskVolumeStatus) DeepCopyInto(out *LocalDiskVolumeStatus) {
 	*out = *in
 	if in.DevLinks != nil {
 		in, out := &in.DevLinks, &out.DevLinks
-		*out = make(map[DevLinkType][]string, len(*in))
+		*out = make(map[string][]string, len(*in))
 		for key, val := range *in {
 			var outVal []string
 			if val == nil {
