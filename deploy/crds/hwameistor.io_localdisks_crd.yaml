@@ -17,6 +17,17 @@ spec:
     - jsonPath: .spec.nodeName
       name: NodeMatch
       type: string
+    - jsonPath: .spec.preNodeName
+      name: PreNodeMatch
+      priority: 1
+      type: string
+    - jsonPath: .spec.devicePath
+      name: DevicePath
+      type: string
+    - jsonPath: .spec.preDevicePath
+      name: PreDevicePath
+      priority: 1
+      type: string
     - jsonPath: .spec.owner
       name: Owner
       priority: 1
