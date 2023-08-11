@@ -38,6 +38,17 @@ failoverAssistant:
       cpu: 1m
       memory: 20Mi
 
+
+auditor:
+  replicas: 2
+  resources:
+    limits:
+      cpu: 300m
+      memory: 300Mi
+    requests:
+      cpu: 1m
+      memory: 20Mi
+
 exporter:
   replicas: 2
   resources:

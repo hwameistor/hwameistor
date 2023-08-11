@@ -2,6 +2,8 @@
 
 package v1alpha1
 
+type EventExpansion interface{}
+
 type LocalDiskExpansion interface{}
 
 type LocalDiskClaimExpansion interface{}

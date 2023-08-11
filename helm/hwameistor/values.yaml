@@ -79,6 +79,12 @@ apiserver:
     accessId: admin
     secretKey: admin
 
+auditor:
+  replicas: 1
+  imageRepository: hwameistor/auditor
+  tag: ""
+  resources: {}
+
 ui:
   replicas: 1
   imageRepository: hwameistor/hwameistor-ui

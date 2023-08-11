@@ -37,6 +37,8 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=hwameistor.io, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("events"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Hwameistor().V1alpha1().Events().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("localdisks"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Hwameistor().V1alpha1().LocalDisks().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("localdiskclaims"):

@@ -1,0 +1,96 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: events.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: Event
+    listKind: EventList
+    plural: events
+    shortNames:
+    - evt
+    singular: event
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.resourceType
+      name: type
+      type: string
+    - jsonPath: .spec.resourceName
+      name: resource
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Event is the Schema for the events API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: EventSpec defines the desired state of Event
+            properties:
+              records:
+                items:
+                  properties:
+                    action:
+                      description: The action is the operation on the resource, such
+                        as Migrate a LocalVolume
+                      type: string
+                    actionContent:
+                      description: The content of the action which is a JSON string
+                      type: string
+                    id:
+                      description: id is unique
+                      type: string
+                    state:
+                      description: The state of the action
+                      type: string
+                    stateContent:
+                      description: The content of the action state which is a JSON
+                        string
+                      type: string
+                    time:
+                      description: The time when does the action happen
+                      format: date-time
+                      type: string
+                  type: object
+                type: array
+              resourceName:
+                description: Name of the resource
+                type: string
+              resourceType:
+                description: 'HwameiStor resource type: Cluster, LocalStorageNode,
+                  LocalDiskNode, Pool,  LocalVolume, LocalDiskVolume, LocalDisk,'
+                enum:
+                - Cluster
+                - StorageNode
+                - DiskNode
+                - Pool
+                - Volume
+                - DiskVolume
+                - Disk
+                type: string
+            required:
+            - records
+            - resourceName
+            - resourceType
+            type: object
+          status:
+            description: EventStatus defines the observed state of Event
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
