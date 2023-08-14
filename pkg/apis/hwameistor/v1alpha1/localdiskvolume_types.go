@@ -82,6 +82,9 @@ type LocalDiskVolumeStatus struct {
 	// DevPath is the disk path in the OS
 	DevPath string `json:"devPath"`
 
+	// VolumePath is the volume path in the OS
+	VolumePath string `json:"volumePath,omitempty"`
+
 	// DevLinks is the set of symlink of a disk
 	DevLinks map[DevLinkType][]string `json:"devLinks,omitempty"`
 

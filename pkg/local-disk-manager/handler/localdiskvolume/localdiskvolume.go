@@ -55,7 +55,8 @@ func (v *DiskVolumeHandler) ReconcileCreated() (reconcile.Result, error) {
 	// devPath is unreliable， use localdisk to find the by-path or by-id path
 	for _, links := range v.Ldv.Status.DevLinks {
 		for _, linkName := range links {
-			if v.hostRegistry.DiskSymbolLinkExist(strings.Split(linkName, "/")[len(strings.Split(linkName, "/"))-1]) {
+			linkName = strings.Split(linkName, "/")[len(strings.Split(linkName, "/"))-1]
+			if v.hostRegistry.DiskSymbolLinkExist(linkName) {
 				selectedDisk = linkName
 			}
 		}
@@ -226,8 +227,7 @@ func (v *DiskVolumeHandler) SetCanWipe(canWipe bool) {
 }
 
 func (v *DiskVolumeHandler) GetVolumePath() string {
-	poolName := types.GetLocalDiskPoolName(v.Ldv.Spec.DiskType)
-	return types.ComposePoolVolumePath(poolName, v.Ldv.Name)
+	return v.Ldv.Status.VolumePath
 }
 
 func (v *DiskVolumeHandler) MountRawBlock(devPath, mountPoint string) error {

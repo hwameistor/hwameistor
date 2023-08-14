@@ -78,6 +78,15 @@ func (builder *Builder) SetupDisk(devPath string) *Builder {
 	return builder
 }
 
+func (builder *Builder) SetupVolumePath(volPath string) *Builder {
+	if err := builder.assertVolumeNotNil(); err != nil {
+		return builder
+	}
+
+	builder.volume.Status.VolumePath = volPath
+	return builder
+}
+
 func (builder *Builder) SetupDevSymLinks(devLinks []string) *Builder {
 	if err := builder.assertVolumeNotNil(); err != nil {
 		return builder

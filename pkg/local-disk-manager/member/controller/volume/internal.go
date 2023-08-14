@@ -166,6 +166,7 @@ func (vm *localDiskVolumeManager) CreateVolume(name string, parameters interface
 		SetupRequiredCapacityBytes(volumeRequest.RequireCapacity).
 		SetupPVCNameSpaceName(volumeRequest.PVCNameSpace + "/" + volumeRequest.PVCName).
 		SetupAccessibility(v1alpha1.AccessibilityTopology{Nodes: []string{volumeRequest.OwnerNodeName}}).
+		SetupVolumePath(types.ComposePoolVolumePath(types.GetLocalDiskPoolName(volumeRequest.DiskType), name)).
 		SetupStatus(v1alpha1.VolumeStateCreated).Build()
 	if err != nil {
 		log.WithError(err).Error("Failed to build volume object")

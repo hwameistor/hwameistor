@@ -62,7 +62,7 @@ func (p *diskPool) ExtendPool(poolName string, devLinks []string, serial string)
 		return exist, err
 	}
 
-	log.Infof("create symlink %s -\\> %s", poolDevicePath, actualDeviceLink)
+	log.Infof("create symlink %s point to %s", poolDevicePath, actualDeviceLink)
 	err = os.Symlink(actualDeviceLink, poolDevicePath)
 	if err != nil {
 		return false, err
