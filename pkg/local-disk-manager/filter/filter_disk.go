@@ -1,8 +1,10 @@
 package filter
 
 import (
+	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"strings"
 
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/sys"
@@ -118,6 +120,7 @@ func (ld *LocalDiskFilter) OwnerMatch(owner string) *LocalDiskFilter {
 		ld.localDisk.Spec.Owner == owner {
 		ld.setResult(TRUE)
 	} else {
+		log.Infof("disk %s owner(%s) mismatch, owner in localdiskclaim is %s", ld.localDisk.Name, ld.localDisk.Spec.Owner, owner)
 		ld.setResult(FALSE)
 	}
 
@@ -136,6 +139,17 @@ func (ld *LocalDiskFilter) HasBoundWith(claimUID types.UID) bool {
 	}
 
 	return false
+}
+
+func (ld *LocalDiskFilter) IsNameFormatMatch() *LocalDiskFilter {
+	// since v0.12.0, we use localdisk- as the localdisk prefix, so those old localdisk won't be matched
+	if strings.HasPrefix(ld.localDisk.Name, v1alpha1.LocalDiskObjectPrefix) {
+		ld.setResult(TRUE)
+	} else {
+		ld.setResult(FALSE)
+	}
+
+	return ld
 }
 
 func (ld *LocalDiskFilter) GetTotalResult() bool {

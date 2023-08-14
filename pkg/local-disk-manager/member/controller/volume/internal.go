@@ -153,6 +153,7 @@ func (vm *localDiskVolumeManager) CreateVolume(name string, parameters interface
 	selectedLocalDisk, err := vm.getLocalDiskByNodeDevicePath(selectedDisk.AttachNode, selectedDisk.DevPath)
 	if err != nil {
 		log.WithError(err).Error("Failed to get LocalDisk by devicePath")
+		return nil, err
 	}
 
 	// create LocalDiskVolume if not exist
@@ -198,8 +199,8 @@ func (vm *localDiskVolumeManager) UpdateVolume(name string, parameters interface
 
 	if volume.Status.AllocatedCapacityBytes < r.RequireCapacity {
 		return nil, fmt.Errorf("RequireCapacity in VolumeRequest is modified "+
-			"but is bigger than allocted disk %s/%s (the disk capacity %d)",
-			volume.Spec.Accessibility.Nodes, volume.Status.DevPath, volume.Status.AllocatedCapacityBytes)
+			"but is bigger than allocted disk %s/%v (the disk capacity %d)",
+			volume.Spec.Accessibility.Nodes, volume.Status.DevLinks, volume.Status.AllocatedCapacityBytes)
 	}
 
 	newVolume, err := localdiskvolume.NewBuilderFrom(volume).
@@ -593,7 +594,7 @@ func (vm *localDiskVolumeManager) getLocalDiskByNodeDevicePath(nodeName, devPath
 	} else if len(localDisks) < 1 {
 		err = fmt.Errorf("this is no LocalDisk found by node device path %s/%s", nodeName, devPath)
 	} else if len(localDisks) > 1 {
-		err = fmt.Errorf("this are mutil LocalDisk(%d) found by node device path %s/%s", len(localDisks), nodeName, devPath)
+		err = fmt.Errorf("thare are mutil LocalDisk(%d) found by node device path %s/%s", len(localDisks), nodeName, devPath)
 
 	}
 	return localDisk, err

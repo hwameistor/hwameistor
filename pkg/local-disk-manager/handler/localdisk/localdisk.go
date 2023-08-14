@@ -197,6 +197,7 @@ func (ldHandler *Handler) FilterDisk(ldc *v1alpha1.LocalDiskClaim) bool {
 		DiskType(ldc.Spec.Description.DiskType).
 		DevType().
 		NoPartition().
+		IsNameFormatMatch().
 		GetTotalResult()
 }
 

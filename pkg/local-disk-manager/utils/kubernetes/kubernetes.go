@@ -78,6 +78,8 @@ func init() {
 
 	// Setup Cache for field index
 	setIndexField(mgr.GetCache())
+
+	go mgr.GetCache().Start(context.Background())
 }
 
 // setIndexField must be called after scheme has been added

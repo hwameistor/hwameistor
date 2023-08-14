@@ -10,8 +10,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 )
+
+const DiskSuffix = "disk"
 
 var (
 	registry Manager
@@ -142,6 +145,15 @@ func (r *localRegistry) DiskExist(devPath string) bool {
 	return ok
 }
 
+func (r *localRegistry) DiskSymbolLinkExist(symlink string) bool {
+	for _, devType := range types.DefaultDevTypes {
+		if exist, _ := r.hu.PathExists(path.Join(types.GetPoolDiskPath(devType), symlink)); exist {
+			return exist
+		}
+	}
+	return false
+}
+
 // discoveryDisks discovery and store cache
 func (r *localRegistry) discoveryDisks() {
 	var allDiscoveryDiskNames []string
@@ -249,7 +261,11 @@ func discoveryDevices(rootPath string) ([]string, error) {
 		}
 		if ok {
 			log.Infof("Found disk %s exist in %s", info.Name(), rootPath)
-			discoveryDevices = append(discoveryDevices, info.Name())
+			if strings.HasSuffix(rootPath, DiskSuffix) {
+				discoveryDevices = append(discoveryDevices, strings.Split(actualPath, "/")[len(strings.Split(actualPath, "/"))-1])
+			} else {
+				discoveryDevices = append(discoveryDevices, info.Name())
+			}
 		} else {
 			log.Debugf("Found %s(mode: %s) in %s but not a device, skip it", info.Name(), info.Mode().Type().String(), rootPath)
 		}
