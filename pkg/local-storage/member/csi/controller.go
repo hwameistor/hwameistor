@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"sync"
 	"time"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
@@ -20,7 +21,11 @@ import (
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
-var _ csi.ControllerServer = (*plugin)(nil)
+var (
+	_ csi.ControllerServer = (*plugin)(nil)
+
+	createLock sync.Mutex
+)
 
 // ControllerGetCapabilities implementation
 func (p *plugin) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
@@ -31,6 +36,10 @@ func (p *plugin) ControllerGetCapabilities(ctx context.Context, req *csi.Control
 
 // CreateVolume implementation, idempotent
 func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
+
+	createLock.Lock()
+	defer createLock.Unlock()
+
 	if req.VolumeContentSource != nil {
 		if req.VolumeContentSource.GetSnapshot() != nil {
 			return p.restoreVolumeFromSnapshot(ctx, req)
@@ -104,8 +113,10 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 }
 
 func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, params *volumeParameters) (*apisv1alpha1.LocalVolumeGroup, error) {
-	p.lock.Lock()
-	defer p.lock.Unlock()
+
+	// case 1. if the pvc is in a LVG, return it
+	// case 2. if the pvc is not in any LVG, create a new one
+	// case 3. if the pvc is not in any LVG but associated pvc is in a LVG, add it into the LVG
 
 	if req.AccessibilityRequirements == nil || len(req.AccessibilityRequirements.Requisite) != 1 {
 		p.logger.WithFields(log.Fields{"volume": req.Name, "accessibility": req.AccessibilityRequirements}).Error("Not found accessibility requirements")
@@ -113,22 +124,36 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 	}
 	requiredNodeName := req.AccessibilityRequirements.Requisite[0].Segments[apis.TopologyNodeKey]
 
-	// fetch the local volume group by PVC
-	lvg, err := p.getLocalVolumeGroupByPVC(params.pvcNamespace, params.pvcName)
+	lvg, lvs, err := p.getAssociatedVolumeGroupAndVolumesForPVC(params.pvcNamespace, params.pvcName)
+	// // fetch the local volume group by PVC
+	// lvg, err := p.getLocalVolumeGroupByPVC(params.pvcNamespace, params.pvcName)
+	p.logger.WithFields(log.Fields{
+		"lvg":       lvg,
+		"lvs":       lvs,
+		"err":       err,
+		"pvc":       params.pvcName,
+		"namespace": params.pvcNamespace,
+	}).Debug("Result of getAssociatedVolumeGroupAndVolumesForPVC")
 	if err != nil {
 		return nil, err
 	}
 	if lvg != nil && len(lvg.Name) > 0 {
-		return lvg, nil
+		// check if pvc is in the lvg, if not, add it
+		for _, vol := range lvg.Spec.Volumes {
+			if vol.PersistentVolumeClaimName == params.pvcName {
+				// case 1: in the LVG
+				return lvg, nil
+			}
+		}
+		// case 2: has the LVG, but pvc is not in it. Add pvc into
+		lvg.Spec.Volumes = append(lvg.Spec.Volumes, apisv1alpha1.VolumeInfo{PersistentVolumeClaimName: params.pvcName})
+		p.logger.WithFields(log.Fields{"lvg": lvg.Name, "pvc": params.pvcName}).Debug("Adding a new PVC into the LVG")
+		return lvg, p.apiClient.Update(context.TODO(), lvg)
 	}
-	// not found the local volume group, create it
-	p.logger.WithFields(log.Fields{"pvc": params.pvcName, "namespace": params.pvcNamespace}).Debug("Not found the LocalVolumeGroup")
-	// get the pod with the volume firstly, and then get all the hwameistor volumes associated with the pod
-	lvs, err := p.getAssociatedVolumes(params.pvcNamespace, params.pvcName)
-	if err != nil {
-		p.logger.WithFields(log.Fields{"pvc": params.pvcName, "namespace": params.pvcNamespace}).WithError(err).Error("Not found associated volumes")
-		return nil, fmt.Errorf("not found associated volumes")
-	}
+
+	// case 3: not found the local volume group, create it
+	p.logger.WithFields(log.Fields{"pvc": params.pvcName, "namespace": params.pvcNamespace}).Debug("Not found the associated LocalVolumeGroup or LocalVolumes")
+
 	candidateNodes := p.storageMember.Controller().VolumeScheduler().GetNodeCandidates(lvs)
 	selectedNodes := []string{}
 	foundThisNode := false
@@ -172,19 +197,25 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 	for _, lv := range lvs {
 		lvg.Spec.Volumes = append(lvg.Spec.Volumes, apisv1alpha1.VolumeInfo{PersistentVolumeClaimName: lv.Spec.PersistentVolumeClaimName})
 	}
-	log.WithFields(log.Fields{"lvg": lvg.Name}).Debug("Creating a new LVG ...")
-	if err := p.apiClient.Create(context.Background(), lvg, &client.CreateOptions{}); err != nil {
-		log.WithField("lvg", lvg.Name).WithError(err).Error("Failed to create LVG")
+	p.logger.WithFields(log.Fields{"lvg": lvg.Name, "spec": lvg.Spec}).Debug("Creating a new LVG ...")
+	if err := p.apiClient.Create(context.TODO(), lvg); err != nil {
+		p.logger.WithField("lvg", lvg.Name).WithError(err).Error("Failed to create LVG")
 		return nil, err
 	}
 
 	return lvg, nil
 }
 
-func (p *plugin) getLocalVolumeGroupByPVC(pvcNamespace string, pvcName string) (*apisv1alpha1.LocalVolumeGroup, error) {
+func (p *plugin) getAssociatedVolumeGroupAndVolumesForPVC(pvcNamespace string, pvcName string) (*apisv1alpha1.LocalVolumeGroup, []*apisv1alpha1.LocalVolume, error) {
+	lvs, err := p.getAssociatedVolumes(pvcNamespace, pvcName)
+	if err != nil {
+		p.logger.WithFields(log.Fields{"pvc": pvcName, "namespace": pvcNamespace}).WithError(err).Error("Not found associated volumes")
+		return nil, lvs, fmt.Errorf("not found associated volumes")
+	}
+
 	lvgList := apisv1alpha1.LocalVolumeGroupList{}
-	if err := p.apiClient.List(context.Background(), &lvgList, &client.ListOptions{}); err != nil {
-		return nil, err
+	if err := p.apiClient.List(context.TODO(), &lvgList); err != nil {
+		return nil, lvs, err
 	}
 	for i, lvg := range lvgList.Items {
 		if lvg.Spec.Namespace != pvcNamespace {
@@ -192,16 +223,16 @@ func (p *plugin) getLocalVolumeGroupByPVC(pvcNamespace string, pvcName string) (
 		}
 		for _, vol := range lvg.Spec.Volumes {
 			if vol.PersistentVolumeClaimName == pvcName {
-				return &lvgList.Items[i], nil
+				return &lvgList.Items[i], lvs, nil
 			}
 		}
 	}
-	return &apisv1alpha1.LocalVolumeGroup{}, nil
+	return nil, lvs, nil
 }
 
 func (p *plugin) getAssociatedVolumes(namespace string, pvcName string) ([]*apisv1alpha1.LocalVolume, error) {
 	podList := corev1.PodList{}
-	if err := p.apiClient.List(context.Background(), &podList, &client.ListOptions{Namespace: namespace}); err != nil {
+	if err := p.apiClient.List(context.TODO(), &podList, &client.ListOptions{Namespace: namespace}); err != nil {
 		p.logger.WithError(err).Error("Failed to list Pods")
 		return []*apisv1alpha1.LocalVolume{}, err
 	}
@@ -222,7 +253,7 @@ func (p *plugin) getAssociatedVolumes(namespace string, pvcName string) ([]*apis
 
 func (p *plugin) getHwameiStorPVCs(pod *corev1.Pod) ([]*apisv1alpha1.LocalVolume, error) {
 	lvs := []*apisv1alpha1.LocalVolume{}
-	p.logger.WithField("pog", pod.Name).Debug("Query hwameistor PVCs")
+	p.logger.WithField("pod", pod.Name).Debug("Query hwameistor PVCs")
 
 	ctx := context.Background()
 	for _, vol := range pod.Spec.Volumes {
@@ -264,6 +295,7 @@ func constructLocalVolumeForPVC(pvc *corev1.PersistentVolumeClaim, sc *storagev1
 		return nil, err
 	}
 
+	//	lv.Name = pvc.Name
 	lv.Spec.PersistentVolumeClaimNamespace = pvc.Namespace
 	lv.Spec.PersistentVolumeClaimName = pvc.Name
 	lv.Spec.PoolName = poolName
