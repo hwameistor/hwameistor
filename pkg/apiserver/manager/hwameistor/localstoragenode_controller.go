@@ -1,7 +1,6 @@
 package hwameistor
 
 import (
-	"bytes"
 	"context"
 	"math"
 	"strings"
@@ -10,8 +9,6 @@ import (
 	k8sv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -423,54 +420,6 @@ func (lsnController *LocalStorageNodeController) convertDriverStatus(state apisv
 	}
 
 	return ""
-}
-
-// GetLocalVolumeMigrateYamlStr
-func (lsnController *LocalStorageNodeController) GetStorageNodeVolumeMigrateYamlStr(resourceName string) (*hwameistorapi.YamlData, error) {
-
-	lvmList := apisv1alpha1.LocalVolumeMigrateList{}
-	if err := lsnController.Client.List(context.Background(), &lvmList, &client.ListOptions{}); err != nil {
-		return nil, err
-	}
-	log.Infof("GetStorageNodeVolumeMigrateYamlStr lvmList = %v", lvmList)
-	var resourceYamlStr string
-	var err error
-	for _, item := range lvmList.Items {
-		if item.Name == resourceName {
-			resourceYamlStr, err = lsnController.getResourceYaml(&item)
-			log.Infof("GetLocalVolumeMigrateYamlStr resourceYamlStr = %v", resourceYamlStr)
-
-			if err != nil {
-				log.WithError(err).Error("Failed to getResourceYaml")
-				return nil, err
-			}
-		}
-	}
-
-	var yamlData = &hwameistorapi.YamlData{}
-	yamlData.Data = resourceYamlStr
-
-	return yamlData, nil
-}
-
-// getResourceYaml
-func (lsnController *LocalStorageNodeController) getResourceYaml(res *apisv1alpha1.LocalVolumeMigrate) (string, error) {
-
-	buf := new(bytes.Buffer)
-	log.Infof("getResourceYaml res.(type) = %v", res)
-
-	res.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   groupName,
-		Version: versionName,
-		Kind:    res.Kind,
-	})
-	y := printers.YAMLPrinter{}
-	err := y.PrintObj(res, buf)
-	if err != nil {
-		panic(err)
-	}
-
-	return buf.String(), nil
 }
 
 // ReserveStorageNodeDisk

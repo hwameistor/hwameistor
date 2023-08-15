@@ -21,8 +21,8 @@ import (
 var (
 	RetryCounts         = 5
 	RetryInterval       = 100 * time.Millisecond
-	metricsHost         = "0.0.0.0"
-	metricsPort   int32 = 8384
+	MetricsHost         = "0.0.0.0"
+	MetricsPort   int32 = 8384
 )
 
 func CollectRoute(r *gin.Engine) *gin.Engine {
@@ -114,7 +114,7 @@ func BuildServerMgr() (*manager.ServerManager, mgrpkg.Manager) {
 	}
 
 	// Set default manager options
-	options := mgrpkg.Options{MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort)}
+	options := mgrpkg.Options{MetricsBindAddress: fmt.Sprintf("%s:%d", MetricsHost, MetricsPort)}
 
 	// Create a new manager to provide shared dependencies and start components
 	mgr, err := mgrpkg.New(cfg, options)
@@ -136,14 +136,14 @@ func BuildServerMgr() (*manager.ServerManager, mgrpkg.Manager) {
 
 	// Setup all Controllers
 	if err := controller.AddToManager(mgr); err != nil {
-		log.Error(err, "")
+		log.Error(err)
 		os.Exit(1)
 	}
 
 	stopCh := signals.SetupSignalHandler()
 	// Start the resource controllers manager
 	go func() {
-		log.Info("Starting the manager of all  storage resources.")
+		log.Info("Starting the manager of all storage resources.")
 		if err := mgr.Start(stopCh); err != nil {
 			log.WithError(err).Error("Failed to run resources manager")
 			os.Exit(1)
@@ -153,6 +153,7 @@ func BuildServerMgr() (*manager.ServerManager, mgrpkg.Manager) {
 	uiClientset, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
 		log.WithError(err).Error("Failed to create client set")
+		os.Exit(1)
 	}
 
 	// Create a new manager to provide shared dependencies and start components

@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	hwameistorPrefix    = "hwameistor"
-	nodeStorageSortNum  = 5
+	hwameistorPrefix   = "hwameistor"
+	nodeStorageSortNum = 5
 )
 
 // MetricController
@@ -63,8 +63,8 @@ func NewMetricController(client client.Client, clientset *kubernetes.Clientset, 
 		storageCapacityCollection: &hwameistorapi.StorageCapacityCollection{},
 		volumeCollection:          &hwameistorapi.VolumeCollection{},
 		diskCollection:            &hwameistorapi.DiskCollection{},
-		moduleStatusCollection:    &hwameistorapi.ModuleStatusCollection{map[string]hwameistorapi.State{}},
-		storagePoolUseCollection:  &hwameistorapi.StoragePoolUseCollection{map[string]hwameistorapi.StoragePoolUse{}},
+		moduleStatusCollection:    &hwameistorapi.ModuleStatusCollection{ModuleStatus: map[string]hwameistorapi.State{}},
+		storagePoolUseCollection:  &hwameistorapi.StoragePoolUseCollection{StoragePoolUseMap: map[string]hwameistorapi.StoragePoolUse{}},
 		nodeStorageUseCollection:  &hwameistorapi.NodeStorageUseCollection{},
 	}
 }

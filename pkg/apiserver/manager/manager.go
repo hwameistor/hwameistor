@@ -8,14 +8,9 @@ import (
 	mgrpkg "sigs.k8s.io/controller-runtime/pkg/manager"
 
 	hwameistorctr "github.com/hwameistor/hwameistor/pkg/apiserver/manager/hwameistor"
-	utils "github.com/hwameistor/hwameistor/pkg/apiserver/util"
 )
 
 type ServerManager struct {
-	nodeName string
-
-	namespace string
-
 	apiClient client.Client
 
 	clientset *kubernetes.Clientset
@@ -43,22 +38,12 @@ type ServerManager struct {
 	logger *log.Entry
 }
 
-// NewServerManager
 func NewServerManager(mgr mgrpkg.Manager, clientset *kubernetes.Clientset) (*ServerManager, error) {
-	var recorder record.EventRecorder
 	return &ServerManager{
-		nodeName:          utils.GetNodeName(),
-		namespace:         utils.GetNamespace(),
-		apiClient:         mgr.GetClient(),
-		clientset:         clientset,
-		lsnController:     hwameistorctr.NewLocalStorageNodeController(mgr.GetClient(), clientset, recorder),
-		lvController:      hwameistorctr.NewLocalVolumeController(mgr.GetClient(), clientset, recorder),
-		mController:       hwameistorctr.NewMetricController(mgr.GetClient(), clientset, recorder),
-		lspController:     hwameistorctr.NewLocalStoragePoolController(mgr.GetClient(), clientset, recorder),
-		settingController: hwameistorctr.NewSettingController(mgr.GetClient(), clientset, recorder),
-		vgController:      hwameistorctr.NewVolumeGroupController(mgr.GetClient(), clientset, recorder),
-		mgr:               mgr,
-		logger:            log.WithField("Module", "ServerManager"),
+		apiClient: mgr.GetClient(),
+		clientset: clientset,
+		mgr:       mgr,
+		logger:    log.WithField("Module", "ServerManager"),
 	}, nil
 }
 
