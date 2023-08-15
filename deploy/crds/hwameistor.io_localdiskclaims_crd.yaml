@@ -127,6 +127,7 @@ spec:
                 type: string
             required:
             - nodeName
+            - owner
             type: object
           status:
             description: LocalDiskClaimStatus defines the observed state of LocalDiskClaim

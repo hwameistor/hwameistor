@@ -415,6 +415,7 @@ func GenFakeLocalDiskClaimObject(status v1alpha1.DiskClaimStatus) *v1alpha1.Loca
 
 	Spec := v1alpha1.LocalDiskClaimSpec{
 		NodeName: fakeNodename,
+		Owner:    "local-storage",
 		Description: v1alpha1.DiskClaimDescription{
 			DiskType: diskTypeHDD,
 			Capacity: cap100G,
