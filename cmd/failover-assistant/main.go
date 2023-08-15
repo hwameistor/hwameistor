@@ -27,15 +27,12 @@ func printVersion() {
 }
 
 func setupLogging(debug bool) {
-
 	if debug {
 		log.SetLevel(log.DebugLevel)
 	}
-
 }
 
 func main() {
-
 	var debug bool
 	flag.BoolVar(&debug, "debug", true, "debug mode")
 	flag.Parse()

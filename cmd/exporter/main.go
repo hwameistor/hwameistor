@@ -18,5 +18,4 @@ func main() {
 	setupLogging()
 
 	exporter.NewCollectorManager().Run(signals.SetupSignalHandler().Done())
-
 }
