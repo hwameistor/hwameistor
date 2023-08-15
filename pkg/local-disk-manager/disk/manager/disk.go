@@ -29,7 +29,8 @@ type DiskInfo struct {
 // GenerateUUID generates a UUID for the disk
 // If the serial number exists, it is used first. If it does not exist, it is generated using by-path path
 func (disk DiskInfo) GenerateUUID() string {
-	var elementSet = disk.Attribute.Model + disk.Attribute.Vendor
+	// NOTES: in virtual environments, model can be changed after creation filesystem on it e.g. lvm
+	var elementSet = disk.Attribute.Vendor
 	if disk.Attribute.Serial != "" {
 		elementSet += disk.Attribute.Serial + disk.Attribute.WWN
 	} else {
