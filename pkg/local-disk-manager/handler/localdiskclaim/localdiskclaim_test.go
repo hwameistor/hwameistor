@@ -18,25 +18,26 @@ import (
 )
 
 var (
-	fakeLocalDiskClaimName       = "local-disk-claim-example"
-	fakeLocalDiskClaimUID        = "local-disk-claim-example-uid"
-	fakeLocalDiskName            = "local-disk-example"
-	localDiskUID                 = "local-disk-example-uid"
-	fakeNamespace                = "local-disk-manager-test"
-	fakeNodename                 = "10-6-118-10"
-	diskTypeHDD                  = "HDD"
-	diskTypeSSD                  = "SSD"
-	fakedevPath                  = "/dev/fake-sda"
-	devType                      = "disk"
-	vendorVMware                 = "VMware"
-	proSCSI                      = "scsi"
-	apiversion                   = "hwameistor.io/v1alpha1"
-	localDiskKind                = "LocalDisk"
-	localDiskNodeKind            = "LocalDiskNode"
-	localDiskClaimKind           = "LocalDiskClaim"
-	cap100G                int64 = 100 * 1024 * 1024 * 1024
-	cap10G                 int64 = 10 * 1024 * 1024 * 1024
-	fakeRecorder                 = record.NewFakeRecorder(100)
+	fakeLocalDiskClaimName        = "local-disk-claim-example"
+	fakeLocalDiskClaimUID         = "local-disk-claim-example-uid"
+	fakeLocalDiskNamePrefix       = "localdisk-"
+	localDiskUID                  = "local-disk-example-uid"
+	fakeNamespace                 = "local-disk-manager-test"
+	fakeNodename                  = "10-6-118-10"
+	diskTypeHDD                   = "HDD"
+	diskTypeSSD                   = "SSD"
+	fakedevPath                   = "/dev/fake-sda"
+	devType                       = "disk"
+	symlinkByPath                 = "/dev/disk/by-path/pci-0000:03:00.0-scsi-0:0:30:0"
+	vendorVMware                  = "VMware"
+	proSCSI                       = "scsi"
+	apiversion                    = "hwameistor.io/v1alpha1"
+	localDiskKind                 = "LocalDisk"
+	localDiskNodeKind             = "LocalDiskNode"
+	localDiskClaimKind            = "LocalDiskClaim"
+	cap100G                 int64 = 100 * 1024 * 1024 * 1024
+	cap10G                  int64 = 10 * 1024 * 1024 * 1024
+	fakeRecorder                  = record.NewFakeRecorder(100)
 )
 
 func TestLocalDiskClaimHandler_AssignDisk(t *testing.T) {
@@ -318,7 +319,7 @@ func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 	}
 
 	ObjectMata := metav1.ObjectMeta{
-		Name:              fakeNodename + strings.Replace(fakedevPath, "/", "-", -1),
+		Name:              fakeLocalDiskNamePrefix + fakeNodename + strings.Replace(fakedevPath, "/", "-", -1),
 		Namespace:         fakeNamespace,
 		UID:               types.UID(localDiskUID),
 		CreationTimestamp: metav1.Time{Time: time.Now()},
@@ -333,6 +334,7 @@ func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 		RAIDInfo:     v1alpha1.RAIDInfo{},
 		HasSmartInfo: false,
 		SmartInfo:    v1alpha1.SmartInfo{},
+		DevLinks:     []string{symlinkByPath},
 		DiskAttributes: v1alpha1.DiskAttributes{
 			Type:     diskTypeHDD,
 			DevType:  devType,
