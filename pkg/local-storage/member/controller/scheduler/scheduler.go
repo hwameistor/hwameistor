@@ -58,18 +58,9 @@ func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) (qualifi
 	// init all available nodes resources
 	s.resourceCollections.syncTotalStorage()
 
-	bigLVs := map[string]*apisv1alpha1.LocalVolume{}
-	for _, lv := range vols {
-		if !isLocalVolumeSameClass(bigLVs[lv.Spec.PoolName], lv) {
-			logCtx.Debugf("volumes has different storageclass")
-			return qualifiedNodes
-		}
-		bigLVs[lv.Spec.PoolName] = appendLocalVolume(bigLVs[lv.Spec.PoolName], lv)
-	}
-
-	for _, lv := range bigLVs {
-		if nodes, err := s.resourceCollections.getNodeCandidates(lv); err != nil {
-			logCtx.WithError(err).WithField("volume", lv.Name).Debugf("fail to getNodeCandidates")
+	for _, vol := range vols {
+		if nodes, err := s.resourceCollections.getNodeCandidates(vol); err != nil {
+			logCtx.WithError(err).WithField("volumes", vol).Debugf("fail to getNodeCandidates")
 			return qualifiedNodes
 		} else {
 			if len(qualifiedNodes) == 0 {
@@ -192,9 +183,6 @@ func isLocalVolumeSameClass(lv1 *apisv1alpha1.LocalVolume, lv2 *apisv1alpha1.Loc
 		return true
 	}
 	if lv1.Spec.PoolName != lv2.Spec.PoolName {
-		return false
-	}
-	if lv1.Spec.ReplicaNumber != lv2.Spec.ReplicaNumber {
 		return false
 	}
 	if lv1.Spec.Convertible != lv2.Spec.Convertible {

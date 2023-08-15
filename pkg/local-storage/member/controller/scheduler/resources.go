@@ -4,15 +4,25 @@ import (
 	"container/heap"
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	runtimecache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
+)
+
+const (
+	HwameiStorSchedulerName = "hwameistor-scheduler"
 )
 
 type resources struct {
@@ -30,6 +40,12 @@ type resources struct {
 
 	storageNodes map[string]*apisv1alpha1.LocalStorageNode
 
+	podToPVCs map[string][]string
+	pvcToPods map[string][]string
+
+	pvcsMap map[string]*corev1.PersistentVolumeClaim
+	scsMap  map[string]*storagev1.StorageClass
+
 	lock sync.Mutex
 
 	logger *log.Entry
@@ -45,6 +61,10 @@ func newResources(maxHAVolumeCount int, apiClient client.Client) *resources {
 		allocatedStorages:    newStorageCollection(),
 		totalStorages:        newStorageCollection(),
 		storageNodes:         map[string]*apisv1alpha1.LocalStorageNode{},
+		podToPVCs:            map[string][]string{},
+		pvcToPods:            map[string][]string{},
+		pvcsMap:              map[string]*corev1.PersistentVolumeClaim{},
+		scsMap:               map[string]*storagev1.StorageClass{},
 	}
 }
 
@@ -71,6 +91,35 @@ func (r *resources) init(apiClient client.Client, informerCache runtimecache.Cac
 	volumeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: r.handleVolumeUpdate,
 	})
+
+	scInformer, err := informerCache.GetInformer(context.TODO(), &storagev1.StorageClass{})
+	if err != nil {
+		r.logger.WithError(err).Fatal("Failed to get informer for k8s StorageClass")
+	}
+	scInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    r.handleStorageClassAdd,
+		UpdateFunc: r.handleStorageClassUpdate,
+		DeleteFunc: r.handleStorageClassDelete,
+	})
+
+	pvcInformer, err := informerCache.GetInformer(context.TODO(), &corev1.PersistentVolumeClaim{})
+	if err != nil {
+		r.logger.WithError(err).Fatal("Failed to get informer for k8s PVC")
+	}
+	pvcInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    r.handlePVCAdd,
+		UpdateFunc: r.handlePVCUpdate,
+	})
+
+	podInformer, err := informerCache.GetInformer(context.TODO(), &corev1.Pod{})
+	if err != nil {
+		r.logger.WithError(err).Fatal("Failed to get informer for k8s Pod")
+	}
+	podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    r.handlePodAdd,
+		UpdateFunc: r.handlePodUpdate,
+	})
+
 }
 
 // syncTotalStorage sync available LocalStorageNodes to storageNodes at now
@@ -137,46 +186,104 @@ func (r *resources) initilizeResources() {
 	}
 }
 
+// poolname -> volumes
+func (r *resources) getAssociatedVolumes(vol *apisv1alpha1.LocalVolume) map[string][]*apisv1alpha1.LocalVolume {
+	lvs := map[string][]*apisv1alpha1.LocalVolume{}
+	lvs[vol.Spec.PoolName] = []*apisv1alpha1.LocalVolume{vol}
+	pvcs := []string{}
+	r.logger.WithFields(log.Fields{"pvcToPods": r.pvcToPods, "namespace": vol.Spec.PersistentVolumeClaimNamespace, "name": vol.Spec.PersistentVolumeClaimName}).Debug("Getting associated volumes")
+	pods, exists := r.pvcToPods[NamespacedName(vol.Spec.PersistentVolumeClaimNamespace, vol.Spec.PersistentVolumeClaimName)]
+	if !exists && len(vol.Spec.VolumeGroup) == 0 {
+		return lvs
+	}
+	if len(pods) > 0 {
+		marks := map[string]bool{}
+		for _, podNamespacedName := range pods {
+			if ps, has := r.podToPVCs[podNamespacedName]; has {
+				for _, pvcNamespacedName := range ps {
+					if _, in := marks[pvcNamespacedName]; !in {
+						marks[pvcNamespacedName] = true
+						pvcs = append(pvcs, pvcNamespacedName)
+					}
+				}
+			}
+		}
+	} else {
+		lvg := &apisv1alpha1.LocalVolumeGroup{}
+		if err := r.apiClient.Get(context.TODO(), types.NamespacedName{Name: vol.Spec.VolumeGroup}, lvg); err != nil {
+			return lvs
+		}
+		for _, v := range lvg.Spec.Volumes {
+			pvcs = append(pvcs, NamespacedName(lvg.Spec.Namespace, v.PersistentVolumeClaimName))
+		}
+	}
+
+	for _, pvcNamespacedName := range pvcs {
+		pvc, exists := r.pvcsMap[pvcNamespacedName]
+		if !exists || pvc == nil {
+			continue
+		}
+		sc, exists := r.scsMap[*pvc.Spec.StorageClassName]
+		if !exists || sc == nil {
+			continue
+		}
+
+		poolName, err := utils.BuildStoragePoolName(
+			sc.Parameters[apisv1alpha1.VolumeParameterPoolClassKey],
+			sc.Parameters[apisv1alpha1.VolumeParameterPoolTypeKey])
+		if err != nil {
+			return lvs
+		}
+		if _, exists := lvs[poolName]; !exists {
+			lvs[poolName] = []*apisv1alpha1.LocalVolume{}
+		}
+
+		lv := &apisv1alpha1.LocalVolume{}
+		lv.Spec.PoolName = poolName
+		storage := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
+		lv.Spec.RequiredCapacityBytes = storage.Value()
+		replica, _ := strconv.Atoi(sc.Parameters[apisv1alpha1.VolumeParameterReplicaNumberKey])
+		lv.Spec.ReplicaNumber = int64(replica)
+		lvs[poolName] = append(lvs[poolName], lv)
+	}
+
+	return lvs
+}
+
 func (r *resources) predicate(vol *apisv1alpha1.LocalVolume, nodeName string) error {
-	node, ok := r.storageNodes[nodeName]
-	if !ok {
+	r.logger.WithFields(log.Fields{"namespace": vol.Spec.PersistentVolumeClaimNamespace, "pvc": vol.Spec.PersistentVolumeClaimName, "node": nodeName}).Debug("Predicting a volume against a node")
+	if _, ok := r.storageNodes[nodeName]; !ok {
+		r.logger.WithField("node", nodeName).Error("Storage node doesn't exist")
 		return fmt.Errorf("storage node %s not exists", nodeName)
 	}
 
-	totalPool := r.totalStorages.pools[vol.Spec.PoolName]
-	allocatedPool := r.allocatedStorages.pools[vol.Spec.PoolName]
-	nodeTotalCapacity := totalPool.capacities[nodeName]
-	nodeAllocatedCapacity := allocatedPool.capacities[nodeName]
-	logCtx := r.logger.WithFields(log.Fields{
-		"volume":                vol.Name,
-		"nodeName":              nodeName,
-		"poolName":              vol.Spec.PoolName,
-		"nodeTotalCapacity":     nodeTotalCapacity,
-		"nodeAllocatedCapacity": nodeAllocatedCapacity,
-	})
-	logCtx.Debug("predicate node for volume")
-
-	if strings.Contains(strings.Join(vol.Spec.Accessibility.Nodes, ","), nodeName) {
-		if vol.Spec.RequiredCapacityBytes > (nodeTotalCapacity - nodeAllocatedCapacity) {
-			logCtx.Error("No enough storage capacity on accessibility node")
-			return fmt.Errorf("no enough storage capacity on accessibility node")
+	vols := r.getAssociatedVolumes(vol)
+	if len(vols) == 0 {
+		r.logger.Error("Not found associated volumes")
+		return fmt.Errorf("not found associated volumes")
+	}
+	for poolName, lvs := range vols {
+		volumeMaxCapacityBytes := int64(0)
+		requiredVolumeCount := len(lvs)
+		requiredCapacityBytes := int64(0)
+		for _, lv := range lvs {
+			requiredCapacityBytes += lv.Spec.RequiredCapacityBytes
+			if lv.Spec.RequiredCapacityBytes > volumeMaxCapacityBytes {
+				volumeMaxCapacityBytes = lv.Spec.RequiredCapacityBytes
+			}
 		}
-		if totalPool.volumeCount[nodeName] <= allocatedPool.volumeCount[nodeName] {
-			logCtx.Error("No enough volume count on accessibility node")
-			return fmt.Errorf("no enough volume count on accessibility node")
-		}
-		return nil
-	}
 
-	if vol.Spec.RequiredCapacityBytes > totalPool.capacities[nodeName]-allocatedPool.capacities[nodeName] {
-		return fmt.Errorf("not enough capacity")
-	}
-	// for disk volume
-	if vol.Spec.RequiredCapacityBytes > node.Status.Pools[vol.Spec.PoolName].VolumeCapacityBytesLimit {
-		return fmt.Errorf("exceed volume capacity bytes limit")
-	}
-	if totalPool.volumeCount[nodeName] <= allocatedPool.volumeCount[nodeName] {
-		return fmt.Errorf("not enough free volume count")
+		totalPool := r.totalStorages.pools[poolName]
+		allocatedPool := r.allocatedStorages.pools[poolName]
+
+		if requiredCapacityBytes > totalPool.capacities[nodeName]-allocatedPool.capacities[nodeName] {
+			r.logger.WithField("pool", poolName).Error("No enough capacity")
+			return fmt.Errorf("not enough capacity in pool %s", poolName)
+		}
+		if totalPool.volumeCount[nodeName] < allocatedPool.volumeCount[nodeName]+int64(requiredVolumeCount) {
+			r.logger.WithField("pool", poolName).Error("No enough volume count")
+			return fmt.Errorf("not enough free volume count in pool %s", poolName)
+		}
 	}
 
 	return nil
@@ -190,21 +297,35 @@ func (r *resources) Score(vol *apisv1alpha1.LocalVolume, nodeName string) (score
 	return r.score(vol, nodeName)
 }
 
-func (r *resources) score(vol *apisv1alpha1.LocalVolume, nodeName string) (score int64, err error) {
+func (r *resources) score(vol *apisv1alpha1.LocalVolume, nodeName string) (int64, error) {
+	r.logger.WithFields(log.Fields{"namespace": vol.Spec.PersistentVolumeClaimNamespace, "pvc": vol.Spec.PersistentVolumeClaimName, "node": nodeName}).Debug("Scoring a volume against a node")
 	if _, ok := r.storageNodes[nodeName]; !ok {
+		r.logger.WithField("node", nodeName).Error("Storage node doesn't exist")
 		return 0, fmt.Errorf("storage node %s not exists", nodeName)
 	}
 
-	totalPool := r.totalStorages.pools[vol.Spec.PoolName]
-	allocatedPool := r.allocatedStorages.pools[vol.Spec.PoolName]
-	score = int64(1-float64(vol.Spec.RequiredCapacityBytes)/float64(totalPool.capacities[nodeName]-allocatedPool.capacities[nodeName])) * 100
+	var score int64 = 0
+	vols := r.getAssociatedVolumes(vol)
+	if len(vols) == 0 {
+		r.logger.Error("Not found associated volumes")
+		return 0, fmt.Errorf("not found associated volumes")
+	}
+	for poolName, lvs := range vols {
+		requiredCapacityBytes := int64(0)
+		for _, lv := range lvs {
+			requiredCapacityBytes += lv.Spec.RequiredCapacityBytes
+		}
+		totalPool := r.totalStorages.pools[poolName]
+		allocatedPool := r.allocatedStorages.pools[poolName]
+		score += int64(1-float64(requiredCapacityBytes)/float64(totalPool.capacities[nodeName]-allocatedPool.capacities[nodeName])) * 100
+	}
 
-	return score, nil
+	return score / int64(len(vols)), nil
 }
 
 func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1alpha1.LocalStorageNode, error) {
-	logCtx := r.logger.WithFields(log.Fields{"volume": vol.Name, "spec": vol.Spec})
-	logCtx.Debug("getting available nodes for LocalVolume")
+	logCtx := r.logger.WithFields(log.Fields{"volume": fmt.Sprintf("%s/%s[%s]", vol.Name, vol.Spec.PersistentVolumeClaimName, vol.Spec.PersistentVolumeClaimNamespace)})
+	logCtx.Debug("getting available nodes for LocalVolumes")
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
@@ -219,8 +340,33 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 		}
 	}
 
+	candidates := []*apisv1alpha1.LocalStorageNode{}
+
+	ctx := context.TODO()
+	lvg := &apisv1alpha1.LocalVolumeGroup{}
+	if err := r.apiClient.Get(ctx, types.NamespacedName{Name: vol.Spec.VolumeGroup}, lvg); err == nil {
+		// found LVG, check if firstly, if nodes are specified in LVG, return them
+		volReplicaNumber := 0
+		if vol.Spec.Config != nil {
+			volReplicaNumber = len(vol.Spec.Config.Replicas)
+		}
+		if len(lvg.Spec.Accessibility.Nodes) == int(vol.Spec.ReplicaNumber) && len(lvg.Spec.Accessibility.Nodes) > volReplicaNumber {
+			// get candidate nodes from LVG
+			for _, nn := range lvg.Spec.Accessibility.Nodes {
+				if !excludedNodes[nn] {
+					candidates = append(candidates, r.storageNodes[nn])
+				}
+			}
+			return candidates, nil
+		}
+	} else if !errors.IsNotFound(err) {
+		logCtx.WithError(err).Error("Failed to check LVG")
+		return candidates, err
+	}
+
+	// not found LVG or new node is not specified in LVG
+
 	// step 2. check the required nodes firstly, if not satisfied, return error immediately
-	var candidates []*apisv1alpha1.LocalStorageNode
 	for _, nn := range vol.Spec.Accessibility.Nodes {
 		if len(nn) > 0 && !excludedNodes[nn] {
 			if err := r.predicate(vol, nn); err != nil {
@@ -236,6 +382,7 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 	// step 3. check the rest of all nodes for the volume replica, and queue the qualified by the available storage space
 	pq := make(PriorityQueue, 0)
 	for _, node := range r.storageNodes {
+		r.logger.WithField("node", node.Name).Debug("filtering a node")
 		if excludedNodes[node.Name] {
 			continue
 		}
@@ -249,7 +396,6 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 			logCtx.WithError(err).WithField("node", node.Name).Debug("filter out a candidate node for score fail")
 			continue
 		}
-		logCtx.WithField("node", node.Name).Debug("filter in a candidate node for LocalVolume")
 		heap.Push(
 			&pq,
 			&PriorityItem{
@@ -263,7 +409,7 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 	for pq.Len() > 0 {
 		item := heap.Pop(&pq).(*PriorityItem)
 		candidates = append(candidates, r.storageNodes[item.name])
-		logCtx.WithFields(log.Fields{"node": item.name, "remains": pq.Len()}).Debug("Adding a candidate")
+		r.logger.WithFields(log.Fields{"node": item.name, "total": pq.Len()}).Debug("Adding a candidate")
 	}
 
 	return candidates, nil
@@ -320,9 +466,6 @@ func (r *resources) addAllocatedStorage(vol *apisv1alpha1.LocalVolume) {
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
-
-	//r.logger.Debug("addAllocatedStorage = vol.Spec.Config.Replicas = %v", vol.Spec.Config.Replicas)
-	fmt.Printf("addAllocatedStorage = vol.Spec.Config.Replicas = %+v", vol.Spec.Config.Replicas)
 
 	for _, replica := range vol.Spec.Config.Replicas {
 		// for capacity
@@ -420,4 +563,128 @@ func (r *resources) handleVolumeUpdate(oldObj, newObj interface{}) {
 	} else if !nVol.Spec.Config.Convertible && len(nVol.Spec.Config.Replicas) < 2 {
 		r.recycleResourceID(nVol)
 	}
+}
+
+func (r *resources) handlePodUpdate(oldObj, newObj interface{}) {
+	r.handlePodAdd(newObj)
+}
+
+func (r *resources) handlePodAdd(obj interface{}) {
+
+	pod := obj.(*corev1.Pod)
+	if pod.Spec.SchedulerName != HwameiStorSchedulerName {
+		return
+	}
+
+	r.logger.WithFields(log.Fields{"namespace": pod.Namespace, "name": pod.Name}).Debug("Added a Pod")
+
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	r.cleanupPod(pod.Namespace, pod.Name)
+
+	if pod.DeletionTimestamp != nil {
+		return
+	}
+
+	pvcNames := []string{}
+	for _, vol := range pod.Spec.Volumes {
+		if vol.PersistentVolumeClaim == nil {
+			continue
+		}
+		pvcNamespacedName := NamespacedName(pod.Namespace, vol.PersistentVolumeClaim.ClaimName)
+		if _, exists := r.pvcsMap[pvcNamespacedName]; exists {
+			pvcNames = append(pvcNames, pvcNamespacedName)
+		}
+	}
+
+	r.addPodAndPVCs(pod.Namespace, pod.Name, pvcNames)
+}
+
+func (r *resources) addPodAndPVCs(namespace string, podName string, pvcNamespacedNames []string) {
+	podNamespacedName := NamespacedName(namespace, podName)
+	r.podToPVCs[podNamespacedName] = []string{}
+	for _, pvcNamespacedName := range pvcNamespacedNames {
+		r.podToPVCs[podNamespacedName] = append(r.podToPVCs[podNamespacedName], pvcNamespacedName)
+		if _, exists := r.pvcToPods[pvcNamespacedName]; !exists {
+			r.pvcToPods[pvcNamespacedName] = []string{}
+		}
+		r.pvcToPods[pvcNamespacedName] = append(r.pvcToPods[pvcNamespacedName], podNamespacedName)
+	}
+}
+
+func (r *resources) cleanupPod(namespace string, podName string) {
+	// pod is to be deleted, clean it up
+	pName := NamespacedName(namespace, podName)
+	if pvcs, exists := r.podToPVCs[pName]; exists {
+		for _, pvc := range pvcs {
+			if pNames, has := r.pvcToPods[pvc]; has {
+				items := utils.RemoveStringItem(pNames, pName)
+				if len(items) > 0 {
+					r.pvcToPods[pvc] = items
+				} else {
+					delete(r.pvcToPods, pvc)
+				}
+			}
+		}
+	}
+	delete(r.podToPVCs, pName)
+}
+
+func (r *resources) handlePVCAdd(obj interface{}) {
+	pvc := obj.(*corev1.PersistentVolumeClaim)
+
+	if pvc.Spec.StorageClassName == nil {
+		return
+	}
+	if _, exists := r.scsMap[*pvc.Spec.StorageClassName]; !exists {
+		return
+	}
+
+	pvcNamespacedName := NamespacedName(pvc.Namespace, pvc.Name)
+	if pvc.DeletionTimestamp != nil {
+		delete(r.pvcsMap, pvcNamespacedName)
+		return
+	}
+
+	r.pvcsMap[pvcNamespacedName] = pvc
+}
+
+func (r *resources) handlePVCUpdate(oldObj, newObj interface{}) {
+	r.handlePVCAdd(newObj)
+}
+
+func (r *resources) handleStorageClassAdd(obj interface{}) {
+	sc := obj.(*storagev1.StorageClass)
+
+	if sc.Provisioner == apisv1alpha1.CSIDriverName {
+		r.scsMap[sc.Name] = sc
+	}
+}
+
+func (r *resources) handleStorageClassUpdate(oldObj, newObj interface{}) {
+	r.handleStorageClassAdd(newObj)
+}
+
+func (r *resources) handleStorageClassDelete(obj interface{}) {
+	sc := obj.(*storagev1.StorageClass)
+
+	if sc.Provisioner == apisv1alpha1.CSIDriverName {
+		delete(r.scsMap, sc.Name)
+	}
+}
+
+func NamespacedName(namespace, name string) string {
+	return fmt.Sprintf("%s/%s", namespace, name)
+}
+
+func GetNamespaceAndName(namespacedName string) (string, string) {
+	items := strings.Split(namespacedName, "/")
+	if len(items) == 0 {
+		return "", ""
+	}
+	if len(items) == 1 {
+		return "", items[0]
+	}
+	return items[0], items[1]
 }

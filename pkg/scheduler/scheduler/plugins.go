@@ -113,8 +113,7 @@ func (p *Plugin) Unreserve(_ context.Context, _ *framework.CycleState, pod *v1.P
 }
 
 func (p *Plugin) filter(pod *v1.Pod, node *v1.Node) (bool, error) {
-	return p.scheduler.
-		Filter(pod, node)
+	return p.scheduler.Filter(pod, node)
 }
 
 // Score is the functions invoked by framework at "score" extension point

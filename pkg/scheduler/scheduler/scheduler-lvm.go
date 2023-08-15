@@ -3,6 +3,8 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"strconv"
+
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -10,7 +12,6 @@ import (
 	framework "k8s.io/kubernetes/pkg/scheduler/framework"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
 
 	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
@@ -193,6 +194,9 @@ func (s *LVMVolumeScheduler) constructLocalVolumeForPVC(pvc *corev1.PersistentVo
 		return nil, err
 	}
 
+	//localVolume.Name = pvc.Name
+	localVolume.Spec.PersistentVolumeClaimName = pvc.Name
+	localVolume.Spec.PersistentVolumeClaimNamespace = pvc.Namespace
 	localVolume.Spec.PoolName = poolName
 	storage := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
 	localVolume.Spec.RequiredCapacityBytes = storage.Value()
