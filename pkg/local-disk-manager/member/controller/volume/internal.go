@@ -262,6 +262,7 @@ func (vm *localDiskVolumeManager) NodePublishVolume(ctx context.Context, volumeR
 	}
 	// in case of machine restart but mountpoint already exist, so update status each time
 	volume.SetupVolumeStatus(v1alpha1.VolumeStateNotReady)
+	volume.UpdateMountPointPhase(r.GetTargetPath(), v1alpha1.MountPointToBeMounted)
 	if err = volume.UpdateLocalDiskVolume(); err != nil {
 		return err
 	}

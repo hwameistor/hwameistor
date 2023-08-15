@@ -7,6 +7,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+	"os"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -58,6 +59,7 @@ func init() {
 	cfg, err := config.GetConfig()
 	if err != nil {
 		log.WithError(err).Error("Failed to init manager")
+		os.Exit(1)
 		return
 	}
 
@@ -67,12 +69,14 @@ func init() {
 
 	if err != nil {
 		log.WithError(err).Error("Failed to init manager")
+		os.Exit(1)
 		return
 	}
 
 	// Setup Scheme for node resources
 	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		log.WithError(err).Error("Failed to add scheme to manager")
+		os.Exit(1)
 		return
 	}
 

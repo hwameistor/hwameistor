@@ -103,7 +103,6 @@ type ReconcileLocalDiskVolume struct {
 
 // Reconcile
 func (r *ReconcileLocalDiskVolume) Reconcile(_ context.Context, request reconcile.Request) (reconcile.Result, error) {
-	log.WithField("LocalDiskVolume", request.Name).Info("Reconciling LocalDiskVolume")
 	var result reconcile.Result
 	v, err := r.reconcileForVolume(request.NamespacedName)
 	if err != nil {
@@ -114,6 +113,7 @@ func (r *ReconcileLocalDiskVolume) Reconcile(_ context.Context, request reconcil
 
 		return result, err
 	}
+	log.WithFields(log.Fields{"LocalDiskVolume": request.Name, "Status": v.VolumeState()}).Info("Reconciling LocalDiskVolume")
 
 	// check finalizers
 	if err := v.CheckFinalizers(); err != nil {
