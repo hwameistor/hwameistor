@@ -2,7 +2,6 @@ package volume
 
 import (
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/definitions"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/manager"
 	"github.com/spf13/cobra"
 )
@@ -21,10 +20,10 @@ func init() {
 }
 
 func volumeGetRunE(cmd *cobra.Command, args []string) error {
-	m, e := manager.NewServerManager(definitions.Kubeconfig)
-	fmt.Println("e:", e)
-	fmt.Println("list:")
-	fmt.Println(m.LocalDiskController().ListLocalDisk())
-	fmt.Println("list end")
+	c, err := manager.NewLocalVolumeController()
+	if err != nil {
+		return err
+	}
+	fmt.Println(c.GetLocalVolume("pvc-29f19e12-145d-453e-89ca-6bf9d1cf852a"))
 	return nil
 }

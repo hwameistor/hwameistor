@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/printers"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -38,16 +37,13 @@ const (
 type LocalVolumeController struct {
 	client.Client
 	record.EventRecorder
-
-	clientset *kubernetes.Clientset
 }
 
 // NewLocalVolumeController
-func NewLocalVolumeController(client client.Client, clientset *kubernetes.Clientset, recorder record.EventRecorder) *LocalVolumeController {
+func NewLocalVolumeController(client client.Client, recorder record.EventRecorder) *LocalVolumeController {
 	return &LocalVolumeController{
 		Client:        client,
 		EventRecorder: recorder,
-		clientset:     clientset,
 	}
 }
 

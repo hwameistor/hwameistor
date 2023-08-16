@@ -21,7 +21,7 @@ var Hwameictl = &cobra.Command{
 func init() {
 	// Hwameictl flags
 	Hwameictl.PersistentFlags().StringVar(&definitions.Kubeconfig, "kubeconfig", "~/.kube/config", "Specify the kubeconfig file")
-	Hwameictl.PersistentFlags().DurationVar(&definitions.Timeout, "timeout", 5*time.Second, "Set the request timeout")
+	Hwameictl.PersistentFlags().DurationVar(&definitions.Timeout, "timeout", 3*time.Second, "Set the request timeout")
 
 	// Sub command
 	Hwameictl.AddCommand(volume.Volume)

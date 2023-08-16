@@ -58,7 +58,7 @@ func (m *ServerManager) StorageNodeController() *hwameistorctr.LocalStorageNodeC
 func (m *ServerManager) VolumeController() *hwameistorctr.LocalVolumeController {
 	var recorder record.EventRecorder
 	if m.lvController == nil {
-		m.lvController = hwameistorctr.NewLocalVolumeController(m.mgr.GetClient(), m.clientset, recorder)
+		m.lvController = hwameistorctr.NewLocalVolumeController(m.mgr.GetClient(), recorder)
 	}
 	return m.lvController
 }
