@@ -12,11 +12,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
 )
 
-var mgr manager.Manager
+var (
+	mgr  manager.Manager
+	once sync.Once
+)
 
 func NewClient() (client.Client, error) {
 	cfg, err := config.GetConfig()
@@ -28,6 +32,9 @@ func NewClient() (client.Client, error) {
 }
 
 func NewClientWithCache() (client.Client, error) {
+	once.Do(func() {
+		initManager()
+	})
 	return mgr.GetClient(), nil
 }
 
@@ -55,7 +62,7 @@ func NewRecorderFor(name string) (record.EventRecorder, error) {
 	return mgr.GetEventRecorderFor(name), nil
 }
 
-func init() {
+func initManager() {
 	cfg, err := config.GetConfig()
 	if err != nil {
 		log.WithError(err).Error("Failed to init manager")
