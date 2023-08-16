@@ -332,6 +332,14 @@ func (v *DiskVolumeHandler) UpdateMountPointPhase(targetPath string, phase v1alp
 	}
 }
 
+// UpdateDevPathAccordingVolume devPath can change after machine restart, so update it here according to the volume
+func (v *DiskVolumeHandler) UpdateDevPathAccordingVolume() {
+	if vol := v.hostRegistry.GetVolumeByName(v.Ldv.Name); vol != nil {
+		v.Ldv.Status.DevPath = vol.AttachPath
+		return
+	}
+}
+
 // WaitVolumeReady wait LocalDiskVolume Ready
 func (v *DiskVolumeHandler) WaitVolumeReady(ctx context.Context) error {
 	if _, ok := ctx.Deadline(); !ok {
