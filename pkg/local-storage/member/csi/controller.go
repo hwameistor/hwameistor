@@ -136,8 +136,6 @@ func (p *plugin) createEmptyVolumeFromRequest(ctx context.Context, req *csi.Crea
 
 	// create volume if not exist
 	vol.Name = req.Name
-	vol.Spec.PoolName = params.poolName
-	vol.Spec.ReplicaNumber = params.replicaNumber
 	vol.Spec.RequiredCapacityBytes = req.CapacityRange.RequiredBytes
 	vol.Spec.Convertible = params.convertible
 	vol.Spec.PersistentVolumeClaimName = params.pvcName
@@ -147,6 +145,20 @@ func (p *plugin) createEmptyVolumeFromRequest(ctx context.Context, req *csi.Crea
 	vol.Spec.VolumeQoS = apisv1alpha1.VolumeQoS{
 		Throughput: params.throughput,
 		IOPS:       params.iops,
+	}
+
+	// override blow parameters when creating volume from snapshot
+	if len(params.snapshot) > 0 {
+		sourceVolume, err := getSourceVolumeFromSnapshot(params.snapshot, p.apiClient)
+		if err != nil {
+			p.logger.WithFields(log.Fields{"volName": vol.Name, "snapshot": params.snapshot}).WithError(err).Error("Failed to get source volume from snapshot")
+			return err
+		}
+		vol.Spec.ReplicaNumber = sourceVolume.Spec.ReplicaNumber
+		vol.Spec.PoolName = sourceVolume.Spec.PoolName
+	} else {
+		vol.Spec.ReplicaNumber = params.replicaNumber
+		vol.Spec.PoolName = params.poolName
 	}
 
 	p.logger.WithFields(log.Fields{"volume": vol}).Debug("Creating a volume")
@@ -195,34 +207,45 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 	// case 3: not found the local volume group, create it
 	p.logger.WithFields(log.Fields{"pvc": params.pvcName, "namespace": params.pvcNamespace}).Debug("Not found the associated LocalVolumeGroup or LocalVolumes")
 
-	candidateNodes := p.storageMember.Controller().VolumeScheduler().GetNodeCandidates(lvs)
-	selectedNodes := []string{}
-	foundThisNode := false
-	for _, nn := range candidateNodes {
-		if len(selectedNodes) == int(params.replicaNumber) {
-			break
+	var selectedNodes []string
+	// for snapshot restore, volume topology must keep same with source volume
+	if len(params.snapshot) > 0 {
+		sourceVolume, err := getSourceVolumeFromSnapshot(params.snapshot, p.apiClient)
+		if err != nil {
+			p.logger.WithField("snapshot", params.snapshot).WithError(err).Error("failed to get source volume from snapshot")
+			return nil, err
 		}
-		if nn.Name == requiredNodeName {
-			foundThisNode = true
-			selectedNodes = append(selectedNodes, nn.Name)
-		} else {
-			if len(selectedNodes) == int(params.replicaNumber-1) {
-				if foundThisNode {
+		selectedNodes = sourceVolume.Spec.Accessibility.Nodes
+	} else {
+		candidateNodes := p.storageMember.Controller().VolumeScheduler().GetNodeCandidates(lvs)
+		foundThisNode := false
+		for _, nn := range candidateNodes {
+			if len(selectedNodes) == int(params.replicaNumber) {
+				break
+			}
+			if nn.Name == requiredNodeName {
+				foundThisNode = true
+				selectedNodes = append(selectedNodes, nn.Name)
+			} else {
+				if len(selectedNodes) == int(params.replicaNumber-1) {
+					if foundThisNode {
+						selectedNodes = append(selectedNodes, nn.Name)
+					}
+				} else {
 					selectedNodes = append(selectedNodes, nn.Name)
 				}
-			} else {
-				selectedNodes = append(selectedNodes, nn.Name)
 			}
 		}
+		if !foundThisNode {
+			p.logger.WithField("requireNode", requiredNodeName).Errorf("requireNode is not exist in candidateNodes")
+			return nil, fmt.Errorf("requireNode %s is not ready", requiredNodeName)
+		}
+		if len(selectedNodes) < int(params.replicaNumber) {
+			p.logger.WithFields(log.Fields{"nodes": selectedNodes, "replica": params.replicaNumber}).Error("No enough nodes")
+			return nil, fmt.Errorf("no enough nodes")
+		}
 	}
-	if !foundThisNode {
-		p.logger.WithField("requireNode", requiredNodeName).Errorf("requireNode is not exist in candidateNodes")
-		return nil, fmt.Errorf("requireNode %s is not ready", requiredNodeName)
-	}
-	if len(selectedNodes) < int(params.replicaNumber) {
-		p.logger.WithFields(log.Fields{"nodes": selectedNodes, "replica": params.replicaNumber}).Error("No enough nodes")
-		return nil, fmt.Errorf("no enough nodes")
-	}
+
 	lvg = &apisv1alpha1.LocalVolumeGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: genUUID(),
@@ -1046,10 +1069,25 @@ func getVolumeAllocatedCapacity(volumeName string, apiClient client.Client) (int
 
 // getVolumeAccessibility returns the access topology from the given volume
 func getVolumeAccessibility(volumeName string, apiClient client.Client) (apisv1alpha1.AccessibilityTopology, error) {
-	volume := apisv1alpha1.LocalVolume{}
-	if err := apiClient.Get(context.Background(), types.NamespacedName{Name: volumeName}, &volume); err != nil {
+	vol := apisv1alpha1.LocalVolume{}
+	if err := apiClient.Get(context.Background(), types.NamespacedName{Name: volumeName}, &vol); err != nil {
 		return apisv1alpha1.AccessibilityTopology{}, err
 	}
 
-	return volume.Spec.Accessibility, nil
+	return vol.Spec.Accessibility, nil
+}
+
+// getVolumeSnapshotAccessibility returns the access topology from the given volume
+func getSourceVolumeFromSnapshot(volumeSnapshotName string, apiClient client.Client) (*apisv1alpha1.LocalVolume, error) {
+	volumeSnapshot := apisv1alpha1.LocalVolumeSnapshot{}
+	if err := apiClient.Get(context.Background(), types.NamespacedName{Name: volumeSnapshotName}, &volumeSnapshot); err != nil {
+		return nil, err
+	}
+
+	volume := apisv1alpha1.LocalVolume{}
+	if err := apiClient.Get(context.Background(), types.NamespacedName{Name: volumeSnapshot.Spec.SourceVolume}, &volume); err != nil {
+		return nil, err
+	}
+
+	return &volume, nil
 }
