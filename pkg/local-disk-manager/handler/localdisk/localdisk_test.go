@@ -36,6 +36,8 @@ var (
 	cap100G                int64 = 100 * 1024 * 1024 * 1024
 	cap10G                 int64 = 10 * 1024 * 1024 * 1024
 	fakeRecorder                 = record.NewFakeRecorder(100)
+	fakeLabelKey                 = "label1"
+	fakeLabelValue               = "value"
 )
 
 func TestLocalDiskHandler_BoundTo(t *testing.T) {
@@ -103,7 +105,7 @@ func TestLocalDiskHandler_BoundTo(t *testing.T) {
 			}
 
 			handler.For(testcase.ld)
-			if err := handler.BoundTo(testcase.ldc); err != nil {
+			if err = handler.BoundTo(testcase.ldc); err != nil {
 				t.Errorf("failed to bound localdiskclaim")
 			}
 
@@ -120,6 +122,95 @@ func TestLocalDiskHandler_BoundTo(t *testing.T) {
 				t.Errorf("Expect localdisk state is Bound but actual got %s", testcase.ld.Status.State)
 			}
 		})
+	}
+}
+
+func TestHandler_GetLocalDiskFuncs(t *testing.T) {
+	cli, _ := CreateFakeClient()
+	handler := NewLocalDiskHandler(cli, fakeRecorder)
+
+	handler.For(GenFakeLocalDiskObject())
+	err := cli.Create(context.Background(), handler.localDisk)
+	if err != nil {
+		t.Errorf("Fail to create LocalDisk")
+		return
+	}
+
+	// handler.GetLocalDisk
+	ld1, err := handler.GetLocalDisk(types.NamespacedName{
+		Name:      fakeNodename + fakedevPath,
+		Namespace: fakeNamespace,
+	})
+	if err != nil || ld1.Name != fakeNodename+fakedevPath {
+		t.Errorf("Fail to get LocalDisk")
+	}
+
+	_, err = handler.GetLocalDisk(types.NamespacedName{
+		Name:      "invalid",
+		Namespace: fakeNamespace,
+	})
+	if err == nil {
+		t.Errorf("Fail to get invalid LocalDisk")
+	}
+
+	// handler.GetLocalDiskWithLabels
+	labels := map[string]string{fakeLabelKey: fakeLabelValue}
+	handler.SetupLabel(labels)
+	if cli.Update(context.TODO(), handler.localDisk) != nil {
+		t.Errorf("Fail to update localDisk")
+	}
+	ldList1, err := handler.GetLocalDiskWithLabels(labels)
+	if err != nil || len(ldList1.Items) == 0 {
+		t.Errorf("Fail to get LocalDiskList")
+	}
+	handler.RemoveLabel(labels)
+
+	// handler.ListLocalDisk
+	ldList2, err := handler.ListLocalDisk()
+	if err != nil || len(ldList2.Items) == 0 {
+		t.Errorf("Fail to list LocalDisk")
+	}
+
+	// handler.ListNodeLocalDisk
+	ldList3, err := handler.ListNodeLocalDisk(fakeNodename)
+	if err != nil || len(ldList3.Items) == 0 {
+		t.Errorf("Fail to list node LocalDisk")
+	}
+
+	// handler.Unclaimed
+	if handler.UnClaimed() == false {
+		t.Errorf("Fail to get claimed")
+	}
+
+	// handler.SetupStatus
+	handler.SetupStatus(v1alpha1.LocalDiskAvailable)
+	if handler.UpdateStatus() != nil {
+		t.Errorf("Fail to update status")
+	}
+
+	// handler.PatchDiskSpec
+	oldLocalDisk := handler.localDisk.DeepCopy()
+	handler.SetPartition(true)
+	handler.SetOwner("testOwner")
+	handler.ReserveDisk()
+	if handler.PatchDiskSpec(client.MergeFrom(oldLocalDisk)) != nil {
+		t.Errorf("Fail to patch LocalDisk spec")
+	}
+
+	if handler.ClaimRef() != nil {
+		t.Errorf("Claim ref should be nil")
+	}
+
+	if handler.PatchDiskOwner("testOwner2") != nil {
+		t.Errorf("Fail to patch disk owner")
+	}
+
+	if handler.IsEmpty() == true {
+		t.Errorf("LocalDisk partision should be empty")
+	}
+
+	if handler.FilterDisk(GenFakeLocalDiskClaimObject()) != false {
+		t.Errorf("Filter disk should be false")
 	}
 }
 

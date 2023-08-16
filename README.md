@@ -129,7 +129,7 @@ please check the [adopters list](./adopters.md).
 ## Community
 
 We welcome contributions of any kind.
-If you have any questions about contributing, please consult the [contributing documentation](./CONTRIBUTING.md).
+If you have any questions about contributing, please consult the [contributing documentation](./docs/docs/contribute/CONTRIBUTING.md).
 
 ### Blog
 
@@ -137,7 +137,8 @@ Please follow our [weekly blogs](https://hwameistor.io/blog).
 
 ### Slack
 
-Welcome to join our [slack channel](https://join.slack.com/t/hwameistor/shared_invite/zt-1dkabcq2c-KIRBJDBc_GgZZfeLrooK6g)
+If you want to join the hwameistor channel on CNCF slack, please **[get invite to CNCF slack](https://slack.cncf.io/)** 
+and then join the [#hwameistor](https://cloud-native.slack.com/messages/hwameistor) channel.
 
 ### WeChat
 
@@ -159,7 +160,7 @@ on this repo will be addressed first.
 
 ## License
 
-Copyright (c) 2014-2021 The HwameiStor Authors
+Copyright (c) 2014-2023 The HwameiStor Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

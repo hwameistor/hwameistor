@@ -128,7 +128,7 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("centos7.9_offl
 							Containers: []corev1.Container{
 								{
 									Name:  "web",
-									Image: "172.30.45.210/daocloud/dao-2048:v1.2.0",
+									Image: "10.6.112.210/daocloud/dao-2048:v1.2.0",
 									Ports: []corev1.ContainerPort{
 										{
 											Name:          "http",
@@ -379,7 +379,7 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("centos7.9_offl
 		})
 		ginkgo.It("delete images", func() {
 			run := "docker rmi -f $(docker images -qa) "
-			_ = utils.RunInLinux(run)
+			_, _ = utils.RunInLinux(run)
 		})
 
 	})

@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hwameistor-failover-assistant
+  namespace: {{ .Release.Namespace}}
+  labels:
+    app: hwameistor-failover-assistant
+spec:
+  replicas: {{ .Values.failoverAssistant.replicas}}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hwameistor-failover-assistant
+  template:
+    metadata:
+      labels:
+        app: hwameistor-failover-assistant
+    spec:
+      serviceAccountName: hwameistor-admin
+      containers:
+        - name: failover-assistant
+          image: {{ .Values.global.hwameistorImageRegistry}}/{{ .Values.failoverAssistant.imageRepository}}:{{ template "hwameistor.failoverAssistantImageTag" . }}
+          imagePullPolicy: IfNotPresent
+          resources: 
+            {{- toYaml .Values.failoverAssistant.resources | nindent 12 }}

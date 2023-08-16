@@ -88,7 +88,6 @@ func (lsnController *LocalStorageNodeController) StorageNodeList(queryPage hwame
 
 // ListLocalStorageNode
 func (lsnController *LocalStorageNodeController) ListLocalStorageNode(queryPage hwameistorapi.QueryPage) ([]*hwameistorapi.StorageNode, error) {
-
 	lsnList := &apisv1alpha1.LocalStorageNodeList{}
 	if err := lsnController.Client.List(context.TODO(), lsnList); err != nil {
 		log.WithError(err).Error("Failed to list LocalStorageNodes")
@@ -105,30 +104,31 @@ func (lsnController *LocalStorageNodeController) ListLocalStorageNode(queryPage 
 		sn.K8sNodeState = K8sNodeState
 
 		log.Infof("ListLocalStorageNode queryPage.Name = %v, queryPage.DriverState = %v, queryPage.NodeState = %v", queryPage.Name, queryPage.DriverState, queryPage.NodeState)
-		if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState == "") {
+
+		// filter out node with mismatched names
+		if !(queryPage.Name == "" || strings.Contains(sn.LocalStorageNode.Name, queryPage.Name)) {
+			continue
+		}
+		// filter out node with mismatched driver state
+		if !(queryPage.DriverState == "" || queryPage.DriverState == sn.LocalStorageNode.Status.State) {
+			continue
+		}
+		// filter out node with mismatched node state
+		switch queryPage.NodeState {
+		case "":
 			sns = append(sns, sn)
-		} else if (queryPage.Name != "" && strings.Contains(sn.LocalStorageNode.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState == "") {
-			sns = append(sns, sn)
-		} else if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (sn.K8sNodeState == hwameistorapi.NodeStateReady || sn.K8sNodeState == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState == "") {
-			sns = append(sns, sn)
-		} else if (queryPage.Name == "") && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.DriverState == sn.LocalStorageNode.Status.State) && (queryPage.DriverState == "") {
-			sns = append(sns, sn)
-		} else if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState != "" && queryPage.DriverState == sn.LocalStorageNode.Status.State) {
-			sns = append(sns, sn)
-		} else if (queryPage.Name == "") && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (sn.K8sNodeState == hwameistorapi.NodeStateReady || sn.K8sNodeState == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState != "" && queryPage.DriverState == sn.LocalStorageNode.Status.State) {
-			sns = append(sns, sn)
-		} else if (queryPage.Name == "") && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.DriverState == sn.LocalStorageNode.Status.State) && (queryPage.DriverState != "" && queryPage.DriverState == sn.LocalStorageNode.Status.State) {
-			sns = append(sns, sn)
-		} else if (queryPage.Name != "" && strings.Contains(sn.LocalStorageNode.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateEmpty) && (queryPage.DriverState != "" && queryPage.DriverState == sn.LocalStorageNode.Status.State) {
-			sns = append(sns, sn)
-		} else if (queryPage.Name != "" && strings.Contains(sn.LocalStorageNode.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (sn.K8sNodeState == hwameistorapi.NodeStateReady || sn.K8sNodeState == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState == "") {
-			sns = append(sns, sn)
-		} else if (queryPage.Name != "" && strings.Contains(sn.LocalStorageNode.Name, queryPage.Name)) && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.NodeState == sn.K8sNodeState) && (queryPage.DriverState == "") {
-			sns = append(sns, sn)
-		} else if (queryPage.Name != "" && strings.Contains(sn.LocalStorageNode.Name, queryPage.Name)) && (queryPage.NodeState == hwameistorapi.NodeStateReadyAndNotReady && (sn.K8sNodeState == hwameistorapi.NodeStateReady || sn.K8sNodeState == hwameistorapi.NodeStateNotReady)) && (queryPage.DriverState != "" && queryPage.DriverState == sn.LocalStorageNode.Status.State) {
-			sns = append(sns, sn)
-		} else if (queryPage.Name != "" && strings.Contains(sn.LocalStorageNode.Name, queryPage.Name)) && (queryPage.NodeState != hwameistorapi.NodeStateUnknown && queryPage.NodeState == sn.K8sNodeState) && (queryPage.DriverState != "" && queryPage.DriverState == sn.LocalStorageNode.Status.State) {
-			sns = append(sns, sn)
+		case hwameistorapi.NodeStateReady, hwameistorapi.NodeStateNotReady:
+			if queryPage.NodeState == sn.K8sNodeState {
+				sns = append(sns, sn)
+			}
+		case hwameistorapi.NodeStateUnknown:
+			if sn.K8sNodeState != hwameistorapi.NodeStateReady && sn.K8sNodeState != hwameistorapi.NodeStateNotReady {
+				sns = append(sns, sn)
+			}
+		default:
+			if queryPage.NodeState == sn.K8sNodeState {
+				sns = append(sns, sn)
+			}
 		}
 	}
 
@@ -368,6 +368,8 @@ func (lsnController *LocalStorageNodeController) ListStorageNodeDisks(queryPage 
 				disk.LocalStoragePooLName = hwameistorapi.PoolNameForHDD
 			} else if diskList.Items[i].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameSSD {
 				disk.LocalStoragePooLName = hwameistorapi.PoolNameForSSD
+			} else if diskList.Items[i].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameNVMe {
+				disk.LocalStoragePooLName = hwameistorapi.PoolNameForNVMe
 			}
 
 			disk.TotalCapacityBytes = diskList.Items[i].Spec.Capacity
@@ -473,7 +475,6 @@ func (lsnController *LocalStorageNodeController) getResourceYaml(res *apisv1alph
 
 // ReserveStorageNodeDisk
 func (lsnController *LocalStorageNodeController) ReserveStorageNodeDisk(queryPage hwameistorapi.QueryPage, diskHandler *localdisk.Handler) (*hwameistorapi.DiskReservedRspBody, error) {
-
 	var RspBody = &hwameistorapi.DiskReservedRspBody{}
 	var diskReservedRsp hwameistorapi.DiskReservedRsp
 	deviceShortPath := queryPage.DeviceShortPath
@@ -506,7 +507,6 @@ func (lsnController *LocalStorageNodeController) ReserveStorageNodeDisk(queryPag
 
 // ReleaseReserveStorageNodeDisk
 func (lsnController *LocalStorageNodeController) ReleaseReserveStorageNodeDisk(queryPage hwameistorapi.QueryPage, diskHandler *localdisk.Handler) (*hwameistorapi.DiskRemoveReservedRspBody, error) {
-
 	var RspBody = &hwameistorapi.DiskRemoveReservedRspBody{}
 	var diskRemoveReservedRsp hwameistorapi.DiskRemoveReservedRsp
 	//nodeName := queryPage.NodeName
@@ -538,7 +538,6 @@ func (lsnController *LocalStorageNodeController) ReleaseReserveStorageNodeDisk(q
 
 // GetStorageNodeDisk
 func (lsnController *LocalStorageNodeController) GetStorageNodeDisk(page hwameistorapi.QueryPage, diskHandler *localdisk.Handler) (*hwameistorapi.LocalDiskInfo, error) {
-
 	var ldi = &hwameistorapi.LocalDiskInfo{}
 	nodeKey := client.ObjectKey{
 		Name: page.NodeName,

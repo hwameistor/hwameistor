@@ -38,6 +38,21 @@ k8s-worker-2                                              Ready    21d
 
 ### 2. 添加新增存储节点到 HwameiStor 系统
 
+首先，需要将磁盘 sdb 的 `owner` 信息修改成 local-disk-manager，具体如下：
+
+```console
+$ kubectl edit ld k8s-worker-2-sdb
+apiVersion: hwameistor.io/v1alpha1
+kind: LocalDisk
+metadata:
+  name: k8s-worker-2-sdb
+spec:
+  devicePath: /dev/sdb
+  nodeName: k8s-worker-2
++ owner: local-disk-manager
+...
+```
+
 为增加存储节点创建资源 LocalStorageClaim，以此为新增存储节点构建存储池。这样，节点就已经成功加入 HwameiStor 系统。具体如下：
 
 ```console

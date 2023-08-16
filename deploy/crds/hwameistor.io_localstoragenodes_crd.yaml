@@ -195,6 +195,7 @@ spec:
                         type: string
                     required:
                     - nodeName
+                    - owner
                     type: object
                   type: array
                 description: PoolExtendRecords record why disks are joined in the

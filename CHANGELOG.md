@@ -1,3 +1,43 @@
+v0.11.2/ 2023-7-25
+========================
+
+## LocalStorage
+* refactor volume qos #966  (@carlory )
+
+##  LocalDiskManager
+* fix(disk-node): use /etc as device root path #994  (@SSmallMonster )
+* update(ldm): mount /etc/hwameistor to container #999   (@SSmallMonster )
+
+##  Apiserver
+* Fix typo in docs #972  (@Vacant2333 )
+* fix list local storage node #991  (@Vacant2333 )
+
+## Other
+* Add more tests  ( add qos e2e test #971 update e2e test #976 update e2e test #977 update qos test #978 update e2e test #998 @FloatXD  )
+* Update Docs (Fix the Chinese documentation of Disk Expansion #964 Fix The Chinese documentation of Volume Provisioned IO has content du… #967 @FloatXD Fix doc issues #968 [Docs] Polish text in creating statefulset and uninstallation #980 update post_check.md #992 @windsonsea Fix doc issues #968 [Docs] Add disk owner description #969 @SSmallMonster Fix typo in docs #972 @calvin-puram add doc for reserving disk while iinstalling #990 @buffalo1024  ）
+
+##  Admission,Scheduler,Evictor,Exporter
+N/A
+
+
+v0.11.1 / 2023-7-5
+========================
+
+
+## LocalStorage
+* support auto-detect cgroup version #959 (@carlory )
+
+
+## Other
+* Add more tests ( update e2e test #941 @FloatXD )
+* Update Docs (add volume_provisioned_io.md #932 @carlory docs(README): mark IO Throtting as Completed in Roadmap at v0.11.0 #937 docs(README): keep consitent with english #938 [Docs] update slack info #951 @SSmallMonster Modify the document information #939 @Seaiii docs: Improved command line format #936 @my-git9 update maintainers #943 change to cncf code of conduct #944 add cncf to readme #946 @windsonsea add cncf logo #945 add cncf logo and banners #949 @SAMZONG fix localdisk status docs #956 @wawa0210）
+
+##  LocalDiskManager,Apiserver,Admission,Scheduler,Evictor,Exporter
+N/A
+
+
+
+
 v0.11.0 / 2023-6-25
 ========================
 

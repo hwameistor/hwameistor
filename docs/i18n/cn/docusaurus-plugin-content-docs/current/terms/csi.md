@@ -5,7 +5,8 @@ sidebar_label: "CSI 接口"
 
 # CSI 接口
 
-CSI 即 Container Storage Interfaces，容器存储接口。目前，Kubernetes 中的存储子系统仍存在一些问题。存储驱动程序代码在 Kubernetes 核心存储库中进行维护，这很难测试。Kubernetes 还需要授予存储供应商许可，便于将代码嵌入 Kubernetes 核心存储库。
+CSI 即 Container Storage Interfaces，容器存储接口。目前，Kubernetes 中的存储子系统仍存在一些问题。
+存储驱动程序代码在 Kubernetes 核心存储库中进行维护，这很难测试。Kubernetes 还需要授予存储供应商许可，便于将代码嵌入 Kubernetes 核心存储库。
 
 CSI 旨在定义行业标准，该标准将使支持 CSI 的存储提供商能够在支持 CSI 的容器编排系统中使用。
 
@@ -23,7 +24,7 @@ CSI 旨在定义行业标准，该标准将使支持 CSI 的存储提供商能�
 
 ## 扩展 CSI 规范
 
-最新的 CSI 0.2.0 仍未定义扩展卷的功能。应引入新的 3 个 RPC：`RequiresFSResize`、 `ControllerResizeVolume` 和 `NodeResizeVolume`。
+最新的 CSI 0.2.0 仍未定义扩展卷的功能。应引入新的 3 个 RPC：`RequiresFSResize`、`ControllerResizeVolume` 和 `NodeResizeVolume`。
 
 ```jade
 service Controller {
@@ -46,7 +47,8 @@ service Node {
 
 ## 扩展 “In-Tree” 卷插件
 
-除了扩展的 CSI 规范之外，Kubernetes 中的 `csiPlugin` 接口还应实现 `expandablePlugin`。`csiPlugin` 接口将扩展代表 `ExpanderController` 的 `PersistentVolumeClaim`。
+除了扩展的 CSI 规范之外，Kubernetes 中的 `csiPlugin` 接口还应实现 `expandablePlugin`。
+`csiPlugin` 接口将扩展代表 `ExpanderController` 的 `PersistentVolumeClaim`。
 
 ```jade
 type ExpandableVolumePlugin interface {

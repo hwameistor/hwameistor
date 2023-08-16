@@ -5,13 +5,13 @@ sidebar_label: "Volume Provisioned IO"
 
 # Volume Provisioned IO
 
-In Hwameistor, it allows users to specify the maximum IOPS and throughput of a volume on a Kuberentes cluster.
+In HwameiStor, it allows users to specify the maximum IOPS and throughput of a volume on a Kuberentes cluster.
 
 Please follow the steps below to create a volume with the maximum IOPS and throughput and create a workload to use it.
 
 ## Create a new StorageClass with the maximum IOPS and throughput parameters
 
-By default, Hwameistor won't auto-create such a StorageClass during the installation, so you need to create it manually.
+By default, HwameiStor won't auto-create such a StorageClass during the installation, so you need to create it manually.
 
 A sample StorageClass is as follows:
 
@@ -36,7 +36,7 @@ reclaimPolicy: Delete
 volumeBindingMode: WaitForFirstConsumer
 ```
 
-Compare to the regular StorageClass created by Hwameistor installer, the following parameters are added:
+Compare to the regular StorageClass created by HwameiStor installer, the following parameters are added:
 
 - provision-iops-on-creation: It specifies the maximum IOPS of the volume on creation.
 - provision-throughput-on-creation: It specifies the maximum throughput of the volume on creation.
@@ -115,10 +115,12 @@ $ dd if=/dev/zero of=/data/test bs=4k count=1000000 oflag=direct
 
 ## How to change the maximum IOPS and throughput of a volume
 
-The maximum IOPS and throughput are specified on the parameters of the StorageClass, you can not change it directly because it is immutable today. 
+The maximum IOPS and throughput are specified on the parameters of the StorageClass,
+you can not change it directly because it is immutable today.
 
-Different from the other storage vendors, Hwameistor is a Native Kubernetes storage solution and it defines a set of operation primitives 
-based on the Kubernetes CRDs. It means that you can modify the related CRD to change the actual maximum IOPS and throughput of a volume. 
+Different from the other storage vendors, HwameiStor is a Native Kubernetes storage solution
+and it defines a set of operation primitives based on the Kubernetes CRDs. It means that you
+can modify the related CRD to change the actual maximum IOPS and throughput of a volume.
 
 The following steps show how to change the maximum IOPS and throughput of a volume.
 
@@ -149,13 +151,15 @@ $ kubectl edit localvolume pvc-cac82087-6f6c-493a-afcd-09480de712ed
 
 In the editor, find the `spec.volumeQoS` section and modify the `iops` and `throughput` fields. By the way, an empty value means no limit.
 
-At last, save the changes and exit the editor. The settings will take effect in a few seconds. 
+At last, save the changes and exit the editor. The settings will take effect in a few seconds.
 
-**Note**: In the future, we will allow users to modify the maximum IOPS and throughput of a volume directly once the Kubernetes supports [it](https://github.com/kubernetes/enhancements/tree/master/keps/sig-storage/3751-volume-attributes-class#motivation).
+**Note**: In the future, we will allow users to modify the maximum IOPS and throughput of a volume directly
+once the Kubernetes supports [it](https://github.com/kubernetes/enhancements/tree/master/keps/sig-storage/3751-volume-attributes-class#motivation).
 
 ## How to check the actual IOPS and throughput of a volume
 
-Hwameistor uses the [cgroupv1](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt) to limit the IOPS and throughput of a volume, so you can use the following command to check the actual IOPS and throughput of a volume.
+HwameiStor uses the [cgroupv1](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)
+to limit the IOPS and throughput of a volume, so you can use the following command to check the actual IOPS and throughput of a volume.
 
 ```
 $ lsblk

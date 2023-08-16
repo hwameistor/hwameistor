@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hwameistor-auditor
+  namespace: {{ .Release.Namespace}}
+  labels:
+    app: hwameistor-auditor
+spec:
+  replicas: {{ .Values.auditor.replicas}}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hwameistor-auditor
+  template:
+    metadata:
+      labels:
+        app: hwameistor-auditor
+    spec:
+      serviceAccountName: hwameistor-admin
+      containers:
+        - name: auditor
+          image: {{ .Values.global.hwameistorImageRegistry}}/{{ .Values.auditor.imageRepository}}:{{ template "hwameistor.auditorImageTag" . }}
+          imagePullPolicy: IfNotPresent
+          resources: 
+            {{- toYaml .Values.auditor.resources | nindent 12 }}

@@ -115,6 +115,8 @@ func (ldcHandler *Handler) AssignFreeDisk() error {
 // PatchBoundDiskRef update all disk bounded by the diskClaim to claim.spec.disks
 func (ldcHandler *Handler) PatchBoundDiskRef() error {
 	time.Sleep(time.Second)
+	logger := log.WithFields(log.Fields{"LocalDiskClaim": ldcHandler.diskClaim.GetName()})
+
 	diskList, err := diskHandler.
 		NewLocalDiskHandler(ldcHandler.Client, ldcHandler.EventRecorder).
 		ListNodeLocalDisk(ldcHandler.diskClaim.Spec.NodeName)
@@ -123,8 +125,7 @@ func (ldcHandler *Handler) PatchBoundDiskRef() error {
 	}
 
 	oldDiskClaim := ldcHandler.diskClaim.DeepCopy()
-	log.WithFields(log.Fields{"diskClaim": ldcHandler.diskClaim.GetName()}).
-		Infof("Found %d localdisk(s) in cluster", len(diskList.Items))
+	logger.Infof("Found %d localdisk(s) in cluster", len(diskList.Items))
 	for _, disk := range diskList.Items {
 		if disk.Spec.ClaimRef != nil &&
 			// Since the claim can be applied repeatedly with a same name, thus compare UID here
@@ -133,11 +134,10 @@ func (ldcHandler *Handler) PatchBoundDiskRef() error {
 		}
 	}
 
-	log.Infof("Found %d localdisk(s) bounded by claim %v",
+	logger.Infof("Found %d localdisk(s) bounded by claim %v",
 		len(ldcHandler.diskClaim.Spec.DiskRefs), ldcHandler.diskClaim.GetName())
 	for _, disk := range ldcHandler.diskClaim.Spec.DiskRefs {
-		log.WithField("diskClaim", ldcHandler.diskClaim.GetName()).
-			Infof("Bounded localdisk: %s", disk.Name)
+		logger.Infof("Bounded localdisk: %s", disk.Name)
 	}
 	return ldcHandler.PatchClaimSpec(client.MergeFrom(oldDiskClaim))
 }

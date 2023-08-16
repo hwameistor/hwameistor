@@ -41,6 +41,21 @@ k8s-worker-2                                              Ready    21d
 
 ### 2. Add the storage node into HwameiStor
 
+First, change the `owner` information of the disk sdb to local-disk-manager as below:
+
+```console
+$ kubectl edit ld k8s-worker-2-sdb
+apiVersion: hwameistor.io/v1alpha1
+kind: LocalDisk
+metadata:
+  name: k8s-worker-2-sdb
+spec:
+  devicePath: /dev/sdb
+  nodeName: k8s-worker-2
++ owner: local-disk-manager
+...
+```
+
 Create the storage pool of the node by adding a LocalStorageClaim CR as below:
 
 ```console

@@ -7,12 +7,10 @@ sidebar_label: "节点扩展"
 
 存储系统可以通过增加存储节点实现扩容。在 HwameiStor 里，通过下列步骤可以添加新的存储节点。
 
-## 步骤
-
-### 1. 准备新的存储节点
+## 准备新的存储节点
 
 在 Kubernetes 集群中新增一个节点，或者，选择一个已有的集群节点（非 HwameiStor 节点）。
-该节点必须满足 [Prerequisites](../install/prereq.md) 要求的所有条件。
+该节点必须满足[准备工作](../install/prereq.md)要求的所有条件。
 本例中，所用的新增存储节点和磁盘信息如下所示：
 
 - name: k8s-worker-4
@@ -36,11 +34,11 @@ hwameistor-local-storage-s4zbw          2/2     Running   0     19h   192.168.14
 
 # 检查 LocalStorageNode 资源
 $ kubectl get localstoragenode k8s-worker-4
-NAME                 IP           ZONE      REGION    STATUS   AGE
-k8s-worker-4   10.6.182.103       default   default   Ready    8d
+NAME                 IP           STATUS   AGE
+k8s-worker-4   10.6.182.103       Ready    8d
 ```
 
-### 2. 添加新增存储节点到 HwameiStor 系统
+## 添加新增存储节点到 HwameiStor 系统
 
 为增加存储节点创建资源 LocalStorageClaim，以此为新增存储节点构建存储池。这样，节点就已经成功加入 HwameiStor 系统。具体如下：
 
@@ -58,7 +56,7 @@ spec:
 EOF
 ```
 
-### 3. 后续检查
+## 后续检查
 
 完成上述步骤后，检查新增存储节点及其存储池的状态，确保节点和 HwameiStor 系统的正常运行。具体如下：
 

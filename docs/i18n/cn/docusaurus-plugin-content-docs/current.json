@@ -44,8 +44,8 @@
     "description": "The label for category Volumes and Nodes in sidebar tutorialSidebar"
   },
   "sidebar.tutorialSidebar.category.Create Hwameistor Volumes": {
-    "message": "创建 Hwameistor 数据卷",
-    "description": "The label for category Create Hwameistor Volumes in sidebar tutorialSidebar"
+    "message": "创建 HwameiStor 数据卷",
+    "description": "The label for category Create HwameiStor Volumes in sidebar tutorialSidebar"
   },
   "sidebar.tutorialSidebar.category.Node Expansion": {
     "message": "扩容存储节点",

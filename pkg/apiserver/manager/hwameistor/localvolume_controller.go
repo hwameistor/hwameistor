@@ -62,6 +62,9 @@ func (lvController *LocalVolumeController) ListLocalVolume(queryPage hwameistora
 	}
 
 	volList.Volumes = utils.DataPatination(vols, queryPage.Page, queryPage.PageSize)
+	if len(vols) == 0 {
+		volList.Volumes = []*hwameistorapi.Volume{}
+	}
 
 	var pagination = &hwameistorapi.Pagination{}
 	pagination.Page = queryPage.Page

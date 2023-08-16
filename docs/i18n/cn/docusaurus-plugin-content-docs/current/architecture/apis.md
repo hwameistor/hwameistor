@@ -7,7 +7,7 @@ sidebar_label: "API"
 
 ## CRD 对象类
 
-Hwameistor 在 Kubernetes 已有的 PV 和 PVC 对象类基础上，Hwameistor 定义了更丰富的对象类，把 PV/PVC 和本地数据盘关联起来。
+HwameiStor 在 Kubernetes 已有的 PV 和 PVC 对象类基础上，HwameiStor 定义了更丰富的对象类，把 PV/PVC 和本地数据盘关联起来。
 
 | Kind              | 缩写       | 功能                  |
 |-------------------|----------|---------------------|

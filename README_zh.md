@@ -131,7 +131,7 @@ Exporter 将收集系统指标，包括节点、存储池、卷、磁盘等。�
 
 ### Slack
 
-欢迎加入我们的 [Slack 频道](https://join.slack.com/t/hwameistor/shared_invite/zt-1dkabcq2c-KIRBJDBc_GgZZfeLrooK6g)。
+如果你想加入我们在 CNCF Slack 的 hwameistor 频道，**请先[接受 CNCF Slack 邀请](https://slack.cncf.io/)**，然后加入 [#hwameistor](https://cloud-native.slack.com/messages/hwameistor)。
 
 ### 微信
 
@@ -151,7 +151,7 @@ HwameiStor 技术沟通群：
 
 ## 许可证
 
-版权所有 (c) 2014-2021 HwameiStor 开发团队
+版权所有 (c) 2014-2023 HwameiStor 开发团队
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

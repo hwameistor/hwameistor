@@ -23,7 +23,8 @@ type LocalDiskClaimSpec struct {
 	DiskRefs []*v1.ObjectReference `json:"diskRefs,omitempty"`
 
 	// Owner represents which system owns this claim(e.g. local-storage, local-disk-manager)
-	Owner string `json:"owner,omitempty"`
+	// +kubebuilder:validation:Required
+	Owner string `json:"owner"`
 }
 
 type LocalDiskClaimSpecArray []LocalDiskClaimSpec

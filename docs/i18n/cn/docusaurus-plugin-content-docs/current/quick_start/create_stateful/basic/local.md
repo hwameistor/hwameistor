@@ -7,7 +7,7 @@ sidebar_label:  "本地卷"
 
 使用 HwameiStor 能非常轻松的运行有状态的应用
 
-这里我们使用一个 MySQL 应用作为例子。
+我们通过创建本地卷来部署一个 MySQL 应用作为例子。
 
 :::note
 下面的 MySQL Yaml 文件来自于 [Kubernetes 的官方 Repo](https://github.com/kubernetes/website/blob/main/content/en/examples/application/mysql/mysql-statefulset.yaml)

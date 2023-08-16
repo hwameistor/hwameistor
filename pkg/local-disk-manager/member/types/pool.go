@@ -3,8 +3,9 @@ package types
 import "path"
 
 const (
-	LocalDiskPoolPrefix = "LocalDisk_Pool"
-	SysDeviceRoot       = "/dev"
+	LocalDiskPoolPrefix  = "LocalDisk_Pool"
+	HwameiStorDeviceRoot = "/etc/hwameistor"
+	SysDeviceRoot        = "/dev"
 
 	// sub path store sub resources under LocalDiskPool
 	diskSubPath   = "disk"
@@ -20,9 +21,9 @@ func GetLocalDiskPoolName(devType DevType) string {
 	return LocalDiskPoolPrefix + devType
 }
 
-// GetLocalDiskPoolPath return /dev/LocalDisk_PoolHDD
+// GetLocalDiskPoolPath return /etc/hwameistor/LocalDisk_PoolHDD
 func GetLocalDiskPoolPath(devType DevType) string {
-	return path.Join(SysDeviceRoot, GetLocalDiskPoolName(devType))
+	return path.Join(HwameiStorDeviceRoot, GetLocalDiskPoolName(devType))
 }
 
 func GetPoolDiskPath(devType DevType) string {
@@ -34,11 +35,11 @@ func GetPoolVolumePath(devType DevType) string {
 }
 
 func ComposePoolDevicePath(poolName, devName string) string {
-	return path.Join(path.Join(SysDeviceRoot, poolName, diskSubPath), devName)
+	return path.Join(path.Join(HwameiStorDeviceRoot, poolName, diskSubPath), devName)
 }
 
 func ComposePoolVolumePath(poolName, volumeName string) string {
-	return path.Join(path.Join(SysDeviceRoot, poolName, volumeSubPath), volumeName)
+	return path.Join(path.Join(HwameiStorDeviceRoot, poolName, volumeSubPath), volumeName)
 }
 
 func GetDefaultDiskPoolPath() (dps []string) {

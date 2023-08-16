@@ -5,4 +5,4 @@ sidebar_label: "GUI"
 
 # GUI
 
-HwameiStor has a module of Graph User Interface. It will provide user an easy way to manage the HwameiStor system. The GUI can be deployed by Operator.
+HwameiStor has a module for Graph User Interface. It will provide users with an easy way to manage the HwameiStor system. The GUI can be deployed by the Operator.
