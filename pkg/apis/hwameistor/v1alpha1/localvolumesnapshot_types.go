@@ -4,6 +4,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	SnapshotRestoringFinalizer = "provisioner.hwameistor.io/restoring-protection"
+)
+
 // VolumeSnapshotSpec describes the common attributes of a volume snapshot.
 
 // LocalVolumeSnapshotSpec describes the common attributes of a localvolume snapshot.

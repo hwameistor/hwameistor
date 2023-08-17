@@ -35,8 +35,6 @@ var (
 
 const (
 	RetryInterval = 2 * time.Second
-
-	pvcRestoreFinalizer = "provisioner.hwameistor.io/restoring-protection"
 )
 
 // ControllerGetCapabilities implementation
@@ -439,7 +437,7 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 	volumeSnapshotRestore.Name = snapshotRestoreName
 	volumeSnapshotRestore.Spec.TargetVolume = req.GetName()
 	// protection finalizer to prevent objects to be deleted
-	volumeSnapshotRestore.SetFinalizers([]string{pvcRestoreFinalizer})
+	volumeSnapshotRestore.SetFinalizers([]string{apisv1alpha1.SnapshotRestoringFinalizer})
 	volumeSnapshotRestore.Spec.RestoreType = apisv1alpha1.RestoreTypeCreate
 	volumeSnapshotRestore.Spec.SourceVolumeSnapshot = req.VolumeContentSource.GetSnapshot().SnapshotId
 	if err := p.apiClient.Create(ctx, &volumeSnapshotRestore); err != nil {
@@ -463,7 +461,7 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 			return false, status.Errorf(codes.Internal, "LocalVolumeSnapshotRestore %s is NotReady", volumeSnapshotRestore.Name)
 		}
 		// LocalVolumeSnapshotRestore is ready, remove the protection finalizer from the object
-		volumeSnapshotRestore.SetFinalizers(utils.RemoveStringItem(volumeSnapshotRestore.Finalizers, pvcRestoreFinalizer))
+		volumeSnapshotRestore.SetFinalizers(utils.RemoveStringItem(volumeSnapshotRestore.Finalizers, apisv1alpha1.SnapshotRestoringFinalizer))
 		return true, p.apiClient.Update(ctx, &volumeSnapshotRestore)
 	}, ctx.Done()); err != nil {
 		logCtx.WithError(err).Errorf("LocalVolumeSnapshotRestore %s is not completed", snapshotRestoreName)
@@ -641,7 +639,7 @@ func (p *plugin) abortVolumeSnapshotRestore(volume *apisv1alpha1.LocalVolume) er
 	}
 
 	snapRestore.Spec.Abort = true
-	snapRestore.Finalizers = utils.RemoveStringItem(snapRestore.GetFinalizers(), pvcRestoreFinalizer)
+	snapRestore.Finalizers = utils.RemoveStringItem(snapRestore.GetFinalizers(), apisv1alpha1.SnapshotRestoringFinalizer)
 	return p.apiClient.Update(context.Background(), &snapRestore)
 }
 
@@ -656,7 +654,7 @@ func (p *plugin) needAbortVolumeSnapshotRestore(volume *apisv1alpha1.LocalVolume
 		return true, err
 	}
 
-	return snapRestore.Spec.Abort == false || isStringInArray(pvcRestoreFinalizer, snapRestore.GetFinalizers()), nil
+	return snapRestore.Spec.Abort == false || isStringInArray(apisv1alpha1.SnapshotRestoringFinalizer, snapRestore.GetFinalizers()), nil
 }
 
 // ControllerPublishVolume implementation, idempotent

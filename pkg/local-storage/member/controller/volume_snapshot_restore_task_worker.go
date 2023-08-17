@@ -4,9 +4,13 @@ import (
 	"context"
 	"fmt"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	utilrand "k8s.io/apimachinery/pkg/util/rand"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (m *manager) startVolumeSnapshotRestoreTaskWorker(stopCh <-chan struct{}) {
@@ -81,19 +85,80 @@ func (m *manager) processVolumeSnapshotRestore(restoreName string) error {
 func (m *manager) volumeSnapshotRestoreSubmit(snapshotRestore *apisv1alpha1.LocalVolumeSnapshotRestore) error {
 	logCtx := m.logger.WithFields(log.Fields{"SnapshotRestore": snapshotRestore.Name, "Spec": snapshotRestore.Spec})
 	logCtx.Debug("Submit a VolumeSnapshotRestore")
-	return nil
+
+	snapshotRestore.Status.State = apisv1alpha1.OperationStateSubmitted
+	return m.apiClient.Status().Update(context.Background(), snapshotRestore)
 }
 
 func (m *manager) volumeSnapshotRestoreStart(snapshotRestore *apisv1alpha1.LocalVolumeSnapshotRestore) error {
 	logCtx := m.logger.WithFields(log.Fields{"SnapshotRestore": snapshotRestore.Name, "Spec": snapshotRestore.Spec})
 	logCtx.Debug("Start a VolumeSnapshotRestore")
-	return nil
+
+	sourceVolume, err := m.getSourceVolumeFromSnapshot(snapshotRestore.Spec.SourceVolumeSnapshot)
+	if err != nil {
+		logCtx.Error("Failed to get source volume from snapshot")
+		return err
+	}
+
+	// create LocalVolumeReplicaSnapshotRestore on each node according to the topology of source volume
+	for _, nodeName := range sourceVolume.Spec.Accessibility.Nodes {
+		replicaSnapshotRestore := &apisv1alpha1.LocalVolumeReplicaSnapshotRestore{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: fmt.Sprintf("%s-%s", snapshotRestore.Name, utilrand.String(6)),
+			},
+			Spec: apisv1alpha1.LocalVolumeReplicaSnapshotRestoreSpec{
+				LocalVolumeSnapshotRestoreSpec: snapshotRestore.Spec,
+				VolumeSnapshotRestore:          snapshotRestore.Name,
+				NodeName:                       nodeName,
+			},
+		}
+
+		if err = m.apiClient.Create(context.Background(), replicaSnapshotRestore); err != nil && !errors.IsAlreadyExists(err) {
+			logCtx.WithField("replicaSnapshotRestore", replicaSnapshotRestore.Name).WithError(err).Error("Failed to create VolumeReplicaSnapshotRestore")
+			return err
+		}
+
+		snapshotRestore.Status.VolumeReplicaSnapshotRestore = utils.AddUniqueStringItem(snapshotRestore.Status.VolumeReplicaSnapshotRestore, replicaSnapshotRestore.Name)
+		logCtx.WithField("replicaSnapshotRestore", replicaSnapshotRestore.Name).WithError(err).Errorf("VolumeReplicaSnapshotRestore is created successfully on %s", nodeName)
+	}
+
+	snapshotRestore.Status.State = apisv1alpha1.OperationStateInProgress
+	return m.apiClient.Status().Update(context.Background(), snapshotRestore)
 }
 
 func (m *manager) checkInProgressVolumeSnapshotRestore(snapshotRestore *apisv1alpha1.LocalVolumeSnapshotRestore) error {
 	logCtx := m.logger.WithFields(log.Fields{"SnapshotRestore": snapshotRestore.Name, "Spec": snapshotRestore.Spec})
 	logCtx.Debug("Check a InProgress VolumeSnapshotRestore")
-	return nil
+
+	var (
+		message        string
+		completedCount int
+	)
+
+	for _, replicaSnapshotRestoreName := range snapshotRestore.Status.VolumeReplicaSnapshotRestore {
+		replicaSnapshotRestore := &apisv1alpha1.LocalVolumeReplicaSnapshot{}
+		if err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: replicaSnapshotRestoreName}, replicaSnapshotRestore); err != nil {
+			logCtx.WithField("ReplicaSnapshotRestore", replicaSnapshotRestoreName).WithError(err).Error("Failed to get VolumeReplicaSnapshotRestore")
+			return err
+		}
+
+		if replicaSnapshotRestore.Status.Message != "" {
+			message += fmt.Sprintf("%s: %s;", replicaSnapshotRestoreName, replicaSnapshotRestore.Status.Message)
+		} else {
+			message += fmt.Sprintf("%s is %s;", replicaSnapshotRestoreName, replicaSnapshotRestore.Status.State)
+		}
+
+		if replicaSnapshotRestore.Status.State == apisv1alpha1.OperationStateCompleted {
+			completedCount++
+		}
+	}
+
+	snapshotRestore.Status.Message = message
+	if completedCount >= len(snapshotRestore.Status.VolumeReplicaSnapshotRestore) {
+		snapshotRestore.Status.State = apisv1alpha1.OperationStateCompleted
+	}
+
+	return m.apiClient.Status().Update(context.Background(), snapshotRestore)
 }
 
 func (m *manager) volumeSnapshotRestoreAbort(snapshotRestore *apisv1alpha1.LocalVolumeSnapshotRestore) error {
@@ -108,5 +173,47 @@ func (m *manager) volumeSnapshotRestoreCleanup(snapshotRestore *apisv1alpha1.Loc
 	logCtx := m.logger.WithFields(log.Fields{"SnapshotRestore": snapshotRestore.Name, "Spec": snapshotRestore.Spec})
 	logCtx.Debug("Cleanup a VolumeSnapshotRestore")
 
+	cleanedCount := 0
+	for _, replicaSnapshotRestoreName := range snapshotRestore.Status.VolumeReplicaSnapshotRestore {
+		replicaSnapshotRestore := &apisv1alpha1.LocalVolumeReplicaSnapshot{}
+		if err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: replicaSnapshotRestoreName}, replicaSnapshotRestore); err != nil {
+			if errors.IsNotFound(err) {
+				cleanedCount++
+				logCtx.WithField("ReplicaSnapshotRestore", replicaSnapshotRestoreName).WithError(err).Error("Cleanup VolumeReplicaSnapshotRestore successfully")
+				continue
+			}
+			logCtx.WithField("ReplicaSnapshotRestore", replicaSnapshotRestoreName).WithError(err).Error("Failed to get VolumeReplicaSnapshotRestore")
+			return err
+		}
+
+		if !replicaSnapshotRestore.Spec.Delete {
+			replicaSnapshotRestore.Spec.Delete = true
+			if err := m.apiClient.Update(context.Background(), replicaSnapshotRestore); err != nil {
+				logCtx.WithField("ReplicaSnapshotRestore", replicaSnapshotRestoreName).Error("Failed to cleanup VolumeReplicaSnapshotRestore")
+				return err
+			}
+			logCtx.WithField("ReplicaSnapshotRestore", replicaSnapshotRestoreName).Error("Cleaning VolumeReplicaSnapshotRestore")
+		}
+	}
+
+	if cleanedCount < len(snapshotRestore.Status.VolumeReplicaSnapshotRestore) {
+		logCtx.Debugf("Remaining %d VolumeReplicaSnapshotRestore to clean", len(snapshotRestore.Status.VolumeReplicaSnapshotRestore)-cleanedCount)
+		return nil
+	}
+
 	return m.apiClient.Delete(context.TODO(), snapshotRestore)
+}
+
+func (m *manager) getSourceVolumeFromSnapshot(volumeSnapshotName string) (*apisv1alpha1.LocalVolume, error) {
+	volumeSnapshot := &apisv1alpha1.LocalVolumeSnapshot{}
+	if err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: volumeSnapshotName}, volumeSnapshot); err != nil {
+		return nil, err
+	}
+
+	sourceVolume := &apisv1alpha1.LocalVolume{}
+	if err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: volumeSnapshot.Spec.SourceVolume}, volumeSnapshot); err != nil {
+		return nil, err
+	}
+
+	return sourceVolume, nil
 }
