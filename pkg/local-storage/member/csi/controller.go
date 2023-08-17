@@ -3,7 +3,6 @@ package csi
 import (
 	"fmt"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	utils2 "github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -596,11 +595,9 @@ func (p *plugin) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 	}
 
 	// abort snapshot restore operation if needed
-	if ok := needAbortVolumeRestore(vol); ok {
-		if err := p.abortSnapshotRestore(vol); err != nil {
-			p.logger.WithError(err).WithFields(log.Fields{"volName": req.VolumeId}).Error("Failed to abort snapshotRestore")
-			return resp, err
-		}
+	if err := p.abortVolumeSnapshotRestoreIfNeeded(vol); err != nil {
+		p.logger.WithError(err).WithField("volName", req.VolumeId).Error("Failed to abort volume restore operation")
+		return nil, err
 	}
 
 	if vol.Status.State == apisv1alpha1.VolumeStateDeleted {
@@ -617,15 +614,49 @@ func (p *plugin) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 	return resp, fmt.Errorf("volume in deleting")
 }
 
-func (p *plugin) abortSnapshotRestore(volume *apisv1alpha1.LocalVolume) error {
-	// 1. remove the finalizer
-	// 2. update abort true
-	return nil
+func (p *plugin) abortVolumeSnapshotRestoreIfNeeded(volume *apisv1alpha1.LocalVolume) error {
+	need, err := p.needAbortVolumeSnapshotRestore(volume)
+	if err != nil {
+		p.logger.WithError(err).WithFields(log.Fields{"volName": volume.Name}).Error("Failed to get snapshotRestore")
+		return err
+	} else if !need {
+		return nil
+	}
+
+	if err = p.abortVolumeSnapshotRestore(volume); err != nil {
+		p.logger.WithError(err).WithFields(log.Fields{"volName": volume.Name}).Error("Failed to abort snapshotRestore")
+	}
+	return err
 }
 
-func needAbortVolumeRestore(volume *apisv1alpha1.LocalVolume) bool {
-	_, ok := utils2.StrFind(volume.GetFinalizers(), pvcRestoreFinalizer)
-	return ok
+func (p *plugin) abortVolumeSnapshotRestore(volume *apisv1alpha1.LocalVolume) error {
+	snapRestoreName := utils.GetSnapshotRestoreNameByVolume(volume.Name)
+	snapRestore := apisv1alpha1.LocalVolumeSnapshotRestore{}
+	if err := p.apiClient.Get(context.Background(), client.ObjectKey{Name: snapRestoreName}, &snapRestore); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		p.logger.WithError(err).WithFields(log.Fields{"snapRestore": snapRestoreName, "volume": volume.Name}).Error("Failed to get SnapshotRestore")
+		return err
+	}
+
+	snapRestore.Spec.Abort = true
+	snapRestore.Finalizers = utils.RemoveStringItem(snapRestore.GetFinalizers(), pvcRestoreFinalizer)
+	return p.apiClient.Update(context.Background(), &snapRestore)
+}
+
+func (p *plugin) needAbortVolumeSnapshotRestore(volume *apisv1alpha1.LocalVolume) (bool, error) {
+	snapRestoreName := utils.GetSnapshotRestoreNameByVolume(volume.Name)
+	snapRestore := apisv1alpha1.LocalVolumeSnapshotRestore{}
+	if err := p.apiClient.Get(context.Background(), client.ObjectKey{Name: snapRestoreName}, &snapRestore); err != nil {
+		if errors.IsNotFound(err) {
+			return false, nil
+		}
+		p.logger.WithError(err).WithFields(log.Fields{"snapRestore": snapRestoreName, "volume": volume.Name}).Error("Failed to get SnapshotRestore")
+		return true, err
+	}
+
+	return snapRestore.Spec.Abort == false || isStringInArray(pvcRestoreFinalizer, snapRestore.GetFinalizers()), nil
 }
 
 // ControllerPublishVolume implementation, idempotent
