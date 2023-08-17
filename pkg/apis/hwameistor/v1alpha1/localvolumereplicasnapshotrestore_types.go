@@ -11,6 +11,9 @@ import (
 type LocalVolumeReplicaSnapshotRestoreSpec struct {
 	LocalVolumeSnapshotRestoreSpec `json:",inline"`
 
+	// +kubebuilder:validation:Required
+	VolumeSnapshotRestore string `json:"volumeSnapshotRestore"`
+
 	// NodeName is the name of the node that snapshot will be restored
 	// +kubebuilder:validation:Required
 	NodeName string `json:"nodeName"`

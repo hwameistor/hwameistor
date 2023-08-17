@@ -3,6 +3,7 @@ package csi
 import (
 	"fmt"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	utils2 "github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -36,7 +37,7 @@ var (
 const (
 	RetryInterval = 2 * time.Second
 
-	pvcCreateFinalizer = "provisioner.hwameistor.io/restoring-protection"
+	pvcRestoreFinalizer = "provisioner.hwameistor.io/restoring-protection"
 )
 
 // ControllerGetCapabilities implementation
@@ -433,13 +434,13 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 	}
 
 	// 3. create LocalVolumeSnapshotRestore instance
-	snapshotRestoreName := fmt.Sprintf("snaprestore-%s", req.GetName())
+	snapshotRestoreName := utils.GetSnapshotRestoreNameByVolume(req.Name)
 	logCtx.Debug("Step3: Start creating LocalVolumeSnapshotRestore %s", snapshotRestoreName)
 	volumeSnapshotRestore := apisv1alpha1.LocalVolumeSnapshotRestore{}
 	volumeSnapshotRestore.Name = snapshotRestoreName
 	volumeSnapshotRestore.Spec.TargetVolume = req.GetName()
 	// protection finalizer to prevent objects to be deleted
-	volumeSnapshotRestore.SetFinalizers([]string{pvcCreateFinalizer})
+	volumeSnapshotRestore.SetFinalizers([]string{pvcRestoreFinalizer})
 	volumeSnapshotRestore.Spec.RestoreType = apisv1alpha1.RestoreTypeCreate
 	volumeSnapshotRestore.Spec.SourceVolumeSnapshot = req.VolumeContentSource.GetSnapshot().SnapshotId
 	if err := p.apiClient.Create(ctx, &volumeSnapshotRestore); err != nil {
@@ -463,7 +464,7 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 			return false, status.Errorf(codes.Internal, "LocalVolumeSnapshotRestore %s is NotReady", volumeSnapshotRestore.Name)
 		}
 		// LocalVolumeSnapshotRestore is ready, remove the protection finalizer from the object
-		volumeSnapshotRestore.SetFinalizers(utils.RemoveStringItem(volumeSnapshotRestore.Finalizers, pvcCreateFinalizer))
+		volumeSnapshotRestore.SetFinalizers(utils.RemoveStringItem(volumeSnapshotRestore.Finalizers, pvcRestoreFinalizer))
 		return true, p.apiClient.Update(ctx, &volumeSnapshotRestore)
 	}, ctx.Done()); err != nil {
 		logCtx.WithError(err).Errorf("LocalVolumeSnapshotRestore %s is not completed", snapshotRestoreName)
@@ -594,6 +595,14 @@ func (p *plugin) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 		return resp, nil
 	}
 
+	// abort snapshot restore operation if needed
+	if ok := needAbortVolumeRestore(vol); ok {
+		if err := p.abortSnapshotRestore(vol); err != nil {
+			p.logger.WithError(err).WithFields(log.Fields{"volName": req.VolumeId}).Error("Failed to abort snapshotRestore")
+			return resp, err
+		}
+	}
+
 	if vol.Status.State == apisv1alpha1.VolumeStateDeleted {
 		return resp, nil
 	}
@@ -606,6 +615,17 @@ func (p *plugin) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 		return resp, err
 	}
 	return resp, fmt.Errorf("volume in deleting")
+}
+
+func (p *plugin) abortSnapshotRestore(volume *apisv1alpha1.LocalVolume) error {
+	// 1. remove the finalizer
+	// 2. update abort true
+	return nil
+}
+
+func needAbortVolumeRestore(volume *apisv1alpha1.LocalVolume) bool {
+	_, ok := utils2.StrFind(volume.GetFinalizers(), pvcRestoreFinalizer)
+	return ok
 }
 
 // ControllerPublishVolume implementation, idempotent

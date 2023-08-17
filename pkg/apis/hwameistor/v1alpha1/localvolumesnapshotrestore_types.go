@@ -34,6 +34,9 @@ type LocalVolumeSnapshotRestoreSpec struct {
 
 // LocalVolumeSnapshotRestoreStatus defines the observed state of LocalVolumeSnapshotRestore
 type LocalVolumeSnapshotRestoreStatus struct {
+	// VolumeReplicaSnapshotRestore is the replica snapshot to be restored
+	VolumeReplicaSnapshotRestore []string `json:"volumeReplicaSnapshotRestore"`
+
 	// State is the phase of restore volume snapshot, e.g. submitted, started, completed, abort, ...
 	State State `json:"state,omitempty"`
 
