@@ -127,6 +127,12 @@ func (ctr *Controller) processSingleEvent(event manager.Event) error {
 
 		// NOTES: currently we are not doing anything about the event that the disk goes offline, just mark it as inactive here
 		localDisk.Spec.State = v1alpha1.LocalDiskInactive
+		localDisk.Spec.PreDevicePath = localDisk.Spec.DevicePath
+		localDisk.Spec.PreNodeName = localDisk.Spec.NodeName
+		localDisk.Spec.DevicePath = ""
+		localDisk.Spec.NodeName = ""
+		localDisk.Spec.Major = ""
+		localDisk.Spec.Minor = ""
 		if err = ctr.localDiskController.UpdateLocalDiskAttr(localDisk); err != nil {
 			log.WithError(err).Errorf("Failed to mark localDisk state %v to inactive", localDisk)
 			return err

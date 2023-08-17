@@ -123,14 +123,15 @@ func (ctr Controller) mergeLocalDiskAttr(oldLd *v1alpha1.LocalDisk, newLd v1alph
 
 	// record historical information about where the disk was attached and the os path
 	// see issue #982 for more details
-	if oldLd.Spec.DevicePath != newLd.Spec.DevicePath {
+	if oldLd.Spec.DevicePath != "" && oldLd.Spec.DevicePath != newLd.Spec.DevicePath {
 		oldLd.Spec.PreDevicePath = oldLd.Spec.DevicePath
-		oldLd.Spec.DevicePath = newLd.Spec.DevicePath
 	}
-	if oldLd.Spec.NodeName != newLd.Spec.NodeName {
+	oldLd.Spec.DevicePath = newLd.Spec.DevicePath
+
+	if oldLd.Spec.NodeName != "" && oldLd.Spec.NodeName != newLd.Spec.NodeName {
 		oldLd.Spec.PreNodeName = oldLd.Spec.NodeName
-		oldLd.Spec.NodeName = newLd.Spec.NodeName
 	}
+	oldLd.Spec.NodeName = newLd.Spec.NodeName
 }
 
 func (ctr Controller) GenLocalDiskName(disk manager.DiskInfo) string {
