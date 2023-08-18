@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -117,10 +118,10 @@ func (m *manager) restoreVolumeFromSnapshot(snapshotRestore *apisv1alpha1.LocalV
 
 	var err error
 	switch snapshotRestore.Spec.RestoreType {
-	case apisv1alpha1.RestoreTypeMerge:
-		err = m.restoreVolumeByMerge(snapshotRestore)
-	case apisv1alpha1.RestoreTypeCreate:
-		err = m.restoreVolumeByCreate(snapshotRestore)
+	case apisv1alpha1.RestoreTypeRollback:
+		err = m.rollbackSnapshot(snapshotRestore)
+	case apisv1alpha1.RestoreTypeRecover:
+		err = m.recoverSnapshot(snapshotRestore)
 	default:
 		logCtx.Error("invalid restore type")
 	}
@@ -136,12 +137,56 @@ func (m *manager) restoreVolumeFromSnapshot(snapshotRestore *apisv1alpha1.LocalV
 	return m.apiClient.Status().Update(context.Background(), snapshotRestore)
 }
 
-func (m *manager) restoreVolumeByMerge(snapshotRestore *apisv1alpha1.LocalVolumeReplicaSnapshotRestore) error {
+func (m *manager) rollbackSnapshot(snapshotRestore *apisv1alpha1.LocalVolumeReplicaSnapshotRestore) (err error) {
+	logCtx := m.logger.WithFields(log.Fields{"ReplicaSnapshotRestore": snapshotRestore.Name})
 
-	return nil
+	// 1. check whether volume snapshot is already merged
+
+	volumeReplicaSnapshot := &apisv1alpha1.LocalVolumeReplicaSnapshot{}
+	if err = m.apiClient.Get(context.Background(), client.ObjectKey{Name: snapshotRestore.Spec.SourceVolumeReplicaSnapshot}, volumeReplicaSnapshot); err != nil {
+		if errors.IsNotFound(err) {
+			// snapshot is already merged
+			logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Info("volume replica snapshot is merged")
+			return nil
+		}
+		logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Error("Failed to get volume replica snapshot")
+		return err
+	}
+
+	replicaSnapshotStatus := &apisv1alpha1.LocalVolumeReplicaSnapshotStatus{}
+	if replicaSnapshotStatus, err = m.Storage().VolumeReplicaSnapshotManager().GetVolumeReplicaSnapshot(volumeReplicaSnapshot); err != nil {
+		if err == storage.ErrorSnapshotNotFound {
+			// snapshot is already merged, remove the snapshot from apiserver
+			logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Info("volume replica snapshot is merged")
+			volumeReplicaSnapshot.Spec.Delete = true
+			return m.apiClient.Update(context.Background(), volumeReplicaSnapshot)
+		}
+		logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Error("Failed to get volume replica snapshot status")
+		return err
+	}
+
+	// 2. check whether volume snapshot is already merging
+
+	if replicaSnapshotStatus.Attribute.Invalid {
+		err = fmt.Errorf("snapshot is expiration, cannot be used to rollback")
+		logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).WithError(err).Error("Failed to rollback snapshot")
+		return err
+	}
+	if replicaSnapshotStatus.Attribute.Merging {
+		err = fmt.Errorf("snapshot is merging")
+		logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Info(err.Error())
+		return err
+	}
+
+	// 3. rollback the volumes snapshot to the source volume
+
+	if err = m.Storage().VolumeReplicaSnapshotManager().RollbackVolumeReplicaSnapshot(snapshotRestore); err != nil {
+		logCtx.WithError(err).Error("Failed to start rollback snapshot")
+	}
+	return err
 }
 
-func (m *manager) restoreVolumeByCreate(snapshotRestore *apisv1alpha1.LocalVolumeReplicaSnapshotRestore) error {
+func (m *manager) recoverSnapshot(snapshotRestore *apisv1alpha1.LocalVolumeReplicaSnapshotRestore) error {
 	return nil
 }
 

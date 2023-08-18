@@ -88,6 +88,14 @@ spec:
                 description: State is the phase of restore volume snapshot, e.g. submitted,
                   started, completed, abort, ...
                 type: string
+              volumeReplicaSnapshotRestore:
+                description: VolumeReplicaSnapshotRestore is the replica snapshot
+                  to be restored
+                items:
+                  type: string
+                type: array
+            required:
+            - volumeReplicaSnapshotRestore
             type: object
         type: object
     served: true

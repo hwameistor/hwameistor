@@ -69,6 +69,10 @@ spec:
                 - merge
                 - create
                 type: string
+              sourceVolumeReplicaSnapshot:
+                description: SourceVolumeReplicaSnapshot represents which replica
+                  snapshot is used for volume to restore from
+                type: string
               sourceVolumeSnapshot:
                 description: SourceVolumeSnapshot represents which snapshot is used
                   for volume to restore from
@@ -76,11 +80,15 @@ spec:
               targetVolume:
                 description: TargetVolume is the name of the volume to restore to
                 type: string
+              volumeSnapshotRestore:
+                type: string
             required:
             - nodeName
             - restoreType
+            - sourceVolumeReplicaSnapshot
             - sourceVolumeSnapshot
             - targetVolume
+            - volumeSnapshotRestore
             type: object
           status:
             description: LocalVolumeReplicaSnapshotRestoreStatus defines the observed
@@ -93,6 +101,14 @@ spec:
                 description: State is the phase of restore volume snapshot, e.g. submitted,
                   started, completed, abort, ...
                 type: string
+              volumeReplicaSnapshotRestore:
+                description: VolumeReplicaSnapshotRestore is the replica snapshot
+                  to be restored
+                items:
+                  type: string
+                type: array
+            required:
+            - volumeReplicaSnapshotRestore
             type: object
         type: object
     served: true

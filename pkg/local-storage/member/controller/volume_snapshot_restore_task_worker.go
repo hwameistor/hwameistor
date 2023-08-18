@@ -100,16 +100,30 @@ func (m *manager) volumeSnapshotRestoreStart(snapshotRestore *apisv1alpha1.Local
 		return err
 	}
 
+	nodeVolumeReplicaSnapshot, err := m.getNodeVolumeReplicaSnapshot(snapshotRestore.Spec.SourceVolumeSnapshot)
+	if err != nil {
+		logCtx.Error("Failed to get volume replica snapshot from snapshot")
+		return err
+	}
+
 	// create LocalVolumeReplicaSnapshotRestore on each node according to the topology of source volume
 	for _, nodeName := range sourceVolume.Spec.Accessibility.Nodes {
+		nodeReplicaSnapshot, ok := nodeVolumeReplicaSnapshot[nodeName]
+		if !ok {
+			err = fmt.Errorf("LocalVolumeReplicaSnapshot not found on node %s but it is accessible in the source LocalVolume topology", nodeName)
+			logCtx.WithError(err).Error("Failed to create LocalVolumeReplicaSnapshot")
+			return err
+		}
+
 		replicaSnapshotRestore := &apisv1alpha1.LocalVolumeReplicaSnapshotRestore{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: fmt.Sprintf("%s-%s", snapshotRestore.Name, utilrand.String(6)),
 			},
 			Spec: apisv1alpha1.LocalVolumeReplicaSnapshotRestoreSpec{
 				LocalVolumeSnapshotRestoreSpec: snapshotRestore.Spec,
-				VolumeSnapshotRestore:          snapshotRestore.Name,
 				NodeName:                       nodeName,
+				SourceVolumeReplicaSnapshot:    nodeReplicaSnapshot,
+				VolumeSnapshotRestore:          snapshotRestore.Name,
 			},
 		}
 
@@ -216,4 +230,22 @@ func (m *manager) getSourceVolumeFromSnapshot(volumeSnapshotName string) (*apisv
 	}
 
 	return sourceVolume, nil
+}
+
+func (m *manager) getNodeVolumeReplicaSnapshot(volumeSnapshotName string) (map[string]string, error) {
+	volumeSnapshot := &apisv1alpha1.LocalVolumeSnapshot{}
+	if err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: volumeSnapshotName}, volumeSnapshot); err != nil {
+		return nil, err
+	}
+
+	nodeReplicaSnapshot := map[string]string{}
+	for _, replicaSnapshot := range volumeSnapshot.Status.ReplicaSnapshots {
+		volumeReplicaSnapshot := &apisv1alpha1.LocalVolumeReplicaSnapshot{}
+		if err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: replicaSnapshot}, volumeReplicaSnapshot); err != nil {
+			return nil, err
+		}
+		nodeReplicaSnapshot[volumeReplicaSnapshot.Spec.NodeName] = volumeReplicaSnapshot.Name
+	}
+
+	return nodeReplicaSnapshot, nil
 }

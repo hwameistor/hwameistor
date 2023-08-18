@@ -438,7 +438,7 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 	volumeSnapshotRestore.Spec.TargetVolume = req.GetName()
 	// protection finalizer to prevent objects to be deleted
 	volumeSnapshotRestore.SetFinalizers([]string{apisv1alpha1.SnapshotRestoringFinalizer})
-	volumeSnapshotRestore.Spec.RestoreType = apisv1alpha1.RestoreTypeCreate
+	volumeSnapshotRestore.Spec.RestoreType = apisv1alpha1.RestoreTypeRecover
 	volumeSnapshotRestore.Spec.SourceVolumeSnapshot = req.VolumeContentSource.GetSnapshot().SnapshotId
 	if err := p.apiClient.Create(ctx, &volumeSnapshotRestore); err != nil {
 		if !errors.IsAlreadyExists(err) {
