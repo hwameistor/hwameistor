@@ -33,3 +33,11 @@ func (snapMgr *localVolumeReplicaSnapshotManager) UpdateVolumeReplicaSnapshot(re
 func (snapMgr *localVolumeReplicaSnapshotManager) GetVolumeReplicaSnapshot(replicaSnapshot *v1alpha1.LocalVolumeReplicaSnapshot) (*v1alpha1.LocalVolumeReplicaSnapshotStatus, error) {
 	return snapMgr.cmdExec.GetVolumeReplicaSnapshot(replicaSnapshot)
 }
+
+func (snapMgr *localVolumeReplicaSnapshotManager) RollbackVolumeReplicaSnapshot(snapshotRestore *v1alpha1.LocalVolumeReplicaSnapshotRestore) error {
+	return snapMgr.cmdExec.RollbackVolumeReplicaSnapshot(snapshotRestore)
+}
+
+func (snapMgr *localVolumeReplicaSnapshotManager) RestoreVolumeReplicaSnapshot(snapshotRestore *v1alpha1.LocalVolumeReplicaSnapshotRestore) error {
+	return nil
+}

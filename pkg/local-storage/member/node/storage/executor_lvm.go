@@ -579,6 +579,13 @@ func (lvm *lvmExecutor) GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.L
 	return &actualSnapshotStatus, nil
 }
 
+// RollbackVolumeReplicaSnapshot rollback snapshot to the source volume
+func (lvm *lvmExecutor) RollbackVolumeReplicaSnapshot(snapshotRestore *apisv1alpha1.LocalVolumeReplicaSnapshotRestore) error {
+	// 1. lvconvert volume
+	// 2. check if
+	return nil
+}
+
 func (lvm *lvmExecutor) getExistingPVs() (map[string]struct{}, error) {
 	existingPVsMap := make(map[string]struct{})
 
@@ -972,4 +979,18 @@ func (lvm *lvmExecutor) getLVMStatus(masks int) (*lvmStatus, error) {
 	}
 
 	return status, nil
+}
+
+func (lvm *lvmExecutor) lvconvert(options ...string) error {
+	params := exechelper.ExecParams{
+		CmdName: "lvconvert",
+		CmdArgs: options,
+	}
+	res := lvm.cmdExec.RunCommand(params)
+	if res.ExitCode != 0 {
+		lvm.logger.WithError(res.Error).Error("Failed to do lvconvert")
+		return res.Error
+	}
+
+	return nil
 }
