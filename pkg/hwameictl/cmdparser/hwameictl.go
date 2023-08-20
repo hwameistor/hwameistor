@@ -3,6 +3,7 @@ package cmdparser
 import (
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/definitions"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/volume"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"time"
 )
@@ -25,4 +26,7 @@ func init() {
 
 	// Sub command
 	Hwameictl.AddCommand(volume.Volume)
+
+	// todo: add debug flag
+	log.SetLevel(log.PanicLevel)
 }

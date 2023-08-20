@@ -16,7 +16,6 @@ func BuildKubeClient(kubeconfigPath string) (client.Client, error) {
 	if !Exists(kubeconfigPath) {
 		return nil, errors.New("kubeconfig file is not exists")
 	}
-
 	loadingRules := clientcmd.NewDefaultPathOptions().LoadingRules
 	loadingRules.ExplicitPath = kubeconfigPath
 	overrides := &clientcmd.ConfigOverrides{
@@ -35,12 +34,11 @@ func BuildKubeClient(kubeconfigPath string) (client.Client, error) {
 	}
 
 	// Setup Scheme for all resources
-	if err := api.AddToScheme(options.Scheme); err != nil {
+	if err = api.AddToScheme(options.Scheme); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
-
-	if err := apisv1alpha1.AddToScheme(options.Scheme); err != nil {
+	if err = apisv1alpha1.AddToScheme(options.Scheme); err != nil {
 		log.Error(err, "Failed to setup scheme for ldm resources")
 		os.Exit(1)
 	}

@@ -2,15 +2,12 @@ package kubernetes
 
 import (
 	"fmt"
-
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	log "github.com/sirupsen/logrus"
 )
 
 var mgr manager.Manager
@@ -50,8 +47,9 @@ func NewRecorderFor(name string) (record.EventRecorder, error) {
 
 func init() {
 	cfg, err := config.GetConfig()
+	// 暂时修改
 	if err != nil {
-		log.WithError(err).Error("Failed to init manager")
+		//log.WithError(err).Error("Failed to init manager")
 		return
 	}
 
@@ -59,7 +57,7 @@ func init() {
 		MetricsBindAddress: "0",
 	})
 	if err != nil {
-		log.WithError(err).Error("Failed to init manager")
+		//log.WithError(err).Error("Failed to init manager")
 		return
 	}
 }
