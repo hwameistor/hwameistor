@@ -71,7 +71,7 @@ func (m *manager) processVolumeReplicaSnapshotRecover(recoverName string) error 
 		return m.recoverVolumeFromSnapshot(snapshotRecover)
 	case apisv1alpha1.OperationStateToBeAborted:
 		return m.volumeReplicaSnapshotRecoverAbort(snapshotRecover)
-	case apisv1alpha1.OperationStateCompleted, apisv1alpha1.OperationStateAborted:
+	case apisv1alpha1.OperationStateAborted:
 		return m.volumeReplicaSnapshotRecoverCleanup(snapshotRecover)
 	default:
 		logCtx.Error("Invalid state/phase")
@@ -186,8 +186,42 @@ func (m *manager) rollbackSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeRepl
 	return err
 }
 
-func (m *manager) restoreSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error {
-	return nil
+func (m *manager) restoreSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) (err error) {
+	logCtx := m.logger.WithFields(log.Fields{"ReplicaSnapshotRecover": snapshotRecover.Name})
+
+	// 1. check whether volume snapshot is already merged
+
+	volumeReplicaSnapshot := &apisv1alpha1.LocalVolumeReplicaSnapshot{}
+	if err = m.apiClient.Get(context.Background(), client.ObjectKey{Name: snapshotRecover.Spec.SourceVolumeReplicaSnapshot}, volumeReplicaSnapshot); err != nil {
+		if errors.IsNotFound(err) {
+			// snapshot is already merged
+			logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Info("volume replica snapshot is restored")
+			return nil
+		}
+		logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Error("Failed to get volume replica snapshot")
+		return err
+	}
+
+	if _, err = m.Storage().VolumeReplicaSnapshotManager().GetVolumeReplicaSnapshot(volumeReplicaSnapshot); err != nil {
+		if err == storage.ErrorSnapshotNotFound {
+			// snapshot is already merged, remove the snapshot from apiserver
+			logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Info("volume replica snapshot is restored")
+			volumeReplicaSnapshot.Spec.Delete = true
+			return m.apiClient.Update(context.Background(), volumeReplicaSnapshot)
+		}
+		logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Error("Failed to get volume replica snapshot status")
+		return err
+	}
+
+	// 2. check whether volume snapshot is already restoring
+	// todo: check if snapshot is already being restored
+
+	// 3. rollback the volumes snapshot to the source volume
+
+	if err = m.Storage().VolumeReplicaSnapshotManager().RestoreVolumeReplicaSnapshot(snapshotRecover); err != nil {
+		logCtx.WithError(err).Error("Failed to start restore snapshot")
+	}
+	return err
 }
 
 func (m *manager) volumeReplicaSnapshotRecoverAbort(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error {
@@ -201,34 +235,6 @@ func (m *manager) volumeReplicaSnapshotRecoverAbort(snapshotRecover *apisv1alpha
 func (m *manager) volumeReplicaSnapshotRecoverCleanup(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error {
 	logCtx := m.logger.WithFields(log.Fields{"SnapshotRecover": snapshotRecover.Name, "Spec": snapshotRecover.Spec})
 	logCtx.Debug("Cleanup a VolumeReplicaSnapshotRecover")
-
-	cleanedCount := 0
-	for _, replicaSnapshotRecoverName := range snapshotRecover.Status.VolumeReplicaSnapshotRecover {
-		replicaSnapshotRecover := &apisv1alpha1.LocalVolumeReplicaSnapshot{}
-		if err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: replicaSnapshotRecoverName}, replicaSnapshotRecover); err != nil {
-			if errors.IsNotFound(err) {
-				cleanedCount++
-				logCtx.WithField("ReplicaSnapshotRecover", replicaSnapshotRecoverName).WithError(err).Error("Cleanup VolumeReplicaSnapshotRecover successfully")
-				continue
-			}
-			logCtx.WithField("ReplicaSnapshotRecover", replicaSnapshotRecoverName).WithError(err).Error("Failed to get VolumeReplicaSnapshotRecover")
-			return err
-		}
-
-		if !replicaSnapshotRecover.Spec.Delete {
-			replicaSnapshotRecover.Spec.Delete = true
-			if err := m.apiClient.Update(context.Background(), replicaSnapshotRecover); err != nil {
-				logCtx.WithField("ReplicaSnapshotRecover", replicaSnapshotRecoverName).Error("Failed to cleanup VolumeReplicaSnapshotRecover")
-				return err
-			}
-			logCtx.WithField("ReplicaSnapshotRecover", replicaSnapshotRecoverName).Error("Cleaning VolumeReplicaSnapshotRecover")
-		}
-	}
-
-	if cleanedCount < len(snapshotRecover.Status.VolumeReplicaSnapshotRecover) {
-		logCtx.Debugf("Remaining %d VolumeReplicaSnapshotRecover to clean", len(snapshotRecover.Status.VolumeReplicaSnapshotRecover)-cleanedCount)
-		return nil
-	}
 
 	return m.apiClient.Delete(context.TODO(), snapshotRecover)
 }

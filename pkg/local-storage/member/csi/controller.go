@@ -436,6 +436,7 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 	volumeSnapshotRecover := apisv1alpha1.LocalVolumeSnapshotRecover{}
 	volumeSnapshotRecover.Name = snapshotRecoverName
 	volumeSnapshotRecover.Spec.TargetVolume = req.GetName()
+	volumeSnapshotRecover.Spec.TargetPoolName = volume.Spec.PoolName
 	// protection finalizer to prevent objects to be deleted
 	volumeSnapshotRecover.SetFinalizers([]string{apisv1alpha1.SnapshotRecoveringFinalizer})
 	volumeSnapshotRecover.Spec.RecoverType = apisv1alpha1.RecoverTypeRestore

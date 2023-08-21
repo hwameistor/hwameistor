@@ -17,6 +17,10 @@ type LocalVolumeSnapshotRecoverSpec struct {
 	// +kubebuilder:validation:Required
 	TargetVolume string `json:"targetVolume"`
 
+	// TargetVolume is the name of the target volume will place at
+	// +kubebuilder:validation:Required
+	TargetPoolName string `json:"targetPoolName"`
+
 	// SourceVolumeSnapshot represents which snapshot is used for volume to recover from
 	// +kubebuilder:validation:Required
 	SourceVolumeSnapshot string `json:"sourceVolumeSnapshot"`

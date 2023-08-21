@@ -52,6 +52,11 @@ type LocalVolumeReplicaSnapshotManager interface {
 	UpdateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error)
 	GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error)
 
+	LocalVolumeReplicaSnapshotRecoverManager
+}
+
+//go:generate mockgen -source=types.go -destination=../../../member/node/storage/replica_mock.go  -package=storage
+type LocalVolumeReplicaSnapshotRecoverManager interface {
 	RollbackVolumeReplicaSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error
 	RestoreVolumeReplicaSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error
 }
@@ -94,7 +99,7 @@ type LocalVolumeReplicaSnapshotExecutor interface {
 	UpdateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error)
 	GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error)
 
-	RollbackVolumeReplicaSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error
+	LocalVolumeReplicaSnapshotRecoverManager
 }
 
 // LocalPoolExecutor interface

@@ -25,7 +25,11 @@ type LocalVolumeReplicaSnapshotRecoverSpec struct {
 
 // LocalVolumeReplicaSnapshotRecoverStatus defines the observed state of LocalVolumeReplicaSnapshotRecover
 type LocalVolumeReplicaSnapshotRecoverStatus struct {
-	LocalVolumeSnapshotRecoverStatus `json:",inline"`
+	// State is the phase of recover volume snapshot, e.g. submitted, started, completed, abort, ...
+	State State `json:"state,omitempty"`
+
+	// Message error message to describe some states
+	Message string `json:"message,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

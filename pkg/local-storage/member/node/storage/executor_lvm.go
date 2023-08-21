@@ -1,12 +1,14 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"path"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
 
@@ -580,7 +582,36 @@ func (lvm *lvmExecutor) GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.L
 }
 
 // RollbackVolumeReplicaSnapshot rollback snapshot to the source volume
-func (lvm *lvmExecutor) RollbackVolumeReplicaSnapshot(snapshotRestore *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error {
+func (lvm *lvmExecutor) RollbackVolumeReplicaSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error {
+	logCtx := lvm.logger.WithFields(log.Fields{
+		"sourceVolume":                snapshotRecover.Spec.SourceVolumeSnapshot,
+		"volumeSnapshot":              snapshotRecover.Spec.VolumeSnapshotRecover,
+		"targetVolume":                snapshotRecover.Spec.TargetVolume,
+		"sourceVolumeReplicaSnapshot": snapshotRecover.Spec.SourceVolumeReplicaSnapshot,
+	})
+	logCtx.Debug("Rolling back a volume replica snapshot")
+
+	replicaSnapshot := &apisv1alpha1.LocalVolumeReplicaSnapshot{}
+	if err := lvm.lm.apiClient.Get(context.Background(), client.ObjectKey{Name: snapshotRecover.Spec.SourceVolumeReplicaSnapshot}, replicaSnapshot); err != nil {
+		logCtx.WithError(err).Error("Failed to get VolumeReplicaSnapshot")
+		return err
+	}
+
+	var options = []string{"--merge", fmt.Sprintf("%s/%s", replicaSnapshot.Spec.PoolName, replicaSnapshot.Spec.VolumeSnapshotName)}
+
+	// lvconvert --merge LocalStorage_PoolHDD/snapshot-name
+	if err := lvm.lvconvert(options...); err != nil {
+		logCtx.WithError(err).Error("Failed to convert snapshot to source volume")
+		return err
+	}
+
+	logCtx.Error("Successfully to convert snapshot to source volume")
+	return nil
+}
+
+// RestoreVolumeReplicaSnapshot restore snapshot to a new volume
+func (lvm *lvmExecutor) RestoreVolumeReplicaSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error {
+	panic("have not implemented restore")
 	return nil
 }
 
