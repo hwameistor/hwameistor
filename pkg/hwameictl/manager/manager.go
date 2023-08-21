@@ -1,10 +1,10 @@
 package manager
 
 import (
-	"github.com/hwameistor/hwameistor/pkg/apiserver/manager/hwameistor"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/hwameistor/hwameistor/pkg/apiserver/manager/hwameistor"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/definitions"
 )
 

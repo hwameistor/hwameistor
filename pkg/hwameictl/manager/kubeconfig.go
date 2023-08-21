@@ -2,14 +2,16 @@ package manager
 
 import (
 	"errors"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
-	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/definitions"
+	"os"
+
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
+	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/definitions"
 )
 
 func BuildKubeClient(kubeconfigPath string) (client.Client, error) {

@@ -2,23 +2,25 @@ package volume
 
 import (
 	"fmt"
+
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/spf13/cobra"
+
 	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/formatter"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/manager"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/utils"
-	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/spf13/cobra"
 )
 
 // Read from volume get flags
 var node, group string
 
 var volumeGet = &cobra.Command{
-	Use:   "get",
-	Short: "Get information about volumes.",
-	Long: "You can use \"hwameictl volume get\" to obtain information about all volumes.\n" +
-		"Additionally, you can use the \"--node\" or \"--group\" options to filter the results.\n" +
-		"Furthermore, you can use \"hwameictl volume get {volumeName}\" to acquire detailed \n" +
+	Use:   "get {?volumeName}",
+	Short: "Get the volumes.",
+	Long: "You can use 'hwameictl volume get' to obtain information about all volumes.\n" +
+		"Additionally, you can use the '--node' or '--group' options to filter the results.\n" +
+		"Furthermore, you can use 'hwameictl volume get {volumeName}' to acquire detailed \n" +
 		"information about a specific volume.",
 	RunE: volumeGetRunE,
 }
@@ -62,6 +64,19 @@ func volumeGetOne(volumeName string) error {
 		return fmt.Errorf("volume %s is not exists", volumeName)
 	}
 	// Volume infos
+	formatter.PrintParameters("Volume parameters", map[string]interface{}{
+		"Status":        lv.Status.State,
+		"Replicas":      len(lv.Status.Replicas),
+		"Used":          utils.FormateBytesToSize(lv.Status.UsedCapacityBytes),
+		"Capacity":      utils.FormateBytesToSize(lv.Spec.RequiredCapacityBytes),
+		"Convertible":   lv.Spec.Convertible,
+		"PVC":           lv.Spec.PersistentVolumeClaimName,
+		"PublishedNode": lv.Status.PublishedNodeName,
+		"Pool":          lv.Spec.PoolName,
+		"Group":         lv.Spec.VolumeGroup,
+		"FSType":        lv.Status.PublishedFSType,
+		"CreateTime":    utils.FormatTime(lv.CreationTimestamp.Time),
+	})
 
 	// Replicas info
 	replicas, err := controller.GetVolumeReplicas(queryPage)
@@ -72,11 +87,11 @@ func volumeGetOne(volumeName string) error {
 	replicaHeader := table.Row{"#", "Name", "Status", "SyncState", "Node", "Capacity"}
 	replicaRows := make([]table.Row, len(replicas.VolumeReplicas))
 	for i, replica := range replicas.VolumeReplicas {
-		replicaRows[i] = table.Row{i, replica.Name, replica.Status.State, replica.Status.Synced,
-			replica.Spec.NodeName, replica.Spec.RequiredCapacityBytes}
+		replicaRows[i] = table.Row{i + 1, replica.Name, replica.Status.State, replica.Status.Synced,
+			replica.Spec.NodeName, utils.FormateBytesToSize(replica.Spec.RequiredCapacityBytes)}
 	}
 
-	formatter.PrintTable("Volume Replicas", replicaHeader, replicaRows)
+	formatter.PrintTable("Volume replicas", replicaHeader, replicaRows)
 
 	// Operations info
 	operations, err := controller.GetVolumeOperation(queryPage)
@@ -108,7 +123,7 @@ func volumeGetOne(volumeName string) error {
 		})
 	}
 
-	formatter.PrintTable("Volume Operations", operationHeader, operationRows)
+	formatter.PrintTable("Volume operations", operationHeader, operationRows)
 
 	return nil
 }
@@ -132,7 +147,7 @@ func volumeGetAll(nodeName, groupName string) error {
 	// Collect rows data
 	for i, volume := range lvs.Volumes {
 		rows[i] = table.Row{i, volume.Name, volume.Status.State, len(volume.Status.Replicas), volume.Spec.VolumeGroup,
-			volume.Spec.RequiredCapacityBytes, volume.Spec.Config.Convertible,
+			utils.FormateBytesToSize(volume.Spec.RequiredCapacityBytes), volume.Spec.Config.Convertible,
 			volume.Spec.PersistentVolumeClaimName, utils.FormatTime(volume.CreationTimestamp.Time),
 			volume.Status.PublishedNodeName,
 		}

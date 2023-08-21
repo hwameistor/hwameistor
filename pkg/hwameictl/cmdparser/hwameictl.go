@@ -1,11 +1,13 @@
 package cmdparser
 
 import (
-	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/definitions"
-	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/volume"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"time"
+
+	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/definitions"
+	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/volume"
 )
 
 var Hwameictl = &cobra.Command{
