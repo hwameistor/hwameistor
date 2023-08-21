@@ -580,7 +580,7 @@ func (lvm *lvmExecutor) GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.L
 }
 
 // RollbackVolumeReplicaSnapshot rollback snapshot to the source volume
-func (lvm *lvmExecutor) RollbackVolumeReplicaSnapshot(snapshotRestore *apisv1alpha1.LocalVolumeReplicaSnapshotRestore) error {
+func (lvm *lvmExecutor) RollbackVolumeReplicaSnapshot(snapshotRestore *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error {
 	return nil
 }
 

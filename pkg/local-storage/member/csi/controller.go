@@ -206,7 +206,7 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 	p.logger.WithFields(log.Fields{"pvc": params.pvcName, "namespace": params.pvcNamespace}).Debug("Not found the associated LocalVolumeGroup or LocalVolumes")
 
 	var selectedNodes []string
-	// for snapshot restore, volume topology must keep same with source volume
+	// for snapshot recover, volume topology must keep same with source volume
 	if len(params.snapshot) > 0 {
 		sourceVolume, err := getSourceVolumeFromSnapshot(params.snapshot, p.apiClient)
 		if err != nil {
@@ -423,55 +423,55 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 		if volume.Status.State != apisv1alpha1.VolumeStateReady {
 			return false, status.Errorf(codes.Internal, "LocalVolume %s is NotReady", volume.Name)
 		}
-		// Volume is ready and prepare to restore snapshot, return immediately
+		// Volume is ready and prepare to recover snapshot, return immediately
 		return true, nil
 	}, ctx.Done()); err != nil {
 		logCtx.WithError(err).Error("LocalVolume %s is not ready", req.Name)
 		return resp, err
 	}
 
-	// 3. create LocalVolumeSnapshotRestore instance
-	snapshotRestoreName := utils.GetSnapshotRestoreNameByVolume(req.Name)
-	logCtx.Debug("Step3: Start creating LocalVolumeSnapshotRestore %s", snapshotRestoreName)
-	volumeSnapshotRestore := apisv1alpha1.LocalVolumeSnapshotRestore{}
-	volumeSnapshotRestore.Name = snapshotRestoreName
-	volumeSnapshotRestore.Spec.TargetVolume = req.GetName()
+	// 3. create LocalVolumeSnapshotRecover instance
+	snapshotRecoverName := utils.GetSnapshotRecoverNameByVolume(req.Name)
+	logCtx.Debug("Step3: Start creating LocalVolumeSnapshotRecover %s", snapshotRecoverName)
+	volumeSnapshotRecover := apisv1alpha1.LocalVolumeSnapshotRecover{}
+	volumeSnapshotRecover.Name = snapshotRecoverName
+	volumeSnapshotRecover.Spec.TargetVolume = req.GetName()
 	// protection finalizer to prevent objects to be deleted
-	volumeSnapshotRestore.SetFinalizers([]string{apisv1alpha1.SnapshotRestoringFinalizer})
-	volumeSnapshotRestore.Spec.RestoreType = apisv1alpha1.RestoreTypeRecover
-	volumeSnapshotRestore.Spec.SourceVolumeSnapshot = req.VolumeContentSource.GetSnapshot().SnapshotId
-	if err := p.apiClient.Create(ctx, &volumeSnapshotRestore); err != nil {
+	volumeSnapshotRecover.SetFinalizers([]string{apisv1alpha1.SnapshotRecoveringFinalizer})
+	volumeSnapshotRecover.Spec.RecoverType = apisv1alpha1.RecoverTypeRestore
+	volumeSnapshotRecover.Spec.SourceVolumeSnapshot = req.VolumeContentSource.GetSnapshot().SnapshotId
+	if err := p.apiClient.Create(ctx, &volumeSnapshotRecover); err != nil {
 		if !errors.IsAlreadyExists(err) {
-			logCtx.WithError(err).Errorf("failed to create LocalVolumeSnapshotRestore %s", snapshotRestoreName)
-			return resp, status.Errorf(codes.Internal, "failed to create LocalVolumeSnapshotRestore: %v", err)
+			logCtx.WithError(err).Errorf("failed to create LocalVolumeSnapshotRecover %s", snapshotRecoverName)
+			return resp, status.Errorf(codes.Internal, "failed to create LocalVolumeSnapshotRecover: %v", err)
 		}
 	}
 
-	// 4. wait for LocalVolumeSnapshotRestore completed
+	// 4. wait for LocalVolumeSnapshotRecover completed
 	//
-	// The LocalVolumeSnapshotRestore is an operation on the VolumeSnapshot, so it will be deleted when the operation is completed.
+	// The LocalVolumeSnapshotRecover is an operation on the VolumeSnapshot, so it will be deleted when the operation is completed.
 	// Thus, we need to hung up the delete operation before we confirm that the operation is completed.
-	logCtx.Debugf("Step4: Checking if LocalVolumeSnapshotRestore %s ready to use", snapshotRestoreName)
+	logCtx.Debugf("Step4: Checking if LocalVolumeSnapshotRecover %s ready to use", snapshotRecoverName)
 	if err := wait.PollUntil(RetryInterval, func() (done bool, err error) {
-		if err = p.apiClient.Get(ctx, client.ObjectKey{Name: snapshotRestoreName}, &volumeSnapshotRestore); err != nil {
-			p.logger.WithError(err).Errorf("failed to get volumeSnapshotRestore %v", err)
+		if err = p.apiClient.Get(ctx, client.ObjectKey{Name: snapshotRecoverName}, &volumeSnapshotRecover); err != nil {
+			p.logger.WithError(err).Errorf("failed to get volumeSnapshotRecover %v", err)
 			return false, err
 		}
-		if volumeSnapshotRestore.Status.State != apisv1alpha1.OperationStateCompleted {
-			return false, status.Errorf(codes.Internal, "LocalVolumeSnapshotRestore %s is NotReady", volumeSnapshotRestore.Name)
+		if volumeSnapshotRecover.Status.State != apisv1alpha1.OperationStateCompleted {
+			return false, status.Errorf(codes.Internal, "LocalVolumeSnapshotRecover %s is NotReady", volumeSnapshotRecover.Name)
 		}
-		// LocalVolumeSnapshotRestore is ready, remove the protection finalizer from the object
-		volumeSnapshotRestore.SetFinalizers(utils.RemoveStringItem(volumeSnapshotRestore.Finalizers, apisv1alpha1.SnapshotRestoringFinalizer))
-		return true, p.apiClient.Update(ctx, &volumeSnapshotRestore)
+		// LocalVolumeSnapshotRecover is ready, remove the protection finalizer from the object
+		volumeSnapshotRecover.SetFinalizers(utils.RemoveStringItem(volumeSnapshotRecover.Finalizers, apisv1alpha1.SnapshotRecoveringFinalizer))
+		return true, p.apiClient.Update(ctx, &volumeSnapshotRecover)
 	}, ctx.Done()); err != nil {
-		logCtx.WithError(err).Errorf("LocalVolumeSnapshotRestore %s is not completed", snapshotRestoreName)
+		logCtx.WithError(err).Errorf("LocalVolumeSnapshotRecover %s is not completed", snapshotRecoverName)
 		return resp, err
 	}
 
 	resp.Volume.VolumeId = volume.Name
 	resp.Volume.CapacityBytes = volume.Status.AllocatedCapacityBytes
 	resp.Volume.VolumeContext = req.Parameters
-	resp.Volume.VolumeContext[apisv1alpha1.SourceVolumeSnapshotAnnoKey] = volumeSnapshotRestore.Spec.SourceVolumeSnapshot
+	resp.Volume.VolumeContext[apisv1alpha1.SourceVolumeSnapshotAnnoKey] = volumeSnapshotRecover.Spec.SourceVolumeSnapshot
 	return resp, nil
 }
 
@@ -592,9 +592,9 @@ func (p *plugin) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 		return resp, nil
 	}
 
-	// abort snapshot restore operation if needed
-	if err := p.abortVolumeSnapshotRestoreIfNeeded(vol); err != nil {
-		p.logger.WithError(err).WithField("volName", req.VolumeId).Error("Failed to abort volume restore operation")
+	// abort snapshot recover operation if needed
+	if err := p.abortVolumeSnapshotRecoverIfNeeded(vol); err != nil {
+		p.logger.WithError(err).WithField("volName", req.VolumeId).Error("Failed to abort volume recover operation")
 		return nil, err
 	}
 
@@ -612,49 +612,49 @@ func (p *plugin) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 	return resp, fmt.Errorf("volume in deleting")
 }
 
-func (p *plugin) abortVolumeSnapshotRestoreIfNeeded(volume *apisv1alpha1.LocalVolume) error {
-	need, err := p.needAbortVolumeSnapshotRestore(volume)
+func (p *plugin) abortVolumeSnapshotRecoverIfNeeded(volume *apisv1alpha1.LocalVolume) error {
+	need, err := p.needAbortVolumeSnapshotRecover(volume)
 	if err != nil {
-		p.logger.WithError(err).WithFields(log.Fields{"volName": volume.Name}).Error("Failed to get snapshotRestore")
+		p.logger.WithError(err).WithFields(log.Fields{"volName": volume.Name}).Error("Failed to get snapshotRecover")
 		return err
 	} else if !need {
 		return nil
 	}
 
-	if err = p.abortVolumeSnapshotRestore(volume); err != nil {
-		p.logger.WithError(err).WithFields(log.Fields{"volName": volume.Name}).Error("Failed to abort snapshotRestore")
+	if err = p.abortVolumeSnapshotRecover(volume); err != nil {
+		p.logger.WithError(err).WithFields(log.Fields{"volName": volume.Name}).Error("Failed to abort snapshotRecover")
 	}
 	return err
 }
 
-func (p *plugin) abortVolumeSnapshotRestore(volume *apisv1alpha1.LocalVolume) error {
-	snapRestoreName := utils.GetSnapshotRestoreNameByVolume(volume.Name)
-	snapRestore := apisv1alpha1.LocalVolumeSnapshotRestore{}
-	if err := p.apiClient.Get(context.Background(), client.ObjectKey{Name: snapRestoreName}, &snapRestore); err != nil {
+func (p *plugin) abortVolumeSnapshotRecover(volume *apisv1alpha1.LocalVolume) error {
+	snapRecoverName := utils.GetSnapshotRecoverNameByVolume(volume.Name)
+	snapRecover := apisv1alpha1.LocalVolumeSnapshotRecover{}
+	if err := p.apiClient.Get(context.Background(), client.ObjectKey{Name: snapRecoverName}, &snapRecover); err != nil {
 		if errors.IsNotFound(err) {
 			return nil
 		}
-		p.logger.WithError(err).WithFields(log.Fields{"snapRestore": snapRestoreName, "volume": volume.Name}).Error("Failed to get SnapshotRestore")
+		p.logger.WithError(err).WithFields(log.Fields{"snapRecover": snapRecoverName, "volume": volume.Name}).Error("Failed to get snapshotRecover")
 		return err
 	}
 
-	snapRestore.Spec.Abort = true
-	snapRestore.Finalizers = utils.RemoveStringItem(snapRestore.GetFinalizers(), apisv1alpha1.SnapshotRestoringFinalizer)
-	return p.apiClient.Update(context.Background(), &snapRestore)
+	snapRecover.Spec.Abort = true
+	snapRecover.Finalizers = utils.RemoveStringItem(snapRecover.GetFinalizers(), apisv1alpha1.SnapshotRecoveringFinalizer)
+	return p.apiClient.Update(context.Background(), &snapRecover)
 }
 
-func (p *plugin) needAbortVolumeSnapshotRestore(volume *apisv1alpha1.LocalVolume) (bool, error) {
-	snapRestoreName := utils.GetSnapshotRestoreNameByVolume(volume.Name)
-	snapRestore := apisv1alpha1.LocalVolumeSnapshotRestore{}
-	if err := p.apiClient.Get(context.Background(), client.ObjectKey{Name: snapRestoreName}, &snapRestore); err != nil {
+func (p *plugin) needAbortVolumeSnapshotRecover(volume *apisv1alpha1.LocalVolume) (bool, error) {
+	snapRecoverName := utils.GetSnapshotRecoverNameByVolume(volume.Name)
+	snapRecover := apisv1alpha1.LocalVolumeSnapshotRecover{}
+	if err := p.apiClient.Get(context.Background(), client.ObjectKey{Name: snapRecoverName}, &snapRecover); err != nil {
 		if errors.IsNotFound(err) {
 			return false, nil
 		}
-		p.logger.WithError(err).WithFields(log.Fields{"snapRestore": snapRestoreName, "volume": volume.Name}).Error("Failed to get SnapshotRestore")
+		p.logger.WithError(err).WithFields(log.Fields{"snapRecover": snapRecoverName, "volume": volume.Name}).Error("Failed to get snapshotRecover")
 		return true, err
 	}
 
-	return snapRestore.Spec.Abort == false || isStringInArray(apisv1alpha1.SnapshotRestoringFinalizer, snapRestore.GetFinalizers()), nil
+	return snapRecover.Spec.Abort == false || isStringInArray(apisv1alpha1.SnapshotRecoveringFinalizer, snapRecover.GetFinalizers()), nil
 }
 
 // ControllerPublishVolume implementation, idempotent

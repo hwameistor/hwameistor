@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	SnapshotRestoringFinalizer = "provisioner.hwameistor.io/restoring-protection"
+	SnapshotRecoveringFinalizer = "provisioner.hwameistor.io/recovering-protection"
 )
 
 // VolumeSnapshotSpec describes the common attributes of a volume snapshot.
