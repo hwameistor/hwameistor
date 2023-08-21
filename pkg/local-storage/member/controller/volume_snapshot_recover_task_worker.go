@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,7 +21,7 @@ func (m *manager) startVolumeSnapshotRecoverTaskWorker(stopCh <-chan struct{}) {
 				m.logger.WithFields(log.Fields{"task": task}).Debug("Stop the Volume Snapshot Recover worker")
 				break
 			}
-			if err := m.processVolumeSnapshot(task); err != nil {
+			if err := m.processVolumeSnapshotRecover(task); err != nil {
 				m.logger.WithFields(log.Fields{"task": task, "attempts": m.volumeSnapshotRecoverTaskQueue.NumRequeues(task), "error": err.Error()}).Error("Failed to process Volume Snapshot Recover task, retry later")
 				m.volumeSnapshotRecoverTaskQueue.AddRateLimited(task)
 			} else {
@@ -91,6 +90,9 @@ func (m *manager) volumeSnapshotRecoverSubmit(snapshotRecover *apisv1alpha1.Loca
 }
 
 func (m *manager) volumeSnapshotRecoverStart(snapshotRecover *apisv1alpha1.LocalVolumeSnapshotRecover) error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
 	logCtx := m.logger.WithFields(log.Fields{"SnapshotRecover": snapshotRecover.Name, "Spec": snapshotRecover.Spec})
 	logCtx.Debug("Start a VolumeSnapshotRecover")
 
@@ -107,7 +109,18 @@ func (m *manager) volumeSnapshotRecoverStart(snapshotRecover *apisv1alpha1.Local
 	}
 
 	// create LocalVolumeReplicaSnapshotRecover on each node according to the topology of source volume
+	var allVolumeReplicaSnapshotRecovers []string
 	for _, nodeName := range sourceVolume.Spec.Accessibility.Nodes {
+		// check if replica snapshot recover has already created on this node
+		if exist, nodeSnapRecover, err := m.isReplicaSnapshotRecoverExistOnNode(nodeName, snapshotRecover.Name); err != nil {
+			logCtx.WithError(err).Errorf("Failed to judge if LocalVolumeReplicaSnapshot exist on node %s", nodeName)
+			return err
+		} else if exist {
+			allVolumeReplicaSnapshotRecovers = append(allVolumeReplicaSnapshotRecovers, nodeSnapRecover.Name)
+			logCtx.WithField("replicaSnapshotRecover", nodeSnapRecover.Name).Infof("VolumeReplicaSnapshotRecover is already exist on %s", nodeName)
+			continue
+		}
+
 		nodeReplicaSnapshot, ok := nodeVolumeReplicaSnapshot[nodeName]
 		if !ok {
 			err = fmt.Errorf("LocalVolumeReplicaSnapshot not found on node %s but it is accessible in the source LocalVolume topology", nodeName)
@@ -132,10 +145,13 @@ func (m *manager) volumeSnapshotRecoverStart(snapshotRecover *apisv1alpha1.Local
 			return err
 		}
 
-		snapshotRecover.Status.VolumeReplicaSnapshotRecover = utils.AddUniqueStringItem(snapshotRecover.Status.VolumeReplicaSnapshotRecover, replicaSnapshotRecover.Name)
+		m.replicaSnapRecoverRecords[snapshotRecover.Name][nodeName] = replicaSnapshotRecover
+		allVolumeReplicaSnapshotRecovers = append(allVolumeReplicaSnapshotRecovers, replicaSnapshotRecover.Name)
+
 		logCtx.WithField("replicaSnapshotRecover", replicaSnapshotRecover.Name).WithError(err).Errorf("VolumeReplicaSnapshotRecover is created successfully on %s", nodeName)
 	}
 
+	snapshotRecover.Status.VolumeReplicaSnapshotRecover = allVolumeReplicaSnapshotRecovers
 	snapshotRecover.Status.State = apisv1alpha1.OperationStateInProgress
 	return m.apiClient.Status().Update(context.Background(), snapshotRecover)
 }
@@ -150,7 +166,7 @@ func (m *manager) checkInProgressVolumeSnapshotRecover(snapshotRecover *apisv1al
 	)
 
 	for _, replicaSnapshotRecoverName := range snapshotRecover.Status.VolumeReplicaSnapshotRecover {
-		replicaSnapshotRecover := &apisv1alpha1.LocalVolumeReplicaSnapshot{}
+		replicaSnapshotRecover := &apisv1alpha1.LocalVolumeReplicaSnapshotRecover{}
 		if err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: replicaSnapshotRecoverName}, replicaSnapshotRecover); err != nil {
 			logCtx.WithField("ReplicaSnapshotRecover", replicaSnapshotRecoverName).WithError(err).Error("Failed to get VolumeReplicaSnapshotRecover")
 			return err
@@ -211,8 +227,9 @@ func (m *manager) volumeSnapshotRecoverCleanup(snapshotRecover *apisv1alpha1.Loc
 	}
 
 	if cleanedCount < len(snapshotRecover.Status.VolumeReplicaSnapshotRecover) {
-		logCtx.Debugf("Remaining %d VolumeReplicaSnapshotRecover to clean", len(snapshotRecover.Status.VolumeReplicaSnapshotRecover)-cleanedCount)
-		return nil
+		err := fmt.Errorf("remaining %d VolumeReplicaSnapshotRecover to clean", len(snapshotRecover.Status.VolumeReplicaSnapshotRecover)-cleanedCount)
+		logCtx.WithError(err).Info("VolumeSnapshotRecover is deleting")
+		return err
 	}
 
 	return m.apiClient.Delete(context.TODO(), snapshotRecover)
@@ -225,7 +242,7 @@ func (m *manager) getSourceVolumeFromSnapshot(volumeSnapshotName string) (*apisv
 	}
 
 	sourceVolume := &apisv1alpha1.LocalVolume{}
-	if err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: volumeSnapshot.Spec.SourceVolume}, volumeSnapshot); err != nil {
+	if err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: volumeSnapshot.Spec.SourceVolume}, sourceVolume); err != nil {
 		return nil, err
 	}
 
@@ -248,4 +265,31 @@ func (m *manager) getNodeVolumeReplicaSnapshot(volumeSnapshotName string) (map[s
 	}
 
 	return nodeReplicaSnapshot, nil
+}
+
+func (m *manager) isReplicaSnapshotRecoverExistOnNode(nodeName, volumeSnapshotRecoverName string) (bool, *apisv1alpha1.LocalVolumeReplicaSnapshotRecover, error) {
+	replicaSnapshotRecover := &apisv1alpha1.LocalVolumeReplicaSnapshotRecoverList{}
+	if err := m.apiClient.List(context.Background(), replicaSnapshotRecover); err != nil {
+		m.logger.WithError(err).Errorf("failed to list replica snapshots on node %s", nodeName)
+		return false, nil, err
+	}
+
+	// 1. check apiserver
+	for _, replicaRecover := range replicaSnapshotRecover.Items {
+		if replicaRecover.Spec.NodeName == nodeName {
+			return true, replicaRecover.DeepCopy(), nil
+		}
+	}
+
+	// 2. check local cache
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+
+	if records, ok := m.replicaSnapRecoverRecords[volumeSnapshotRecoverName]; ok {
+		if volumeReplicaSnapshotRecover, ok := records[nodeName]; ok {
+			return true, volumeReplicaSnapshotRecover, nil
+		}
+	}
+
+	return false, nil, nil
 }

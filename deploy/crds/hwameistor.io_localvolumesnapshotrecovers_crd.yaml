@@ -58,16 +58,20 @@ spec:
                   clean up sub resources created by the recover operation automatically
                 type: boolean
               recoverType:
-                default: create
+                default: restore
                 description: RecoverType is the type about how to recover the volume,
                   e.g. create, merge. By default create.
                 enum:
-                - merge
-                - create
+                - rollback
+                - restore
                 type: string
               sourceVolumeSnapshot:
                 description: SourceVolumeSnapshot represents which snapshot is used
                   for volume to recover from
+                type: string
+              targetPoolName:
+                description: TargetVolume is the name of the target volume will place
+                  at
                 type: string
               targetVolume:
                 description: TargetVolume is the name of the volume to recover to
@@ -75,6 +79,7 @@ spec:
             required:
             - recoverType
             - sourceVolumeSnapshot
+            - targetPoolName
             - targetVolume
             type: object
           status:
@@ -94,8 +99,6 @@ spec:
                 items:
                   type: string
                 type: array
-            required:
-            - volumeReplicaSnapshotRecover
             type: object
         type: object
     served: true

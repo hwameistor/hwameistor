@@ -65,9 +65,11 @@ type manager struct {
 
 	localNodes map[string]apisv1alpha1.State // nodeName -> status
 
+	replicaSnapRecoverRecords map[string]map[string]*apisv1alpha1.LocalVolumeReplicaSnapshotRecover // volume snapshot recover -> nodeName
+
 	logger *log.Entry
 
-	lock sync.Mutex
+	lock sync.RWMutex
 
 	dataCopyManager *datacopyutil.DataCopyManager
 }
@@ -98,6 +100,7 @@ func New(name string, namespace string, cli client.Client, scheme *runtime.Schem
 		volumeSnapshotTaskQueue:        common.NewTaskQueue("VolumeSnapshotTask", maxRetries),
 		volumeSnapshotRecoverTaskQueue: common.NewTaskQueue("VolumeSnapshotRecoverTask", maxRetries),
 		localNodes:                     map[string]apisv1alpha1.State{},
+		replicaSnapRecoverRecords:      map[string]map[string]*apisv1alpha1.LocalVolumeReplicaSnapshotRecover{},
 		logger:                         log.WithField("Module", "ControllerManager"),
 		dataCopyManager:                dcm,
 	}, nil

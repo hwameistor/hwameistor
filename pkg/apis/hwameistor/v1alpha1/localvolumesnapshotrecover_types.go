@@ -26,9 +26,9 @@ type LocalVolumeSnapshotRecoverSpec struct {
 	SourceVolumeSnapshot string `json:"sourceVolumeSnapshot"`
 
 	// RecoverType is the type about how to recover the volume, e.g. create, merge. By default create.
-	// +kubebuilder:default:=create
+	// +kubebuilder:default:=restore
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum:=merge;create
+	// +kubebuilder:validation:Enum:=rollback;restore
 	RecoverType RecoverType `json:"recoverType"`
 
 	// Abort can be used to abort the recover operation and clean up sub resources created by the recover operation automatically
@@ -39,7 +39,7 @@ type LocalVolumeSnapshotRecoverSpec struct {
 // LocalVolumeSnapshotRecoverStatus defines the observed state of LocalVolumeSnapshotRecover
 type LocalVolumeSnapshotRecoverStatus struct {
 	// VolumeReplicaSnapshotRecover is the replica snapshot to be recovered
-	VolumeReplicaSnapshotRecover []string `json:"volumeReplicaSnapshotRecover"`
+	VolumeReplicaSnapshotRecover []string `json:"volumeReplicaSnapshotRecover,omitempty"`
 
 	// State is the phase of recover volume snapshot, e.g. submitted, started, completed, abort, ...
 	State State `json:"state,omitempty"`

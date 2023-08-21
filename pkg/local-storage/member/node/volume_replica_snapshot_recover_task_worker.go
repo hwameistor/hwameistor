@@ -38,8 +38,8 @@ func (m *manager) startVolumeReplicaSnapshotRecoverTaskWorker(stopCh <-chan stru
 func (m *manager) processVolumeReplicaSnapshotRecover(recoverName string) error {
 	logCtx := m.logger.WithFields(log.Fields{"VolumeReplicaSnapshotRecover": recoverName})
 	logCtx.Debug("Working on a VolumeReplicaSnapshotRecover task")
-	snapshotRecover := &apisv1alpha1.LocalVolumeReplicaSnapshotRecover{}
-	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: recoverName}, snapshotRecover); err != nil {
+	replicaSnapshotRecover := &apisv1alpha1.LocalVolumeReplicaSnapshotRecover{}
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: recoverName}, replicaSnapshotRecover); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Error("Failed to get VolumeReplicaSnapshotRecover from cache")
 			return err
@@ -48,31 +48,35 @@ func (m *manager) processVolumeReplicaSnapshotRecover(recoverName string) error 
 		return nil
 	}
 
-	if snapshotRecover.Spec.Abort &&
-		snapshotRecover.Status.State != apisv1alpha1.OperationStateToBeAborted &&
-		snapshotRecover.Status.State != apisv1alpha1.OperationStateAborting &&
-		snapshotRecover.Status.State != apisv1alpha1.OperationStateAborted {
+	if replicaSnapshotRecover.Spec.Abort &&
+		replicaSnapshotRecover.Status.State != apisv1alpha1.OperationStateToBeAborted &&
+		replicaSnapshotRecover.Status.State != apisv1alpha1.OperationStateAborting &&
+		replicaSnapshotRecover.Status.State != apisv1alpha1.OperationStateAborted {
 
-		snapshotRecover.Status.State = apisv1alpha1.OperationStateToBeAborted
-		return m.apiClient.Status().Update(context.TODO(), snapshotRecover)
+		replicaSnapshotRecover.Status.State = apisv1alpha1.OperationStateToBeAborted
+		return m.apiClient.Status().Update(context.TODO(), replicaSnapshotRecover)
 	}
 
 	// log with namespace/name is enough
-	logCtx = m.logger.WithFields(log.Fields{"TargetVolume": snapshotRecover.Spec.TargetVolume, "SnapshotRecover": snapshotRecover.Name, "Spec": snapshotRecover.Spec, "Status": snapshotRecover.Status})
+	logCtx = m.logger.WithFields(log.Fields{"TargetVolume": replicaSnapshotRecover.Spec.TargetVolume, "SnapshotRecover": replicaSnapshotRecover.Name, "Spec": replicaSnapshotRecover.Spec, "Status": replicaSnapshotRecover.Status})
 	logCtx.Debug("Starting to process a VolumeReplicaSnapshotRecover")
 
 	// state chain: (empty) -> Submitted -> Start -> InProgress -> Completed
-	switch snapshotRecover.Status.State {
+	switch replicaSnapshotRecover.Status.State {
 	case "":
-		return m.volumeReplicaSnapshotRecoverSubmit(snapshotRecover)
+		return m.volumeReplicaSnapshotRecoverSubmit(replicaSnapshotRecover)
 	case apisv1alpha1.OperationStateSubmitted:
-		return m.volumeReplicaSnapshotRecoverPreCheck(snapshotRecover)
+		return m.volumeReplicaSnapshotRecoverPreCheck(replicaSnapshotRecover)
 	case apisv1alpha1.OperationStateInProgress:
-		return m.recoverVolumeFromSnapshot(snapshotRecover)
+		return m.recoverVolumeFromSnapshot(replicaSnapshotRecover)
 	case apisv1alpha1.OperationStateToBeAborted:
-		return m.volumeReplicaSnapshotRecoverAbort(snapshotRecover)
+		return m.volumeReplicaSnapshotRecoverAbort(replicaSnapshotRecover)
 	case apisv1alpha1.OperationStateAborted:
-		return m.volumeReplicaSnapshotRecoverCleanup(snapshotRecover)
+		return m.volumeReplicaSnapshotRecoverCleanup(replicaSnapshotRecover)
+	case apisv1alpha1.OperationStateCompleted:
+		// wait for VolumeSnapshotRecover confirm to delete
+		m.logger.Info("VolumeReplicaSnapshotRecover is completed")
+		return nil
 	default:
 		logCtx.Error("Invalid state/phase")
 	}
@@ -91,7 +95,7 @@ func (m *manager) volumeReplicaSnapshotRecoverPreCheck(snapshotRecover *apisv1al
 	logCtx := m.logger.WithFields(log.Fields{"SnapshotRecover": snapshotRecover.Name, "Spec": snapshotRecover.Spec})
 	logCtx.Debug("PreCheck a VolumeReplicaSnapshotRecover")
 
-	targetVolume := &apisv1alpha1.LocalVolumeSnapshot{}
+	targetVolume := &apisv1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: snapshotRecover.Spec.TargetVolume}, targetVolume); err != nil {
 		logCtx.WithError(err).Error("Failed to get target volume")
 		return err
@@ -213,8 +217,7 @@ func (m *manager) restoreSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeRepli
 		return err
 	}
 
-	// 2. check whether volume snapshot is already restoring
-	// todo: check if snapshot is already being restored
+	// 2. todo: check whether volume snapshot is already restoring
 
 	// 3. rollback the volumes snapshot to the source volume
 

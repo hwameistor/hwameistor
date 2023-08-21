@@ -15,6 +15,10 @@ spec:
   scope: Cluster
   versions:
   - additionalPrinterColumns:
+    - description: Node to recover
+      jsonPath: .spec.nodeName
+      name: nodeName
+      type: string
     - description: Target for the recover
       jsonPath: .spec.targetVolume
       name: targetvolume
@@ -62,12 +66,12 @@ spec:
                   recovered at
                 type: string
               recoverType:
-                default: create
+                default: restore
                 description: RecoverType is the type about how to recover the volume,
                   e.g. create, merge. By default create.
                 enum:
-                - merge
-                - create
+                - rollback
+                - restore
                 type: string
               sourceVolumeReplicaSnapshot:
                 description: SourceVolumeReplicaSnapshot represents which replica
@@ -76,6 +80,10 @@ spec:
               sourceVolumeSnapshot:
                 description: SourceVolumeSnapshot represents which snapshot is used
                   for volume to recover from
+                type: string
+              targetPoolName:
+                description: TargetVolume is the name of the target volume will place
+                  at
                 type: string
               targetVolume:
                 description: TargetVolume is the name of the volume to recover to
@@ -87,6 +95,7 @@ spec:
             - recoverType
             - sourceVolumeReplicaSnapshot
             - sourceVolumeSnapshot
+            - targetPoolName
             - targetVolume
             - volumeSnapshotRecover
             type: object
@@ -101,14 +110,6 @@ spec:
                 description: State is the phase of recover volume snapshot, e.g. submitted,
                   started, completed, abort, ...
                 type: string
-              volumeReplicaSnapshotRecover:
-                description: VolumeReplicaSnapshotRecover is the replica snapshot
-                  to be recovered
-                items:
-                  type: string
-                type: array
-            required:
-            - volumeReplicaSnapshotRecover
             type: object
         type: object
     served: true

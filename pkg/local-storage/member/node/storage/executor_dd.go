@@ -39,7 +39,7 @@ func (dd *ddExecutor) RollbackVolumeReplicaSnapshot(snapshotRecover *apisv1alpha
 func (dd *ddExecutor) RestoreVolumeReplicaSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error {
 	poolName := snapshotRecover.Spec.TargetPoolName
 	outPutDevicePath := composePoolVolumePath(poolName, snapshotRecover.Spec.TargetVolume)
-	inputDevicePath := composePoolVolumePath(poolName, snapshotRecover.Spec.SourceVolumeReplicaSnapshot)
+	inputDevicePath := composePoolVolumePath(poolName, snapshotRecover.Spec.SourceVolumeSnapshot)
 
 	// example：dd if=/dev/LocalStorage_PoolHDD/snapshot of=/dev/LocalStorage_PoolHDD/volume-new bs=10M
 	dataCopyCommand := exechelper.ExecParams{
@@ -47,13 +47,13 @@ func (dd *ddExecutor) RestoreVolumeReplicaSnapshot(snapshotRecover *apisv1alpha1
 		CmdArgs: []string{
 			fmt.Sprintf("if=%s", inputDevicePath),
 			fmt.Sprintf("of=%s", outPutDevicePath),
-			"bs=10Mi",
+			"bs=10M",
 		},
 	}
 
 	dd.logger.WithField("restoreVolume", outPutDevicePath).Info("Start restoring snapshot")
 	if result := dd.cmdExec.RunCommand(dataCopyCommand); result.ExitCode != 0 {
-		dd.logger.WithField("restoreVolume", outPutDevicePath).Info("Failed to restore snapshot")
+		dd.logger.WithError(result.Error).WithField("restoreVolume", outPutDevicePath).Info("Failed to restore snapshot")
 		return result.Error
 	}
 

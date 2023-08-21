@@ -37,6 +37,7 @@ type LocalVolumeReplicaSnapshotRecoverStatus struct {
 // LocalVolumeReplicaSnapshotRecover is the Schema for the localvolumereplicasnapshotrecovers API
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=localvolumereplicasnapshotrecovers,scope=Cluster,shortName=lvrsrecover;lvrsnaprecover
+// +kubebuilder:printcolumn:name="nodeName",type=string,JSONPath=`.spec.nodeName`,description="Node to recover"
 // +kubebuilder:printcolumn:name="targetvolume",type=string,JSONPath=`.spec.targetVolume`,description="Target for the recover"
 // +kubebuilder:printcolumn:name="sourcesnapshot",type=string,JSONPath=`.spec.sourceVolumeSnapshot`,description="Source snapshot for the recover"
 // +kubebuilder:printcolumn:name="state",type=string,JSONPath=`.status.state`,description="State of the recover"
