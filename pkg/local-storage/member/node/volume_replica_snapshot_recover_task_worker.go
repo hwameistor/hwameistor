@@ -142,7 +142,8 @@ func (m *manager) recoverVolumeFromSnapshot(snapshotRecover *apisv1alpha1.LocalV
 }
 
 func (m *manager) rollbackSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) (err error) {
-	logCtx := m.logger.WithFields(log.Fields{"ReplicaSnapshotRecover": snapshotRecover.Name})
+	logCtx := m.logger.WithFields(log.Fields{"ReplicaSnapshotRecover": snapshotRecover.Name, "TargetVolume": snapshotRecover.Spec.TargetVolume, "SourceSnapshot": snapshotRecover.Spec.SourceVolumeSnapshot})
+	logCtx.Debug("Start rolling back snapshot")
 
 	// 1. check whether volume snapshot is already merged
 
@@ -157,28 +158,35 @@ func (m *manager) rollbackSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeRepl
 		return err
 	}
 
-	replicaSnapshotStatus := &apisv1alpha1.LocalVolumeReplicaSnapshotStatus{}
-	if replicaSnapshotStatus, err = m.Storage().VolumeReplicaSnapshotManager().GetVolumeReplicaSnapshot(volumeReplicaSnapshot); err != nil {
-		if err == storage.ErrorSnapshotNotFound {
-			// snapshot is already merged, remove the snapshot from apiserver
-			logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Info("volume replica snapshot is merged")
-			volumeReplicaSnapshot.Spec.Delete = true
-			return m.apiClient.Update(context.Background(), volumeReplicaSnapshot)
+	isSnapshotInMerging := func() error {
+		replicaSnapshotStatus := &apisv1alpha1.LocalVolumeReplicaSnapshotStatus{}
+		if replicaSnapshotStatus, err = m.Storage().VolumeReplicaSnapshotManager().GetVolumeReplicaSnapshot(volumeReplicaSnapshot); err != nil {
+			if err == storage.ErrorSnapshotNotFound {
+				// snapshot is already merged, remove the snapshot from apiserver
+				logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Info("volume replica snapshot is merged")
+				volumeReplicaSnapshot.Spec.Delete = true
+				return m.apiClient.Update(context.Background(), volumeReplicaSnapshot)
+			}
+			logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Error("Failed to get volume replica snapshot status")
+			return err
 		}
-		logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Error("Failed to get volume replica snapshot status")
-		return err
+
+		if replicaSnapshotStatus.Attribute.Invalid {
+			err = fmt.Errorf("snapshot is expiration, cannot be used to rollback")
+			logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).WithError(err).Error("Failed to rollback snapshot")
+			return err
+		}
+		if replicaSnapshotStatus.Attribute.Merging {
+			err = fmt.Errorf("snapshot is merging")
+			logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Info(err.Error())
+			return err
+		}
+
+		return nil
 	}
 
 	// 2. check whether volume snapshot is already merging
-
-	if replicaSnapshotStatus.Attribute.Invalid {
-		err = fmt.Errorf("snapshot is expiration, cannot be used to rollback")
-		logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).WithError(err).Error("Failed to rollback snapshot")
-		return err
-	}
-	if replicaSnapshotStatus.Attribute.Merging {
-		err = fmt.Errorf("snapshot is merging")
-		logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Info(err.Error())
+	if err = isSnapshotInMerging(); err != nil {
 		return err
 	}
 
@@ -186,12 +194,16 @@ func (m *manager) rollbackSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeRepl
 
 	if err = m.Storage().VolumeReplicaSnapshotManager().RollbackVolumeReplicaSnapshot(snapshotRecover); err != nil {
 		logCtx.WithError(err).Error("Failed to start rollback snapshot")
+		return err
 	}
-	return err
+
+	// 4. due to snapshot rollback is performed asynchronously, check again whether volume snapshot is already merging
+	return isSnapshotInMerging()
 }
 
 func (m *manager) restoreSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) (err error) {
-	logCtx := m.logger.WithFields(log.Fields{"ReplicaSnapshotRecover": snapshotRecover.Name})
+	logCtx := m.logger.WithFields(log.Fields{"ReplicaSnapshotRecover": snapshotRecover.Name, "TargetVolume": snapshotRecover.Spec.TargetVolume, "SourceSnapshot": snapshotRecover.Spec.SourceVolumeSnapshot})
+	logCtx.Debug("Start restoring snapshot")
 
 	// 1. check whether volume snapshot is already merged
 

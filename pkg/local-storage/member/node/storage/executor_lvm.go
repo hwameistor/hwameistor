@@ -567,7 +567,8 @@ func (lvm *lvmExecutor) GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.L
 		return nil, err
 	}
 
-	actualSnapshotStatus.CreationTimestamp = metav1.NewTime(cTime.Local())
+	newTime := metav1.NewTime(cTime.Local())
+	actualSnapshotStatus.CreationTime = newTime.DeepCopy()
 	actualSnapshotStatus.AllocatedCapacityBytes = capacity
 	actualSnapshotStatus.Attribute.Invalid = len(snapshotVolume.LVSnapInvalid) > 0
 	actualSnapshotStatus.Attribute.Merging = len(snapshotVolume.LVMerging) > 0
@@ -873,7 +874,7 @@ func (lvm *lvmExecutor) vgs() (*vgsReport, error) {
 func (lvm *lvmExecutor) lvs() (*lvsReport, error) {
 	params := exechelper.ExecParams{
 		CmdName: "lvs",
-		CmdArgs: []string{"-o", "lv_path,lv_name,vg_name,lv_attr,lv_size,pool_lv,origin,data_percent,metadata_percent,move_pv,mirror_log,copy_percent,convert_lv," +
+		CmdArgs: []string{"-a", "-o", "lv_path,lv_name,vg_name,lv_attr,lv_size,pool_lv,origin,data_percent,metadata_percent,move_pv,mirror_log,copy_percent,convert_lv," +
 			"lv_snapshot_invalid,lv_merge_failed,snap_percent,lv_device_open,lv_merging,lv_converting,lv_time", "--reportformat", "json", "--units", "B"},
 	}
 	res := lvm.cmdExec.RunCommand(params)
@@ -974,6 +975,11 @@ func (lvm *lvmExecutor) getLVMStatus(masks int) (*lvmStatus, error) {
 		}
 		for _, lvsReportRecords := range lvsReport.Records {
 			for _, lvRecord := range lvsReportRecords.Records {
+				// for merging snapshot: "lv_name":"[snapcontent-49246190-f939-4e17-912a-394ddc088299]"
+				if strings.HasPrefix(lvRecord.Name, "[") && strings.HasSuffix(lvRecord.Name, "]") {
+					lvRecord.Name = strings.TrimPrefix(lvRecord.Name, "[")
+					lvRecord.Name = strings.TrimSuffix(lvRecord.Name, "]")
+				}
 				status.lvs[lvRecord.Name] = lvRecord
 			}
 		}

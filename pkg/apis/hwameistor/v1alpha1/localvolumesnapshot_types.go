@@ -38,9 +38,9 @@ type LocalVolumeSnapshotStatus struct {
 	// ReplicaSnapshots represents the actual snapshots of replica
 	ReplicaSnapshots []string `json:"replicaSnapshots,omitempty"`
 
-	// CreationTimestamp is the host real snapshot creation time
+	// CreationTime is the host real snapshot creation time
 	// In case of HA volume with multiple replicas, the value is equal to the one of a replica's snapshot creation time
-	CreationTimestamp metav1.Time `json:"creationTimestamp,omitempty" protobuf:"bytes,8,opt,name=creationTimestamp"`
+	CreationTime *metav1.Time `json:"creationTime,omitempty"`
 
 	// Attribute indicates attr on snapshot
 	Attribute VolumeSnapshotAttr `json:"attr,omitempty"`

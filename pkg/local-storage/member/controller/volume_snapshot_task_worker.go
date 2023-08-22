@@ -109,12 +109,19 @@ func (m *manager) volumeSnapshotReadyOrNot(snapshot *apisv1alpha1.LocalVolumeSna
 		volumeReplicaSnapshots = append(volumeReplicaSnapshots, replicaSnapshot.Name)
 
 		// collect all specified node replicas ready snapshots
-		if _, exist := utils.StrFind(snapshot.Spec.Accessibility.Nodes, replicaSnapshot.Spec.NodeName); exist &&
-			replicaSnapshot.Status.State == apisv1alpha1.VolumeReplicaStateReady {
+		if _, exist := utils.StrFind(snapshot.Spec.Accessibility.Nodes, replicaSnapshot.Spec.NodeName); !exist {
+			continue
+		}
+
+		if replicaSnapshot.Status.State == apisv1alpha1.VolumeReplicaStateReady {
 			specifiedNodeReadySnapshots = append(specifiedNodeReadySnapshots, replicaSnapshot.Name)
 		}
-		continue
+
+		snapshot.Status.Attribute = replicaSnapshot.Status.Attribute
+		snapshot.Status.CreationTime = replicaSnapshot.Status.CreationTime
+		snapshot.Status.AllocatedCapacityBytes = replicaSnapshot.Status.AllocatedCapacityBytes
 	}
+
 	// keep sorted to avoid useless reconcile
 	sort.Strings(volumeReplicaSnapshots)
 	snapshot.Status.ReplicaSnapshots = volumeReplicaSnapshots

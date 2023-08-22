@@ -116,6 +116,11 @@ func (m *manager) volumeReplicaSnapshotReadyOrNot(snapshot *apisv1alpha1.LocalVo
 	snapRealStatus, err := m.storageMgr.VolumeReplicaSnapshotManager().GetVolumeReplicaSnapshot(snapshot)
 	if err != nil {
 		logCtx.WithError(err).Error("Failed to get VolumeReplica Snapshot from host")
+
+		// keep monitoring the snapshot status until no error happens
+		snapRealStatus.State = apisv1alpha1.VolumeStateNotReady
+		snapRealStatus.Message = err.Error()
+		_ = m.apiClient.Status().Update(context.TODO(), snapshot)
 		return err
 	}
 

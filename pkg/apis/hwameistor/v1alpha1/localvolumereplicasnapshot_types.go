@@ -43,8 +43,8 @@ type LocalVolumeReplicaSnapshotStatus struct {
 	// AllocatedCapacityBytes is the real allocated capacity in bytes
 	AllocatedCapacityBytes int64 `json:"allocatedCapacityBytes,omitempty"`
 
-	// CreationTimestamp is the host real snapshot creation time
-	CreationTimestamp metav1.Time `json:"creationTimestamp,omitempty"`
+	// CreationTime is the host real snapshot creation time
+	CreationTime *metav1.Time `json:"creationTime,omitempty"`
 
 	// Attribute indicates attr on snapshot
 	Attribute VolumeSnapshotAttr `json:"attr,omitempty"`

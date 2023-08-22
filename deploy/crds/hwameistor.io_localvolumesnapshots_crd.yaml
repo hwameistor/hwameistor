@@ -113,6 +113,12 @@ spec:
                     description: Merging set true if snapshot is merging now
                     type: boolean
                 type: object
+              creationTime:
+                description: CreationTime is the host real snapshot creation time
+                  In case of HA volume with multiple replicas, the value is equal
+                  to the one of a replica's snapshot creation time
+                format: date-time
+                type: string
               message:
                 description: Message error message to describe some states
                 type: string

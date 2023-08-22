@@ -120,6 +120,10 @@ spec:
                     description: Merging set true if snapshot is merging now
                     type: boolean
                 type: object
+              creationTime:
+                description: CreationTime is the host real snapshot creation time
+                format: date-time
+                type: string
               reason:
                 description: Message error message to describe some states
                 type: string
