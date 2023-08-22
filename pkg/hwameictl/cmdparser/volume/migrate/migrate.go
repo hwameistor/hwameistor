@@ -1,4 +1,4 @@
-package volume
+package migrate
 
 import (
 	"github.com/spf13/cobra"
@@ -6,7 +6,7 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/manager"
 )
 
-var volumeMigrate = &cobra.Command{
+var VolumeMigrate = &cobra.Command{
 	Use:   "migrate {volumeName} {sourceNode} {?targetNode}",
 	Short: "Migrate a volume from a node to another node.",
 	Long:  "",

@@ -1,4 +1,4 @@
-package volume
+package get
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ import (
 // Read from volume get flags
 var node, group string
 
-var volumeGet = &cobra.Command{
+var VolumeGet = &cobra.Command{
 	Use:   "get {?volumeName}",
 	Short: "Get the volumes.",
 	Long: "You can use 'hwameictl volume get' to obtain information about all volumes.\n" +
@@ -27,8 +27,8 @@ var volumeGet = &cobra.Command{
 
 func init() {
 	// Volume get flags
-	volumeGet.Flags().StringVar(&node, "node", "", "Filter Volumes by node name")
-	volumeGet.Flags().StringVar(&group, "group", "", "Filter Volumes by group name")
+	VolumeGet.Flags().StringVar(&node, "node", "", "Filter Volumes by node name")
+	VolumeGet.Flags().StringVar(&group, "group", "", "Filter Volumes by group name")
 }
 
 func volumeGetRunE(cmd *cobra.Command, args []string) error {

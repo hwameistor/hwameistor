@@ -1,4 +1,4 @@
-package volume
+package convert
 
 import (
 	"github.com/spf13/cobra"
@@ -6,7 +6,7 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/manager"
 )
 
-var volumeConvert = &cobra.Command{
+var VolumeConvert = &cobra.Command{
 	Use:   "convert {volumeName}",
 	Short: "",
 	Long:  "",

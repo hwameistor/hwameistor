@@ -1,6 +1,9 @@
 package volume
 
 import (
+	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/volume/convert"
+	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/volume/get"
+	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/volume/migrate"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +19,7 @@ var Volume = &cobra.Command{
 
 func init() {
 	// Volume sub command
-	Volume.AddCommand(volumeGet)
-	Volume.AddCommand(volumeMigrate)
-	Volume.AddCommand(volumeConvert)
+	Volume.AddCommand(get.VolumeGet)
+	Volume.AddCommand(migrate.VolumeMigrate)
+	Volume.AddCommand(convert.VolumeConvert)
 }
