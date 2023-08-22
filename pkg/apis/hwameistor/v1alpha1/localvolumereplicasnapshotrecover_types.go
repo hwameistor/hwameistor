@@ -11,6 +11,10 @@ import (
 type LocalVolumeReplicaSnapshotRecoverSpec struct {
 	LocalVolumeSnapshotRecoverSpec `json:",inline"`
 
+	// TargetVolume is the name of the volume to recover to
+	// +kubebuilder:validation:Required
+	TargetVolume string `json:"targetVolume"`
+
 	// SourceVolumeReplicaSnapshot represents which replica snapshot is used for volume to recover from
 	// +kubebuilder:validation:Required
 	SourceVolumeReplicaSnapshot string `json:"sourceVolumeReplicaSnapshot"`

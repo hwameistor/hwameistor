@@ -120,11 +120,21 @@ func (m *manager) volumeReplicaSnapshotReadyOrNot(snapshot *apisv1alpha1.LocalVo
 		// keep monitoring the snapshot status until no error happens
 		snapRealStatus.State = apisv1alpha1.VolumeStateNotReady
 		snapRealStatus.Message = err.Error()
-		_ = m.apiClient.Status().Update(context.TODO(), snapshot)
+		if err = m.apiClient.Status().Update(context.TODO(), snapshot); err != nil {
+			return err
+		}
 		return err
 	}
 
 	snapshot.Status = *snapRealStatus
+	if snapshot.Status.State != apisv1alpha1.NodeStateReady {
+		if err = m.apiClient.Status().Update(context.TODO(), snapshot); err != nil {
+			return err
+		}
+		err = fmt.Errorf(snapshot.Status.Message)
+		return err
+	}
+
 	return m.apiClient.Status().Update(context.TODO(), snapshot)
 }
 

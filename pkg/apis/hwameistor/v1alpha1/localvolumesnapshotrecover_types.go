@@ -14,8 +14,7 @@ const (
 // LocalVolumeSnapshotRecoverSpec defines the desired state of LocalVolumeSnapshotRecover
 type LocalVolumeSnapshotRecoverSpec struct {
 	// TargetVolume is the name of the volume to recover to
-	// +kubebuilder:validation:Required
-	TargetVolume string `json:"targetVolume"`
+	TargetVolume string `json:"targetVolume,omitempty"`
 
 	// TargetVolume is the name of the target volume will place at
 	// +kubebuilder:validation:Required

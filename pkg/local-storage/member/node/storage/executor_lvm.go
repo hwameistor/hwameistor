@@ -25,6 +25,9 @@ const (
 	PVMask = 1 << 2
 )
 
+// LVMUnknownStatus this represents no error or this status is not set
+const LVMUnknownStatus = "unknown"
+
 // variables
 var (
 	ErrNotLVMByteNum   = errors.New("LVM byte format unrecognised")
@@ -570,7 +573,7 @@ func (lvm *lvmExecutor) GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.L
 	newTime := metav1.NewTime(cTime.Local())
 	actualSnapshotStatus.CreationTime = newTime.DeepCopy()
 	actualSnapshotStatus.AllocatedCapacityBytes = capacity
-	actualSnapshotStatus.Attribute.Invalid = len(snapshotVolume.LVSnapInvalid) > 0
+	actualSnapshotStatus.Attribute.Invalid = len(snapshotVolume.LVSnapInvalid) > 0 && snapshotVolume.LVSnapInvalid != LVMUnknownStatus
 	actualSnapshotStatus.Attribute.Merging = len(snapshotVolume.LVMerging) > 0
 	if actualSnapshotStatus.Attribute.Invalid {
 		actualSnapshotStatus.Message = fmt.Sprintf("snapshot is invalid")

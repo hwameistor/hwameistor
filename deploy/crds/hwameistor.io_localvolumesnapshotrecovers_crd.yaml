@@ -80,7 +80,6 @@ spec:
             - recoverType
             - sourceVolumeSnapshot
             - targetPoolName
-            - targetVolume
             type: object
           status:
             description: LocalVolumeSnapshotRecoverStatus defines the observed state
