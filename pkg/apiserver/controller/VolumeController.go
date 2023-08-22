@@ -80,10 +80,9 @@ func (v *VolumeController) VolumeGet(ctx *gin.Context) {
 // @Param       sort query bool false "sort"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.VolumeList   "成功"
+// @Success     200 {object}  api.VolumeList
 // @Router      /cluster/volumes [get]
 func (v *VolumeController) VolumeList(ctx *gin.Context) {
-
 	var failRsp hwameistorapi.RspFailBody
 
 	// 获取path中的page
@@ -128,10 +127,9 @@ func (v *VolumeController) VolumeList(ctx *gin.Context) {
 // @Param       state query string false "state"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.VolumeReplicaList  "成功"
+// @Success     200 {object}  api.VolumeReplicaList
 // @Router      /cluster/volumes/{volumeName}/replicas [get]
 func (v *VolumeController) VolumeReplicasGet(ctx *gin.Context) {
-
 	var failRsp hwameistorapi.RspFailBody
 
 	// 获取path中的name
@@ -173,11 +171,10 @@ func (v *VolumeController) VolumeReplicasGet(ctx *gin.Context) {
 // @Param       body body api.VolumeMigrateReqBody true "reqBody"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.VolumeMigrateRspBody      "成功"
-// @Failure     500 {object}  api.RspFailBody "失败"
+// @Success     200 {object}  api.VolumeMigrateRspBody
+// @Failure     500 {object}  api.RspFailBody
 // @Router      /cluster/volumes/{volumeName}/migrate [post]
 func (v *VolumeController) VolumeMigrateOperation(ctx *gin.Context) {
-
 	var failRsp hwameistorapi.RspFailBody
 	// 获取path中的name
 	name := ctx.Param("volumeName")
@@ -235,11 +232,10 @@ func (v *VolumeController) VolumeMigrateOperation(ctx *gin.Context) {
 // @Param       body body api.VolumeConvertReqBody true "reqBody"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.VolumeConvertRspBody      "成功"
-// @Failure     500 {object}  api.RspFailBody "失败"
+// @Success     200 {object}  api.VolumeConvertRspBody
+// @Failure     500 {object}  api.RspFailBody
 // @Router      /cluster/volumes/{volumeName}/convert [post]
 func (v *VolumeController) VolumeConvertOperation(ctx *gin.Context) {
-
 	var failRsp hwameistorapi.RspFailBody
 
 	// 获取path中的name
@@ -282,11 +278,10 @@ func (v *VolumeController) VolumeConvertOperation(ctx *gin.Context) {
 // @Param       volumeName path string true "volumeName"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.VolumeMigrateOperation      "成功"
-// @Failure     500 {object}  api.RspFailBody "失败"
+// @Success     200 {object}  api.VolumeMigrateOperation
+// @Failure     500 {object}  api.RspFailBody
 // @Router      /cluster/volumes/{volumeName}/migrate [get]
 func (v *VolumeController) GetVolumeMigrateOperation(ctx *gin.Context) {
-
 	var failRsp hwameistorapi.RspFailBody
 	// 获取path中的name
 	volumeName := ctx.Param("volumeName")
@@ -317,11 +312,10 @@ func (v *VolumeController) GetVolumeMigrateOperation(ctx *gin.Context) {
 // @Param       volumeName path string true "volumeName"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.VolumeConvertOperation      "成功"
-// @Failure     500 {object}  api.RspFailBody "失败"
+// @Success     200 {object}  api.VolumeConvertOperation
+// @Failure     500 {object}  api.RspFailBody
 // @Router      /cluster/volumes/{volumeName}/convert [get]
 func (v *VolumeController) GetVolumeConvertOperation(ctx *gin.Context) {
-
 	var failRsp hwameistorapi.RspFailBody
 
 	// 获取path中的name
@@ -353,11 +347,10 @@ func (v *VolumeController) GetVolumeConvertOperation(ctx *gin.Context) {
 // @Param       volumeName path string true "volumeName"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.VolumeExpandOperation      "成功"
-// @Failure     500 {object}  api.RspFailBody "失败"
+// @Success     200 {object}  api.VolumeExpandOperation
+// @Failure     500 {object}  api.RspFailBody
 // @Router      /cluster/volumes/{volumeName}/expand [get]
 func (v *VolumeController) GetVolumeExpandOperation(ctx *gin.Context) {
-
 	var failRsp hwameistorapi.RspFailBody
 
 	// 获取path中的name
@@ -389,11 +382,10 @@ func (v *VolumeController) GetVolumeExpandOperation(ctx *gin.Context) {
 // @Param       volumeName path string true "volumeName"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.VolumeConvertOperation      "成功"
-// @Failure     500 {object}  api.RspFailBody "失败"
+// @Success     200 {object}  api.VolumeConvertOperation
+// @Failure     500 {object}  api.RspFailBody
 // @Router      /cluster/volumes/{volumeName}/expand [post]
 func (v *VolumeController) VolumeExpandOperation(ctx *gin.Context) {
-
 	var failRsp hwameistorapi.RspFailBody
 
 	// 获取path中的name
@@ -427,10 +419,9 @@ func (v *VolumeController) VolumeExpandOperation(ctx *gin.Context) {
 // @Param       state query string false "state"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.VolumeOperationByVolume      "成功"
+// @Success     200 {object}  api.VolumeOperationByVolume
 // @Router      /cluster/volumes/{volumeName}/operations [get]
 func (v *VolumeController) VolumeOperationGet(ctx *gin.Context) {
-
 	var failRsp hwameistorapi.RspFailBody
 
 	// 获取path中的name

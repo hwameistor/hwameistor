@@ -1,6 +1,8 @@
 package api
 
-import apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+import (
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+)
 
 // LocalDiskInfo is disk struct
 type LocalDiskInfo struct {
@@ -20,9 +22,6 @@ type LocalDiskInfo struct {
 
 	// LocalStoragePooLName 存储池名称
 	LocalStoragePooLName string `json:"localStoragePooLName,omitempty"`
-}
-
-type ReservedStatus struct {
 }
 
 // DiskReqBody
