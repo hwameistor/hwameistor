@@ -78,6 +78,15 @@ func (builder *Builder) SetupDisk(devPath string) *Builder {
 	return builder
 }
 
+func (builder *Builder) SetupVolumePath(volPath string) *Builder {
+	if err := builder.assertVolumeNotNil(); err != nil {
+		return builder
+	}
+
+	builder.volume.Status.VolumePath = volPath
+	return builder
+}
+
 func (builder *Builder) SetupDevSymLinks(devLinks []string) *Builder {
 	if err := builder.assertVolumeNotNil(); err != nil {
 		return builder
@@ -85,12 +94,15 @@ func (builder *Builder) SetupDevSymLinks(devLinks []string) *Builder {
 
 	devLinksMap := make(map[v1alpha1.DevLinkType][]string, 0)
 	for _, devLink := range devLinks {
-		if strings.Contains(devLink, v1alpha1.LinkByPath) {
+		switch {
+		case strings.Contains(devLink, v1alpha1.LinkByPath):
 			devLinksMap[v1alpha1.LinkByPath] = append(devLinksMap[v1alpha1.LinkByPath], devLink)
-		} else if strings.Contains(devLink, v1alpha1.LinkByID) {
+		case strings.Contains(devLink, v1alpha1.LinkByID):
 			devLinksMap[v1alpha1.LinkByID] = append(devLinksMap[v1alpha1.LinkByID], devLink)
-		} else if strings.Contains(devLink, v1alpha1.LinkByUUID) {
+		case strings.Contains(devLink, v1alpha1.LinkByUUID):
 			devLinksMap[v1alpha1.LinkByUUID] = append(devLinksMap[v1alpha1.LinkByUUID], devLink)
+		default:
+			continue
 		}
 	}
 

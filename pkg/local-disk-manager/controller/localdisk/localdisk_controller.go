@@ -63,6 +63,28 @@ func withCurrentNode() predicate.Predicate {
 	}
 }
 
+// withActiveDisk filter active disk
+func withActiveDisk() predicate.Predicate {
+	return predicate.Funcs{
+		CreateFunc: func(event event.CreateEvent) bool {
+			disk, _ := event.Object.DeepCopyObject().(*v1alpha1.LocalDisk)
+			return disk.Spec.State == v1alpha1.LocalDiskActive
+		},
+		DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
+			disk, _ := deleteEvent.Object.DeepCopyObject().(*v1alpha1.LocalDisk)
+			return disk.Spec.State == v1alpha1.LocalDiskActive
+		},
+		UpdateFunc: func(updateEvent event.UpdateEvent) bool {
+			disk, _ := updateEvent.ObjectNew.DeepCopyObject().(*v1alpha1.LocalDisk)
+			return disk.Spec.State == v1alpha1.LocalDiskActive
+		},
+		GenericFunc: func(genericEvent event.GenericEvent) bool {
+			disk, _ := genericEvent.Object.DeepCopyObject().(*v1alpha1.LocalDisk)
+			return disk.Spec.State == v1alpha1.LocalDiskActive
+		},
+	}
+}
+
 // add a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
@@ -72,7 +94,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource localDisk
-	err = c.Watch(&source.Kind{Type: &v1alpha1.LocalDisk{}}, &handler.EnqueueRequestForObject{}, withCurrentNode())
+	err = c.Watch(&source.Kind{Type: &v1alpha1.LocalDisk{}}, &handler.EnqueueRequestForObject{}, withCurrentNode(), withActiveDisk())
 	if err != nil {
 		return err
 	}

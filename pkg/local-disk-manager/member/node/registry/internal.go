@@ -10,8 +10,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 )
+
+const DiskSuffix = "disk"
 
 var (
 	registry Manager
@@ -37,8 +40,6 @@ type localRegistry struct {
 
 	// hu helps to find and create file on host
 	hu hostutil.HostUtils
-
-	lock sync.Mutex
 }
 
 func New() Manager {
@@ -142,6 +143,15 @@ func (r *localRegistry) DiskExist(devPath string) bool {
 	return ok
 }
 
+func (r *localRegistry) DiskSymbolLinkExist(symlink string) bool {
+	for _, devType := range types.DefaultDevTypes {
+		if exist, _ := r.hu.PathExists(path.Join(types.GetPoolDiskPath(devType), symlink)); exist {
+			return exist
+		}
+	}
+	return false
+}
+
 // discoveryDisks discovery and store cache
 func (r *localRegistry) discoveryDisks() {
 	var allDiscoveryDiskNames []string
@@ -152,7 +162,7 @@ func (r *localRegistry) discoveryDisks() {
 		discoveryDiskNames, err := discoveryDevices(rootPath)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to discovery devices from %s", rootPath)
-			os.Exit(1)
+			continue
 		}
 		allDiscoveryDiskNames = append(allDiscoveryDiskNames, discoveryDiskNames...)
 
@@ -160,7 +170,7 @@ func (r *localRegistry) discoveryDisks() {
 		for _, disk := range discoveryDiskNames {
 			if discoveryDisk, err := convertDisk(disk, poolClass); err != nil {
 				log.WithError(err).Errorf("Failed to convert disk %s", disk)
-				os.Exit(1)
+				continue
 			} else {
 				r.disks.Store(discoveryDisk.DevPath, discoveryDisk)
 				discoverDisks = append(discoverDisks, discoveryDisk)
@@ -193,7 +203,7 @@ func (r *localRegistry) discoveryVolumes() {
 		discoveryVolumes, err := discoveryDevices(rootPath)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to discovery devices from %s", rootPath)
-			os.Exit(1)
+			continue
 		}
 		allDiscoveryVolumeNames = append(allDiscoveryVolumeNames, discoveryVolumes...)
 
@@ -201,7 +211,7 @@ func (r *localRegistry) discoveryVolumes() {
 		for _, volume := range discoveryVolumes {
 			if discoveryVolume, err := convertVolume(volume, poolClass); err != nil {
 				log.WithError(err).Errorf("Failed to convert volume %s", volume)
-				os.Exit(1)
+				continue
 			} else {
 				r.volumes.Store(discoveryVolume.Name, discoveryVolume)
 				discoverVolumes = append(discoverVolumes, discoveryVolume)
@@ -235,21 +245,30 @@ func discoveryDevices(rootPath string) ([]string, error) {
 
 	// walk the folder and discovery devices
 	var discoveryDevices []string
-	err = filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(rootPath, func(subPath string, info os.FileInfo, err error) error {
+		if rootPath == subPath {
+			return nil
+		}
 		if err != nil {
 			return err
 		}
-		actualPath, err := hu.EvalHostSymlinks(path)
+		actualPath, err := hu.EvalHostSymlinks(subPath)
 		if err != nil {
-			return err
+			log.WithError(err).Warningf("Failed at evaluate path %s, skip it", subPath)
+			return nil
 		}
 		ok, err := hu.PathIsDevice(actualPath)
 		if err != nil {
-			return err
+			log.WithError(err).Warningf("Failed at judge path %s, skip it", subPath)
+			return nil
 		}
 		if ok {
-			log.Infof("Found disk %s exist in %s", info.Name(), rootPath)
-			discoveryDevices = append(discoveryDevices, info.Name())
+			log.Infof("Found device %s exist in %s", info.Name(), rootPath)
+			if strings.HasSuffix(rootPath, DiskSuffix) {
+				discoveryDevices = append(discoveryDevices, strings.Split(actualPath, "/")[len(strings.Split(actualPath, "/"))-1])
+			} else {
+				discoveryDevices = append(discoveryDevices, info.Name())
+			}
 		} else {
 			log.Debugf("Found %s(mode: %s) in %s but not a device, skip it", info.Name(), info.Mode().Type().String(), rootPath)
 		}

@@ -3,6 +3,7 @@ package localdiskvolume
 import (
 	"context"
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/registry"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/volume"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
 	"strings"
@@ -29,9 +30,10 @@ const (
 type DiskVolumeHandler struct {
 	client.Client
 	record.EventRecorder
-	Ldv     *v1alpha1.LocalDiskVolume
-	hostVM  volume.Manager
-	mounter lscsi.Mounter
+	Ldv          *v1alpha1.LocalDiskVolume
+	hostVM       volume.Manager
+	hostRegistry registry.Manager
+	mounter      lscsi.Mounter
 }
 
 // NewLocalDiskHandler
@@ -42,23 +44,33 @@ func NewLocalDiskVolumeHandler(cli client.Client, recorder record.EventRecorder)
 		EventRecorder: recorder,
 		mounter:       lscsi.NewLinuxMounter(logger),
 		hostVM:        volume.New(),
+		hostRegistry:  registry.New(),
 	}
 }
 
 func (v *DiskVolumeHandler) ReconcileCreated() (reconcile.Result, error) {
 	volumeName := v.Ldv.Name
 	volumeType := v.Ldv.Spec.DiskType
-	selectedDisk := strings.TrimPrefix(v.Ldv.Status.DevPath, types.SysDeviceRoot)
+	selectedDisk := ""
+	// devPath is unreliable， use localdisk to find the by-path or by-id path
+	for _, links := range v.Ldv.Status.DevLinks {
+		for _, linkName := range links {
+			linkName = strings.Split(linkName, "/")[len(strings.Split(linkName, "/"))-1]
+			if v.hostRegistry.DiskSymbolLinkExist(linkName) {
+				selectedDisk = linkName
+			}
+		}
+	}
 	return reconcile.Result{}, v.hostVM.CreateVolume(volumeName, types.GetLocalDiskPoolName(volumeType), selectedDisk)
 }
 
 func (v *DiskVolumeHandler) ReconcileMount() (reconcile.Result, error) {
 	var err error
 	var result reconcile.Result
-	var devPath = v.GetDevPath()
+	var volPath = v.GetVolumePath()
 	var mountPoints = v.GetMountPoints()
 
-	if devPath == "" || len(mountPoints) == 0 {
+	if volPath == "" || len(mountPoints) == 0 {
 		log.Infof("DevPath or MountPoints is empty, no operation here")
 		return result, nil
 	}
@@ -71,9 +83,9 @@ func (v *DiskVolumeHandler) ReconcileMount() (reconcile.Result, error) {
 
 		switch mountPoint.VolumeCap.AccessType {
 		case v1alpha1.VolumeCapability_AccessType_Mount:
-			err = v.MountFileSystem(devPath, mountPoint.TargetPath, mountPoint.FsTye, mountPoint.MountOptions...)
+			err = v.MountFileSystem(volPath, mountPoint.TargetPath, mountPoint.FsTye, mountPoint.MountOptions...)
 		case v1alpha1.VolumeCapability_AccessType_Block:
-			err = v.MountRawBlock(devPath, mountPoint.TargetPath)
+			err = v.MountRawBlock(volPath, mountPoint.TargetPath)
 		default:
 			// record and skip this mountpoint
 			v.RecordEvent(corev1.EventTypeWarning, "ValidAccessType", "AccessType of MountPoint %s "+
@@ -81,7 +93,7 @@ func (v *DiskVolumeHandler) ReconcileMount() (reconcile.Result, error) {
 		}
 
 		if err != nil {
-			log.WithError(err).Errorf("Failed to mount %s to %s", devPath, mountPoint.TargetPath)
+			log.WithError(err).Errorf("Failed to mount %s to %s", volPath, mountPoint.TargetPath)
 			result.Requeue = true
 			continue
 		}
@@ -214,6 +226,10 @@ func (v *DiskVolumeHandler) SetCanWipe(canWipe bool) {
 	v.Ldv.Spec.CanWipe = canWipe
 }
 
+func (v *DiskVolumeHandler) GetVolumePath() string {
+	return v.Ldv.Status.VolumePath
+}
+
 func (v *DiskVolumeHandler) MountRawBlock(devPath, mountPoint string) error {
 	// fixme: should check mount points again when do mount
 	// mount twice will cause error
@@ -246,8 +262,8 @@ func (v *DiskVolumeHandler) UnMount(mountPoint string) error {
 	if err := v.mounter.Unmount(mountPoint); err != nil {
 		// fixme: need consider raw block
 		if !v.IsDevMountPoint(mountPoint) {
-			v.RecordEvent(corev1.EventTypeWarning, "UnMountSuccess", "Unmount skipped due to mountpoint %s is empty or not mounted by disk %s",
-				mountPoint, v.Ldv.Status.DevPath)
+			v.RecordEvent(corev1.EventTypeWarning, "UnMountSuccess", "Unmount skipped due to mountpoint %s is empty or not mounted by disk %v",
+				mountPoint, v.Ldv.Status.DevLinks)
 			return nil
 		}
 
@@ -313,6 +329,14 @@ func (v *DiskVolumeHandler) UpdateMountPointPhase(targetPath string, phase v1alp
 			v.Ldv.Status.MountPoints[i].Phase = phase
 			return
 		}
+	}
+}
+
+// UpdateDevPathAccordingVolume devPath can change after machine restart, so update it here according to the volume
+func (v *DiskVolumeHandler) UpdateDevPathAccordingVolume() {
+	if vol := v.hostRegistry.GetVolumeByName(v.Ldv.Name); vol != nil {
+		v.Ldv.Status.DevPath = vol.AttachPath
+		return
 	}
 }
 

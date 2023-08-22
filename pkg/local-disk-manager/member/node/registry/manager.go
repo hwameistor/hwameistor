@@ -22,4 +22,6 @@ type Manager interface {
 	ListVolumesByType(devType types.DevType) []types.Volume
 
 	DiskExist(devPath string) bool
+
+	DiskSymbolLinkExist(symlink string) bool
 }

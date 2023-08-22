@@ -21,5 +21,5 @@ type Manager interface {
 	GetPool(poolName string) (*Pool, error)
 
 	// ExtendPool extend StoragePool with new disk
-	ExtendPool(poolName string, devPath string) (bool, error)
+	ExtendPool(poolName string, devLinks []string, serial string) (bool, error)
 }

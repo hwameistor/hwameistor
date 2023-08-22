@@ -73,6 +73,12 @@ For test, each host must have at least one unused drive with a minimal size of `
 
 For production, it is recommended to have at least one unused drive, protected by RAID1 or RAID5/6, with a minimal size of `200GiB`.
 
+:::note
+For virtual machine environments, please ensure that the disk serial number feature is enabled for each virtual machine. This will assist HwameiStor in better identifying and managing the disks on the host.
+
+To avoid disk identification conflicts, please ensure that the provided virtual disk serial numbers are not duplicated.
+:::
+
 ### Network
 
 For production, it is recommended to have a redundant `10Giga TCP/IP` network, if the HA feature is enabled.
