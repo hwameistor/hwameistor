@@ -153,6 +153,8 @@ definitions:
         items:
           $ref: '#/definitions/api.ModuleState'
         type: array
+      phase:
+        type: string
     type: object
   api.NodeDiskListByPool:
     properties:
@@ -1812,8 +1814,9 @@ definitions:
           NodeName represents where disk has to be claimed.
         type: string
       owner:
-        description: Owner represents which system owns this claim(e.g. local-storage,
-          local-disk-manager)
+        description: |-
+          Owner represents which system owns this claim(e.g. local-storage, local-disk-manager)
+          +kubebuilder:validation:Required
         type: string
     type: object
   v1alpha1.LocalDiskManagerStatus:
@@ -1912,6 +1915,11 @@ definitions:
         description: |-
           ClaimRef is the reference to the LDC which has claimed this LD
           +optional
+      devLinks:
+        description: DevLinks are symbol links for this device
+        items:
+          type: string
+        type: array
       devicePath:
         description: DevicePath is the disk path in the OS
         type: string
@@ -1922,6 +1930,16 @@ definitions:
       isRaid:
         description: HasRAID identifies if the disk is a raid disk or not
         type: boolean
+      major:
+        description: |-
+          Major represents drive used by the device
+          +optional
+        type: string
+      minor:
+        description: |-
+          Minor is used to distinguish different devices
+          +optional
+        type: string
       nodeName:
         description: |-
           NodeName represents the node where the disk is attached
@@ -1942,6 +1960,12 @@ definitions:
       partitioned:
         description: HasPartition represents if the disk has partitions or not
         type: boolean
+      preDevicePath:
+        description: PreDevicePath represents the last device path in the OS
+        type: string
+      preNodeName:
+        description: PreNodeName represents the node where the disk was attached
+        type: string
       raidInfo:
         allOf:
         - $ref: '#/definitions/v1alpha1.RAIDInfo'
@@ -2466,11 +2490,6 @@ definitions:
     type: object
   v1alpha1.State:
     enum:
-    - ""
-    - ToBeMounted
-    - ToBeUnMount
-    - Mounted
-    - NotReady
     - Ready
     - Maintain
     - Offline
@@ -2505,13 +2524,13 @@ definitions:
     - Available
     - InUse
     - Offline
+    - ""
+    - ToBeMounted
+    - ToBeUnMount
+    - Mounted
+    - NotReady
     type: string
     x-enum-varnames:
-    - MountPointStateEmpty
-    - MountPointToBeMounted
-    - MountPointToBeUnMount
-    - MountPointMounted
-    - MountPointNotReady
     - NodeStateReady
     - NodeStateMaintain
     - NodeStateOffline
@@ -2546,6 +2565,11 @@ definitions:
     - DiskStateAvailable
     - DiskStateInUse
     - DiskStateOffline
+    - MountPointStateEmpty
+    - MountPointToBeMounted
+    - MountPointToBeUnMount
+    - MountPointMounted
+    - MountPointNotReady
   v1alpha1.StorageNodeCondition:
     properties:
       lastTransitionTime:
@@ -3560,55 +3584,6 @@ paths:
           schema:
             $ref: '#/definitions/api.RspFailBody'
       summary: 摘要 指定数据卷转换操作
-      tags:
-      - Volume
-  /cluster/volumes/{volumeName}/expand:
-    get:
-      consumes:
-      - application/json
-      description: get GetVolumeExpandOperation
-      parameters:
-      - description: volumeName
-        in: path
-        name: volumeName
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.VolumeExpandOperation'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.RspFailBody'
-      summary: 摘要 获取指定数据卷扩容操作
-      tags:
-      - Volume
-    post:
-      consumes:
-      - application/json
-      description: post VolumeExpandOperation
-      parameters:
-      - description: volumeName
-        in: path
-        name: volumeName
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.VolumeConvertOperation'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.RspFailBody'
-      summary: 摘要 指定数据卷扩容
       tags:
       - Volume
   /cluster/volumes/{volumeName}/migrate:

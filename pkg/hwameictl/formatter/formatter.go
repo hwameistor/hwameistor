@@ -1,71 +1,40 @@
 package formatter
 
 import (
-	"os"
-	"sort"
-
-	"github.com/jedib0t/go-pretty/v6/table"
+	"fmt"
+	"time"
 )
 
-// ParameterTableLineLength the length for each line about parameter table
-const ParameterTableLineLength = 4
-
-func buildDefaultTable() table.Writer {
-	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
-
-	//t.SetStyle(table.StyleLight)
-	t.Style().Options.SeparateRows = true
-
-	return t
+func FormatTime(t time.Time) string {
+	return t.Format("2006-01-02 15:04")
 }
 
-func PrintParameters(title string, parameters map[string]interface{}) {
-	t := buildDefaultTable()
+func FormatBytesToSize(bytes int64) string {
+	const (
+		Byte = 1.0
+		KB   = 1024 * Byte
+		MB   = 1024 * KB
+		GB   = 1024 * MB
+		TB   = 1024 * GB
+	)
 
-	if title != "" {
-		t.SetTitle(title)
+	var unit string
+	var size float64
+
+	switch {
+	case bytes >= TB:
+		unit = "TB"
+		size = float64(bytes / TB)
+	case bytes >= GB:
+		unit = "GB"
+		size = float64(bytes / GB)
+	default:
+		unit = "MB"
+		size = float64(bytes / MB)
 	}
-
-	// Sort the keys
-	keys := make([]string, 0, len(parameters))
-	for key := range parameters {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-
-	// Get the count of the rows
-	length := len(parameters) / ParameterTableLineLength
-	if len(parameters)%ParameterTableLineLength != 0 {
-		length++
-	}
-	rows := make([]table.Row, length)
-
-	// Parse map values to the table rows
-	rowIndex, rowLength := 0, 0
-	for _, key := range keys {
-		if rowLength == ParameterTableLineLength {
-			// set length to 0, and switch to next row
-			rowIndex, rowLength = rowIndex+1, 0
-		}
-		rows[rowIndex], rowLength = append(rows[rowIndex], key, parameters[key]), rowLength+1
-		if rowLength != ParameterTableLineLength {
-			rows[rowIndex] = append(rows[rowIndex], " ")
-		}
-	}
-
-	t.AppendRows(rows)
-	t.Render()
+	return fmt.Sprintf("%.2f %s", size, unit)
 }
 
-func PrintTable(title string, header table.Row, rows []table.Row) {
-	t := buildDefaultTable()
-
-	if title != "" {
-		t.SetTitle(title)
-	}
-
-	t.AppendHeader(header)
-	t.AppendRows(rows)
-	t.Render()
+func FormatPercentString(v1, v2 int64) string {
+	return fmt.Sprintf("%.2f%%", (float64(v1)/float64(v2))*100)
 }

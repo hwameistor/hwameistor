@@ -73,7 +73,6 @@ func New(clientset *kubernetes.Clientset) Evictor {
 }
 
 func (ev *evictor) Run(stopCh <-chan struct{}) error {
-
 	log.Debug("start informer factory")
 	factory := informers.NewSharedInformerFactory(ev.clientset, 0)
 	factory.Start(stopCh)

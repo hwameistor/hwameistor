@@ -10,7 +10,6 @@ type LocalPool struct {
 	Name string `json:"name,omitempty"`
 }
 
-// Volume
 type Volume struct {
 	apisv1alpha1.LocalVolume
 }
@@ -20,14 +19,12 @@ type VolumeItemsList struct {
 	Volumes []*Volume `json:"items,omitempty"`
 }
 
-// VolumeList
 type VolumeList struct {
 	Volumes []*Volume `json:"items"`
 	// page 信息
 	Page *Pagination `json:"pagination,omitempty"`
 }
 
-// VolumeReplica
 type VolumeReplica struct {
 	apisv1alpha1.LocalVolumeReplica
 
@@ -35,7 +32,6 @@ type VolumeReplica struct {
 	//State State `json:"state,omitempty"`
 }
 
-// VolumeReplicaList
 type VolumeReplicaList struct {
 	// volume name
 	VolumeName string `json:"volumeName,omitempty"`
@@ -43,7 +39,6 @@ type VolumeReplicaList struct {
 	VolumeReplicas []*VolumeReplica `json:"volumeReplicas,omitempty"`
 }
 
-// VolumeOperationList
 type VolumeOperationListByNode struct {
 	// node name
 	NodeName string `json:"nodeName,omitempty"`
@@ -53,7 +48,6 @@ type VolumeOperationListByNode struct {
 	Page *Pagination `json:"pagination,omitempty"`
 }
 
-// VolumeOperationByVolume
 type VolumeOperationByVolume struct {
 	// VolumeName
 	VolumeName string `json:"volumeName,omitempty"`
@@ -67,7 +61,6 @@ type VolumeOperationByVolume struct {
 	VolumeExpandOperations []*VolumeExpandOperation `json:"VolumeExpandOperations,omitempty"`
 }
 
-// VolumeOperationByMigrate
 type VolumeOperationByMigrate struct {
 	// VolumeMigrateName name
 	VolumeMigrateName string `json:"volumeMigrateName,omitempty"`
@@ -75,17 +68,14 @@ type VolumeOperationByMigrate struct {
 	VolumeMigrateOperation *VolumeMigrateOperation `json:"volumeMigrateOperation,omitempty"`
 }
 
-// VolumeMigrateOperation
 type VolumeMigrateOperation struct {
 	apisv1alpha1.LocalVolumeMigrate
 }
 
-// VolumeConvertOperation
 type VolumeConvertOperation struct {
 	apisv1alpha1.LocalVolumeConvert
 }
 
-// VolumeExpandOperation
 type VolumeExpandOperation struct {
 	apisv1alpha1.LocalVolumeExpand
 }
@@ -94,16 +84,12 @@ type VolumeExpandOperation struct {
 type LocalVolumeMigrateSpec struct {
 	// volumeName
 	VolumeName string `json:"volumeName"`
-
 	// sourceNode
 	SourceNode string `json:"sourceNode"`
-
 	// targetNodesSuggested
 	TargetNodesSuggested []string `json:"targetNodesSuggested"`
-
 	// migrateAllVols
 	MigrateAllVols bool `json:"migrateAllVols,omitempty"`
-
 	// abort
 	Abort bool `json:"abort,omitempty"`
 }
@@ -204,7 +190,6 @@ type VolumeGroup struct {
 	Volumes []apisv1alpha1.LocalVolume `json:"items,omitempty"`
 }
 
-// VolumeGroupList
 type VolumeGroupList struct {
 	// VolumeGroups
 	VolumeGroups []VolumeGroup `json:"items"`

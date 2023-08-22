@@ -55,9 +55,6 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	v1.GET("/cluster/volumes/:volumeName/convert", volumeController.GetVolumeConvertOperation)
 	v1.POST("/cluster/volumes/:volumeName/convert", volumeController.VolumeConvertOperation)
 
-	v1.GET("/cluster/volumes/:volumeName/expand", volumeController.GetVolumeExpandOperation)
-	v1.POST("/cluster/volumes/:volumeName/expand", volumeController.VolumeExpandOperation)
-
 	v1.GET("/cluster/volumes/:volumeName/operations", volumeController.VolumeOperationGet)
 
 	volumeGroupController := controller.NewVolumeGroupController(sm)
@@ -124,18 +121,18 @@ func BuildServerMgr() (*manager.ServerManager, mgrpkg.Manager) {
 	}
 
 	// Setup Scheme for all resources
-	if err := api.AddToScheme(mgr.GetScheme()); err != nil {
+	if err = api.AddToScheme(mgr.GetScheme()); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
 
-	if err := apisv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
+	if err = apisv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		log.Error(err, "Failed to setup scheme for ldm resources")
 		os.Exit(1)
 	}
 
 	// Setup all Controllers
-	if err := controller.AddToManager(mgr); err != nil {
+	if err = controller.AddToManager(mgr); err != nil {
 		log.Error(err)
 		os.Exit(1)
 	}

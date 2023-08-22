@@ -21,7 +21,6 @@ const (
 	drbdVersion   = "drbd-version"
 )
 
-// SettingController
 type SettingController struct {
 	client.Client
 	record.EventRecorder
@@ -29,7 +28,6 @@ type SettingController struct {
 	clientset *kubernetes.Clientset
 }
 
-// NewSettingController
 func NewSettingController(client client.Client, clientset *kubernetes.Clientset, recorder record.EventRecorder) *SettingController {
 	return &SettingController{
 		Client:        client,
@@ -38,7 +36,6 @@ func NewSettingController(client client.Client, clientset *kubernetes.Clientset,
 	}
 }
 
-// EnableHighAvailability
 func (settingController *SettingController) EnableHighAvailability() (*hwameistorapi.DrbdEnableSettingRspBody, error) {
 	var RspBody = &hwameistorapi.DrbdEnableSettingRspBody{}
 	clusterList := &hoapisv1alpha1.ClusterList{}
@@ -72,14 +69,13 @@ func (settingController *SettingController) EnableHighAvailability() (*hwameisto
 	return RspBody, nil
 }
 
-// GetDRBDSetting
 func (settingController *SettingController) GetDRBDSetting() (*hwameistorapi.DrbdEnableSetting, error) {
-
 	jobs, err := settingController.getDrbdJobListByNS()
 	if err != nil {
 		log.WithError(err).Error("Failed to getJobListByNS")
 		return nil, err
 	}
+
 	var drbdSetting = &hwameistorapi.DrbdEnableSetting{}
 	for _, job := range jobs {
 		if label, exists := job.Labels[drbdVersion]; exists {
@@ -99,13 +95,13 @@ func (settingController *SettingController) GetDRBDSetting() (*hwameistorapi.Drb
 	return drbdSetting, nil
 }
 
-// getDrbdJobListByNS 获取当前namespace下同环境的job Item实例
 func (settingController *SettingController) getDrbdJobListByNS() ([]v1.Job, error) {
 	var jobList, err = settingController.clientset.BatchV1().Jobs("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
-	// 过滤非同前缀的Job
+
+	// Filter jobs by prefix
 	var items []v1.Job
 	for _, v := range jobList.Items {
 		log.Infof("getDrbdJobListByNS v.Name = %v", v.Name)
@@ -113,6 +109,5 @@ func (settingController *SettingController) getDrbdJobListByNS() ([]v1.Job, erro
 			items = append(items, v)
 		}
 	}
-
 	return items, nil
 }

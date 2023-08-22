@@ -10,13 +10,11 @@ import (
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
-// LocalDiskNodeController
 type LocalDiskNodeController struct {
 	client.Client
 	record.EventRecorder
 }
 
-// NewLocalDiskNodeController
 func NewLocalDiskNodeController(client client.Client, recorder record.EventRecorder) *LocalDiskNodeController {
 	return &LocalDiskNodeController{
 		Client:        client,
@@ -24,16 +22,14 @@ func NewLocalDiskNodeController(client client.Client, recorder record.EventRecor
 	}
 }
 
-// ListLocalDiskNode
 func (ldController *LocalDiskNodeController) ListLocalDiskNode() (*apisv1alpha1.LocalDiskNodeList, error) {
-	localdiskList := &apisv1alpha1.LocalDiskNodeList{}
-	if err := ldController.Client.List(context.TODO(), localdiskList); err != nil {
+	localDiskList := &apisv1alpha1.LocalDiskNodeList{}
+	if err := ldController.Client.List(context.TODO(), localDiskList); err != nil {
 		log.WithError(err).Error("Failed to list LocalDiskNodes")
 	}
-	return localdiskList, nil
+	return localDiskList, nil
 }
 
-// GetLocalDiskNode
 func (ldController *LocalDiskNodeController) GetLocalDiskNode(key client.ObjectKey) (*apisv1alpha1.LocalDiskNode, error) {
 	node := &apisv1alpha1.LocalDiskNode{}
 	if err := ldController.Client.Get(context.TODO(), key, node); err != nil {

@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
@@ -251,23 +253,23 @@ func (n *PoolController) StoragePoolExpand(ctx *gin.Context) {
 		return
 	}
 
-	if req.DiskType != "HDD" && req.DiskType != "SSD" && req.DiskType != "NVME" {
+	if req.DiskType != "HDD" && req.DiskType != "SSD" && req.DiskType != "NVMe" {
 		ctx.JSON(http.StatusNonAuthoritativeInfo, hwameistorapi.RspFailBody{
 			ErrCode: http.StatusNonAuthoritativeInfo,
-			Desc:    "DiskType must be HDD/SSD/NVME",
+			Desc:    "DiskType must be HDD/SSD/NVMe",
 		})
 		return
 	}
 
-	if req.Owner != "local-storage" && req.Owner != "local-disk-manager" {
+	if req.Owner != apisv1alpha1.LocalStorage && req.Owner != apisv1alpha1.LocalDiskManager {
 		ctx.JSON(http.StatusNonAuthoritativeInfo, hwameistorapi.RspFailBody{
 			ErrCode: http.StatusNonAuthoritativeInfo,
-			Desc:    "Owner must be local-storage/local-disk-manager",
+			Desc:    fmt.Sprintf("owner must be %s or %s", apisv1alpha1.LocalStorage, apisv1alpha1.LocalDiskManager),
 		})
 		return
 	}
 
-	if err = n.m.LocalDiskController().AddLocalDiskClaim(req.NodeName, req.DiskType, req.Owner); err != nil {
+	if err = n.m.StoragePoolController().ExpandStoragePool(req.NodeName, req.DiskType, req.Owner); err != nil {
 		ctx.JSON(http.StatusInternalServerError, hwameistorapi.RspFailBody{
 			ErrCode: http.StatusInternalServerError,
 			Desc:    err.Error(),

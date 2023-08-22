@@ -1383,80 +1383,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/cluster/volumes/{volumeName}/expand": {
-            "get": {
-                "description": "get GetVolumeExpandOperation",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Volume"
-                ],
-                "summary": "摘要 获取指定数据卷扩容操作",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "volumeName",
-                        "name": "volumeName",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/api.VolumeExpandOperation"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.RspFailBody"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "post VolumeExpandOperation",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Volume"
-                ],
-                "summary": "摘要 指定数据卷扩容",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "volumeName",
-                        "name": "volumeName",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/api.VolumeConvertOperation"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.RspFailBody"
-                        }
-                    }
-                }
-            }
-        },
         "/cluster/volumes/{volumeName}/migrate": {
             "get": {
                 "description": "get GetVolumeMigrateOperation 状态枚举 （Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed）",
@@ -1848,6 +1774,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/api.ModuleState"
                     }
+                },
+                "phase": {
+                    "type": "string"
                 }
             }
         },
@@ -3594,7 +3523,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "owner": {
-                    "description": "Owner represents which system owns this claim(e.g. local-storage, local-disk-manager)",
+                    "description": "Owner represents which system owns this claim(e.g. local-storage, local-disk-manager)\n+kubebuilder:validation:Required",
                     "type": "string"
                 }
             }
@@ -3712,6 +3641,13 @@ const docTemplate = `{
                         }
                     ]
                 },
+                "devLinks": {
+                    "description": "DevLinks are symbol links for this device",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "devicePath": {
                     "description": "DevicePath is the disk path in the OS",
                     "type": "string"
@@ -3727,6 +3663,14 @@ const docTemplate = `{
                 "isRaid": {
                     "description": "HasRAID identifies if the disk is a raid disk or not",
                     "type": "boolean"
+                },
+                "major": {
+                    "description": "Major represents drive used by the device\n+optional",
+                    "type": "string"
+                },
+                "minor": {
+                    "description": "Minor is used to distinguish different devices\n+optional",
+                    "type": "string"
                 },
                 "nodeName": {
                     "description": "NodeName represents the node where the disk is attached\n+kubebuilder:validation:Required",
@@ -3746,6 +3690,14 @@ const docTemplate = `{
                 "partitioned": {
                     "description": "HasPartition represents if the disk has partitions or not",
                     "type": "boolean"
+                },
+                "preDevicePath": {
+                    "description": "PreDevicePath represents the last device path in the OS",
+                    "type": "string"
+                },
+                "preNodeName": {
+                    "description": "PreNodeName represents the node where the disk was attached",
+                    "type": "string"
                 },
                 "raidInfo": {
                     "description": "RAIDInfo contains RAID information\n+optional",
@@ -4403,11 +4355,6 @@ const docTemplate = `{
         "v1alpha1.State": {
             "type": "string",
             "enum": [
-                "",
-                "ToBeMounted",
-                "ToBeUnMount",
-                "Mounted",
-                "NotReady",
                 "Ready",
                 "Maintain",
                 "Offline",
@@ -4441,14 +4388,14 @@ const docTemplate = `{
                 "Failed",
                 "Available",
                 "InUse",
-                "Offline"
+                "Offline",
+                "",
+                "ToBeMounted",
+                "ToBeUnMount",
+                "Mounted",
+                "NotReady"
             ],
             "x-enum-varnames": [
-                "MountPointStateEmpty",
-                "MountPointToBeMounted",
-                "MountPointToBeUnMount",
-                "MountPointMounted",
-                "MountPointNotReady",
                 "NodeStateReady",
                 "NodeStateMaintain",
                 "NodeStateOffline",
@@ -4482,7 +4429,12 @@ const docTemplate = `{
                 "OperationStateFailed",
                 "DiskStateAvailable",
                 "DiskStateInUse",
-                "DiskStateOffline"
+                "DiskStateOffline",
+                "MountPointStateEmpty",
+                "MountPointToBeMounted",
+                "MountPointToBeUnMount",
+                "MountPointMounted",
+                "MountPointNotReady"
             ]
         },
         "v1alpha1.StorageNodeCondition": {

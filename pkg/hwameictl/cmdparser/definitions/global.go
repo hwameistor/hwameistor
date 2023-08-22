@@ -2,8 +2,11 @@ package definitions
 
 import "time"
 
+const DefaultKubeConfigPath = "~/.kube/config"
+
 // Global settings, Read from hwameictl flags
 var (
-	Kubeconfig string
-	Timeout    time.Duration
+	KubeConfigPath string
+	Timeout        time.Duration
+	Debug          bool
 )

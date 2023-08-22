@@ -12,30 +12,19 @@ import (
 
 type ServerManager struct {
 	apiClient client.Client
-
 	clientset *kubernetes.Clientset
+	mgr       mgrpkg.Manager
+	logger    *log.Entry
 
-	lsnController *hwameistorctr.LocalStorageNodeController
-
-	lvController *hwameistorctr.LocalVolumeController
-
-	vgController *hwameistorctr.VolumeGroupController
-
-	mController *hwameistorctr.MetricController
-
-	lspController *hwameistorctr.LocalStoragePoolController
-
+	lsnController     *hwameistorctr.LocalStorageNodeController
+	lvController      *hwameistorctr.LocalVolumeController
+	vgController      *hwameistorctr.VolumeGroupController
+	mController       *hwameistorctr.MetricController
+	lspController     *hwameistorctr.LocalStoragePoolController
 	settingController *hwameistorctr.SettingController
-
-	ldController *hwameistorctr.LocalDiskController
-
-	ldnController *hwameistorctr.LocalDiskNodeController
-
-	authController *hwameistorctr.AuthController
-
-	mgr mgrpkg.Manager
-
-	logger *log.Entry
+	ldController      *hwameistorctr.LocalDiskController
+	ldnController     *hwameistorctr.LocalDiskNodeController
+	authController    *hwameistorctr.AuthController
 }
 
 func NewServerManager(mgr mgrpkg.Manager, clientset *kubernetes.Clientset) (*ServerManager, error) {

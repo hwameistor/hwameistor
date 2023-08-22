@@ -12,11 +12,9 @@ import (
 )
 
 type ILocalDiskController interface {
-	// LocalDiskList
 	LocalDiskList(ctx *gin.Context)
 }
 
-// LocalDiskController
 type LocalDiskController struct {
 	m *manager.ServerManager
 }

@@ -65,19 +65,13 @@ const (
 	// LocalDiskInUse represents that the disk is in use but not claimed by a LDC
 	LocalDiskInUse State = "Inuse"
 	// LocalDiskReserved represents that the disk will be used in the feature
-	LocalDiskReserved State = "Reserved"
-	// LocalDiskRemoveReserved
-	LocalDiskReleaseReserved State = "ReleaseReserved"
-	// LocalDiskEmpty
-	LocalDiskEmpty State = ""
-	// LocalDiskClaimedAndUnclaimed
+	LocalDiskReserved            State = "Reserved"
+	LocalDiskReleaseReserved     State = "ReleaseReserved"
+	LocalDiskEmpty               State = ""
 	LocalDiskClaimedAndUnclaimed State = "ClaimedAndUnclaimed"
-	// LocalDiskPending
-	LocalDiskPending State = "Pending"
-	// LocalDiskBound
-	LocalDiskBound State = "Bound"
-	// LocalDiskAvailable
-	LocalDiskAvailable State = "Available"
+	LocalDiskPending             State = "Pending"
+	LocalDiskBound               State = "Bound"
+	LocalDiskAvailable           State = "Available"
 
 	// LocalDiskActive is the state for the disk that is connected
 	LocalDiskActive State = "Active"
@@ -128,7 +122,6 @@ const (
 	PoolNameForNVMe = PoolNamePrefix + DiskClassNameNVMe
 )
 
-// StateConvert
 func StateConvert(state apisv1alpha1.State) State {
 	switch state {
 	case apisv1alpha1.OperationStateToBeAborted:
@@ -200,9 +193,7 @@ func StateConvert(state apisv1alpha1.State) State {
 	return ""
 }
 
-// VolumeStatefuzzyConvert
 func VolumeStatefuzzyConvert(state string) apisv1alpha1.State {
-
 	if state == "" {
 		return apisv1alpha1.VolumeStateEmpty
 	}
@@ -230,7 +221,6 @@ func VolumeStatefuzzyConvert(state string) apisv1alpha1.State {
 	return ""
 }
 
-// NodeStatefuzzyConvert
 func NodeStatefuzzyConvert(state string) State {
 	if state == "" {
 		return NodeStateEmpty
@@ -256,7 +246,6 @@ func NodeStatefuzzyConvert(state string) State {
 	return NodeStateUnknown
 }
 
-// OperationStatefuzzyConvert
 func OperationStatefuzzyConvert(state string) apisv1alpha1.State {
 	if state == "" {
 		return apisv1alpha1.VolumeStateEmpty
@@ -305,7 +294,6 @@ func OperationStatefuzzyConvert(state string) apisv1alpha1.State {
 	return apisv1alpha1.VolumeStateEmpty
 }
 
-// DriverStatefuzzyConvert
 func DriverStatefuzzyConvert(state string) apisv1alpha1.State {
 	if state == "" {
 		return ""
@@ -322,9 +310,7 @@ func DriverStatefuzzyConvert(state string) apisv1alpha1.State {
 	return ""
 }
 
-// DiskStatefuzzyConvert
 func DiskStatefuzzyConvert(state string) apisv1alpha1.LocalDiskState {
-
 	if state == "" {
 		return apisv1alpha1.LocalDiskEmpty
 	}

@@ -289,7 +289,7 @@ func (n *NodeController) UpdateStorageNodeDisk(ctx *gin.Context) {
 		}
 		ctx.JSON(http.StatusOK, diskReservedRsp)
 	} else {
-		removeDiskReservedRsp, err := n.m.StorageNodeController().ReleaseReserveStorageNodeDisk(queryPage, n.diskHandler)
+		removeDiskReservedRsp, err := n.m.StorageNodeController().RemoveReserveStorageNodeDisk(queryPage, n.diskHandler)
 		if err != nil {
 			failRsp.ErrCode = 500
 			failRsp.Desc = "ReserveStorageNodeDisk Failed:" + err.Error()
@@ -566,7 +566,7 @@ func (n *NodeController) StorageNodeUpdate(ctx *gin.Context) {
 		return
 	}
 
-	err = n.m.StorageNodeController().UpdateLocalDiskNode(nodeName, *req.Enable)
+	err = n.m.StorageNodeController().UpdateLocalStorageNode(nodeName, *req.Enable)
 	if err != nil {
 		log.Errorf("Fail to update local disk node, req = %v, err = %v", req, err)
 		ctx.JSON(http.StatusInternalServerError, hwameistorapi.RspFailBody{

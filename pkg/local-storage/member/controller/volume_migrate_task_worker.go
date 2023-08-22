@@ -300,7 +300,6 @@ func (m *manager) volumeMigrateSyncReplica(migrate *apisv1alpha1.LocalVolumeMigr
 
 	migrate.Status.State = apisv1alpha1.OperationStateMigratePruneReplica
 	return m.apiClient.Status().Update(ctx, migrate)
-
 }
 
 func (m *manager) syncReplicaByRclone(migrate *apisv1alpha1.LocalVolumeMigrate, vol *apisv1alpha1.LocalVolume) error {

@@ -26,33 +26,24 @@ const (
 	nodeStorageSortNum = 5
 )
 
-// MetricController
 type MetricController struct {
 	client.Client
 	record.EventRecorder
 
 	nameSpace string
-
 	clientset *kubernetes.Clientset
 
 	storageCapacityCollection *hwameistorapi.StorageCapacityCollection
-
-	storageNodesCollection *hwameistorapi.StorageNodesCollection
-
-	volumeCollection *hwameistorapi.VolumeCollection
-
-	diskCollection *hwameistorapi.DiskCollection
-
-	moduleStatusCollection *hwameistorapi.ModuleStatusCollection
-
-	storagePoolUseCollection *hwameistorapi.StoragePoolUseCollection
-
-	nodeStorageUseCollection *hwameistorapi.NodeStorageUseCollection
+	storageNodesCollection    *hwameistorapi.StorageNodesCollection
+	volumeCollection          *hwameistorapi.VolumeCollection
+	diskCollection            *hwameistorapi.DiskCollection
+	moduleStatusCollection    *hwameistorapi.ModuleStatusCollection
+	storagePoolUseCollection  *hwameistorapi.StoragePoolUseCollection
+	nodeStorageUseCollection  *hwameistorapi.NodeStorageUseCollection
 
 	lock sync.Mutex
 }
 
-// NewMetricController
 func NewMetricController(client client.Client, clientset *kubernetes.Clientset, recorder record.EventRecorder) *MetricController {
 	return &MetricController{
 		Client:                    client,
@@ -69,7 +60,6 @@ func NewMetricController(client client.Client, clientset *kubernetes.Clientset, 
 	}
 }
 
-// GetBaseMetric
 func (mController *MetricController) GetBaseMetric() (*hwameistorapi.BaseMetric, error) {
 	if err := mController.getBaseCapacityMetric(); err != nil {
 		log.WithError(err).Error("Failed to getBaseCapacityMetric")
@@ -93,7 +83,6 @@ func (mController *MetricController) GetBaseMetric() (*hwameistorapi.BaseMetric,
 	return basemetric, nil
 }
 
-// GetModuleStatus
 func (mController *MetricController) GetModuleStatus() (*hwameistorapi.ModuleStatus, error) {
 	if err := mController.getHwameistorDaemonsetStatusMetric(); err != nil {
 		log.WithError(err).Error("Failed to getHwameistorDaemonsetStatusMetric")
@@ -116,7 +105,6 @@ func (mController *MetricController) GetModuleStatus() (*hwameistorapi.ModuleSta
 	return operatorModuleStatus, nil
 }
 
-// GetStoragePoolUseMetric
 func (mController *MetricController) GetStoragePoolUseMetric() (*hwameistorapi.StoragePoolUseMetric, error) {
 	if err := mController.addStoragePoolUseMetric(); err != nil {
 		log.WithError(err).Error("Failed to addStoragePoolUseMetric")
@@ -127,7 +115,6 @@ func (mController *MetricController) GetStoragePoolUseMetric() (*hwameistorapi.S
 	return storagePoolUseMetric, nil
 }
 
-// GetNodeStorageUseMetric
 func (mController *MetricController) GetNodeStorageUseMetric(storagepoolclass string) (*hwameistorapi.NodeStorageUseMetric, error) {
 	if err := mController.addNodeStorageUseMetric(storagepoolclass); err != nil {
 		log.WithError(err).Error("Failed to addNodeStorageUseMetric")
@@ -138,7 +125,6 @@ func (mController *MetricController) GetNodeStorageUseMetric(storagepoolclass st
 	return nodeStorageUseMetric, nil
 }
 
-// OperationListMetric
 func (mController *MetricController) OperationListMetric(page, pageSize int32) (*hwameistorapi.OperationMetric, error) {
 	var operationMetric = &hwameistorapi.OperationMetric{}
 	var operationList []hwameistorapi.Operation
@@ -190,7 +176,7 @@ func (mController *MetricController) OperationListMetric(page, pageSize int32) (
 		operationList = append(operationList, operation)
 	}
 
-	var operations = []hwameistorapi.Operation{}
+	var operations []hwameistorapi.Operation
 	operationMetric.OperationList = utils.DataPatination(operationList, page, pageSize)
 	if len(operationList) == 0 {
 		operationMetric.OperationList = operations
@@ -210,10 +196,8 @@ func (mController *MetricController) OperationListMetric(page, pageSize int32) (
 	return operationMetric, nil
 }
 
-// getBaseCapacityMetric
 func (mController *MetricController) getBaseCapacityMetric() error {
 	mController.resetNodeResourceMetric()
-
 	mController.addK8sNodeMetric()
 
 	lsnList := &apisv1alpha1.LocalStorageNodeList{}
@@ -231,7 +215,6 @@ func (mController *MetricController) getBaseCapacityMetric() error {
 	return nil
 }
 
-// getBaseVolumeMetric
 func (mController *MetricController) getBaseVolumeMetric() error {
 	volList := &apisv1alpha1.LocalVolumeList{}
 	if err := mController.Client.List(context.TODO(), volList); err != nil {
@@ -253,7 +236,6 @@ func (mController *MetricController) getBaseVolumeMetric() error {
 	return nil
 }
 
-// getBaseDiskMetric
 func (mController *MetricController) getBaseDiskMetric() error {
 	diskList := &apisv1alpha1.LocalDiskList{}
 	if err := mController.Client.List(context.TODO(), diskList); err != nil {
@@ -274,7 +256,6 @@ func (mController *MetricController) getBaseDiskMetric() error {
 	return nil
 }
 
-// convertBaseMetric
 func (mController *MetricController) convertBaseMetric() *hwameistorapi.BaseMetric {
 	basemetric := &hwameistorapi.BaseMetric{}
 
@@ -297,7 +278,6 @@ func (mController *MetricController) convertBaseMetric() *hwameistorapi.BaseMetr
 	return basemetric
 }
 
-// convertModuleStatus
 func (mController *MetricController) convertModuleStatus() *hwameistorapi.ModuleStatus {
 	ModuleStatus := &hwameistorapi.ModuleStatus{}
 
@@ -313,7 +293,6 @@ func (mController *MetricController) convertModuleStatus() *hwameistorapi.Module
 	return ModuleStatus
 }
 
-// convertStoragePoolUseMetric
 func (mController *MetricController) convertStoragePoolUseMetric() *hwameistorapi.StoragePoolUseMetric {
 	storagePoolUseMetric := &hwameistorapi.StoragePoolUseMetric{}
 
@@ -330,7 +309,6 @@ func (mController *MetricController) convertStoragePoolUseMetric() *hwameistorap
 	return storagePoolUseMetric
 }
 
-// resetNodeResourceMetric
 func (mController *MetricController) resetNodeResourceMetric() {
 	mController.storageCapacityCollection.ReservedCapacityBytes = 0
 	mController.storageCapacityCollection.AllocatedCapacityBytes = 0
@@ -350,7 +328,6 @@ func (mController *MetricController) resetNodeResourceMetric() {
 	mController.diskCollection.HealthyDiskNum = 0
 }
 
-// addNodeResourceMetric
 func (mController *MetricController) addNodeResourceMetric(node *apisv1alpha1.LocalStorageNode) {
 	mController.lock.Lock()
 	defer mController.lock.Unlock()
@@ -363,7 +340,6 @@ func (mController *MetricController) addNodeResourceMetric(node *apisv1alpha1.Lo
 	mController.storageNodesCollection.ManagedNodesNum++
 }
 
-// addK8sNodeMetric
 func (mController *MetricController) addK8sNodeMetric() {
 	mController.lock.Lock()
 	defer mController.lock.Unlock()
@@ -377,7 +353,6 @@ func (mController *MetricController) addK8sNodeMetric() {
 	mController.storageNodesCollection.TotalNodesNum = int64(len(nodes.Items))
 }
 
-// addNodeReservedCapacityMetric
 func (mController *MetricController) addNodeReservedCapacityMetric() error {
 	mController.lock.Lock()
 	defer mController.lock.Unlock()
@@ -395,9 +370,7 @@ func (mController *MetricController) addNodeReservedCapacityMetric() error {
 	return nil
 }
 
-// getBaseNodeMetric
 func (mController *MetricController) getBaseNodeMetric() error {
-
 	if err := mController.addNodeReservedCapacityMetric(); err != nil {
 		return err
 	}
@@ -405,10 +378,7 @@ func (mController *MetricController) getBaseNodeMetric() error {
 	return nil
 }
 
-// getHwameistorDaemonsetStatusMetric
 func (mController *MetricController) getHwameistorDaemonsetStatusMetric() error {
-
-	// 获取daemonset的资源名字
 	daemonsets, err := mController.clientset.AppsV1().DaemonSets(mController.nameSpace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		log.WithError(err).Error("Failed to list daemonsets")
@@ -430,10 +400,7 @@ func (mController *MetricController) getHwameistorDaemonsetStatusMetric() error 
 	return nil
 }
 
-// getHwameistorDeploymentStatusMetric
 func (mController *MetricController) getHwameistorDeploymentStatusMetric() error {
-
-	// 获取deployments的资源名字
 	deployments, err := mController.clientset.AppsV1().Deployments(mController.nameSpace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		log.WithError(err).Error("Failed to list daemonsets")
@@ -455,9 +422,7 @@ func (mController *MetricController) getHwameistorDeploymentStatusMetric() error
 	return nil
 }
 
-// getHwameistorOperatorStatusMetric
 func (mController *MetricController) getHwameistorOperatorStatusMetric() (*hwameistorapi.ModuleStatus, error) {
-
 	var moduleStatus = &hwameistorapi.ModuleStatus{}
 	clusterList := &hoapisv1alpha1.ClusterList{}
 	if err := mController.Client.List(context.TODO(), clusterList); err != nil {
@@ -476,7 +441,6 @@ func (mController *MetricController) getHwameistorOperatorStatusMetric() (*hwame
 	return moduleStatus, nil
 }
 
-// addStoragePoolUseMetric
 func (mController *MetricController) addStoragePoolUseMetric() error {
 	mController.lock.Lock()
 	defer mController.lock.Unlock()
@@ -506,7 +470,6 @@ func (mController *MetricController) addStoragePoolUseMetric() error {
 	return nil
 }
 
-// addNodeStorageUseMetric
 func (mController *MetricController) addNodeStorageUseMetric(storagepoolclass string) error {
 	mController.lock.Lock()
 	defer mController.lock.Unlock()
@@ -534,18 +497,15 @@ func (mController *MetricController) addNodeStorageUseMetric(storagepoolclass st
 		}
 	}
 
-	// 使用sort包进行排序
 	sort.Stable(sort.Reverse(nodeStorageUseRatios))
 	mController.nodeStorageUseCollection.NodeStorageUseRatios = nodeStorageUseRatios
-
 	return nil
 }
 
-// convertNodeStorageUseMetric
 func (mController *MetricController) convertNodeStorageUseMetric(storagepoolclass string) *hwameistorapi.NodeStorageUseMetric {
 	nodeStorageUseMetric := &hwameistorapi.NodeStorageUseMetric{}
-
 	nodeStorageUseMetric.StoragePoolClass = storagepoolclass
+
 	if mController.nodeStorageUseCollection != nil {
 		for i, ratio := range mController.nodeStorageUseCollection.NodeStorageUseRatios {
 			if i < nodeStorageSortNum {

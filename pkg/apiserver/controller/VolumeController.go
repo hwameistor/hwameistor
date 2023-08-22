@@ -12,7 +12,6 @@ import (
 )
 
 type IVolumeController interface {
-	//RestController
 	VolumeGet(ctx *gin.Context)
 	VolumeList(ctx *gin.Context)
 	VolumeReplicasGet(ctx *gin.Context)
@@ -20,12 +19,9 @@ type IVolumeController interface {
 	VolumeMigrateOperation(ctx *gin.Context)
 	GetVolumeConvertOperation(ctx *gin.Context)
 	VolumeConvertOperation(ctx *gin.Context)
-	GetVolumeExpandOperation(ctx *gin.Context)
-	VolumeExpandOperation(ctx *gin.Context)
 	VolumeOperationGet(ctx *gin.Context)
 }
 
-// VolumeController
 type VolumeController struct {
 	m *manager.ServerManager
 }
@@ -134,7 +130,6 @@ func (v *VolumeController) VolumeReplicasGet(ctx *gin.Context) {
 
 	// 获取path中的name
 	volumeName := ctx.Param("volumeName")
-
 	// 获取path中的volumeReplicaName
 	volumeReplicaName := ctx.Query("volumeReplicaName")
 	// 获取path中的state
@@ -176,6 +171,7 @@ func (v *VolumeController) VolumeReplicasGet(ctx *gin.Context) {
 // @Router      /cluster/volumes/{volumeName}/migrate [post]
 func (v *VolumeController) VolumeMigrateOperation(ctx *gin.Context) {
 	var failRsp hwameistorapi.RspFailBody
+
 	// 获取path中的name
 	name := ctx.Param("volumeName")
 	log.Infof("VolumeMigrateOperation name = %v", name)
@@ -294,15 +290,15 @@ func (v *VolumeController) GetVolumeMigrateOperation(ctx *gin.Context) {
 		return
 	}
 
-	volumeConvert, err := v.m.VolumeController().GetVolumeMigrate(volumeName)
+	volumeMigrate, err := v.m.VolumeController().GetVolumeMigrate(volumeName)
 	if err != nil {
 		failRsp.ErrCode = 500
-		failRsp.Desc = "VolumeConvertOperation Failed: " + err.Error()
+		failRsp.Desc = "VolumeMigrateOperation Failed: " + err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, volumeConvert)
+	ctx.JSON(http.StatusOK, hwameistorapi.VolumeMigrateOperation{LocalVolumeMigrate: *volumeMigrate})
 }
 
 // GetVolumeConvertOperation godoc
@@ -337,77 +333,7 @@ func (v *VolumeController) GetVolumeConvertOperation(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, volumeConvert)
-}
-
-// GetVolumeExpandOperation godoc
-// @Summary 摘要 获取指定数据卷扩容操作
-// @Description get GetVolumeExpandOperation
-// @Tags        Volume
-// @Param       volumeName path string true "volumeName"
-// @Accept      json
-// @Produce     json
-// @Success     200 {object}  api.VolumeExpandOperation
-// @Failure     500 {object}  api.RspFailBody
-// @Router      /cluster/volumes/{volumeName}/expand [get]
-func (v *VolumeController) GetVolumeExpandOperation(ctx *gin.Context) {
-	var failRsp hwameistorapi.RspFailBody
-
-	// 获取path中的name
-	volumeName := ctx.Param("volumeName")
-
-	log.Infof("VolumeConvertOperation volumeName = %v", volumeName)
-	if volumeName == "" {
-		failRsp.ErrCode = 203
-		failRsp.Desc = "volumeName cannot be empty"
-		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
-		return
-	}
-
-	volumeConvert, err := v.m.VolumeController().GetVolumeConvert(volumeName)
-	if err != nil {
-		failRsp.ErrCode = 500
-		failRsp.Desc = "VolumeConvertOperation Failed: " + err.Error()
-		ctx.JSON(http.StatusInternalServerError, failRsp)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, volumeConvert)
-}
-
-// VolumeExpandOperation godoc
-// @Summary 摘要 指定数据卷扩容
-// @Description post VolumeExpandOperation
-// @Tags        Volume
-// @Param       volumeName path string true "volumeName"
-// @Accept      json
-// @Produce     json
-// @Success     200 {object}  api.VolumeConvertOperation
-// @Failure     500 {object}  api.RspFailBody
-// @Router      /cluster/volumes/{volumeName}/expand [post]
-func (v *VolumeController) VolumeExpandOperation(ctx *gin.Context) {
-	var failRsp hwameistorapi.RspFailBody
-
-	// 获取path中的name
-	volumeName := ctx.Param("volumeName")
-
-	log.Infof("VolumeConvertOperation volumeName = %v", volumeName)
-	if volumeName == "" {
-		failRsp.ErrCode = 203
-		failRsp.Desc = "volumeName cannot be empty"
-		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
-		return
-	}
-
-	volumeConvert, err := v.m.VolumeController().GetVolumeConvert(volumeName)
-	if err != nil {
-		failRsp.ErrCode = 500
-		failRsp.Desc = "VolumeConvertOperation Failed: " + err.Error()
-		ctx.JSON(http.StatusInternalServerError, failRsp)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, volumeConvert)
+	ctx.JSON(http.StatusOK, hwameistorapi.VolumeConvertOperation{LocalVolumeConvert: *volumeConvert})
 }
 
 // VolumeOperationGet godoc

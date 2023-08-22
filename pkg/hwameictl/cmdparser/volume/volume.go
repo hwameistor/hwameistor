@@ -1,16 +1,17 @@
 package volume
 
 import (
-	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/volume/convert"
-	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/volume/get"
-	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/volume/migrate"
 	"github.com/spf13/cobra"
 )
 
 var Volume = &cobra.Command{
 	Use:   "volume",
-	Short: "Manage the hwameistor's Volumes.",
-	Long:  "Manage the hwameistor's Volumes.",
+	Args:  cobra.ExactArgs(0),
+	Short: "Manage the Hwameistor's volumes.",
+	Long: "Manage the Hwameistor's volumes.Hwameistor provides LVM-based data volumes,\n" +
+		"which offer read and write performance comparable to that of native disks.\n" +
+		"These data volumes also provide advanced features such as data volume expansion,\n" +
+		"migration, high availability, and more.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// root cmd will show help only
 		return cmd.Help()
@@ -18,8 +19,6 @@ var Volume = &cobra.Command{
 }
 
 func init() {
-	// Volume sub command
-	Volume.AddCommand(get.VolumeGet)
-	Volume.AddCommand(migrate.VolumeMigrate)
-	Volume.AddCommand(convert.VolumeConvert)
+	// Volume sub commands
+	Volume.AddCommand(volumeGet, volumeList, volumeMigrate, volumeConvert, volumeExpand)
 }

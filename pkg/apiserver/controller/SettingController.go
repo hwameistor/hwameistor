@@ -11,12 +11,10 @@ import (
 )
 
 type ISettingController interface {
-	//RestController
 	EnableDRBDSetting(ctx *gin.Context)
 	DRBDSettingGet(ctx *gin.Context)
 }
 
-// SettingController
 type SettingController struct {
 	m *manager.ServerManager
 }
