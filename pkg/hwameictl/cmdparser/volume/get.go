@@ -63,6 +63,7 @@ func volumeGetOne(volumeName string) error {
 	if lv == nil {
 		return fmt.Errorf("volume %s is not exists", volumeName)
 	}
+
 	// Volume infos
 	formatter.PrintParameters("Volume parameters", map[string]interface{}{
 		"Status":        lv.Status.State,

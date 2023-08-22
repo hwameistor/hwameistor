@@ -37,11 +37,11 @@ func BuildKubeClient(kubeconfigPath string) (client.Client, error) {
 
 	// Setup Scheme for all resources
 	if err = api.AddToScheme(options.Scheme); err != nil {
-		log.Error(err, "")
+		log.Error(err, "Failed to setup schemes")
 		os.Exit(1)
 	}
 	if err = apisv1alpha1.AddToScheme(options.Scheme); err != nil {
-		log.Error(err, "Failed to setup scheme for ldm resources")
+		log.Error(err, "Failed to setup schemes")
 		os.Exit(1)
 	}
 

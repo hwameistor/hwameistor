@@ -17,4 +17,6 @@ var Volume = &cobra.Command{
 func init() {
 	// Volume sub command
 	Volume.AddCommand(volumeGet)
+	Volume.AddCommand(volumeMigrate)
+	Volume.AddCommand(volumeConvert)
 }

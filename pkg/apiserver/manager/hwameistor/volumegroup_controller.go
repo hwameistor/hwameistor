@@ -84,7 +84,7 @@ func (vgController *VolumeGroupController) ListVolumeGroup() (*hwameistorapi.Vol
 
 	var vgnames []string
 	for _, lv := range lvList.Items {
-		var vgsnamestr string = strings.Join(vgnames, " ")
+		var vgsnamestr = strings.Join(vgnames, " ")
 		if lv.Spec.VolumeGroup != "" && !strings.Contains(vgsnamestr, lv.Spec.VolumeGroup) {
 			vgnames = append(vgnames, lv.Spec.VolumeGroup)
 
