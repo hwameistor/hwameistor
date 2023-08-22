@@ -69,7 +69,7 @@ type manager struct {
 
 	logger *log.Entry
 
-	lock sync.RWMutex
+	lock sync.Mutex
 
 	dataCopyManager *datacopyutil.DataCopyManager
 }

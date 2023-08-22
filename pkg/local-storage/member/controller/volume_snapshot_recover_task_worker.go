@@ -111,7 +111,7 @@ func (m *manager) volumeSnapshotRecoverStart(snapshotRecover *apisv1alpha1.Local
 	// create LocalVolumeReplicaSnapshotRecover on each node according to the topology of source volume
 	var allVolumeReplicaSnapshotRecovers []string
 	for _, nodeName := range sourceVolume.Spec.Accessibility.Nodes {
-		// check if replica snapshot recover has already created on this node
+		// 1. check if replica snapshot recover has already created on this node
 		if exist, nodeSnapRecover, err := m.isReplicaSnapshotRecoverExistOnNode(nodeName, snapshotRecover.Name); err != nil {
 			logCtx.WithError(err).Errorf("Failed to judge if LocalVolumeReplicaSnapshot exist on node %s", nodeName)
 			return err
@@ -121,6 +121,7 @@ func (m *manager) volumeSnapshotRecoverStart(snapshotRecover *apisv1alpha1.Local
 			continue
 		}
 
+		// 2. start creating replica snapshot recover
 		nodeReplicaSnapshot, ok := nodeVolumeReplicaSnapshot[nodeName]
 		if !ok {
 			err = fmt.Errorf("LocalVolumeReplicaSnapshot not found on node %s but it is accessible in the source LocalVolume topology", nodeName)
@@ -128,6 +129,9 @@ func (m *manager) volumeSnapshotRecoverStart(snapshotRecover *apisv1alpha1.Local
 			return err
 		}
 
+		if m.replicaSnapRecoverRecords[snapshotRecover.Name] == nil {
+			m.replicaSnapRecoverRecords[snapshotRecover.Name] = make(map[string]*apisv1alpha1.LocalVolumeReplicaSnapshotRecover)
+		}
 		replicaSnapshotRecover := &apisv1alpha1.LocalVolumeReplicaSnapshotRecover{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: fmt.Sprintf("%s-%s", snapshotRecover.Name, utilrand.String(6)),
@@ -205,19 +209,19 @@ func (m *manager) volumeSnapshotRecoverCleanup(snapshotRecover *apisv1alpha1.Loc
 
 	cleanedCount := 0
 	for _, replicaSnapshotRecoverName := range snapshotRecover.Status.VolumeReplicaSnapshotRecover {
-		replicaSnapshotRecover := &apisv1alpha1.LocalVolumeReplicaSnapshot{}
+		replicaSnapshotRecover := &apisv1alpha1.LocalVolumeReplicaSnapshotRecover{}
 		if err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: replicaSnapshotRecoverName}, replicaSnapshotRecover); err != nil {
 			if errors.IsNotFound(err) {
 				cleanedCount++
-				logCtx.WithField("ReplicaSnapshotRecover", replicaSnapshotRecoverName).WithError(err).Error("Cleanup VolumeReplicaSnapshotRecover successfully")
+				logCtx.WithField("ReplicaSnapshotRecover", replicaSnapshotRecoverName).Error("Cleanup VolumeReplicaSnapshotRecover successfully")
 				continue
 			}
 			logCtx.WithField("ReplicaSnapshotRecover", replicaSnapshotRecoverName).WithError(err).Error("Failed to get VolumeReplicaSnapshotRecover")
 			return err
 		}
 
-		if !replicaSnapshotRecover.Spec.Delete {
-			replicaSnapshotRecover.Spec.Delete = true
+		if !replicaSnapshotRecover.Spec.Abort {
+			replicaSnapshotRecover.Spec.Abort = true
 			if err := m.apiClient.Update(context.Background(), replicaSnapshotRecover); err != nil {
 				logCtx.WithField("ReplicaSnapshotRecover", replicaSnapshotRecoverName).Error("Failed to cleanup VolumeReplicaSnapshotRecover")
 				return err
@@ -282,9 +286,6 @@ func (m *manager) isReplicaSnapshotRecoverExistOnNode(nodeName, volumeSnapshotRe
 	}
 
 	// 2. check local cache
-	m.lock.RLock()
-	defer m.lock.RUnlock()
-
 	if records, ok := m.replicaSnapRecoverRecords[volumeSnapshotRecoverName]; ok {
 		if volumeReplicaSnapshotRecover, ok := records[nodeName]; ok {
 			return true, volumeReplicaSnapshotRecover, nil
