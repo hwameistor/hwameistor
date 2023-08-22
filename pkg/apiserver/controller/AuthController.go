@@ -32,6 +32,7 @@ func NewAuthController(m *manager.ServerManager) IAuthController {
 // @Accept      application/json
 // @Produce     application/json
 // @Success     200 {object} api.AuthRspBody
+// @Failure     500 {object} api.RspFailBody
 // @Router      /cluster/auth/auth [post]
 func (n *AuthController) Auth(ctx *gin.Context) {
 	var req api.AuthReqBody
@@ -72,6 +73,7 @@ func (n *AuthController) Auth(ctx *gin.Context) {
 // @Tags        Auth
 // @Produce     application/json
 // @Success     200 {object} api.AuthLogoutRspBody
+// @Failure     500 {object} api.RspFailBody
 // @Router      /cluster/auth/logout [post]
 func (n *AuthController) Logout(ctx *gin.Context) {
 	token := ctx.Request.Header.Get(api.AuthTokenHeaderName)

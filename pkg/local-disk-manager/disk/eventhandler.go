@@ -1,6 +1,0 @@
-package disk
-
-//
-func Detail() {
-
-}

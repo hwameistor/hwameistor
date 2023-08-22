@@ -17,6 +17,21 @@ spec:
     - jsonPath: .spec.nodeName
       name: NodeMatch
       type: string
+    - jsonPath: .spec.capacity
+      name: Capacity
+      priority: 1
+      type: integer
+    - jsonPath: .spec.preNodeName
+      name: PreNodeMatch
+      priority: 1
+      type: string
+    - jsonPath: .spec.devicePath
+      name: DevicePath
+      type: string
+    - jsonPath: .spec.preDevicePath
+      name: PreDevicePath
+      priority: 1
+      type: string
     - jsonPath: .spec.owner
       name: Owner
       priority: 1
@@ -32,6 +47,9 @@ spec:
       name: Reserved
       priority: 1
       type: boolean
+    - jsonPath: .metadata.creationTimestamp
+      name: age
+      type: date
     name: v1alpha1
     schema:
       openAPIV3Schema:

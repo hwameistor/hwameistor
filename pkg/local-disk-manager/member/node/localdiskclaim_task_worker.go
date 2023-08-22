@@ -118,7 +118,7 @@ func (m *nodeManager) processLocalDiskClaimBound(diskClaim *v1alpha1.LocalDiskCl
 	}()
 
 	for _, disk := range tobeExtendedDisks {
-		ok, err := m.poolManager.ExtendPool(poolName, disk.Spec.DevicePath)
+		ok, err := m.poolManager.ExtendPool(poolName, disk.Spec.DevLinks, disk.Spec.DiskAttributes.SerialNumber)
 		if ok {
 			logCtx.WithFields(log.Fields{"poolName": poolName, "extendDisk": disk.Spec.DevicePath}).Infof("Succeed to expand DiskPool")
 		} else if err != nil {

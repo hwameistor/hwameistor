@@ -67,3 +67,15 @@ type StoragePoolNodesCollection struct {
 	// 存储池信息
 	StoragePool StoragePool `json:"storagePool"`
 }
+
+type StoragePoolExpansionReqBody struct {
+	NodeName string `json:"nodeName,omitempty"`
+	// HDD/SSD/NVME
+	DiskType string `json:"diskType,omitempty"`
+	// local-storage/local-disk-manager
+	Owner string `json:"owner,omitempty"`
+}
+
+type StoragePoolExpansionRspBody struct {
+	Success bool `json:"success,omitempty"`
+}

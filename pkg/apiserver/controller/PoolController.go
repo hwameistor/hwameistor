@@ -1,6 +1,7 @@
 package controller
 
 import (
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 
@@ -11,14 +12,13 @@ import (
 )
 
 type IPoolController interface {
-	//RestController
 	StoragePoolGet(ctx *gin.Context)
 	StoragePoolList(ctx *gin.Context)
 	StorageNodesGetByPoolName(ctx *gin.Context)
 	StorageNodeDisksGetByPoolName(ctx *gin.Context)
+	StoragePoolExpand(ctx *gin.Context)
 }
 
-// PoolController
 type PoolController struct {
 	m *manager.ServerManager
 }
@@ -219,4 +219,63 @@ func (n *PoolController) StorageNodeDisksGetByPoolName(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, sndisksByPoolName)
+}
+
+// StoragePoolExpand godoc
+// @Summary     Storage pool expand
+// @Description expand new disk for storage pool
+// @Tags        Pool
+// @Param       body body api.StoragePoolExpansionReqBody true "body"
+// @Accept      application/json
+// @Produce     application/json
+// @Success     200 {object} api.StoragePoolExpansionRspBody
+// @Failure     500 {object} api.RspFailBody
+// @Router      /cluster/pools/expand [post]
+func (n *PoolController) StoragePoolExpand(ctx *gin.Context) {
+	var req hwameistorapi.StoragePoolExpansionReqBody
+	err := ctx.ShouldBind(&req)
+	if err != nil {
+		log.Errorf("Unmarshal err = %v", err)
+		ctx.JSON(http.StatusInternalServerError, hwameistorapi.RspFailBody{
+			ErrCode: http.StatusInternalServerError,
+			Desc:    err.Error(),
+		})
+		return
+	}
+
+	if req.NodeName == "" {
+		ctx.JSON(http.StatusNonAuthoritativeInfo, hwameistorapi.RspFailBody{
+			ErrCode: http.StatusNonAuthoritativeInfo,
+			Desc:    "nodeName cant be empty",
+		})
+		return
+	}
+
+	if req.DiskType != "HDD" && req.DiskType != "SSD" && req.DiskType != "NVME" {
+		ctx.JSON(http.StatusNonAuthoritativeInfo, hwameistorapi.RspFailBody{
+			ErrCode: http.StatusNonAuthoritativeInfo,
+			Desc:    "DiskType must be HDD/SSD/NVME",
+		})
+		return
+	}
+
+	if req.Owner != "local-storage" && req.Owner != "local-disk-manager" {
+		ctx.JSON(http.StatusNonAuthoritativeInfo, hwameistorapi.RspFailBody{
+			ErrCode: http.StatusNonAuthoritativeInfo,
+			Desc:    "Owner must be local-storage/local-disk-manager",
+		})
+		return
+	}
+
+	if err = n.m.LocalDiskController().AddLocalDiskClaim(req.NodeName, req.DiskType, req.Owner); err != nil {
+		ctx.JSON(http.StatusInternalServerError, hwameistorapi.RspFailBody{
+			ErrCode: http.StatusInternalServerError,
+			Desc:    err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, hwameistorapi.StoragePoolExpansionRspBody{
+		Success: true,
+	})
 }

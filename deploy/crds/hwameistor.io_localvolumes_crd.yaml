@@ -37,6 +37,7 @@ spec:
     - description: Allocated resource ID for the volume
       jsonPath: .spec.config.resourceID
       name: resource
+      priority: 1
       type: integer
     - description: Name of the node where the volume is in-use
       jsonPath: .status.publishedNode
@@ -45,6 +46,12 @@ spec:
     - description: Filesystem type of this volume
       jsonPath: .status.fsType
       name: fstype
+      priority: 1
+      type: string
+    - description: Name of volume group
+      jsonPath: .spec.volumegroup
+      name: group
+      priority: 1
       type: string
     - jsonPath: .metadata.creationTimestamp
       name: age

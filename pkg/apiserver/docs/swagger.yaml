@@ -172,6 +172,16 @@ definitions:
         description: PoolName 存储池名称
         type: string
     type: object
+  api.NodeUpdateReqBody:
+    properties:
+      enable:
+        type: boolean
+    type: object
+  api.NodeUpdateRspBody:
+    properties:
+      success:
+        type: boolean
+    type: object
   api.Operation:
     properties:
       description:
@@ -458,6 +468,22 @@ definitions:
       totalCapacityBytes:
         description: TotalCapacityBytes 存储池对应存储总容量
         type: integer
+    type: object
+  api.StoragePoolExpansionReqBody:
+    properties:
+      diskType:
+        description: HDD/SSD/NVME
+        type: string
+      nodeName:
+        type: string
+      owner:
+        description: local-storage/local-disk-manager
+        type: string
+    type: object
+  api.StoragePoolExpansionRspBody:
+    properties:
+      success:
+        type: boolean
     type: object
   api.StoragePoolList:
     properties:
@@ -2244,6 +2270,10 @@ definitions:
       volumeName:
         description: VolumeName is the name of the volume, e.g. pvc-fbf3ffc3-66db-4dae-9032-bda3c61b8f85
         type: string
+      volumeQoS:
+        allOf:
+        - $ref: '#/definitions/v1alpha1.VolumeQoS'
+        description: VolumeQoS is the QoS of the volume
     type: object
   v1alpha1.LocalVolumeReplicaStatus:
     properties:
@@ -2331,6 +2361,10 @@ definitions:
       requiredCapacityBytes:
         description: +kubebuilder:validation:Minimum:=4194304
         type: integer
+      volumeQoS:
+        allOf:
+        - $ref: '#/definitions/v1alpha1.VolumeQoS'
+        description: VolumeQoS is the QoS of the volume
       volumegroup:
         description: VolumeGroup is the group name of the local volumes. It is designed
           for the scheduling and allocating.
@@ -2432,6 +2466,11 @@ definitions:
     type: object
   v1alpha1.State:
     enum:
+    - ""
+    - ToBeMounted
+    - ToBeUnMount
+    - Mounted
+    - NotReady
     - Ready
     - Maintain
     - Offline
@@ -2466,13 +2505,13 @@ definitions:
     - Available
     - InUse
     - Offline
-    - ""
-    - ToBeMounted
-    - ToBeUnMount
-    - Mounted
-    - NotReady
     type: string
     x-enum-varnames:
+    - MountPointStateEmpty
+    - MountPointToBeMounted
+    - MountPointToBeUnMount
+    - MountPointMounted
+    - MountPointNotReady
     - NodeStateReady
     - NodeStateMaintain
     - NodeStateOffline
@@ -2507,11 +2546,6 @@ definitions:
     - DiskStateAvailable
     - DiskStateInUse
     - DiskStateOffline
-    - MountPointStateEmpty
-    - MountPointToBeMounted
-    - MountPointToBeUnMount
-    - MountPointMounted
-    - MountPointNotReady
   v1alpha1.StorageNodeCondition:
     properties:
       lastTransitionTime:
@@ -2596,6 +2630,15 @@ definitions:
         description: PersistentVolumeClaimName is the name of the associated PVC
         type: string
     type: object
+  v1alpha1.VolumeQoS:
+    properties:
+      iops:
+        description: IOPS defines the IOPS of the volume
+        type: string
+      throughput:
+        description: Throughput defines the throughput of the volume
+        type: string
+    type: object
   v1alpha1.VolumeReplica:
     properties:
       hostname:
@@ -2629,6 +2672,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/api.AuthRspBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
       summary: Authorization
       tags:
       - Auth
@@ -2656,6 +2703,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/api.AuthLogoutRspBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
       summary: Logout the token
       tags:
       - Auth
@@ -2693,7 +2744,7 @@ paths:
           schema:
             $ref: '#/definitions/api.DrbdEnableSettingRspBody'
         "500":
-          description: 失败
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/api.RspFailBody'
       summary: 摘要 高可用设置
@@ -2797,6 +2848,35 @@ paths:
       summary: 摘要 获取指定存储节点
       tags:
       - Node
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: nodeName
+        in: path
+        name: nodeName
+        required: true
+        type: string
+      - description: body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.NodeUpdateReqBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.NodeUpdateRspBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: Set node enable/disable
+      tags:
+      - Node
   /cluster/nodes/{nodeName}/disks:
     get:
       consumes:
@@ -2865,11 +2945,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.DiskReqBody'
         "500":
-          description: 失败
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/api.RspFailBody'
       summary: 摘要 更新磁盘
@@ -2903,11 +2983,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.LocalDiskInfo'
         "500":
-          description: 失败
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/api.RspFailBody'
       summary: 摘要 获取指定磁盘信息
@@ -2985,11 +3065,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.StoragePoolList'
         "500":
-          description: 失败
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/api.RspFailBody'
       summary: 摘要 获取指定节点存储池列表信息
@@ -3015,11 +3095,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.StoragePool'
         "500":
-          description: 失败
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/api.RspFailBody'
       summary: 摘要 获取指定节点指定存储池信息
@@ -3049,11 +3129,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.LocalDisksItemsList'
         "500":
-          description: 失败
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/api.RspFailBody'
       summary: 摘要 获取指定节点指定存储池磁盘列表信息
@@ -3084,11 +3164,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.LocalDiskInfo'
         "500":
-          description: 失败
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/api.RspFailBody'
       summary: 摘要 获取指定节点指定存储池指定磁盘信息
@@ -3118,7 +3198,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.OperationMetric'
       summary: 摘要 获取操作记录列表
@@ -3270,6 +3350,32 @@ paths:
       summary: 摘要 获取指定存储池指定存储节点磁盘列表信息
       tags:
       - Pool
+  /cluster/pools/expand:
+    post:
+      consumes:
+      - application/json
+      description: expand new disk for storage pool
+      parameters:
+      - description: body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.StoragePoolExpansionReqBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.StoragePoolExpansionRspBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: Storage pool expand
+      tags:
+      - Pool
   /cluster/status:
     get:
       consumes:
@@ -3284,7 +3390,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.ModuleStatus'
       summary: 摘要 获取基础监控指标
@@ -3374,7 +3480,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.VolumeList'
       summary: 摘要 获取数据卷列表信息 数据卷状态枚举 （ToBeMounted、Created、Creating、Ready、NotReady、ToBeDeleted、Deleted）
@@ -3416,11 +3522,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.VolumeConvertOperation'
         "500":
-          description: 失败
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/api.RspFailBody'
       summary: 摘要 获取指定数据卷转换操作
@@ -3446,11 +3552,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.VolumeConvertRspBody'
         "500":
-          description: 失败
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/api.RspFailBody'
       summary: 摘要 指定数据卷转换操作
@@ -3471,11 +3577,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.VolumeExpandOperation'
         "500":
-          description: 失败
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/api.RspFailBody'
       summary: 摘要 获取指定数据卷扩容操作
@@ -3495,11 +3601,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.VolumeConvertOperation'
         "500":
-          description: 失败
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/api.RspFailBody'
       summary: 摘要 指定数据卷扩容
@@ -3520,11 +3626,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.VolumeMigrateOperation'
         "500":
-          description: 失败
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/api.RspFailBody'
       summary: 摘要 获取指定数据卷迁移操作
@@ -3551,11 +3657,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.VolumeMigrateRspBody'
         "500":
-          description: 失败
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/api.RspFailBody'
       summary: 摘要 指定数据卷迁移操作
@@ -3584,7 +3690,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.VolumeOperationByVolume'
       summary: 摘要 获取指定数据卷操作记录信息 状态枚举 (Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed)
@@ -3613,7 +3719,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功
+          description: OK
           schema:
             $ref: '#/definitions/api.VolumeReplicaList'
       summary: 摘要 获取指定数据卷的副本列表信息

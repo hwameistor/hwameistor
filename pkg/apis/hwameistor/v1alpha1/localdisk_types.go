@@ -255,10 +255,15 @@ type LocalDiskStatus struct {
 // +kubebuilder:resource:scope=Cluster,shortName=ld
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
+// +kubebuilder:printcolumn:JSONPath=".spec.capacity",name=Capacity,type=integer,priority=1
+// +kubebuilder:printcolumn:JSONPath=".spec.preNodeName",name=PreNodeMatch,type=string,priority=1
+// +kubebuilder:printcolumn:JSONPath=".spec.devicePath",name=DevicePath,type=string
+// +kubebuilder:printcolumn:JSONPath=".spec.preDevicePath",name=PreDevicePath,type=string,priority=1
 // +kubebuilder:printcolumn:JSONPath=".spec.owner",name=Owner,type=string,priority=1
 // +kubebuilder:printcolumn:JSONPath=".status.claimState",name=Phase,type=string
 // +kubebuilder:printcolumn:JSONPath=".spec.smartInfo.overallHealth",name=Health,type=string,priority=1
 // +kubebuilder:printcolumn:JSONPath=".spec.reserved",name=Reserved,type=boolean,priority=1
+// +kubebuilder:printcolumn:name="age",type=date,JSONPath=`.metadata.creationTimestamp`
 type LocalDisk struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

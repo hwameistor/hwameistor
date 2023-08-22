@@ -1,8 +1,6 @@
 package csi
 
 import (
-	"sync"
-
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,7 +35,7 @@ type plugin struct {
 	storageMember apis.LocalStorageMember
 	mounter       Mounter
 
-	lock      sync.Mutex
+	//lock      sync.Mutex
 	apiClient client.Client
 
 	volumeQoSManager *qos.VolumeQoSManager

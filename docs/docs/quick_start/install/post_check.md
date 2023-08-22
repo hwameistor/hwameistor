@@ -75,30 +75,19 @@ The unused disks are displayed with `PHASE: Available`.
 
 ```console
 $ kubectl get localdisknodes
-NAME          TOTALDISK   FREEDISK
-10-6-234-40   1
-10-6-234-41   8
-10-6-234-42   8
+NAME         FREECAPACITY   TOTALCAPACITY   TOTALDISK   STATUS   AGE
+k8s-master                                              Ready    28h
+k8s-node1                                               Ready    28h
+k8s-node2                                               Ready    28h
 
 $ kubectl get localdisks
-NAME              NODEMATCH     PHASE
-10-6-234-40-sda   10-6-234-40   Bound
-10-6-234-41-sda   10-6-234-41   Bound
-10-6-234-41-sdb   10-6-234-41   Bound
-10-6-234-41-sdc   10-6-234-41   Bound
-10-6-234-41-sdd   10-6-234-41   Bound
-10-6-234-41-sde   10-6-234-41   Bound
-10-6-234-41-sdf   10-6-234-41   Bound
-10-6-234-41-sdg   10-6-234-41   Bound
-10-6-234-41-sdh   10-6-234-41   Bound
-10-6-234-42-sda   10-6-234-42   Bound
-10-6-234-42-sdb   10-6-234-42   Bound
-10-6-234-42-sdc   10-6-234-42   Bound
-10-6-234-42-sdd   10-6-234-42   Bound
-10-6-234-42-sde   10-6-234-42   Bound
-10-6-234-42-sdf   10-6-234-42   Bound
-10-6-234-42-sdg   10-6-234-42   Bound
-10-6-234-42-sdh   10-6-234-42   Bound
+NAME                                         NODEMATCH    DEVICEPATH   PHASE       AGE
+localdisk-2307de2b1c5b5d051058bc1d54b41d5c   k8s-node1    /dev/sdb     Available   28h
+localdisk-311191645ea00c62277fe709badc244e   k8s-node2    /dev/sdb     Available   28h
+localdisk-37a20db051af3a53a1c4e27f7616369a   k8s-master   /dev/sdb     Available   28h
+localdisk-b57b108ad2ccc47f4b4fab6f0b9eaeb5   k8s-node2    /dev/sda     Bound       28h
+localdisk-b682686c65667763bda58e391fbb5d20   k8s-master   /dev/sda     Bound       28h
+localdisk-da121e8f0dabac9ee1bcb6ed69840d7b   k8s-node1    /dev/sda     Bound       28h
 ```
 
 ## Check `LocalStorageNodes` and Storage Pools

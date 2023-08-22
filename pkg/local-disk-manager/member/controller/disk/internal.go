@@ -31,7 +31,7 @@ func New() Manager {
 	once.Do(func() {
 		ldn = &localDiskNodesManager{}
 		ldn.GetClient = localdisknode.NewKubeclient
-		cli, _ := kubernetes.NewClient()
+		cli, _ := kubernetes.NewClientWithCache()
 		recoder, _ := kubernetes.NewRecorderFor("LocalDiskNodeManager")
 		ldn.DiskHandler = localdisk2.NewLocalDiskHandler(cli, recoder)
 	})
@@ -148,6 +148,10 @@ func (ldn *localDiskNodesManager) NodeIsReady(node string) (bool, error) {
 	}
 
 	return diskNode.Status.State == v1alpha1.NodeStateReady, nil
+}
+
+func (ldn *localDiskNodesManager) ListLocalDiskByNodeDevicePath(nodeName, devicePath string) ([]v1alpha1.LocalDisk, error) {
+	return ldn.DiskHandler.ListLocalDiskByNodeDevicePath(nodeName, devicePath)
 }
 
 func convertToDisk(diskNode string, disk v1alpha1.LocalDevice) *types.Disk {

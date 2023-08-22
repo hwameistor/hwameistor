@@ -71,7 +71,6 @@ func NewMetricController(client client.Client, clientset *kubernetes.Clientset, 
 
 // GetBaseMetric
 func (mController *MetricController) GetBaseMetric() (*hwameistorapi.BaseMetric, error) {
-
 	if err := mController.getBaseCapacityMetric(); err != nil {
 		log.WithError(err).Error("Failed to getBaseCapacityMetric")
 		return nil, err
@@ -96,7 +95,6 @@ func (mController *MetricController) GetBaseMetric() (*hwameistorapi.BaseMetric,
 
 // GetModuleStatus
 func (mController *MetricController) GetModuleStatus() (*hwameistorapi.ModuleStatus, error) {
-
 	if err := mController.getHwameistorDaemonsetStatusMetric(); err != nil {
 		log.WithError(err).Error("Failed to getHwameistorDaemonsetStatusMetric")
 		return nil, err
@@ -120,7 +118,6 @@ func (mController *MetricController) GetModuleStatus() (*hwameistorapi.ModuleSta
 
 // GetStoragePoolUseMetric
 func (mController *MetricController) GetStoragePoolUseMetric() (*hwameistorapi.StoragePoolUseMetric, error) {
-
 	if err := mController.addStoragePoolUseMetric(); err != nil {
 		log.WithError(err).Error("Failed to addStoragePoolUseMetric")
 		return nil, err
@@ -132,7 +129,6 @@ func (mController *MetricController) GetStoragePoolUseMetric() (*hwameistorapi.S
 
 // GetNodeStorageUseMetric
 func (mController *MetricController) GetNodeStorageUseMetric(storagepoolclass string) (*hwameistorapi.NodeStorageUseMetric, error) {
-
 	if err := mController.addNodeStorageUseMetric(storagepoolclass); err != nil {
 		log.WithError(err).Error("Failed to addNodeStorageUseMetric")
 		return nil, err
@@ -144,7 +140,6 @@ func (mController *MetricController) GetNodeStorageUseMetric(storagepoolclass st
 
 // OperationListMetric
 func (mController *MetricController) OperationListMetric(page, pageSize int32) (*hwameistorapi.OperationMetric, error) {
-
 	var operationMetric = &hwameistorapi.OperationMetric{}
 	var operationList []hwameistorapi.Operation
 	lvmList := apisv1alpha1.LocalVolumeMigrateList{}
@@ -217,7 +212,6 @@ func (mController *MetricController) OperationListMetric(page, pageSize int32) (
 
 // getBaseCapacityMetric
 func (mController *MetricController) getBaseCapacityMetric() error {
-
 	mController.resetNodeResourceMetric()
 
 	mController.addK8sNodeMetric()
@@ -239,7 +233,6 @@ func (mController *MetricController) getBaseCapacityMetric() error {
 
 // getBaseVolumeMetric
 func (mController *MetricController) getBaseVolumeMetric() error {
-
 	volList := &apisv1alpha1.LocalVolumeList{}
 	if err := mController.Client.List(context.TODO(), volList); err != nil {
 		log.WithError(err).Error("Failed to list LocalVolumes")
