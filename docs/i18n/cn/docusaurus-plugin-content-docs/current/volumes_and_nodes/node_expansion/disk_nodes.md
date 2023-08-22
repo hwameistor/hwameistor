@@ -41,11 +41,11 @@ k8s-worker-2                                              Ready    21d
 首先，需要将磁盘 sdb 的 `owner` 信息修改成 local-disk-manager，具体如下：
 
 ```console
-$ kubectl edit ld k8s-worker-2-sdb
+$ kubectl edit ld localdisk-2307de2b1c5b5d051058bc1d54b41d5c
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalDisk
 metadata:
-  name: k8s-worker-2-sdb
+  name: localdisk-2307de2b1c5b5d051058bc1d54b41d5c
 spec:
   devicePath: /dev/sdb
   nodeName: k8s-worker-2
