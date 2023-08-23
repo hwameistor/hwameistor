@@ -111,18 +111,7 @@ entries:
     urls:
     - https://github.com/hwameistor/drbd-adapter/releases/download/0.1.0/drbd-adapter-0.1.0.tgz
     version: 0.1.0
-  hwameistor:
-  - apiVersion: v2
-    appVersion: v0.12.0
-    created: "2023-08-22T07:36:22.091561127Z"
-    description: the HwameiStor local storage
-    digest: 37cfc9bac1c3ca2a75e29612b8a82f5c1bec2c8fc1e7d83ae4a25a4431fe484e
-    icon: https://hwameistor.io/img/logo.svg
-    name: hwameistor
-    type: application
-    urls:
-    - https://github.com/hwameistor/hwameistor/releases/download/v0.12.0/hwameistor-v0.12.0.tgz
-    version: v0.12.0
+  hwameistor:  
   - apiVersion: v2
     appVersion: v0.11.2
     created: "2023-07-25T08:54:29.353564348Z"
