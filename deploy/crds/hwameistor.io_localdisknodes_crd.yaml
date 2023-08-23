@@ -117,6 +117,9 @@ spec:
                             description: DiskType represents the type of drive like
                               SSD, HDD etc.,
                             type: string
+                          localDiskName:
+                            description: LocalDiskName for specifying LocalDisk
+                            type: string
                         type: object
                       diskRefs:
                         description: DiskRefs represents which disks are assigned

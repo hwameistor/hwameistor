@@ -1,10 +1,11 @@
 package filter
 
 import (
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"strings"
 
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/sys"
@@ -20,6 +21,7 @@ const (
 type LocalDiskFilter struct {
 	localDisk *v1alpha1.LocalDisk
 	Result    Bool
+	hasLdName bool
 }
 
 func NewLocalDiskFilter(ld *v1alpha1.LocalDisk) LocalDiskFilter {
@@ -31,6 +33,7 @@ func NewLocalDiskFilter(ld *v1alpha1.LocalDisk) LocalDiskFilter {
 
 func (ld *LocalDiskFilter) Init() *LocalDiskFilter {
 	ld.Result = TRUE
+	ld.hasLdName = false
 	return ld
 }
 
@@ -86,6 +89,11 @@ func (ld *LocalDiskFilter) Capacity(cap int64) *LocalDiskFilter {
 }
 
 func (ld *LocalDiskFilter) DiskType(diskType string) *LocalDiskFilter {
+	// result is true when diskType is empty string and hasLdName is true
+	if diskType == "" && ld.hasLdName {
+		ld.setResult(TRUE)
+		return ld
+	}
 	if ld.localDisk.Spec.DiskAttributes.Type == diskType {
 		ld.setResult(TRUE)
 	} else {
@@ -149,6 +157,20 @@ func (ld *LocalDiskFilter) IsNameFormatMatch() *LocalDiskFilter {
 		ld.setResult(FALSE)
 	}
 
+	return ld
+}
+
+func (ld *LocalDiskFilter) IsLdNameMatch(ldName string) *LocalDiskFilter {
+	if ldName == "" {
+		ld.setResult(TRUE)
+		return ld
+	}
+	if ld.localDisk.Name == ldName {
+		ld.hasLdName = true
+		ld.setResult(TRUE)
+	} else {
+		ld.setResult(FALSE)
+	}
 	return ld
 }
 

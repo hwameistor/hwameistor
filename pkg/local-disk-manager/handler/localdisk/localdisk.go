@@ -191,6 +191,7 @@ func (ldHandler *Handler) FilterDisk(ldc *v1alpha1.LocalDiskClaim) bool {
 		Init().
 		Available().
 		HasNotReserved().
+		IsLdNameMatch(ldc.Spec.Description.LocalDiskName).
 		OwnerMatch(ldc.Spec.Owner).
 		NodeMatch(ldc.Spec.NodeName).
 		Capacity(ldc.Spec.Description.Capacity).

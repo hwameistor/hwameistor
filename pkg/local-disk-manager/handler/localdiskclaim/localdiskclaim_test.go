@@ -38,6 +38,7 @@ var (
 	cap100G                 int64 = 100 * 1024 * 1024 * 1024
 	cap10G                  int64 = 10 * 1024 * 1024 * 1024
 	fakeRecorder                  = record.NewFakeRecorder(100)
+	fakeLDName                    = fakeLocalDiskNamePrefix + fakeNodename + strings.Replace(fakedevPath, "/", "-", -1)
 )
 
 func TestLocalDiskClaimHandler_AssignDisk(t *testing.T) {
@@ -114,6 +115,42 @@ func TestLocalDiskClaimHandler_AssignDisk(t *testing.T) {
 
 			setProperty: func(diskClaim *v1alpha1.LocalDiskClaim) {
 				diskClaim.Spec.NodeName = "test"
+				return
+			},
+			createNewFreeDisk: createLocalDisk,
+			deleteDisk:        deleteLocalDisk,
+
+			createNewDiskClaim: createLocalDiskClaim,
+			deleteDiskClaim:    deleteLocalDiskClaim,
+		},
+		{
+			Description: "Should return no error when localDiskName is satisfied",
+			DiskClaim:   GenFakeLocalDiskClaimObject(),
+			FreeDisk:    GenFakeLocalDiskObject(),
+			WantAssign:  true,
+
+			setProperty: func(diskClaim *v1alpha1.LocalDiskClaim) {
+				diskClaim.Spec.Description = v1alpha1.DiskClaimDescription{
+					LocalDiskName: fakeLDName,
+				}
+				return
+			},
+			createNewFreeDisk: createLocalDisk,
+			deleteDisk:        deleteLocalDisk,
+
+			createNewDiskClaim: createLocalDiskClaim,
+			deleteDiskClaim:    deleteLocalDiskClaim,
+		},
+		{
+			Description: "Should return error when localDiskName is not satisfied",
+			DiskClaim:   GenFakeLocalDiskClaimObject(),
+			FreeDisk:    GenFakeLocalDiskObject(),
+			WantAssign:  false,
+
+			setProperty: func(diskClaim *v1alpha1.LocalDiskClaim) {
+				diskClaim.Spec.Description = v1alpha1.DiskClaimDescription{
+					LocalDiskName: "fakeName",
+				}
 				return
 			},
 			createNewFreeDisk: createLocalDisk,
@@ -319,7 +356,7 @@ func GenFakeLocalDiskObject() *v1alpha1.LocalDisk {
 	}
 
 	ObjectMata := metav1.ObjectMeta{
-		Name:              fakeLocalDiskNamePrefix + fakeNodename + strings.Replace(fakedevPath, "/", "-", -1),
+		Name:              fakeLDName,
 		Namespace:         fakeNamespace,
 		UID:               types.UID(localDiskUID),
 		CreationTimestamp: metav1.Time{Time: time.Now()},
