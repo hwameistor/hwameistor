@@ -71,11 +71,13 @@ type VolumeSnapshotAttr struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=localvolumereplicasnapshots,scope=Cluster,shortName=lvrs
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="SourceVolume",type=string,JSONPath=`.spec.sourceVolume`,description="Name of the snapshot's source volume"
 // +kubebuilder:printcolumn:name="Capacity",type=integer,JSONPath=`.status.allocatedCapacityBytes`,description="Allocated capacity of the snapshot"
 // +kubebuilder:printcolumn:name="NodeName",type=string,JSONPath=`.spec.nodeName`,description="Node where snapshot is located"
+// +kubebuilder:printcolumn:name="SourceVolume",type=string,JSONPath=`.spec.sourceVolume`,description="Name of the snapshot's source volume"
 // +kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.state`,description="State of the snapshot"
-// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+// +kubebuilder:printcolumn:name="Merging",type=string,JSONPath=`.status.attr.merging`,description="if the snapshot is merging"
+// +kubebuilder:printcolumn:name="Invalid",type=string,JSONPath=`.status.attr.invalid`,description="if the snapshot is invalid"
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.status.creationTime`
 // +kubebuilder:printcolumn:name="SourceVolumeReplica",type=string,JSONPath=`.spec.sourceVolumeReplica`,description="Name of the snapshot's source volume replica",priority=1
 type LocalVolumeReplicaSnapshot struct {
 	metav1.TypeMeta   `json:",inline"`

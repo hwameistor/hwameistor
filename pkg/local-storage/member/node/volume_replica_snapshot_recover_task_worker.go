@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"path"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -102,9 +103,10 @@ func (m *manager) volumeReplicaSnapshotRecoverPreCheck(snapshotRecover *apisv1al
 	}
 
 	// consider data security, abort if target volume has been mounted
-
-	if len(m.mounter.GetDeviceMountPoints(snapshotRecover.Spec.TargetVolume)) > 0 {
-		err := fmt.Errorf("target volume is already mounted, cannot recover from snapshot now")
+	// fixme: device path fetched by lvm will be better
+	devicePath := path.Join("dev", snapshotRecover.Spec.TargetPoolName, snapshotRecover.Spec.TargetVolume)
+	if len(m.mounter.GetDeviceMountPoints(devicePath)) > 0 {
+		err := fmt.Errorf("target volume is already mounted, cannot %s from snapshot now", snapshotRecover.Spec.RecoverType)
 		logCtx.WithError(err).Error("Failed to check mount point for target volume")
 
 		snapshotRecover.Status.Message = err.Error()

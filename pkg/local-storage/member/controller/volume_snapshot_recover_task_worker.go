@@ -101,6 +101,11 @@ func (m *manager) volumeSnapshotRecoverStart(snapshotRecover *apisv1alpha1.Local
 	logCtx := m.logger.WithFields(log.Fields{"SnapshotRecover": snapshotRecover.Name, "Spec": snapshotRecover.Spec})
 	logCtx.Debug("Start a VolumeSnapshotRecover")
 
+	if err := m.volumeSnapshotRecoverPreCheck(snapshotRecover); err != nil {
+		logCtx.Error("Failed to precheck volume snapshot recover")
+		return err
+	}
+
 	sourceVolume, err := m.getSourceVolumeFromSnapshot(snapshotRecover.Spec.SourceVolumeSnapshot)
 	if err != nil {
 		logCtx.Error("Failed to get source volume from snapshot")
@@ -143,24 +148,14 @@ func (m *manager) volumeSnapshotRecoverStart(snapshotRecover *apisv1alpha1.Local
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(snapshotRecover, snapshotRecover.GroupVersionKind())},
 			},
 			Spec: apisv1alpha1.LocalVolumeReplicaSnapshotRecoverSpec{
-				LocalVolumeSnapshotRecoverSpec: snapshotRecover.Spec,
-				NodeName:                       nodeName,
-				SourceVolumeReplicaSnapshot:    nodeReplicaSnapshot,
-				VolumeSnapshotRecover:          snapshotRecover.Name,
-				TargetVolume:                   snapshotRecover.Spec.TargetVolume,
+				NodeName:                    nodeName,
+				SourceVolumeReplicaSnapshot: nodeReplicaSnapshot,
+				VolumeSnapshotRecover:       snapshotRecover.Name,
+				RecoverType:                 snapshotRecover.Spec.RecoverType,
+				TargetVolume:                snapshotRecover.Spec.TargetVolume,
+				TargetPoolName:              snapshotRecover.Spec.TargetPoolName,
+				SourceVolumeSnapshot:        snapshotRecover.Spec.SourceVolumeSnapshot,
 			},
-		}
-
-		// compare if target volume is set correctly when recover type is rollback
-		if snapshotRecover.Spec.RecoverType == apisv1alpha1.RecoverTypeRollback {
-			if (snapshotRecover.Spec.TargetVolume != "" && snapshotRecover.Spec.TargetVolume != sourceVolume.Name) ||
-				(snapshotRecover.Spec.TargetPoolName != "" && snapshotRecover.Spec.TargetPoolName != sourceVolume.Spec.PoolName) {
-				logCtx.WithFields(log.Fields{"replicaSnapshotRecover": replicaSnapshotRecover.Name,
-					"originTargetPoolVolume":  snapshotRecover.Spec.TargetPoolName + "/" + snapshotRecover.Spec.TargetVolume,
-					"correctTargetPoolVolume": sourceVolume.Spec.PoolName + "/" + sourceVolume.Name}).Info("TargetPoolVolume is wrong, correct it with info in source volume")
-			}
-			replicaSnapshotRecover.Spec.TargetVolume = sourceVolume.Name
-			replicaSnapshotRecover.Spec.TargetPoolName = sourceVolume.Spec.PoolName
 		}
 
 		if err = m.apiClient.Create(context.Background(), replicaSnapshotRecover); err != nil && !errors.IsAlreadyExists(err) {
@@ -177,6 +172,39 @@ func (m *manager) volumeSnapshotRecoverStart(snapshotRecover *apisv1alpha1.Local
 	snapshotRecover.Status.VolumeReplicaSnapshotRecover = allVolumeReplicaSnapshotRecovers
 	snapshotRecover.Status.State = apisv1alpha1.OperationStateInProgress
 	return m.apiClient.Status().Update(context.Background(), snapshotRecover)
+}
+
+func (m *manager) volumeSnapshotRecoverPreCheck(snapshotRecover *apisv1alpha1.LocalVolumeSnapshotRecover) error {
+	logCtx := m.logger.WithFields(log.Fields{"SnapshotRecover": snapshotRecover.Name, "Spec": snapshotRecover.Spec})
+	logCtx.Debug("precheck volumeSnapshotRecover")
+
+	sourceVolume, err := m.getSourceVolumeFromSnapshot(snapshotRecover.Spec.SourceVolumeSnapshot)
+	if err != nil {
+		logCtx.Error("Failed to get source volume from snapshot")
+		return err
+	}
+
+	switch snapshotRecover.Spec.RecoverType {
+	case apisv1alpha1.RecoverTypeRollback:
+		// compare if target volume is set correctly when recover type is rollback
+		if (snapshotRecover.Spec.TargetVolume != "" && snapshotRecover.Spec.TargetVolume != sourceVolume.Name) ||
+			(snapshotRecover.Spec.TargetPoolName != "" && snapshotRecover.Spec.TargetPoolName != sourceVolume.Spec.PoolName) {
+			logCtx.WithFields(log.Fields{"originTargetPoolVolume": snapshotRecover.Spec.TargetPoolName + "/" + snapshotRecover.Spec.TargetVolume,
+				"correctTargetPoolVolume": sourceVolume.Spec.PoolName + "/" + sourceVolume.Name}).Info("TargetPoolVolume is wrong, correct it with info in source volume")
+		}
+		snapshotRecover.Spec.TargetVolume = sourceVolume.Name
+		snapshotRecover.Spec.TargetPoolName = sourceVolume.Spec.PoolName
+		return m.apiClient.Update(context.Background(), snapshotRecover)
+
+	case apisv1alpha1.RecoverTypeRestore:
+		if snapshotRecover.Spec.TargetVolume == "" || snapshotRecover.Spec.TargetPoolName == "" {
+			return fmt.Errorf("TargetVolume and TargetPoolName is required")
+		}
+	default:
+		return fmt.Errorf("invalid revover type")
+	}
+
+	return nil
 }
 
 func (m *manager) checkInProgressVolumeSnapshotRecover(snapshotRecover *apisv1alpha1.LocalVolumeSnapshotRecover) error {
@@ -208,10 +236,31 @@ func (m *manager) checkInProgressVolumeSnapshotRecover(snapshotRecover *apisv1al
 
 	snapshotRecover.Status.Message = message
 	if completedCount >= len(snapshotRecover.Status.VolumeReplicaSnapshotRecover) {
+		if err := m.markTargetVolumeAsCompleted(snapshotRecover.Spec.TargetVolume); err != nil {
+			logCtx.WithError(err).Error("Failed to mark target volume as completed")
+			return err
+		}
 		snapshotRecover.Status.State = apisv1alpha1.OperationStateCompleted
 	}
 
 	return m.apiClient.Status().Update(context.Background(), snapshotRecover)
+}
+
+func (m *manager) markTargetVolumeAsCompleted(targetVolumeName string) error {
+	targetVolume := &apisv1alpha1.LocalVolume{}
+	if err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: targetVolumeName}, targetVolume); err != nil {
+		return err
+	}
+
+	var anno map[string]string
+	if anno = targetVolume.GetAnnotations(); anno == nil {
+		anno = make(map[string]string)
+	}
+
+	anno[apisv1alpha1.VolumeSnapshotRecoverCompletedAnnoKey] = ""
+	targetVolume.SetAnnotations(anno)
+
+	return m.apiClient.Update(context.Background(), targetVolume)
 }
 
 func (m *manager) volumeSnapshotRecoverAbort(snapshotRecover *apisv1alpha1.LocalVolumeSnapshotRecover) error {
@@ -245,6 +294,7 @@ func (m *manager) volumeSnapshotRecoverCleanup(snapshotRecover *apisv1alpha1.Loc
 				logCtx.WithField("ReplicaSnapshotRecover", replicaSnapshotRecoverName).Error("Failed to cleanup VolumeReplicaSnapshotRecover")
 				return err
 			}
+			delete(m.replicaSnapRecoverRecords[snapshotRecover.Name], replicaSnapshotRecover.Spec.NodeName)
 			logCtx.WithField("ReplicaSnapshotRecover", replicaSnapshotRecoverName).Error("Cleaning VolumeReplicaSnapshotRecover")
 		}
 	}

@@ -14,15 +14,27 @@ spec:
   scope: Cluster
   versions:
   - additionalPrinterColumns:
+    - description: Required capacity of the volume snapshot
+      jsonPath: .status.allocatedCapacityBytes
+      name: Capacity
+      type: integer
     - description: Name of the snapshot's source volume
       jsonPath: .spec.sourceVolume
       name: SourceVolume
       type: string
     - description: State of the snapshot
       jsonPath: .status.state
-      name: state
+      name: State
       type: string
-    - jsonPath: .metadata.creationTimestamp
+    - description: if the snapshot is merging
+      jsonPath: .status.attr.merging
+      name: Merging
+      type: string
+    - description: if the snapshot is invalid
+      jsonPath: .status.attr.invalid
+      name: Invalid
+      type: string
+    - jsonPath: .status.creationTime
       name: Age
       type: date
     name: v1alpha1

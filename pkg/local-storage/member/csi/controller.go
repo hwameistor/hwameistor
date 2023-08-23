@@ -34,7 +34,7 @@ var (
 )
 
 const (
-	RetryInterval = 2 * time.Second
+	RetryInterval = 1 * time.Second
 )
 
 // ControllerGetCapabilities implementation
@@ -399,13 +399,57 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 	})
 	logCtx.Debug("restoreVolumeFromSnapshot")
 
-	resp := &csi.CreateVolumeResponse{Volume: &csi.Volume{}}
+	volume := apisv1alpha1.LocalVolume{}
+	resp := &csi.CreateVolumeResponse{Volume: &csi.Volume{
+		ContentSource: &csi.VolumeContentSource{
+			Type: &csi.VolumeContentSource_Snapshot{
+				Snapshot: &csi.VolumeContentSource_SnapshotSource{
+					SnapshotId: req.VolumeContentSource.GetSnapshot().SnapshotId,
+				},
+			},
+		},
+	}}
+	snapshotRecoverName := utils.GetSnapshotRecoverNameByVolume(req.Name)
+	volumeSnapshotRecover := apisv1alpha1.LocalVolumeSnapshotRecover{}
+	releaseRecovery := func() error {
+		if err := p.apiClient.Get(ctx, client.ObjectKey{Name: snapshotRecoverName}, &volumeSnapshotRecover); err != nil {
+			if errors.IsNotFound(err) {
+				return nil
+			}
+			p.logger.WithError(err).Errorf("failed to get volumeSnapshotRecover %v", err)
+			return err
+		}
+		// LocalVolumeSnapshotRecover is ready, remove the protection finalizer from the object
+		volumeSnapshotRecover.SetFinalizers(utils.RemoveStringItem(volumeSnapshotRecover.Finalizers, apisv1alpha1.SnapshotRecoveringFinalizer))
+		return p.apiClient.Update(ctx, &volumeSnapshotRecover)
+	}
+
+	// 0. finish directly if snapshot recover has already been completed
+	if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.Name}, &volume); err != nil {
+		if !errors.IsNotFound(err) {
+			return resp, err
+		}
+	}
+	if volume.GetAnnotations() != nil {
+		if _, ok := volume.GetAnnotations()[apisv1alpha1.VolumeSnapshotRecoverCompletedAnnoKey]; ok {
+			if err := releaseRecovery(); err != nil {
+				p.logger.WithError(err).Errorf("failed to release snapshot recovery")
+				return resp, err
+			}
+			resp.Volume.VolumeId = volume.Name
+			resp.Volume.CapacityBytes = volume.Status.AllocatedCapacityBytes
+			resp.Volume.VolumeContext = req.Parameters
+			resp.Volume.VolumeContext[apisv1alpha1.SourceVolumeSnapshotAnnoKey] = req.VolumeContentSource.GetSnapshot().SnapshotId
+			return resp, nil
+		}
+	}
+
+	// 1. create new empty LocalVolume
 	if err := p.validateVolumeCreateRequestForSnapshot(ctx, req); err != nil {
 		logCtx.WithError(err).Error("failed to validate CreateVolumeRequest for snapshot")
 		return resp, status.Errorf(codes.InvalidArgument, "failed to validate CreateVolumeRequest for snapshot: %v", err)
 	}
 
-	// 1. create new empty LocalVolume
 	logCtx.Debugf("Step1: Start creating LocalVolume %s", req.GetName())
 	if err := p.createEmptyVolumeFromRequest(ctx, req); err != nil {
 		logCtx.WithError(err).Error("failed to create LocalVolume")
@@ -413,27 +457,26 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 	}
 
 	// 2. wait for LocalVolume ready to use
-	volume := apisv1alpha1.LocalVolume{}
 	logCtx.Debugf("Step2: Checking if LocalVolume %s ready to use", req.Name)
+	tryCount := 0
 	if err := wait.PollUntil(RetryInterval, func() (done bool, err error) {
+		tryCount++
 		if err = p.apiClient.Get(ctx, client.ObjectKey{Name: req.Name}, &volume); err != nil {
 			p.logger.WithError(err).Errorf("failed to get volume %v", err)
 			return false, err
 		}
 		if volume.Status.State != apisv1alpha1.VolumeStateReady {
-			return false, status.Errorf(codes.Internal, "LocalVolume %s is NotReady", volume.Name)
+			return tryCount >= 1, status.Errorf(codes.Internal, "LocalVolume %s is NotReady", volume.Name)
 		}
 		// Volume is ready and prepare to recover snapshot, return immediately
 		return true, nil
 	}, ctx.Done()); err != nil {
-		logCtx.WithError(err).Error("LocalVolume %s is not ready", req.Name)
-		return resp, err
+		logCtx.WithError(err).Errorf("LocalVolume %s is NotReady", req.Name)
+		return resp, status.Errorf(codes.Internal, "failed to check LocalVolume %s Ready or Not: %v", volume.Name, err)
 	}
 
 	// 3. create LocalVolumeSnapshotRecover instance
-	snapshotRecoverName := utils.GetSnapshotRecoverNameByVolume(req.Name)
-	logCtx.Debug("Step3: Start creating LocalVolumeSnapshotRecover %s", snapshotRecoverName)
-	volumeSnapshotRecover := apisv1alpha1.LocalVolumeSnapshotRecover{}
+	logCtx.Debugf("Step3: Start creating LocalVolumeSnapshotRecover %s", snapshotRecoverName)
 	volumeSnapshotRecover.Name = snapshotRecoverName
 	volumeSnapshotRecover.Spec.TargetVolume = req.GetName()
 	volumeSnapshotRecover.Spec.TargetPoolName = volume.Spec.PoolName
@@ -453,13 +496,14 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 	// The LocalVolumeSnapshotRecover is an operation on the VolumeSnapshot, so it will be deleted when the operation is completed.
 	// Thus, we need to hung up the delete operation before we confirm that the operation is completed.
 	logCtx.Debugf("Step4: Checking if LocalVolumeSnapshotRecover %s ready to use", snapshotRecoverName)
+	tryCount = 0
 	if err := wait.PollUntil(RetryInterval, func() (done bool, err error) {
 		if err = p.apiClient.Get(ctx, client.ObjectKey{Name: snapshotRecoverName}, &volumeSnapshotRecover); err != nil {
 			p.logger.WithError(err).Errorf("failed to get volumeSnapshotRecover %v", err)
-			return false, err
+			return tryCount >= 1, err
 		}
 		if volumeSnapshotRecover.Status.State != apisv1alpha1.OperationStateCompleted {
-			return false, status.Errorf(codes.Internal, "LocalVolumeSnapshotRecover %s is NotReady", volumeSnapshotRecover.Name)
+			return tryCount >= 1, status.Errorf(codes.Internal, "LocalVolumeSnapshotRecover %s is NotReady", volumeSnapshotRecover.Name)
 		}
 		// LocalVolumeSnapshotRecover is ready, remove the protection finalizer from the object
 		volumeSnapshotRecover.SetFinalizers(utils.RemoveStringItem(volumeSnapshotRecover.Finalizers, apisv1alpha1.SnapshotRecoveringFinalizer))
@@ -472,7 +516,7 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 	resp.Volume.VolumeId = volume.Name
 	resp.Volume.CapacityBytes = volume.Status.AllocatedCapacityBytes
 	resp.Volume.VolumeContext = req.Parameters
-	resp.Volume.VolumeContext[apisv1alpha1.SourceVolumeSnapshotAnnoKey] = volumeSnapshotRecover.Spec.SourceVolumeSnapshot
+	resp.Volume.VolumeContext[apisv1alpha1.SourceVolumeSnapshotAnnoKey] = req.VolumeContentSource.GetSnapshot().SnapshotId
 	return resp, nil
 }
 

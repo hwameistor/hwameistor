@@ -8,7 +8,8 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 const (
-	SourceVolumeSnapshotAnnoKey = "hwameistor.io/source-snapshot"
+	SourceVolumeSnapshotAnnoKey           = "hwameistor.io/source-snapshot"
+	VolumeSnapshotRecoverCompletedAnnoKey = "hwameistor.io/snapshot-recover-completed"
 )
 
 // LocalVolumeSnapshotRecoverSpec defines the desired state of LocalVolumeSnapshotRecover
@@ -17,8 +18,7 @@ type LocalVolumeSnapshotRecoverSpec struct {
 	TargetVolume string `json:"targetVolume,omitempty"`
 
 	// TargetVolume is the name of the target volume will place at
-	// +kubebuilder:validation:Required
-	TargetPoolName string `json:"targetPoolName"`
+	TargetPoolName string `json:"targetPoolName,omitempty"`
 
 	// SourceVolumeSnapshot represents which snapshot is used for volume to recover from
 	// +kubebuilder:validation:Required

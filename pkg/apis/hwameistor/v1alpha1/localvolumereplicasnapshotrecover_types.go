@@ -9,22 +9,38 @@ import (
 
 // LocalVolumeReplicaSnapshotRecoverSpec defines the desired state of LocalVolumeReplicaSnapshotRecover
 type LocalVolumeReplicaSnapshotRecoverSpec struct {
-	LocalVolumeSnapshotRecoverSpec `json:",inline"`
+	// NodeName is the name of the node that snapshot will be recovered at
+	// +kubebuilder:validation:Required
+	NodeName string `json:"nodeName"`
 
 	// TargetVolume is the name of the volume to recover to
 	// +kubebuilder:validation:Required
 	TargetVolume string `json:"targetVolume"`
 
+	// TargetVolume is the name of the target volume will place at
+	// +kubebuilder:validation:Required
+	TargetPoolName string `json:"targetPoolName"`
+
+	// SourceVolumeSnapshot represents which snapshot is used for volume to recover from
+	// +kubebuilder:validation:Required
+	SourceVolumeSnapshot string `json:"sourceVolumeSnapshot"`
+
 	// SourceVolumeReplicaSnapshot represents which replica snapshot is used for volume to recover from
 	// +kubebuilder:validation:Required
 	SourceVolumeReplicaSnapshot string `json:"sourceVolumeReplicaSnapshot"`
 
+	// RecoverType is the type about how to recover the volume, e.g. create, merge. By default create.
+	// +kubebuilder:default:=restore
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum:=rollback;restore
+	RecoverType RecoverType `json:"recoverType"`
+
 	// +kubebuilder:validation:Required
 	VolumeSnapshotRecover string `json:"volumeSnapshotRecover"`
 
-	// NodeName is the name of the node that snapshot will be recovered at
-	// +kubebuilder:validation:Required
-	NodeName string `json:"nodeName"`
+	// Abort can be used to abort the recover operation and clean up sub resources created by the recover operation automatically
+	// +kubebuilder:default:=false
+	Abort bool `json:"abort,omitempty"`
 }
 
 // LocalVolumeReplicaSnapshotRecoverStatus defines the observed state of LocalVolumeReplicaSnapshotRecover
