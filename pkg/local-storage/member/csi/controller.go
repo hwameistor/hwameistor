@@ -966,6 +966,12 @@ func (p *plugin) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequ
 			return nil, status.Errorf(codes.Internal, "Failed to get volume access topology: %v", err)
 		}
 
+		// for now, we only support take snapshot on single replica volume
+		if len(accessTopology.Nodes) > 1 {
+			logCtx.WithField("topology", accessTopology.Nodes).Error("Haven't support take snapshot on HA-Volume")
+			return nil, status.Errorf(codes.Internal, "Haven't support take snapshot on HA-Volume")
+		}
+
 		snapshot.Name = snapshotID
 		snapshot.Spec.Accessibility = accessTopology
 		snapshot.Spec.RequiredCapacityBytes = snapsize

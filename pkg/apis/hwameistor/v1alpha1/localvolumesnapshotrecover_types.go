@@ -24,7 +24,7 @@ type LocalVolumeSnapshotRecoverSpec struct {
 	// +kubebuilder:validation:Required
 	SourceVolumeSnapshot string `json:"sourceVolumeSnapshot"`
 
-	// RecoverType is the type about how to recover the volume, e.g. create, merge. By default create.
+	// RecoverType is the type about how to recover the volume, e.g. rollback, restore. By default restore.
 	// +kubebuilder:default:=restore
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum:=rollback;restore
