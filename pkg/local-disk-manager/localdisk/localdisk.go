@@ -2,6 +2,7 @@ package localdisk
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/fields"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -74,6 +75,17 @@ func (ctr Controller) GetLocalDisk(key client.ObjectKey) (v1alpha1.LocalDisk, er
 	}
 
 	return ld, nil
+}
+
+func (ctr Controller) ListLocalDisksByNode(nodeName string) ([]v1alpha1.LocalDisk, error) {
+	lds := &v1alpha1.LocalDiskList{}
+
+	if err := ctr.Mgr.GetClient().List(context.Background(), lds, &client.ListOptions{
+		FieldSelector: fields.ParseSelectorOrDie("spec.nodeName=" + nodeName),
+	}); err != nil {
+		return nil, err
+	}
+	return lds.Items, nil
 }
 
 // ListLocalDiskByNodeDevicePath returns LocalDisks by given node device path
