@@ -125,12 +125,14 @@ func (ldcHandler *Handler) PatchBoundDiskRef() error {
 	}
 
 	oldDiskClaim := ldcHandler.diskClaim.DeepCopy()
+	matchedLds := make([]v1alpha1.LocalDisk, 0, 1)
 	logger.Infof("Found %d localdisk(s) in cluster", len(diskList.Items))
 	for _, disk := range diskList.Items {
 		if disk.Spec.ClaimRef != nil &&
 			// Since the claim can be applied repeatedly with a same name, thus compare UID here
 			disk.Spec.ClaimRef.UID == ldcHandler.diskClaim.UID {
 			ldcHandler.AppendDiskRef(&disk)
+			matchedLds = append(matchedLds, disk)
 		}
 	}
 
@@ -139,6 +141,14 @@ func (ldcHandler *Handler) PatchBoundDiskRef() error {
 	for _, disk := range ldcHandler.diskClaim.Spec.DiskRefs {
 		logger.Infof("Bounded localdisk: %s", disk.Name)
 	}
+
+	// Put back DiskType here if only localDiskName is specified,
+	// because later GetLocalDiskPoolName needs disk type
+	if ldcHandler.diskClaim.Spec.Description.LocalDiskName != "" && len(matchedLds) == 1 &&
+		ldcHandler.diskClaim.Spec.Description.DiskType == "" {
+		ldcHandler.diskClaim.Spec.Description.DiskType = matchedLds[0].Spec.DiskAttributes.Type
+	}
+
 	return ldcHandler.PatchClaimSpec(client.MergeFrom(oldDiskClaim))
 }
 
