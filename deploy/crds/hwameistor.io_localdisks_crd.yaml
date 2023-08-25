@@ -47,6 +47,9 @@ spec:
       name: Reserved
       priority: 1
       type: boolean
+    - jsonPath: .spec.state
+      name: State
+      type: string
     - jsonPath: .metadata.creationTimestamp
       name: age
       type: date

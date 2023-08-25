@@ -2,6 +2,7 @@ package disk
 
 import (
 	"context"
+
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/common"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
@@ -49,7 +50,10 @@ func (ctr *Controller) StartMonitor() {
 	go ctr.HandleEvent()
 
 	// Start list disk exist
-	for _, disk := range ctr.diskManager.ListExist() {
+	existDisks := ctr.diskManager.ListExist()
+	ctr.handleStaleDisks(existDisks)
+
+	for _, disk := range existDisks {
 		ctr.Push(disk)
 	}
 
@@ -59,6 +63,61 @@ func (ctr *Controller) StartMonitor() {
 	// Start push disk event to controller event chan
 	for disk := range diskEventChan {
 		ctr.Push(disk)
+	}
+}
+
+func (ctr *Controller) handleStaleDisks(existDisks []manager.Event) {
+	existDiskAttrs := make([]manager.Attribute, 0, len(existDisks))
+	for _, e := range existDisks {
+		diskParser.For(*manager.NewDiskIdentifyWithName(e.DevPath, e.DevName))
+		existDiskAttrs = append(existDiskAttrs, diskParser.AttributeParser.ParseDiskAttr())
+	}
+	// list all localDisks in current node
+	lastLocalDisks, _ := ctr.localDiskController.ListLocalDisksByNode(utils.GetNodeName())
+	// search stale localdisks
+	for _, ld := range lastLocalDisks {
+		if ld.Spec.State == v1alpha1.LocalDiskInactive {
+			continue
+		}
+
+		exist := false
+		// search by serial number
+		if ld.Spec.DiskAttributes.SerialNumber != "" {
+			for _, attr := range existDiskAttrs {
+				if ld.Spec.DiskAttributes.SerialNumber == attr.Serial {
+					log.WithField("serialNumber", attr.Serial).WithField("ldName", ld.Name).Info("Found existing disk serial number")
+					exist = true
+					break
+				}
+			}
+		} else {
+			devLinkSet := make(map[string]struct{})
+			for _, devLink := range ld.Spec.DevLinks {
+				devLinkSet[devLink] = struct{}{}
+			}
+			// search by dev link
+			for _, attr := range existDiskAttrs {
+				existDevLinkSet := make(map[string]struct{})
+				for _, existDevLink := range attr.DevLinks {
+					existDevLinkSet[existDevLink] = struct{}{}
+				}
+				for key, _ := range devLinkSet {
+					if _, ok := existDevLinkSet[key]; ok {
+						log.WithField("devLink", attr).WithField("ldName", ld.Name).Info("Found existing disk IDPath")
+						exist = true
+						break
+					}
+				}
+				if exist {
+					break
+				}
+			}
+		}
+		// can't find device in exist disks, it must be removed from this node
+		if !exist {
+			log.WithField("ldName", ld.Name).Info("Stale disk found, mark it inactive")
+			_ = ctr.markLocalDiskInactive(ld)
+		}
 	}
 }
 
@@ -126,21 +185,28 @@ func (ctr *Controller) processSingleEvent(event manager.Event) error {
 		localDisk := localDisks[0]
 
 		// NOTES: currently we are not doing anything about the event that the disk goes offline, just mark it as inactive here
-		localDisk.Spec.State = v1alpha1.LocalDiskInactive
-		localDisk.Spec.PreDevicePath = localDisk.Spec.DevicePath
-		localDisk.Spec.PreNodeName = localDisk.Spec.NodeName
-		localDisk.Spec.DevicePath = ""
-		localDisk.Spec.NodeName = ""
-		localDisk.Spec.Major = ""
-		localDisk.Spec.Minor = ""
-		if err = ctr.localDiskController.UpdateLocalDiskAttr(localDisk); err != nil {
-			log.WithError(err).Errorf("Failed to mark localDisk state %v to inactive", localDisk)
+		if err := ctr.markLocalDiskInactive(localDisk); err != nil {
 			return err
 		}
-		return nil
 
 	default:
 		log.Infof("UNKNOWN event %v, skip it", event)
+	}
+	return nil
+}
+
+func (ctr *Controller) markLocalDiskInactive(localDisk v1alpha1.LocalDisk) error {
+	// NOTES: currently we are not doing anything about the event that the disk goes offline, just mark it as inactive here
+	localDisk.Spec.State = v1alpha1.LocalDiskInactive
+	localDisk.Spec.PreDevicePath = localDisk.Spec.DevicePath
+	localDisk.Spec.PreNodeName = localDisk.Spec.NodeName
+	localDisk.Spec.DevicePath = ""
+	localDisk.Spec.NodeName = ""
+	localDisk.Spec.Major = ""
+	localDisk.Spec.Minor = ""
+	if err := ctr.localDiskController.UpdateLocalDiskAttr(localDisk); err != nil {
+		log.WithError(err).Errorf("Failed to mark localDisk state %v to inactive", localDisk)
+		return err
 	}
 	return nil
 }
