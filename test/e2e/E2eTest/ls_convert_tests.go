@@ -294,16 +294,22 @@ var _ = ginkgo.Describe("test convertible localstorage volume ", ginkgo.Label("p
 			}
 
 			err = wait.PollImmediate(10*time.Second, 10*time.Minute, func() (done bool, err error) {
-				err = client.List(ctx, lvlist)
+				lvrlist := &v1alpha1.LocalVolumeReplicaList{}
+				err = client.List(ctx, lvrlist)
 				if err != nil {
 					logrus.Error("%+v ", err)
 					f.ExpectNoError(err)
 				}
-				if len(lvlist.Items) != 2 {
+				if len(lvrlist.Items) != 2 {
 					return false, nil
 				} else {
+					err := client.List(ctx, lvlist)
+					if err != nil {
+						logrus.Error("%+v ", err)
+						f.ExpectNoError(err)
+					}
 					for _, lv := range lvlist.Items {
-						if lv.Status.State != "ready" {
+						if lv.Status.State != "Ready" {
 							return false, nil
 						}
 					}
@@ -311,6 +317,10 @@ var _ = ginkgo.Describe("test convertible localstorage volume ", ginkgo.Label("p
 				return true, nil
 
 			})
+			if err != nil {
+				logrus.Printf("lv convert failed ：%+v ", err)
+				f.ExpectNoError(err)
+			}
 
 		})
 		ginkgo.It("Expand volume", func() {
@@ -446,6 +456,32 @@ var _ = ginkgo.Describe("test convertible localstorage volume ", ginkgo.Label("p
 				}
 			}
 		})
+	})
+	ginkgo.Context("check the localvolume", func() {
+
+		ginkgo.It("check the accessibility node", func() {
+
+			lvlist := &v1alpha1.LocalVolumeList{}
+			err := client.List(ctx, lvlist)
+			if err != nil {
+				logrus.Error("%+v ", err)
+				f.ExpectNoError(err)
+			}
+			lv := lvlist.Items[0]
+			logrus.Printf("check the lv")
+			for _, replicas := range lv.Spec.Config.Replicas {
+				result := true
+				for _, node := range lv.Spec.Accessibility.Nodes {
+					if replicas.Hostname == node {
+						result = true
+						break
+					}
+				}
+				gomega.Expect(result).To(gomega.BeTrue())
+			}
+
+		})
+
 	})
 	ginkgo.Context("Clean up the environment", func() {
 		ginkgo.It("Delete test Deployment", func() {

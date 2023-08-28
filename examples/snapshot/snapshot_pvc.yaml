@@ -1,0 +1,8 @@
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: snapshot-data-sts-mysql-local-0
+spec:
+  volumeSnapshotClassName: hwameistor-storage-lvm-snap
+  source:
+    persistentVolumeClaimName: data-sts-mysql-local-0

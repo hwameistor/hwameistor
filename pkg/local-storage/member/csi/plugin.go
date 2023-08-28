@@ -1,8 +1,6 @@
 package csi
 
 import (
-	"sync"
-
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,7 +35,7 @@ type plugin struct {
 	storageMember apis.LocalStorageMember
 	mounter       Mounter
 
-	lock      sync.Mutex
+	//lock      sync.Mutex
 	apiClient client.Client
 
 	volumeQoSManager *qos.VolumeQoSManager
@@ -132,8 +130,8 @@ func (p *plugin) initControllerServiceCapabilities() {
 		// for storage capacity
 		//csi.ControllerServiceCapability_RPC_GET_CAPACITY, // don't support it as the scheduler will take care of it
 		// for snapshot
-		//csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
-		//csi.ControllerServiceCapability_RPC_LIST_SNAPSHOTS,
+		csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
+		csi.ControllerServiceCapability_RPC_LIST_SNAPSHOTS,
 		// for clone
 		//csi.ControllerServiceCapability_RPC_CLONE_VOLUME,
 	}

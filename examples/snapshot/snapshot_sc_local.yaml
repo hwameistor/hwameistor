@@ -1,0 +1,10 @@
+kind: VolumeSnapshotClass
+apiVersion: snapshot.storage.k8s.io/v1
+metadata:
+  name: hwameistor-storage-lvm-snap
+  annotations:
+    snapshot.storage.kubernetes.io/is-default-class: "true"
+parameters:
+  snapsize: "1073741824"
+driver: lvm.hwameistor.io
+deletionPolicy: Delete

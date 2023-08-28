@@ -102,6 +102,13 @@ spec:
                   in bytes
                 format: int64
                 type: integer
+              devLinks:
+                additionalProperties:
+                  items:
+                    type: string
+                  type: array
+                description: DevLinks is the set of symlink of a disk
+                type: object
               devPath:
                 description: DevPath is the disk path in the OS
                 type: string
@@ -147,6 +154,9 @@ spec:
                 description: UsedCapacityBytes is the real used capacity in bytes
                 format: int64
                 type: integer
+              volumePath:
+                description: VolumePath is the volume path in the OS
+                type: string
             required:
             - devPath
             type: object

@@ -76,10 +76,10 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	v1.GET("/cluster/nodes/:nodeName/migrates", nodeController.StorageNodeMigrateGet)
 
 	v1.GET("/cluster/nodes/:nodeName/disks", nodeController.StorageNodeDisksList)
-
 	v1.GET("/cluster/nodes/:nodeName/disks/:diskName", nodeController.GetStorageNodeDisk)
 
 	v1.POST("/cluster/nodes/:nodeName/disks/:devicePath", nodeController.UpdateStorageNodeDisk)
+	v1.POST("/cluster/nodes/:nodeName", nodeController.StorageNodeUpdate)
 
 	v1.GET("/cluster/nodes/:nodeName/pools", nodeController.StorageNodePoolsList)
 	v1.GET("/cluster/nodes/:nodeName/pools/:poolName", nodeController.StorageNodePoolGet)
@@ -87,14 +87,14 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	v1.GET("/cluster/nodes/:nodeName/pools/:poolName/disks/:diskName", nodeController.StorageNodePoolDiskGet)
 
 	poolController := controller.NewPoolController(sm)
-	//poolRoutes := v1.Group("/pools")
 	v1.GET("/cluster/pools", poolController.StoragePoolList)
 	v1.GET("/cluster/pools/:poolName", poolController.StoragePoolGet)
 	v1.GET("/cluster/pools/:poolName/nodes/:nodeName/disks", poolController.StorageNodeDisksGetByPoolName)
 	v1.GET("/cluster/pools/:poolName/nodes", poolController.StorageNodesGetByPoolName)
+	// Expand operation include add pool and expand pool, so we not add `:poolName` at here
+	v1.POST("/cluster/pools/expand", poolController.StoragePoolExpand)
 
 	settingController := controller.NewSettingController(sm)
-	//settingRoutes := v1.Group("/settings")
 	v1.POST("/cluster/drbd", settingController.EnableDRBDSetting)
 	v1.GET("/cluster/drbd", settingController.DRBDSettingGet)
 

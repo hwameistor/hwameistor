@@ -150,7 +150,6 @@ func ConvertBytesToStr(size int64) string {
 
 // BuildStoragePoolName constructs storage pool name
 func BuildStoragePoolName(poolClass string, poolType string) (string, error) {
-
 	if poolClass == apisv1alpha1.DiskClassNameHDD && poolType == apisv1alpha1.PoolTypeRegular {
 		return apisv1alpha1.PoolNameForHDD, nil
 	}
@@ -238,4 +237,8 @@ func TouchFile(filepath string) error {
 		}
 	}
 	return nil
+}
+
+func GetSnapshotRecoverNameByVolume(volumeName string) string {
+	return fmt.Sprintf("snaprecover-%s", volumeName)
 }

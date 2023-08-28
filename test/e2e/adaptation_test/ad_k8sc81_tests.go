@@ -378,7 +378,7 @@ var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("k8sc81"), fun
 		})
 		ginkgo.It("delete images", func() {
 			run := "docker rmi -f $(docker images -qa) "
-			_ = utils.RunInLinux(run)
+			_, _ = utils.RunInLinux(run)
 		})
 	})
 

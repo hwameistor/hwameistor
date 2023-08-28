@@ -2,6 +2,7 @@ package localdisk
 
 import (
 	"context"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -70,6 +71,23 @@ func (ldHandler *Handler) ListNodeLocalDisk(node string) (*v1alpha1.LocalDiskLis
 	nodeMatcher := client.MatchingFields{"spec.nodeName": node}
 	err := ldHandler.List(context.TODO(), list, nodeMatcher)
 	return list, err
+}
+
+// ListLocalDiskByNodeDevicePath returns LocalDisks by given node device path
+// This is should only be used when disk serial cannot be found(e.g. trigger by disk remove events)
+func (ldHandler *Handler) ListLocalDiskByNodeDevicePath(nodeName, devPath string) ([]v1alpha1.LocalDisk, error) {
+	var ldList v1alpha1.LocalDiskList
+	if err := ldHandler.List(context.Background(), &ldList, client.MatchingFields{"spec.nodeName/devicePath": nodeName + "/" + devPath}); err != nil {
+		return nil, err
+	}
+	// NOTES: this logic applies only to scenarios that upgrade after an older version(<=v0.11.2) was installed
+	var matchedLocalDisks []v1alpha1.LocalDisk
+	for _, item := range ldList.Items {
+		if strings.HasPrefix(item.Name, v1alpha1.LocalDiskObjectPrefix) {
+			matchedLocalDisks = append(matchedLocalDisks, *item.DeepCopy())
+		}
+	}
+	return matchedLocalDisks, nil
 }
 
 // ListLocalDiskDirectly query localdisk list from API Server directly
@@ -179,6 +197,7 @@ func (ldHandler *Handler) FilterDisk(ldc *v1alpha1.LocalDiskClaim) bool {
 		DiskType(ldc.Spec.Description.DiskType).
 		DevType().
 		NoPartition().
+		IsNameFormatMatch().
 		GetTotalResult()
 }
 

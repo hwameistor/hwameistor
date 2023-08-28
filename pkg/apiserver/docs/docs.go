@@ -46,6 +46,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/api.AuthRspBody"
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.RspFailBody"
+                        }
                     }
                 }
             }
@@ -85,6 +91,12 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.AuthLogoutRspBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.RspFailBody"
                         }
                     }
                 }
@@ -143,7 +155,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "失败",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.RspFailBody"
                         }
@@ -295,6 +307,50 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Node"
+                ],
+                "summary": "Set node enable/disable",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "nodeName",
+                        "name": "nodeName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.NodeUpdateReqBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.NodeUpdateRspBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.RspFailBody"
+                        }
+                    }
+                }
             }
         },
         "/cluster/nodes/{nodeName}/disks": {
@@ -400,13 +456,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.DiskReqBody"
                         }
                     },
                     "500": {
-                        "description": "失败",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.RspFailBody"
                         }
@@ -457,13 +513,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.LocalDiskInfo"
                         }
                     },
                     "500": {
-                        "description": "失败",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.RspFailBody"
                         }
@@ -579,13 +635,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.StoragePoolList"
                         }
                     },
                     "500": {
-                        "description": "失败",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.RspFailBody"
                         }
@@ -624,13 +680,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.StoragePool"
                         }
                     },
                     "500": {
-                        "description": "失败",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.RspFailBody"
                         }
@@ -675,13 +731,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.LocalDisksItemsList"
                         }
                     },
                     "500": {
-                        "description": "失败",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.RspFailBody"
                         }
@@ -727,13 +783,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.LocalDiskInfo"
                         }
                     },
                     "500": {
-                        "description": "失败",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.RspFailBody"
                         }
@@ -778,7 +834,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.OperationMetric"
                         }
@@ -838,6 +894,46 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.StoragePoolList"
+                        }
+                    }
+                }
+            }
+        },
+        "/cluster/pools/expand": {
+            "post": {
+                "description": "expand new disk for storage pool",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pool"
+                ],
+                "summary": "Storage pool expand",
+                "parameters": [
+                    {
+                        "description": "body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.StoragePoolExpansionReqBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.StoragePoolExpansionRspBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.RspFailBody"
                         }
                     }
                 }
@@ -1027,7 +1123,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.ModuleStatus"
                         }
@@ -1164,7 +1260,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.VolumeList"
                         }
@@ -1228,13 +1324,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.VolumeConvertOperation"
                         }
                     },
                     "500": {
-                        "description": "失败",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.RspFailBody"
                         }
@@ -1273,13 +1369,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.VolumeConvertRspBody"
                         }
                     },
                     "500": {
-                        "description": "失败",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.RspFailBody"
                         }
@@ -1311,13 +1407,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.VolumeExpandOperation"
                         }
                     },
                     "500": {
-                        "description": "失败",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.RspFailBody"
                         }
@@ -1347,13 +1443,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.VolumeConvertOperation"
                         }
                     },
                     "500": {
-                        "description": "失败",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.RspFailBody"
                         }
@@ -1385,13 +1481,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.VolumeMigrateOperation"
                         }
                     },
                     "500": {
-                        "description": "失败",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.RspFailBody"
                         }
@@ -1430,13 +1526,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.VolumeMigrateRspBody"
                         }
                     },
                     "500": {
-                        "description": "失败",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.RspFailBody"
                         }
@@ -1480,7 +1576,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.VolumeOperationByVolume"
                         }
@@ -1524,7 +1620,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.VolumeReplicaList"
                         }
@@ -1780,6 +1876,22 @@ const docTemplate = `{
                 "poolName": {
                     "description": "PoolName 存储池名称",
                     "type": "string"
+                }
+            }
+        },
+        "api.NodeUpdateReqBody": {
+            "type": "object",
+            "properties": {
+                "enable": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "api.NodeUpdateRspBody": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean"
                 }
             }
         },
@@ -2144,6 +2256,30 @@ const docTemplate = `{
                 "totalCapacityBytes": {
                     "description": "TotalCapacityBytes 存储池对应存储总容量",
                     "type": "integer"
+                }
+            }
+        },
+        "api.StoragePoolExpansionReqBody": {
+            "type": "object",
+            "properties": {
+                "diskType": {
+                    "description": "HDD/SSD/NVME",
+                    "type": "string"
+                },
+                "nodeName": {
+                    "type": "string"
+                },
+                "owner": {
+                    "description": "local-storage/local-disk-manager",
+                    "type": "string"
+                }
+            }
+        },
+        "api.StoragePoolExpansionRspBody": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean"
                 }
             }
         },
@@ -3006,7 +3142,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "creationTimestamp": {
-                    "description": "CreationTimestamp is a timestamp representing the server time when this object was\ncreated. It is not guaranteed to be set in happens-before order across separate operations.\nClients may not set this value. It is represented in RFC3339 form and is in UTC.\n\nPopulated by the system.\nRead-only.\nNull for lists.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional",
+                    "description": "CreationTime is a timestamp representing the server time when this object was\ncreated. It is not guaranteed to be set in happens-before order across separate operations.\nClients may not set this value. It is represented in RFC3339 form and is in UTC.\n\nPopulated by the system.\nRead-only.\nNull for lists.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional",
                     "type": "string"
                 },
                 "deletionGracePeriodSeconds": {
@@ -4017,6 +4153,14 @@ const docTemplate = `{
                 "volumeName": {
                     "description": "VolumeName is the name of the volume, e.g. pvc-fbf3ffc3-66db-4dae-9032-bda3c61b8f85",
                     "type": "string"
+                },
+                "volumeQoS": {
+                    "description": "VolumeQoS is the QoS of the volume",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1alpha1.VolumeQoS"
+                        }
+                    ]
                 }
             }
         },
@@ -4114,6 +4258,14 @@ const docTemplate = `{
                 "requiredCapacityBytes": {
                     "description": "+kubebuilder:validation:Minimum:=4194304",
                     "type": "integer"
+                },
+                "volumeQoS": {
+                    "description": "VolumeQoS is the QoS of the volume",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1alpha1.VolumeQoS"
+                        }
+                    ]
                 },
                 "volumegroup": {
                     "description": "VolumeGroup is the group name of the local volumes. It is designed for the scheduling and allocating.",
@@ -4251,6 +4403,11 @@ const docTemplate = `{
         "v1alpha1.State": {
             "type": "string",
             "enum": [
+                "",
+                "ToBeMounted",
+                "ToBeUnMount",
+                "Mounted",
+                "NotReady",
                 "Ready",
                 "Maintain",
                 "Offline",
@@ -4284,14 +4441,14 @@ const docTemplate = `{
                 "Failed",
                 "Available",
                 "InUse",
-                "Offline",
-                "",
-                "ToBeMounted",
-                "ToBeUnMount",
-                "Mounted",
-                "NotReady"
+                "Offline"
             ],
             "x-enum-varnames": [
+                "MountPointStateEmpty",
+                "MountPointToBeMounted",
+                "MountPointToBeUnMount",
+                "MountPointMounted",
+                "MountPointNotReady",
                 "NodeStateReady",
                 "NodeStateMaintain",
                 "NodeStateOffline",
@@ -4325,12 +4482,7 @@ const docTemplate = `{
                 "OperationStateFailed",
                 "DiskStateAvailable",
                 "DiskStateInUse",
-                "DiskStateOffline",
-                "MountPointStateEmpty",
-                "MountPointToBeMounted",
-                "MountPointToBeUnMount",
-                "MountPointMounted",
-                "MountPointNotReady"
+                "DiskStateOffline"
             ]
         },
         "v1alpha1.StorageNodeCondition": {
@@ -4444,6 +4596,19 @@ const docTemplate = `{
                 },
                 "pvc": {
                     "description": "PersistentVolumeClaimName is the name of the associated PVC",
+                    "type": "string"
+                }
+            }
+        },
+        "v1alpha1.VolumeQoS": {
+            "type": "object",
+            "properties": {
+                "iops": {
+                    "description": "IOPS defines the IOPS of the volume",
+                    "type": "string"
+                },
+                "throughput": {
+                    "description": "Throughput defines the throughput of the volume",
                     "type": "string"
                 }
             }

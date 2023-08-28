@@ -14,7 +14,6 @@ import (
 )
 
 type INodeController interface {
-	//RestController
 	StorageNodeGet(ctx *gin.Context)
 	StorageNodeList(ctx *gin.Context)
 	StorageNodeMigrateGet(ctx *gin.Context)
@@ -25,16 +24,15 @@ type INodeController interface {
 	StorageNodePoolGet(ctx *gin.Context)
 	StorageNodePoolDisksList(ctx *gin.Context)
 	StorageNodePoolDiskGet(ctx *gin.Context)
+	StorageNodeUpdate(ctx *gin.Context)
 }
 
-// NodeController
 type NodeController struct {
 	m           *manager.ServerManager
 	diskHandler *localdisk.Handler
 }
 
 func NewNodeController(m *manager.ServerManager, mgr mgrpkg.Manager) INodeController {
-
 	diskHandler := localdisk.NewLocalDiskHandler(mgr.GetClient(),
 		mgr.GetEventRecorderFor("localdisk-controller"))
 
@@ -246,11 +244,10 @@ func (n *NodeController) StorageNodeDisksList(ctx *gin.Context) {
 // @Param       body body api.DiskReqBody false "reqBody"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.DiskReqBody  "成功"
-// @Failure     500 {object}  api.RspFailBody "失败"
+// @Success     200 {object}  api.DiskReqBody
+// @Failure     500 {object}  api.RspFailBody
 // @Router      /cluster/nodes/{nodeName}/disks/{devicePath} [post]
 func (n *NodeController) UpdateStorageNodeDisk(ctx *gin.Context) {
-
 	var failRsp hwameistorapi.RspFailBody
 
 	// 获取path中的nodeName
@@ -314,8 +311,8 @@ func (n *NodeController) UpdateStorageNodeDisk(ctx *gin.Context) {
 // @Param       sort query bool false "sort"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.LocalDiskInfo  "成功"
-// @Failure     500 {object}  api.RspFailBody "失败"
+// @Success     200 {object}  api.LocalDiskInfo
+// @Failure     500 {object}  api.RspFailBody
 // @Router      /cluster/nodes/{nodeName}/disks/{diskName} [get]
 func (n *NodeController) GetStorageNodeDisk(ctx *gin.Context) {
 	var failRsp hwameistorapi.RspFailBody
@@ -358,8 +355,8 @@ func (n *NodeController) GetStorageNodeDisk(ctx *gin.Context) {
 // @Param       pageSize query int32 true "pageSize"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.StoragePoolList  "成功"
-// @Failure     500 {object}  api.RspFailBody "失败"
+// @Success     200 {object}  api.StoragePoolList
+// @Failure     500 {object}  api.RspFailBody
 // @Router      /cluster/nodes/{nodeName}/pools [get]
 func (n *NodeController) StorageNodePoolsList(ctx *gin.Context) {
 	var failRsp hwameistorapi.RspFailBody
@@ -405,8 +402,8 @@ func (n *NodeController) StorageNodePoolsList(ctx *gin.Context) {
 // @Param       poolName path string true "poolName"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.StoragePool  "成功"
-// @Failure     500 {object}  api.RspFailBody "失败"
+// @Success     200 {object}  api.StoragePool
+// @Failure     500 {object}  api.RspFailBody
 // @Router      /cluster/nodes/{nodeName}/pools/{poolName} [get]
 func (n *NodeController) StorageNodePoolGet(ctx *gin.Context) {
 	var failRsp hwameistorapi.RspFailBody
@@ -448,8 +445,8 @@ func (n *NodeController) StorageNodePoolGet(ctx *gin.Context) {
 // @Param       fuzzy query bool false "fuzzy"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.LocalDisksItemsList  "成功"
-// @Failure     500 {object}  api.RspFailBody "失败"
+// @Success     200 {object}  api.LocalDisksItemsList
+// @Failure     500 {object}  api.RspFailBody
 // @Router      /cluster/nodes/{nodeName}/pools/{poolName}/disks [get]
 func (n *NodeController) StorageNodePoolDisksList(ctx *gin.Context) {
 	var failRsp hwameistorapi.RspFailBody
@@ -491,8 +488,8 @@ func (n *NodeController) StorageNodePoolDisksList(ctx *gin.Context) {
 // @Param       diskName path string true "diskName"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.LocalDiskInfo  "成功"
-// @Failure     500 {object}  api.RspFailBody "失败"
+// @Success     200 {object}  api.LocalDiskInfo
+// @Failure     500 {object}  api.RspFailBody
 // @Router      /cluster/nodes/{nodeName}/pools/{poolName}/disks/{diskName} [get]
 func (n *NodeController) StorageNodePoolDiskGet(ctx *gin.Context) {
 	var failRsp hwameistorapi.RspFailBody
@@ -527,4 +524,57 @@ func (n *NodeController) StorageNodePoolDiskGet(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, localDiskInfo)
+}
+
+// StorageNodeUpdate godoc
+// @Summary     Set node enable/disable
+// @Tags        Node
+// @Param       nodeName path string true "nodeName"
+// @Param       body body api.NodeUpdateReqBody true "body"
+// @Accept      application/json
+// @Produce     application/json
+// @Success     200 {object} api.NodeUpdateRspBody
+// @Failure     500 {object} api.RspFailBody
+// @Router      /cluster/nodes/{nodeName} [post]
+func (n *NodeController) StorageNodeUpdate(ctx *gin.Context) {
+	nodeName := ctx.Param("nodeName")
+
+	if nodeName == "" {
+		ctx.JSON(http.StatusNonAuthoritativeInfo, hwameistorapi.RspFailBody{
+			ErrCode: http.StatusNonAuthoritativeInfo,
+			Desc:    "nodeName cant be empty",
+		})
+		return
+	}
+
+	var req hwameistorapi.NodeUpdateReqBody
+	err := ctx.ShouldBind(&req)
+	if err != nil {
+		log.Errorf("Unmarshal err = %v", err)
+		ctx.JSON(http.StatusInternalServerError, hwameistorapi.RspFailBody{
+			ErrCode: http.StatusInternalServerError,
+			Desc:    err.Error(),
+		})
+		return
+	}
+
+	if req.Enable == nil {
+		ctx.JSON(http.StatusNonAuthoritativeInfo, hwameistorapi.RspFailBody{
+			ErrCode: http.StatusNonAuthoritativeInfo,
+			Desc:    "enable parameter cant be empty",
+		})
+		return
+	}
+
+	err = n.m.StorageNodeController().UpdateLocalDiskNode(nodeName, *req.Enable)
+	if err != nil {
+		log.Errorf("Fail to update local disk node, req = %v, err = %v", req, err)
+		ctx.JSON(http.StatusInternalServerError, hwameistorapi.RspFailBody{
+			ErrCode: http.StatusInternalServerError,
+			Desc:    err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, hwameistorapi.NodeUpdateRspBody{Success: true})
 }

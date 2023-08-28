@@ -3,12 +3,16 @@ package hwameistor
 import (
 	"bytes"
 	"context"
+	"errors"
+	"k8s.io/apimachinery/pkg/types"
 	"math"
+	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	k8sv1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/printers"
@@ -43,7 +47,7 @@ func NewLocalStorageNodeController(client client.Client, clientset *kubernetes.C
 func (lsnController *LocalStorageNodeController) GetLocalStorageNode(key client.ObjectKey) (*apisv1alpha1.LocalStorageNode, error) {
 	lsn := &apisv1alpha1.LocalStorageNode{}
 	if err := lsnController.Client.Get(context.TODO(), key, lsn); err != nil {
-		if !errors.IsNotFound(err) {
+		if !k8serrors.IsNotFound(err) {
 			log.WithError(err).Error("Failed to query lsn")
 		} else {
 			log.Printf("GetLocalStorageNode: not found lsn")
@@ -56,7 +60,6 @@ func (lsnController *LocalStorageNodeController) GetLocalStorageNode(key client.
 
 // StorageNodeList
 func (lsnController *LocalStorageNodeController) StorageNodeList(queryPage hwameistorapi.QueryPage) (*hwameistorapi.StorageNodeList, error) {
-
 	var storageNodeList = &hwameistorapi.StorageNodeList{}
 	sns, err := lsnController.ListLocalStorageNode(queryPage)
 	if err != nil {
@@ -137,7 +140,6 @@ func (lsnController *LocalStorageNodeController) ListLocalStorageNode(queryPage 
 
 // getK8SNode
 func (lsnController *LocalStorageNodeController) getK8SNode(nodeName string) (*k8sv1.Node, hwameistorapi.State) {
-
 	k8snode, err := lsnController.clientset.CoreV1().Nodes().Get(context.TODO(), nodeName, metav1.GetOptions{})
 	if err != nil {
 		return k8snode, hwameistorapi.NodeStateNotReady
@@ -299,9 +301,8 @@ func (lsnController *LocalStorageNodeController) getAvailableDiskCapacity(nodeNa
 }
 
 func (lsnController *LocalStorageNodeController) LocalDiskListByNode(queryPage hwameistorapi.QueryPage) (*hwameistorapi.LocalDiskListByNode, error) {
-
 	var localDiskList = &hwameistorapi.LocalDiskListByNode{}
-	var localdisks = []*hwameistorapi.LocalDiskInfo{}
+	var localdisks []*hwameistorapi.LocalDiskInfo
 
 	disks, err := lsnController.ListStorageNodeDisks(queryPage)
 	if err != nil {
@@ -332,7 +333,6 @@ func (lsnController *LocalStorageNodeController) LocalDiskListByNode(queryPage h
 
 // ListStorageNodeDisks
 func (lsnController *LocalStorageNodeController) GetcdLocalDiskNodes(nodeName string) (*apisv1alpha1.LocalDiskNode, error) {
-
 	ldnList := &apisv1alpha1.LocalDiskNodeList{}
 	if err := lsnController.Client.List(context.TODO(), ldnList); err != nil {
 		log.WithError(err).Error("Failed to list LocalStorageNodes")
@@ -351,7 +351,6 @@ func (lsnController *LocalStorageNodeController) GetcdLocalDiskNodes(nodeName st
 
 // ListStorageNodeDisks
 func (lsnController *LocalStorageNodeController) ListStorageNodeDisks(queryPage hwameistorapi.QueryPage) ([]*hwameistorapi.LocalDiskInfo, error) {
-
 	diskList := &apisv1alpha1.LocalDiskList{}
 	if err := lsnController.Client.List(context.TODO(), diskList); err != nil {
 		log.WithError(err).Error("Failed to list LocalDisks")
@@ -368,6 +367,8 @@ func (lsnController *LocalStorageNodeController) ListStorageNodeDisks(queryPage 
 				disk.LocalStoragePooLName = hwameistorapi.PoolNameForHDD
 			} else if diskList.Items[i].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameSSD {
 				disk.LocalStoragePooLName = hwameistorapi.PoolNameForSSD
+			} else if diskList.Items[i].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameNVMe {
+				disk.LocalStoragePooLName = hwameistorapi.PoolNameForNVMe
 			}
 
 			disk.TotalCapacityBytes = diskList.Items[i].Spec.Capacity
@@ -400,7 +401,6 @@ func (lsnController *LocalStorageNodeController) convertLocalDiskState(state api
 
 	case apisv1alpha1.LocalDiskEmpty:
 		return hwameistorapi.LocalDiskEmpty
-
 	}
 
 	return hwameistorapi.LocalDiskUnknown
@@ -408,7 +408,6 @@ func (lsnController *LocalStorageNodeController) convertLocalDiskState(state api
 
 // convertDriverStatus
 func (lsnController *LocalStorageNodeController) convertDriverStatus(state apisv1alpha1.State) hwameistorapi.State {
-
 	switch state {
 	case apisv1alpha1.NodeStateReady:
 		return hwameistorapi.DriverStateReady
@@ -425,7 +424,6 @@ func (lsnController *LocalStorageNodeController) convertDriverStatus(state apisv
 
 // GetLocalVolumeMigrateYamlStr
 func (lsnController *LocalStorageNodeController) GetStorageNodeVolumeMigrateYamlStr(resourceName string) (*hwameistorapi.YamlData, error) {
-
 	lvmList := apisv1alpha1.LocalVolumeMigrateList{}
 	if err := lsnController.Client.List(context.Background(), &lvmList, &client.ListOptions{}); err != nil {
 		return nil, err
@@ -453,7 +451,6 @@ func (lsnController *LocalStorageNodeController) GetStorageNodeVolumeMigrateYaml
 
 // getResourceYaml
 func (lsnController *LocalStorageNodeController) getResourceYaml(res *apisv1alpha1.LocalVolumeMigrate) (string, error) {
-
 	buf := new(bytes.Buffer)
 	log.Infof("getResourceYaml res.(type) = %v", res)
 
@@ -564,32 +561,11 @@ func (lsnController *LocalStorageNodeController) GetStorageNodeDisk(page hwameis
 }
 
 // StorageNodePoolsList
-func (lsnController *LocalStorageNodeController) StorageNodePoolsList(queryPage hwameistorapi.QueryPage, handler *localdisk.Handler) (*hwameistorapi.StoragePoolList, error) {
-	var spl = &hwameistorapi.StoragePoolList{}
-
-	nodeKey := client.ObjectKey{
-		Name: queryPage.NodeName,
+func (lsnController *LocalStorageNodeController) StorageNodePoolsList(queryPage hwameistorapi.QueryPage, _ *localdisk.Handler) (*hwameistorapi.StoragePoolList, error) {
+	spl, err := lsnController.getStorageNodePoolList(queryPage.NodeName)
+	if err != nil {
+		return nil, err
 	}
-	log.Infof("StorageNodePoolsList nodeKey = %v", nodeKey)
-	if lsn, err := lsnController.GetLocalStorageNode(nodeKey); err == nil {
-		for _, pool := range lsn.Status.Pools {
-			var sp = &hwameistorapi.StoragePool{}
-			var snp hwameistorapi.StorageNodePool
-			snp.LocalPool = pool
-			snp.NodeName = queryPage.NodeName
-			sp.StorageNodePools = append(sp.StorageNodePools, snp)
-			sp.PoolName = pool.Name
-			sp.NodeNames = append(sp.NodeNames, queryPage.NodeName)
-			sp.AllocatedCapacityBytes = pool.UsedCapacityBytes
-			sp.TotalCapacityBytes = pool.TotalCapacityBytes
-			sp.CreateTime = lsn.CreationTimestamp.Time
-			spl.StoragePools = append(spl.StoragePools, sp)
-		}
-	} else {
-		log.Infof("StorageNodePoolsList err = %v", err)
-	}
-
-	log.Infof("StorageNodePoolsList spl.StoragePools[0] = %v", len(spl.StoragePools))
 
 	var pagination = &hwameistorapi.Pagination{}
 	pagination.Page = queryPage.Page
@@ -710,4 +686,81 @@ func (lsnController *LocalStorageNodeController) StorageNodePoolDiskGet(page hwa
 	}
 
 	return ldi, nil
+}
+
+func (lsnController *LocalStorageNodeController) getStorageNodePoolList(nodeName string) (*hwameistorapi.StoragePoolList, error) {
+	var spl = &hwameistorapi.StoragePoolList{}
+
+	nodeKey := client.ObjectKey{
+		Name: nodeName,
+	}
+	log.Infof("StorageNodePoolsList nodeKey = %v", nodeKey)
+	if lsn, err := lsnController.GetLocalStorageNode(nodeKey); err == nil {
+		for _, pool := range lsn.Status.Pools {
+			var sp = &hwameistorapi.StoragePool{}
+			var snp hwameistorapi.StorageNodePool
+			snp.LocalPool = pool
+			snp.NodeName = nodeName
+			sp.StorageNodePools = append(sp.StorageNodePools, snp)
+			sp.PoolName = pool.Name
+			sp.NodeNames = append(sp.NodeNames, nodeName)
+			sp.AllocatedCapacityBytes = pool.UsedCapacityBytes
+			sp.TotalCapacityBytes = pool.TotalCapacityBytes
+			sp.CreateTime = lsn.CreationTimestamp.Time
+			spl.StoragePools = append(spl.StoragePools, sp)
+		}
+	} else {
+		log.Infof("StorageNodePoolsList err = %v", err)
+		return nil, err
+	}
+
+	return spl, nil
+}
+
+func (lsnController *LocalStorageNodeController) UpdateLocalDiskNode(nodeName string, enable bool) error {
+	// check localDiskNode exists
+	lsn, err := lsnController.GetLocalStorageNode(types.NamespacedName{Name: nodeName})
+	if err != nil {
+		return err
+	}
+
+	// get the node resource
+	node := &corev1.Node{}
+	if err := lsnController.Client.Get(context.TODO(), types.NamespacedName{Name: nodeName}, node); err != nil {
+		return err
+	}
+
+	return lsnController.updateNodeEnable(lsn, node, enable)
+}
+
+func (lsnController *LocalStorageNodeController) updateNodeEnable(lsn *apisv1alpha1.LocalStorageNode, node *corev1.Node, enable bool) error {
+	if node.Labels == nil {
+		node.Labels = map[string]string{}
+	}
+
+	_, exists := node.Labels["lvm.hwameistor.io/enable"]
+	// set default value
+	if !exists {
+		node.Labels["lvm.hwameistor.io/enable"] = "true"
+	}
+
+	if node.Labels["lvm.hwameistor.io/enable"] == strconv.FormatBool(enable) {
+		// if its equal, return ok
+		return nil
+	}
+
+	if enable {
+		// enable Node
+		node.Labels["lvm.hwameistor.io/enable"] = "true"
+	} else {
+		// disable Node, check the pools are not used
+		for _, pool := range lsn.Status.Pools {
+			if pool.UsedVolumeCount != 0 {
+				return errors.New("LocalVolumes must be empty")
+			}
+		}
+		node.Labels["lvm.hwameistor.io/enable"] = "false"
+	}
+
+	return lsnController.Update(context.TODO(), node)
 }

@@ -5,22 +5,25 @@ sidebar_label: "FAQs"
 
 # FAQs
 
-## Q1: How does HwameiStor scheduler work in a Kubernetes platform?
+## Q1: How does hwameistor-scheduler work in a Kubernetes platform?
 
-The HwameiStor scheduler is deployed as a pod in the HwameiStor namespace.
+The hwameistor-scheduler is deployed as a pod in the hwameistor namespace.
 
 ![img](img/clip_image002.png)
 
 Once the applications (Deployment or StatefulSet) are created, the pod will
 be scheduled to the worker nodes on which HwameiStor is already configured.
 
-## Q2: How does HwameiStor schedule applications with multi-replicas workloads and what are the differences compared to the traditional shared storage (NFS / block)?
+## Q2: How to schedule applications with multi-replica workloads?
 
-We strongly recommend using StatefulSet for applications with multi-replica workloads.
+This question can be extended to:
+How does HwameiStor schedule applications with multi-replica workloads and how does it differ from traditional shared storage (NFS/block)?
 
-StatefulSet will deploy replicas on the same worker node with the original pod, and will
-also create a PV data volume for each replica. If you need to deploy replicas on different
-worker nodes, you shall manually configure them with `pod affinity`.
+To efficiently schedule applications with multi-replica workloads, we highly recommend using StatefulSet.
+
+StatefulSet ensures that replicas are deployed on the same worker node as the original pod.
+It also creates a PV data volume for each replica. If you need to deploy replicas on different
+worker nodes, manual configuration with `pod affinity` is necessary.
 
 ![img](img/clip_image004.png)
 
@@ -33,7 +36,7 @@ volumes' data running when retiring/rebooting a node.
 
 ### Remove a node
 
-Before remove a node from a Kubernetes cluster, the Pods and volumes on the node should be
+Before you remove a node from a Kubernetes cluster, the Pods and volumes on the node should be
 rescheduled and migrated to another available node, and keep the Pods/volumes running.
 
 Follow these steps to remove a node:
@@ -44,11 +47,9 @@ Follow these steps to remove a node:
     kubectl drain NODE --ignore-daemonsets=true. --ignore-daemonsets=true
     ```
 
-    Allows the above command to succeed even if pods managed by daemonset exist.
-    If it stacks due to PodDisruptionBudgets or something, try --force option.
-    The command will also trigger HwameiStor to migrate all the volumes' replicas
-    to another available node. Make sure the migration to complete by following
-    command before moving ahead.
+    This command can evict and reschedule Pods on the node. It also automatically
+    triggers HwameiStor's data volume eviction behavior. HwameiStor will automatically
+    migrate all replicas of the data volumes from that node to other nodes, ensuring data availability.
 
 2. Check the migration progress.
 
@@ -112,6 +113,11 @@ HwameiStor can immediately reschedule the Pod to another available node with ass
 volume data and bring the Pod back to running in very short time (~ 10 seconds for the
 Pod using a HA volume, and longer time for the Pod with non-HA volume depends on the data size).
 
+If users wish to keep data volumes on a specific node, accessible even after the node restarts,
+they can add the following labels to the node. This prevents the system from migrating the data volumes
+from that node. However, the system will still immediately schedule Pods on other nodes that have
+replicas of the data volumes.
+
 1. Add a label (optional)
 
     If it is not required to migrate the volumes during the node reboots,
@@ -128,7 +134,9 @@ Pod using a HA volume, and longer time for the Pod with non-HA volume depends on
     ```
 
     - If Step 1 has been performed, you can reboot the node after Step 2 is successful.
-    - If Step 1 has not been performed, you should check if the data migration is complete after Step 2 is successful (similar to Step 2 in [remove node](#remove-a-node)). After the data migration is complete, you can reboot the node.
+    - If Step 1 has not been performed, you should check if the data migration is complete
+      after Step 2 is successful (similar to Step 2 in [remove node](#remove-a-node)).
+      After the data migration is complete, you can reboot the node.
 
     After the first two steps are successful, you can reboot the node and wait for the node system to return to normal.
 
@@ -140,9 +148,13 @@ Pod using a HA volume, and longer time for the Pod with non-HA volume depends on
 
 ### Traditional shared storage
 
-In this case, StatefulSet will deploy replicas to other worker nodes for workload distribution and
-will also create a PV data volume for each replica.
+StatefulSet, which is used for stateful applications, prioritizes deploying replicated replicas
+to different nodes to distribute the workload. However, it creates a PV data volume
+for each Pod replica. Only when the number of replicas exceeds the number of worker nodes,
+multiple replicas will be deployed on the same node.
 
-The `Deployment` will also deploy replicas to other worker nodes for workload distribution
-but will share the same PV data volume (only for NFS). We suggest using a single pod for
-block storage because the block data volumes can not be shared.
+On the other hand, Deployments, which are used for stateless applications, prioritize deploying
+replicated replicas to different nodes to distribute the workload. All Pods share a single PV data volume
+(currently only supports NFS). Similar to StatefulSets, multiple replicas will be deployed on the same node
+only when the number of replicas exceeds the number of worker nodes. For block storage, as data volumes
+cannot be shared, it is recommended to use a single replica.

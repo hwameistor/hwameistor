@@ -1,12 +1,16 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
-
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"path"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
+	"time"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/exechelper"
@@ -21,9 +25,14 @@ const (
 	PVMask = 1 << 2
 )
 
+// LVMUnknownStatus this represents no error or this status is not set
+const LVMUnknownStatus = "unknown"
+
 // variables
 var (
-	ErrNotLVMByteNum = errors.New("LVM byte format unrecognised")
+	ErrNotLVMByteNum   = errors.New("LVM byte format unrecognised")
+	ErrReplicaNotFound = errors.New("volume replica not found on host")
+	LVMTimeLayout      = "2006-01-02 15:04:05 -0700"
 )
 
 // for PV/disk
@@ -72,11 +81,19 @@ type lvsReportRecord struct {
 }
 
 type lvRecord struct {
-	LvPath       string `json:"lv_path"`
-	Name         string `json:"lv_name,omitempty"`
-	PoolName     string `json:"vg_name,omitempty"`
-	ThinPoolName string `json:"pool_lv,omitempty"`
-	LvCapacity   string `json:"lv_size"`
+	LvPath        string `json:"lv_path"`
+	Name          string `json:"lv_name,omitempty"`
+	PoolName      string `json:"vg_name,omitempty"`
+	ThinPoolName  string `json:"pool_lv,omitempty"`
+	LvCapacity    string `json:"lv_size"`
+	Origin        string `json:"origin,omitempty"`
+	DataPercent   string `json:"data_percent,omitempty"`
+	LVSnapInvalid string `json:"lv_snapshot_invalid,omitempty"`
+	LVMergeFailed string `json:"lv_merge_failed,omitempty"`
+	SnapPercent   string `json:"snap_percent,omitempty"`
+	LVMerging     string `json:"lv_merging,omitempty"`
+	LVConverting  string `json:"lv_converting,omitempty"`
+	LVTime        string `json:"lv_time,omitempty"`
 }
 
 // type vgStatus struct {
@@ -464,6 +481,144 @@ func (lvm *lvmExecutor) ConsistencyCheck(crdReplicas map[string]*apisv1alpha1.Lo
 	lvm.logger.Debug("Consistency check completed")
 }
 
+// CreateVolumeReplicaSnapshot creates a new COW volume replica snapshot
+func (lvm *lvmExecutor) CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error {
+	logCtx := lvm.logger.WithFields(log.Fields{
+		"volumeSnapshot":        replicaSnapshot.Spec.VolumeSnapshotName,
+		"volumeReplicaSnapshot": replicaSnapshot.Name,
+		"sourceVolume":          replicaSnapshot.Spec.SourceVolume,
+		"sourceVolumeReplica":   replicaSnapshot.Spec.SourceVolumeReplica,
+	})
+	logCtx.Debug("Start creating volume replica snapshot")
+
+	existReplicas, err := lvm.GetReplicas()
+	if err != nil {
+		return err
+	}
+
+	if _, ok := existReplicas[replicaSnapshot.Spec.SourceVolume]; !ok {
+		logCtx.WithError(err).Error("Failed to get source volume replica on host")
+		return ErrReplicaNotFound
+	}
+
+	// use volume snapshot name as snapshot volume key - avoid duplicate volume replica snapshot with the same snapshot
+	if err = lvm.lvSnapCreate(replicaSnapshot.Spec.VolumeSnapshotName, path.Join(replicaSnapshot.Spec.PoolName, replicaSnapshot.Spec.SourceVolume),
+		replicaSnapshot.Spec.RequiredCapacityBytes); err != nil {
+		lvm.logger.WithError(err).Error("Failed to create volume replica snapshot")
+		return err
+	}
+
+	lvm.logger.Debugf("Volume replica snapshot created: %s", replicaSnapshot.Name)
+	return nil
+}
+
+func (lvm *lvmExecutor) DeleteVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error {
+	logCtx := lvm.logger.WithFields(log.Fields{
+		"volumeSnapshot":        replicaSnapshot.Spec.VolumeSnapshotName,
+		"volumeReplicaSnapshot": replicaSnapshot.Name,
+		"sourceVolume":          replicaSnapshot.Spec.SourceVolume,
+		"sourceVolumeReplica":   replicaSnapshot.Spec.SourceVolumeReplica,
+	})
+	logCtx.Debug("Start deleting volume replica snapshot")
+
+	if err := lvm.lvremove(path.Join(replicaSnapshot.Spec.PoolName, replicaSnapshot.Spec.VolumeSnapshotName), []string{}); err != nil {
+		logCtx.WithError(err).Error("Failed to delete volume replica snapshot from host")
+		return err
+	}
+
+	lvm.logger.Debugf("Volume replica snapshot deleted: %s", replicaSnapshot.Name)
+	return nil
+}
+
+func (lvm *lvmExecutor) UpdateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+// GetVolumeReplicaSnapshot returns a volume replica snapshot attribute including state and creation time
+func (lvm *lvmExecutor) GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error) {
+	logCtx := lvm.logger.WithFields(log.Fields{
+		"volumeSnapshot":        replicaSnapshot.Spec.VolumeSnapshotName,
+		"volumeReplicaSnapshot": replicaSnapshot.Name,
+		"sourceVolume":          replicaSnapshot.Spec.SourceVolume,
+		"sourceVolumeReplica":   replicaSnapshot.Spec.SourceVolumeReplica,
+	})
+	logCtx.Debug("Getting a volume replica snapshot")
+
+	lvmState, err := lvm.getLVMStatus(LVMask)
+	if err != nil {
+		logCtx.WithError(err).Error("Failed to query LV stats")
+		return nil, err
+	}
+
+	actualSnapshotStatus := apisv1alpha1.LocalVolumeReplicaSnapshotStatus{}
+	snapshotVolume, ok := lvmState.lvs[replicaSnapshot.Spec.VolumeSnapshotName]
+	if !ok {
+		return nil, ErrorSnapshotNotFound
+	}
+
+	capacity, err := utils.ConvertLVMBytesToNumeric(snapshotVolume.LvCapacity)
+	if err != nil {
+		logCtx.WithError(err).Errorf("Failed to get replica snapshot capacity, unrecognizied params %s", snapshotVolume.LvCapacity)
+		return nil, err
+	}
+
+	// parse lv create time to UTC time
+	cTime, err := time.Parse(LVMTimeLayout, snapshotVolume.LVTime)
+	if err != nil {
+		logCtx.WithError(err).Errorf("Failed to convert replica snapshot creation time to UTC Time, unrecognizied params %s", snapshotVolume.LVTime)
+		return nil, err
+	}
+
+	newTime := metav1.NewTime(cTime.Local())
+	actualSnapshotStatus.CreationTime = newTime.DeepCopy()
+	actualSnapshotStatus.AllocatedCapacityBytes = capacity
+	actualSnapshotStatus.Attribute.Invalid = len(snapshotVolume.LVSnapInvalid) > 0 && snapshotVolume.LVSnapInvalid != LVMUnknownStatus
+	actualSnapshotStatus.Attribute.Merging = len(snapshotVolume.LVMerging) > 0
+	if actualSnapshotStatus.Attribute.Invalid {
+		actualSnapshotStatus.Message = fmt.Sprintf("snapshot is invalid")
+		actualSnapshotStatus.State = apisv1alpha1.VolumeStateNotReady
+	} else {
+		actualSnapshotStatus.State = apisv1alpha1.VolumeStateReady
+	}
+
+	return &actualSnapshotStatus, nil
+}
+
+// RollbackVolumeReplicaSnapshot rollback snapshot to the source volume
+func (lvm *lvmExecutor) RollbackVolumeReplicaSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error {
+	logCtx := lvm.logger.WithFields(log.Fields{
+		"sourceVolume":                snapshotRecover.Spec.SourceVolumeSnapshot,
+		"volumeSnapshot":              snapshotRecover.Spec.VolumeSnapshotRecover,
+		"targetVolume":                snapshotRecover.Spec.TargetVolume,
+		"sourceVolumeReplicaSnapshot": snapshotRecover.Spec.SourceVolumeReplicaSnapshot,
+	})
+	logCtx.Debug("Rolling back a volume replica snapshot")
+
+	replicaSnapshot := &apisv1alpha1.LocalVolumeReplicaSnapshot{}
+	if err := lvm.lm.apiClient.Get(context.Background(), client.ObjectKey{Name: snapshotRecover.Spec.SourceVolumeReplicaSnapshot}, replicaSnapshot); err != nil {
+		logCtx.WithError(err).Error("Failed to get VolumeReplicaSnapshot")
+		return err
+	}
+
+	var options = []string{"--merge", fmt.Sprintf("%s/%s", replicaSnapshot.Spec.PoolName, replicaSnapshot.Spec.VolumeSnapshotName)}
+
+	// lvconvert --merge LocalStorage_PoolHDD/snapshot-name
+	if err := lvm.lvconvert(options...); err != nil {
+		logCtx.WithError(err).Error("Failed to convert snapshot to source volume")
+		return err
+	}
+
+	logCtx.Error("Successfully to convert snapshot to source volume")
+	return nil
+}
+
+// RestoreVolumeReplicaSnapshot restore snapshot to a new volume
+func (lvm *lvmExecutor) RestoreVolumeReplicaSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error {
+	panic("have not implemented restore")
+	return nil
+}
+
 func (lvm *lvmExecutor) getExistingPVs() (map[string]struct{}, error) {
 	existingPVsMap := make(map[string]struct{})
 
@@ -607,6 +762,26 @@ func (lvm *lvmExecutor) lvcreate(lvName string, vgName string, options []string)
 	return res.Error
 }
 
+func (lvm *lvmExecutor) lvSnapCreate(snapName string, sourceVolumePath string, snapSize int64, options ...string) error {
+	snapSizeStr := utils.ConvertNumericToLVMBytes(snapSize)
+	params := exechelper.ExecParams{
+		CmdName: "lvcreate",
+		CmdArgs: append(options,
+			"--snapshot",
+			"--name", snapName,
+			// only supported read-only snapshots. By default, lvm snapshot is readable and writeable
+			"--permission", "r",
+			"--size", snapSizeStr,
+			sourceVolumePath,
+		),
+	}
+	res := lvm.cmdExec.RunCommand(params)
+	if res.ExitCode == 0 {
+		return nil
+	}
+	return res.Error
+}
+
 func (lvm *lvmExecutor) lvRecord(lvName string, vgName string) (*lvRecord, error) {
 	lvsReport, err := lvm.lvs()
 	if err != nil {
@@ -702,7 +877,8 @@ func (lvm *lvmExecutor) vgs() (*vgsReport, error) {
 func (lvm *lvmExecutor) lvs() (*lvsReport, error) {
 	params := exechelper.ExecParams{
 		CmdName: "lvs",
-		CmdArgs: []string{"-o", "lv_path,lv_name,vg_name,lv_attr,lv_size,pool_lv,origin,data_percent,metadata_percent,move_pv,mirror_log,copy_percent,convert_lv", "--reportformat", "json", "--units", "B"},
+		CmdArgs: []string{"-a", "-o", "lv_path,lv_name,vg_name,lv_attr,lv_size,pool_lv,origin,data_percent,metadata_percent,move_pv,mirror_log,copy_percent,convert_lv," +
+			"lv_snapshot_invalid,lv_merge_failed,snap_percent,lv_device_open,lv_merging,lv_converting,lv_time", "--reportformat", "json", "--units", "B"},
 	}
 	res := lvm.cmdExec.RunCommand(params)
 	if res.ExitCode != 0 {
@@ -802,6 +978,11 @@ func (lvm *lvmExecutor) getLVMStatus(masks int) (*lvmStatus, error) {
 		}
 		for _, lvsReportRecords := range lvsReport.Records {
 			for _, lvRecord := range lvsReportRecords.Records {
+				// for merging snapshot: "lv_name":"[snapcontent-49246190-f939-4e17-912a-394ddc088299]"
+				if strings.HasPrefix(lvRecord.Name, "[") && strings.HasSuffix(lvRecord.Name, "]") {
+					lvRecord.Name = strings.TrimPrefix(lvRecord.Name, "[")
+					lvRecord.Name = strings.TrimSuffix(lvRecord.Name, "]")
+				}
 				status.lvs[lvRecord.Name] = lvRecord
 			}
 		}
@@ -836,4 +1017,18 @@ func (lvm *lvmExecutor) getLVMStatus(masks int) (*lvmStatus, error) {
 	}
 
 	return status, nil
+}
+
+func (lvm *lvmExecutor) lvconvert(options ...string) error {
+	params := exechelper.ExecParams{
+		CmdName: "lvconvert",
+		CmdArgs: options,
+	}
+	res := lvm.cmdExec.RunCommand(params)
+	if res.ExitCode != 0 {
+		lvm.logger.WithError(res.Error).Error("Failed to do lvconvert")
+		return res.Error
+	}
+
+	return nil
 }

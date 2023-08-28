@@ -8,12 +8,12 @@ import (
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("apiserver check test ", ginkgo.Label("periodCheck"), func() {
+var _ = ginkgo.Describe("apiserver check test", ginkgo.Label("periodCheck"), func() {
 
 	ginkgo.Context("check the fields of hwameistor-apiserver", func() {
 		ginkgo.It("check serviceAccountName", func() {
 			logrus.Infof("check serviceAccountName")
-			output := utils.RunInLinux("cat ../../helm/hwameistor/templates/api-server.yaml |grep serviceAccountName |wc -l")
+			output, _ := utils.RunInLinux("cat ../../helm/hwameistor/templates/api-server.yaml |grep serviceAccountName |wc -l")
 			gomega.Expect(output).To(gomega.Equal("1\n"))
 		})
 	})

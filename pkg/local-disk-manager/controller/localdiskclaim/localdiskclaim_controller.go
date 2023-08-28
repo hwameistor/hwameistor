@@ -2,6 +2,7 @@ package localdiskclaim
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -125,9 +126,15 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimEmpty(diskClaim *v1alpha1.Loca
 func (r *ReconcileLocalDiskClaim) processDiskClaimPending(diskClaim *v1alpha1.LocalDiskClaim) error {
 	logCtx := log.Fields{"name": diskClaim.Name}
 	log.WithFields(logCtx).Info("Start processing Pending localdiskclaim")
-	var (
-		err error
-	)
+
+	var err error
+	// don't assign disks when owner is not specified
+	if len(diskClaim.Spec.Owner) == 0 {
+		err = fmt.Errorf("owner must be specified")
+		r.Recorder.Eventf(diskClaim, v1.EventTypeWarning, v1alpha1.LocalDiskClaimEventReasonAssignFail,
+			"Assign free disk fail, due to error: %v", err)
+		return err
+	}
 
 	// assign disks or update status bound according to diskRefs
 	switch {

@@ -12,6 +12,10 @@ type FakeHwameistorV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeHwameistorV1alpha1) Events() v1alpha1.EventInterface {
+	return &FakeEvents{c}
+}
+
 func (c *FakeHwameistorV1alpha1) LocalDisks() v1alpha1.LocalDiskInterface {
 	return &FakeLocalDisks{c}
 }

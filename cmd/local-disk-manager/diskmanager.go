@@ -397,6 +397,18 @@ func setIndexField(cache cache.Cache) {
 				return []string{obj.(*v1alpha1.LocalDisk).Spec.NodeName}
 			},
 		},
+		{
+			field: "spec.devicePath",
+			Func: func(obj client.Object) []string {
+				return []string{obj.(*v1alpha1.LocalDisk).Spec.DevicePath}
+			},
+		},
+		{
+			field: "spec.nodeName/devicePath",
+			Func: func(obj client.Object) []string {
+				return []string{obj.(*v1alpha1.LocalDisk).Spec.NodeName + "/" + obj.(*v1alpha1.LocalDisk).Spec.DevicePath}
+			},
+		},
 	}
 
 	for _, index := range indexes {

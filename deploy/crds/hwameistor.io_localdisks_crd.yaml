@@ -17,6 +17,21 @@ spec:
     - jsonPath: .spec.nodeName
       name: NodeMatch
       type: string
+    - jsonPath: .spec.capacity
+      name: Capacity
+      priority: 1
+      type: integer
+    - jsonPath: .spec.preNodeName
+      name: PreNodeMatch
+      priority: 1
+      type: string
+    - jsonPath: .spec.devicePath
+      name: DevicePath
+      type: string
+    - jsonPath: .spec.preDevicePath
+      name: PreDevicePath
+      priority: 1
+      type: string
     - jsonPath: .spec.owner
       name: Owner
       priority: 1
@@ -32,6 +47,12 @@ spec:
       name: Reserved
       priority: 1
       type: boolean
+    - jsonPath: .spec.state
+      name: State
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: age
+      type: date
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -93,6 +114,11 @@ spec:
                     description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
                     type: string
                 type: object
+              devLinks:
+                description: DevLinks are symbol links for this device
+                items:
+                  type: string
+                type: array
               devicePath:
                 description: DevicePath is the disk path in the OS
                 type: string
@@ -139,6 +165,12 @@ spec:
               isRaid:
                 description: HasRAID identifies if the disk is a raid disk or not
                 type: boolean
+              major:
+                description: Major represents drive used by the device
+                type: string
+              minor:
+                description: Minor is used to distinguish different devices
+                type: string
               nodeName:
                 description: NodeName represents the node where the disk is attached
                 type: string
@@ -180,6 +212,13 @@ spec:
                 description: HasPartition represents if the disk has partitions or
                   not
                 type: boolean
+              preDevicePath:
+                description: PreDevicePath represents the last device path in the
+                  OS
+                type: string
+              preNodeName:
+                description: PreNodeName represents the node where the disk was attached
+                type: string
               raidInfo:
                 description: RAIDInfo contains RAID information
                 properties:
@@ -217,6 +256,7 @@ spec:
                 description: UUID global unique identifier of the disk
                 type: string
             required:
+            - devLinks
             - nodeName
             type: object
           status:

@@ -149,15 +149,24 @@ func (vm *localDiskVolumeManager) CreateVolume(name string, parameters interface
 	}
 	log.WithFields(logCtx).Debugf("Select disk %s to place volume", selectedDisk.Name)
 
+	// get localdisk by device path
+	selectedLocalDisk, err := vm.getLocalDiskByNodeDevicePath(selectedDisk.AttachNode, selectedDisk.DevPath)
+	if err != nil {
+		log.WithError(err).Error("Failed to get LocalDisk by devicePath")
+		return nil, err
+	}
+
 	// create LocalDiskVolume if not exist
 	volume, err := localdiskvolume.NewBuilder().WithName(name).
 		SetupDiskType(volumeRequest.DiskType).
 		SetupDisk(selectedDisk.DevPath).
-		SetupLocalDiskName(selectedDisk.Name).
+		SetupDevSymLinks(selectedLocalDisk.Spec.DevLinks).
+		SetupLocalDiskName(selectedLocalDisk.Name).
 		SetupAllocateCap(selectedDisk.Capacity).
 		SetupRequiredCapacityBytes(volumeRequest.RequireCapacity).
 		SetupPVCNameSpaceName(volumeRequest.PVCNameSpace + "/" + volumeRequest.PVCName).
 		SetupAccessibility(v1alpha1.AccessibilityTopology{Nodes: []string{volumeRequest.OwnerNodeName}}).
+		SetupVolumePath(types.ComposePoolVolumePath(types.GetLocalDiskPoolName(volumeRequest.DiskType), name)).
 		SetupStatus(v1alpha1.VolumeStateCreated).Build()
 	if err != nil {
 		log.WithError(err).Error("Failed to build volume object")
@@ -169,11 +178,6 @@ func (vm *localDiskVolumeManager) CreateVolume(name string, parameters interface
 		log.WithError(err).Error("Failed to create volume")
 		return nil, err
 	}
-
-	//if err = vm.markNodeDiskInuse(volumeRequest.OwnerNodeName, selectedDisk); err != nil {
-	//	log.WithFields(logCtx).WithField("selectedDisk", selectedDisk.DevPath).WithError(err).Error("Failed to mark select disk state as inuse")
-	//	return nil, err
-	//}
 
 	return &types.Volume{
 		Name:     createVolume.Name,
@@ -196,8 +200,8 @@ func (vm *localDiskVolumeManager) UpdateVolume(name string, parameters interface
 
 	if volume.Status.AllocatedCapacityBytes < r.RequireCapacity {
 		return nil, fmt.Errorf("RequireCapacity in VolumeRequest is modified "+
-			"but is bigger than allocted disk %s/%s (the disk capacity %d)",
-			volume.Spec.Accessibility.Nodes, volume.Status.DevPath, volume.Status.AllocatedCapacityBytes)
+			"but is bigger than allocted disk %s/%v (the disk capacity %d)",
+			volume.Spec.Accessibility.Nodes, volume.Status.DevLinks, volume.Status.AllocatedCapacityBytes)
 	}
 
 	newVolume, err := localdiskvolume.NewBuilderFrom(volume).
@@ -255,11 +259,13 @@ func (vm *localDiskVolumeManager) NodePublishVolume(ctx context.Context, volumeR
 	exist := volume.ExistMountPoint(r.GetTargetPath())
 	if !exist {
 		volume.AppendMountPoint(r.GetTargetPath(), r.GetVolumeCapability())
-		volume.SetupVolumeStatus(v1alpha1.VolumeStateNotReady)
-
-		if err = volume.UpdateLocalDiskVolume(); err != nil {
-			return err
-		}
+	}
+	// in case of machine restart but mountpoint already exist, so update status each time
+	volume.SetupVolumeStatus(v1alpha1.VolumeStateNotReady)
+	volume.UpdateMountPointPhase(r.GetTargetPath(), v1alpha1.MountPointToBeMounted)
+	volume.UpdateDevPathAccordingVolume()
+	if err = volume.UpdateLocalDiskVolume(); err != nil {
+		return err
 	}
 
 	return volume.WaitVolume(ctx, v1alpha1.VolumeStateReady)
@@ -281,7 +287,7 @@ func (vm *localDiskVolumeManager) NodeUnpublishVolume(ctx context.Context,
 
 	volume.UpdateMountPointPhase(targetPath, v1alpha1.MountPointToBeUnMount)
 	volume.SetupVolumeStatus(v1alpha1.VolumeStateToBeUnmount)
-	if err := volume.UpdateLocalDiskVolume(); err != nil {
+	if err = volume.UpdateLocalDiskVolume(); err != nil {
 		return err
 	}
 
@@ -577,4 +583,22 @@ func (vm *localDiskVolumeManager) markNodeDiskInuse(node string, disk *types.Dis
 
 func (vm *localDiskVolumeManager) markNodeDiskAvailable(node string, disk *types.Disk) error {
 	return vm.dm.MarkNodeDiskAvailable(node, disk)
+}
+
+func (vm *localDiskVolumeManager) getLocalDiskByNodeDevicePath(nodeName, devPath string) (*v1alpha1.LocalDisk, error) {
+	localDisks, err := vm.dm.ListLocalDiskByNodeDevicePath(nodeName, devPath)
+	if err != nil {
+		return nil, err
+	}
+
+	localDisk := &v1alpha1.LocalDisk{}
+	if len(localDisks) == 1 {
+		localDisk = localDisks[0].DeepCopy()
+	} else if len(localDisks) < 1 {
+		err = fmt.Errorf("this is no LocalDisk found by node device path %s/%s", nodeName, devPath)
+	} else if len(localDisks) > 1 {
+		err = fmt.Errorf("thare are mutil LocalDisk(%d) found by node device path %s/%s", len(localDisks), nodeName, devPath)
+
+	}
+	return localDisk, err
 }

@@ -129,7 +129,7 @@ please check the [adopters list](./adopters.md).
 ## Community
 
 We welcome contributions of any kind.
-If you have any questions about contributing, please consult the [contributing documentation](./CONTRIBUTING.md).
+If you have any questions about contributing, please consult the [contributing documentation](./docs/docs/contribute/CONTRIBUTING.md).
 
 ### Blog
 

@@ -2,7 +2,6 @@ package hwameistor
 
 import (
 	"context"
-
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
@@ -36,14 +35,14 @@ func (ldController *LocalDiskNodeController) ListLocalDiskNode() (*apisv1alpha1.
 
 // GetLocalDiskNode
 func (ldController *LocalDiskNodeController) GetLocalDiskNode(key client.ObjectKey) (*apisv1alpha1.LocalDiskNode, error) {
-	disk := &apisv1alpha1.LocalDiskNode{}
-	if err := ldController.Client.Get(context.TODO(), key, disk); err != nil {
+	node := &apisv1alpha1.LocalDiskNode{}
+	if err := ldController.Client.Get(context.TODO(), key, node); err != nil {
 		if !errors.IsNotFound(err) {
-			log.WithError(err).Error("Failed to query diskume")
+			log.WithError(err).Error("Failed to query localDiskNode")
 		} else {
-			log.Info("Not found the diskume")
+			log.Info("Not found the localDiskNode")
 		}
 		return nil, err
 	}
-	return disk, nil
+	return node, nil
 }

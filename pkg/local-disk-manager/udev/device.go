@@ -2,6 +2,7 @@ package udev
 
 import (
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"strings"
 
 	"github.com/pilebones/go-udev/crawler"
@@ -21,7 +22,7 @@ func NewCDevice(device crawler.Device) CDevice {
 	return CDevice{device}
 }
 
-// FilterDisk
+// FilterDisk filter out disks that are virtual or can't identify themselves
 func (d CDevice) FilterDisk() bool {
 	device := NewDevice(d.KObj)
 	err := device.ParseDeviceInfo()
@@ -30,6 +31,22 @@ func (d CDevice) FilterDisk() bool {
 		return false
 	}
 	log.Debugf("Device info in udev is:%+v", *device)
+
+	// disk with no identity will be filter out
+	if device.Serial == "" {
+		foundIDLink := false
+		for _, devLink := range device.DevLinks {
+			// by-path symlink will be used to identify disk when serial is empty, this mustn't be empty!
+			if strings.Contains(devLink, v1alpha1.LinkByPath) {
+				foundIDLink = true
+				break
+			}
+		}
+
+		if !foundIDLink {
+			return false
+		}
+	}
 
 	// virtual block device like loop device will be filter out
 	if strings.Contains(device.DevPath, "/virtual/") {
@@ -91,6 +108,9 @@ type Device struct {
 
 	// Name is the name of the device node sda, sdb, dm-0 etc
 	Name string `json:"name"`
+
+	// DEVLINKS
+	DevLinks []string `json:"devLinks"`
 }
 
 // NewDevice
@@ -113,7 +133,7 @@ func (d *Device) ParseDeviceInfo() error {
 }
 
 // Info
-func (d *Device) Info() (map[string]string, error) {
+func (d *Device) Info() (map[string]interface{}, error) {
 	var out string
 	var err error
 	if d.DevPath != "" {
@@ -129,7 +149,7 @@ func (d *Device) Info() (map[string]string, error) {
 }
 
 // parseDiskAttribute
-func (d *Device) parseDiskAttribute(info map[string]string) error {
+func (d *Device) parseDiskAttribute(info map[string]interface{}) error {
 	// Why do we need to convert the map information into JSON data
 	// instead of directly converting the map into a structure
 	//
@@ -145,8 +165,8 @@ func (d *Device) parseDiskAttribute(info map[string]string) error {
 }
 
 // parseUdevInfo
-func parseUdevInfo(udevInfo string) map[string]string {
-	udevItems := make(map[string]string)
+func parseUdevInfo(udevInfo string) map[string]interface{} {
+	udevItems := make(map[string]interface{})
 	for _, info := range utils.ConvertShellOutputs(udevInfo) {
 		if info == "" {
 			continue
@@ -157,6 +177,10 @@ func parseUdevInfo(udevInfo string) map[string]string {
 		case 'E':
 			items := strings.Split(strings.Replace(info, "E: ", "", 1), "=")
 			if len(items) != 2 {
+				continue
+			}
+			if items[0] == "DEVLINKS" {
+				udevItems[items[0]] = strings.Split(items[1], " ")
 				continue
 			}
 			udevItems[items[0]] = items[1]

@@ -33,7 +33,7 @@ func NewMetricsController(m *manager.ServerManager) IMetricsController {
 // @Param       name query string false "name"
 // @Accept      application/json
 // @Produce     application/json
-// @Success     200 {object} api.ModuleStatus  "成功"
+// @Success     200 {object} api.ModuleStatus
 // @Router      /cluster/status [get]
 func (v *MetricsController) ModuleStatus(ctx *gin.Context) {
 	var failRsp hwameistorapi.RspFailBody
@@ -58,7 +58,7 @@ func (v *MetricsController) ModuleStatus(ctx *gin.Context) {
 // @Param       pageSize query int32 true "pageSize"
 // @Accept      json
 // @Produce     json
-// @Success     200 {object}  api.OperationMetric  "成功"
+// @Success     200 {object}  api.OperationMetric
 // @Router      /cluster/operations [get]
 func (v *MetricsController) OperationList(ctx *gin.Context) {
 	var failRsp hwameistorapi.RspFailBody

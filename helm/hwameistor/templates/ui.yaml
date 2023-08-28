@@ -21,8 +21,9 @@ spec:
           imagePullPolicy: IfNotPresent
           name: hwameistor-ui
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               protocol: TCP
+              name: http
           resources:
             {{- toYaml .Values.apiserver.resources | nindent 12 }}
       restartPolicy: Always
@@ -38,6 +39,6 @@ spec:
   ports:
     - port: 80
       protocol: TCP
-      targetPort: 80
+      targetPort: http
   selector:
     app: hwameistor-ui

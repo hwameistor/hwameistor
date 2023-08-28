@@ -1,6 +1,7 @@
 package disk
 
 import (
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
 )
 
@@ -17,4 +18,6 @@ type Manager interface {
 	MarkNodeDiskAvailable(node string, disk *types.Disk) error
 
 	NodeIsReady(node string) (bool, error)
+
+	ListLocalDiskByNodeDevicePath(nodeName, devicePath string) ([]v1alpha1.LocalDisk, error)
 }

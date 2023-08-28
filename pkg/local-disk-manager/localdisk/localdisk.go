@@ -2,6 +2,9 @@ package localdisk
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/fields"
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,8 +47,7 @@ func (ctr Controller) CreateLocalDisk(ld v1alpha1.LocalDisk) error {
 }
 
 func (ctr Controller) UpdateLocalDiskAttr(newLocalDisk v1alpha1.LocalDisk) error {
-	key := client.ObjectKey{Name: newLocalDisk.GetName(), Namespace: ""}
-	remote, err := ctr.GetLocalDisk(key)
+	remote, err := ctr.GetLocalDisk(client.ObjectKey{Name: newLocalDisk.GetName()})
 	if err != nil {
 		return err
 	}
@@ -75,6 +77,34 @@ func (ctr Controller) GetLocalDisk(key client.ObjectKey) (v1alpha1.LocalDisk, er
 	return ld, nil
 }
 
+func (ctr Controller) ListLocalDisksByNode(nodeName string) ([]v1alpha1.LocalDisk, error) {
+	lds := &v1alpha1.LocalDiskList{}
+
+	if err := ctr.Mgr.GetClient().List(context.Background(), lds, &client.ListOptions{
+		FieldSelector: fields.ParseSelectorOrDie("spec.nodeName=" + nodeName),
+	}); err != nil {
+		return nil, err
+	}
+	return lds.Items, nil
+}
+
+// ListLocalDiskByNodeDevicePath returns LocalDisks by given node device path
+// This is should only be used when disk serial cannot be found(e.g. trigger by disk remove events)
+func (ctr Controller) ListLocalDiskByNodeDevicePath(nodeName, devPath string) ([]v1alpha1.LocalDisk, error) {
+	var ldList v1alpha1.LocalDiskList
+	if err := ctr.Mgr.GetClient().List(context.Background(), &ldList, client.MatchingFields{"spec.nodeName/devicePath": nodeName + "/" + devPath}); err != nil {
+		return nil, err
+	}
+	// NOTES: this logic applies only to scenarios that upgrade after an older version(<=v0.11.2) was installed
+	var matchedLocalDisks []v1alpha1.LocalDisk
+	for _, item := range ldList.Items {
+		if strings.HasPrefix(item.Name, v1alpha1.LocalDiskObjectPrefix) {
+			matchedLocalDisks = append(matchedLocalDisks, *item.DeepCopy())
+		}
+	}
+	return matchedLocalDisks, nil
+}
+
 func (ctr Controller) ConvertDiskToLocalDisk(disk manager.DiskInfo) (ld v1alpha1.LocalDisk) {
 	ld, _ = localdisk.NewBuilder().WithName(ctr.GenLocalDiskName(disk)).
 		SetupState().
@@ -97,11 +127,25 @@ func (ctr Controller) mergeLocalDiskAttr(oldLd *v1alpha1.LocalDisk, newLd v1alph
 	oldLd.Spec.SmartInfo = newLd.Spec.SmartInfo
 	oldLd.Spec.HasPartition = newLd.Spec.HasPartition
 	oldLd.Spec.PartitionInfo = newLd.Spec.PartitionInfo
-	oldLd.Spec.DevicePath = newLd.Spec.DevicePath
 	oldLd.Spec.UUID = newLd.Spec.UUID
 	oldLd.Spec.State = newLd.Spec.State
+	oldLd.Spec.Major = newLd.Spec.Major
+	oldLd.Spec.Minor = newLd.Spec.Minor
+	oldLd.Spec.DevLinks = newLd.Spec.DevLinks
+
+	// record historical information about where the disk was attached and the os path
+	// see issue #982 for more details
+	if oldLd.Spec.DevicePath != "" && oldLd.Spec.DevicePath != newLd.Spec.DevicePath {
+		oldLd.Spec.PreDevicePath = oldLd.Spec.DevicePath
+	}
+	oldLd.Spec.DevicePath = newLd.Spec.DevicePath
+
+	if oldLd.Spec.NodeName != "" && oldLd.Spec.NodeName != newLd.Spec.NodeName {
+		oldLd.Spec.PreNodeName = oldLd.Spec.NodeName
+	}
+	oldLd.Spec.NodeName = newLd.Spec.NodeName
 }
 
 func (ctr Controller) GenLocalDiskName(disk manager.DiskInfo) string {
-	return utils.ConvertNodeName(ctr.NodeName) + "-" + disk.Name
+	return v1alpha1.LocalDiskObjectPrefix + disk.GenerateUUID()
 }

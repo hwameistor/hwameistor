@@ -12,6 +12,22 @@ const (
 	LocalStorage     = "local-storage"
 	LocalDiskManager = "local-disk-manager"
 	System           = "system"
+
+	// LocalDiskObjectPrefix is used to prefix LocalDisk objects
+	LocalDiskObjectPrefix = "localdisk-"
+)
+
+type DevLinkType = string
+
+const (
+	// LinkByPath is used to identify by-path symbolic link
+	LinkByPath DevLinkType = "by-path"
+
+	// LinkByID is used to identify by-id symbolic link
+	LinkByID DevLinkType = "by-id"
+
+	// LinkByUUID is used to identify by-uuid symbolic link
+	LinkByUUID DevLinkType = "by-uuid"
 )
 
 // PartitionInfo contains partition information(e.g. FileSystem)
@@ -157,11 +173,20 @@ type LocalDiskSpec struct {
 	// +kubebuilder:validation:Required
 	NodeName string `json:"nodeName"`
 
+	// PreNodeName represents the node where the disk was attached
+	PreNodeName string `json:"preNodeName,omitempty"`
+
 	// UUID global unique identifier of the disk
 	UUID string `json:"uuid,omitempty"`
 
 	// DevicePath is the disk path in the OS
 	DevicePath string `json:"devicePath,omitempty"`
+
+	// PreDevicePath represents the last device path in the OS
+	PreDevicePath string `json:"preDevicePath,omitempty"`
+
+	// DevLinks are symbol links for this device
+	DevLinks []string `json:"devLinks"`
 
 	// Capacity of the disk in bytes
 	Capacity int64 `json:"capacity,omitempty"`
@@ -205,6 +230,14 @@ type LocalDiskSpec struct {
 	// Owner represents which system owns this claim(e.g. local-storage, local-disk-manager)
 	// +optional
 	Owner string `json:"owner,omitempty"`
+
+	// Major represents drive used by the device
+	// +optional
+	Major string `json:"major,omitempty"`
+
+	// Minor is used to distinguish different devices
+	// +optional
+	Minor string `json:"minor,omitempty"`
 }
 
 // LocalDiskStatus defines the observed state of LocalDisk
@@ -219,13 +252,19 @@ type LocalDiskStatus struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // LocalDisk is the Schema for the localdisks API
-//+kubebuilder:resource:scope=Cluster,shortName=ld
-//+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
-//+kubebuilder:printcolumn:JSONPath=".spec.owner",name=Owner,type=string,priority=1
-//+kubebuilder:printcolumn:JSONPath=".status.claimState",name=Phase,type=string
-//+kubebuilder:printcolumn:JSONPath=".spec.smartInfo.overallHealth",name=Health,type=string,priority=1
-//+kubebuilder:printcolumn:JSONPath=".spec.reserved",name=Reserved,type=boolean,priority=1
+// +kubebuilder:resource:scope=Cluster,shortName=ld
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
+// +kubebuilder:printcolumn:JSONPath=".spec.capacity",name=Capacity,type=integer,priority=1
+// +kubebuilder:printcolumn:JSONPath=".spec.preNodeName",name=PreNodeMatch,type=string,priority=1
+// +kubebuilder:printcolumn:JSONPath=".spec.devicePath",name=DevicePath,type=string
+// +kubebuilder:printcolumn:JSONPath=".spec.preDevicePath",name=PreDevicePath,type=string,priority=1
+// +kubebuilder:printcolumn:JSONPath=".spec.owner",name=Owner,type=string,priority=1
+// +kubebuilder:printcolumn:JSONPath=".status.claimState",name=Phase,type=string
+// +kubebuilder:printcolumn:JSONPath=".spec.smartInfo.overallHealth",name=Health,type=string,priority=1
+// +kubebuilder:printcolumn:JSONPath=".spec.reserved",name=Reserved,type=boolean,priority=1
+// +kubebuilder:printcolumn:JSONPath=".spec.state",name=State,type=string
+// +kubebuilder:printcolumn:name="age",type=date,JSONPath=`.metadata.creationTimestamp`
 type LocalDisk struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

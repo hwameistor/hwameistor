@@ -1,31 +1,4 @@
 include Makefile.variables
-# local-disk-manager build definitions
-LDM_MODULE_NAME = local-disk-manager
-LDM_BUILD_INPUT = ${CMDS_DIR}/${LDM_MODULE_NAME}/diskmanager.go
-
-# local-storage build definitions
-LS_MODULE_NAME = local-storage
-LS_BUILD_INPUT = ${CMDS_DIR}/${LS_MODULE_NAME}/storage.go
-
-# scheduler build definitions
-SCHEDULER_MODULE_NAME = scheduler
-SCHEDULER_BUILD_INPUT = ${CMDS_DIR}/${SCHEDULER_MODULE_NAME}/scheduler.go
-
-# admission build definitions
-ADMISSION_MODULE_NAME = admission
-ADMISSION_BUILD_INPUT = ${CMDS_DIR}/${ADMISSION_MODULE_NAME}/admission.go
-
-EVICTOR_MODULE_NAME = evictor
-EVICTOR_BUILD_INPUT = ${CMDS_DIR}/${EVICTOR_MODULE_NAME}/main.go
-
-EXPORTER_MODULE_NAME = exporter
-EXPORTER_BUILD_INPUT = ${CMDS_DIR}/${EXPORTER_MODULE_NAME}/main.go
-
-APISERVER_MODULE_NAME = apiserver
-APISERVER_BUILD_INPUT = ${CMDS_DIR}/${APISERVER_MODULE_NAME}/main.go
-
-PVC-AUTORESIZER_MODULE_NAME = pvc-autoresizer
-PVC-AUTORESIZER_BUILD_INPUT = ${CMDS_DIR}/${PVC-AUTORESIZER_MODULE_NAME}/main.go
 
 .PHONY: debug
 debug:
@@ -41,18 +14,18 @@ apiserver_run: apiserver_swag
 	GIN_MODE=debug go run ${BUILD_OPTIONS} ${APISERVER_BUILD_INPUT}
 
 .PHONY: compile
-compile: compile_ldm compile_ls compile_scheduler compile_admission compile_evictor compile_exporter compile_apiserver compile_pvc-autoresizer
+compile: compile_ldm compile_ls compile_scheduler compile_admission compile_evictor compile_exporter compile_apiserver compile_failover compile_auditor compile_pvc-autoresizer
 
 .PHONY: image
-image: build_ldm_image build_ls_image build_scheduler_image build_admission_image build_evictor_image build_exporter_image build_apiserver_image build_pvc-autoresizer_image
+image: build_ldm_image build_ls_image build_scheduler_image build_admission_image build_evictor_image build_exporter_image build_apiserver_image build_failover_image build_auditor_image build_pvc-autoresizer_image
 
 
 .PHONY: arm-image
-arm-image: build_ldm_image_arm64 build_ls_image_arm64 build_scheduler_image_arm64 build_admission_image_arm64 build_evictor_image_arm64 build_exporter_image_arm64 build_apiserver_image_arm64 build_pvc-autoresizer_image_arm64
+arm-image: build_ldm_image_arm64 build_ls_image_arm64 build_scheduler_image_arm64 build_admission_image_arm64 build_evictor_image_arm64 build_exporter_image_arm64 build_apiserver_image_arm64 build_failover_image_arm64 build_auditor_image_arm64 build_pvc-autoresizer_image_arm64
 
 
 .PHONY: release
-release: release_ldm release_ls release_scheduler release_admission release_evictor release_exporter release_apiserver release_pvc-autoresizer
+release: release_ldm release_ls release_scheduler release_admission release_evictor release_exporter release_apiserver release_failover release_auditor release_pvc-autoresizer
 
 .PHONY: unit-test
 unit-test:
@@ -63,6 +36,30 @@ unit-test:
 vendor:
 	go mod tidy -compat=1.18
 	go mod vendor
+
+#### for LDM #########
+LDM_MODULE_NAME = local-disk-manager
+LDM_BUILD_INPUT = ${CMDS_DIR}/${LDM_MODULE_NAME}/diskmanager.go
+
+.PHONY: compile_ldm
+compile_ldm:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${LDM_BUILD_OUTPUT} ${LDM_BUILD_INPUT}
+
+.PHONY: compile_ldm_arm64
+compile_ldm_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${LDM_BUILD_OUTPUT} ${LDM_BUILD_INPUT}
+
+.PHONY: build_ldm_image
+build_ldm_image:
+	@echo "Build local-disk-manager image ${LDM_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_ldm
+	docker build -t ${LDM_IMAGE_NAME}:${IMAGE_TAG} -f ${LDM_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_ldm_image_arm64
+build_ldm_image_arm64:
+	@echo "Build local-disk-manager image ${LDM_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_ldm_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${LDM_IMAGE_NAME}:${IMAGE_TAG} -f ${LDM_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
 .PHONY: release_ldm
 release_ldm:
@@ -75,6 +72,31 @@ release_ldm:
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${LDM_IMAGE_NAME}:${RELEASE_TAG}
 
+
+#### for LS ##########
+LS_MODULE_NAME = local-storage
+LS_BUILD_INPUT = ${CMDS_DIR}/${LS_MODULE_NAME}/storage.go
+
+.PHONY: compile_ls
+compile_ls:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${LS_BUILD_OUTPUT} ${LS_BUILD_INPUT}
+
+.PHONY: compile_ls_arm64
+compile_ls_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${LS_BUILD_OUTPUT} ${LS_BUILD_INPUT}
+
+.PHONY: build_ls_image
+build_ls_image:
+	@echo "Build local-storage image ${LS_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_ls
+	docker build -t ${LS_IMAGE_NAME}:${IMAGE_TAG} -f ${LS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_ls_image_arm64
+build_ls_image_arm64:
+	@echo "Build local-storage image ${LS_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_ls_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${LS_IMAGE_NAME}:${IMAGE_TAG} -f ${LS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
 .PHONY: release_ls
 release_ls:
 	# build for amd64 version
@@ -85,6 +107,31 @@ release_ls:
 	${DOCKER_BUILDX_CMD_ARM64} -t ${LS_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${LS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${LS_IMAGE_NAME}:${RELEASE_TAG}
+
+
+#### for Scheduler ##########
+SCHEDULER_MODULE_NAME = scheduler
+SCHEDULER_BUILD_INPUT = ${CMDS_DIR}/${SCHEDULER_MODULE_NAME}/scheduler.go
+
+.PHONY: compile_scheduler
+compile_scheduler:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${SCHEDULER_BUILD_OUTPUT} ${SCHEDULER_BUILD_INPUT}
+
+.PHONY: compile_scheduler_arm64
+compile_scheduler_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${SCHEDULER_BUILD_OUTPUT} ${SCHEDULER_BUILD_INPUT}
+
+.PHONY: build_scheduler_image
+build_scheduler_image:
+	@echo "Build scheduler image ${SCHEDULER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_scheduler
+	docker build -t ${SCHEDULER_IMAGE_NAME}:${IMAGE_TAG} -f ${SCHEDULER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_scheduler_image_arm64
+build_scheduler_image_arm64:
+	@echo "Build scheduler image ${SCHEDULER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_scheduler_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${SCHEDULER_IMAGE_NAME}:${IMAGE_TAG} -f ${SCHEDULER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
 .PHONY: release_scheduler
 release_scheduler:
@@ -97,6 +144,31 @@ release_scheduler:
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${SCHEDULER_IMAGE_NAME}:${RELEASE_TAG}
 
+
+#### for Admission Controller ##########
+ADMISSION_MODULE_NAME = admission
+ADMISSION_BUILD_INPUT = ${CMDS_DIR}/${ADMISSION_MODULE_NAME}/admission.go
+
+.PHONY: compile_admission
+compile_admission:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${ADMISSION_BUILD_OUTPUT} ${ADMISSION_BUILD_INPUT}
+
+.PHONY: compile_admission_arm64
+compile_admission_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${ADMISSION_BUILD_OUTPUT} ${ADMISSION_BUILD_INPUT}
+
+.PHONY: build_admission_image
+build_admission_image:
+	@echo "Build admission image ${ADMISSION_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_admission
+	docker build -t ${ADMISSION_IMAGE_NAME}:${IMAGE_TAG} -f ${ADMISSION_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_admission_image_arm64
+build_admission_image_arm64:
+	@echo "Build admission image ${ADMISSION_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_admission_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${ADMISSION_IMAGE_NAME}:${IMAGE_TAG} -f ${ADMISSION_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
 .PHONY: release_admission
 release_admission:
 	# build for amd64 version
@@ -107,6 +179,31 @@ release_admission:
 	${DOCKER_BUILDX_CMD_ARM64} -t ${ADMISSION_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${ADMISSION_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${ADMISSION_IMAGE_NAME}:${RELEASE_TAG}
+
+
+#### for Evitor ##########
+EVICTOR_MODULE_NAME = evictor
+EVICTOR_BUILD_INPUT = ${CMDS_DIR}/${EVICTOR_MODULE_NAME}/main.go
+
+.PHONY: compile_evictor
+compile_evictor:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${EVICTOR_BUILD_OUTPUT} ${EVICTOR_BUILD_INPUT}
+
+.PHONY: compile_evictor_arm64
+compile_evictor_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${EVICTOR_BUILD_OUTPUT} ${EVICTOR_BUILD_INPUT}
+
+.PHONY: build_evictor_image
+build_evictor_image:
+	@echo "Build evictor image ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_evictor
+	docker build -t ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG} -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_evictor_image_arm64
+build_evictor_image_arm64:
+	@echo "Build evictor image ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_evictor_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG} -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
 .PHONY: release_evictor
 release_evictor:
@@ -119,6 +216,31 @@ release_evictor:
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${EVICTOR_IMAGE_NAME}:${RELEASE_TAG}
 
+
+#### for Exporter ##########
+EXPORTER_MODULE_NAME = exporter
+EXPORTER_BUILD_INPUT = ${CMDS_DIR}/${EXPORTER_MODULE_NAME}/main.go
+
+.PHONY: compile_exporter
+compile_exporter:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${EXPORTER_BUILD_OUTPUT} ${EXPORTER_BUILD_INPUT}
+
+.PHONY: compile_exporter_arm64
+compile_exporter_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${EXPORTER_BUILD_OUTPUT} ${EXPORTER_BUILD_INPUT}
+
+.PHONY: build_exporter_image
+build_exporter_image:
+	@echo "Build exporter image ${EXPORTER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_exporter
+	docker build -t ${EXPORTER_IMAGE_NAME}:${IMAGE_TAG} -f ${EXPORTER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_exporter_image_arm64
+build_exporter_image_arm64:
+	@echo "Build exporter image ${EXPORTER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_exporter_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${EXPORTER_IMAGE_NAME}:${IMAGE_TAG} -f ${EXPORTER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
 .PHONY: release_exporter
 release_exporter:
 	# build for amd64 version
@@ -129,6 +251,31 @@ release_exporter:
 	${DOCKER_BUILDX_CMD_ARM64} -t ${EXPORTER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${EXPORTER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${EXPORTER_IMAGE_NAME}:${RELEASE_TAG}
+
+
+#### for APIServer ##########
+APISERVER_MODULE_NAME = apiserver
+APISERVER_BUILD_INPUT = ${CMDS_DIR}/${APISERVER_MODULE_NAME}/main.go
+
+.PHONY: compile_apiserver
+compile_apiserver:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${APISERVER_BUILD_OUTPUT} ${APISERVER_BUILD_INPUT}
+
+.PHONY: compile_apiserver_arm64
+compile_apiserver_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${APISERVER_BUILD_OUTPUT} ${APISERVER_BUILD_INPUT}
+
+.PHONY: build_apiserver_image
+build_apiserver_image:
+	@echo "Build hwameistor apiserver image ${APISERVER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_apiserver
+	docker build -t ${APISERVER_IMAGE_NAME}:${IMAGE_TAG} -f ${APISERVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_apiserver_image_arm64
+build_apiserver_image_arm64:
+	@echo "Build apiserver image ${APISERVER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_apiserver_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${APISERVER_IMAGE_NAME}:${IMAGE_TAG} -f ${APISERVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
 .PHONY: release_apiserver
 release_apiserver:
@@ -141,6 +288,103 @@ release_apiserver:
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${APISERVER_IMAGE_NAME}:${RELEASE_TAG}
 
+
+#### for Failover ##########
+FAILOVER_MODULE_NAME = failover-assistant
+FAILOVER_BUILD_INPUT = ${CMDS_DIR}/${FAILOVER_MODULE_NAME}/main.go
+
+.PHONY: compile_failover
+compile_failover:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${FAILOVER_BUILD_OUTPUT} ${FAILOVER_BUILD_INPUT}
+
+.PHONY: compile_failover_arm64
+compile_failover_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${FAILOVER_BUILD_OUTPUT} ${FAILOVER_BUILD_INPUT}
+
+.PHONY: build_failover_image
+build_failover_image:
+	@echo "Build hwameistor failover image ${FAILOVER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_failover
+	docker build -t ${FAILOVER_IMAGE_NAME}:${IMAGE_TAG} -f ${FAILOVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_failover_image_arm64
+build_failover_image_arm64:
+	@echo "Build failover image ${FAILOVER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_failover_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${FAILOVER_IMAGE_NAME}:${IMAGE_TAG} -f ${FAILOVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: release_failover
+release_failover:
+	# build for amd64 version
+	${DOCKER_MAKE_CMD} make compile_failover
+	${DOCKER_BUILDX_CMD_AMD64} -t ${FAILOVER_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${FAILOVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# build for arm64 version
+	${DOCKER_MAKE_CMD} make compile_failover_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${FAILOVER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${FAILOVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# push to a public registry
+	${MUILT_ARCH_PUSH_CMD} -i ${FAILOVER_IMAGE_NAME}:${RELEASE_TAG}
+
+
+#### for Auditor ##########
+AUDITOR_MODULE_NAME = auditor
+AUDITOR_BUILD_INPUT = ${CMDS_DIR}/${AUDITOR_MODULE_NAME}/main.go
+
+.PHONY: compile_auditor
+compile_auditor:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${AUDITOR_BUILD_OUTPUT} ${AUDITOR_BUILD_INPUT}
+
+.PHONY: compile_auditor_arm64
+compile_auditor_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${AUDITOR_BUILD_OUTPUT} ${AUDITOR_BUILD_INPUT}
+
+.PHONY: build_auditor_image
+build_auditor_image:
+	@echo "Build hwameistor auditor image ${AUDITOR_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_auditor
+	docker build -t ${AUDITOR_IMAGE_NAME}:${IMAGE_TAG} -f ${AUDITOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_auditor_image_arm64
+build_auditor_image_arm64:
+	@echo "Build auditor image ${AUDITOR_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_auditor_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${AUDITOR_IMAGE_NAME}:${IMAGE_TAG} -f ${AUDITOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: release_auditor
+release_auditor:
+	# build for amd64 version
+	${DOCKER_MAKE_CMD} make compile_auditor
+	${DOCKER_BUILDX_CMD_AMD64} -t ${AUDITOR_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${AUDITOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# build for arm64 version
+	${DOCKER_MAKE_CMD} make compile_auditor_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${AUDITOR_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${AUDITOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# push to a public registry
+	${MUILT_ARCH_PUSH_CMD} -i ${AUDITOR_IMAGE_NAME}:${RELEASE_TAG}
+
+
+#### for PVC AutoResizer ##########
+PVC-AUTORESIZER_MODULE_NAME = pvc-autoresizer
+PVC-AUTORESIZER_BUILD_INPUT = ${CMDS_DIR}/${PVC-AUTORESIZER_MODULE_NAME}/main.go
+
+.PHONY: compile_pvc-autoresizer
+compile_pvc-autoresizer:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${PVC-AUTORESIZER_BUILD_OUTPUT} ${PVC-AUTORESIZER_BUILD_INPUT}
+
+.PHONY: compile_pvc-autoresizer_arm64
+compile_apiserver_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${PVC-AUTORESIZER_BUILD_OUTPUT} ${PVC-AUTORESIZER_BUILD_INPUT}
+
+.PHONY: build_pvc-autoresizer_image
+build_pvc-autoresizer_image:
+	@echo "Build hwameistor pvc-autoresizer image ${PVC-AUTORESIZER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_pvc-autoresizer
+	docker build -t ${PVC-AUTORESIZER_IMAGE_NAME}:${IMAGE_TAG} -f ${PVC-AUTORESIZER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_pvc-autoresizer_image_arm64
+build_pvc-autoresizer_image_arm64:
+	@echo "Build hwameistor pvc-autoresizer image ${PVC-AUTORESIZER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_pvc-autoresizer_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${PVC-AUTORESIZER_IMAGE_NAME}:${IMAGE_TAG} -f ${PVC-AUTORESIZER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
 .PHONY: release_pvc-autoresizer
 release_pvc-autoresizer:
     # build for amd64 version
@@ -152,103 +396,6 @@ release_pvc-autoresizer:
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${PVC-AUTORESIZER_IMAGE_NAME}:${RELEASE_TAG}
 
-
-.PHONY: build_ldm_image
-build_ldm_image:
-	@echo "Build local-disk-manager image ${LDM_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_ldm
-	docker build -t ${LDM_IMAGE_NAME}:${IMAGE_TAG} -f ${LDM_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-.PHONY: build_ls_image
-build_ls_image:
-	@echo "Build local-storage image ${LS_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_ls
-	docker build -t ${LS_IMAGE_NAME}:${IMAGE_TAG} -f ${LS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-.PHONY: build_scheduler_image
-build_scheduler_image:
-	@echo "Build scheduler image ${SCHEDULER_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_scheduler
-	docker build -t ${SCHEDULER_IMAGE_NAME}:${IMAGE_TAG} -f ${SCHEDULER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-.PHONY: build_admission_image
-build_admission_image:
-	@echo "Build admission image ${ADMISSION_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_admission
-	docker build -t ${ADMISSION_IMAGE_NAME}:${IMAGE_TAG} -f ${ADMISSION_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-.PHONY: build_evictor_image
-build_evictor_image:
-	@echo "Build evictor image ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_evictor
-	docker build -t ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG} -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-.PHONY: build_exporter_image
-build_exporter_image:
-	@echo "Build exporter image ${EXPORTER_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_exporter
-	docker build -t ${EXPORTER_IMAGE_NAME}:${IMAGE_TAG} -f ${EXPORTER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-
-.PHONY: build_apiserver_image
-build_apiserver_image:
-	@echo "Build hwameistor apiserver image ${APISERVER_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_apiserver
-	docker build -t ${APISERVER_IMAGE_NAME}:${IMAGE_TAG} -f ${APISERVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-.PHONY: build_pvc-autoresizer_image
-build_apiserver_image:
-	@echo "Build hwameistor pvc-autoresizer image ${PVC-AUTORESIZER_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_pvc-autoresizer
-	docker build -t ${PVC-AUTORESIZER_IMAGE_NAME}:${IMAGE_TAG} -f ${PVC-AUTORESIZER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-.PHONY: build_ldm_image_arm64
-build_ldm_image_arm64:
-	@echo "Build local-disk-manager image ${LDM_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_ldm_arm64
-	${DOCKER_BUILDX_CMD_ARM64} -t ${LDM_IMAGE_NAME}:${IMAGE_TAG} -f ${LDM_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-.PHONY: build_ls_image_arm64
-build_ls_image_arm64:
-	@echo "Build local-storage image ${LS_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_ls_arm64
-	${DOCKER_BUILDX_CMD_ARM64} -t ${LS_IMAGE_NAME}:${IMAGE_TAG} -f ${LS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-.PHONY: build_scheduler_image_arm64
-build_scheduler_image_arm64:
-	@echo "Build scheduler image ${SCHEDULER_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_scheduler_arm64
-	${DOCKER_BUILDX_CMD_ARM64} -t ${SCHEDULER_IMAGE_NAME}:${IMAGE_TAG} -f ${SCHEDULER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-.PHONY: build_admission_image_arm64
-build_admission_image_arm64:
-	@echo "Build admission image ${ADMISSION_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_admission_arm64
-	${DOCKER_BUILDX_CMD_ARM64} -t ${ADMISSION_IMAGE_NAME}:${IMAGE_TAG} -f ${ADMISSION_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-.PHONY: build_evictor_image_arm64
-build_evictor_image_arm64:
-	@echo "Build evictor image ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_evictor_arm64
-	${DOCKER_BUILDX_CMD_ARM64} -t ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG} -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-.PHONY: build_exporter_image_arm64
-build_exporter_image_arm64:
-	@echo "Build exporter image ${EXPORTER_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_exporter_arm64
-	${DOCKER_BUILDX_CMD_ARM64} -t ${EXPORTER_IMAGE_NAME}:${IMAGE_TAG} -f ${EXPORTER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-.PHONY: build_apiserver_image_arm64
-build_apiserver_image_arm64:
-	@echo "Build hwameistor apiserver image ${APISERVER_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_apiserver_arm64
-	${DOCKER_BUILDX_CMD_ARM64} -t ${APISERVER_IMAGE_NAME}:${IMAGE_TAG} -f ${APISERVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-.PHONY: build_pvc-autoresizer_image_arm64
-build_pvc-autoresizer_image_arm64:
-	@echo "Build hwameistor pvc-autoresizer image ${PVC-AUTORESIZER_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_pvc-autoresizer_arm64
-	${DOCKER_BUILDX_CMD_ARM64} -t ${PVC-AUTORESIZER_IMAGE_NAME}:${IMAGE_TAG} -f ${PVC-AUTORESIZER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
 .PHONY: apis
 apis:
@@ -265,69 +412,6 @@ _gen-apis:
 	${OPERATOR_CMD} generate crds
 	GOPROXY=https://goproxy.cn,direct /code-generator/generate-groups.sh all github.com/hwameistor/hwameistor/pkg/apis/client github.com/hwameistor/hwameistor/pkg/apis "hwameistor:v1alpha1" --go-header-file /go/src/github.com/hwameistor/hwameistor/build/boilerplate.go.txt
 
-.PHONY: compile_ldm
-compile_ldm:
-	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${LDM_BUILD_OUTPUT} ${LDM_BUILD_INPUT}
-
-.PHONY: compile_ldm_arm64
-compile_ldm_arm64:
-	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${LDM_BUILD_OUTPUT} ${LDM_BUILD_INPUT}
-
-.PHONY: compile_ls
-compile_ls:
-	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${LS_BUILD_OUTPUT} ${LS_BUILD_INPUT}
-
-.PHONY: compile_ls_arm64
-compile_ls_arm64:
-	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${LS_BUILD_OUTPUT} ${LS_BUILD_INPUT}
-
-.PHONY: compile_scheduler
-compile_scheduler:
-	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${SCHEDULER_BUILD_OUTPUT} ${SCHEDULER_BUILD_INPUT}
-
-.PHONY: compile_scheduler_arm64
-compile_scheduler_arm64:
-	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${SCHEDULER_BUILD_OUTPUT} ${SCHEDULER_BUILD_INPUT}
-
-.PHONY: compile_admission
-compile_admission:
-	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${ADMISSION_BUILD_OUTPUT} ${ADMISSION_BUILD_INPUT}
-
-.PHONY: compile_admission_arm64
-compile_admission_arm64:
-	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${ADMISSION_BUILD_OUTPUT} ${ADMISSION_BUILD_INPUT}
-
-.PHONY: compile_evictor
-compile_evictor:
-	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${EVICTOR_BUILD_OUTPUT} ${EVICTOR_BUILD_INPUT}
-
-.PHONY: compile_evictor_arm64
-compile_evictor_arm64:
-	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${EVICTOR_BUILD_OUTPUT} ${EVICTOR_BUILD_INPUT}
-
-.PHONY: compile_exporter
-compile_exporter:
-	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${EXPORTER_BUILD_OUTPUT} ${EXPORTER_BUILD_INPUT}
-
-.PHONY: compile_exporter_arm64
-compile_exporter_arm64:
-	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${EXPORTER_BUILD_OUTPUT} ${EXPORTER_BUILD_INPUT}
-
-.PHONY: compile_apiserver
-compile_apiserver:
-	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${APISERVER_BUILD_OUTPUT} ${APISERVER_BUILD_INPUT}
-
-.PHONY: compile_apiserver_arm64
-compile_apiserver_arm64:
-	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${APISERVER_BUILD_OUTPUT} ${APISERVER_BUILD_INPUT}
-
-.PHONY: compile_pvc-autoresizer
-compile_pvc-autoresizer:
-	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${PVC-AUTORESIZER_BUILD_OUTPUT} ${PVC-AUTORESIZER_BUILD_INPUT}
-
-.PHONY: compile_pvc-autoresizer_arm64
-compile_apiserver_arm64:
-	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${PVC-AUTORESIZER_BUILD_OUTPUT} ${PVC-AUTORESIZER_BUILD_INPUT}
 
 .PHONY: _enable_buildx
 _enable_buildx:
@@ -355,6 +439,10 @@ pr-test:
 .PHONY: relok8s-test
 relok8s-test:
 	bash test/relok8s-test.sh
+
+.PHONY: shutdownvm
+shutdownvm:
+	bash test/shutdownvm.sh
 
 .PHONY: render-chart-values
 render-chart-values:
