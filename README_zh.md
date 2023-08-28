@@ -40,19 +40,19 @@ HwameiStor 的最新版本为 [![hwameistor-releases](https://img.shields.io/git
 
 HwameiStor 包含若干模块：
 
-[local-disk-manager](#local-disk-manager)
-[local-storage](#local-storage)
-[scheduler](#scheduler)
-[admission-controller](#admission-controller)
-[Evictor](#evictor)
-[Exporter](#exporter)
-[HA module installer](#高可用模块安装器)
-[Volume Snapshot](#volume-snapshot)
-[Volume Auto Resize](#volume-auto-resize)
-[Volume IO Throtting](#volume-io-throtting)
-[App Failover](#app-failover)
-[Audit](#audit)
-[UI](#ui)
+* [local-disk-manager](#local-disk-manager)
+* [local-storage](#local-storage)
+* [scheduler](#scheduler)
+* [admission-controller](#admission-controller)
+* [Evictor](#evictor)
+* [Exporter](#exporter)
+* [HA module installer](#高可用模块安装器)
+* [Volume Snapshot](#数据卷快照)
+* [Volume Auto Resize](#数据卷自动扩容)
+* [Volume IO Throtting](#数据卷-io-访问控制)
+* [App Failover](#应用故障转移)
+* [Audit](#审计日志)
+* [GUI](#图形化用户界面)
 
 ### local-disk-manager
 
