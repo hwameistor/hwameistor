@@ -370,7 +370,7 @@ compile_pvc-autoresizer:
 	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${PVC-AUTORESIZER_BUILD_OUTPUT} ${PVC-AUTORESIZER_BUILD_INPUT}
 
 .PHONY: compile_pvc-autoresizer_arm64
-compile_apiserver_arm64:
+compile_pvc-autoresizer_arm64:
 	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${PVC-AUTORESIZER_BUILD_OUTPUT} ${PVC-AUTORESIZER_BUILD_INPUT}
 
 .PHONY: build_pvc-autoresizer_image
