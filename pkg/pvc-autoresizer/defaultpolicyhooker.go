@@ -7,10 +7,10 @@ import (
 	hwameistorv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	// apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
+	// "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -20,6 +20,13 @@ import (
 )
 
 var defaultResizePolicyName = "default"
+var defaultResizePolicy = "default"
+
+var defaultResizePolicyLabelSelector = metav1.LabelSelector{
+	MatchLabels: map[string]string{
+		"hwameistor.io/is-default-resizepolicy": "true",
+	},
+}
 
 type Hooker struct {
 	Client client.Client
@@ -42,22 +49,40 @@ func (h *Hooker) Start() {
 				log.Infof("pvc %v in namespace %v already related to resizePolicy %v, don't add default resizepolicy annotation", pvc.Name, pvc.Namespace, policyName)
 				return
 			}
-			defaultPolicy := hwameistorv1alpha1.ResizePolicy{}
-			if err := h.Client.Get(h.Context, types.NamespacedName{Name: defaultResizePolicyName}, &defaultPolicy); err != nil {
-				if apierrors.IsNotFound(err) {
-					log.Infof("No default resizepolicy exist, pvc %v in namespace %v not added annotation", pvc.Name, pvc.Namespace)
-					return
-				} else {
-					log.Errorf("get ResizePolicy err: %v", err)
-					return
-				}
-			}
-			pvc.Annotations[PVCResizePolicyAnnotationName] = defaultResizePolicyName
-			if err := h.Client.Update(h.Context, pvc); err != nil {
-				log.Errorf("add annotation err for pvc %v in namespace %v, err: %v", pvc.Name, pvc.Namespace, err)
+			resizePolicyList := &hwameistorv1alpha1.ResizePolicyList{}
+			labelSelector, err := metav1.LabelSelectorAsSelector(&defaultResizePolicyLabelSelector)
+			if err != nil {
+				log.Errorf("convert labelSelector err: %v", err)
 				return
 			}
-			log.Infof("Added default resizepolicy annotation for pvc %v in namespace %v", pvc.Name, pvc.Namespace)
+			if err := h.Client.List(h.Context, resizePolicyList, &client.ListOptions{LabelSelector: labelSelector}); err != nil {
+				log.Errorf("list resizepolicy err: %v", err)
+				return
+			}
+			if len(resizePolicyList.Items) > 0 {
+				pvc.Annotations[PVCResizePolicyAnnotationKey] = defaultResizePolicy
+				if err := h.Client.Update(h.Context, pvc); err != nil {
+					log.Errorf("add annotation err for pvc %v in namespace %v, err: %v", pvc.Name, pvc.Namespace, err)
+					return
+				}
+				log.Infof("Added default resizepolicy annotation for pvc %v in namespace %v", pvc.Name, pvc.Namespace)
+			}
+			// defaultPolicy := hwameistorv1alpha1.ResizePolicy{}
+			// if err := h.Client.Get(h.Context, types.NamespacedName{Name: defaultResizePolicyName}, &defaultPolicy); err != nil {
+			// 	if apierrors.IsNotFound(err) {
+			// 		log.Infof("No default resizepolicy exist, pvc %v in namespace %v not added annotation", pvc.Name, pvc.Namespace)
+			// 		return
+			// 	} else {
+			// 		log.Errorf("get ResizePolicy err: %v", err)
+			// 		return
+			// 	}
+			// }
+			// pvc.Annotations[PVCResizePolicyAnnotationName] = defaultResizePolicyName
+			// if err := h.Client.Update(h.Context, pvc); err != nil {
+			// 	log.Errorf("add annotation err for pvc %v in namespace %v, err: %v", pvc.Name, pvc.Namespace, err)
+			// 	return
+			// }
+			// log.Infof("Added default resizepolicy annotation for pvc %v in namespace %v", pvc.Name, pvc.Namespace)
 		},
 	}
 

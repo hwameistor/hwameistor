@@ -6,6 +6,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -81,12 +82,26 @@ func (r *AutoResizer) Start() {
 			usagePercentage := computeUsedPercentage(usedCapacityBytes, requestStorageCapacity)
 			log.Infof("usagePercentage: %v", usagePercentage)
 
-			resizePolicyName, ok := p.localVolume.pvc.Annotations[PVCResizePolicyAnnotationName]
+			resizePolicyName, ok := p.localVolume.pvc.Annotations[PVCResizePolicyAnnotationKey]
 			if ok {
 				resizePolicy := hwameistorv1alpha1.ResizePolicy{}
-				if err := p.cli.Get(p.ctx, types.NamespacedName{Name: resizePolicyName}, &resizePolicy); err != nil {
-					log.Errorf("get ResizePolicy err: %v", err)
-					return
+				if resizePolicyName == defaultResizePolicy {
+					resizePolicyList := &hwameistorv1alpha1.ResizePolicyList{}
+					labelSelector, err := metav1.LabelSelectorAsSelector(&defaultResizePolicyLabelSelector)
+					if err != nil {
+						log.Errorf("convert labelSelector err: %v", err)
+						return
+					}
+					if err := p.cli.List(p.ctx, resizePolicyList, &client.ListOptions{LabelSelector: labelSelector}); err != nil {
+						log.Errorf("list resizepolicy err: %v", err)
+						return
+					}
+					resizePolicy = resizePolicyList.Items[0]
+				} else {
+					if err := p.cli.Get(p.ctx, types.NamespacedName{Name: resizePolicyName}, &resizePolicy); err != nil {
+						log.Errorf("get ResizePolicy err: %v", err)
+						return
+					}
 				}
 				p.localVolume.resizePolicy = resizePolicy
 			} else {
