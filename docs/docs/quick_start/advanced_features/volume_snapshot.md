@@ -5,7 +5,13 @@ sidebar_label: "Volume Snapshot"
 
 # Volume Snapshot
 
-In HwameiStor, it allows users to create snapshots of non-highly available volumes. And restore and rollback operations can be performed based on volume snapshots
+In HwameiStor, it allows users to create snapshots of data volumes and perform restore and rollback operations based on data volume snapshots.
+
+:::note
+Currently, only snapshots are supported for non highly available LVM type data volumes.
+
+To avoid data inconsistency, please pause or stop I/O before taking a snapshot.
+:::
 
 Please follow the steps below to create a VolumeSnapshotClass and a VolumeSnapshot to use it.
 
@@ -28,6 +34,10 @@ driver: lvm.hwameistor.io
 ```
 
 - snapsize：It specifies the size of VolumeSnapshot
+
+:::note
+If the snapsize parameter is not specified, the size of the created snapshot is consistent with the size of the source volume.
+:::
 
 
 After you create a VolumeSnapshotClass, you can use it to create VolumeSnapshot.
@@ -64,6 +74,11 @@ NAME                                               CAPACITY     SOURCEVOLUME    
 snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110   1073741824   pvc-967baffd-ce10-4739-b996-87c9ed24e635   Ready                       5m31s
 
 ```
+- CAPACITY: The capacity size of the snapshot
+- SourceVOLUME: The source volume name of the snapshot
+- MERGING: Whether the snapshot is in a merged state (usually triggered by * rollback operation *)
+- INVALID: Whether the snapshot is invalidated (usually triggered when * the snapshot capacity is full *)
+- AGE: The actual creation time of the snapshot (different from the CR creation time, this time is the creation time of the underlying snapshot data volume)
 
 After creating a VolumeSnapshot, you can restore and rollback the VolumeSnapshot.
 
@@ -92,6 +107,11 @@ spec:
 
 ## Rollback VolumeSnapshot
 
+:::note
+To roll back a snapshot, you must first stop the I/O of the source volume, such as stopping the application and waiting for the rollback operation to complete,
+*confirm data consistency* before using the rolled back data volume.
+:::
+
 VolumeSnapshot can be rolled back by creating the resource LocalVolumeSnapshotRecover, as follows:
 
 ```yaml
@@ -102,9 +122,5 @@ metadata:
 spec:
   sourceVolumeSnapshot: snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110
   recoverType: "rollback"
-  targetPoolName: LocalStorage_PoolHDD
-  targetVolume: pvc-967baffd-ce10-4739-b996-87c9ed24e635
 ```
 - sourceVolumeSnapshot：It specifies the VolumeSnapshot to be rollback.
-- targetPoolName: It specifies the storage pool where the rollback target volume is located.
-- targetVolume:  It specifies the data volume of the target of the rollback.
