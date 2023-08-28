@@ -4,6 +4,7 @@ v0.12.0/ 2023-8-28
 
 ## LocalStorage
 * [Feat][Snapshot] Recover Snapshot #981 (@SSmallMonster )
+* add new component pvc-autoresizer #1016 (@buffalo1024 )
 * feat(local-storage): support ext{x} filesystem #1033 (@SSmallMonster )
 * fix bug of displaying NVMe disk of LocalStoragePool node #1041 (@buffalo1024 )
 * fix migrate operation missing update replica status #1047 (@Vacant2333 )
