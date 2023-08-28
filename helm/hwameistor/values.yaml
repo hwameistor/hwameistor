@@ -148,3 +148,8 @@ localStorageCSIController:
     imageRepository: sig-storage/csi-external-health-monitor-controller
     tag: v0.8.0
     resources: {}
+
+pvcAutoResizer:
+  replicas: 1
+  imageRepository: hwameistor/pvc-autoresizer
+  tag: ""
