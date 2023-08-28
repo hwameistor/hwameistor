@@ -43,6 +43,11 @@
   {{- default .Chart.Version .Values.ui.tag -}}
 {{- end -}}
 
+{{/* Allow PVCAutoResizer image tag to be overridden. */}}
+{{- define "hwameistor.pvcautoresizerImageTag" -}}
+  {{- default .Chart.Version .Values.pvcAutoResizer.tag -}}
+{{- end -}}
+
 {{/* Allow Failover image tag to be overridden. */}}
 {{- define "hwameistor.failoverAssistantImageTag" -}}
   {{- default .Chart.Version .Values.failoverAssistant.tag -}}

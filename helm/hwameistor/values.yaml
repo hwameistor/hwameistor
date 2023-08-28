@@ -168,3 +168,8 @@ localStorageCSIController:
     imageRepository: sig-storage/csi-snapshotter
     tag: v6.0.0
     resources: {}
+
+pvcAutoResizer:
+  replicas: 1
+  imageRepository: hwameistor/pvc-autoresizer
+  tag: ""
