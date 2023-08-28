@@ -19,6 +19,12 @@ type ResizePolicySpec struct {
 
 	NodePoolUsageLimit int8 `json:"nodePoolUsageLimit"`
 
+	StorageClassSelector *metav1.LabelSelector `json:"storageClassSelector,omitempty"`
+
+	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
+
+	PVCSelector *metav1.LabelSelector `json:"pvcSelector,omitempty"`
+
 }
 
 // ResizePolicyStatus defines the observed state of ResizePolicy
