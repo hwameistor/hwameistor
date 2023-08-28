@@ -5,7 +5,13 @@ sidebar_label: "数据卷快照"
 
 # 数据卷快照
 
-在 HwameiStor 中，它允许用户创建非高可用数据卷的快照，且可以基于数据卷快照进行还原、回滚操作。
+在 HwameiStor 中，它允许用户创建数据卷的快照，且可以基于数据卷快照进行还原、回滚操作。
+
+:::note
+目前仅支持对非高可用 LVM 类型数据卷创建快照。
+
+为了避免数据不一致，请先暂停或者停止 I/O 然后再打快照。
+:::
 
 请按照以下步骤创建卷快照类（VolumeSnapshotClass）和卷快照（VolumeSnapshot）来使用它。
 
@@ -28,6 +34,10 @@ driver: lvm.hwameistor.io
 ```
 
 - snapsize：指定创建卷快照的大小。
+
+:::note
+如果不指定 snapsize 参数，那么创建的快照大小和源卷的大小一致。
+:::
 
 
 创建 卷快照类 后，您可以使用它来创建 卷快照。
@@ -64,6 +74,11 @@ NAME                                               CAPACITY     SOURCEVOLUME    
 snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110   1073741824   pvc-967baffd-ce10-4739-b996-87c9ed24e635   Ready                       5m31s
 
 ```
+- CAPACITY：快照的容量大小
+- SOURCEVOLUME：快照的源卷名称
+- MERGING：快照是否处于合并状态（一般由*回滚操作*触发）
+- INVALID：快照是否失效（一般在*快照容量写满*触发）
+- AGE：快照真实创建的时间（不同于 CR 创建的时间，这个时间是底层快照数据卷的创建时间）
 
 创建 卷快照 后，您可以对卷快照进行还原、回滚操作。
 
@@ -92,6 +107,11 @@ spec:
 
 ## 对卷快照进行回滚操作
 
+:::note
+对快照进行回滚必须先*停止源卷的 I/O*，比如先停止应用，等待回滚操作完全结束，
+并*确认数据一致性*之后再使用回滚后的数据卷。
+:::
+
 可以通过创建资源 LocalVolumeSnapshotRecover，对卷快照进行回滚操作。具体如下：
 
 ```yaml
@@ -102,9 +122,5 @@ metadata:
 spec:
   sourceVolumeSnapshot: snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110
   recoverType: "rollback"
-  targetPoolName: LocalStorage_PoolHDD
-  targetVolume: pvc-967baffd-ce10-4739-b996-87c9ed24e635
 ```
 - sourceVolumeSnapshot：指定要进行回滚操作的 卷快照。
-- targetPoolName: 指定回滚目标数据卷所在的存储池。
-- targetVolume:  指定回滚的目标数据卷。
