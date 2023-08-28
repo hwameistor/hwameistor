@@ -1,9 +1,0 @@
-apiVersion: hwameistor.io/v1alpha1
-kind: LocalVolumeSnapshotRecover
-metadata:
-  name: pvc-890e27b0-1c9a-4a12-9b26-c1c3d04f0139
-spec:
-  sourceVolumeSnapshot: snapcontent-49246190-f939-4e17-912a-394ddc088299
-  recoverType: "restore"
-  targetPoolName: LocalStorage_PoolHDD
-  targetVolume: pvc-4cd2a35a-4ed2-497d-aae2-766f607dtest
