@@ -123,7 +123,7 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("periodCheck")
 							Containers: []corev1.Container{
 								{
 									Name:  "web",
-									Image: "172.30.45.210/hwameistor/dao-2048:v1.2.0",
+									Image: "10.6.112.210/hwameistor/dao-2048:v1.2.0",
 									Ports: []corev1.ContainerPort{
 										{
 											Name:          "http",

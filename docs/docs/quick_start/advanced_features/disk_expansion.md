@@ -42,7 +42,7 @@ After the new disk is added into the storage node `k8s-worker-4`, you can check 
     The output may look like:
 
     ```none
-    k8s-worker-4-sdc   k8s-worker-4       Unclaimed 
+    k8s-worker-4-sdc   k8s-worker-4       Available 
     ```
 
 ## Add the new disk into the node's storage pool

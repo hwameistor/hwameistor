@@ -99,7 +99,7 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("periodCheck"), func(
 
 		ginkgo.It("create a deployment", func() {
 			//create deployment
-			_ = utils.RunInLinux("kubectl taint node --all node-role.kubernetes.io/master-")
+			_, _ = utils.RunInLinux("kubectl taint node --all node-role.kubernetes.io/master-")
 			exampleDeployment := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      utils.HaDeploymentName,
@@ -125,7 +125,7 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("periodCheck"), func(
 							Containers: []corev1.Container{
 								{
 									Name:  "web",
-									Image: "172.30.45.210/hwameistor/dao-2048:v1.2.0",
+									Image: "10.6.112.210/hwameistor/dao-2048:v1.2.0",
 									Ports: []corev1.ContainerPort{
 										{
 											Name:          "http",
@@ -554,7 +554,7 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("periodCheck"), func(
 							Containers: []corev1.Container{
 								{
 									Name:  "web",
-									Image: "172.30.45.210/hwameistor/dao-2048:v1.2.0",
+									Image: "10.6.112.210/hwameistor/dao-2048:v1.2.0",
 									Ports: []corev1.ContainerPort{
 										{
 											Name:          "http",

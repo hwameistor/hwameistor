@@ -10,6 +10,7 @@ import (
 
 type HwameistorV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	EventsGetter
 	LocalDisksGetter
 	LocalDiskClaimsGetter
 	LocalDiskNodesGetter
@@ -26,6 +27,10 @@ type HwameistorV1alpha1Interface interface {
 // HwameistorV1alpha1Client is used to interact with features provided by the hwameistor.io group.
 type HwameistorV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *HwameistorV1alpha1Client) Events() EventInterface {
+	return newEvents(c)
 }
 
 func (c *HwameistorV1alpha1Client) LocalDisks() LocalDiskInterface {

@@ -23,5 +23,5 @@ CRD 可以向 `Kubernetes` 集群注册一种新资源，用于拓展 `Kubernete
 
 另请参考 Kubernetes 官方文档：
 
-- [CustomResource](https://kubernetes.io/zh/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
-- [CustomResourceDefinition](https://kubernetes.io/zh/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/)
+- [CustomResource](https://kubernetes.io/zh-cn/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
+- [CustomResourceDefinition](https://kubernetes.io/zh-cn/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/)

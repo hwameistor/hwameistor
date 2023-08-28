@@ -7,7 +7,7 @@ sidebar_label:  "Local Volumes"
 
 Running a stateful application with HwameiStor is super easy.
 
-Here takes MySQL as an example for demonstration.
+As an example, we will deploy a MySQL application by creating a local volume.
 
 :::note
 The yaml file for MySQL is learnt from

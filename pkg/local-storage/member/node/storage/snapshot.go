@@ -7,12 +7,14 @@ import (
 
 type localVolumeReplicaSnapshotManager struct {
 	cmdExec LocalVolumeReplicaSnapshotExecutor
+	ddExec  LocalVolumeReplicaSnapshotRecoverManager
 	logger  *log.Entry
 }
 
 func newLocalVolumeReplicaSnapshotManager(lm *LocalManager) LocalVolumeReplicaSnapshotManager {
 	return &localVolumeReplicaSnapshotManager{
 		cmdExec: newLVMExecutor(lm),
+		ddExec:  newDDExecutor(),
 		logger:  log.WithField("Module", "NodeManager/LocalVolumeReplicaSnapshotManager"),
 	}
 }
@@ -32,4 +34,12 @@ func (snapMgr *localVolumeReplicaSnapshotManager) UpdateVolumeReplicaSnapshot(re
 
 func (snapMgr *localVolumeReplicaSnapshotManager) GetVolumeReplicaSnapshot(replicaSnapshot *v1alpha1.LocalVolumeReplicaSnapshot) (*v1alpha1.LocalVolumeReplicaSnapshotStatus, error) {
 	return snapMgr.cmdExec.GetVolumeReplicaSnapshot(replicaSnapshot)
+}
+
+func (snapMgr *localVolumeReplicaSnapshotManager) RollbackVolumeReplicaSnapshot(snapshotRecover *v1alpha1.LocalVolumeReplicaSnapshotRecover) error {
+	return snapMgr.cmdExec.RollbackVolumeReplicaSnapshot(snapshotRecover)
+}
+
+func (snapMgr *localVolumeReplicaSnapshotManager) RestoreVolumeReplicaSnapshot(snapshotRecover *v1alpha1.LocalVolumeReplicaSnapshotRecover) error {
+	return snapMgr.ddExec.RestoreVolumeReplicaSnapshot(snapshotRecover)
 }

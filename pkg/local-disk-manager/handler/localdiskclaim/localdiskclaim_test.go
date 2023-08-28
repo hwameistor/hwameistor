@@ -160,7 +160,6 @@ func TestLocalDiskClaimHandler_AssignDisk(t *testing.T) {
 
 func TestLocalDiskClaimHandler_ListUnboundDiskClaim(t *testing.T) {
 	cli, _ := CreateFakeClient()
-
 	claimHandler := NewLocalDiskClaimHandler(cli, fakeRecorder)
 
 	testCases := []struct {
@@ -230,6 +229,69 @@ func TestLocalDiskClaimHandler_ListUnboundDiskClaim(t *testing.T) {
 				t.Fatalf("Failed to delete diskclaim %v", err)
 			}
 		})
+	}
+}
+
+func TestHandler_Funcs(t *testing.T) {
+	cli, _ := CreateFakeClient()
+	handler := NewLocalDiskClaimHandler(cli, fakeRecorder).For(GenFakeLocalDiskClaimObject())
+
+	if cli.Create(context.Background(), handler.diskClaim) != nil {
+		t.Errorf("Fail to create LocalDiskClaim")
+	}
+
+	claims, err := handler.ListLocalDiskClaim()
+	if err != nil || len(claims.Items) == 0 {
+		t.Errorf("Fail to list LocalDiskClaim")
+	}
+
+	claim1, err := handler.GetLocalDiskClaim(types.NamespacedName{
+		Namespace: fakeNamespace,
+		Name:      fakeLocalDiskClaimName,
+	})
+	if err != nil || claim1 == nil {
+		t.Errorf("Fail to get LocalDiskClaim")
+	}
+
+	claim2, err := handler.GetLocalDiskClaim(types.NamespacedName{
+		Namespace: "invalid namespace",
+		Name:      fakeLocalDiskClaimName,
+	})
+	if err != nil || claim2 != nil {
+		t.Errorf("Get LocalDiskClaim should be nil or notFound")
+	}
+
+	handler.AppendDiskRef(GenFakeLocalDiskObject())
+	if handler.PatchBoundDiskRef() != nil {
+		t.Errorf("Fail to patch bound disk ref")
+	}
+	if len(handler.DiskRefs()) == 0 || handler.Bounded() {
+		t.Errorf("Disk refs should not be nil")
+	}
+
+	handler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusBound)
+	if handler.UpdateClaimStatus() != nil {
+		t.Errorf("Fail to update claim status")
+	}
+
+	if handler.Refresh() != nil {
+		t.Errorf("Fail to fresh claim")
+	}
+
+	if handler.diskClaim.Status.Status != v1alpha1.LocalDiskClaimStatusBound {
+		t.Errorf("LocalDiskClaim status should be bound")
+	}
+
+	if handler.DeleteLocalDiskClaim() != nil {
+		t.Errorf("Fail to delete claim")
+	}
+
+	if handler.Refresh() != nil {
+		t.Errorf("Fail to refresh claim after delete")
+	}
+
+	if handler.diskClaim != nil {
+		t.Errorf("diskClaim should be nil")
 	}
 }
 

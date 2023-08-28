@@ -126,6 +126,7 @@ func (m *manager) processVolumeReplicaCheck(replica *apisv1alpha1.LocalVolumeRep
 		return err
 	}
 
+	// configure QoS for the volume
 	if err := m.configureQoS(replica); err != nil {
 		m.logger.WithError(err).Error("Failed to configure QoS for VolumeReplica")
 		return err

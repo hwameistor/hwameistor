@@ -14,15 +14,27 @@ spec:
   scope: Cluster
   versions:
   - additionalPrinterColumns:
+    - description: Required capacity of the volume snapshot
+      jsonPath: .status.allocatedCapacityBytes
+      name: Capacity
+      type: integer
     - description: Name of the snapshot's source volume
       jsonPath: .spec.sourceVolume
       name: SourceVolume
       type: string
     - description: State of the snapshot
       jsonPath: .status.state
-      name: state
+      name: State
       type: string
-    - jsonPath: .metadata.creationTimestamp
+    - description: if the snapshot is merging
+      jsonPath: .status.attr.merging
+      name: Merging
+      type: string
+    - description: if the snapshot is invalid
+      jsonPath: .status.attr.invalid
+      name: Invalid
+      type: string
+    - jsonPath: .status.creationTime
       name: Age
       type: date
     name: v1alpha1
@@ -48,9 +60,6 @@ spec:
             description: LocalVolumeSnapshotSpec describes the common attributes of
               a localvolume snapshot.
             properties:
-              abort:
-                default: false
-                type: boolean
               accessibility:
                 description: 'NOTE: We only take snapshots on the volume replica exist
                   at the moment! Accessibility is the topology requirement of the
@@ -80,6 +89,9 @@ spec:
                       type: string
                     type: array
                 type: object
+              delete:
+                default: false
+                type: boolean
               requiredCapacityBytes:
                 description: RequiredCapacityBytes specifies the space reserved for
                   the snapshot
@@ -113,6 +125,12 @@ spec:
                     description: Merging set true if snapshot is merging now
                     type: boolean
                 type: object
+              creationTime:
+                description: CreationTime is the host real snapshot creation time
+                  In case of HA volume with multiple replicas, the value is equal
+                  to the one of a replica's snapshot creation time
+                format: date-time
+                type: string
               message:
                 description: Message error message to describe some states
                 type: string

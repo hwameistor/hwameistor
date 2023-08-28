@@ -14,10 +14,6 @@ spec:
   scope: Cluster
   versions:
   - additionalPrinterColumns:
-    - description: Name of the snapshot's source volume
-      jsonPath: .spec.sourceVolume
-      name: SourceVolume
-      type: string
     - description: Allocated capacity of the snapshot
       jsonPath: .status.allocatedCapacityBytes
       name: Capacity
@@ -26,11 +22,23 @@ spec:
       jsonPath: .spec.nodeName
       name: NodeName
       type: string
+    - description: Name of the snapshot's source volume
+      jsonPath: .spec.sourceVolume
+      name: SourceVolume
+      type: string
     - description: State of the snapshot
       jsonPath: .status.state
       name: State
       type: string
-    - jsonPath: .metadata.creationTimestamp
+    - description: if the snapshot is merging
+      jsonPath: .status.attr.merging
+      name: Merging
+      type: string
+    - description: if the snapshot is invalid
+      jsonPath: .status.attr.invalid
+      name: Invalid
+      type: string
+    - jsonPath: .status.creationTime
       name: Age
       type: date
     - description: Name of the snapshot's source volume replica
@@ -61,6 +69,8 @@ spec:
               snapshot object in lvm
             properties:
               delete:
+                default: false
+                description: Delete this snapshot if it is true
                 type: boolean
               nodeName:
                 description: NodeName specifies which node the snapshot will be placed
@@ -92,7 +102,6 @@ spec:
                 description: VolumeSnapshotName represents the name of volume snapshot
                 type: string
             required:
-            - delete
             - nodeName
             - poolName
             - requiredCapacityBytes
@@ -119,6 +128,10 @@ spec:
                     description: Merging set true if snapshot is merging now
                     type: boolean
                 type: object
+              creationTime:
+                description: CreationTime is the host real snapshot creation time
+                format: date-time
+                type: string
               reason:
                 description: Message error message to describe some states
                 type: string

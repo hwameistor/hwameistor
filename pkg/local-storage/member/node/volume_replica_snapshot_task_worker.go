@@ -87,7 +87,7 @@ func (m *manager) volumeReplicaSnapshotCreate(snapshot *apisv1alpha1.LocalVolume
 	snapshotExistOnHost := func() (bool, error) {
 		_, err := m.storageMgr.VolumeReplicaSnapshotManager().GetVolumeReplicaSnapshot(snapshot)
 		if err != nil && err != storage.ErrorSnapshotNotFound {
-			logCtx.WithError(err).Error("Failed to get VolumeReplica Snapshot")
+			logCtx.WithError(err).Error("Failed to get VolumeReplica Snapshot from host")
 			return false, err
 		}
 		return !(err == storage.ErrorSnapshotNotFound), nil
@@ -115,11 +115,26 @@ func (m *manager) volumeReplicaSnapshotReadyOrNot(snapshot *apisv1alpha1.LocalVo
 
 	snapRealStatus, err := m.storageMgr.VolumeReplicaSnapshotManager().GetVolumeReplicaSnapshot(snapshot)
 	if err != nil {
-		logCtx.WithError(err).Error("Failed to get VolumeReplica Snapshot")
+		logCtx.WithError(err).Error("Failed to get VolumeReplica Snapshot from host")
+
+		// keep monitoring the snapshot status until no error happens
+		snapRealStatus.State = apisv1alpha1.VolumeStateNotReady
+		snapRealStatus.Message = err.Error()
+		if err = m.apiClient.Status().Update(context.TODO(), snapshot); err != nil {
+			return err
+		}
 		return err
 	}
 
 	snapshot.Status = *snapRealStatus
+	if snapshot.Status.State != apisv1alpha1.NodeStateReady {
+		if err = m.apiClient.Status().Update(context.TODO(), snapshot); err != nil {
+			return err
+		}
+		err = fmt.Errorf(snapshot.Status.Message)
+		return err
+	}
+
 	return m.apiClient.Status().Update(context.TODO(), snapshot)
 }
 
@@ -127,7 +142,15 @@ func (m *manager) volumeReplicaSnapshotCleanup(snapshot *apisv1alpha1.LocalVolum
 	logCtx := m.logger.WithFields(log.Fields{"Snapshot": snapshot.Name, "Spec": snapshot.Spec})
 	logCtx.Debug("Cleanup a VolumeReplica Snapshot")
 
-	return m.apiClient.Delete(context.TODO(), snapshot)
+	if err := m.apiClient.Delete(context.TODO(), snapshot); err != nil {
+		return err
+	}
+
+	// clean up the records in cache when the replica snapshot is deleted from the cluster
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	delete(m.replicaSnapshotsRecords, snapshot.Spec.VolumeSnapshotName)
+	return nil
 }
 
 func (m *manager) volumeReplicaSnapshotDelete(snapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error {

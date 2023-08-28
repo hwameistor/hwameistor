@@ -37,7 +37,7 @@ set -e
 date=$(date +%Y%m%d%H%M)
 IMAGE_TAG=v${date}
 export IMAGE_TAG=${IMAGE_TAG}
-MODULES=(local-storage local-disk-manager scheduler admission evictor exporter apiserver)
+MODULES=(local-storage local-disk-manager scheduler admission evictor exporter apiserver failover-assistant auditor)
 
 function build_image(){
 	echo "Build hwameistor image"
@@ -70,7 +70,7 @@ function prepare_install_params() {
 #
 #	 sed -i "/hwameistor\/apiserver/a \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
 #
-	 sed -i 's/rclone\/rclone/172.30.45.210\/hwameistor\/hwameistor-migrate-rclone/' helm/hwameistor/values.yaml
+	 sed -i 's/rclone\/rclone/10.6.112.210\/hwameistor\/hwameistor-migrate-rclone/' helm/hwameistor/values.yaml
    sed -i "5c version: ${IMAGE_TAG}" helm/hwameistor/Chart.yaml
 
 	 sed -i 's/tag: 1.53.2/tag: v1.1.2/' helm/hwameistor/values.yaml

@@ -22,7 +22,7 @@ For example, the new node and disk information are as follows:
 After the new node is already added into the Kubernetes cluster,
 make sure the following HwameiStor pods are already running on this node.
 
-```bash
+```console
 $ kubectl get node
 NAME           STATUS   ROLES            AGE     VERSION
 k8s-master-1   Ready    master           96d     v1.24.3-2+63243a96d1c393
@@ -37,8 +37,8 @@ hwameistor-local-storage-s4zbw          2/2     Running   0     19h   192.168.14
 
 # check if LocalStorageNode exists
 $ kubectl get localstoragenode k8s-worker-4
-NAME                 IP           ZONE      REGION    STATUS   AGE
-k8s-worker-4   10.6.182.103       default   default   Ready    8d
+NAME                 IP           STATUS   AGE
+k8s-worker-4   10.6.182.103       Ready    8d
 ```
 
 ## Add the storage node into HwameiStor

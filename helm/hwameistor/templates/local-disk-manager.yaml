@@ -61,6 +61,9 @@ spec:
             readOnly: true
           - name: devmount
             mountPath: /dev
+          - name: host-etc-hwameistor
+            mountPath: /etc/hwameistor
+            mountPropagation: "Bidirectional"
           - name: registration-dir
             mountPath: {{ template "hwameistor.kubeletRootDir" . }}/plugins_registry
           - name: plugin-dir
@@ -109,6 +112,10 @@ spec:
         hostPath:
           path: /dev
           type: Directory
+      - name: host-etc-hwameistor
+        hostPath:
+          path: /etc/hwameistor
+          type: DirectoryOrCreate
       - name: socket-dir
         hostPath:
           path: {{ template "hwameistor.kubeletRootDir" . }}/plugins/disk.hwameistor.io

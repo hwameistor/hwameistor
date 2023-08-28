@@ -75,6 +75,55 @@ type AccessibilityTopology struct {
 	Regions []string `json:"regions,omitempty"`
 }
 
+func (at *AccessibilityTopology) Equal(peer *AccessibilityTopology) bool {
+
+	if !IsStringArraysEqual(at.Nodes, peer.Nodes) {
+		return false
+	}
+	if !IsStringArraysEqual(at.Zones, peer.Zones) {
+		return false
+	}
+	if !IsStringArraysEqual(at.Regions, peer.Regions) {
+		return false
+	}
+
+	return true
+}
+
+func IsStringArraysEqual(arr1, arr2 []string) bool {
+	if len(arr1) != len(arr2) {
+		return false
+	}
+
+	for _, str1 := range arr1 {
+		found := false
+		for _, str2 := range arr2 {
+			if str1 == str2 {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	for _, str2 := range arr2 {
+		found := false
+		for _, str1 := range arr1 {
+			if str2 == str1 {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	return true
+}
+
 // VolumeConfig is the configration of the volume, including the replicas
 type VolumeConfig struct {
 	// Version of config, start from 0, plus 1 every time config update
@@ -207,9 +256,10 @@ type LocalVolumeStatus struct {
 // +kubebuilder:printcolumn:name="capacity",type=integer,JSONPath=`.spec.requiredCapacityBytes`,description="Required capacity of the volume"
 // +kubebuilder:printcolumn:name="used",type=integer,JSONPath=`.status.usedCapacityBytes`,description="Used capacity of the volume"
 // +kubebuilder:printcolumn:name="state",type=string,JSONPath=`.status.state`,description="State of the volume"
-// +kubebuilder:printcolumn:name="resource",type=integer,JSONPath=`.spec.config.resourceID`,description="Allocated resource ID for the volume"
+// +kubebuilder:printcolumn:name="resource",type=integer,JSONPath=`.spec.config.resourceID`,description="Allocated resource ID for the volume",priority=1
 // +kubebuilder:printcolumn:name="published",type=string,JSONPath=`.status.publishedNode`,description="Name of the node where the volume is in-use"
-// +kubebuilder:printcolumn:name="fstype",type=string,JSONPath=`.status.fsType`,description="Filesystem type of this volume"
+// +kubebuilder:printcolumn:name="fstype",type=string,JSONPath=`.status.fsType`,description="Filesystem type of this volume",priority=1
+// +kubebuilder:printcolumn:name="group",type=string,JSONPath=`.spec.volumegroup`,description="Name of volume group",priority=1
 // +kubebuilder:printcolumn:name="age",type=date,JSONPath=`.metadata.creationTimestamp`
 type LocalVolume struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -224,6 +274,14 @@ func (v *LocalVolume) SetReplicas(replicas []*LocalVolumeReplica) {
 	v.Status.Replicas = []string{}
 	for _, replica := range replicas {
 		v.Status.Replicas = append(v.Status.Replicas, replica.Name)
+	}
+}
+
+// UpdateAccessibilityNodesFromReplicas Update volume and group's accessibility node by replicas
+func (v *LocalVolume) UpdateAccessibilityNodesFromReplicas() {
+	v.Spec.Accessibility.Nodes = make([]string, 0)
+	for _, replica := range v.Spec.Config.Replicas {
+		v.Spec.Accessibility.Nodes = append(v.Spec.Accessibility.Nodes, replica.Hostname)
 	}
 }
 

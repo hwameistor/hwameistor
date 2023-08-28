@@ -1,7 +1,9 @@
 package manager
 
 import (
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"os"
+	"strings"
 
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 )
@@ -24,16 +26,28 @@ type DiskInfo struct {
 	Smart SmartInfo `json:"smart"`
 }
 
-// GenerateUUID
+// GenerateUUID generates a UUID for the disk
+// If the serial number exists, it is used first. If it does not exist, it is generated using by-path path
 func (disk DiskInfo) GenerateUUID() string {
-	elementSet := disk.Attribute.Serial + disk.Attribute.Model + disk.Attribute.Vendor + disk.Attribute.WWN
+	var elementSet = disk.Attribute.Model + disk.Attribute.Vendor
+	if disk.Attribute.Serial != "" {
+		elementSet += disk.Attribute.Serial + disk.Attribute.WWN
+	} else {
+		hostName, _ := os.Hostname()
 
-	vitualDiskModels := []string{"EphemeralDisk", "QEMU_HARDDISK", "Virtual_disk"}
-	for _, virtualModel := range vitualDiskModels {
-		if virtualModel == disk.Attribute.Model {
-			host, _ := os.Hostname()
-			elementSet += host + disk.Attribute.DevName
+		foundIDPath := false
+		for _, devLink := range disk.Attribute.DevLinks {
+			if strings.Contains(devLink, v1alpha1.LinkByPath) {
+				elementSet += hostName + devLink
+				foundIDPath = true
+			}
+		}
+
+		// don't generate a UUID if the device has no element to identify
+		if !foundIDPath {
+			return ""
 		}
 	}
+
 	return utils.Hash(elementSet)
 }

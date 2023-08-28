@@ -67,6 +67,12 @@ type LocalVolumeGroupList struct {
 	Items           []LocalVolumeGroup `json:"items"`
 }
 
+// SetAccessibilityNodes Set group's accessibility node
+func (c *LocalVolumeGroup) SetAccessibilityNodes(nodes []string) {
+	c.Spec.Accessibility.Nodes = make([]string, len(nodes))
+	copy(c.Spec.Accessibility.Nodes, nodes)
+}
+
 func init() {
 	SchemeBuilder.Register(&LocalVolumeGroup{}, &LocalVolumeGroupList{})
 }

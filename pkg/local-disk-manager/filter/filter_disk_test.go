@@ -36,7 +36,6 @@ var (
 )
 
 func TestLocalDiskFilter(t *testing.T) {
-
 	testCases := []struct {
 		Description      string
 		WantFilterResult bool

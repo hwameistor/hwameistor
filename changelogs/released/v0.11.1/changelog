@@ -1,0 +1,17 @@
+v0.11.1 / 2023-7-5
+========================
+
+
+## LocalStorage
+* support auto-detect cgroup version #959 (@carlory )
+
+
+## Other
+* Add more tests ( update e2e test #941@FloatXD )
+* Update Docs (add volume_provisioned_io.md #932 @carlory docs(README): mark IO Throtting as Completed in Roadmap at v0.11.0 #937 docs(README): keep consitent with english #938 [Docs] update slack info #951 @SSmallMonster Modify the document information #939 @Seaiii docs: Improved command line format #936 @my-git9 update maintainers #943 change to cncf code of conduct #944 add cncf to readme #946 @windsonsea add cncf logo #945 add cncf logo and banners #949 @SAMZONG fix localdisk status docs #956 @wawa0210）
+
+##  LocalDiskManager,Apiserver,Admission,Scheduler,Evictor,Exporter
+N/A
+
+
+

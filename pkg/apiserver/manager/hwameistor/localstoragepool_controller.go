@@ -35,7 +35,6 @@ func NewLocalStoragePoolController(client client.Client, clientset *kubernetes.C
 
 // StoragePoolList
 func (lspController *LocalStoragePoolController) StoragePoolList(queryPage hwameistorapi.QueryPage) (*hwameistorapi.StoragePoolList, error) {
-
 	var storagePoolList = &hwameistorapi.StoragePoolList{}
 	sps, err := lspController.listLocalStoragePools(queryPage)
 	if err != nil {
@@ -43,10 +42,9 @@ func (lspController *LocalStoragePoolController) StoragePoolList(queryPage hwame
 		return nil, err
 	}
 
-	var storagePools = []*hwameistorapi.StoragePool{}
 	storagePoolList.StoragePools = utils.DataPatination(sps, queryPage.Page, queryPage.PageSize)
 	if len(sps) == 0 {
-		storagePoolList.StoragePools = storagePools
+		storagePoolList.StoragePools = []*hwameistorapi.StoragePool{}
 	}
 
 	var pagination = &hwameistorapi.Pagination{}
@@ -62,7 +60,6 @@ func (lspController *LocalStoragePoolController) StoragePoolList(queryPage hwame
 
 // listLocalStoragePools
 func (lspController *LocalStoragePoolController) listLocalStoragePools(queryPage hwameistorapi.QueryPage) ([]*hwameistorapi.StoragePool, error) {
-
 	storagePoolNodesCollectionMap, err := lspController.makeStoragePoolNodesCollectionMap()
 	if err != nil {
 		log.WithError(err).Error("Failed to makeStoragePoolNodesCollectionMap")
@@ -88,7 +85,6 @@ func (lspController *LocalStoragePoolController) listLocalStoragePools(queryPage
 
 // makeStoragePoolNodesCollectionMap
 func (lspController *LocalStoragePoolController) makeStoragePoolNodesCollectionMap() (map[string]*hwameistorapi.StoragePoolNodesCollection, error) {
-
 	lsnList := &apisv1alpha1.LocalStorageNodeList{}
 	if err := lspController.Client.List(context.TODO(), lsnList); err != nil {
 		log.WithError(err).Error("Failed to list LocalStorageNodes")
@@ -151,7 +147,6 @@ func (lspController *LocalStoragePoolController) GetStoragePool(poolName string)
 
 // GetStorageNodeByPoolName
 func (lspController *LocalStoragePoolController) GetStorageNodeByPoolName(queryPage hwameistorapi.QueryPage) (*hwameistorapi.StorageNodeListByPool, error) {
-
 	snlist, err := lspController.getStorageNodeByPoolName(queryPage)
 	if err != nil {
 		log.WithError(err).Error("Failed to getStorageNodeByPoolName")

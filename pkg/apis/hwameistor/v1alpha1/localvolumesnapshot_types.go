@@ -4,6 +4,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	SnapshotRecoveringFinalizer = "provisioner.hwameistor.io/recovering-protection"
+)
+
 // VolumeSnapshotSpec describes the common attributes of a volume snapshot.
 
 // LocalVolumeSnapshotSpec describes the common attributes of a localvolume snapshot.
@@ -22,7 +26,7 @@ type LocalVolumeSnapshotSpec struct {
 	RequiredCapacityBytes int64 `json:"requiredCapacityBytes"`
 
 	// +kubebuilder:default:=false
-	Delete bool `json:"abort,omitempty"`
+	Delete bool `json:"delete,omitempty"`
 }
 
 // LocalVolumeSnapshotStatus defines the observed state of LocalVolumeSnapshot
@@ -34,9 +38,9 @@ type LocalVolumeSnapshotStatus struct {
 	// ReplicaSnapshots represents the actual snapshots of replica
 	ReplicaSnapshots []string `json:"replicaSnapshots,omitempty"`
 
-	// CreationTimestamp is the host real snapshot creation time
+	// CreationTime is the host real snapshot creation time
 	// In case of HA volume with multiple replicas, the value is equal to the one of a replica's snapshot creation time
-	CreationTimestamp metav1.Time `json:"creationTimestamp,omitempty" protobuf:"bytes,8,opt,name=creationTimestamp"`
+	CreationTime *metav1.Time `json:"creationTime,omitempty"`
 
 	// Attribute indicates attr on snapshot
 	Attribute VolumeSnapshotAttr `json:"attr,omitempty"`
@@ -55,9 +59,12 @@ type LocalVolumeSnapshotStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=localvolumesnapshots,scope=Cluster,shortName=lvs
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Capacity",type=integer,JSONPath=`.status.allocatedCapacityBytes`,description="Required capacity of the volume snapshot"
 // +kubebuilder:printcolumn:name="SourceVolume",type=string,JSONPath=`.spec.sourceVolume`,description="Name of the snapshot's source volume"
-// +kubebuilder:printcolumn:name="state",type=string,JSONPath=`.status.state`,description="State of the snapshot"
-// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+// +kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.state`,description="State of the snapshot"
+// +kubebuilder:printcolumn:name="Merging",type=string,JSONPath=`.status.attr.merging`,description="if the snapshot is merging"
+// +kubebuilder:printcolumn:name="Invalid",type=string,JSONPath=`.status.attr.invalid`,description="if the snapshot is invalid"
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.status.creationTime`
 type LocalVolumeSnapshot struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -4,10 +4,8 @@ Welcome to HwameiStor!
 
 ## Community guidelines
 
-HwameiStor is a project listed in the [CNCF landscape](https://landscape.cncf.io/?selected=hwamei-stor)
-and is applying for joining the CNCF sandbox.
-We follow [CNCF Community Code of Conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md),
-also observe our own [Code of Conduct](./CODE_OF_CONDUCT.md).
+HwameiStor is a sandbox project listed in the [CNCF landscape](https://landscape.cncf.io/?selected=hwamei-stor).
+We follow [CNCF Community Code of Conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md).
 
 ## Requirements
 

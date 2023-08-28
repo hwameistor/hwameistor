@@ -5,7 +5,7 @@ sidebar_label: "Eviction"
 
 # Eviction
 
-Data volume migration along with node eviction is very important to keep the data 
+Data volume migration along with node eviction is very important to keep the data
 persistent in a dynamic kubernetes native environment.
 
 Node-pressure eviction is the process by which the kubelet proactively terminates pods

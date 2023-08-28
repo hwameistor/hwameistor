@@ -56,6 +56,12 @@ evictor:
   tag: ""
   resources: {}
 
+failoverAssistant:
+  replicas: 1
+  imageRepository: hwameistor/failover-assistant
+  tag: ""
+  resources: {}
+
 exporter:
   replicas: 1
   imageRepository: hwameistor/exporter
@@ -72,6 +78,12 @@ apiserver:
     enableAuth: false
     accessId: admin
     secretKey: admin
+
+auditor:
+  replicas: 1
+  imageRepository: hwameistor/auditor
+  tag: ""
+  resources: {}
 
 ui:
   replicas: 1
@@ -134,7 +146,7 @@ localStorageCSIController:
   priorityClassName:
   provisioner:
     imageRepository: sig-storage/csi-provisioner
-    tag: v2.0.3
+    tag: v3.5.0
     resources: {}
   attacher:
     imageRepository: sig-storage/csi-attacher
