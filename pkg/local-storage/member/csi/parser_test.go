@@ -55,7 +55,7 @@ func Test_parseParameters(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseParameters(tt.args.req)
+			got, err := parseParameters(tt.args.req.(*csi.CreateVolumeRequest))
 			fmt.Printf("got = %+v", got)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseParameters() error = %v, wantErr %v", err, tt.wantErr)

@@ -9,34 +9,6 @@ import (
 	apisv1alpha "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
-func Test_localPoolManager_ExtendPoolsInfo(t *testing.T) {
-	var localDiskM = map[string]*apisv1alpha.LocalDevice{}
-	localDiskM["/dev/sdb"] = &apisv1alpha.LocalDevice{
-		DevPath:       "/dev/sdb",
-		Class:         apisv1alpha.DiskClassNameHDD,
-		CapacityBytes: 10240,
-		State:         apisv1alpha.DiskStateAvailable,
-	}
-	// 创建gomock控制器，用来记录后续的操作信息
-	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
-	defer ctrl.Finish()
-	m := NewMockLocalPoolManager(ctrl)
-	m.
-		EXPECT().
-		ExtendPoolsInfo(localDiskM).
-		Return(nil, nil).
-		Times(1)
-
-	v, err := m.ExtendPoolsInfo(localDiskM)
-	fmt.Printf("Test_localPoolManager_ExtendPoolsInfo err = %+v", err)
-	if err != nil {
-		t.Fatal()
-	}
-	fmt.Printf("Test_localPoolManager_ExtendPoolsInfo v= %+v", v)
-}
-
 func Test_getPoolClassTypeByName(t *testing.T) {
 	type args struct {
 		poolName string
@@ -202,36 +174,9 @@ func Test_localPoolManager_ExtendPools(t *testing.T) {
 		Return(nil).
 		Times(1)
 
-	err := m.ExtendPools(localDisks)
+	_, err := m.ExtendPools(localDisks)
 	if err != nil {
 		t.Fatal()
 	}
 	fmt.Printf("Test_localPoolManager_ExtendPools v= %+v", err)
-}
-
-func Test_localPoolManager_ExtendPoolsInfo1(t *testing.T) {
-	var localDiskM = map[string]*apisv1alpha.LocalDevice{}
-	localDiskM["/dev/sdb"] = &apisv1alpha.LocalDevice{
-		DevPath:       "/dev/sdb",
-		Class:         apisv1alpha.DiskClassNameHDD,
-		CapacityBytes: 10240,
-		State:         apisv1alpha.DiskStateAvailable,
-	}
-	// 创建gomock控制器，用来记录后续的操作信息
-	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
-	defer ctrl.Finish()
-	m := NewMockLocalPoolExecutor(ctrl)
-	m.
-		EXPECT().
-		ExtendPoolsInfo(localDiskM).
-		Return(nil, nil).
-		Times(1)
-
-	v, err := m.ExtendPoolsInfo(localDiskM)
-	if err != nil {
-		t.Fatal()
-	}
-	fmt.Printf("Test_localPoolManager_ExtendPoolsInfo1 v= %+v", v)
 }

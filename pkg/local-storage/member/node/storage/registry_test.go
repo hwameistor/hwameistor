@@ -68,32 +68,6 @@ func Test_localRegistry_Pools(t *testing.T) {
 
 }
 
-func Test_localRegistry_SyncResourcesToNodeCRD(t *testing.T) {
-	var localDiskM = map[string]*apisv1alpha1.LocalDevice{}
-	localDiskM["/dev/sdb"] = &apisv1alpha1.LocalDevice{
-		DevPath:       "/dev/sdb",
-		Class:         apisv1alpha1.DiskClassNameHDD,
-		CapacityBytes: 10240,
-		State:         apisv1alpha1.DiskStateAvailable,
-	}
-
-	// 创建gomock控制器，用来记录后续的操作信息
-	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
-	defer ctrl.Finish()
-	m := NewMockLocalRegistry(ctrl)
-	m.
-		EXPECT().
-		SyncResourcesToNodeCRD(localDiskM).
-		Return(nil).
-		Times(1)
-
-	err := m.SyncResourcesToNodeCRD(localDiskM)
-	fmt.Printf("Test_localRegistry_SyncResourcesToNodeCRD err = %+v", err)
-
-}
-
 func Test_localRegistry_UpdateNodeForVolumeReplica(t *testing.T) {
 	var localVolumeReplica = &apisv1alpha1.LocalVolumeReplica{}
 	localVolumeReplica.Spec.VolumeName = "volume1"
