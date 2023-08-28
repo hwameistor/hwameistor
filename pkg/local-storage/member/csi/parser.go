@@ -2,6 +2,7 @@ package csi
 
 import (
 	"fmt"
+	"github.com/container-storage-interface/spec/lib/go/csi"
 	"strconv"
 	"strings"
 
@@ -24,9 +25,10 @@ type volumeParameters struct {
 	pvcNamespace  string
 	throughput    string
 	iops          string
+	snapshot      string
 }
 
-func parseParameters(req RequestParameterHandler) (*volumeParameters, error) {
+func parseParameters(req *csi.CreateVolumeRequest) (*volumeParameters, error) {
 	params := req.GetParameters()
 
 	poolClass, ok := params[apisv1alpha1.VolumeParameterPoolClassKey]
@@ -72,6 +74,11 @@ func parseParameters(req RequestParameterHandler) (*volumeParameters, error) {
 		return nil, fmt.Errorf("not found pvc name")
 	}
 
+	snapshot := ""
+	if req.VolumeContentSource != nil && req.VolumeContentSource.GetSnapshot() != nil {
+		snapshot = req.VolumeContentSource.GetSnapshot().SnapshotId
+	}
+
 	return &volumeParameters{
 		poolClass:     poolClass,
 		poolType:      poolType,
@@ -82,5 +89,6 @@ func parseParameters(req RequestParameterHandler) (*volumeParameters, error) {
 		pvcName:       pvcName,
 		throughput:    params[apisv1alpha1.VolumeParameterThroughput],
 		iops:          params[apisv1alpha1.VolumeParameterIOPS],
+		snapshot:      snapshot,
 	}, nil
 }

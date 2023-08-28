@@ -1,0 +1,147 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localvolumereplicasnapshots.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalVolumeReplicaSnapshot
+    listKind: LocalVolumeReplicaSnapshotList
+    plural: localvolumereplicasnapshots
+    shortNames:
+    - lvrs
+    singular: localvolumereplicasnapshot
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: Allocated capacity of the snapshot
+      jsonPath: .status.allocatedCapacityBytes
+      name: Capacity
+      type: integer
+    - description: Node where snapshot is located
+      jsonPath: .spec.nodeName
+      name: NodeName
+      type: string
+    - description: Name of the snapshot's source volume
+      jsonPath: .spec.sourceVolume
+      name: SourceVolume
+      type: string
+    - description: State of the snapshot
+      jsonPath: .status.state
+      name: State
+      type: string
+    - description: if the snapshot is merging
+      jsonPath: .status.attr.merging
+      name: Merging
+      type: string
+    - description: if the snapshot is invalid
+      jsonPath: .status.attr.invalid
+      name: Invalid
+      type: string
+    - jsonPath: .status.creationTime
+      name: Age
+      type: date
+    - description: Name of the snapshot's source volume replica
+      jsonPath: .spec.sourceVolumeReplica
+      name: SourceVolumeReplica
+      priority: 1
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalVolumeReplicaSnapshot is the Schema for the localvolumereplicasnapshots
+          API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalVolumeReplicaSnapshotSpec represents the actual localvolume
+              snapshot object in lvm
+            properties:
+              delete:
+                default: false
+                description: Delete this snapshot if it is true
+                type: boolean
+              nodeName:
+                description: NodeName specifies which node the snapshot will be placed
+                type: string
+              poolName:
+                description: PoolName specifies which volume group the snapshot and
+                  source volume is placed valid options are LocalStorage_PoolHDD,
+                  LocalStorage_PoolSSD, LocalStorage_PoolNVMe
+                enum:
+                - LocalStorage_PoolHDD
+                - LocalStorage_PoolSSD
+                - LocalStorage_PoolNVMe
+                type: string
+              requiredCapacityBytes:
+                description: RequiredCapacityBytes specifies the space reserved for
+                  the snapshot
+                format: int64
+                minimum: 4194304
+                type: integer
+              sourceVolume:
+                description: SourceVolume specifies the source volume name of the
+                  snapshot
+                type: string
+              sourceVolumeReplica:
+                description: SourceVolume specifies the source volume replica name
+                  of the snapshot
+                type: string
+              volumeSnapshotName:
+                description: VolumeSnapshotName represents the name of volume snapshot
+                type: string
+            required:
+            - nodeName
+            - poolName
+            - requiredCapacityBytes
+            - sourceVolume
+            - sourceVolumeReplica
+            - volumeSnapshotName
+            type: object
+          status:
+            description: LocalVolumeReplicaSnapshotStatus defines the observed state
+              of LocalVolumeReplicaSnapshot
+            properties:
+              allocatedCapacityBytes:
+                description: AllocatedCapacityBytes is the real allocated capacity
+                  in bytes
+                format: int64
+                type: integer
+              attr:
+                description: Attribute indicates attr on snapshot
+                properties:
+                  invalid:
+                    description: Invalid set true if snapshot is expiration
+                    type: boolean
+                  merging:
+                    description: Merging set true if snapshot is merging now
+                    type: boolean
+                type: object
+              creationTime:
+                description: CreationTime is the host real snapshot creation time
+                format: date-time
+                type: string
+              reason:
+                description: Message error message to describe some states
+                type: string
+              state:
+                description: State is the phase of volume replica, e.g. Creating,
+                  Ready, NotReady, ToBeDeleted, Deleted
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

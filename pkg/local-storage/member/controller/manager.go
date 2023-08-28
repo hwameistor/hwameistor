@@ -53,13 +53,19 @@ type manager struct {
 
 	volumeMigrateTaskQueue *common.TaskQueue
 
-	volumeConvertTaskQueue *common.TaskQueue
+	volumeSnapshotTaskQueue *common.TaskQueue
+
+	volumeSnapshotRecoverTaskQueue *common.TaskQueue
 
 	volumeGroupMigrateTaskQueue *common.TaskQueue
+
+	volumeConvertTaskQueue *common.TaskQueue
 
 	volumeGroupConvertTaskQueue *common.TaskQueue
 
 	localNodes map[string]apisv1alpha1.State // nodeName -> status
+
+	replicaSnapRecoverRecords map[string]map[string]*apisv1alpha1.LocalVolumeReplicaSnapshotRecover // volume snapshot recover -> nodeName
 
 	logger *log.Entry
 
@@ -89,11 +95,14 @@ func New(name string, namespace string, cli client.Client, scheme *runtime.Schem
 		volumeMigrateTaskQueue: common.NewTaskQueue("VolumeMigrateTask", maxRetries),
 		volumeConvertTaskQueue: common.NewTaskQueue("VolumeConvertTask", maxRetries),
 
-		volumeGroupMigrateTaskQueue: common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
-		volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
-		localNodes:                  map[string]apisv1alpha1.State{},
-		logger:                      log.WithField("Module", "ControllerManager"),
-		dataCopyManager:             dcm,
+		volumeGroupMigrateTaskQueue:    common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
+		volumeGroupConvertTaskQueue:    common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
+		volumeSnapshotTaskQueue:        common.NewTaskQueue("VolumeSnapshotTask", maxRetries),
+		volumeSnapshotRecoverTaskQueue: common.NewTaskQueue("VolumeSnapshotRecoverTask", maxRetries),
+		localNodes:                     map[string]apisv1alpha1.State{},
+		replicaSnapRecoverRecords:      map[string]map[string]*apisv1alpha1.LocalVolumeReplicaSnapshotRecover{},
+		logger:                         log.WithField("Module", "ControllerManager"),
+		dataCopyManager:                dcm,
 	}, nil
 }
 
@@ -119,6 +128,8 @@ func (m *manager) start(stopCh <-chan struct{}) {
 		go m.startVolumeExpandTaskWorker(stopCh)
 		go m.startVolumeMigrateTaskWorker(stopCh)
 		go m.startVolumeConvertTaskWorker(stopCh)
+		go m.startVolumeSnapshotTaskWorker(stopCh)
+		go m.startVolumeSnapshotRecoverTaskWorker(stopCh)
 
 		m.setupInformers()
 
@@ -187,6 +198,95 @@ func (m *manager) setupInformers() {
 		AddFunc:    m.handlePodAddEvent,
 		UpdateFunc: m.handlePodUpdateEvent,
 	})
+
+	// setup LocalVolumeSnapshot informer
+	volumeSnapshotInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolumeSnapshot{})
+	if err != nil {
+		// error happens, crash the node
+		m.logger.WithError(err).Fatal("Failed to get informer for LocalVolumeSnapshot")
+	}
+	volumeSnapshotInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.handleVolumeSnapshotAddEvent,
+		UpdateFunc: m.handleVolumeSnapshotUpdateEvent,
+	})
+	// setup LocalVolumeSnapshotRecover informer
+	volumeSnapshotRecoverInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolumeSnapshotRecover{})
+	if err != nil {
+		// error happens, crash the node
+		m.logger.WithError(err).Fatal("Failed to get informer for LocalVolumeSnapshotRecover")
+	}
+	volumeSnapshotRecoverInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.handleVolumeSnapshotRecoverAddEvent,
+		UpdateFunc: m.handleVolumeSnapshotRecoverUpdateEvent,
+	})
+
+	// setup LocalVolumeReplicaSnapshot informer
+	volumeReplicaSnapshotInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolumeReplicaSnapshot{})
+	if err != nil {
+		// error happens, crash the node
+		m.logger.WithError(err).Fatal("Failed to get informer for LocalVolumeReplicaSnapshot")
+	}
+	volumeReplicaSnapshotInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.handleVolumeSnapshotAddEvent,
+		UpdateFunc: m.handleVolumeSnapshotUpdateEvent,
+		DeleteFunc: m.handleVolumeSnapshotDeleteEvent,
+	})
+
+	// setup LocalVolumeReplicaSnapshotRecover informer
+	volumeReplicaSnapshotRecoverInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolumeReplicaSnapshotRecover{})
+	if err != nil {
+		// error happens, crash the node
+		m.logger.WithError(err).Fatal("Failed to get informer for LocalVolumeReplicaSnapshotRecover")
+	}
+	volumeReplicaSnapshotRecoverInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.handleVolumeSnapshotRecoverAddEvent,
+		UpdateFunc: m.handleVolumeSnapshotRecoverUpdateEvent,
+		DeleteFunc: m.handleVolumeSnapshotRecoverDeleteEvent,
+	})
+}
+
+func (m *manager) handleVolumeSnapshotDeleteEvent(newObj interface{}) {
+	m.handleVolumeSnapshotAddEvent(newObj)
+}
+
+func (m *manager) handleVolumeSnapshotUpdateEvent(oldObj, newObj interface{}) {
+	m.handleVolumeSnapshotAddEvent(newObj)
+}
+
+func (m *manager) handleVolumeSnapshotAddEvent(newObject interface{}) {
+	volumeSnapshot, ok := newObject.(*apisv1alpha1.LocalVolumeSnapshot)
+	if ok {
+		m.volumeSnapshotTaskQueue.Add(volumeSnapshot.Name)
+		return
+	}
+	volumeReplicaSnapshot, ok := newObject.(*apisv1alpha1.LocalVolumeReplicaSnapshot)
+	if ok {
+		m.volumeSnapshotTaskQueue.Add(volumeReplicaSnapshot.Spec.VolumeSnapshotName)
+		return
+	}
+	return
+}
+
+func (m *manager) handleVolumeSnapshotRecoverAddEvent(newObject interface{}) {
+	volumeSnapshotRecover, ok := newObject.(*apisv1alpha1.LocalVolumeSnapshotRecover)
+	if ok {
+		m.volumeSnapshotRecoverTaskQueue.Add(volumeSnapshotRecover.Name)
+		return
+	}
+	volumeReplicaSnapshotRecover, ok := newObject.(*apisv1alpha1.LocalVolumeReplicaSnapshotRecover)
+	if ok {
+		m.volumeSnapshotRecoverTaskQueue.Add(volumeReplicaSnapshotRecover.Spec.VolumeSnapshotRecover)
+		return
+	}
+	return
+}
+
+func (m *manager) handleVolumeSnapshotRecoverUpdateEvent(oldObj, newObj interface{}) {
+	m.handleVolumeSnapshotRecoverAddEvent(newObj)
+}
+
+func (m *manager) handleVolumeSnapshotRecoverDeleteEvent(newObj interface{}) {
+	m.handleVolumeSnapshotRecoverAddEvent(newObj)
 }
 
 // VolumeScheduler retrieve the volume scheduler instance

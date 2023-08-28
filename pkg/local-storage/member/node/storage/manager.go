@@ -10,29 +10,28 @@ import (
 
 // LocalManager struct
 type LocalManager struct {
-	nodeConf    *apisv1alpha1.NodeConfig
-	apiClient   client.Client
-	scheme      *runtime.Scheme
-	recorder    record.EventRecorder
-	poolManager LocalPoolManager
-	//diskManager                LocalDiskManager
-	volumeReplicaManager       LocalVolumeReplicaManager
-	registry                   LocalRegistry
-	addEmptyDiskToDefaultPools bool
+	apiClient client.Client
+	scheme    *runtime.Scheme
+	recorder  record.EventRecorder
+	nodeConf  *apisv1alpha1.NodeConfig
+
+	registry                     LocalRegistry
+	poolManager                  LocalPoolManager
+	volumeReplicaManager         LocalVolumeReplicaManager
+	volumeReplicaSnapshotManager LocalVolumeReplicaSnapshotManager
 }
 
 // NewLocalManager creates a local manager
 func NewLocalManager(nodeConf *apisv1alpha1.NodeConfig, cli client.Client, scheme *runtime.Scheme, recorder record.EventRecorder) *LocalManager {
 	lm := &LocalManager{
-		nodeConf:                   nodeConf,
-		apiClient:                  cli,
-		addEmptyDiskToDefaultPools: true,
-		scheme:                     scheme,
-		recorder:                   recorder,
+		nodeConf:  nodeConf,
+		apiClient: cli,
+		scheme:    scheme,
+		recorder:  recorder,
 	}
-	//lm.diskManager = newLocalDiskManager(lm)
 	lm.registry = newLocalRegistry(lm)
 	lm.volumeReplicaManager = newLocalVolumeReplicaManager(lm)
+	lm.volumeReplicaSnapshotManager = newLocalVolumeReplicaSnapshotManager(lm)
 	lm.poolManager = newLocalPoolManager(lm)
 
 	return lm
@@ -58,11 +57,6 @@ func (lm *LocalManager) Registry() LocalRegistry {
 	return lm.registry
 }
 
-// DiskManager gets disk manager
-//func (lm *LocalManager) DiskManager() LocalDiskManager {
-//	return lm.diskManager
-//}
-
 // PoolManager gets pool manager
 func (lm *LocalManager) PoolManager() LocalPoolManager {
 	return lm.poolManager
@@ -71,6 +65,11 @@ func (lm *LocalManager) PoolManager() LocalPoolManager {
 // VolumeReplicaManager gets volume replica manager
 func (lm *LocalManager) VolumeReplicaManager() LocalVolumeReplicaManager {
 	return lm.volumeReplicaManager
+}
+
+// VolumeReplicaSnapshotManager gets volume replica snapshot manager
+func (lm *LocalManager) VolumeReplicaSnapshotManager() LocalVolumeReplicaSnapshotManager {
+	return lm.volumeReplicaSnapshotManager
 }
 
 // NodeConfig gets node configuration

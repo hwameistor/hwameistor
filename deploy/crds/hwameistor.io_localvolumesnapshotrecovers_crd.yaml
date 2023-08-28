@@ -1,0 +1,105 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localvolumesnapshotrecovers.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalVolumeSnapshotRecover
+    listKind: LocalVolumeSnapshotRecoverList
+    plural: localvolumesnapshotrecovers
+    shortNames:
+    - lvsrecover
+    - lvsnaprecover
+    singular: localvolumesnapshotrecover
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: Target for the recover
+      jsonPath: .spec.targetVolume
+      name: targetvolume
+      type: string
+    - description: Source snapshot for the recover
+      jsonPath: .spec.sourceVolumeSnapshot
+      name: sourcesnapshot
+      type: string
+    - description: State of the recover
+      jsonPath: .status.state
+      name: state
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalVolumeSnapshotRecover is user's request for either recovering
+          a local volume snapshot to a new volume, or merging into the old volume.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalVolumeSnapshotRecoverSpec defines the desired state
+              of LocalVolumeSnapshotRecover
+            properties:
+              abort:
+                default: false
+                description: Abort can be used to abort the recover operation and
+                  clean up sub resources created by the recover operation automatically
+                type: boolean
+              recoverType:
+                default: restore
+                description: RecoverType is the type about how to recover the volume,
+                  e.g. rollback, restore. By default restore.
+                enum:
+                - rollback
+                - restore
+                type: string
+              sourceVolumeSnapshot:
+                description: SourceVolumeSnapshot represents which snapshot is used
+                  for volume to recover from
+                type: string
+              targetPoolName:
+                description: TargetVolume is the name of the target volume will place
+                  at
+                type: string
+              targetVolume:
+                description: TargetVolume is the name of the volume to recover to
+                type: string
+            required:
+            - recoverType
+            - sourceVolumeSnapshot
+            type: object
+          status:
+            description: LocalVolumeSnapshotRecoverStatus defines the observed state
+              of LocalVolumeSnapshotRecover
+            properties:
+              message:
+                description: Message error message to describe some states
+                type: string
+              state:
+                description: State is the phase of recover volume snapshot, e.g. submitted,
+                  started, completed, abort, ...
+                type: string
+              volumeReplicaSnapshotRecover:
+                description: VolumeReplicaSnapshotRecover is the replica snapshot
+                  to be recovered
+                items:
+                  type: string
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
