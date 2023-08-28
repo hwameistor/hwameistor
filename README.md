@@ -42,19 +42,19 @@ See [current releases](https://github.com/hwameistor/hwameistor/releases).
 
 HwameiStor contains several modules:
 
- [local-disk-manager](#local-disk-manager)
- [local-storage](#local-storage)
- [scheduler](#scheduler)
- [admission-controller](#admission-controller)
- [Evictor](#evictor)
- [Exporter](#exporter)
- [HA module installer](#ha-module-installer)
- [Volume Snapshot](#volume-snapshot)
- [Volume Auto Resize](#volume-auto-resize)
- [Volume IO Throtting](#volume-io-throtting)
- [App Failover](#app-failover)
- [Audit](#audit)
- [UI](#ui)
+ * [local-disk-manager](#local-disk-manager)
+ * [local-storage](#local-storage)
+ * [scheduler](#scheduler)
+ * [admission-controller](#admission-controller)
+ * [Evictor](#evictor)
+ * [Exporter](#exporter)
+ * [HA module installer](#ha-module-installer)
+ * [Volume Snapshot](#volume-snapshot)
+ * [Volume Auto Resize](#volume-auto-resize)
+ * [Volume IO Throtting](#volume-io-throtting)
+ * [App Failover](#app-failover)
+ * [Audit](#audit)
+ * [UI](#ui)
 
 ### local-disk-manager
 
