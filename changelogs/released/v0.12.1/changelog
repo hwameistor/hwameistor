@@ -1,0 +1,82 @@
+v0.12.1/ 2023-8-29
+========================
+
+
+## LVM volume management enhancements
+
+- feat(local-storage): support ext{x} filesystem #1033 (@SSmallMonster )
+- fix bug of displaying NVMe disk of LocalStoragePool node #1041 (@buffalo1024 )
+- fix migrate operation missing update replica status #1047 (@Vacant2333 )
+- The big enhancement of LocalVolumeGroup feature #1062 (@sun7927 )
+- fix panic err when notfound #1093 (@SSmallMonster )
+
+## Disk Management Enhancements
+
+- add more attributes to localdisk #1032 (@AmazingPangWei )
+- Update LocalDisk/LocalDiskVolume to identify Disk/DiskVolume #1039 (@SSmallMonster )
+- fix(disk-claim): don't assign disks when owner in claim is empty #1053 (@SSmallMonster )
+- add field to record device history info #1057 (@SSmallMonster )
+- Use Serial/IDPATH to Identify Disk #1058 (@SSmallMonster )
+- yum install xfsprogs when build local-disk-manager container image #1071 (@buffalo1024 )
+- fix: remove stale localdisk during start #1088 (@AmazingPangWei )
+
+## Volume Snapshot and Restore
+
+- Develop snapshot #1090 @SSmallMonster
+- [Feat][Snapshot] Restore Snapshot #981 @SSmallMonster
+
+
+## PVC auto-resize
+
+- add new component pvc-autoresizer #1016 @buffalo1024
+
+
+## Volume QoS management
+
+- Add cgroupsv2 support #1083 @carlory
+
+## App Failover
+
+- Failover #1008 @sun7927
+- fixed failover assistant helm issues #1018 @sun7927
+- fixed some deploy issues for failover assistant #1023 @sun7927
+- fixed the Makefile issue for failover #1026 @sun7927
+- deleted the CR which caused the installation failure #1060 @sun7927
+
+## Audit
+
+- Added a feature of audit for system resources, including cluster, storagenode, volume, disk #1056 @sun7927
+
+## UI
+
+- fix(ui yaml): ui run as nginx user #1081 @lsq645599166
+
+## Tests
+
+- update e2e test for throughput test #1009 @FloatXD
+- update e2e test #1022 @FloatXD
+- update AD test #1025 @FloatXD
+- update AD test #1029 @FloatXD
+- update AD test for failover-assistant #1030 @FloatXD
+- update pr test paths #1034 @FloatXD
+- Modify pr test coverage #1037 @FloatXD
+- add lv node check in convert tests #1043 @FloatXD
+- add convert tests in periodcheck #1046 @FloatXD
+- update checkout job #1050 @FloatXD
+- add unit tests #1010 @Vacant2333
+- fix compile error on darwin #1101 @carlory
+- fixed the unit tests bugs #1098 @sun7927
+
+## Documents
+
+- update operator.md #1011 @windsonsea
+- update uninstall commands #1021 @windsonsea
+- Add membership.md and members.yaml #1036 @windsonsea
+- update output of kubectl get #1048 @windsonsea
+- Fix the output of kubectl get in node expansion #1055 @windsonsea
+- update faqs.md #1078@windsonsea
+- update qos doc #1084 @carlory
+- add doc for snapshot #1085 @FloatXD
+- add doc for snapshot roollback #1094 @FloatXD
+- update snapshot docs #1091 @SSmallMonster
+- correct the information in readme #1100,#1099 @sun7927
