@@ -122,18 +122,7 @@ entries:
     type: application
     urls:
     - https://github.com/hwameistor/hwameistor/releases/download/v0.12.1/hwameistor-v0.12.1.tgz
-    version: v0.12.1
-  - apiVersion: v2
-    appVersion: v0.12.0
-    created: "2023-08-28T09:02:01.150404438Z"
-    description: the HwameiStor local storage
-    digest: 98f589eb88c396ade28935519364b7aac7ee9c0e56d0c57f2e0665a4e3e485a9
-    icon: https://hwameistor.io/img/logo.svg
-    name: hwameistor
-    type: application
-    urls:
-    - https://github.com/hwameistor/hwameistor/releases/download/v0.12.0/hwameistor-v0.12.0.tgz
-    version: v0.12.0
+    version: v0.12.1  
   - apiVersion: v2
     appVersion: v0.11.2
     created: "2023-07-25T08:54:29.353564348Z"
