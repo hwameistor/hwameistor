@@ -85,28 +85,29 @@ func (r *AutoResizer) Start() {
 			resizePolicyName, ok := p.localVolume.pvc.Annotations[PVCResizePolicyAnnotationKey]
 			if ok {
 				resizePolicy := hwameistorv1alpha1.ResizePolicy{}
-				if resizePolicyName == defaultResizePolicy {
-					resizePolicyList := &hwameistorv1alpha1.ResizePolicyList{}
-					labelSelector, err := metav1.LabelSelectorAsSelector(&defaultResizePolicyLabelSelector)
-					if err != nil {
-						log.Errorf("convert labelSelector err: %v", err)
-						return
-					}
-					if err := p.cli.List(p.ctx, resizePolicyList, &client.ListOptions{LabelSelector: labelSelector}); err != nil {
-						log.Errorf("list resizepolicy err: %v", err)
-						return
-					}
-					resizePolicy = resizePolicyList.Items[0]
-				} else {
-					if err := p.cli.Get(p.ctx, types.NamespacedName{Name: resizePolicyName}, &resizePolicy); err != nil {
-						log.Errorf("get ResizePolicy err: %v", err)
-						return
-					}
+				if err := p.cli.Get(p.ctx, types.NamespacedName{Name: resizePolicyName}, &resizePolicy); err != nil {
+					log.Errorf("get ResizePolicy err: %v", err)
+					return
 				}
 				p.localVolume.resizePolicy = resizePolicy
 			} else {
-				log.Infof("no resizePolicy in pvc annotation, pvc namespace:%v, pvc name: %v, localVolumeName: %v", p.localVolume.pvc.Namespace, p.localVolume.pvc.Namespace, p.localVolume.Name)
-				return
+				resizePolicyList := &hwameistorv1alpha1.ResizePolicyList{}
+				labelSelector, err := metav1.LabelSelectorAsSelector(&defaultResizePolicyLabelSelector)
+				if err != nil {
+					log.Errorf("convert labelSelector err: %v", err)
+					return
+				}
+				if err := p.cli.List(p.ctx, resizePolicyList, &client.ListOptions{LabelSelector: labelSelector}); err != nil {
+					log.Errorf("list resizepolicy err: %v", err)
+					return
+				}
+
+				if len(resizePolicyList.Items) > 0 {
+					p.localVolume.resizePolicy = resizePolicyList.Items[0]
+				} else {
+					log.Infof("no default resizepolicy in cluster")
+					return
+				}
 			}
 
 			if p.reachedResizeThreshold(usagePercentage) {
