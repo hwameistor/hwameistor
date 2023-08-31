@@ -1,155 +1,160 @@
 package datacopy
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"path/filepath"
-	"time"
+	"strings"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/hwameistor/hwameistor/pkg/exechelper"
+	"k8s.io/apimachinery/pkg/types"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	RcloneSrcName            = "source"
-	RcloneRemoteName         = "remote"
-	RCloneKeyDir             = "/root/.ssh"
-	RCloneKeyComment         = "RClonePubKey"
-	sshkeygenCmd             = "ssh-keygen"
-	RCloneSrcMountPoint      = "/mnt/hwameistor/src/"
-	RCloneDstMountPoint      = "/mnt/hwameistor/dst/"
-	RClonePubKeyFileName     = "rclone.pub"
-	RClonePrivateKeyFileName = "rclone"
-	RCloneKeyConfigMapName   = "rclone-key-config"
-	RCloneConfigMapName      = "rclone-config"
-	RCloneConfigMapKey       = "rclone.conf"
-	RCloneCertKey            = "rclone-ssh-keys"
-	RcloneJobLabelApp        = "hwameistor-datasync-rclone"
-	rcloneJobAffinityKey     = "kubernetes.io/hostname"
-
-	RCloneConfigSrcNodeNameKey     = "sourceNode"
-	RCloneConfigDstNodeNameKey     = "targetNode"
-	RCloneConfigVolumeNameKey      = "localVolume"
-	RCloneConfigSourceNodeReadyKey = "sourceReady"
-	RCloneConfigRemoteNodeReadyKey = "targetReady"
-	RCloneConfigSyncDoneKey        = "completed"
-
-	RCloneTrue  string = "yes"
-	RCloneFalse string = "no"
-
-	RCloneJobFinalizer = "hwameistor.io/rclone-job-protect"
+	RCloneConfigMapKey = "rclone.conf"
 )
 
-type Rclone struct {
-	rcloneImage              string
-	rcloneMountContainerName string
-	rcloneConfigMapNamespace string
-	dcm                      *DataCopyManager
-	cmdExec                  exechelper.Executor
+var (
+	rcloneImageName = "daocloud.io/daocloud/hwameistor-migrate-rclone:v1.1.2"
+)
+
+type RClone struct {
+	namespace string
+	apiClient k8sclient.Client
 }
 
-func (rcl *Rclone) generateSSHPubAndPrivateKeyCM() (string, string, error) {
-	logger.Debug("GenerateSSHPubAndPrivateKey start ")
+func (r *RClone) Prepare(targetNodeName, sourceNodeName, lvName string) error {
+	ctx := context.TODO()
 
-	paramsRemove := exechelper.ExecParams{
-		CmdName: "rm",
-		CmdArgs: []string{"-rf", filepath.Join(RCloneKeyDir, RClonePrivateKeyFileName)},
-		Timeout: 0,
-	}
-	resultRemove := rcl.cmdExec.RunCommand(paramsRemove)
-	if resultRemove.ExitCode != 0 {
-		return "", "", fmt.Errorf("rm -rf %s err: %d, %s", filepath.Join(RCloneKeyDir, RClonePrivateKeyFileName), resultRemove.ExitCode, resultRemove.ErrBuf.String())
+	cmName := GetConfigMapName(SyncConfigMapName, lvName)
+
+	cm := &corev1.ConfigMap{}
+	if err := r.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: r.namespace, Name: cmName}, cm); err == nil {
+		logger.WithField("configmap", cmName).Debug("The config of rclone already exists")
+		return nil
 	}
 
-	paramsMkdir := exechelper.ExecParams{
-		CmdName: "mkdir",
-		CmdArgs: []string{"-p", RCloneKeyDir},
-		Timeout: 0,
-	}
-	resultMkdir := rcl.cmdExec.RunCommand(paramsMkdir)
-	if resultMkdir.ExitCode != 0 {
-		return "", "", fmt.Errorf("mkdir -p %s err: %d, %s", RCloneKeyDir, resultMkdir.ExitCode, resultMkdir.ErrBuf.String())
-	}
+	remoteNameData := "[remote]" + "\n"
+	sourceNameData := "[source]" + "\n"
+	typeData := "type = sftp" + "\n"
+	remoteHostData := "host = " + targetNodeName + "\n"
+	sourceHostData := "host = " + sourceNodeName + "\n"
+	keyFileData := "key_file = /config/rclone/" + SyncCertKey + "\n"
+	shellTypeData := "shell_type = unix" + "\n"
+	md5sumCommandData := "md5sum_command = md5sum" + "\n"
+	sha1sumCommandData := "sha1sum_command = sha1sum" + "\n"
 
-	params := exechelper.ExecParams{
-		CmdName: sshkeygenCmd,
-		CmdArgs: []string{"-q", "-b 4096", "-C" + RCloneKeyComment, "-f", filepath.Join(RCloneKeyDir, RClonePrivateKeyFileName)},
-		Timeout: 0,
+	remoteConfig := remoteNameData + typeData + remoteHostData + keyFileData + shellTypeData + md5sumCommandData + sha1sumCommandData
+	sourceConfig := sourceNameData + typeData + sourceHostData + keyFileData + shellTypeData + md5sumCommandData + sha1sumCommandData
+	data := map[string]string{
+		RCloneConfigMapKey:       remoteConfig + sourceConfig,
+		SyncConfigVolumeNameKey:  lvName,
+		SyncConfigDstNodeNameKey: targetNodeName,
+		SyncConfigSrcNodeNameKey: sourceNodeName,
 	}
-	result := rcl.cmdExec.RunCommand(params)
-	if result.ExitCode != 0 {
-		return "", "", fmt.Errorf("ssh-keygen %s err: %d, %s", RCloneKeyComment, result.ExitCode, result.ErrBuf.String())
-	}
-
-	paramsCatRclone := exechelper.ExecParams{
-		CmdName: "cat",
-		CmdArgs: []string{filepath.Join(RCloneKeyDir, RClonePrivateKeyFileName)},
-		Timeout: 0,
-	}
-	resultCatRclone := rcl.cmdExec.RunCommand(paramsCatRclone)
-	if resultCatRclone.ExitCode != 0 {
-		return "", "", fmt.Errorf("cat %s err: %d, %s", filepath.Join(RCloneKeyDir, RClonePrivateKeyFileName), resultCatRclone.ExitCode, resultCatRclone.ErrBuf.String())
-	}
-
-	paramsCatRclonePub := exechelper.ExecParams{
-		CmdName: "cat",
-		CmdArgs: []string{filepath.Join(RCloneKeyDir, RClonePubKeyFileName)},
-		Timeout: 0,
-	}
-	resultCatRclonePub := rcl.cmdExec.RunCommand(paramsCatRclonePub)
-	if resultCatRclonePub.ExitCode != 0 {
-		return "", "", fmt.Errorf("cat %s err: %d, %s", filepath.Join(RCloneKeyDir, RClonePubKeyFileName), resultCatRclonePub.ExitCode, resultCatRclonePub.ErrBuf.String())
-	}
-	rclonePubKeyData := resultCatRclonePub.OutBuf.String()
-	rclonePrivateKeyData := resultCatRclone.OutBuf.String()
-
-	return rclonePubKeyData, rclonePrivateKeyData, nil
-}
-
-func (rcl *Rclone) GenerateRcloneKeyConfigMap() *corev1.ConfigMap {
-
-	var rcloneCM = &corev1.ConfigMap{}
-	rclonePubKeyData, rclonePrivateKeyData, err := rcl.generateSSHPubAndPrivateKeyCM()
-
-	if err != nil {
-		logger.WithError(err).Errorf("generateRcloneKeyConfigMap generateSSHPubAndPrivateKeyCM")
-		return rcloneCM
-	}
-
-	configData := map[string]string{
-		RClonePubKeyFileName:     rclonePubKeyData,
-		RClonePrivateKeyFileName: rclonePrivateKeyData,
-		RCloneCertKey:            rclonePrivateKeyData + "\n" + rclonePubKeyData,
-	}
-
-	configMap := &corev1.ConfigMap{
+	cm = &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      RCloneKeyConfigMapName,
-			Namespace: rcl.rcloneConfigMapNamespace,
+			Name:      cmName,
+			Namespace: r.namespace,
+			Labels:    map[string]string{},
 		},
-		Data: configData,
+		Data: data,
 	}
 
-	return configMap
+	if err := r.apiClient.Create(ctx, cm); err != nil {
+		logger.WithError(err).Error("Failed to create MigrateConfigmap")
+		return err
+	}
+
+	return nil
 }
 
-func (rcl *Rclone) StartRCloneJob(jobName, lvName, srcNodeName string, waitUntilSuccess bool, timeout time.Duration) error {
-	job := rcl.getBaseJobStruct(jobName, lvName)
+func (r *RClone) StartSync(jobName string, volName string, excludedRunningNodeName string, runningNodeName string) error {
+	job := r.getJob(jobName, volName, excludedRunningNodeName, runningNodeName)
 
-	affinity := &corev1.Affinity{
-		NodeAffinity: &corev1.NodeAffinity{
-			RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{
-					{
-						MatchExpressions: []corev1.NodeSelectorRequirement{
-							{
-								Key:      rcloneJobAffinityKey,
-								Operator: corev1.NodeSelectorOpNotIn,
-								Values: []string{
-									srcNodeName,
+	if err := r.apiClient.Create(context.TODO(), job); err != nil {
+		if k8serrors.IsAlreadyExists(err) {
+			return fmt.Errorf("failed to create sync job, already exists")
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (r *RClone) getJob(jobName string, volName string, excludedRunningNodeName string, runningNodeName string) *batchv1.Job {
+	if value := os.Getenv("MIGRAGE_RCLONE_IMAGE"); len(value) > 0 {
+		rcloneImageName = value
+	}
+
+	tmpDstMountPoint := SyncDstMountPoint + volName
+	tmpSrcMountPoint := SyncSrcMountPoint + volName
+	runCommand := fmt.Sprintf("sync sync %s:%s %s:%s --progress --links;", SyncSrcName, tmpSrcMountPoint, SyncRemoteName, tmpDstMountPoint)
+
+	nodeSelectExpression := []corev1.NodeSelectorRequirement{}
+	if len(strings.TrimSpace(runningNodeName)) > 0 {
+		nodeSelectExpression = append(nodeSelectExpression, corev1.NodeSelectorRequirement{
+			Key:      SyncJobAffinityKey,
+			Operator: corev1.NodeSelectorOpIn,
+			Values: []string{
+				runningNodeName,
+			},
+		})
+	} else if len(strings.TrimSpace(excludedRunningNodeName)) > 0 {
+		nodeSelectExpression = append(nodeSelectExpression, corev1.NodeSelectorRequirement{
+			Key:      SyncJobAffinityKey,
+			Operator: corev1.NodeSelectorOpNotIn,
+			Values: []string{
+				excludedRunningNodeName,
+			},
+		})
+
+	}
+
+	var privileged = true
+	baseStruct := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      jobName,
+			Namespace: r.namespace,
+			//Annotations: annotations,
+			Labels: map[string]string{
+				"app": SyncJobLabelApp,
+			},
+			Finalizers: []string{SyncJobFinalizer},
+		},
+		Spec: batchv1.JobSpec{
+			// Require feature gate
+			//TTLSecondsAfterFinished: &ttl,
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": SyncJobLabelApp,
+					},
+				},
+				Spec: corev1.PodSpec{
+					RestartPolicy: "Never",
+					Containers: []corev1.Container{
+						{
+							Name:  syncMountContainerName,
+							Image: rcloneImageName,
+							SecurityContext: &corev1.SecurityContext{
+								Privileged: &privileged,
+							},
+							Command: []string{"sh", "-c", runCommand},
+						},
+					},
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: nodeSelectExpression,
+									},
 								},
 							},
 						},
@@ -158,104 +163,23 @@ func (rcl *Rclone) StartRCloneJob(jobName, lvName, srcNodeName string, waitUntil
 			},
 		},
 	}
-	job.Spec.Template.Spec.Affinity = affinity
 
-	tmpDstMountPoint := RCloneDstMountPoint + lvName
-	tmpSrcMountPoint := RCloneSrcMountPoint + lvName
-
-	rcloneCommand := fmt.Sprintf("rclone sync %s:%s %s:%s --progress;", RcloneSrcName, tmpSrcMountPoint, RcloneRemoteName, tmpDstMountPoint)
-	job.Spec.Template.Spec.Containers[0].Command = []string{"sh", "-c", rcloneCommand}
-
-	if err := rcl.dcm.k8sControllerClient.Create(rcl.dcm.ctx, job); err != nil {
-		if k8serrors.IsAlreadyExists(err) {
-			return fmt.Errorf("failed to create rclone job, already exists")
-		}
-		return err
-	}
-
-	return nil
-}
-
-// func (rcl *Rclone) WaitMigrateJobTaskDone(jobName, lvName string, waitUntilSuccess bool, timeout time.Duration) error {
-
-// 	resCh := make(chan *DataCopyStatus)
-// 	rcl.dcm.RegisterRelatedJob(jobName, resCh)
-// 	defer rcl.dcm.DeregisterRelatedJob(jobName)
-
-// 	if waitUntilSuccess {
-// 		if timeout == 0 {
-// 			timeout = DefaultCopyTimeout
-// 		}
-
-// 		select {
-// 		case res := <-resCh:
-// 			if res.Phase == DataCopyStatusFailed {
-// 				return fmt.Errorf("failed to run job %s, message is [TODO] %s", res.JobName, res.Message)
-// 			} else {
-// 				return nil
-// 			}
-// 		case <-time.After(timeout):
-// 			return fmt.Errorf("failed to copy data from srcMountPointName: %s to dstMountPointName: %s, timeout after %s", RCloneSrcMountPoint+lvName, RCloneDstMountPoint+lvName, timeout)
-// 		}
-// 	}
-
-// 	return nil
-// }
-
-// User should fill up with Spec.Template.Spec.Containers[0].Command
-func (rcl *Rclone) getBaseJobStruct(jobName, volName string) *batchv1.Job {
-	var privileged = true
-	baseStruct := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      jobName,
-			Namespace: rcl.rcloneConfigMapNamespace,
-			//Annotations: annotations,
-			Labels: map[string]string{
-				"app": RcloneJobLabelApp,
-			},
-			Finalizers: []string{RCloneJobFinalizer},
-		},
-		Spec: batchv1.JobSpec{
-			// Require feature gate
-			//TTLSecondsAfterFinished: &ttl,
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app": RcloneJobLabelApp,
-					},
-				},
-				Spec: corev1.PodSpec{
-					RestartPolicy: "Never",
-					Containers: []corev1.Container{
-						{
-							Name:  rcl.rcloneMountContainerName,
-							Image: rcl.rcloneImage,
-							SecurityContext: &corev1.SecurityContext{
-								Privileged: &privileged,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	rcloneConfigVolumeMount := corev1.VolumeMount{
+	syncConfigVolumeMount := corev1.VolumeMount{
 		Name:      "rclone-config",
 		MountPath: filepath.Join("/config/rclone", RCloneConfigMapKey),
 		SubPath:   RCloneConfigMapKey,
 	}
 
-	rcloneKeyConfigVolumeMount := corev1.VolumeMount{
+	syncKeyConfigVolumeMount := corev1.VolumeMount{
 		Name:      "rclone-key-config",
-		MountPath: filepath.Join("/config/rclone", RCloneCertKey),
-		SubPath:   RCloneCertKey,
+		MountPath: filepath.Join("/config/rclone", SyncCertKey),
+		SubPath:   SyncCertKey,
 	}
 
 	// Container volume mount declare
 	baseStruct.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
-		rcloneConfigVolumeMount,
-		rcloneKeyConfigVolumeMount,
+		syncConfigVolumeMount,
+		syncKeyConfigVolumeMount,
 	}
 
 	// Template volume declare
@@ -264,7 +188,7 @@ func (rcl *Rclone) getBaseJobStruct(jobName, volName string) *batchv1.Job {
 			Name: "rclone-config",
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
-					LocalObjectReference: corev1.LocalObjectReference{Name: GetConfigMapName(RCloneConfigMapName, volName)},
+					LocalObjectReference: corev1.LocalObjectReference{Name: GetConfigMapName(SyncConfigMapName, volName)},
 					Items: []corev1.KeyToPath{
 						{
 							Key:  RCloneConfigMapKey,
@@ -278,11 +202,11 @@ func (rcl *Rclone) getBaseJobStruct(jobName, volName string) *batchv1.Job {
 			Name: "rclone-key-config",
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
-					LocalObjectReference: corev1.LocalObjectReference{Name: RCloneKeyConfigMapName},
+					LocalObjectReference: corev1.LocalObjectReference{Name: SyncKeyConfigMapName},
 					Items: []corev1.KeyToPath{
 						{
-							Key:  RCloneCertKey,
-							Path: RCloneCertKey,
+							Key:  SyncCertKey,
+							Path: SyncCertKey,
 						},
 					},
 				},
@@ -335,13 +259,4 @@ func (rcl *Rclone) getBaseJobStruct(jobName, volName string) *batchv1.Job {
 	baseStruct.Spec.Template.Spec.Volumes = append(baseStruct.Spec.Template.Spec.Volumes, etchostsVolume)
 
 	return baseStruct
-}
-
-// TODO
-func (rcl *Rclone) progressWatchingFunc() *Progress {
-	return nil
-}
-
-func GetConfigMapName(str1, str2 string) string {
-	return fmt.Sprintf("%s-%s", str1, str2)
 }

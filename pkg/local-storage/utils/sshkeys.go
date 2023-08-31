@@ -12,7 +12,7 @@ const (
 )
 
 func AddPubKeyIntoAuthorizedKeys(pubkey string) error {
-	newTxt, err := grepNonRcloneKeys(sshAuthorizedKeysFilePath)
+	newTxt, err := grepNonSyncKeys(sshAuthorizedKeysFilePath)
 	if err != nil {
 		return err
 	}
@@ -24,7 +24,7 @@ func AddPubKeyIntoAuthorizedKeys(pubkey string) error {
 }
 
 func RemovePubKeyFromAuthorizedKeys() error {
-	newTxt, err := grepNonRcloneKeys(sshAuthorizedKeysFilePath)
+	newTxt, err := grepNonSyncKeys(sshAuthorizedKeysFilePath)
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func RemovePubKeyFromAuthorizedKeys() error {
 	return os.WriteFile(sshAuthorizedKeysFilePath, []byte(newTxt), 0644)
 }
 
-func grepNonRcloneKeys(keyFilePath string) (string, error) {
+func grepNonSyncKeys(keyFilePath string) (string, error) {
 	txt, err := os.ReadFile(sshAuthorizedKeysFilePath)
 	if err != nil {
 		return "", err
@@ -41,7 +41,7 @@ func grepNonRcloneKeys(keyFilePath string) (string, error) {
 	newTxt := ""
 	for _, line := range strings.Split(string(txt), "\n") {
 		if str := strings.TrimSpace(line); len(str) != 0 {
-			if strings.Contains(line, datacopy.RCloneKeyComment) {
+			if strings.Contains(line, datacopy.SyncKeyComment) {
 				continue
 			}
 			newTxt += line + "\n"
