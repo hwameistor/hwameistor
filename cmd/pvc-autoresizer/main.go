@@ -1,11 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"path"
+	"runtime"
+	"strings"
 	"time"
 
 	autoresizer "github.com/hwameistor/hwameistor/pkg/pvc-autoresizer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
@@ -26,6 +31,8 @@ func init() {
 }
 
 func main() {
+	setupLogging()
+
 	kubeconfig, err := config.GetConfig()
 	if err != nil {
 		log.Errorf("Get kubeconfig err: %v", err)
@@ -40,9 +47,37 @@ func main() {
 		os.Exit(1)
 	}
 
+	options := manager.Options{
+		Namespace: "", // watch all namespaces
+	}
+
+	mgr, err := manager.New(kubeconfig, options)
+	if err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+
+
 	stopChan := signals.SetupSignalHandler()
+
+	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
+		log.WithError(err).Error("Failed to setup scheme for all HwameiStor resources")
+		os.Exit(1)
+	}
+
+	go func() {
+		log.Info("Starting the manager of all local storage resources.")
+		if err := mgr.Start(stopChan); err != nil {
+			log.WithError(err).Error("Failed to run resources manager")
+			os.Exit(1)
+		}
+	}()
+
+	pvcAttacher := autoresizer.NewPVCAttacher(cli)
+	go pvcAttacher.StartPVCInformer(cli, stopChan)
+	go pvcAttacher.Start(stopChan.Done())
+	go autoresizer.StartResizePolicyEventHandler(cli, mgr.GetCache())
 	go autoresizer.NewAutoResizer(cli, stopChan).Start()
-	go autoresizer.NewHooker(cli, stopChan).Start()
 
 	select {
 	case <-stopChan.Done():
@@ -50,4 +85,15 @@ func main() {
 		time.Sleep(3 * time.Second)
 		os.Exit(1)
 	}
+}
+
+func setupLogging() {
+	log.SetFormatter(&log.JSONFormatter{
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			s := strings.Split(f.Function, ".")
+			funcName := s[len(s)-1]
+			fileName := path.Base(f.File)
+			return funcName, fmt.Sprintf("%s:%d", fileName, f.Line)
+		}})
+	log.SetReportCaller(true)
 }
