@@ -139,3 +139,27 @@ HwameiStor 可以立即将 Pods 调度到其他数据卷所在的可用节点，
 无状态应用 deployment 会将复制的副本优先部署到其他节点以分散 workload，并且所有的 Pod 共享一个 PV 数据卷
 （目前仅支持 NFS）。只有当副本数超过 Worker 节点数的时候会出现多个副本在同一个节点。对于 block 存储，
 由于数据卷不能共享，所以建议使用单副本。
+
+## Q4: LocalStorageNode 查看出现报错如何处理？
+
+当查看 `LocalStorageNode`出现如下报错：
+
+![faq_04](img/faq04.png)
+
+可能的错误原因：
+
+1. 节点没有安装 LVM2 ，可通过如下命令进行安装：
+
+   ```
+   $rpm -qa | grep lvm2  #确认 LVM2 是否安装
+   $yum install lvm2 #在每个节点上确认 LVM 已安装
+   ```
+
+2. 确认节点上对应磁盘 GPT 分区
+
+   ```
+   blkid /dev/sd*  # 确认磁盘分区是否干净
+   wipefs -a /dev/sd* # 磁盘清理
+   ```
+
+   
