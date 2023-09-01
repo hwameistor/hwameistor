@@ -43,7 +43,7 @@ func (w *ResizePolicyWorker) Select(pvc *corev1.PersistentVolumeClaim) (*Selecti
 	}
 	matched, err = matchNamespace(w.resizePolicy, ns)
 	if err != nil {
-		log.Errorf("resizepolicy %v match ns %v err: %v", w.resizePolicy.Name, ns.Name, pvc.Name, err)
+		log.Errorf("resizepolicy %v match ns %v err: %v", w.resizePolicy.Name, ns.Name, err)
 		return nil, err
 	}
 	if matched {
