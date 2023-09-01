@@ -1,3 +1,15 @@
+v0.12.2/ 2023-9-1
+========================
+
+
+## PVC auto-resize
+- resizepolicy select pvc by label selector #1107 ( @buffalo1024 )
+
+## Documents
+- added the documents for audit and failover #1104 ( @sun7927 )
+
+
+
 v0.12.1/ 2023-8-29
 ========================
 
