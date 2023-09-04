@@ -8,7 +8,7 @@ set -e
 date=$(date +%Y%m%d%H%M)
 IMAGE_TAG=v${date}
 export IMAGE_TAG=${IMAGE_TAG}
-MODULES=(local-storage local-disk-manager scheduler admission evictor exporter apiserver failover-assistant auditor)
+MODULES=(local-storage local-disk-manager scheduler admission evictor exporter apiserver failover-assistant auditor pvc-autoresizer)
 
 function build_image(){
 	echo "Build hwameistor image"
