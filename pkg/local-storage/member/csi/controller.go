@@ -998,7 +998,7 @@ func (p *plugin) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequ
 		resp.Snapshot.ReadyToUse = true
 		resp.Snapshot.SizeBytes = snapshot.Status.AllocatedCapacityBytes
 		resp.Snapshot.CreationTime = &timestamp.Timestamp{
-			Seconds: int64(snapshot.Status.CreationTime.Second()),
+			Seconds: snapshot.Status.CreationTime.Unix(),
 			Nanos:   int32(snapshot.Status.CreationTime.Nanosecond()),
 		}
 		return true, nil
@@ -1057,7 +1057,7 @@ func (p *plugin) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsReques
 				SizeBytes:      snap.Status.AllocatedCapacityBytes,
 				ReadyToUse:     snap.Status.State == apisv1alpha1.VolumeStateReady,
 				CreationTime: &timestamp.Timestamp{
-					Seconds: int64(snap.Status.CreationTime.Second()),
+					Seconds: snap.Status.CreationTime.Unix(),
 					Nanos:   int32(snap.Status.CreationTime.Nanosecond()),
 				},
 			},
