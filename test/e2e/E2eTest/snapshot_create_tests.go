@@ -2,8 +2,12 @@ package E2eTest
 
 import (
 	"context"
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"time"
 
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
@@ -21,10 +25,11 @@ import (
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = ginkgo.Describe("snapshot create test ", ginkgo.Label("periodCheck"), func() {
+var _ = ginkgo.Describe("snapshot rollback test ", ginkgo.Label("periodCheck"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
+	var snapshotname string
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", ginkgo.FlakeAttempts(5), func() {
 		result := utils.ConfigureEnvironment(ctx)
@@ -210,6 +215,57 @@ var _ = ginkgo.Describe("snapshot create test ", ginkgo.Label("periodCheck"), fu
 		})
 
 	})
+	ginkgo.Context("write test data", func() {
+		ginkgo.It("add test file", func() {
+			//create a request
+			config, err := config.GetConfig()
+			if err != nil {
+				return
+			}
+
+			deployment := &appsv1.Deployment{}
+			deployKey := ctrlclient.ObjectKey{
+				Name:      utils.DeploymentName,
+				Namespace: "default",
+			}
+			err = client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
+			selector := labels.NewSelector()
+			selector = selector.Add(*apps)
+			listOption := ctrlclient.ListOptions{
+				LabelSelector: selector,
+			}
+			podlist := &corev1.PodList{}
+			err = client.List(ctx, podlist, &listOption)
+
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			containers := deployment.Spec.Template.Spec.Containers
+			for _, pod := range podlist.Items {
+				for _, container := range containers {
+					_, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && echo it-is-a-test >test", container.Name)
+					if err != nil {
+						logrus.Printf("%+v ", err)
+						f.ExpectNoError(err)
+					}
+					output, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
+					if err != nil {
+						logrus.Printf("%+v ", err)
+						f.ExpectNoError(err)
+					}
+					gomega.Expect(output).To(gomega.Equal("it-is-a-test"))
+				}
+			}
+		})
+	})
 	ginkgo.Context("create a VolumeSnapshotClass", func() {
 		ginkgo.It("create a VolumeSnapshotClass", func() {
 			examplesnapshotclass := &snapshotv1.VolumeSnapshotClass{
@@ -269,7 +325,7 @@ var _ = ginkgo.Describe("snapshot create test ", ginkgo.Label("periodCheck"), fu
 	})
 	ginkgo.Context("check the Snapshot", func() {
 		ginkgo.It("check the VolumeSnapshot", func() {
-			logrus.Infof("Waiting for the VolumeSnapshot to be ready")
+			logrus.Infof("Waiting for the VolumeSnapshot to be ready(2 minutes)")
 			time.Sleep(2 * time.Minute)
 			snapshot := &snapshotv1.VolumeSnapshot{}
 			snapshotKey := ctrlclient.ObjectKey{
@@ -295,7 +351,7 @@ var _ = ginkgo.Describe("snapshot create test ", ginkgo.Label("periodCheck"), fu
 				logrus.Printf("get snapshot error :%+v ", err)
 				f.ExpectNoError(err)
 			}
-
+			snapshotname = *snapshot.Status.BoundVolumeSnapshotContentName
 			localsnapshot := &v1alpha1.LocalVolumeSnapshot{}
 			localsnapshotKey := ctrlclient.ObjectKey{
 				Name:      *snapshot.Status.BoundVolumeSnapshotContentName,
@@ -316,8 +372,211 @@ var _ = ginkgo.Describe("snapshot create test ", ginkgo.Label("periodCheck"), fu
 				}
 				return true, nil
 			})
+			if err != nil {
+				logrus.Printf("check the state of VolumeSnapshot error :%+v ", err)
+				f.ExpectNoError(err)
+			}
 			gomega.Expect(localsnapshot.Status.State).To(gomega.Equal(v1alpha1.NodeStateReady))
 
+		})
+	})
+	ginkgo.Context("write test data", func() {
+		ginkgo.It("add test file", func() {
+			//create a request
+			config, err := config.GetConfig()
+			if err != nil {
+				return
+			}
+
+			deployment := &appsv1.Deployment{}
+			deployKey := ctrlclient.ObjectKey{
+				Name:      utils.DeploymentName,
+				Namespace: "default",
+			}
+			err = client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
+			selector := labels.NewSelector()
+			selector = selector.Add(*apps)
+			listOption := ctrlclient.ListOptions{
+				LabelSelector: selector,
+			}
+			podlist := &corev1.PodList{}
+			err = client.List(ctx, podlist, &listOption)
+
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			containers := deployment.Spec.Template.Spec.Containers
+			for _, pod := range podlist.Items {
+				for _, container := range containers {
+					_, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && echo it-is-second-test >test", container.Name)
+					if err != nil {
+						logrus.Printf("%+v ", err)
+						f.ExpectNoError(err)
+					}
+					output, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
+					if err != nil {
+						logrus.Printf("%+v ", err)
+						f.ExpectNoError(err)
+					}
+					gomega.Expect(output).To(gomega.Equal("it-is-second-test"))
+				}
+			}
+		})
+	})
+	ginkgo.Context("stop the deployment", func() {
+		ginkgo.It("edit the Replicas", func() {
+			deployment := &appsv1.Deployment{}
+			deployKey := ctrlclient.ObjectKey{
+				Name:      utils.DeploymentName,
+				Namespace: "default",
+			}
+			err := client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+			deployment.Spec.Replicas = utils.Int32Ptr(0)
+
+			err = client.Update(ctx, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+			PodList := &corev1.PodList{}
+			listOption := ctrlclient.ListOptions{
+				Namespace: "default",
+			}
+			err = wait.PollImmediate(3*time.Second, 2*time.Minute, func() (done bool, err error) {
+				if err = client.List(ctx, PodList, &listOption); len(PodList.Items) != 0 {
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				logrus.Printf("stop the deployment error :%+v ", err)
+				f.ExpectNoError(err)
+			}
+			gomega.Expect(err).To(gomega.BeNil())
+
+		})
+	})
+	ginkgo.Context("start the rollback", func() {
+		ginkgo.It("create the LocalVolumeSnapshotRecover", func() {
+			f := framework.NewDefaultFramework(clientset.AddToScheme)
+			client = f.GetClient()
+			logrus.Printf("Create LocalVolumeSnapshotRecover")
+			LocalVolumeSnapshotRecover := &v1alpha1.LocalVolumeSnapshotRecover{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "LocalVolumeSnapshotRecover",
+					APIVersion: "hwameistor.io/v1alpha1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "recover-test",
+					Namespace: "default",
+				},
+				Spec: v1alpha1.LocalVolumeSnapshotRecoverSpec{
+					SourceVolumeSnapshot: snapshotname,
+					RecoverType:          "rollback",
+				},
+			}
+			err := client.Create(ctx, LocalVolumeSnapshotRecover)
+			if err != nil {
+				logrus.Printf("Create LocalVolumeSnapshotRecover failed ：%+v ", err)
+				f.ExpectNoError(err)
+			}
+			gomega.Expect(err).To(gomega.BeNil())
+		})
+		ginkgo.It("Wait for rollback to end", func() {
+			LocalVolumeSnapshotRecoverList := &v1alpha1.LocalVolumeSnapshotRecoverList{}
+			err := wait.PollImmediate(3*time.Second, 1*time.Minute, func() (done bool, err error) {
+				if err = client.List(ctx, LocalVolumeSnapshotRecoverList); len(LocalVolumeSnapshotRecoverList.Items) != 0 {
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				logrus.Printf("rollback timeout error :%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+		})
+	})
+
+	ginkgo.Context("start the deployment", func() {
+		ginkgo.It("edit the Replicas", func() {
+			deployment := &appsv1.Deployment{}
+			deployKey := ctrlclient.ObjectKey{
+				Name:      utils.DeploymentName,
+				Namespace: "default",
+			}
+			err := client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+			deployment.Spec.Replicas = utils.Int32Ptr(1)
+
+			err = client.Update(ctx, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+			time.Sleep(1 * time.Minute)
+
+		})
+	})
+	ginkgo.Context("check the test data", func() {
+		ginkgo.It("check test file", func() {
+			//create a request
+			config, err := config.GetConfig()
+			if err != nil {
+				return
+			}
+
+			deployment := &appsv1.Deployment{}
+			deployKey := ctrlclient.ObjectKey{
+				Name:      utils.DeploymentName,
+				Namespace: "default",
+			}
+			err = client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
+			selector := labels.NewSelector()
+			selector = selector.Add(*apps)
+			listOption := ctrlclient.ListOptions{
+				LabelSelector: selector,
+			}
+			podlist := &corev1.PodList{}
+			err = client.List(ctx, podlist, &listOption)
+
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			containers := deployment.Spec.Template.Spec.Containers
+			for _, pod := range podlist.Items {
+				for _, container := range containers {
+					output, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
+					if err != nil {
+						logrus.Printf("%+v ", err)
+						f.ExpectNoError(err)
+					}
+					gomega.Expect(output).To(gomega.Equal("it-is-a-test"))
+				}
+			}
 		})
 	})
 	ginkgo.Context("Clean up the environment", func() {
