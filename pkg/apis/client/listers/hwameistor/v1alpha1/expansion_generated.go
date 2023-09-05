@@ -10,6 +10,10 @@ type EventListerExpansion interface{}
 // LocalDiskLister.
 type LocalDiskListerExpansion interface{}
 
+// LocalDiskActionListerExpansion allows custom methods to be added to
+// LocalDiskActionLister.
+type LocalDiskActionListerExpansion interface{}
+
 // LocalDiskClaimListerExpansion allows custom methods to be added to
 // LocalDiskClaimLister.
 type LocalDiskClaimListerExpansion interface{}
