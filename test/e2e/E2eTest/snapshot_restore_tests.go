@@ -27,7 +27,6 @@ var _ = ginkgo.Describe("snapshot rollback test ", ginkgo.Label("restore"), func
 
 	var f *framework.Framework
 	var client ctrlclient.Client
-	var snapshotname string
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", ginkgo.FlakeAttempts(5), func() {
 		result := utils.ConfigureEnvironment(ctx)
@@ -349,7 +348,6 @@ var _ = ginkgo.Describe("snapshot rollback test ", ginkgo.Label("restore"), func
 				logrus.Printf("get snapshot error :%+v ", err)
 				f.ExpectNoError(err)
 			}
-			snapshotname = *snapshot.Status.BoundVolumeSnapshotContentName
 			localsnapshot := &v1alpha1.LocalVolumeSnapshot{}
 			localsnapshotKey := ctrlclient.ObjectKey{
 				Name:      *snapshot.Status.BoundVolumeSnapshotContentName,
