@@ -21,7 +21,6 @@ const (
 type LocalDiskFilter struct {
 	localDisk *v1alpha1.LocalDisk
 	Result    Bool
-	hasLdName bool
 }
 
 func NewLocalDiskFilter(ld *v1alpha1.LocalDisk) LocalDiskFilter {
@@ -33,7 +32,6 @@ func NewLocalDiskFilter(ld *v1alpha1.LocalDisk) LocalDiskFilter {
 
 func (ld *LocalDiskFilter) Init() *LocalDiskFilter {
 	ld.Result = TRUE
-	ld.hasLdName = false
 	return ld
 }
 
@@ -89,8 +87,8 @@ func (ld *LocalDiskFilter) Capacity(cap int64) *LocalDiskFilter {
 }
 
 func (ld *LocalDiskFilter) DiskType(diskType string) *LocalDiskFilter {
-	// result is true when diskType is empty string and hasLdName is true
-	if diskType == "" && ld.hasLdName {
+	// result is true when diskType is empty string
+	if diskType == "" {
 		ld.setResult(TRUE)
 		return ld
 	}
@@ -160,13 +158,45 @@ func (ld *LocalDiskFilter) IsNameFormatMatch() *LocalDiskFilter {
 	return ld
 }
 
-func (ld *LocalDiskFilter) IsLdNameMatch(ldName string) *LocalDiskFilter {
-	if ldName == "" {
+func (ld *LocalDiskFilter) LdNameMatch(ldNames []string) *LocalDiskFilter {
+	if len(ldNames) == 0 {
 		ld.setResult(TRUE)
 		return ld
 	}
-	if ld.localDisk.Name == ldName {
-		ld.hasLdName = true
+
+	found := false
+
+	for _, ldName := range ldNames {
+		if ldName == ld.localDisk.Name {
+			found = true
+			break
+		}
+	}
+
+	if found {
+		ld.setResult(TRUE)
+	} else {
+		ld.setResult(FALSE)
+	}
+	return ld
+}
+
+func (ld *LocalDiskFilter) DevPathMatch(devPaths []string) *LocalDiskFilter {
+	if len(devPaths) == 0 {
+		ld.setResult(TRUE)
+		return ld
+	}
+
+	found := false
+
+	for _, devName := range devPaths {
+		if devName == ld.localDisk.Spec.DevicePath {
+			found = true
+			break
+		}
+	}
+
+	if found {
 		ld.setResult(TRUE)
 	} else {
 		ld.setResult(FALSE)

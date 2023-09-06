@@ -73,8 +73,13 @@ type DiskClaimDescription struct {
 	// Capacity of the disk in bytes
 	Capacity int64 `json:"capacity,omitempty"`
 
-	// LocalDiskName for specifying LocalDisk
-	LocalDiskName string `json:"localDiskName,omitempty"`
+	// Match the name of Localdisk
+	// LocalDiskNames match all disks if LocalDiskNames are empty
+	LocalDiskNames []string `json:"localDiskNames,omitempty"`
+
+	// Match the device path of Localdisk
+	// DevicePaths match all disks if DevicePaths are empty
+	DevicePaths []string `json:"devicePaths,omitempty"`
 }
 
 // DiskClaimStatus is a typed string for phase field of BlockDeviceClaim.
