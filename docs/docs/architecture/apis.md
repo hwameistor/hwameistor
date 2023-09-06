@@ -9,12 +9,25 @@ sidebar_label: "APIs"
 
 HwameiStor defines some object classes to associate PV/PVC with local disks.
 
-| Kind              | Abbr     | Function                                                             |
-|-------------------|----------|----------------------------------------------------------------------|
-| LocalDiskNode     | ldn      | Storage pool for disk volumes                                        |
-| LocalDisk         | ld       | Data disks on nodes and automatically find which disks are available |
-| LocalDiskVolume   | ldv      | Disk volumes                                                         |
-| LocalDiskClaim    | ldc      | Filter and allocate local data disks                                 |
-| LocalStorageNode  | lsn      | Storage pool for lvm volumes                                         |
-| LocalVolume       | lv       | LVM local volumes                                                    |
-| LocalVolumeExpand | lvexpand | Expand local volume storage capacity                                 |
+| Name                               | Abbr                       | Kind                              | Function                                                             |
+|------------------------------------|----------------------------|-----------------------------------|----------------------------------------------------------------------|
+| clusters                           | hmcluster                  | Cluster                           | HwameiStor cluster                                                   |
+| events                             | evt                        | Event                             | Audit information of HwameiStor cluster                              |
+| localdiskclaims                    | ldc                        | LocalDiskClaim                    | Filter and allocate local data disks                                 |
+| localdisknodes                     | ldn                        | LocalDiskNode                     | Storage pool for disk volumes                                        |
+| localdisks                         | ld                         | LocalDisk                         | Data disks on nodes and automatically find which disks are available |
+| localdiskvolumes                   | ldv                        | LocalDiskVolume                   | Disk volumes                                                         |
+| localstoragenodes                  | lsn                        | LocalStorageNode                  | Storage pool for lvm volumes                                         |
+| localvolumeconverts                | lvconvert                  | LocalVolumeConvert                | Convert common LVM volume to highly available LVM volume             |
+| localvolumeexpands                 | lvexpand                   | LocalVolumeExpand                 | Expand local volume storage capacity                                 |                                                        |
+| localvolumegroups                  | lvg                        | LocalVolumeGroup                  | LVM volume groups                                                    |                                                          |
+| localvolumemigrates                | lvmigrate                  | LocalVolumeMigrate                | Migrate LVM volume                                                   |
+| localvolumereplicas                | lvr                        | LocalVolumeReplica                | Replicas of LVM volume                                               |
+| localvolumereplicasnapshotrecovers | lvrsrecover,lvrsnaprecover | LocalVolumeReplicaSnapshotRecover | Recover snapshots of LVM volume Replicas                             |
+| localvolumereplicasnapshots        | lvrs                       | LocalVolumeReplicaSnapshot        | Snapshots of LVM volume Replicas                                     |
+| localvolumes                       | lv                         | LocalVolume                       | LVM local volumes                                                    |
+| localvolumesnapshotrecovers        | lvsrecover,lvsnaprecover   | LocalVolumeSnapshotRecover        | Recover snapshots of LVM volume                                      |
+| localvolumesnapshots               | lvs                        | LocalVolumeSnapshot               | Snapshots of LVM volume                                              |                                                      |
+| resizepolicies                     |                            | ResizePolicy                      | PVC automatic expansion policy                                       |                      |
+
+
