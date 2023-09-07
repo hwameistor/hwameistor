@@ -158,3 +158,25 @@ replicated replicas to different nodes to distribute the workload. All Pods shar
 (currently only supports NFS). Similar to StatefulSets, multiple replicas will be deployed on the same node
 only when the number of replicas exceeds the number of worker nodes. For block storage, as data volumes
 cannot be shared, it is recommended to use a single replica.
+
+## Q4: How to handle the error when encountering "LocalStorageNode" during inspection?
+
+When encountering the following error while inspecting `LocalStorageNode`:
+
+![faq_04](img/faq04.png)
+
+Possible causes of the error:
+
+1. The node does not have LVM2 installed. You can install it using the following command:
+
+   ```bash
+   rpm -qa | grep lvm2  # Check if LVM2 is installed
+   yum install lvm2  # Install LVM on each node
+   ```
+
+2. Ensure that the proper disk on the node has GPT partitioning.
+
+   ```bash
+   blkid /dev/sd*  # Confirm if the disk partitions are clean
+   wipefs -a /dev/sd*  # Clean the disk
+   ```
