@@ -195,6 +195,8 @@ func (ldHandler *Handler) FilterDisk(ldc *v1alpha1.LocalDiskClaim) bool {
 		NodeMatch(ldc.Spec.NodeName).
 		Capacity(ldc.Spec.Description.Capacity).
 		DiskType(ldc.Spec.Description.DiskType).
+		LdNameMatch(ldc.Spec.Description.LocalDiskNames).
+		DevPathMatch(ldc.Spec.Description.DevicePaths).
 		DevType().
 		NoPartition().
 		IsNameFormatMatch().

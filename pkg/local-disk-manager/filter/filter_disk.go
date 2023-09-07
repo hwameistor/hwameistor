@@ -1,10 +1,11 @@
 package filter
 
 import (
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"strings"
 
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/sys"
@@ -86,6 +87,11 @@ func (ld *LocalDiskFilter) Capacity(cap int64) *LocalDiskFilter {
 }
 
 func (ld *LocalDiskFilter) DiskType(diskType string) *LocalDiskFilter {
+	// result is true when diskType is empty string
+	if diskType == "" {
+		ld.setResult(TRUE)
+		return ld
+	}
 	if ld.localDisk.Spec.DiskAttributes.Type == diskType {
 		ld.setResult(TRUE)
 	} else {
@@ -149,6 +155,52 @@ func (ld *LocalDiskFilter) IsNameFormatMatch() *LocalDiskFilter {
 		ld.setResult(FALSE)
 	}
 
+	return ld
+}
+
+func (ld *LocalDiskFilter) LdNameMatch(ldNames []string) *LocalDiskFilter {
+	if len(ldNames) == 0 {
+		ld.setResult(TRUE)
+		return ld
+	}
+
+	found := false
+
+	for _, ldName := range ldNames {
+		if ldName == ld.localDisk.Name {
+			found = true
+			break
+		}
+	}
+
+	if found {
+		ld.setResult(TRUE)
+	} else {
+		ld.setResult(FALSE)
+	}
+	return ld
+}
+
+func (ld *LocalDiskFilter) DevPathMatch(devPaths []string) *LocalDiskFilter {
+	if len(devPaths) == 0 {
+		ld.setResult(TRUE)
+		return ld
+	}
+
+	found := false
+
+	for _, devName := range devPaths {
+		if devName == ld.localDisk.Spec.DevicePath {
+			found = true
+			break
+		}
+	}
+
+	if found {
+		ld.setResult(TRUE)
+	} else {
+		ld.setResult(FALSE)
+	}
 	return ld
 }
 

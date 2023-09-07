@@ -41,12 +41,12 @@ type LocalDiskClaimStatus struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // LocalDiskClaim is the Schema for the localdiskclaims API
-//+kubebuilder:validation:Required
-//+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
-//+kubebuilder:printcolumn:JSONPath=".status.status",name=Phase,type=string
-//+kubebuilder:printcolumn:JSONPath=".spec.owner",name=Owner,type=string
-//+kubebuilder:resource:scope=Cluster,shortName=ldc
+// +kubebuilder:validation:Required
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeMatch,type=string
+// +kubebuilder:printcolumn:JSONPath=".status.status",name=Phase,type=string
+// +kubebuilder:printcolumn:JSONPath=".spec.owner",name=Owner,type=string
+// +kubebuilder:resource:scope=Cluster,shortName=ldc
 type LocalDiskClaim struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -72,6 +72,14 @@ type DiskClaimDescription struct {
 
 	// Capacity of the disk in bytes
 	Capacity int64 `json:"capacity,omitempty"`
+
+	// Match the name of Localdisk
+	// LocalDiskNames match all disks if LocalDiskNames are empty
+	LocalDiskNames []string `json:"localDiskNames,omitempty"`
+
+	// Match the device path of Localdisk
+	// DevicePaths match all disks if DevicePaths are empty
+	DevicePaths []string `json:"devicePaths,omitempty"`
 }
 
 // DiskClaimStatus is a typed string for phase field of BlockDeviceClaim.
