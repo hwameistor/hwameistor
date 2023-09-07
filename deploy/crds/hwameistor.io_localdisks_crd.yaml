@@ -34,7 +34,6 @@ spec:
       type: string
     - jsonPath: .spec.owner
       name: Owner
-      priority: 1
       type: string
     - jsonPath: .status.claimState
       name: Phase
