@@ -44,7 +44,8 @@ func (a *PVCAttacher) Start (stopCh <-chan struct{}) {
 				log.Infof("queue shutdown, pvc: %v:%v", pvc.Namespace, pvc.Name)
 				break
 			}
-			if err := a.process(pvc); err != nil {
+			if err := a.processV2(pvc); err != nil {
+			// if err := a.process(pvc); err != nil {
 				log.Errorf("pvc: %v:%v, attempts: %v, err: %v, failed to process pvc, retry later", pvc.Namespace, pvc.Name, a.queue.NumRequeues(pvc), err)
 				a.queue.AddRateLimited(pvc)
 			} else {
@@ -105,6 +106,7 @@ func (a *PVCAttacher) StartPVCInformer(cli client.Client, ctx context.Context) {
 	handlerFuncs := cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			pvc := obj.(*corev1.PersistentVolumeClaim)
+			log.Infof("pvc %v:%v added", pvc.Namespace, pvc.Name)
 			a.queue.Add(pvc)
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
