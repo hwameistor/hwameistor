@@ -2,16 +2,17 @@ package csi
 
 import (
 	"fmt"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"math"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
@@ -385,7 +386,7 @@ func buildStoragePoolName(poolClass string, poolType string) (string, error) {
 
 // restoreVolumeFromSnapshot creates a new volume from the snapshot
 // Main Steps:
-// 	1. Create a new empty LocalVolume
+//  1. Create a new empty LocalVolume
 //  2. Fill the new LocalVolume with the contents from the snapshot
 func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	logCtx := p.logger.WithFields(log.Fields{
@@ -1099,7 +1100,12 @@ func (p *plugin) ControllerExpandVolume(ctx context.Context, req *csi.Controller
 	if math.Abs(float64(req.CapacityRange.RequiredBytes-vol.Status.AllocatedCapacityBytes)) <= float64(apisv1alpha1.VolumeExpansionCapacityBytesMin) {
 		logCtx.WithFields(log.Fields{"currentCapacity": vol.Status.AllocatedCapacityBytes, "newCapacity": req.CapacityRange.RequiredBytes}).Info("Volume capacity expand completed")
 		resp.CapacityBytes = vol.Status.AllocatedCapacityBytes
-		resp.NodeExpansionRequired = true
+		if req.GetVolumeCapability().GetBlock() != nil {
+			// there is no need to NodeExpansion if volumeMode is block
+			resp.NodeExpansionRequired = false
+		} else {
+			resp.NodeExpansionRequired = true
+		}
 		return resp, nil
 	}
 
