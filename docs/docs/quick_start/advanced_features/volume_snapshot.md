@@ -112,23 +112,23 @@ To roll back a snapshot, you must first stop the I/O of the source volume, such 
 *confirm data consistency* before using the rolled back data volume.
 :::
 
-VolumeSnapshot can be rolled back by creating the resource LocalVolumeSnapshotRecover, as follows:
+VolumeSnapshot can be rolled back by creating the resource LocalVolumeSnapshotRestore, as follows:
 
 ```yaml
 apiVersion: hwameistor.io/v1alpha1
-kind: LocalVolumeSnapshotRecover
+kind: LocalVolumeSnapshotRestore
 metadata:
-  name: recover-test
+  name: restore-test
 spec:
   sourceVolumeSnapshot: snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110
-  recoverType: "rollback"
+  restoreType: "rollback"
 ```
 - sourceVolumeSnapshot：It specifies the VolumeSnapshot to be rollback.
 
-Observing the created LocalVolumeSnapshotRecover, you can understand the entire rollback process through the state. After the rollback is complete, the corresponding LocalVolumeSnapshotRecover will be deleted.
+Observing the created LocalVolumeSnapshotRestore, you can understand the entire rollback process through the state. After the rollback is complete, the corresponding LocalVolumeSnapshotRestore will be deleted.
 ```yaml
 NAME            TARGETVOLUME                               SOURCESNAPSHOT                                     STATE        AGE
-recover-test2   pvc-967baffd-ce10-4739-b996-87c9ed24e635   snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110   Submitted    0s
-recover-test2   pvc-967baffd-ce10-4739-b996-87c9ed24e635   snapcontent-81a1f605-c28a-4e60-8c78-a3d504cbf6d9   InProgress   0s
-recover-test2   pvc-967baffd-ce10-4739-b996-87c9ed24e635   snapcontent-81a1f605-c28a-4e60-8c78-a3d504cbf6d9   Completed    2s
+restore-test2   pvc-967baffd-ce10-4739-b996-87c9ed24e635   snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110   Submitted    0s
+restore-test2   pvc-967baffd-ce10-4739-b996-87c9ed24e635   snapcontent-81a1f605-c28a-4e60-8c78-a3d504cbf6d9   InProgress   0s
+restore-test2   pvc-967baffd-ce10-4739-b996-87c9ed24e635   snapcontent-81a1f605-c28a-4e60-8c78-a3d504cbf6d9   Completed    2s
 ```
