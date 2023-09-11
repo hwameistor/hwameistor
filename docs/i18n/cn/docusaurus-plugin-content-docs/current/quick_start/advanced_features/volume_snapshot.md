@@ -112,23 +112,23 @@ spec:
 并*确认数据一致性*之后再使用回滚后的数据卷。
 :::
 
-可以通过创建资源 LocalVolumeSnapshotRecover，对卷快照进行回滚操作。具体如下：
+可以通过创建资源 LocalVolumeSnapshotRestore，对卷快照进行回滚操作。具体如下：
 
 ```yaml
 apiVersion: hwameistor.io/v1alpha1
-kind: LocalVolumeSnapshotRecover
+kind: LocalVolumeSnapshotRestore
 metadata:
-  name: recover-test
+  name: restore-test
 spec:
   sourceVolumeSnapshot: snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110
-  recoverType: "rollback"
+  restoreType: "rollback"
 ```
 - sourceVolumeSnapshot：指定要进行回滚操作的 卷快照。
 
-对创建的 LocalVolumeSnapshotRecover 进行观察，可以通过状态了解整个回滚的过程。回滚结束后，对应的 LocalVolumeSnapshotRecover 会被删除。
+对创建的 LocalVolumeSnapshotRestore 进行观察，可以通过状态了解整个回滚的过程。回滚结束后，对应的 LocalVolumeSnapshotRestore 会被删除。
 ```yaml
 NAME            TARGETVOLUME                               SOURCESNAPSHOT                                     STATE        AGE
-recover-test2   pvc-967baffd-ce10-4739-b996-87c9ed24e635   snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110   Submitted    0s
-recover-test2   pvc-967baffd-ce10-4739-b996-87c9ed24e635   snapcontent-81a1f605-c28a-4e60-8c78-a3d504cbf6d9   InProgress   0s
-recover-test2   pvc-967baffd-ce10-4739-b996-87c9ed24e635   snapcontent-81a1f605-c28a-4e60-8c78-a3d504cbf6d9   Completed    2s
+restore-test2   pvc-967baffd-ce10-4739-b996-87c9ed24e635   snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110   Submitted    0s
+restore-test2   pvc-967baffd-ce10-4739-b996-87c9ed24e635   snapcontent-81a1f605-c28a-4e60-8c78-a3d504cbf6d9   InProgress   0s
+restore-test2   pvc-967baffd-ce10-4739-b996-87c9ed24e635   snapcontent-81a1f605-c28a-4e60-8c78-a3d504cbf6d9   Completed    2s
 ```

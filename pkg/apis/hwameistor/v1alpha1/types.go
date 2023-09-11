@@ -122,15 +122,15 @@ const (
 	SnapshotParameterSizeKey = "snapsize"
 )
 
-type RecoverType string
+type RestoreType string
 
 // consts for snapshot restore
 
 const (
-	// RecoverTypeRollback is used to merge snapshot to existing volume
-	RecoverTypeRollback RecoverType = "rollback"
-	// RecoverTypeRestore is used to create a new volume from existing snapshot
-	RecoverTypeRestore RecoverType = "restore"
+	// RestoreTypeRollback is used to merge snapshot to existing volume
+	RestoreTypeRollback RestoreType = "rollback"
+	// RestoreTypeCreate is used to create a new volume from existing snapshot
+	RestoreTypeCreate RestoreType = "create"
 )
 
 // misc

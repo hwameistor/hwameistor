@@ -67,10 +67,10 @@ localvolumeexpands                   lvexpand                     hwameistor.io/
 localvolumegroups                    lvg                          hwameistor.io/v1alpha1   false        LocalVolumeGroup
 localvolumemigrates                  lvmigrate                    hwameistor.io/v1alpha1   false        LocalVolumeMigrate
 localvolumereplicas                  lvr                          hwameistor.io/v1alpha1   false        LocalVolumeReplica
-localvolumereplicasnapshotrecovers   lvrsrecover,lvrsnaprecover   hwameistor.io/v1alpha1   false        LocalVolumeReplicaSnapshotRecover
+localvolumereplicasnapshotrestores   lvrsrestore,lvrsnaprestore   hwameistor.io/v1alpha1   false        LocalVolumeReplicaSnapshotRestore
 localvolumereplicasnapshots          lvrs                         hwameistor.io/v1alpha1   false        LocalVolumeReplicaSnapshot
 localvolumes                         lv                           hwameistor.io/v1alpha1   false        LocalVolume
-localvolumesnapshotrecovers          lvsrecover,lvsnaprecover     hwameistor.io/v1alpha1   false        LocalVolumeSnapshotRecover
+localvolumesnapshotrestores          lvsrestore,lvsnaprestore     hwameistor.io/v1alpha1   false        LocalVolumeSnapshotRestore
 localvolumesnapshots                 lvs                          hwameistor.io/v1alpha1   false        LocalVolumeSnapshot
 resizepolicies                                                    hwameistor.io/v1alpha1   false        ResizePolicy
 ```

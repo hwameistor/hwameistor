@@ -73,7 +73,7 @@ type manager struct {
 
 	volumeReplicaSnapshotTaskQueue *common.TaskQueue
 
-	volumeReplicaSnapshotRecoverTaskQueue *common.TaskQueue
+	volumeReplicaSnapshotRestoreTaskQueue *common.TaskQueue
 
 	localDiskClaimTaskQueue *common.TaskQueue
 
@@ -120,7 +120,7 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 		localDiskTaskQueue:                    common.NewTaskQueue("LocalDisk", maxRetries),
 		volumeSnapshotTaskQueue:               common.NewTaskQueue("VolumeSnapshotTask", maxRetries),
 		volumeReplicaSnapshotTaskQueue:        common.NewTaskQueue("VolumeReplicaSnapshotTask", maxRetries),
-		volumeReplicaSnapshotRecoverTaskQueue: common.NewTaskQueue("VolumeReplicaSnapshotRecoverTask", maxRetries),
+		volumeReplicaSnapshotRestoreTaskQueue: common.NewTaskQueue("VolumeReplicaSnapshotRestoreTask", maxRetries),
 		// healthCheckQueue:        common.NewTaskQueue("HealthCheckTask", maxRetries),
 		diskEventQueue:   diskmonitor.NewEventQueue("DiskEvents"),
 		configManager:    configManager,
@@ -158,7 +158,7 @@ func (m *manager) Run(stopCh <-chan struct{}) {
 
 	go m.startVolumeReplicaSnapshotTaskWorker(stopCh)
 
-	go m.startVolumeReplicaSnapshotRecoverTaskWorker(stopCh)
+	go m.startVolumeReplicaSnapshotRestoreTaskWorker(stopCh)
 
 	go diskmonitor.New(m.diskEventQueue).Run(stopCh)
 
@@ -305,34 +305,34 @@ func (m *manager) setupInformers() {
 		DeleteFunc: m.handleVolumeReplicaSnapshotDeleteEvent,
 	})
 
-	// setup LocalVolumeReplicaSnapshotRecover informer
-	volumeReplicaSnapshotRecoverInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolumeReplicaSnapshotRecover{})
+	// setup LocalVolumeReplicaSnapshotRestore informer
+	volumeReplicaSnapshotRestoreInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolumeReplicaSnapshotRestore{})
 	if err != nil {
 		// error happens, crash the node
-		m.logger.WithError(err).Fatal("Failed to get informer for LocalVolumeReplicaSnapshotRecover")
+		m.logger.WithError(err).Fatal("Failed to get informer for LocalVolumeReplicaSnapshotRestore")
 	}
-	volumeReplicaSnapshotRecoverInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    m.handleVolumeReplicaSnapshotRecoverAddEvent,
-		UpdateFunc: m.handleVolumeReplicaSnapshotRecoverUpdateEvent,
-		DeleteFunc: m.handleVolumeReplicaSnapshotRecoverDeleteEvent,
+	volumeReplicaSnapshotRestoreInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.handleVolumeReplicaSnapshotRestoreAddEvent,
+		UpdateFunc: m.handleVolumeReplicaSnapshotRestoreUpdateEvent,
+		DeleteFunc: m.handleVolumeReplicaSnapshotRestoreDeleteEvent,
 	})
 }
 
-func (m *manager) handleVolumeReplicaSnapshotRecoverAddEvent(newObject interface{}) {
-	volumeReplicaSnapshotRecover, ok := newObject.(*apisv1alpha1.LocalVolumeReplicaSnapshotRecover)
+func (m *manager) handleVolumeReplicaSnapshotRestoreAddEvent(newObject interface{}) {
+	volumeReplicaSnapshotRecover, ok := newObject.(*apisv1alpha1.LocalVolumeReplicaSnapshotRestore)
 	if ok {
-		m.volumeReplicaSnapshotRecoverTaskQueue.Add(volumeReplicaSnapshotRecover.Name)
+		m.volumeReplicaSnapshotRestoreTaskQueue.Add(volumeReplicaSnapshotRecover.Name)
 		return
 	}
 	return
 }
 
-func (m *manager) handleVolumeReplicaSnapshotRecoverUpdateEvent(oldObj, newObj interface{}) {
-	m.handleVolumeReplicaSnapshotRecoverAddEvent(newObj)
+func (m *manager) handleVolumeReplicaSnapshotRestoreUpdateEvent(oldObj, newObj interface{}) {
+	m.handleVolumeReplicaSnapshotRestoreAddEvent(newObj)
 }
 
-func (m *manager) handleVolumeReplicaSnapshotRecoverDeleteEvent(newObj interface{}) {
-	m.handleVolumeReplicaSnapshotRecoverAddEvent(newObj)
+func (m *manager) handleVolumeReplicaSnapshotRestoreDeleteEvent(newObj interface{}) {
+	m.handleVolumeReplicaSnapshotRestoreAddEvent(newObj)
 }
 
 func (m *manager) handleVolumeSnapshotDeleteEvent(newObj interface{}) {
