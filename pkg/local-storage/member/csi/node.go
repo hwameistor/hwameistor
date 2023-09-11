@@ -238,5 +238,10 @@ func (p *plugin) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolume
 		CapacityBytes: req.CapacityRange.RequiredBytes,
 	}
 
-	return resp, p.expandFileSystemByMountPoint(req.VolumePath)
+	// expand fs only when volumeMode is not block
+	if req.GetVolumeCapability().GetBlock() == nil {
+		return resp, p.expandFileSystemByMountPoint(req.VolumePath)
+	}
+
+	return resp, nil
 }
