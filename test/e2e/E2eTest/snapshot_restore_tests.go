@@ -3,6 +3,7 @@ package E2eTest
 import (
 	"context"
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -23,7 +24,7 @@ import (
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = ginkgo.Describe("snapshot rollback test ", ginkgo.Label("restore"), func() {
+var _ = ginkgo.Describe("snapshot restore test ", ginkgo.Label("error"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
@@ -573,49 +574,49 @@ var _ = ginkgo.Describe("snapshot rollback test ", ginkgo.Label("restore"), func
 			}
 		})
 	})
-	//ginkgo.Context("Clean up the environment", func() {
-	//	ginkgo.It("Delete test Deployment", func() {
-	//		//delete deploy
-	//		deployment := &appsv1.Deployment{}
-	//		deployKey := ctrlclient.ObjectKey{
-	//			Name:      utils.DeploymentName,
-	//			Namespace: "default",
-	//		}
-	//		err := client.Get(ctx, deployKey, deployment)
-	//		if err != nil {
-	//			logrus.Error(err)
-	//			f.ExpectNoError(err)
-	//		}
-	//		logrus.Infof("deleting test Deployment ")
-	//
-	//		err = client.Delete(ctx, deployment)
-	//		if err != nil {
-	//			logrus.Error(err)
-	//			f.ExpectNoError(err)
-	//		}
-	//		err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
-	//			if err := client.Get(ctx, deployKey, deployment); !k8serror.IsNotFound(err) {
-	//				return false, nil
-	//			}
-	//			return true, nil
-	//		})
-	//		if err != nil {
-	//			logrus.Error(err)
-	//		}
-	//		gomega.Expect(err).To(gomega.BeNil())
-	//
-	//	})
-	//	ginkgo.It("delete all pvc ", func() {
-	//		err := utils.DeleteAllPVC(ctx)
-	//		gomega.Expect(err).To(gomega.BeNil())
-	//	})
-	//	ginkgo.It("delete all sc", func() {
-	//		err := utils.DeleteAllSC(ctx)
-	//		gomega.Expect(err).To(gomega.BeNil())
-	//	})
-	//	ginkgo.It("delete helm", func() {
-	//		utils.UninstallHelm()
-	//	})
-	//})
+	ginkgo.Context("Clean up the environment", func() {
+		ginkgo.It("Delete test Deployment", func() {
+			//delete deploy
+			deployment := &appsv1.Deployment{}
+			deployKey := ctrlclient.ObjectKey{
+				Name:      utils.DeploymentName,
+				Namespace: "default",
+			}
+			err := client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Error(err)
+				f.ExpectNoError(err)
+			}
+			logrus.Infof("deleting test Deployment ")
+
+			err = client.Delete(ctx, deployment)
+			if err != nil {
+				logrus.Error(err)
+				f.ExpectNoError(err)
+			}
+			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
+				if err := client.Get(ctx, deployKey, deployment); !k8serror.IsNotFound(err) {
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				logrus.Error(err)
+			}
+			gomega.Expect(err).To(gomega.BeNil())
+
+		})
+		ginkgo.It("delete all pvc ", func() {
+			err := utils.DeleteAllPVC(ctx)
+			gomega.Expect(err).To(gomega.BeNil())
+		})
+		ginkgo.It("delete all sc", func() {
+			err := utils.DeleteAllSC(ctx)
+			gomega.Expect(err).To(gomega.BeNil())
+		})
+		ginkgo.It("delete helm", func() {
+			utils.UninstallHelm()
+		})
+	})
 
 })
