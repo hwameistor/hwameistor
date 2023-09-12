@@ -21,7 +21,7 @@ func NewDiskManager() DiskManager {
 
 // ListExist
 func (dm DiskManager) ListExist() []manager.Event {
-	events, err := getExistDevice(GenRuleForBlock())
+	events, err := getExistDeviceEvents(GenRuleForBlock())
 	if err != nil {
 		log.WithError(err).Errorf("Failed processing existing devices")
 		return nil
@@ -125,8 +125,8 @@ func monitorDeviceEvent(c chan manager.Event, matchRule netlink.Matcher) error {
 	}
 }
 
-// getExistDevice
-func getExistDevice(matchRule netlink.Matcher) (events []manager.Event, err error) {
+// getExistDeviceEvents
+func getExistDeviceEvents(matchRule netlink.Matcher) (events []manager.Event, err error) {
 	deviceEvent := make(chan crawler.Device)
 	errors := make(chan error)
 	crawler.ExistingDevices(deviceEvent, errors, matchRule)
@@ -156,6 +156,46 @@ func getExistDevice(matchRule netlink.Matcher) (events []manager.Event, err erro
 				DevPath: deviceEvt.KObj,
 				DevType: deviceEvt.Env["DEVTYPE"],
 				DevName: deviceEvt.Env["DEVNAME"],
+			})
+
+		case err = <-errors:
+			close(errors)
+			return
+		}
+	}
+}
+
+// ListAllBlockDevices list all block devices by udev
+func ListAllBlockDevices() ([]manager.Attribute, error) {
+	return getExistDevice(GenRuleForBlock())
+}
+
+// getExistDevice
+func getExistDevice(matchRule netlink.Matcher) (devices []manager.Attribute, err error) {
+	deviceEvent := make(chan crawler.Device)
+	errors := make(chan error)
+	crawler.ExistingDevices(deviceEvent, errors, matchRule)
+
+	for {
+		select {
+		case device, empty := <-deviceEvent:
+			if !empty {
+				return
+			}
+
+			// Filter non disk events
+			if !NewCDevice(device).FilterDisk() {
+				log.Debugf("Device:%+v is drop", device)
+				continue
+			}
+			log.Debugf("Device:%+v is keep", device)
+
+			devices = append(devices, manager.Attribute{
+				DevPath:  device.KObj,
+				DevType:  device.Env["DEVTYPE"],
+				DevName:  device.Env["DEVNAME"],
+				Serial:   device.Env["ID_SERIAL"],
+				DevLinks: strings.Split(device.Env["DEVLINKS"], " "),
 			})
 
 		case err = <-errors:

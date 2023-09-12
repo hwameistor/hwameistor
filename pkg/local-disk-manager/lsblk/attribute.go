@@ -1,6 +1,9 @@
 package lsblk
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
@@ -67,4 +70,36 @@ func NewAttributeParser(disk *manager.DiskIdentify) *manager.AttributeParser {
 	return &manager.AttributeParser{
 		IDiskAttribute: AttributeParser{disk},
 	}
+}
+
+// ListAllBlockDevices returns a list of all block devices converted from lsblk outputs
+func ListAllBlockDevices() ([]manager.Attribute, error) {
+	// internal use only for convert lsblk output
+	type _lsblkJsonFormat struct {
+		blockdevices []struct {
+			Name   string `json:"name"`
+			FSType string `json:"fstype"`
+			Serial string `json:"serial"`
+		}
+	}
+
+	var lo _lsblkJsonFormat
+	output, err := utils.Bash(fmt.Sprintf("lsblk -Jbdo NAME,FSTYPE,SERIAL"))
+	if err != nil {
+		return nil, err
+	}
+	if err = json.Unmarshal([]byte(output), &lo); err != nil {
+		return nil, err
+	}
+
+	var result []manager.Attribute
+	for _, blockDevice := range lo.blockdevices {
+		result = append(result, manager.Attribute{
+			DevName: blockDevice.Name,
+			FSType:  blockDevice.FSType,
+			Serial:  blockDevice.Serial,
+		})
+	}
+
+	return result, nil
 }

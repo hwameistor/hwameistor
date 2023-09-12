@@ -3,9 +3,12 @@ package localdiskvolume
 import (
 	"context"
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/registry"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/volume"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/udev"
+	"path"
 	"strings"
 	"time"
 
@@ -78,6 +81,13 @@ func (v *DiskVolumeHandler) ReconcileMount() (reconcile.Result, error) {
 	// Mount RawBlock or FileSystem Volumes
 	for _, mountPoint := range mountPoints {
 		if mountPoint.Phase != v1alpha1.MountPointToBeMounted {
+			continue
+		}
+
+		// check if the volume can mount safely, more details see issue #1116
+		if _, err = v.CanSafelyMount(); err != nil {
+			log.WithError(err).Errorf("Failed to mount %s to %s", volPath, mountPoint.TargetPath)
+			result.Requeue = true
 			continue
 		}
 
@@ -458,4 +468,57 @@ func (v *DiskVolumeHandler) GetBoundDisk() string {
 
 func (v *DiskVolumeHandler) For(volume *v1alpha1.LocalDiskVolume) {
 	v.Ldv = volume
+}
+
+// CanSafelyMount returns true if the volume is safe to be mounted, false otherwise.
+// case 1: if there are multiple disks having the same identifier, return false to prevent mount the wrong disk
+func (v *DiskVolumeHandler) CanSafelyMount() (bool, error) {
+	// this can not be happened, stop the mount process
+	if len(v.Ldv.Status.DevLinks) == 0 {
+		return false, fmt.Errorf("no devlinks found for volume %s", v.Ldv.Name)
+	}
+
+	// skip if no id_path found
+	if len(v.Ldv.Status.DevLinks[v1alpha1.LinkByID]) == 0 {
+		return true, nil
+	}
+
+	// NOTE: don't use id_path here because it might be different from the dev-link used by the volume
+	// 1. get the symbol link that actually used by the volume
+	deviceLink, err := getDeviceLinkByVolume(v.Ldv.Status.VolumePath)
+	if err != nil {
+		return false, err
+	}
+
+	// 2. list all devices and check whether this link exists at 2 or more different devices
+	allDevices, err := udev.ListAllBlockDevices()
+	if err != nil {
+		return false, err
+	}
+
+	var matchedDevices []manager.Attribute
+	for i, device := range allDevices {
+		if _, exist := utils.StrFind(device.DevLinks, deviceLink); exist {
+			matchedDevices = append(matchedDevices, allDevices[i])
+		}
+	}
+	if len(matchedDevices) > 1 {
+		return false, fmt.Errorf("device %s and %s has the same device link %s", matchedDevices[0].DevName, matchedDevices[1].DevName, deviceLink)
+	}
+
+	return true, nil
+}
+
+// this is only used for disk volume
+func getDeviceLinkByVolume(volumePath string) (string, error) {
+	// device path example: ../disk/pci-0000:03:00.0-scsi-0:0:30:0
+	devicePath, err := utils.Bash(fmt.Sprintf("readlink %v", volumePath))
+	if err != nil {
+		return "", err
+	}
+	// after convert: /etc/hwameistor/LocalDisk_PoolHDD/disk/pci-0000:03:00.0-scsi-0:0:30:0
+	devicePath = path.Join(types.GetLocalDiskPoolPathFromVolume(volumePath), strings.TrimPrefix(devicePath, "../"))
+
+	// final output: /dev/disk/by-path/pci-0000:03:00.0-scsi-0:0:30:0
+	return utils.Bash(fmt.Sprintf("readlink %v", devicePath))
 }
