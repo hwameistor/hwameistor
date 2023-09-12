@@ -23,10 +23,10 @@ HwameiStor 在 Kubernetes 已有的 PV 和 PVC 对象类基础上，HwameiStor �
 | localvolumegroups                  | lvg                        | LocalVolumeGroup                  | LVM 类型数据卷组                |
 | localvolumemigrates                | lvmigrate                  | LocalVolumeMigrate                | 迁移LVM类型数据卷                |
 | localvolumereplicas                | lvr                        | LocalVolumeReplica                | LVM 类型数据卷的副本              |
-| localvolumereplicasnapshotrecovers | lvrsrecover,lvrsnaprecover | LocalVolumeReplicaSnapshotRecover | 恢复 LVM 类型数据卷副本的快照         |
+| localvolumereplicasnapshotrestores | lvrsrestore,lvrsnaprestore | LocalVolumeReplicaSnapshotRestore | 恢复 LVM 类型数据卷副本的快照         |
 | localvolumereplicasnapshots        | lvrs                       | LocalVolumeReplicaSnapshot        | LVM 类型数据卷副本的快照            |
 | localvolumes                       | lv                         | LocalVolume                       | LVM 类型数据卷                 |
-| localvolumesnapshotrecovers        | lvsrecover,lvsnaprecover   | LocalVolumeSnapshotRecover        | 恢复 LVM 类型数据卷快照            |
+| localvolumesnapshotrestores        | lvsrestore,lvsnaprestore   | LocalVolumeSnapshotRestore        | 恢复 LVM 类型数据卷快照            |
 | localvolumesnapshots               | lvs                        | LocalVolumeSnapshot               | LVM 类型数据卷快照               |
 | resizepolicies                     |                            | ResizePolicy                      | PVC自动扩容策略                 |
 

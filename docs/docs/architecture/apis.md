@@ -23,10 +23,10 @@ HwameiStor defines some object classes to associate PV/PVC with local disks.
 | localvolumegroups                  | lvg                        | LocalVolumeGroup                  | LVM volume groups                                                    |                                                          |
 | localvolumemigrates                | lvmigrate                  | LocalVolumeMigrate                | Migrate LVM volume                                                   |
 | localvolumereplicas                | lvr                        | LocalVolumeReplica                | Replicas of LVM volume                                               |
-| localvolumereplicasnapshotrecovers | lvrsrecover,lvrsnaprecover | LocalVolumeReplicaSnapshotRecover | Recover snapshots of LVM volume Replicas                             |
+| localvolumereplicasnapshotrestores | lvrsrestore,lvrsnaprestore | LocalVolumeReplicaSnapshotRestore | Restore snapshots of LVM volume Replicas                             |
 | localvolumereplicasnapshots        | lvrs                       | LocalVolumeReplicaSnapshot        | Snapshots of LVM volume Replicas                                     |
 | localvolumes                       | lv                         | LocalVolume                       | LVM local volumes                                                    |
-| localvolumesnapshotrecovers        | lvsrecover,lvsnaprecover   | LocalVolumeSnapshotRecover        | Recover snapshots of LVM volume                                      |
+| localvolumesnapshotrestores        | lvsrestore,lvsnaprestore   | LocalVolumeSnapshotRestore        | Restore snapshots of LVM volume                                      |
 | localvolumesnapshots               | lvs                        | LocalVolumeSnapshot               | Snapshots of LVM volume                                              |                                                      |
 | resizepolicies                     |                            | ResizePolicy                      | PVC automatic expansion policy                                       |                      |
 

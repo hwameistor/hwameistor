@@ -473,13 +473,13 @@ var _ = ginkgo.Describe("snapshot rollback test ", ginkgo.Label("periodCheck"), 
 			f := framework.NewDefaultFramework(clientset.AddToScheme)
 			client = f.GetClient()
 			logrus.Printf("Create LocalVolumeSnapshotRestore")
-			LocalVolumeSnapshotRecover := &v1alpha1.LocalVolumeSnapshotRestore{
+			LocalVolumeSnapshotRestore := &v1alpha1.LocalVolumeSnapshotRestore{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "LocalVolumeSnapshotRestore",
 					APIVersion: "hwameistor.io/v1alpha1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "recover-test",
+					Name:      "Restore-test",
 					Namespace: "default",
 				},
 				Spec: v1alpha1.LocalVolumeSnapshotRestoreSpec{
@@ -487,7 +487,7 @@ var _ = ginkgo.Describe("snapshot rollback test ", ginkgo.Label("periodCheck"), 
 					RestoreType:          "rollback",
 				},
 			}
-			err := client.Create(ctx, LocalVolumeSnapshotRecover)
+			err := client.Create(ctx, LocalVolumeSnapshotRestore)
 			if err != nil {
 				logrus.Printf("Create LocalVolumeSnapshotRestore failed ：%+v ", err)
 				f.ExpectNoError(err)
@@ -495,9 +495,9 @@ var _ = ginkgo.Describe("snapshot rollback test ", ginkgo.Label("periodCheck"), 
 			gomega.Expect(err).To(gomega.BeNil())
 		})
 		ginkgo.It("Wait for rollback to end", func() {
-			LocalVolumeSnapshotRecoverList := &v1alpha1.LocalVolumeSnapshotRestoreList{}
+			LocalVolumeSnapshotRestoreList := &v1alpha1.LocalVolumeSnapshotRestoreList{}
 			err := wait.PollImmediate(3*time.Second, 1*time.Minute, func() (done bool, err error) {
-				if err = client.List(ctx, LocalVolumeSnapshotRecoverList); len(LocalVolumeSnapshotRecoverList.Items) != 0 {
+				if err = client.List(ctx, LocalVolumeSnapshotRestoreList); len(LocalVolumeSnapshotRestoreList.Items) != 0 {
 					return false, nil
 				}
 				return true, nil
