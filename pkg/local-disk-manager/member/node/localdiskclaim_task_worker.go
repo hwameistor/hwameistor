@@ -3,6 +3,8 @@ package node
 import (
 	"context"
 	"fmt"
+	"reflect"
+
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
 	log "github.com/sirupsen/logrus"
@@ -10,7 +12,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	types2 "k8s.io/apimachinery/pkg/types"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -72,16 +73,6 @@ func (m *nodeManager) processLocalDiskClaimBound(diskClaim *v1alpha1.LocalDiskCl
 	logCtx := m.logger.WithFields(log.Fields{"diskClaim": diskClaim.Name})
 	logCtx.Debugf("Start processing Bound LocalDiskClaim")
 
-	// disks backing the diskClaim must be the same class
-	poolName := types.GetLocalDiskPoolName(diskClaim.Spec.Description.DiskType)
-	defer func() {
-		if err == nil {
-			if err = m.updatePoolExtendRecord(poolName, diskClaim.Spec); err != nil {
-				logCtx.WithFields(log.Fields{"poolName": poolName}).WithError(err).Error("Failed to update extend record")
-			}
-		}
-	}()
-
 	// fetch disks that bounded by the claim
 	allocatedDisks, err := fetchBoundedLocalDisks(m.k8sClient, diskClaim)
 	if err != nil {
@@ -92,7 +83,11 @@ func (m *nodeManager) processLocalDiskClaimBound(diskClaim *v1alpha1.LocalDiskCl
 
 	// find out disks that need to be extended actually
 	var tobeExtendedDisks []*v1alpha1.LocalDisk
+	poolExtendedSet := make(map[string]struct{})
 	for _, localDisk := range allocatedDisks {
+		poolName := types.GetLocalDiskPoolName(localDisk.Spec.DiskAttributes.Type)
+		poolExtendedSet[poolName] = struct{}{}
+
 		exist := m.registryManager.DiskExist(localDisk.Spec.DevicePath)
 		// skip exist disk
 		if exist {
@@ -101,6 +96,19 @@ func (m *nodeManager) processLocalDiskClaimBound(diskClaim *v1alpha1.LocalDiskCl
 		}
 		tobeExtendedDisks = append(tobeExtendedDisks, localDisk.DeepCopy())
 	}
+
+	// defer update pool extend record
+	defer func() {
+		if err == nil {
+			poolNames := make([]string, 0, len(poolExtendedSet))
+			for poolName := range poolExtendedSet {
+				poolNames = append(poolNames, poolName)
+			}
+			if err = m.updatePoolExtendRecord(poolNames, diskClaim.Spec); err != nil {
+				logCtx.WithFields(log.Fields{"poolNames": poolNames}).WithError(err).Error("Failed to update extend record")
+			}
+		}
+	}()
 
 	if len(tobeExtendedDisks) == 0 {
 		logCtx.Info("No LocalDisk need to process")
@@ -118,6 +126,7 @@ func (m *nodeManager) processLocalDiskClaimBound(diskClaim *v1alpha1.LocalDiskCl
 	}()
 
 	for _, disk := range tobeExtendedDisks {
+		poolName := types.GetLocalDiskPoolName(disk.Spec.DiskAttributes.Type)
 		ok, err := m.poolManager.ExtendPool(poolName, disk.Spec.DevLinks, disk.Spec.DiskAttributes.SerialNumber)
 		if ok {
 			logCtx.WithFields(log.Fields{"poolName": poolName, "extendDisk": disk.Spec.DevicePath}).Infof("Succeed to expand DiskPool")
@@ -131,7 +140,7 @@ func (m *nodeManager) processLocalDiskClaimBound(diskClaim *v1alpha1.LocalDiskCl
 	return confirmLocalDisksConsumed(m.k8sClient, diskClaim)
 }
 
-func (m *nodeManager) updatePoolExtendRecord(poolName string, record v1alpha1.LocalDiskClaimSpec) error {
+func (m *nodeManager) updatePoolExtendRecord(poolNames []string, record v1alpha1.LocalDiskClaimSpec) error {
 	var storageNode v1alpha1.LocalDiskNode
 	err := m.k8sClient.Get(context.TODO(), types2.NamespacedName{Name: m.nodeName}, &storageNode)
 	if err != nil {
@@ -144,21 +153,23 @@ func (m *nodeManager) updatePoolExtendRecord(poolName string, record v1alpha1.Lo
 		storageNode.Status.PoolExtendRecords = make(map[string]v1alpha1.LocalDiskClaimSpecArray)
 	}
 
-	// init pool records
-	if _, ok := storageNode.Status.PoolExtendRecords[poolName]; !ok {
-		storageNode.Status.PoolExtendRecords[poolName] = make(v1alpha1.LocalDiskClaimSpecArray, 0)
-	}
-
-	// append this record if not exist
-	exist := false
-	for _, poolRecord := range storageNode.Status.PoolExtendRecords[poolName] {
-		if reflect.DeepEqual(poolRecord, record) {
-			exist = true
+	// append pool records
+	for _, poolName := range poolNames {
+		if _, ok := storageNode.Status.PoolExtendRecords[poolName]; !ok {
+			storageNode.Status.PoolExtendRecords[poolName] = make(v1alpha1.LocalDiskClaimSpecArray, 0)
+		}
+		// append this record if not exist
+		exist := false
+		for _, poolRecord := range storageNode.Status.PoolExtendRecords[poolName] {
+			if reflect.DeepEqual(poolRecord, record) {
+				exist = true
+			}
+		}
+		if !exist {
+			storageNode.Status.PoolExtendRecords[poolName] = append(storageNode.Status.PoolExtendRecords[poolName], record)
 		}
 	}
-	if !exist {
-		storageNode.Status.PoolExtendRecords[poolName] = append(storageNode.Status.PoolExtendRecords[poolName], record)
-	}
+
 	return m.k8sClient.Status().Patch(context.TODO(), &storageNode, client.MergeFrom(storageNodeOld))
 }
 

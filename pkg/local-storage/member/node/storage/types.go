@@ -52,13 +52,13 @@ type LocalVolumeReplicaSnapshotManager interface {
 	UpdateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error)
 	GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error)
 
-	LocalVolumeReplicaSnapshotRecoverManager
+	LocalVolumeReplicaSnapshotRestoreManager
 }
 
 //go:generate mockgen -source=types.go -destination=../../../member/node/storage/replica_mock.go  -package=storage
-type LocalVolumeReplicaSnapshotRecoverManager interface {
-	RollbackVolumeReplicaSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error
-	RestoreVolumeReplicaSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error
+type LocalVolumeReplicaSnapshotRestoreManager interface {
+	RollbackVolumeReplicaSnapshot(snapshotRestore *apisv1alpha1.LocalVolumeReplicaSnapshotRestore) error
+	RestoreVolumeReplicaSnapshot(snapshotRestore *apisv1alpha1.LocalVolumeReplicaSnapshotRestore) error
 }
 
 // LocalRegistry interface
@@ -99,7 +99,7 @@ type LocalVolumeReplicaSnapshotExecutor interface {
 	UpdateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error)
 	GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (*apisv1alpha1.LocalVolumeReplicaSnapshotStatus, error)
 
-	LocalVolumeReplicaSnapshotRecoverManager
+	LocalVolumeReplicaSnapshotRestoreManager
 }
 
 // LocalPoolExecutor interface

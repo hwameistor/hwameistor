@@ -31,15 +31,15 @@ func newDDExecutor() *ddExecutor {
 	return ddExecutorInstance
 }
 
-func (dd *ddExecutor) RollbackVolumeReplicaSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error {
+func (dd *ddExecutor) RollbackVolumeReplicaSnapshot(snapshotRestore *apisv1alpha1.LocalVolumeReplicaSnapshotRestore) error {
 	panic("not implemented")
 	return nil
 }
 
-func (dd *ddExecutor) RestoreVolumeReplicaSnapshot(snapshotRecover *apisv1alpha1.LocalVolumeReplicaSnapshotRecover) error {
-	poolName := snapshotRecover.Spec.TargetPoolName
-	outPutDevicePath := composePoolVolumePath(poolName, snapshotRecover.Spec.TargetVolume)
-	inputDevicePath := composePoolVolumePath(poolName, snapshotRecover.Spec.SourceVolumeSnapshot)
+func (dd *ddExecutor) RestoreVolumeReplicaSnapshot(snapshotRestore *apisv1alpha1.LocalVolumeReplicaSnapshotRestore) error {
+	poolName := snapshotRestore.Spec.TargetPoolName
+	outPutDevicePath := composePoolVolumePath(poolName, snapshotRestore.Spec.TargetVolume)
+	inputDevicePath := composePoolVolumePath(poolName, snapshotRestore.Spec.SourceVolumeSnapshot)
 
 	// example：dd if=/dev/LocalStorage_PoolHDD/snapshot of=/dev/LocalStorage_PoolHDD/volume-new bs=10M
 	dataCopyCommand := exechelper.ExecParams{

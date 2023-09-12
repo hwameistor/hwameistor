@@ -139,6 +139,7 @@ func (ldcHandler *Handler) PatchBoundDiskRef() error {
 	for _, disk := range ldcHandler.diskClaim.Spec.DiskRefs {
 		logger.Infof("Bounded localdisk: %s", disk.Name)
 	}
+
 	return ldcHandler.PatchClaimSpec(client.MergeFrom(oldDiskClaim))
 }
 

@@ -148,18 +148,16 @@ HwameiStor 可以立即将 Pods 调度到其他数据卷所在的可用节点，
 
 可能的错误原因：
 
-1. 节点没有安装 LVM2 ，可通过如下命令进行安装：
+1. 节点没有安装 LVM2，可通过如下命令进行安装：
 
-   ```
-   $rpm -qa | grep lvm2  #确认 LVM2 是否安装
-   $yum install lvm2 #在每个节点上确认 LVM 已安装
+   ```bash
+   rpm -qa | grep lvm2  #确认 LVM2 是否安装
+   yum install lvm2 #在每个节点上确认 LVM 已安装
    ```
 
-2. 确认节点上对应磁盘 GPT 分区
+2. 确认节点上对应磁盘的 GPT 分区：
 
-   ```
+   ```bash
    blkid /dev/sd*  # 确认磁盘分区是否干净
    wipefs -a /dev/sd* # 磁盘清理
    ```
-
-   

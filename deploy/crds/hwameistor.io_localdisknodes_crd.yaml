@@ -113,10 +113,22 @@ spec:
                             description: Capacity of the disk in bytes
                             format: int64
                             type: integer
+                          devicePaths:
+                            description: Match the device path of Localdisk DevicePaths
+                              match all disks if DevicePaths are empty
+                            items:
+                              type: string
+                            type: array
                           diskType:
                             description: DiskType represents the type of drive like
                               SSD, HDD etc.,
                             type: string
+                          localDiskNames:
+                            description: Match the name of Localdisk LocalDiskNames
+                              match all disks if LocalDiskNames are empty
+                            items:
+                              type: string
+                            type: array
                         type: object
                       diskRefs:
                         description: DiskRefs represents which disks are assigned

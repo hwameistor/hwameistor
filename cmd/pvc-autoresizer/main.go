@@ -76,7 +76,8 @@ func main() {
 	pvcAttacher := autoresizer.NewPVCAttacher(cli)
 	go pvcAttacher.StartPVCInformer(cli, stopChan)
 	go pvcAttacher.Start(stopChan.Done())
-	go autoresizer.StartResizePolicyEventHandler(cli, mgr.GetCache())
+	// go autoresizer.StartResizePolicyEventHandler(cli, mgr.GetCache())
+	go autoresizer.StartResizePolicyEventHandlerV2(cli, mgr.GetCache())
 	go autoresizer.NewAutoResizer(cli, stopChan).Start()
 
 	select {

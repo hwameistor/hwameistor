@@ -91,6 +91,10 @@ func (r *AutoResizer) Start() {
 				}
 				p.localVolume.resizePolicy = resizePolicy
 			} else {
+				// expect resizepolicy related only when annotation appointed
+				log.Infof("pvc %v:%v has no resizepolicy annotation", p.localVolume.pvc.Namespace, p.localVolume.pvc.Name)
+				return
+
 				resizePolicyList := &hwameistorv1alpha1.ResizePolicyList{}
 				labelSelector, err := metav1.LabelSelectorAsSelector(&defaultResizePolicyLabelSelector)
 				if err != nil {
