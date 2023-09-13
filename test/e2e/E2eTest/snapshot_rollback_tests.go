@@ -479,7 +479,7 @@ var _ = ginkgo.Describe("snapshot rollback test ", ginkgo.Label("periodCheck"), 
 					APIVersion: "hwameistor.io/v1alpha1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "Restore-test",
+					Name:      "restore-test",
 					Namespace: "default",
 				},
 				Spec: v1alpha1.LocalVolumeSnapshotRestoreSpec{
