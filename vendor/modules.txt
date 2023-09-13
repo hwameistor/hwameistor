@@ -225,6 +225,7 @@ github.com/kubernetes-csi/csi-lib-utils/protosanitizer
 # github.com/kubernetes-csi/external-snapshotter/client/v6 v6.2.0
 ## explicit; go 1.19
 github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1
+github.com/kubernetes-csi/external-snapshotter/client/v6/clientset/versioned/scheme
 # github.com/leodido/go-urn v1.2.1
 ## explicit; go 1.13
 github.com/leodido/go-urn

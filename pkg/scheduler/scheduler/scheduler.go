@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	snapshot "github.com/kubernetes-csi/external-snapshotter/client/v6/clientset/versioned/scheme"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	corev1lister "k8s.io/client-go/listers/core/v1"
@@ -50,6 +51,10 @@ func NewScheduler(f framework.Handle) *Scheduler {
 	// Setup Scheme for all resources of Local Storage
 	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		log.WithError(err).Fatal("Failed to setup scheme for local-storage resources")
+	}
+	// Setup Scheme for all resources of Snapshot
+	if err = snapshot.AddToScheme(mgr.GetScheme()); err != nil {
+		log.WithError(err).Fatal("Failed to setup scheme for snapshot resources")
 	}
 
 	apiClient := mgr.GetClient()
