@@ -6,6 +6,7 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
 	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -196,16 +197,18 @@ func (s *LVMVolumeScheduler) validateNodeForPVCsFromSnapshot(pvcs []*corev1.Pers
 		if !isVolumeFromSnapshot(pvc) {
 			continue
 		}
-		vss = append(vss, pvc.Spec.DataSource.Name)
+		vss = append(vss, fmt.Sprintf("%s/%s", pvc.Namespace, pvc.Spec.DataSource.Name))
 	}
 	if len(vss) == 0 {
 		return true, nil
 	}
 
 	// range each volumesnapshot and compare the node
-	for _, vsName := range vss {
+	for _, vsNamespaceName := range vss {
 		vs := v1.VolumeSnapshot{}
-		if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: vsName}, &vs); err != nil {
+		if err := s.apiClient.Get(context.Background(), client.ObjectKey{
+			Namespace: strings.Split(vsNamespaceName, "/")[0],
+			Name:      strings.Split(vsNamespaceName, "/")[1]}, &vs); err != nil {
 			return false, err
 		}
 
@@ -231,7 +234,7 @@ func (s *LVMVolumeScheduler) constructLocalVolumeForPVC(pvc *corev1.PersistentVo
 	var scName string
 	if pvc.Spec.DataSource != nil && pvc.Spec.DataSource.Kind == VolumeSnapshot {
 		// for volume create from snapshot, use sc from the source volume
-		if srcPVC, err := s.getSourcePVCFromSnapshot(pvc.Spec.DataSource.Name); err != nil {
+		if srcPVC, err := s.getSourcePVCFromSnapshot(pvc.Namespace, pvc.Spec.DataSource.Name); err != nil {
 			return nil, err
 		} else {
 			scName = *srcPVC.Spec.StorageClassName
@@ -263,13 +266,13 @@ func (s *LVMVolumeScheduler) constructLocalVolumeForPVC(pvc *corev1.PersistentVo
 	return &localVolume, nil
 }
 
-func (s *LVMVolumeScheduler) getSourcePVCFromSnapshot(vsName string) (*corev1.PersistentVolumeClaim, error) {
+func (s *LVMVolumeScheduler) getSourcePVCFromSnapshot(vsNamespace, vsName string) (*corev1.PersistentVolumeClaim, error) {
 	vs := v1.VolumeSnapshot{}
-	if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: vsName}, &vs); err != nil {
+	if err := s.apiClient.Get(context.Background(), client.ObjectKey{Namespace: vsNamespace, Name: vsName}, &vs); err != nil {
 		return nil, err
 	}
 	pvc := corev1.PersistentVolumeClaim{}
-	if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: *vs.Spec.Source.PersistentVolumeClaimName}, &pvc); err != nil {
+	if err := s.apiClient.Get(context.Background(), client.ObjectKey{Namespace: vsNamespace, Name: *vs.Spec.Source.PersistentVolumeClaimName}, &pvc); err != nil {
 		return nil, err
 	}
 	return &pvc, nil
