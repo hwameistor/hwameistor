@@ -3,21 +3,21 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/webhook/config"
-	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	"strings"
 	"sync"
 
 	"github.com/sirupsen/logrus"
 	admission "k8s.io/api/admission/v1beta1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	mykube "github.com/hwameistor/hwameistor/pkg/utils/kubernetes"
 	"github.com/hwameistor/hwameistor/pkg/webhook"
+	"github.com/hwameistor/hwameistor/pkg/webhook/config"
 )
 
 var (
