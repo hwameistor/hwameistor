@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-var _ = ginkgo.Describe("pvc autoresize test", ginkgo.Label("error"), func() {
+var _ = ginkgo.Describe("pvc autoresize test", ginkgo.Label("pvc"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
