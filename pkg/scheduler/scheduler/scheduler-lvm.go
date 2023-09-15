@@ -3,7 +3,10 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
+	v1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
 	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -16,6 +19,8 @@ import (
 	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
+
+const VolumeSnapshot = "VolumeSnapshot"
 
 type LVMVolumeScheduler struct {
 	fHandle   framework.Handle
@@ -150,10 +155,15 @@ func (s *LVMVolumeScheduler) filterForExistingLocalVolumes(lvs []string, node *c
 }
 
 func (s *LVMVolumeScheduler) filterForNewPVCs(pvcs []*corev1.PersistentVolumeClaim, node *corev1.Node) (bool, error) {
-
 	if len(pvcs) == 0 {
 		return true, nil
 	}
+
+	// the scheduled node must keep consistent with the existing snapshot node
+	if ok, err := s.validateNodeForPVCsFromSnapshot(pvcs, node); !ok {
+		return false, fmt.Errorf("node %v is not the expected snapshot node, error: %v", node.Name, err)
+	}
+
 	for _, pvc := range pvcs {
 		log.WithField("pvc", pvc.Name).WithField("node", node.Name).Debug("New PVC")
 	}
@@ -180,9 +190,60 @@ func (s *LVMVolumeScheduler) filterForNewPVCs(pvcs []*corev1.PersistentVolumeCla
 	return false, nil
 }
 
-func (s *LVMVolumeScheduler) constructLocalVolumeForPVC(pvc *corev1.PersistentVolumeClaim) (*v1alpha1.LocalVolume, error) {
+// validateNodeForSnapshotVolume ensures that the node can be scheduled at the node where snapshot located
+func (s *LVMVolumeScheduler) validateNodeForPVCsFromSnapshot(pvcs []*corev1.PersistentVolumeClaim, node *corev1.Node) (bool, error) {
+	var vss []string
+	for _, pvc := range pvcs {
+		if !isVolumeFromSnapshot(pvc) {
+			continue
+		}
+		vss = append(vss, fmt.Sprintf("%s/%s", pvc.Namespace, pvc.Spec.DataSource.Name))
+	}
+	if len(vss) == 0 {
+		return true, nil
+	}
 
-	sc, err := s.scLister.Get(*pvc.Spec.StorageClassName)
+	// range each volumesnapshot and compare the node
+	for _, vsNamespaceName := range vss {
+		vs := v1.VolumeSnapshot{}
+		if err := s.apiClient.Get(context.Background(), client.ObjectKey{
+			Namespace: strings.Split(vsNamespaceName, "/")[0],
+			Name:      strings.Split(vsNamespaceName, "/")[1]}, &vs); err != nil {
+			return false, err
+		}
+
+		// check if snapshotcontent is already created and bounded
+		if vs.Status.ReadyToUse == nil || vs.Status.BoundVolumeSnapshotContentName == nil {
+			return false, fmt.Errorf("snapshot %s is not ready to use", vs.Name)
+		}
+
+		snapshot := v1alpha1.LocalVolumeSnapshot{}
+		if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: *vs.Status.BoundVolumeSnapshotContentName}, &snapshot); err != nil {
+			return false, err
+		}
+
+		if _, ok := utils.StrFind(snapshot.Spec.Accessibility.Nodes, node.Name); !ok {
+			return false, fmt.Errorf("node %s is not matchable with snapshot accessibility node(s) %v", node.Name, snapshot.Spec.Accessibility.Nodes)
+		}
+	}
+
+	return true, nil
+}
+
+func (s *LVMVolumeScheduler) constructLocalVolumeForPVC(pvc *corev1.PersistentVolumeClaim) (*v1alpha1.LocalVolume, error) {
+	var scName string
+	if pvc.Spec.DataSource != nil && pvc.Spec.DataSource.Kind == VolumeSnapshot {
+		// for volume create from snapshot, use sc from the source volume
+		if srcPVC, err := s.getSourcePVCFromSnapshot(pvc.Namespace, pvc.Spec.DataSource.Name); err != nil {
+			return nil, err
+		} else {
+			scName = *srcPVC.Spec.StorageClassName
+		}
+	} else {
+		scName = *pvc.Spec.StorageClassName
+	}
+
+	sc, err := s.scLister.Get(scName)
 	if err != nil {
 		return nil, err
 	}
@@ -203,6 +264,18 @@ func (s *LVMVolumeScheduler) constructLocalVolumeForPVC(pvc *corev1.PersistentVo
 	replica, _ := strconv.Atoi(sc.Parameters[v1alpha1.VolumeParameterReplicaNumberKey])
 	localVolume.Spec.ReplicaNumber = int64(replica)
 	return &localVolume, nil
+}
+
+func (s *LVMVolumeScheduler) getSourcePVCFromSnapshot(vsNamespace, vsName string) (*corev1.PersistentVolumeClaim, error) {
+	vs := v1.VolumeSnapshot{}
+	if err := s.apiClient.Get(context.Background(), client.ObjectKey{Namespace: vsNamespace, Name: vsName}, &vs); err != nil {
+		return nil, err
+	}
+	pvc := corev1.PersistentVolumeClaim{}
+	if err := s.apiClient.Get(context.Background(), client.ObjectKey{Namespace: vsNamespace, Name: *vs.Spec.Source.PersistentVolumeClaimName}, &pvc); err != nil {
+		return nil, err
+	}
+	return &pvc, nil
 }
 
 func buildStoragePoolName(poolClass string, poolType string) (string, error) {
@@ -226,4 +299,8 @@ func (s *LVMVolumeScheduler) Reserve(pendingPVCs []*corev1.PersistentVolumeClaim
 
 func (s *LVMVolumeScheduler) Unreserve(pendingPVCs []*corev1.PersistentVolumeClaim, node string) error {
 	return nil
+}
+
+func isVolumeFromSnapshot(pvc *corev1.PersistentVolumeClaim) bool {
+	return pvc.Spec.DataSource != nil && pvc.Spec.DataSource.Kind == VolumeSnapshot
 }
