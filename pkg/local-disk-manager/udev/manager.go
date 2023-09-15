@@ -178,24 +178,29 @@ func getExistDevice(matchRule netlink.Matcher) (devices []manager.Attribute, err
 
 	for {
 		select {
-		case device, empty := <-deviceEvent:
+		case deviceEvt, empty := <-deviceEvent:
 			if !empty {
 				return
 			}
 
 			// Filter non disk events
-			if !NewCDevice(device).FilterDisk() {
-				log.Debugf("Device:%+v is drop", device)
+			device := NewDevice(deviceEvt.KObj)
+			if err = device.ParseDeviceInfo(); err != nil {
+				log.WithError(err).WithField("Device", deviceEvt.KObj).Error("failed to parse device, drop it")
 				continue
 			}
-			log.Debugf("Device:%+v is keep", device)
+			if !device.FilterDisk() {
+				log.Debugf("Device:%+v is drop", deviceEvt)
+				continue
+			}
+			log.Debugf("Device:%+v is keep", deviceEvt)
 
 			devices = append(devices, manager.Attribute{
-				DevPath:  device.KObj,
-				DevType:  device.Env["DEVTYPE"],
-				DevName:  device.Env["DEVNAME"],
-				Serial:   device.Env["ID_SERIAL"],
-				DevLinks: strings.Split(device.Env["DEVLINKS"], " "),
+				DevPath:  device.DevPath,
+				DevType:  device.DevType,
+				DevName:  device.DevName,
+				Serial:   device.Serial,
+				DevLinks: device.DevLinks,
 			})
 
 		case err = <-errors:
