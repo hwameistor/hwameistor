@@ -2,8 +2,9 @@ package localdisk
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/fields"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/fields"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -53,6 +54,13 @@ func (ctr Controller) UpdateLocalDiskAttr(newLocalDisk v1alpha1.LocalDisk) error
 	}
 	remoteOrigin := remote.DeepCopy()
 	ctr.mergeLocalDiskAttr(&remote, newLocalDisk)
+
+	// user may modify disk type for some reasons(#1130)
+	// don't update disk type here if serial number exists
+	if remoteOrigin.Spec.DiskAttributes.SerialNumber != "" && remoteOrigin.Spec.DiskAttributes.Type != "" {
+		remote.Spec.DiskAttributes.Type = remoteOrigin.Spec.DiskAttributes.Type
+	}
+
 	return ctr.Mgr.GetClient().Patch(context.Background(), &remote, client.MergeFrom(remoteOrigin))
 }
 
