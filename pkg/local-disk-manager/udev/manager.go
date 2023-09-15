@@ -84,28 +84,34 @@ func monitorDeviceEvent(c chan manager.Event, matchRule netlink.Matcher) error {
 
 	for {
 		select {
-		case device, empty := <-eventChan:
+		case deviceEvt, empty := <-eventChan:
 			if !empty {
 				return fmt.Errorf("EventChan has been closed when monitor udev event")
 			}
 
 			event := manager.Event{
-				Type:    string(device.Action),
-				DevPath: addSysPrefix(device.KObj),
-				DevType: device.Env["DEVTYPE"],
-				DevName: device.Env["DEVNAME"],
+				Type:    string(deviceEvt.Action),
+				DevPath: addSysPrefix(deviceEvt.KObj),
+				DevType: deviceEvt.Env["DEVTYPE"],
+				DevName: deviceEvt.Env["DEVNAME"],
 			}
 
-			switch string(device.Action) {
+			switch string(deviceEvt.Action) {
 			case manager.REMOVE:
 				// push chan directly
 				c <- event
 			default:
-				if !NewCDevice(crawler.Device{KObj: device.KObj, Env: device.Env}).FilterDisk() {
-					log.Debugf("Device:%+v is drop", device)
+				device := NewDevice(deviceEvt.KObj)
+				if err := device.ParseDeviceInfo(); err != nil {
+					log.WithError(err).WithField("Device", deviceEvt.KObj).Error("Failed to parse device, drop it")
 					continue
 				}
-				log.Debugf("Device:%+v is keep", device)
+
+				if !device.FilterDisk() {
+					log.Debugf("Device:%+v is drop", deviceEvt)
+					continue
+				}
+				log.Debugf("Device:%+v is keep", deviceEvt)
 				c <- event
 			}
 
@@ -127,23 +133,29 @@ func getExistDevice(matchRule netlink.Matcher) (events []manager.Event, err erro
 
 	for {
 		select {
-		case device, empty := <-deviceEvent:
+		case deviceEvt, empty := <-deviceEvent:
 			if !empty {
 				return
 			}
 
 			// Filter non disk events
-			if !NewCDevice(device).FilterDisk() {
-				log.Debugf("Device:%+v is drop", device)
+			device := NewDevice(deviceEvt.KObj)
+			if err = device.ParseDeviceInfo(); err != nil {
+				log.WithError(err).WithField("Device", deviceEvt.KObj).Error("Failed to parse device, drop it")
 				continue
 			}
-			log.Debugf("Device:%+v is keep", device)
+
+			if !device.FilterDisk() {
+				log.Debugf("Device:%+v is drop", deviceEvt)
+				continue
+			}
+			log.Debugf("Device:%+v is keep", deviceEvt)
 
 			events = append(events, manager.Event{
 				Type:    manager.EXIST,
-				DevPath: device.KObj,
-				DevType: device.Env["DEVTYPE"],
-				DevName: device.Env["DEVNAME"],
+				DevPath: deviceEvt.KObj,
+				DevType: deviceEvt.Env["DEVTYPE"],
+				DevName: deviceEvt.Env["DEVNAME"],
 			})
 
 		case err = <-errors:
