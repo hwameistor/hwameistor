@@ -208,36 +208,9 @@ func (m *manager) restoreSnapshot(snapshotRestore *apisv1alpha1.LocalVolumeRepli
 	logCtx := m.logger.WithFields(log.Fields{"ReplicaSnapshotRestore": snapshotRestore.Name, "TargetVolume": snapshotRestore.Spec.TargetVolume, "SourceSnapshot": snapshotRestore.Spec.SourceVolumeSnapshot})
 	logCtx.Debug("Start restoring snapshot")
 
-	// 1. check whether volume snapshot is already merged
-
-	volumeReplicaSnapshot := &apisv1alpha1.LocalVolumeReplicaSnapshot{}
-	if err = m.apiClient.Get(context.Background(), client.ObjectKey{Name: snapshotRestore.Spec.SourceVolumeReplicaSnapshot}, volumeReplicaSnapshot); err != nil {
-		if errors.IsNotFound(err) {
-			// snapshot is already merged
-			logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Info("volume replica snapshot is restored")
-			return nil
-		}
-		logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Error("Failed to get volume replica snapshot")
-		return err
-	}
-
-	if _, err = m.Storage().VolumeReplicaSnapshotManager().GetVolumeReplicaSnapshot(volumeReplicaSnapshot); err != nil {
-		if err == storage.ErrorSnapshotNotFound {
-			// snapshot is already merged, remove the snapshot from apiserver
-			logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Info("volume replica snapshot is restored")
-			volumeReplicaSnapshot.Spec.Delete = true
-			return m.apiClient.Update(context.Background(), volumeReplicaSnapshot)
-		}
-		logCtx.WithField("VolumeReplicaSnapshot", volumeReplicaSnapshot).Error("Failed to get volume replica snapshot status")
-		return err
-	}
-
-	// 2. todo: check whether volume snapshot is already restoring
-
-	// 3. rollback the volumes snapshot to the source volume
-
+	// NOTE: different from snapshotRollback, restore snapshot won't cause snapshot deletion, so we just restore without judging snapshot is already merged
 	if err = m.Storage().VolumeReplicaSnapshotManager().RestoreVolumeReplicaSnapshot(snapshotRestore); err != nil {
-		logCtx.WithError(err).Error("Failed to start restore snapshot")
+		logCtx.WithError(err).Error("Failed to restore snapshot")
 	}
 	return err
 }
