@@ -56,6 +56,14 @@ func (w *pvcWorker) conformPVCAgainstResizePolicy(pvc *corev1.PersistentVolumeCl
 	}
 	if rp.Spec.StorageClassSelector != nil {
 		if w.StorageClass == nil {
+			if pvc.Spec.StorageClassName == nil {
+				log.Infof("pvc %v:%v has no storageclass, return now", pvc.Namespace, pvc.Name)
+				return false, nil
+			}
+			if *pvc.Spec.StorageClassName == "" {
+				log.Infof("storageclassname of pvc %v:%v is empty string, return now", pvc.Namespace, pvc.Name)
+				return false, nil
+			}
 			sc := &storagev1.StorageClass{}
 			if err := w.cli.Get(context.TODO(), types.NamespacedName{Name: *pvc.Spec.StorageClassName}, sc); err != nil {
 				log.Errorf("get storageclass err: %v", err)
