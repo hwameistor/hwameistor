@@ -3,6 +3,7 @@ package autoresizer
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"sort"
 	"sync"
 
@@ -10,7 +11,9 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	// corev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
 	runtimecache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -105,6 +108,7 @@ func (c *ResizePolicyChain) print() {
 func addFunc(obj interface{}) {
 	rp := obj.(*hwameistorv1alpha1.ResizePolicy)
 	log.Infof("resizepolicy %v added", rp.Name)
+	defer requeuePVC(cliVar, pvcWorkQueue)
 	if isPVCSelector(rp) {
 		pvcSelectorChain.insert(rp)
 		log.Infof("resizepolicy %v added into chain %v", rp.Name, pvcSelectorChain.Name)
@@ -189,6 +193,11 @@ func decideChainForResizePolicy(rp *hwameistorv1alpha1.ResizePolicy) *ResizePoli
 func updateFunc(olbObj, newObj interface{}) {
 	rp := newObj.(*hwameistorv1alpha1.ResizePolicy)
 	log.Infof("resizepolicy %v updated", rp.Name)
+	rpOld := olbObj.(*hwameistorv1alpha1.ResizePolicy)
+	if selectorUpdated(rp, rpOld) {
+		log.Infof("resizepolicy %v updated selector, will requeue pvc", rp.Name)
+		defer requeuePVC(cliVar, pvcWorkQueue)
+	}
 	chainLocated := findChainResizePolicyIn(rp)
 	chainShoudlBeIn := decideChainForResizePolicy(rp)
 	if chainLocated != nil {
@@ -209,7 +218,14 @@ func updateFunc(olbObj, newObj interface{}) {
 	chainShoudlBeIn.print()
 }
 
-func StartResizePolicyEventHandlerV2(cli client.Client, runtimeCache runtimecache.Cache) {
+
+var cliVar client.Client
+var pvcWorkQueue workqueue.RateLimitingInterface
+
+func StartResizePolicyEventHandlerV2(cli client.Client, q workqueue.RateLimitingInterface, runtimeCache runtimecache.Cache) {
+	cliVar = cli
+	pvcWorkQueue = q
+
 	handlerFuncs := cache.ResourceEventHandlerFuncs{
 		AddFunc: addFunc,
 		UpdateFunc: updateFunc,
@@ -225,4 +241,29 @@ func StartResizePolicyEventHandlerV2(cli client.Client, runtimeCache runtimecach
 	log.Infof("going to run resizepolicy informer")
 	rpInformer.AddEventHandler(handlerFuncs)
 	log.Infof("resizepolicy informer started")
+}
+
+func selectorUpdated(new, old *hwameistorv1alpha1.ResizePolicy) bool {
+	if !reflect.DeepEqual(new.Spec.PVCSelector, old.Spec.PVCSelector) {
+		return true
+	}
+	if !reflect.DeepEqual(new.Spec.NamespaceSelector, old.Spec.NamespaceSelector) {
+		return true
+	}
+	if !reflect.DeepEqual(new.Spec.StorageClassSelector, old.Spec.StorageClassSelector) {
+		return true
+	}
+	return false
+}
+
+func requeuePVC(cli client.Client, q workqueue.RateLimitingInterface) {
+	log.Infof("to requeue pvc")
+	pvcList := &corev1.PersistentVolumeClaimList{}
+	if err := cli.List(context.TODO(), pvcList); err != nil {
+		log.Errorf("list pvc err: %v", err)
+		return
+	}
+	for _, pvc := range pvcList.Items {
+		q.Add(&pvc)
+	}
 }

@@ -2,63 +2,13 @@ package udev
 
 import (
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"strings"
 
-	"github.com/pilebones/go-udev/crawler"
-	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/json"
-
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
+	"k8s.io/apimachinery/pkg/util/json"
 )
 
-// CDevice alias of crawler.Device
-type CDevice struct {
-	crawler.Device
-}
-
-// NewCDevice
-func NewCDevice(device crawler.Device) CDevice {
-	return CDevice{device}
-}
-
-// FilterDisk filter out disks that are virtual or can't identify themselves
-func (d CDevice) FilterDisk() bool {
-	device := NewDevice(d.KObj)
-	err := device.ParseDeviceInfo()
-	if err != nil {
-		log.WithError(err).Errorf("Parse device:%v fail", d)
-		return false
-	}
-	log.Debugf("Device info in udev is:%+v", *device)
-
-	// disk with no identity will be filter out
-	if device.Serial == "" {
-		foundIDLink := false
-		for _, devLink := range device.DevLinks {
-			// by-path symlink will be used to identify disk when serial is empty, this mustn't be empty!
-			if strings.Contains(devLink, v1alpha1.LinkByPath) {
-				foundIDLink = true
-				break
-			}
-		}
-
-		if !foundIDLink {
-			return false
-		}
-	}
-
-	// virtual block device like loop device will be filter out
-	if strings.Contains(device.DevPath, "/virtual/") {
-		return false
-	}
-
-	// For some disk(ex AliCloud HDD Disk), IDType may be empty
-	return (device.IDType == "disk" || device.IDType == "") &&
-		device.DevType == "disk"
-}
-
-// Device
 type Device struct {
 	// DevicePath represents the disk hardware path.
 	// The general format is like /sys/devices/pci0000:ae/0000:ae:02.0/0000:b1:00.0/host2/target2:1:0/2:1:0:0/block/sdc/sdc
@@ -113,17 +63,42 @@ type Device struct {
 	DevLinks []string `json:"devLinks"`
 }
 
-// NewDevice
 func NewDevice(devPath string) *Device {
 	return &Device{DevPath: devPath}
 }
 
-// NewDeviceWithName
 func NewDeviceWithName(devPath, devName string) *Device {
 	return &Device{DevName: devName, DevPath: devPath}
 }
 
-// ParseDeviceInfo
+// FilterDisk filter out disks that are virtual or can't identify themselves
+func (d *Device) FilterDisk() bool {
+	// disk with no identity will be filter out
+	if d.Serial == "" {
+		foundIDLink := false
+		for _, devLink := range d.DevLinks {
+			// by-path symlink will be used to identify disk when serial is empty, this mustn't be empty!
+			if strings.Contains(devLink, v1alpha1.LinkByPath) {
+				foundIDLink = true
+				break
+			}
+		}
+
+		if !foundIDLink {
+			return false
+		}
+	}
+
+	// virtual block device like loop device will be filter out
+	if strings.Contains(d.DevPath, "/virtual/") {
+		return false
+	}
+
+	// For some disk(ex AliCloud HDD Disk), IDType may be empty
+	return (d.IDType == "disk" || d.IDType == "") &&
+		d.DevType == "disk"
+}
+
 func (d *Device) ParseDeviceInfo() error {
 	info, err := d.Info()
 	if err != nil {
@@ -132,7 +107,6 @@ func (d *Device) ParseDeviceInfo() error {
 	return d.parseDiskAttribute(info)
 }
 
-// Info
 func (d *Device) Info() (map[string]interface{}, error) {
 	var out string
 	var err error
@@ -148,7 +122,6 @@ func (d *Device) Info() (map[string]interface{}, error) {
 	return parseUdevInfo(out), nil
 }
 
-// parseDiskAttribute
 func (d *Device) parseDiskAttribute(info map[string]interface{}) error {
 	// Why do we need to convert the map information into JSON data
 	// instead of directly converting the map into a structure
@@ -164,7 +137,6 @@ func (d *Device) parseDiskAttribute(info map[string]interface{}) error {
 	return json.Unmarshal(jsonStr, d)
 }
 
-// parseUdevInfo
 func parseUdevInfo(udevInfo string) map[string]interface{} {
 	udevItems := make(map[string]interface{})
 	for _, info := range utils.ConvertShellOutputs(udevInfo) {

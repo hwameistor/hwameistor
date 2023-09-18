@@ -88,7 +88,6 @@ admission-controller 是一种 Webhook，可以自动确定哪个 Pod 使用 Hwa
 DRBD（Distributed Replicated Block Device）是 HwameiStor 将利用的第三方高可用模块之一，用于提供高可用卷。
 它由 Linux 内核模块和相关脚本组成，用于构建高可用集群。通过在网络上镜像整个设备来实现，可以看作是一种网络 RAID。
 这个安装器可以直接将 DRBD 安装到容器集群中。目前，此模块仅用于测试目的。
-[了解更多](docs/docs/architecture/modules/drbd.md)
 
 ### Exporter
 

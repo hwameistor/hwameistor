@@ -3,7 +3,6 @@ package autoresizer
 import (
 	"context"
 	"reflect"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -25,13 +24,10 @@ type PVCAttacher struct {
 	queue workqueue.RateLimitingInterface
 }
 
-func NewPVCAttacher(cli client.Client) *PVCAttacher {
+func NewPVCAttacher(cli client.Client, q workqueue.RateLimitingInterface) *PVCAttacher {
 	return &PVCAttacher{
 		cli: cli,
-		queue: workqueue.NewNamedRateLimitingQueue(
-			workqueue.NewItemExponentialFailureRateLimiter(time.Second, 16*time.Second), 
-			"pvc-attacher",
-		),
+		queue: q,
 	}
 }
 

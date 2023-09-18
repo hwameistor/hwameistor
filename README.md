@@ -93,7 +93,6 @@ It composed of Linux kernel modules and related scripts
 to build high available clusters. It is implemented by mirroring the entire device over the network,
 which can be thought of as a kind of network RAID. This installer can directly install DRBD to a
 container cluster. Currently this module is only for testing purposes.
-[Learn more](docs/docs/architecture/modules/drbd.md)
 
 ### Exporter
 
