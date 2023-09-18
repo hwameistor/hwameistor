@@ -1,0 +1,43 @@
+v0.12.3/ 2023-9-18
+========================
+
+## LVM volume management enhancements
+
+- fix: allow lvm block volume to extend #1125 (@AmazingPangWei )
+- stop mount process when duplicate device link found #1131(@SSmallMonster )
+- feat: enable specify localDiskName for localdiskclaim #1089(@AmazingPangWei )
+- show LD's owner directly #1121(@sun7927 )
+- refact: remove CDevice struct #1139(@SSmallMonster )
+- don't update disk type when ldm start up #1138 (@AmazingPangWei )
+
+## Volume Snapshot and Restore
+
+- rename SnapshotRecover to SnapshotRestore #1126 (@SSmallMonster )
+- restore volume without judging snapshot exist #1141 (@SSmallMonster )
+- scheduler: adapt volume create from snapshot #1134 (@SSmallMonster )
+
+## PVC auto-resize
+
+- modify pvc-autoresizer #1120 (@buffalo1024 )
+- fix pvc autoresize failed #1142 (@buffalo1024 )
+- fix nil pointer panic when pvc has no storageclass #1143 (@buffalo1024 )
+
+## Tests
+
+- add build local-disk-action-controller in e2e test #1123 (@FloatXD )
+- add pvc autoresize test in e2e test #1127 (@FloatXD )
+- add snapshot restore test in e2e test #1115 (@FloatXD )
+- update recover to restore #1129 (@FloatXD )
+- fix rollback test #1132 (@FloatXD )
+- fix resizer test #1136 (@FloatXD )
+
+## Documents
+
+- update faqs.md #1078 (@windsonsea )
+- Update documents related to crd and post_check #1119 (@FloatXD )
+- Sync en faqs #1118 (@windsonsea )
+- chore: remove link #1135 (@yyzxw )
+
+## Others
+
+- style: code style #1133 (@luckymrwang )
