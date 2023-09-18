@@ -24,7 +24,7 @@ import (
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = ginkgo.Describe("snapshot restore test ", ginkgo.Label("error"), func() {
+var _ = ginkgo.Describe("snapshot restore test ", ginkgo.Label("pvc"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
@@ -418,7 +418,7 @@ var _ = ginkgo.Describe("snapshot restore test ", ginkgo.Label("error"), func() 
 			//create deployment
 			exampleDeployment := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      utils.DeploymentName + "restore",
+					Name:      utils.DeploymentName + "-restore",
 					Namespace: "default",
 				},
 				Spec: appsv1.DeploymentSpec{
@@ -504,7 +504,7 @@ var _ = ginkgo.Describe("snapshot restore test ", ginkgo.Label("error"), func() 
 		ginkgo.It("deploy STATUS should be AVAILABLE", func() {
 			deployment := &appsv1.Deployment{}
 			deployKey := ctrlclient.ObjectKey{
-				Name:      utils.DeploymentName + "restore",
+				Name:      utils.DeploymentName + "-restore",
 				Namespace: "default",
 			}
 			err := client.Get(ctx, deployKey, deployment)
@@ -538,7 +538,7 @@ var _ = ginkgo.Describe("snapshot restore test ", ginkgo.Label("error"), func() 
 
 			deployment := &appsv1.Deployment{}
 			deployKey := ctrlclient.ObjectKey{
-				Name:      utils.DeploymentName + "restore",
+				Name:      utils.DeploymentName + "-restore",
 				Namespace: "default",
 			}
 			err = client.Get(ctx, deployKey, deployment)
@@ -588,6 +588,37 @@ var _ = ginkgo.Describe("snapshot restore test ", ginkgo.Label("error"), func() 
 				f.ExpectNoError(err)
 			}
 			logrus.Infof("deleting test Deployment ")
+
+			err = client.Delete(ctx, deployment)
+			if err != nil {
+				logrus.Error(err)
+				f.ExpectNoError(err)
+			}
+			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
+				if err := client.Get(ctx, deployKey, deployment); !k8serror.IsNotFound(err) {
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				logrus.Error(err)
+			}
+			gomega.Expect(err).To(gomega.BeNil())
+
+		})
+		ginkgo.It("Delete restore Deployment", func() {
+			//delete deploy
+			deployment := &appsv1.Deployment{}
+			deployKey := ctrlclient.ObjectKey{
+				Name:      utils.DeploymentName + "-restore",
+				Namespace: "default",
+			}
+			err := client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Error(err)
+				f.ExpectNoError(err)
+			}
+			logrus.Infof("deleting restore Deployment ")
 
 			err = client.Delete(ctx, deployment)
 			if err != nil {
