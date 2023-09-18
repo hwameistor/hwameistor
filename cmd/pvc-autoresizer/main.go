@@ -17,6 +17,7 @@ import (
 	apimachineryruntime "k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
@@ -73,11 +74,15 @@ func main() {
 		}
 	}()
 
-	pvcAttacher := autoresizer.NewPVCAttacher(cli)
+	pvcWorkQueue := workqueue.NewNamedRateLimitingQueue(
+		workqueue.NewItemExponentialFailureRateLimiter(time.Second, 16*time.Second), 
+		"pvc-attacher",
+	)
+	pvcAttacher := autoresizer.NewPVCAttacher(cli, pvcWorkQueue)
 	go pvcAttacher.StartPVCInformer(cli, stopChan)
 	go pvcAttacher.Start(stopChan.Done())
 	// go autoresizer.StartResizePolicyEventHandler(cli, mgr.GetCache())
-	go autoresizer.StartResizePolicyEventHandlerV2(cli, mgr.GetCache())
+	go autoresizer.StartResizePolicyEventHandlerV2(cli, pvcWorkQueue, mgr.GetCache())
 	go autoresizer.NewAutoResizer(cli, stopChan).Start()
 
 	select {
