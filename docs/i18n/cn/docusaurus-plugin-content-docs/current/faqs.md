@@ -46,7 +46,7 @@ HwameiStor 提供了数据卷驱逐和迁移功能。在移除或者重启一个
 2. 检查迁移进度。
 
     ```bash
-    kubectl get localstoragenode NODE
+    kubectl get localstoragenode NODE -o yaml
     ```
 
     ```yaml
@@ -94,7 +94,8 @@ HwameiStor 提供了数据卷驱逐和迁移功能。在移除或者重启一个
 
 ### 重启节点
 
-重启节点通常需要很长的时间才能将节点恢复正常。在这期间，该节点上的所有 Pods 和本地数据都无法正常运行。这种情况对于一些应用（例如，数据库）来说，会产生巨大的代价，甚至不可接受。
+重启节点通常需要很长的时间才能将节点恢复正常。在这期间，该节点上的所有 Pods 和本地数据都无法正常运行。
+这种情况对于一些应用（例如，数据库）来说，会产生巨大的代价，甚至不可接受。
 
 HwameiStor 可以立即将 Pods 调度到其他数据卷所在的可用节点，并持续运行。
 对于使用 HwameiStor 多副本数据卷的 Pod，这一过程会非常迅速，大概需要～10秒
@@ -106,6 +107,8 @@ HwameiStor 可以立即将 Pods 调度到其他数据卷所在的可用节点，
 
 1. 添加一个标签（可选）。
 
+    如果在节点重新启动期间不需要迁移数据卷，你可以在排空（drain）节点之前将以下标签添加到该节点。
+
     ```bash
     kubectl label node NODE hwameistor.io/eviction=disable
     ```
@@ -116,8 +119,9 @@ HwameiStor 可以立即将 Pods 调度到其他数据卷所在的可用节点，
     kubectl drain NODE --ignore-daemonsets=true. --ignore-daemonsets=true
     ```
 
-    如果执行了 Step 1，待 Step 2 成功后，用户即可重启节点。
-    如果没有执行 Step 1，待 Step 2 成功后，用户察看数据迁移是否完成（方法如同“移除节点”的 Step 2）。待数据迁移完成后，即可重启节点。
+    - 如果执行了第 1 步，待第 2 步成功后，用户即可重启节点。
+    - 如果没有执行第 1 步，待第 2 步成功后，用户察看数据迁移是否完成（方法如同“移除节点”的第 2 步）。
+      待数据迁移完成后，即可重启节点。
 
     在前两步成功之后，用户可以重启节点，并等待节点系统恢复正常。
 
@@ -135,3 +139,25 @@ HwameiStor 可以立即将 Pods 调度到其他数据卷所在的可用节点，
 无状态应用 deployment 会将复制的副本优先部署到其他节点以分散 workload，并且所有的 Pod 共享一个 PV 数据卷
 （目前仅支持 NFS）。只有当副本数超过 Worker 节点数的时候会出现多个副本在同一个节点。对于 block 存储，
 由于数据卷不能共享，所以建议使用单副本。
+
+## Q4: LocalStorageNode 查看出现报错如何处理？
+
+当查看 `LocalStorageNode`出现如下报错：
+
+![faq_04](img/faq04.png)
+
+可能的错误原因：
+
+1. 节点没有安装 LVM2，可通过如下命令进行安装：
+
+   ```bash
+   rpm -qa | grep lvm2  #确认 LVM2 是否安装
+   yum install lvm2 #在每个节点上确认 LVM 已安装
+   ```
+
+2. 确认节点上对应磁盘的 GPT 分区：
+
+   ```bash
+   blkid /dev/sd*  # 确认磁盘分区是否干净
+   wipefs -a /dev/sd* # 磁盘清理
+   ```

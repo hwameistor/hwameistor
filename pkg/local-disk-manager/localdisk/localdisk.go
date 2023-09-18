@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/fields"
+
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,6 +54,13 @@ func (ctr Controller) UpdateLocalDiskAttr(newLocalDisk v1alpha1.LocalDisk) error
 	}
 	remoteOrigin := remote.DeepCopy()
 	ctr.mergeLocalDiskAttr(&remote, newLocalDisk)
+
+	// user may modify disk type for some reasons(#1130)
+	// don't update disk type here if serial number exists
+	if remoteOrigin.Spec.DiskAttributes.SerialNumber != "" && remoteOrigin.Spec.DiskAttributes.Type != "" {
+		remote.Spec.DiskAttributes.Type = remoteOrigin.Spec.DiskAttributes.Type
+	}
+
 	return ctr.Mgr.GetClient().Patch(context.Background(), &remote, client.MergeFrom(remoteOrigin))
 }
 
@@ -74,6 +83,17 @@ func (ctr Controller) GetLocalDisk(key client.ObjectKey) (v1alpha1.LocalDisk, er
 	}
 
 	return ld, nil
+}
+
+func (ctr Controller) ListLocalDisksByNode(nodeName string) ([]v1alpha1.LocalDisk, error) {
+	lds := &v1alpha1.LocalDiskList{}
+
+	if err := ctr.Mgr.GetClient().List(context.Background(), lds, &client.ListOptions{
+		FieldSelector: fields.ParseSelectorOrDie("spec.nodeName=" + nodeName),
+	}); err != nil {
+		return nil, err
+	}
+	return lds.Items, nil
 }
 
 // ListLocalDiskByNodeDevicePath returns LocalDisks by given node device path

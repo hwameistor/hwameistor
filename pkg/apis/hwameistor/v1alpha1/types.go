@@ -116,6 +116,23 @@ const (
 	VolumeParameterIOPS             = "provision-iops-on-creation"
 )
 
+// consts for snapshot class
+
+const (
+	SnapshotParameterSizeKey = "snapsize"
+)
+
+type RestoreType string
+
+// consts for snapshot restore
+
+const (
+	// RestoreTypeRollback is used to merge snapshot to existing volume
+	RestoreTypeRollback RestoreType = "rollback"
+	// RestoreTypeCreate is used to create a new volume from existing snapshot
+	RestoreTypeCreate RestoreType = "create"
+)
+
 // misc
 const (
 	CSIDriverName = "lvm.hwameistor.io"
@@ -130,7 +147,7 @@ const (
 
 // localstorage local storage dev paths
 const (
-	DiskDevRootPath     = "/dev"
+	DiskDevRootPath     = "/etc/hwameistor"
 	AssigedDiskPool     = DiskDevRootPath + "/LocalStorage_DiskPool"
 	AssigedDiskPoolHDD  = AssigedDiskPool + DiskClassNameHDD
 	AssigedDiskPoolSSD  = AssigedDiskPool + DiskClassNameSSD

@@ -201,7 +201,7 @@ func Test_lvmExecutor_ExtendPools(t *testing.T) {
 		Return(nil).
 		Times(1)
 
-	err := m.ExtendPools(disks)
+	_, err := m.ExtendPools(disks)
 	fmt.Printf("Test_lvmExecutor_ExtendPools err = %v", err)
 }
 

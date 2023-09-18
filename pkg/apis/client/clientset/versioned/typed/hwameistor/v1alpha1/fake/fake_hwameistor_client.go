@@ -20,6 +20,10 @@ func (c *FakeHwameistorV1alpha1) LocalDisks() v1alpha1.LocalDiskInterface {
 	return &FakeLocalDisks{c}
 }
 
+func (c *FakeHwameistorV1alpha1) LocalDiskActions() v1alpha1.LocalDiskActionInterface {
+	return &FakeLocalDiskActions{c}
+}
+
 func (c *FakeHwameistorV1alpha1) LocalDiskClaims() v1alpha1.LocalDiskClaimInterface {
 	return &FakeLocalDiskClaims{c}
 }

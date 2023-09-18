@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hwameistor-pvc-autoresizer
+  namespace: {{ .Release.Namespace}}
+  labels:
+    app: hwameistor-pvc-autoresizer
+spec:
+  replicas: {{ .Values.pvcAutoResizer.replicas}}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hwameistor-pvc-autoresizer
+  template:
+    metadata:
+      labels:
+        app: hwameistor-pvc-autoresizer
+    spec:
+      serviceAccountName: hwameistor-admin
+      containers:
+        - name: pvc-autoresizer
+          image: {{ .Values.global.hwameistorImageRegistry}}/{{ .Values.pvcAutoResizer.imageRepository}}:{{ template "hwameistor.pvcautoresizerImageTag" . }}
+          imagePullPolicy: IfNotPresent

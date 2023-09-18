@@ -1,0 +1,151 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: localvolumesnapshots.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: LocalVolumeSnapshot
+    listKind: LocalVolumeSnapshotList
+    plural: localvolumesnapshots
+    shortNames:
+    - lvs
+    singular: localvolumesnapshot
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: Required capacity of the volume snapshot
+      jsonPath: .status.allocatedCapacityBytes
+      name: Capacity
+      type: integer
+    - description: Name of the snapshot's source volume
+      jsonPath: .spec.sourceVolume
+      name: SourceVolume
+      type: string
+    - description: State of the snapshot
+      jsonPath: .status.state
+      name: State
+      type: string
+    - description: if the snapshot is merging
+      jsonPath: .status.attr.merging
+      name: Merging
+      type: string
+    - description: if the snapshot is invalid
+      jsonPath: .status.attr.invalid
+      name: Invalid
+      type: string
+    - jsonPath: .status.creationTime
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LocalVolumeSnapshot is a user's request for either creating a
+          point-in-time snapshot of a persistent localvolume, or binding to a pre-existing
+          snapshot.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LocalVolumeSnapshotSpec describes the common attributes of
+              a localvolume snapshot.
+            properties:
+              accessibility:
+                description: 'NOTE: We only take snapshots on the volume replica exist
+                  at the moment! Accessibility is the topology requirement of the
+                  volume snapshot. It describes how to locate and distribute the volume
+                  replicas snapshot.'
+                properties:
+                  nodes:
+                    description: Nodes is the collection of storage nodes the volume
+                      replicas must locate at
+                    items:
+                      type: string
+                    type: array
+                  regions:
+                    default:
+                    - default
+                    description: regions where the volume replicas should be distributed
+                      across, it's Optional
+                    items:
+                      type: string
+                    type: array
+                  zones:
+                    default:
+                    - default
+                    description: zones where the volume replicas should be distributed
+                      across, it's Optional
+                    items:
+                      type: string
+                    type: array
+                type: object
+              delete:
+                default: false
+                type: boolean
+              requiredCapacityBytes:
+                description: RequiredCapacityBytes specifies the space reserved for
+                  the snapshot
+                format: int64
+                minimum: 4194304
+                type: integer
+              sourceVolume:
+                description: SourceVolume specifies the source volume of the snapshot
+                type: string
+            required:
+            - accessibility
+            - requiredCapacityBytes
+            - sourceVolume
+            type: object
+          status:
+            description: LocalVolumeSnapshotStatus defines the observed state of LocalVolumeSnapshot
+            properties:
+              allocatedCapacityBytes:
+                description: AllocatedCapacityBytes is the real allocated capacity
+                  in bytes In case of HA volume with multiple replicas, the value
+                  is equal to the one of a replica's snapshot size
+                format: int64
+                type: integer
+              attr:
+                description: Attribute indicates attr on snapshot
+                properties:
+                  invalid:
+                    description: Invalid set true if snapshot is expiration
+                    type: boolean
+                  merging:
+                    description: Merging set true if snapshot is merging now
+                    type: boolean
+                type: object
+              creationTime:
+                description: CreationTime is the host real snapshot creation time
+                  In case of HA volume with multiple replicas, the value is equal
+                  to the one of a replica's snapshot creation time
+                format: date-time
+                type: string
+              message:
+                description: Message error message to describe some states
+                type: string
+              replicaSnapshots:
+                description: ReplicaSnapshots represents the actual snapshots of replica
+                items:
+                  type: string
+                type: array
+              state:
+                description: State is the phase of volume replica, e.g. Creating,
+                  Ready, NotReady, ToBeDeleted, Deleted
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

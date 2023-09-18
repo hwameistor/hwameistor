@@ -6,6 +6,8 @@ type EventExpansion interface{}
 
 type LocalDiskExpansion interface{}
 
+type LocalDiskActionExpansion interface{}
+
 type LocalDiskClaimExpansion interface{}
 
 type LocalDiskNodeExpansion interface{}

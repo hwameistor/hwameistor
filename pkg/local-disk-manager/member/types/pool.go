@@ -1,6 +1,9 @@
 package types
 
-import "path"
+import (
+	"path"
+	"strings"
+)
 
 const (
 	LocalDiskPoolPrefix  = "LocalDisk_Pool"
@@ -40,6 +43,10 @@ func ComposePoolDevicePath(poolName, devName string) string {
 
 func ComposePoolVolumePath(poolName, volumeName string) string {
 	return path.Join(path.Join(HwameiStorDeviceRoot, poolName, volumeSubPath), volumeName)
+}
+
+func GetLocalDiskPoolPathFromVolume(volumePath string) string {
+	return strings.Split(volumePath, diskSubPath)[0]
 }
 
 func GetDefaultDiskPoolPath() (dps []string) {

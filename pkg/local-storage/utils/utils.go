@@ -238,3 +238,7 @@ func TouchFile(filepath string) error {
 	}
 	return nil
 }
+
+func GetSnapshotRestoreNameByVolume(volumeName string) string {
+	return fmt.Sprintf("snaprestore-%s", volumeName)
+}

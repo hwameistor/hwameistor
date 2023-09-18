@@ -40,13 +40,19 @@ HwameiStor 的最新版本为 [![hwameistor-releases](https://img.shields.io/git
 
 HwameiStor 包含若干模块：
 
-- [local-disk-manager](#local-disk-manager)
-- [local-storage](#local-storage)
-- [scheduler](#scheduler)
-- [admission-controller](#admission-controller)
-- [Evictor](#evictor)
-- [Exporter](#exporter)
-  [HA module installer](#高可用模块安装器)
+* [local-disk-manager](#local-disk-manager)
+* [local-storage](#local-storage)
+* [scheduler](#scheduler)
+* [admission-controller](#admission-controller)
+* [Evictor](#evictor)
+* [Exporter](#exporter)
+* [HA module installer](#高可用模块安装器)
+* [Volume Snapshot](#数据卷快照)
+* [Volume Auto Resize](#数据卷自动扩容)
+* [Volume IO Throtting](#数据卷-io-访问控制)
+* [App Failover](#应用故障转移)
+* [Audit](#审计日志)
+* [GUI](#图形化用户界面)
 
 ### local-disk-manager
 
@@ -77,16 +83,40 @@ admission-controller 是一种 Webhook，可以自动确定哪个 Pod 使用 Hwa
 当按计划或未按计划驱逐节点或 Pod 时，将自动检测并从节点迁移具有副本的关联 HwameiStor 卷。
 [了解更多](docs/docs/architecture/modules/evictor.md)
 
-## 高可用模块安装器
+### 高可用模块安装器
 
 DRBD（Distributed Replicated Block Device）是 HwameiStor 将利用的第三方高可用模块之一，用于提供高可用卷。
 它由 Linux 内核模块和相关脚本组成，用于构建高可用集群。通过在网络上镜像整个设备来实现，可以看作是一种网络 RAID。
 这个安装器可以直接将 DRBD 安装到容器集群中。目前，此模块仅用于测试目的。
-[了解更多](docs/docs/architecture/modules/drbd.md)
 
-## Exporter
+### Exporter
 
 Exporter 将收集系统指标，包括节点、存储池、卷、磁盘等。支持 Prometheus。
+
+### 数据卷快照
+
+HwameiStor 目前可以为非高可用的 LVM 数据卷提供快照及还原功能。使用 CSI 的快照标准接口。
+
+### 数据卷自动扩容
+
+系统可以根据用户配置的规则，为 LVM 数据卷自动扩容。一旦配置后，无需用户干预。
+
+### 数据卷 IO 访问控制
+
+用户可以为某个数据卷设置最大访问速率（例如：带宽、IOPS），目的是为了在资源共享的情况下，避免过度地影响其他应用的数据访问。
+
+### 应用故障转移
+
+该功能主要是在应用发生故障时，快速主动地将应用迁移至另外的健康节点上，同时保证新节点上有需要访问的数据卷副本。因此，该功能主要针对使用高可用数据卷的应用。
+
+### 审计日志
+
+系统为各个资源提供了历史操作信息。
+
+### 图形化用户界面
+
+HwameiStor 提供了友好的用户界面.
+
 
 ## 文档
 
@@ -98,28 +128,29 @@ Exporter 将收集系统指标，包括节点、存储池、卷、磁盘等。�
 
 | 特性                | 状态     | 版本   | 说明                                 |
 | ------------------- | -------- | ------ | ------------------------------------ |
-| LVM 卷 CSI          | 已完成   | v0.3.2 | 用 lvm 制备卷                        |
-| 磁盘卷 CSI          | 已完成   | v0.3.2 | 用磁盘制备卷                         |
-| HA LVM 卷           | 已完成   | v0.3.2 | 高可用卷                             |
-| LVM 卷扩容          | 已完成   | v0.3.2 | 在线扩展 LVM 容量                    |
-| LVM 卷转换          | 已完成   | v0.3.2 | 将 LVM 卷转换为高可用卷              |
-| LVM 卷迁移          | 已完成   | v0.4.0 | 将 LVM 卷副本迁移到不同的节点        |
-| 卷组 (VG)           | 已完成   | v0.3.2 | 支持卷组分配                         |
-| 磁盘健康检查        | 已完成   | v0.7.0 | 磁盘故障预测、状态报告               |
+| LVM 卷 CSI          | 完成   | v0.3.2 | 用 lvm 制备卷                        |
+| 磁盘卷 CSI          | 完成   | v0.3.2 | 用磁盘制备卷                         |
+| HA LVM 卷           | 完成   | v0.3.2 | 高可用卷                             |
+| LVM 卷扩容          | 完成   | v0.3.2 | 在线扩展 LVM 容量                    |
+| LVM 卷转换          | 完成   | v0.3.2 | 将 LVM 卷转换为高可用卷              |
+| LVM 卷迁移          | 完成   | v0.4.0 | 将 LVM 卷副本迁移到不同的节点        |
+| 卷组 (VG)           | 完成   | v0.3.2 | 支持卷组分配                         |
+| 磁盘健康检查        | 完成   | v0.7.0 | 磁盘故障预测、状态报告               |
 | LVM 高可用卷恢复    | 计划中   |        | 恢复有故障的 LVM HA 卷               |
-| HwameiStor Operator | 已完成   | v0.9.0 | HwameiStor Operator 用于安装和维护等 |
-| 可观测性            | 已完成   | v0.9.2 | 支持指标、日志等可观测性             |
-| 故障转移            | 计划中   |        | HwameiStor 卷对 Pod 进行故障转移     |
-| IO 节流             | 已完成   | v0.11.0 | 限制访问 HwameiStor 卷的 IO 带宽    |
+| HwameiStor Operator | 完成   | v0.9.0 | HwameiStor Operator 用于安装和维护等 |
+| 可观测性            | 完成   | v0.9.2 | 支持指标、日志等可观测性             |
+| 故障转移            | 完成   | v0.12.0  | HwameiStor 卷对 Pod 进行故障转移     |
+| IO 访问控制         | 完成   | v0.11.0 | 限制访问 HwameiStor 卷的 IO 带宽    |
 | 换盘                | 计划中   |        | 更换故障或即将故障的磁盘             |
-| LVM 卷自动扩容      | 正在开发 |        | 自动扩展 LVM 卷                      |
-| LVM 卷快照          | 正在开发 |        | LVM 卷快照                           |
+| LVM 卷自动扩容      | 完成   | v0.12.0  | 自动扩展 LVM 卷                      |
+| LVM 卷快照          | 完成  | v0.12.0  | LVM 卷快照                           |
 | LVM 卷克隆          | 计划中   |        | 克隆 LVM 卷                          |
 | LVM 卷薄制备        | 还未计划 |        | LVM 卷薄制备                         |
 | LVM 卷条带模式      | 还未计划 |        | LVM 卷条带读写                       |
 | 数据加密            | 还未计划 |        | 数据加密                             |
 | 系统一致性          | 计划中   |        | 一致性检查和灾难恢复                 |
 | 卷备份              | 计划中   |        | 将卷数据备份到远程服务器并恢复       |
+| HwameiStor CLI 命令行  | 开发中   |        | 提供 CLI 命令行       |
 
 ## 社区
 

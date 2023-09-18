@@ -118,6 +118,10 @@ func (p *plugin) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 	case *csi.VolumeCapability_Mount:
 		// filesystem block
 		mnt := req.GetVolumeCapability().GetMount()
+		// mount xfs with nouuid, just in case that uuid is already mounted, especially for volume restored from snapshot
+		if mnt.FsType == "xfs" {
+			mnt.MountFlags = append(mnt.MountFlags, "nouuid")
+		}
 		err := p.mounter.FormatAndMount(devicePath, req.TargetPath, mnt.FsType, mnt.MountFlags)
 		if err != nil {
 			return resp, err
@@ -238,5 +242,10 @@ func (p *plugin) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolume
 		CapacityBytes: req.CapacityRange.RequiredBytes,
 	}
 
-	return resp, p.expandFileSystemByMountPoint(req.VolumePath)
+	// expand fs only when volumeMode is not block
+	if req.GetVolumeCapability().GetBlock() == nil {
+		return resp, p.expandFileSystemByMountPoint(req.VolumePath)
+	}
+
+	return resp, nil
 }

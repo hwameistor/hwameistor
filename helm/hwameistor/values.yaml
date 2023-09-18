@@ -88,7 +88,7 @@ auditor:
 ui:
   replicas: 1
   imageRepository: hwameistor/hwameistor-ui
-  tag: v0.11.0
+  tag: v0.12.1
   resources: {}
 
 localDiskManager:
@@ -105,7 +105,7 @@ localDiskManager:
 
 localDiskManagerCSIController:
   replicas: 1
-  priorityClassName: 
+  priorityClassName:
   provisioner:
     imageRepository: sig-storage/csi-provisioner
     tag: v2.0.3
@@ -117,7 +117,7 @@ localDiskManagerCSIController:
 
 localStorage:
   tolerationsOnMaster: true
-  priorityClassName: 
+  priorityClassName:
   registrar:
     imageRepository: sig-storage/csi-node-driver-registrar
     tag: v2.5.0
@@ -146,7 +146,7 @@ localStorageCSIController:
   priorityClassName:
   provisioner:
     imageRepository: sig-storage/csi-provisioner
-    tag: v2.0.3
+    tag: v3.5.0
     resources: {}
   attacher:
     imageRepository: sig-storage/csi-attacher
@@ -160,3 +160,21 @@ localStorageCSIController:
     imageRepository: sig-storage/csi-external-health-monitor-controller
     tag: v0.8.0
     resources: {}
+  snapshotController:
+    imageRepository: sig-storage/snapshot-controller
+    tag: v6.0.0
+    resources: {}
+  snapshotter:
+    imageRepository: sig-storage/csi-snapshotter
+    tag: v6.0.0
+    resources: {}
+
+pvcAutoResizer:
+  replicas: 1
+  imageRepository: hwameistor/pvc-autoresizer
+  tag: ""
+
+localDiskActionController:
+  imageRepository: hwameistor/local-disk-action-controller
+  tag: ""
+  resources: {}

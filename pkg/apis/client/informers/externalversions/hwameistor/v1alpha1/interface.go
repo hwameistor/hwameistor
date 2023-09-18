@@ -12,6 +12,8 @@ type Interface interface {
 	Events() EventInformer
 	// LocalDisks returns a LocalDiskInformer.
 	LocalDisks() LocalDiskInformer
+	// LocalDiskActions returns a LocalDiskActionInformer.
+	LocalDiskActions() LocalDiskActionInformer
 	// LocalDiskClaims returns a LocalDiskClaimInformer.
 	LocalDiskClaims() LocalDiskClaimInformer
 	// LocalDiskNodes returns a LocalDiskNodeInformer.
@@ -53,6 +55,11 @@ func (v *version) Events() EventInformer {
 // LocalDisks returns a LocalDiskInformer.
 func (v *version) LocalDisks() LocalDiskInformer {
 	return &localDiskInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// LocalDiskActions returns a LocalDiskActionInformer.
+func (v *version) LocalDiskActions() LocalDiskActionInformer {
+	return &localDiskActionInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // LocalDiskClaims returns a LocalDiskClaimInformer.

@@ -14,18 +14,18 @@ apiserver_run: apiserver_swag
 	GIN_MODE=debug go run ${BUILD_OPTIONS} ${APISERVER_BUILD_INPUT}
 
 .PHONY: compile
-compile: compile_ldm compile_ls compile_scheduler compile_admission compile_evictor compile_exporter compile_apiserver compile_failover compile_auditor
+compile: compile_ldm compile_ls compile_scheduler compile_admission compile_evictor compile_exporter compile_apiserver compile_failover compile_auditor compile_pvc-autoresizer compile_lda
 
 .PHONY: image
-image: build_ldm_image build_ls_image build_scheduler_image build_admission_image build_evictor_image build_exporter_image build_apiserver_image build_failover_image build_auditor_image
+image: build_ldm_image build_ls_image build_scheduler_image build_admission_image build_evictor_image build_exporter_image build_apiserver_image build_failover_image build_auditor_image build_pvc-autoresizer_image build_lda_image
 
 
 .PHONY: arm-image
-arm-image: build_ldm_image_arm64 build_ls_image_arm64 build_scheduler_image_arm64 build_admission_image_arm64 build_evictor_image_arm64 build_exporter_image_arm64 build_apiserver_image_arm64 build_failover_image_arm64 build_auditor_image_arm64
+arm-image: build_ldm_image_arm64 build_ls_image_arm64 build_scheduler_image_arm64 build_admission_image_arm64 build_evictor_image_arm64 build_exporter_image_arm64 build_apiserver_image_arm64 build_failover_image_arm64 build_auditor_image_arm64 build_pvc-autoresizer_image_arm64 build_lda_image_arm64
 
 
 .PHONY: release
-release: release_ldm release_ls release_scheduler release_admission release_evictor release_exporter release_apiserver release_failover release_auditor
+release: release_ldm release_ls release_scheduler release_admission release_evictor release_exporter release_apiserver release_failover release_auditor release_pvc-autoresizer release_lda
 
 .PHONY: unit-test
 unit-test:
@@ -358,9 +358,79 @@ release_auditor:
 	${DOCKER_MAKE_CMD} make compile_auditor_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${AUDITOR_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${AUDITOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# push to a public registry
-	${MUILT_ARCH_PUSH_CMD} -i ${FAUDITOR_IMAGE_NAME}:${RELEASE_TAG}
+	${MUILT_ARCH_PUSH_CMD} -i ${AUDITOR_IMAGE_NAME}:${RELEASE_TAG}
 
 
+#### for PVC AutoResizer ##########
+PVC-AUTORESIZER_MODULE_NAME = pvc-autoresizer
+PVC-AUTORESIZER_BUILD_INPUT = ${CMDS_DIR}/${PVC-AUTORESIZER_MODULE_NAME}/main.go
+
+.PHONY: compile_pvc-autoresizer
+compile_pvc-autoresizer:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${PVC-AUTORESIZER_BUILD_OUTPUT} ${PVC-AUTORESIZER_BUILD_INPUT}
+
+.PHONY: compile_pvc-autoresizer_arm64
+compile_pvc-autoresizer_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${PVC-AUTORESIZER_BUILD_OUTPUT} ${PVC-AUTORESIZER_BUILD_INPUT}
+
+.PHONY: build_pvc-autoresizer_image
+build_pvc-autoresizer_image:
+	@echo "Build hwameistor pvc-autoresizer image ${PVC-AUTORESIZER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_pvc-autoresizer
+	docker build -t ${PVC-AUTORESIZER_IMAGE_NAME}:${IMAGE_TAG} -f ${PVC-AUTORESIZER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_pvc-autoresizer_image_arm64
+build_pvc-autoresizer_image_arm64:
+	@echo "Build hwameistor pvc-autoresizer image ${PVC-AUTORESIZER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_pvc-autoresizer_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${PVC-AUTORESIZER_IMAGE_NAME}:${IMAGE_TAG} -f ${PVC-AUTORESIZER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: release_pvc-autoresizer
+release_pvc-autoresizer:
+    # build for amd64 version
+	${DOCKER_MAKE_CMD} make compile_pvc-autoresizer
+	${DOCKER_BUILDX_CMD_AMD64} -t ${PVC-AUTORESIZER_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${PVC-AUTORESIZER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# build for arm64 version
+	${DOCKER_MAKE_CMD} make compile_pvc-autoresizer_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${PVC-AUTORESIZER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${PVC-AUTORESIZER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# push to a public registry
+	${MUILT_ARCH_PUSH_CMD} -i ${PVC-AUTORESIZER_IMAGE_NAME}:${RELEASE_TAG}
+
+
+#### for LocalDiskAction controller ##########
+LDA_CONTROLLER_MODULE_NAME = local-disk-action-controller
+LDA_CONTROLLER_BUILD_INPUT = ${CMDS_DIR}/${LDA_CONTROLLER_MODULE_NAME}/main.go
+
+.PHONY: compile_lda
+compile_lda:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${LDA_CONTROLLER_BUILD_OUTPUT} ${LDA_CONTROLLER_BUILD_INPUT}
+
+.PHONY: compile_lda_arm64
+compile_lda_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${LDA_CONTROLLER_BUILD_OUTPUT} ${LDA_CONTROLLER_BUILD_INPUT}
+
+.PHONY: build_lda_image
+build_lda_image:
+	@echo "Build local-disk-action-controller image ${LDA_CONTROLLER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_lda
+	docker build -t ${LDA_CONTROLLER_IMAGE_NAME}:${IMAGE_TAG} -f ${LDA_CONTROLLER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_lda_image_arm64
+build_lda_image_arm64:
+	@echo "Build local-disk-action-controller image ${LDA_CONTROLLER_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_lda_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${LDA_CONTROLLER_IMAGE_NAME}:${IMAGE_TAG} -f ${LDA_CONTROLLER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: release_lda
+release_lda:
+	# build for amd64 version
+	${DOCKER_MAKE_CMD} make compile_lda
+	${DOCKER_BUILDX_CMD_AMD64} -t ${LDA_CONTROLLER_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${LDA_CONTROLLER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# build for arm64 version
+	${DOCKER_MAKE_CMD} make compile_lda_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${LDA_CONTROLLER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${LDA_CONTROLLER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# push to a public registry
+	${MUILT_ARCH_PUSH_CMD} -i ${LDA_CONTROLLER_IMAGE_NAME}:${RELEASE_TAG}
 
 
 .PHONY: apis

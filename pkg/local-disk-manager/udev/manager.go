@@ -21,7 +21,7 @@ func NewDiskManager() DiskManager {
 
 // ListExist
 func (dm DiskManager) ListExist() []manager.Event {
-	events, err := getExistDevice(GenRuleForBlock())
+	events, err := getExistDeviceEvents(GenRuleForBlock())
 	if err != nil {
 		log.WithError(err).Errorf("Failed processing existing devices")
 		return nil
@@ -84,28 +84,34 @@ func monitorDeviceEvent(c chan manager.Event, matchRule netlink.Matcher) error {
 
 	for {
 		select {
-		case device, empty := <-eventChan:
+		case deviceEvt, empty := <-eventChan:
 			if !empty {
 				return fmt.Errorf("EventChan has been closed when monitor udev event")
 			}
 
 			event := manager.Event{
-				Type:    string(device.Action),
-				DevPath: addSysPrefix(device.KObj),
-				DevType: device.Env["DEVTYPE"],
-				DevName: device.Env["DEVNAME"],
+				Type:    string(deviceEvt.Action),
+				DevPath: addSysPrefix(deviceEvt.KObj),
+				DevType: deviceEvt.Env["DEVTYPE"],
+				DevName: deviceEvt.Env["DEVNAME"],
 			}
 
-			switch string(device.Action) {
+			switch string(deviceEvt.Action) {
 			case manager.REMOVE:
 				// push chan directly
 				c <- event
 			default:
-				if !NewCDevice(crawler.Device{KObj: device.KObj, Env: device.Env}).FilterDisk() {
-					log.Debugf("Device:%+v is drop", device)
+				device := NewDevice(deviceEvt.KObj)
+				if err := device.ParseDeviceInfo(); err != nil {
+					log.WithError(err).WithField("Device", deviceEvt.KObj).Error("Failed to parse device, drop it")
 					continue
 				}
-				log.Debugf("Device:%+v is keep", device)
+
+				if !device.FilterDisk() {
+					log.Debugf("Device:%+v is drop", deviceEvt)
+					continue
+				}
+				log.Debugf("Device:%+v is keep", deviceEvt)
 				c <- event
 			}
 
@@ -119,31 +125,82 @@ func monitorDeviceEvent(c chan manager.Event, matchRule netlink.Matcher) error {
 	}
 }
 
-// getExistDevice
-func getExistDevice(matchRule netlink.Matcher) (events []manager.Event, err error) {
+// getExistDeviceEvents
+func getExistDeviceEvents(matchRule netlink.Matcher) (events []manager.Event, err error) {
 	deviceEvent := make(chan crawler.Device)
 	errors := make(chan error)
 	crawler.ExistingDevices(deviceEvent, errors, matchRule)
 
 	for {
 		select {
-		case device, empty := <-deviceEvent:
+		case deviceEvt, empty := <-deviceEvent:
 			if !empty {
 				return
 			}
 
 			// Filter non disk events
-			if !NewCDevice(device).FilterDisk() {
-				log.Debugf("Device:%+v is drop", device)
+			device := NewDevice(deviceEvt.KObj)
+			if err = device.ParseDeviceInfo(); err != nil {
+				log.WithError(err).WithField("Device", deviceEvt.KObj).Error("Failed to parse device, drop it")
 				continue
 			}
-			log.Debugf("Device:%+v is keep", device)
+
+			if !device.FilterDisk() {
+				log.Debugf("Device:%+v is drop", deviceEvt)
+				continue
+			}
+			log.Debugf("Device:%+v is keep", deviceEvt)
 
 			events = append(events, manager.Event{
 				Type:    manager.EXIST,
-				DevPath: device.KObj,
-				DevType: device.Env["DEVTYPE"],
-				DevName: device.Env["DEVNAME"],
+				DevPath: deviceEvt.KObj,
+				DevType: deviceEvt.Env["DEVTYPE"],
+				DevName: deviceEvt.Env["DEVNAME"],
+			})
+
+		case err = <-errors:
+			close(errors)
+			return
+		}
+	}
+}
+
+// ListAllBlockDevices list all block devices by udev
+func ListAllBlockDevices() ([]manager.Attribute, error) {
+	return getExistDevice(GenRuleForBlock())
+}
+
+// getExistDevice
+func getExistDevice(matchRule netlink.Matcher) (devices []manager.Attribute, err error) {
+	deviceEvent := make(chan crawler.Device)
+	errors := make(chan error)
+	crawler.ExistingDevices(deviceEvent, errors, matchRule)
+
+	for {
+		select {
+		case deviceEvt, empty := <-deviceEvent:
+			if !empty {
+				return
+			}
+
+			// Filter non disk events
+			device := NewDevice(deviceEvt.KObj)
+			if err = device.ParseDeviceInfo(); err != nil {
+				log.WithError(err).WithField("Device", deviceEvt.KObj).Error("failed to parse device, drop it")
+				continue
+			}
+			if !device.FilterDisk() {
+				log.Debugf("Device:%+v is drop", deviceEvt)
+				continue
+			}
+			log.Debugf("Device:%+v is keep", deviceEvt)
+
+			devices = append(devices, manager.Attribute{
+				DevPath:  device.DevPath,
+				DevType:  device.DevType,
+				DevName:  device.DevName,
+				Serial:   device.Serial,
+				DevLinks: device.DevLinks,
 			})
 
 		case err = <-errors:

@@ -9,6 +9,15 @@ In HwameiStor, it allows users to specify the maximum IOPS and throughput of a v
 
 Please follow the steps below to create a volume with the maximum IOPS and throughput and create a workload to use it.
 
+## Requirements (if you want to limit non-direct io)
+
+cgroup v2 has the following requirements:
+
+- OS distribution enables cgroup v2
+- Linux Kernel version is 5.8 or later
+
+More info, please refer to the [Kubernetes website](https://kubernetes.io/docs/concepts/architecture/cgroups)
+
 ## Create a new StorageClass with the maximum IOPS and throughput parameters
 
 By default, HwameiStor won't auto-create such a StorageClass during the installation, so you need to create it manually.
@@ -106,12 +115,22 @@ status: {}
 
 After the Deployment is created, you can test the volume's IOPS and throughput by using the following command:
 
+shell 1:
+
 ```bash
 $ kubectl exec -it pod-sample-5f5f8f6f6f-5q4q5 -- /bin/sh
 $ dd if=/dev/zero of=/data/test bs=4k count=1000000 oflag=direct
 ```
 
-**Note**: due to the cgroupv1 limitation, the settings of the maximum IOPS and throughput may not take effect on non-direct IO.
+shell 2:
+
+`/dev/LocalStorage_PoolHDD/pvc-c623054b-e7e9-41d7-a987-77acd8727e66` is the path of the volume on the node. you can find it by using the `kubectl get lvr` command.
+
+```bash
+$ iostat -d /dev/LocalStorage_PoolHDD/pvc-c623054b-e7e9-41d7-a987-77acd8727e66  -x -k 2
+```
+
+**Note**: due to the cgroupv1 limitation, the settings of the maximum IOPS and throughput may not take effect on non-direct IO. However, it will take effect on non-direct IO in cgroupv2.
 
 ## How to change the maximum IOPS and throughput of a volume
 
@@ -158,7 +177,7 @@ once the Kubernetes supports [it](https://github.com/kubernetes/enhancements/tre
 
 ## How to check the actual IOPS and throughput of a volume
 
-HwameiStor uses the [cgroupv1](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)
+HwameiStor uses the [cgroupv1](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt) or [cgroupv2](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)
 to limit the IOPS and throughput of a volume, so you can use the following command to check the actual IOPS and throughput of a volume.
 
 ```
@@ -180,6 +199,8 @@ sdc               8:32   0   300G  0 disk
   └─centos-root 253:0    0   300G  0 lvm  /
 sr0              11:0    1   973M  0 rom
 
+# if cgroup version is v1.
+
 $ cat /sys/fs/cgroup/blkio/blkio.throttle.read_iops_device
 253:3 100
 
@@ -191,4 +212,8 @@ $ cat /sys/fs/cgroup/blkio/blkio.throttle.read_bps_device
 
 $ cat /sys/fs/cgroup/blkio/blkio.throttle.write_bps_device
 253:3 1048576
+
+# if cgroup version is v2.
+# cat /sys/fs/cgroup/kubepods.slice/io.max
+253:0 rbps=1048576 wbps=1048576 riops=100 wiops=100
 ```

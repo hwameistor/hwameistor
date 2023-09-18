@@ -34,7 +34,6 @@ spec:
       type: string
     - jsonPath: .spec.owner
       name: Owner
-      priority: 1
       type: string
     - jsonPath: .status.claimState
       name: Phase
@@ -47,6 +46,9 @@ spec:
       name: Reserved
       priority: 1
       type: boolean
+    - jsonPath: .spec.state
+      name: State
+      type: string
     - jsonPath: .metadata.creationTimestamp
       name: age
       type: date

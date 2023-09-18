@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hwameistor-local-disk-action-controller
+  namespace: {{ .Release.Namespace}}
+  labels:
+    app: hwameistor-local-disk-action-controller
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hwameistor-local-disk-action-controller
+  template:
+    metadata:
+      labels:
+        app: hwameistor-local-disk-action-controller
+    spec:
+      serviceAccountName: hwameistor-admin
+      containers:
+        - name: lda-controller
+          image: {{ .Values.global.hwameistorImageRegistry}}/{{ .Values.localDiskActionController.imageRepository}}:{{ template "hwameistor.localDiskActionControllerImageTag" . }}
+          imagePullPolicy: IfNotPresent
+          resources: 
+            {{- toYaml .Values.localDiskActionController.resources | nindent 12 }}
