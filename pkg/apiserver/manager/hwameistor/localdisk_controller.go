@@ -2,6 +2,8 @@ package hwameistor
 
 import (
 	"context"
+	"fmt"
+
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -42,6 +44,19 @@ func (ldController *LocalDiskController) GetLocalDisk(localDiskName string) (*ap
 		return nil, err
 	}
 	return disk, nil
+}
+
+func (ldController *LocalDiskController) GetLocalDiskByPath(nodeName, shortPath string) (*apisv1alpha1.LocalDisk, error) {
+	diskList, err := ldController.ListLocalDisk()
+	if err != nil {
+		return nil, err
+	}
+	for _, disk := range diskList.Items {
+		if disk.Spec.NodeName == nodeName && disk.Spec.DevicePath == fmt.Sprintf("/dev/%s", shortPath) {
+			return &disk, nil
+		}
+	}
+	return nil, fmt.Errorf("not found the LocalDisk")
 }
 
 func (ldController *LocalDiskController) SetLocalDiskOwner(localDiskName string, owner string) error {

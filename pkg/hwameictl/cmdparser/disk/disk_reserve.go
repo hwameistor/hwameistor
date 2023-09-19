@@ -11,7 +11,7 @@ import (
 )
 
 var diskReserve = &cobra.Command{
-	Use:     "reserve {nodeName} {diskDevPath} {reserve}",
+	Use:     "reserve {nodeName} {deviceDevPath} {reserve}",
 	Args:    cobra.ExactArgs(3),
 	Short:   "Set a disk to be reserved.",
 	Long:    "Set a disk to be reserved.",
@@ -26,8 +26,8 @@ func diskReserveRunE(_ *cobra.Command, args []string) error {
 	}
 
 	diskHandler := localdisk.NewLocalDiskHandler(c.Client, c.EventRecorder)
-	// Build the local disk query page
-	queryPage := api.QueryPage{
+	// Build the query parameters
+	parameters := api.QueryPage{
 		NodeName:        args[0],
 		DeviceShortPath: args[1],
 	}
@@ -35,11 +35,11 @@ func diskReserveRunE(_ *cobra.Command, args []string) error {
 	switch args[2] {
 	case "true":
 		// Set the disk reserved
-		_, err = c.ReserveStorageNodeDisk(queryPage, diskHandler)
+		_, err = c.ReserveStorageNodeDisk(parameters, diskHandler)
 		return err
 	case "false":
 		// Set the disk unreserved
-		_, err = c.RemoveReserveStorageNodeDisk(queryPage, diskHandler)
+		_, err = c.RemoveReserveStorageNodeDisk(parameters, diskHandler)
 		return err
 	}
 	return fmt.Errorf("the `reserve` parameter should be true/false")

@@ -4,7 +4,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/manager"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 )
 
 var diskOwner = &cobra.Command{
@@ -21,8 +20,11 @@ func diskOwnerRunE(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	// Build the disk name like 'master-node-1-sdb'
-	diskName := utils.ConvertNodeName(args[0]) + "-" + args[1]
+	// Get the LocalDisk by nodeName and shortPath
+	disk, err := c.GetLocalDiskByPath(args[0], args[1])
+	if err != nil {
+		return err
+	}
 	// Set the disk's owner
-	return c.SetLocalDiskOwner(diskName, args[2])
+	return c.SetLocalDiskOwner(disk.Name, args[2])
 }

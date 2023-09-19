@@ -4,6 +4,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/formatter"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/manager"
@@ -82,10 +83,10 @@ func getNodePoolUtilization(node *api.StorageNode) (hddUtilization, ssdUtilizati
 	// Calculate the hdd and ssd pool utilization
 	hddUtilization = "N/A"
 	ssdUtilization = "N/A"
-	if hddPool, ok := node.LocalStorageNode.Status.Pools[api.PoolNamePrefix+"HDD"]; ok {
+	if hddPool, ok := node.LocalStorageNode.Status.Pools[api.PoolNamePrefix+apisv1alpha1.DiskClassNameHDD]; ok {
 		hddUtilization = formatter.FormatPercentString(hddPool.UsedCapacityBytes, hddPool.TotalCapacityBytes)
 	}
-	if ssdPool, ok := node.LocalStorageNode.Status.Pools[api.PoolNamePrefix+"SSD"]; ok {
+	if ssdPool, ok := node.LocalStorageNode.Status.Pools[api.PoolNamePrefix+apisv1alpha1.DiskClassNameSSD]; ok {
 		ssdUtilization = formatter.FormatPercentString(ssdPool.UsedCapacityBytes, ssdPool.TotalCapacityBytes)
 	}
 	return

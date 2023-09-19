@@ -24,8 +24,9 @@ var poolExpand = &cobra.Command{
 func poolExpandRunE(_ *cobra.Command, args []string) error {
 	nodeName, diskType, owner := args[0], args[1], args[2]
 	// Check the parameters
-	if diskType != "SSD" && diskType != "HDD" && diskType != "NVMe" {
-		return fmt.Errorf("diskType must be SSD or HDD or NVMe")
+
+	if diskType != apisv1alpha1.DiskClassNameSSD && diskType != apisv1alpha1.DiskClassNameHDD && diskType != apisv1alpha1.DiskClassNameNVMe {
+		return fmt.Errorf("diskType must be %s or %s or %s", apisv1alpha1.DiskClassNameSSD, apisv1alpha1.DiskClassNameHDD, apisv1alpha1.DiskClassNameNVMe)
 	}
 	if owner != apisv1alpha1.LocalStorage && owner != apisv1alpha1.LocalDiskManager {
 		return fmt.Errorf("owner must be %s or %s", apisv1alpha1.LocalStorage, apisv1alpha1.LocalDiskManager)
