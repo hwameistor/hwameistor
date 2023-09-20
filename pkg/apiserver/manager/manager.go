@@ -8,57 +8,31 @@ import (
 	mgrpkg "sigs.k8s.io/controller-runtime/pkg/manager"
 
 	hwameistorctr "github.com/hwameistor/hwameistor/pkg/apiserver/manager/hwameistor"
-	utils "github.com/hwameistor/hwameistor/pkg/apiserver/util"
 )
 
 type ServerManager struct {
-	nodeName string
-
-	namespace string
-
 	apiClient client.Client
-
 	clientset *kubernetes.Clientset
+	mgr       mgrpkg.Manager
+	logger    *log.Entry
 
-	lsnController *hwameistorctr.LocalStorageNodeController
-
-	lvController *hwameistorctr.LocalVolumeController
-
-	vgController *hwameistorctr.VolumeGroupController
-
-	mController *hwameistorctr.MetricController
-
-	lspController *hwameistorctr.LocalStoragePoolController
-
+	lsnController     *hwameistorctr.LocalStorageNodeController
+	lvController      *hwameistorctr.LocalVolumeController
+	vgController      *hwameistorctr.VolumeGroupController
+	mController       *hwameistorctr.MetricController
+	lspController     *hwameistorctr.LocalStoragePoolController
 	settingController *hwameistorctr.SettingController
-
-	ldController *hwameistorctr.LocalDiskController
-
-	ldnController *hwameistorctr.LocalDiskNodeController
-
-	authController *hwameistorctr.AuthController
-
-	mgr mgrpkg.Manager
-
-	logger *log.Entry
+	ldController      *hwameistorctr.LocalDiskController
+	ldnController     *hwameistorctr.LocalDiskNodeController
+	authController    *hwameistorctr.AuthController
 }
 
-// NewServerManager
 func NewServerManager(mgr mgrpkg.Manager, clientset *kubernetes.Clientset) (*ServerManager, error) {
-	var recorder record.EventRecorder
 	return &ServerManager{
-		nodeName:          utils.GetNodeName(),
-		namespace:         utils.GetNamespace(),
-		apiClient:         mgr.GetClient(),
-		clientset:         clientset,
-		lsnController:     hwameistorctr.NewLocalStorageNodeController(mgr.GetClient(), clientset, recorder),
-		lvController:      hwameistorctr.NewLocalVolumeController(mgr.GetClient(), clientset, recorder),
-		mController:       hwameistorctr.NewMetricController(mgr.GetClient(), clientset, recorder),
-		lspController:     hwameistorctr.NewLocalStoragePoolController(mgr.GetClient(), clientset, recorder),
-		settingController: hwameistorctr.NewSettingController(mgr.GetClient(), clientset, recorder),
-		vgController:      hwameistorctr.NewVolumeGroupController(mgr.GetClient(), clientset, recorder),
-		mgr:               mgr,
-		logger:            log.WithField("Module", "ServerManager"),
+		apiClient: mgr.GetClient(),
+		clientset: clientset,
+		mgr:       mgr,
+		logger:    log.WithField("Module", "ServerManager"),
 	}, nil
 }
 
@@ -73,7 +47,7 @@ func (m *ServerManager) StorageNodeController() *hwameistorctr.LocalStorageNodeC
 func (m *ServerManager) VolumeController() *hwameistorctr.LocalVolumeController {
 	var recorder record.EventRecorder
 	if m.lvController == nil {
-		m.lvController = hwameistorctr.NewLocalVolumeController(m.mgr.GetClient(), m.clientset, recorder)
+		m.lvController = hwameistorctr.NewLocalVolumeController(m.mgr.GetClient(), recorder)
 	}
 	return m.lvController
 }

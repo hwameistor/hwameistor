@@ -31,7 +31,6 @@ type StoragePool struct {
 	CreateTime time.Time `json:"createTime,omitempty"`
 }
 
-// StoragePoolList
 type StoragePoolList struct {
 	// storagePools
 	StoragePools []*StoragePool `json:"items"`
@@ -39,7 +38,6 @@ type StoragePoolList struct {
 	Page *Pagination `json:"pagination,omitempty"`
 }
 
-// NodeDiskListByPool
 type NodeDiskListByPool struct {
 	// PoolName 存储池名称
 	PoolName string `json:"poolName,omitempty"`
@@ -51,7 +49,6 @@ type NodeDiskListByPool struct {
 	Page *Pagination `json:"pagination,omitempty"`
 }
 
-// StorageNodeListByPool
 type StorageNodeListByPool struct {
 	// StoragePoolName 存储池名称
 	StoragePoolName string `json:"storagePoolName,omitempty"`

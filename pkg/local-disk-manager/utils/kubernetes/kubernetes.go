@@ -3,18 +3,19 @@ package kubernetes
 import (
 	"context"
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"os"
+	"sync"
+
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sync"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 var (

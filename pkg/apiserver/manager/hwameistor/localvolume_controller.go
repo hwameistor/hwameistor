@@ -1,19 +1,17 @@
 package hwameistor
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/types"
 	"math"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/cli-runtime/pkg/printers"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -23,35 +21,21 @@ import (
 )
 
 const (
-	groupName   = "hwameistor.io"
-	versionName = "v1"
-
-	APIVersion                   = "v1alpha1"
-	LocalVolumeMigrateKind       = "LocalVolumeMigrate"
-	LocalVolumeConvertKind       = "LocalVolumeConvert"
-	LocalVolumeMigrateAPIVersion = "hwameistor.io" + "/" + APIVersion
-	LocalVolumeConvertAPIVersion = "hwameistor.io" + "/" + APIVersion
-	ConvertReplicaNum            = 2
+	ConvertReplicaNum = 2
 )
 
-// LocalVolumeController
 type LocalVolumeController struct {
 	client.Client
 	record.EventRecorder
-
-	clientset *kubernetes.Clientset
 }
 
-// NewLocalVolumeController
-func NewLocalVolumeController(client client.Client, clientset *kubernetes.Clientset, recorder record.EventRecorder) *LocalVolumeController {
+func NewLocalVolumeController(client client.Client, recorder record.EventRecorder) *LocalVolumeController {
 	return &LocalVolumeController{
 		Client:        client,
 		EventRecorder: recorder,
-		clientset:     clientset,
 	}
 }
 
-// ListLocalVolume
 func (lvController *LocalVolumeController) ListLocalVolume(queryPage hwameistorapi.QueryPage) (*hwameistorapi.VolumeList, error) {
 	var volList = &hwameistorapi.VolumeList{}
 	vols, err := lvController.listLocalVolume(queryPage)
@@ -80,7 +64,6 @@ func (lvController *LocalVolumeController) ListLocalVolume(queryPage hwameistora
 	return volList, nil
 }
 
-// listLocalVolume
 func (lvController *LocalVolumeController) listLocalVolume(queryPage hwameistorapi.QueryPage) ([]*hwameistorapi.Volume, error) {
 	lvList := &apisv1alpha1.LocalVolumeList{}
 	if err := lvController.Client.List(context.TODO(), lvList); err != nil {
@@ -124,7 +107,6 @@ func (lvController *LocalVolumeController) listLocalVolume(queryPage hwameistora
 	return vols, nil
 }
 
-// GetLocalVolume
 func (lvController *LocalVolumeController) GetLocalVolume(lvname string) (*hwameistorapi.Volume, error) {
 	var queryPage hwameistorapi.QueryPage
 	queryPage.VolumeName = lvname
@@ -140,31 +122,29 @@ func (lvController *LocalVolumeController) GetLocalVolume(lvname string) (*hwame
 			return lv, nil
 		}
 	}
-
 	return nil, nil
 }
 
-// getLocalVolumeReplicas
 func (lvController *LocalVolumeController) getLocalVolumeReplicas(lvname string) ([]*apisv1alpha1.LocalVolumeReplica, error) {
 	lv := &apisv1alpha1.LocalVolume{}
 	if err := lvController.Client.Get(context.TODO(), client.ObjectKey{Name: lvname}, lv); err != nil {
 		if !errors.IsNotFound(err) {
-			log.WithError(err).Error("Failed to query diskume")
+			log.WithError(err).Error("Failed to query LocalVolume")
 		} else {
-			log.Info("Not found the diskume")
+			log.Info("Not found the LocalVolume")
 		}
 		return nil, err
 	}
 
 	var lvrs []*apisv1alpha1.LocalVolumeReplica
 	var replicaNames = lv.Status.Replicas
-	for _, replicaname := range replicaNames {
+	for _, replicaName := range replicaNames {
 		lvr := &apisv1alpha1.LocalVolumeReplica{}
-		if err := lvController.Client.Get(context.TODO(), client.ObjectKey{Name: replicaname}, lvr); err != nil {
+		if err := lvController.Client.Get(context.TODO(), client.ObjectKey{Name: replicaName}, lvr); err != nil {
 			if !errors.IsNotFound(err) {
-				log.WithError(err).Error("Failed to query localvolumereplica")
+				log.WithError(err).Error("Failed to query LocalVolumeReplica")
 			} else {
-				log.Info("Not found the localvolumereplica")
+				log.Info("Not found the LocalVolumeReplica")
 			}
 			return nil, err
 		}
@@ -174,7 +154,6 @@ func (lvController *LocalVolumeController) getLocalVolumeReplicas(lvname string)
 	return lvrs, nil
 }
 
-// GetVolumeReplicas
 func (lvController *LocalVolumeController) GetVolumeReplicas(queryPage hwameistorapi.QueryPage) (*hwameistorapi.VolumeReplicaList, error) {
 	lvrs, err := lvController.getLocalVolumeReplicas(queryPage.VolumeName)
 	if err != nil {
@@ -230,12 +209,11 @@ func (lvController *LocalVolumeController) GetVolumeReplicas(queryPage hwameisto
 	return vrList, nil
 }
 
-// GetVolumeOperation
 func (lvController *LocalVolumeController) GetVolumeOperation(queryPage hwameistorapi.QueryPage) (*hwameistorapi.VolumeOperationByVolume, error) {
 	var volumeOperation = &hwameistorapi.VolumeOperationByVolume{}
-	var volumeMigrateOperations = []*hwameistorapi.VolumeMigrateOperation{}
+	var volumeMigrateOperations []*hwameistorapi.VolumeMigrateOperation
 	lvmList := apisv1alpha1.LocalVolumeMigrateList{}
-	if err := lvController.Client.List(context.Background(), &lvmList, &client.ListOptions{}); err != nil {
+	if err := lvController.Client.List(context.Background(), &lvmList); err != nil {
 		return nil, err
 	}
 
@@ -259,7 +237,7 @@ func (lvController *LocalVolumeController) GetVolumeOperation(queryPage hwameist
 		}
 	}
 
-	var volumeConvertOperations = []*hwameistorapi.VolumeConvertOperation{}
+	var volumeConvertOperations []*hwameistorapi.VolumeConvertOperation
 	lvcList := apisv1alpha1.LocalVolumeConvertList{}
 	if err := lvController.Client.List(context.Background(), &lvcList, &client.ListOptions{}); err != nil {
 		return nil, err
@@ -285,9 +263,9 @@ func (lvController *LocalVolumeController) GetVolumeOperation(queryPage hwameist
 		}
 	}
 
-	var volumeExpandOperations = []*hwameistorapi.VolumeExpandOperation{}
+	var volumeExpandOperations []*hwameistorapi.VolumeExpandOperation
 	lveList := apisv1alpha1.LocalVolumeExpandList{}
-	if err := lvController.Client.List(context.Background(), &lveList, &client.ListOptions{}); err != nil {
+	if err := lvController.Client.List(context.Background(), &lveList); err != nil {
 		return nil, err
 	}
 
@@ -314,298 +292,220 @@ func (lvController *LocalVolumeController) GetVolumeOperation(queryPage hwameist
 	volumeOperation.VolumeMigrateOperations = volumeMigrateOperations
 	volumeOperation.VolumeConvertOperations = volumeConvertOperations
 	volumeOperation.VolumeExpandOperations = volumeExpandOperations
-
 	volumeOperation.VolumeName = queryPage.VolumeName
 	return volumeOperation, nil
 }
 
-// GetLocalVolumeMigrateYamlStr
-func (lvController *LocalVolumeController) GetLocalVolumeMigrateYamlStr(resourceName string) (*hwameistorapi.YamlData, error) {
-	lvm := &apisv1alpha1.LocalVolumeMigrate{}
-	if err := lvController.Client.Get(context.TODO(), client.ObjectKey{Name: resourceName}, lvm); err != nil {
-		if !errors.IsNotFound(err) {
-			log.WithError(err).Error("Failed to query localvolumemigrate")
-		} else {
-			log.Info("Not found the localvolumemigrate")
-		}
-		return nil, err
-	}
-
-	resourceYamlStr, err := lvController.getLVMResourceYaml(lvm)
-	if err != nil {
-		log.WithError(err).Error("Failed to getLVMResourceYaml")
-		return nil, err
-	}
-	var yamlData = &hwameistorapi.YamlData{}
-	yamlData.Data = resourceYamlStr
-
-	return yamlData, nil
-}
-
-// GetLocalVolumeReplicaYamlStr
-func (lvController *LocalVolumeController) GetLocalVolumeReplicaYamlStr(resourceName string) (*hwameistorapi.YamlData, error) {
-	lvr := &apisv1alpha1.LocalVolumeReplica{}
-	if err := lvController.Client.Get(context.TODO(), client.ObjectKey{Name: resourceName}, lvr); err != nil {
-		if !errors.IsNotFound(err) {
-			log.WithError(err).Error("Failed to query localvolumereplica")
-		} else {
-			log.Info("Not found the localvolumereplica")
-		}
-		return nil, err
-	}
-
-	resourceYamlStr, err := lvController.getLVRResourceYaml(lvr)
-	if err != nil {
-		log.WithError(err).Error("Failed to getLVRResourceYaml")
-		return nil, err
-	}
-	var yamlData = &hwameistorapi.YamlData{}
-	yamlData.Data = resourceYamlStr
-
-	return yamlData, nil
-}
-
-// GetLocalVolumeYamlStr
-func (lvController *LocalVolumeController) GetLocalVolumeYamlStr(resourceName string) (*hwameistorapi.YamlData, error) {
-	lv := &apisv1alpha1.LocalVolume{}
-	if err := lvController.Client.Get(context.TODO(), client.ObjectKey{Name: resourceName}, lv); err != nil {
-		if !errors.IsNotFound(err) {
-			log.WithError(err).Error("Failed to query localVolume")
-		} else {
-			log.Info("Not found the localVolume")
-		}
-		return nil, err
-	}
-
-	resourceYamlStr, err := lvController.getLVResourceYaml(lv)
-	if err != nil {
-		log.WithError(err).Error("Failed to getLVRResourceYaml")
-		return nil, err
-	}
-	var yamlData = &hwameistorapi.YamlData{}
-	yamlData.Data = resourceYamlStr
-
-	return yamlData, nil
-}
-
-// getLVMResourceYaml
-func (lvController *LocalVolumeController) getLVMResourceYaml(lvm *apisv1alpha1.LocalVolumeMigrate) (string, error) {
-	buf := new(bytes.Buffer)
-
-	lvm.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   groupName,
-		Version: versionName,
-		Kind:    lvm.Kind,
-	})
-	y := printers.YAMLPrinter{}
-	err := y.PrintObj(lvm, buf)
-	if err != nil {
-		panic(err)
-	}
-
-	return buf.String(), nil
-}
-
-// getLVRResourceYaml
-func (lvController *LocalVolumeController) getLVRResourceYaml(lvr *apisv1alpha1.LocalVolumeReplica) (string, error) {
-	buf := new(bytes.Buffer)
-
-	lvr.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   groupName,
-		Version: versionName,
-		Kind:    lvr.Kind,
-	})
-	y := printers.YAMLPrinter{}
-	err := y.PrintObj(lvr, buf)
-	if err != nil {
-		panic(err)
-	}
-
-	return buf.String(), nil
-}
-
-// getLVResourceYaml
-func (lvController *LocalVolumeController) getLVResourceYaml(lv *apisv1alpha1.LocalVolume) (string, error) {
-	buf := new(bytes.Buffer)
-
-	lv.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   groupName,
-		Version: versionName,
-		Kind:    lv.Kind,
-	})
-	y := printers.YAMLPrinter{}
-	err := y.PrintObj(lv, buf)
-	if err != nil {
-		panic(err)
-	}
-
-	return buf.String(), nil
-}
-
-// CreateVolumeMigrate
+// CreateVolumeMigrate it creates a migrate crd or set a migrate task abort, if abort, we need volName only
 func (lvController *LocalVolumeController) CreateVolumeMigrate(volName, srcNode, selectedNode string, abort bool) (*hwameistorapi.VolumeMigrateRspBody, error) {
-	lvmName := fmt.Sprintf("migrate-%s", volName)
-
-	lvm := &apisv1alpha1.LocalVolumeMigrate{}
-	if err := lvController.Client.Get(context.TODO(), client.ObjectKey{Name: lvmName}, lvm); err == nil {
-		return nil, errors.NewBadRequest("LocalVolume has already exists lvm task, try it later")
+	rsp := &hwameistorapi.VolumeMigrateRspBody{
+		VolumeMigrateInfo: &hwameistorapi.VolumeMigrateInfo{
+			VolumeName:   volName,
+			SrcNode:      srcNode,
+			SelectedNode: selectedNode,
+		},
 	}
 
+	if abort {
+		// Abort the migrate operation
+		lvm, err := lvController.GetVolumeMigrate(volName)
+		if err != nil {
+			return nil, err
+		}
+		if lvm == nil {
+			return nil, fmt.Errorf("LocalVolumeMigrate is not exists")
+		}
+		lvm.Spec.Abort = true
+		return rsp, lvController.Client.Update(context.TODO(), lvm)
+	}
+
+	// Create the migrate operation crd
 	lv := &apisv1alpha1.LocalVolume{}
 	if err := lvController.Client.Get(context.Background(), types.NamespacedName{Name: volName}, lv); err != nil {
-		log.WithField("localvolume", lv.Name).WithError(err).Error("Failed to submit localvolume")
 		return nil, err
 	}
-
 	if lv.Status.PublishedNodeName == srcNode {
-		return nil, errors.NewBadRequest("LocalVolume is still in use by source node, try it later")
+		return nil, fmt.Errorf("LocalVolume is still in use by source node, try it later")
 	}
 
-	lvm = &apisv1alpha1.LocalVolumeMigrate{
+	lvm := &apisv1alpha1.LocalVolumeMigrate{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: lvmName,
-		},
-		TypeMeta: metav1.TypeMeta{
-			Kind:       LocalVolumeMigrateKind,
-			APIVersion: LocalVolumeMigrateAPIVersion,
+			Name: fmt.Sprintf("migrate-%s", volName),
 		},
 		Spec: apisv1alpha1.LocalVolumeMigrateSpec{
 			VolumeName:           volName,
 			SourceNode:           srcNode,
 			MigrateAllVols:       true,
-			Abort:                abort,
 			TargetNodesSuggested: []string{},
 		},
 	}
-	// don't specify the target nodes, so the scheduler will select from the available nodes
+	// Don't specify the target nodes, so the scheduler will select from the available nodes
 	if selectedNode != "" {
 		lvm.Spec.TargetNodesSuggested = append(lvm.Spec.TargetNodesSuggested, selectedNode)
 	}
-	if abort == false {
-		if err := lvController.Client.Create(context.Background(), lvm); err != nil {
-			log.WithField("migrate", lvm.Name).WithError(err).Error("Failed to submit a migrate job")
-			return nil, err
-		}
-	} else {
-		if err := lvController.Client.Delete(context.TODO(), lvm); err != nil {
-			log.WithField("migrate", lvm.Name).WithError(err).Error("Failed to delete a migrate job")
-			return nil, err
-		}
-	}
-
-	var RspBody = &hwameistorapi.VolumeMigrateRspBody{}
-	var vmi = &hwameistorapi.VolumeMigrateInfo{}
-	vmi.VolumeName = volName
-	vmi.SrcNode = srcNode
-	vmi.SelectedNode = selectedNode
-
-	RspBody.VolumeMigrateInfo = vmi
-
-	return RspBody, nil
+	return rsp, lvController.Client.Create(context.Background(), lvm)
 }
 
-// CreateVolumeConvert
 func (lvController *LocalVolumeController) CreateVolumeConvert(volName string, abort bool) (*hwameistorapi.VolumeConvertRspBody, error) {
-	lvmName := fmt.Sprintf("convert-%s", volName)
+	rsp := &hwameistorapi.VolumeConvertRspBody{
+		VolumeConvertInfo: &hwameistorapi.VolumeConvertInfo{
+			VolumeName: volName,
+			ReplicaNum: ConvertReplicaNum,
+		},
+	}
 
-	var RspBody = &hwameistorapi.VolumeConvertRspBody{}
-	var vci = &hwameistorapi.VolumeConvertInfo{}
-	vci.VolumeName = volName
-	vci.ReplicaNum = ConvertReplicaNum
-	RspBody.VolumeConvertInfo = vci
+	if abort {
+		// Abort the convert operation
+		lvc, err := lvController.GetVolumeConvert(volName)
+		if err != nil {
+			return nil, err
+		}
+		if lvc == nil {
+			return nil, fmt.Errorf("LocalVolumeConvert is not exists")
+		}
+		lvc.Spec.Abort = true
+		return rsp, lvController.Client.Update(context.TODO(), lvc)
+	}
 
 	lv, err := lvController.GetLocalVolume(volName)
 	if err != nil {
-		return RspBody, nil
+		return nil, err
 	}
+	if lv == nil {
+		return nil, fmt.Errorf("volume %v is not exists", volName)
+	}
+
+	// Create the convert operation crd
 	if lv.Spec.Convertible == false || lv.Spec.ReplicaNumber > 1 {
-		return RspBody, errors.NewBadRequest("Cannot create convert crd: check convertible is true and replicanumber == 1")
+		return nil, fmt.Errorf("convertible is false or RplicaNumber is not 1")
 	}
 
 	lvc := &apisv1alpha1.LocalVolumeConvert{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: lvmName,
-		},
-		TypeMeta: metav1.TypeMeta{
-			Kind:       LocalVolumeConvertKind,
-			APIVersion: LocalVolumeConvertAPIVersion,
+			Name: fmt.Sprintf("convert-%s", volName),
 		},
 		Spec: apisv1alpha1.LocalVolumeConvertSpec{
 			VolumeName:    volName,
 			ReplicaNumber: ConvertReplicaNum,
-			Abort:         abort,
+		},
+	}
+	return rsp, lvController.Client.Create(context.Background(), lvc)
+}
+
+func (lvController *LocalVolumeController) CreateVolumeExpand(volName string, targetCapacity string, abort bool) (*hwameistorapi.VolumeExpandRspBody, error) {
+	rsp := &hwameistorapi.VolumeExpandRspBody{
+		VolumeExpandInfo: &hwameistorapi.VolumeExpandInfo{
+			VolumeName: volName,
 		},
 	}
 
-	if abort == false {
-		if err := lvController.Client.Create(context.Background(), lvc); err != nil {
-			log.WithField("convert", lvc.Name).WithError(err).Error("Failed to submit a convert job")
-			if errors.IsAlreadyExists(err) {
-				return RspBody, nil
-			}
+	if abort {
+		// Abort the expand operation
+		lve, err := lvController.GetVolumeExpand(volName)
+		if err != nil {
 			return nil, err
 		}
-	} else {
-		if err := lvController.Client.Delete(context.Background(), lvc); err != nil {
-			log.WithField("convert", lvc.Name).WithError(err).Error("Failed to delete a convert job")
-			return RspBody, err
+		if lve == nil {
+			return nil, fmt.Errorf("LocalVolumeExpand is not exists")
 		}
+		lve.Spec.Abort = true
+		return rsp, lvController.Client.Update(context.TODO(), lve)
 	}
 
-	RspBody.VolumeConvertInfo = vci
-	return RspBody, nil
-}
+	// Get the LocalVolume
+	lv, err := lvController.GetLocalVolume(volName)
+	if err != nil {
+		return nil, err
+	}
+	if lv == nil {
+		return nil, fmt.Errorf("volume %v is not exists", volName)
+	}
 
-// GetTargetNodesByManualTargetNodeType
-func (lvController *LocalVolumeController) GetTargetNodesByManualTargetNodeType() ([]string, error) {
-	lsnList := &apisv1alpha1.LocalStorageNodeList{}
-	if err := lvController.Client.List(context.TODO(), lsnList); err != nil {
-		log.WithError(err).Error("Failed to list LocalStorageNodes")
+	// Get the pvc
+	pvc := &corev1.PersistentVolumeClaim{}
+	pvcKey := types.NamespacedName{
+		Namespace: lv.Spec.PersistentVolumeClaimNamespace,
+		Name:      lv.Spec.PersistentVolumeClaimName,
+	}
+	err = lvController.Client.Get(context.TODO(), pvcKey, pvc)
+	if err != nil {
 		return nil, err
 	}
 
-	var nodeNames []string
-	for _, lsn := range lsnList.Items {
-		if lsn.Status.State == apisv1alpha1.NodeStateReady {
-			nodeNames = append(nodeNames, lsn.Name)
-		}
+	// Parse the targetCapacity
+	quantity, err := resource.ParseQuantity(targetCapacity)
+	if err != nil {
+		return nil, err
 	}
+	rsp.VolumeExpandInfo.TargetCapacityBytes = quantity.Value()
 
-	return nodeNames, nil
+	// Update the pvc's request capacity
+	pvc.Spec.Resources.Requests["storage"] = quantity
+
+	return rsp, lvController.Client.Update(context.TODO(), pvc)
 }
 
-// GetVolumeConvert
-func (lvController *LocalVolumeController) GetVolumeConvert(lvname string) (*hwameistorapi.VolumeConvertOperation, error) {
-	var vcp = &hwameistorapi.VolumeConvertOperation{}
-
-	lvcList := apisv1alpha1.LocalVolumeConvertList{}
-	if err := lvController.Client.List(context.Background(), &lvcList, &client.ListOptions{}); err != nil {
-		return vcp, err
+func (lvController *LocalVolumeController) GetVolumeConvert(lvName string) (*apisv1alpha1.LocalVolumeConvert, error) {
+	lvcList, err := lvController.ListVolumeConvert()
+	if err != nil {
+		return nil, err
 	}
 
 	for _, item := range lvcList.Items {
-		if item.Spec.VolumeName == lvname {
-			vcp.LocalVolumeConvert = item
-			break
+		if item.Spec.VolumeName == lvName {
+			return &item, nil
 		}
 	}
-	return vcp, nil
+	return nil, nil
 }
 
-// GetVolumeMigrate
-func (lvController *LocalVolumeController) GetVolumeMigrate(lvname string) (hwameistorapi.VolumeMigrateOperation, error) {
-	var vcp hwameistorapi.VolumeMigrateOperation
-
-	lvmList := apisv1alpha1.LocalVolumeMigrateList{}
-	if err := lvController.Client.List(context.Background(), &lvmList, &client.ListOptions{}); err != nil {
-		return vcp, err
+func (lvController *LocalVolumeController) ListVolumeConvert() (*apisv1alpha1.LocalVolumeConvertList, error) {
+	lvcList := &apisv1alpha1.LocalVolumeConvertList{}
+	if err := lvController.Client.List(context.Background(), lvcList); err != nil {
+		return nil, err
 	}
+	return lvcList, nil
+}
 
+func (lvController *LocalVolumeController) GetVolumeMigrate(lvName string) (*apisv1alpha1.LocalVolumeMigrate, error) {
+	lvmList, err := lvController.ListVolumeMigrate()
+	if err != nil {
+		return nil, err
+	}
 	for _, item := range lvmList.Items {
-		if item.Spec.VolumeName == lvname {
-			vcp.LocalVolumeMigrate = item
-			break
+		if item.Spec.VolumeName == lvName {
+			return &item, nil
 		}
 	}
-	return vcp, nil
+	return nil, nil
+}
+
+func (lvController *LocalVolumeController) ListVolumeMigrate() (*apisv1alpha1.LocalVolumeMigrateList, error) {
+	lvmList := &apisv1alpha1.LocalVolumeMigrateList{}
+	if err := lvController.Client.List(context.Background(), lvmList); err != nil {
+		return nil, err
+	}
+	return lvmList, nil
+}
+
+func (lvController *LocalVolumeController) GetVolumeExpand(lvName string) (*apisv1alpha1.LocalVolumeExpand, error) {
+	lveList, err := lvController.ListVolumeExpand()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, item := range lveList.Items {
+		if item.Spec.VolumeName == lvName {
+			return &item, nil
+		}
+	}
+	return nil, nil
+}
+
+func (lvController *LocalVolumeController) ListVolumeExpand() (*apisv1alpha1.LocalVolumeExpandList, error) {
+	lveList := &apisv1alpha1.LocalVolumeExpandList{}
+	if err := lvController.Client.List(context.Background(), lveList); err != nil {
+		return nil, err
+	}
+	return lveList, nil
 }

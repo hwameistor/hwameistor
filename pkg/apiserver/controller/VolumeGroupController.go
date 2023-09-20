@@ -11,13 +11,10 @@ import (
 )
 
 type IVolumeGroupController interface {
-	//VolumeGroupList
 	VolumeGroupList(ctx *gin.Context)
-	// VolumeGroupGet
 	VolumeGroupGet(ctx *gin.Context)
 }
 
-// VolumeGroupController
 type VolumeGroupController struct {
 	m *manager.ServerManager
 }

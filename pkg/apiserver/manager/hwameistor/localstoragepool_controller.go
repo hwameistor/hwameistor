@@ -2,6 +2,9 @@ package hwameistor
 
 import (
 	"context"
+	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"math"
 	"sort"
 	"strings"
@@ -16,7 +19,6 @@ import (
 	utils "github.com/hwameistor/hwameistor/pkg/apiserver/util"
 )
 
-// LocalStoragePoolController
 type LocalStoragePoolController struct {
 	client.Client
 	record.EventRecorder
@@ -24,7 +26,6 @@ type LocalStoragePoolController struct {
 	clientset *kubernetes.Clientset
 }
 
-// NewLocalStoragePoolController
 func NewLocalStoragePoolController(client client.Client, clientset *kubernetes.Clientset, recorder record.EventRecorder) *LocalStoragePoolController {
 	return &LocalStoragePoolController{
 		Client:        client,
@@ -33,7 +34,6 @@ func NewLocalStoragePoolController(client client.Client, clientset *kubernetes.C
 	}
 }
 
-// StoragePoolList
 func (lspController *LocalStoragePoolController) StoragePoolList(queryPage hwameistorapi.QueryPage) (*hwameistorapi.StoragePoolList, error) {
 	var storagePoolList = &hwameistorapi.StoragePoolList{}
 	sps, err := lspController.listLocalStoragePools(queryPage)
@@ -58,7 +58,6 @@ func (lspController *LocalStoragePoolController) StoragePoolList(queryPage hwame
 	return storagePoolList, nil
 }
 
-// listLocalStoragePools
 func (lspController *LocalStoragePoolController) listLocalStoragePools(queryPage hwameistorapi.QueryPage) ([]*hwameistorapi.StoragePool, error) {
 	storagePoolNodesCollectionMap, err := lspController.makeStoragePoolNodesCollectionMap()
 	if err != nil {
@@ -83,7 +82,6 @@ func (lspController *LocalStoragePoolController) listLocalStoragePools(queryPage
 	return sps, nil
 }
 
-// makeStoragePoolNodesCollectionMap
 func (lspController *LocalStoragePoolController) makeStoragePoolNodesCollectionMap() (map[string]*hwameistorapi.StoragePoolNodesCollection, error) {
 	lsnList := &apisv1alpha1.LocalStorageNodeList{}
 	if err := lspController.Client.List(context.TODO(), lsnList); err != nil {
@@ -93,7 +91,6 @@ func (lspController *LocalStoragePoolController) makeStoragePoolNodesCollectionM
 	sort.Slice(lsnList.Items, func(i, j int) bool {
 		return lsnList.Items[i].CreationTimestamp.After(lsnList.Items[j].CreationTimestamp.Time)
 	})
-
 	var storagePoolNodesCollectionMap = make(map[string]*hwameistorapi.StoragePoolNodesCollection)
 	for _, lsn := range lsnList.Items {
 		for _, pool := range lsn.Status.Pools {
@@ -127,7 +124,6 @@ func (lspController *LocalStoragePoolController) makeStoragePoolNodesCollectionM
 	return storagePoolNodesCollectionMap, nil
 }
 
-// GetStoragePool
 func (lspController *LocalStoragePoolController) GetStoragePool(poolName string) (*hwameistorapi.StoragePool, error) {
 	var queryPage hwameistorapi.QueryPage
 	sps, err := lspController.listLocalStoragePools(queryPage)
@@ -145,7 +141,6 @@ func (lspController *LocalStoragePoolController) GetStoragePool(poolName string)
 	return nil, nil
 }
 
-// GetStorageNodeByPoolName
 func (lspController *LocalStoragePoolController) GetStorageNodeByPoolName(queryPage hwameistorapi.QueryPage) (*hwameistorapi.StorageNodeListByPool, error) {
 	snlist, err := lspController.getStorageNodeByPoolName(queryPage)
 	if err != nil {
@@ -153,7 +148,7 @@ func (lspController *LocalStoragePoolController) GetStorageNodeByPoolName(queryP
 		return nil, err
 	}
 	var snlistByPool = &hwameistorapi.StorageNodeListByPool{}
-	var sns = []*hwameistorapi.StorageNode{}
+	var sns []*hwameistorapi.StorageNode
 
 	snlistByPool.StorageNodes = utils.DataPatination(snlist, queryPage.Page, queryPage.PageSize)
 	snlistByPool.StoragePoolName = queryPage.PoolName
@@ -171,7 +166,6 @@ func (lspController *LocalStoragePoolController) GetStorageNodeByPoolName(queryP
 	return snlistByPool, nil
 }
 
-// GetStorageNodeByPoolName
 func (lspController *LocalStoragePoolController) getStorageNodeByPoolName(queryPage hwameistorapi.QueryPage) ([]*hwameistorapi.StorageNode, error) {
 	storagePoolNodesCollectionMap, err := lspController.makeStoragePoolNodesCollectionMap()
 	if err != nil {
@@ -204,7 +198,6 @@ func (lspController *LocalStoragePoolController) getStorageNodeByPoolName(queryP
 	return sns, nil
 }
 
-// StorageNodeDisksGetByPoolName
 func (lspController *LocalStoragePoolController) StorageNodeDisksGetByPoolName(queryPage hwameistorapi.QueryPage) (*hwameistorapi.NodeDiskListByPool, error) {
 	storagePoolNodesCollectionMap, err := lspController.makeStoragePoolNodesCollectionMap()
 	if err != nil {
@@ -213,7 +206,7 @@ func (lspController *LocalStoragePoolController) StorageNodeDisksGetByPoolName(q
 	}
 
 	var nodeDiskListByPool = &hwameistorapi.NodeDiskListByPool{}
-	var lds = []*hwameistorapi.LocalDiskInfo{}
+	var lds []*hwameistorapi.LocalDiskInfo
 	lsnController := NewLocalStorageNodeController(lspController.Client, lspController.clientset, lspController.EventRecorder)
 	if spnc, exists := storagePoolNodesCollectionMap[queryPage.PoolName]; exists {
 		for _, nn := range spnc.ManagedNodeNames {
@@ -251,7 +244,6 @@ func (lspController *LocalStoragePoolController) StorageNodeDisksGetByPoolName(q
 	return nodeDiskListByPool, nil
 }
 
-// listClaimedLocalDiskByNode
 func (lspController *LocalStoragePoolController) listClaimedLocalDiskByNode(nodeName string) ([]apisv1alpha1.LocalDisk, error) {
 	diskList := &apisv1alpha1.LocalDiskList{}
 	if err := lspController.Client.List(context.TODO(), diskList); err != nil {
@@ -269,6 +261,33 @@ func (lspController *LocalStoragePoolController) listClaimedLocalDiskByNode(node
 	}
 
 	return claimedLocalDisks, nil
+}
+
+func (lspController *LocalStoragePoolController) ExpandStoragePool(nodeName, diskType, owner string) error {
+	ldn := &apisv1alpha1.LocalDiskNode{}
+	// Check node exists
+	if err := lspController.Client.Get(context.TODO(), types.NamespacedName{Name: nodeName}, ldn); err != nil {
+		return err
+	}
+
+	claim := &apisv1alpha1.LocalDiskClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: strings.ToLower(fmt.Sprintf("%s-%s-claim", nodeName, diskType)),
+		},
+		Spec: apisv1alpha1.LocalDiskClaimSpec{
+			Owner:    owner,
+			NodeName: nodeName,
+			Description: apisv1alpha1.DiskClaimDescription{
+				DiskType: diskType,
+			},
+		},
+	}
+
+	if err := lspController.Create(context.TODO(), claim); err != nil {
+		log.WithError(err).Error("Fail to create LocalDiskClaim")
+		return err
+	}
+	return nil
 }
 
 // LocalDiskListByNode

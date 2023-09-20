@@ -24,33 +24,24 @@ type LocalDiskInfo struct {
 	LocalStoragePooLName string `json:"localStoragePooLName,omitempty"`
 }
 
-// DiskReqBody
 type DiskReqBody struct {
 	Reserve bool `json:"reserve,omitempty"`
 }
 
-// DiskReservedRspBody
 type DiskReservedRspBody struct {
 	DiskReservedRsp DiskReservedRsp `json:"data,omitempty"`
 }
 
-// DiskReservedRsp
 type DiskReservedRsp struct {
-	// DiskName
-	DiskName string `json:"diskName,omitempty"`
-	// ReservedRsp
-	ReservedRsp State `json:"reservedRsp,omitempty"`
+	DiskName    string `json:"diskName,omitempty"`
+	ReservedRsp State  `json:"reservedRsp,omitempty"`
 }
 
-// DiskRemoveReservedRsp
 type DiskRemoveReservedRsp struct {
-	// DiskName
-	DiskName string `json:"diskName,omitempty"`
-	// RemoveReservedRsp
-	RemoveReservedRsp State `json:"removeReservedRsp,omitempty"`
+	DiskName          string `json:"diskName,omitempty"`
+	RemoveReservedRsp State  `json:"removeReservedRsp,omitempty"`
 }
 
-// DiskRemoveReservedRspBody
 type DiskRemoveReservedRspBody struct {
 	DiskRemoveReservedRsp DiskRemoveReservedRsp `json:"data,omitempty"`
 }

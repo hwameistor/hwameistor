@@ -10,12 +10,10 @@ import (
 )
 
 type IMetricsController interface {
-	//RestController
 	ModuleStatus(ctx *gin.Context)
 	OperationList(ctx *gin.Context)
 }
 
-// MetricsController
 type MetricsController struct {
 	m *manager.ServerManager
 }

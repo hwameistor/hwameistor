@@ -11,11 +11,9 @@ import (
 )
 
 type ILocalDiskNodeController interface {
-	//LocalDiskNodeList
 	LocalDiskNodeList(ctx *gin.Context)
 }
 
-// LocalDiskNodeController
 type LocalDiskNodeController struct {
 	m *manager.ServerManager
 }
