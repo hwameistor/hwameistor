@@ -432,6 +432,19 @@ release_lda:
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${LDA_CONTROLLER_IMAGE_NAME}:${RELEASE_TAG}
 
+### for hwameictl ###
+HWAMEICTL_BUILD_INPUT = ${CMDS_DIR}/hwameictl/hwameictl.go
+# Example:
+# make build_hwameictl OS=linux ARCH=amd64
+# make build_hwameictl OS=darwin ARCH=arm64
+.PHONY: build_hwameictl
+build_hwameictl:
+	@echo "Building for OS: ${OS}, ARCH: ${ARCH}"
+ifeq ("$(OS)", "windows")
+	CGO_ENABLED=0 GOOS=${OS} GOARCH=${ARCH} ${BUILD_CMD} -o "_build/hwameictl/hwameictl-${OS}-${ARCH}.exe" ${BUILD_OPTIONS} ${HWAMEICTL_BUILD_INPUT}
+else
+	CGO_ENABLED=0 GOOS=${OS} GOARCH=${ARCH} ${BUILD_CMD} -o "_build/hwameictl/hwameictl-${OS}-${ARCH}" ${BUILD_OPTIONS} ${HWAMEICTL_BUILD_INPUT}
+endif
 
 .PHONY: apis
 apis:

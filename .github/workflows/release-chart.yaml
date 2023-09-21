@@ -35,6 +35,40 @@ jobs:
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
+  release-hwameictl:
+    name: release hwameictl
+    runs-on: ubuntu-22.04
+    needs:
+      - release-chart
+    strategy:
+      matrix:
+        os:
+          - linux
+          - darwin
+          - windows
+        arch:
+          - amd64
+          - arm64
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.4
+      - name: Build hwameictl
+        run: make build_hwameictl OS=${{ matrix.os }} ARCH=${{ matrix.arch }}
+      - name: Extract Version from Chart.yaml
+        run: |
+          echo "CHART_VERSION=$(yq eval '.version' helm/hwameistor/Chart.yaml)" >> $GITHUB_ENV
+      - name: Upload assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            _build/hwameictl/hwameictl-${{ matrix.os }}-${{ matrix.arch }}
+            _build/hwameictl/hwameictl-${{ matrix.os }}-${{ matrix.arch }}.exe
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          tag_name: "${{ env.CHART_VERSION }}"
+
   release-image:
     runs-on: ubuntu-latest
     needs:
