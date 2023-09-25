@@ -2,6 +2,7 @@ package udev
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"strings"
 
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
@@ -73,6 +74,7 @@ func NewDeviceWithName(devPath, devName string) *Device {
 
 // FilterDisk filter out disks that are virtual or can't identify themselves
 func (d *Device) FilterDisk() bool {
+	log.Debugf("Device Info: %+v", *d)
 	// disk with no identity will be filter out
 	if d.Serial == "" {
 		foundIDLink := false
@@ -85,18 +87,28 @@ func (d *Device) FilterDisk() bool {
 		}
 
 		if !foundIDLink {
+			log.Debugf("device %s has no id-path or serial", d.DevPath)
 			return false
 		}
 	}
 
 	// virtual block device like loop device will be filter out
 	if strings.Contains(d.DevPath, "/virtual/") {
+		log.Debugf("virtual device %s found", d.DevPath)
 		return false
 	}
 
 	// For some disk(ex AliCloud HDD Disk), IDType may be empty
-	return (d.IDType == "disk" || d.IDType == "") &&
-		d.DevType == "disk"
+	if d.DevType != "disk" {
+		log.Debugf("%s DevType is not disk", d.DevPath)
+		return false
+	}
+	if d.IDType != "" && d.IDType != "disk" {
+		log.Debugf("%s IDType is not disk or empty", d.DevPath)
+		return false
+	}
+
+	return true
 }
 
 func (d *Device) ParseDeviceInfo() error {
