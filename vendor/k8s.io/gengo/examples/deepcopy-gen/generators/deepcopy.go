@@ -273,6 +273,10 @@ func (g *genDeepCopy) Filter(c *generator.Context, t *types.Type) bool {
 	if !enabled {
 		return false
 	}
+	if !copyableType(t) {
+		klog.V(2).Infof("Type %v is not copyable", t)
+		return false
+	}
 	klog.V(4).Infof("Type %v is copyable", t)
 	g.typesForInit = append(g.typesForInit, t)
 	return true
