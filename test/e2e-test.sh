@@ -32,7 +32,7 @@ function build_image_arm64(){
 
 function prepare_install_params() {
 	# FIXME: image tags should be passed by helm install params
-	sed -i '/.*ghcr.io*/c\ \ hwameistorImageRegistry: '$ImageRegistry'' helm/hwameistor/values.yaml
+	sed -i '/.*hwameistorImageRegistry: ghcr.io*/c\ \ hwameistorImageRegistry: '$ImageRegistry'' helm/hwameistor/values.yaml
 #
 #	# sed -i '/hwameistor\/local-disk-manager/{n;d}' helm/hwameistor/values.yaml
 #	 sed -i "/hwameistor\/local-disk-manager/a \ \ \ \ tag: ${IMAGE_TAG}" helm/hwameistor/values.yaml
