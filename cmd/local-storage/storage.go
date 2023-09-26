@@ -32,7 +32,7 @@ const (
 
 	defaultDRBDStartPort      = 43001
 	defaultHAVolumeTotalCount = 1000
-	defaultDataSyncToolName   = datacopy.SyncToolRClone
+	defaultDataSyncToolName   = datacopy.SyncToolJuiceSync
 )
 
 var (
@@ -40,7 +40,7 @@ var (
 	namespace          = flag.String("namespace", "", "Namespace of the Pod")
 	csiSockAddr        = flag.String("csi-address", "", "CSI endpoint")
 	systemMode         = flag.String("system-mode", string(apisv1alpha1.SystemModeDRBD), "dlocal system mode")
-	dataSyncToolName   = flag.String("data-sync-tool", defaultDataSyncToolName, "tool to sync the data across the nodes, e.g. rclone, juicesync")
+	dataSyncToolName   = flag.String("data-sync-tool", defaultDataSyncToolName, "tool to sync the data across the nodes, e.g. juicesync")
 	drbdStartPort      = flag.Int("drbd-start-port", defaultDRBDStartPort, "drbd start port, end port=start-port+volume-count-1")
 	haVolumeTotalCount = flag.Int("max-ha-volume-count", defaultHAVolumeTotalCount, "max HA volume count")
 	httpPort           = flag.Int("http-port", restServerDefaultPort, "HTTP port for REST server")

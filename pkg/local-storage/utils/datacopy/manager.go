@@ -23,13 +23,13 @@ const (
 	DefaultCopyTimeout     = time.Hour * 48
 	syncMountContainerName = "syncer"
 
-	SyncKeyDir             = "/root/.ssh"
 	SyncKeyComment         = "SyncPubKey"
 	sshkeygenCmd           = "ssh-keygen"
-	SyncPubKeyFileName     = "sync.pub"
-	SyncPrivateKeyFileName = "sync"
+	SyncPubKeyFileName     = "key.pub"
+	SyncPrivateKeyFileName = "key"
 	SyncKeyConfigMapName   = "sync-key-config"
-	SyncCertKey            = "sync-ssh-keys"
+
+	SyncCertKey = "keys-pair"
 )
 
 var (
@@ -99,8 +99,8 @@ func (dcm *DataCopyManager) Sync(jobName, srcNodeName, dstNodeName, volName stri
 		logCtx.WithField(SyncConfigSourceNodeReadyKey, ready).Debug("Waiting for source mountpoint to be ready ...")
 		return fmt.Errorf("source mountpoint is not ready")
 	}
-	if ready := cm.Data[SyncConfigRemoteNodeReadyKey]; ready != SyncTrue {
-		logCtx.WithField(SyncConfigRemoteNodeReadyKey, ready).Debug("Waiting for remote mountpoint to be ready ...")
+	if ready := cm.Data[SyncConfigTargetNodeReadyKey]; ready != SyncTrue {
+		logCtx.WithField(SyncConfigTargetNodeReadyKey, ready).Debug("Waiting for remote mountpoint to be ready ...")
 		return fmt.Errorf("remote mountpoint is not ready")
 	}
 
@@ -131,7 +131,7 @@ func (dcm *DataCopyManager) Sync(jobName, srcNodeName, dstNodeName, volName stri
 
 			cm.Data[SyncConfigSyncDoneKey] = SyncTrue
 			if err := dcm.k8sControllerClient.Update(ctx, cm, &k8sclient.UpdateOptions{Raw: &metav1.UpdateOptions{}}); err != nil {
-				logCtx.WithField("configmap", cmName).WithError(err).Error("Failed to update rclone configmap")
+				logCtx.WithField("configmap", cmName).WithError(err).Error("Failed to update sync configmap")
 				return err
 			}
 			// remove the finalizer will release the job
@@ -152,7 +152,7 @@ func (dcm *DataCopyManager) Sync(jobName, srcNodeName, dstNodeName, volName stri
 				}
 			}
 			if err := dcm.k8sControllerClient.Delete(ctx, cm); err != nil {
-				logCtx.WithField("configmap", cm.Name).WithError(err).Warning("Failed to cleanup the rclone configmap, just leak it")
+				logCtx.WithField("configmap", cm.Name).WithError(err).Warning("Failed to cleanup the sync configmap, just leak it")
 			}
 			isJobCompleted = true
 			break
@@ -171,13 +171,13 @@ func (dcm *DataCopyManager) prepareForSync(jobName, srcNodeName, dstNodeName, vo
 	logCtx.Debug("Preparing the resources for volume sync")
 
 	if err := dcm.prepareRemoteAccessKeys(); err != nil {
-		logCtx.WithError(err).Error("Failed to create ssh keys for rclone")
+		logCtx.WithError(err).Error("Failed to create ssh keys for remote access")
 		return err
 	}
 
 	// Prepare the data syncer's configuration, which should be created unique for each volume data copy
 	if err := dcm.syncer.Prepare(dstNodeName, srcNodeName, volName); err != nil {
-		logCtx.WithError(err).Error("Failed to create rclone's config")
+		logCtx.WithError(err).Error("Failed to create remote access config")
 		return err
 	}
 
@@ -209,7 +209,7 @@ func (dcm *DataCopyManager) GenerateSyncKeyConfigMap() *corev1.ConfigMap {
 	syncPubKeyData, syncPrivateKeyData, err := dcm.generateSSHPubAndPrivateKeyCM()
 
 	if err != nil {
-		logger.WithError(err).Errorf("generateRcloneKeyConfigMap generateSSHPubAndPrivateKeyCM")
+		logger.WithError(err).Errorf("Failed to generate remote access key configmap")
 		return cm
 	}
 
@@ -233,30 +233,32 @@ func (dcm *DataCopyManager) GenerateSyncKeyConfigMap() *corev1.ConfigMap {
 func (dcm *DataCopyManager) generateSSHPubAndPrivateKeyCM() (string, string, error) {
 	logger.Debug("GenerateSSHPubAndPrivateKey start ")
 
-	keyFilePath := filepath.Join(SyncKeyDir, SyncPrivateKeyFileName)
+	tmpKeyDir := "/tmp/ssh_keys"
+	privateKeyFilePath := filepath.Join(tmpKeyDir, SyncPrivateKeyFileName)
+	pubKeyFilePath := filepath.Join(tmpKeyDir, SyncPubKeyFileName)
 	paramsRemove := exechelper.ExecParams{
 		CmdName: "rm",
-		CmdArgs: []string{"-rf", keyFilePath},
+		CmdArgs: []string{"-rf", privateKeyFilePath, pubKeyFilePath},
 		Timeout: 0,
 	}
 	resultRemove := dcm.cmdExec.RunCommand(paramsRemove)
 	if resultRemove.ExitCode != 0 {
-		return "", "", fmt.Errorf("rm -rf %s err: %d, %s", keyFilePath, resultRemove.ExitCode, resultRemove.ErrBuf.String())
+		return "", "", fmt.Errorf("rm -rf %s %s err: %d, %s", privateKeyFilePath, pubKeyFilePath, resultRemove.ExitCode, resultRemove.ErrBuf.String())
 	}
 
 	paramsMkdir := exechelper.ExecParams{
 		CmdName: "mkdir",
-		CmdArgs: []string{"-p", SyncKeyDir},
+		CmdArgs: []string{"-p", tmpKeyDir},
 		Timeout: 0,
 	}
 	resultMkdir := dcm.cmdExec.RunCommand(paramsMkdir)
 	if resultMkdir.ExitCode != 0 {
-		return "", "", fmt.Errorf("mkdir -p %s err: %d, %s", SyncKeyDir, resultMkdir.ExitCode, resultMkdir.ErrBuf.String())
+		return "", "", fmt.Errorf("mkdir -p %s err: %d, %s", tmpKeyDir, resultMkdir.ExitCode, resultMkdir.ErrBuf.String())
 	}
 
 	params := exechelper.ExecParams{
 		CmdName: sshkeygenCmd,
-		CmdArgs: []string{"-q", "-b 4096", "-C" + SyncKeyComment, "-f", keyFilePath},
+		CmdArgs: []string{"-q", "-b 2048", "-C" + SyncKeyComment, "-f", privateKeyFilePath},
 		Timeout: 0,
 	}
 	result := dcm.cmdExec.RunCommand(params)
@@ -264,29 +266,27 @@ func (dcm *DataCopyManager) generateSSHPubAndPrivateKeyCM() (string, string, err
 		return "", "", fmt.Errorf("ssh-keygen %s err: %d, %s", SyncKeyComment, result.ExitCode, result.ErrBuf.String())
 	}
 
-	paramsCatRclone := exechelper.ExecParams{
+	cmd := exechelper.ExecParams{
 		CmdName: "cat",
-		CmdArgs: []string{keyFilePath},
+		CmdArgs: []string{privateKeyFilePath},
 		Timeout: 0,
 	}
-	resultCatRclone := dcm.cmdExec.RunCommand(paramsCatRclone)
-	if resultCatRclone.ExitCode != 0 {
-		return "", "", fmt.Errorf("cat %s err: %d, %s", keyFilePath, resultCatRclone.ExitCode, resultCatRclone.ErrBuf.String())
+	privateKeyContent := dcm.cmdExec.RunCommand(cmd)
+	if privateKeyContent.ExitCode != 0 {
+		return "", "", fmt.Errorf("cat %s err: %d, %s", privateKeyFilePath, privateKeyContent.ExitCode, privateKeyContent.ErrBuf.String())
 	}
 
-	paramsCatRclonePub := exechelper.ExecParams{
+	cmd = exechelper.ExecParams{
 		CmdName: "cat",
-		CmdArgs: []string{keyFilePath},
+		CmdArgs: []string{pubKeyFilePath},
 		Timeout: 0,
 	}
-	resultCatRclonePub := dcm.cmdExec.RunCommand(paramsCatRclonePub)
-	if resultCatRclonePub.ExitCode != 0 {
-		return "", "", fmt.Errorf("cat %s err: %d, %s", keyFilePath, resultCatRclonePub.ExitCode, resultCatRclonePub.ErrBuf.String())
+	pubKeyContent := dcm.cmdExec.RunCommand(cmd)
+	if pubKeyContent.ExitCode != 0 {
+		return "", "", fmt.Errorf("cat %s err: %d, %s", pubKeyFilePath, pubKeyContent.ExitCode, pubKeyContent.ErrBuf.String())
 	}
-	PubKeyData := resultCatRclonePub.OutBuf.String()
-	PrivateKeyData := resultCatRclone.OutBuf.String()
 
-	return PubKeyData, PrivateKeyData, nil
+	return pubKeyContent.OutBuf.String(), privateKeyContent.OutBuf.String(), nil
 }
 
 func (dcm *DataCopyManager) RegisterRelatedJob(jobName string, resultCh chan *DataCopyStatus) {

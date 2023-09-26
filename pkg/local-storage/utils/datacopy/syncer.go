@@ -13,22 +13,23 @@ const (
 	SyncJobLabelApp    = "hwameistor-datasync"
 	SyncJobAffinityKey = "kubernetes.io/hostname"
 
-	SyncSrcMountPoint = "/mnt/hwameistor/src/"
-	SyncDstMountPoint = "/mnt/hwameistor/dst/"
+	SyncSourceMountPoint = "/mnt/hwameistor/src/"
+	SyncTargetMountPoint = "/mnt/hwameistor/dst/"
 
-	SyncConfigSrcNodeNameKey     = "sourceNode"
-	SyncConfigDstNodeNameKey     = "targetNode"
-	SyncConfigVolumeNameKey      = "localVolume"
-	SyncConfigSourceNodeReadyKey = "sourceReady"
-	SyncConfigRemoteNodeReadyKey = "targetReady"
-	SyncConfigSyncDoneKey        = "completed"
+	SyncConfigSourceMountPointKey = "sourceMountPoint"
+	SyncConfigTargetMountPointKey = "targetMountPoint"
+	SyncConfigSourceNodeNameKey   = "sourceNode"
+	SyncConfigTargetNodeNameKey   = "targetNode"
+	SyncConfigVolumeNameKey       = "localVolume"
+	SyncConfigSourceNodeReadyKey  = "sourceReady"
+	SyncConfigTargetNodeReadyKey  = "targetReady"
+	SyncConfigSyncDoneKey         = "completed"
 
 	SyncTrue  string = "yes"
 	SyncFalse string = "no"
 
 	SyncJobFinalizer = "hwameistor.io/sync-job-protect"
 
-	SyncToolRClone    = "rclone"
 	SyncToolJuiceSync = "juicesync"
 )
 
@@ -38,14 +39,7 @@ type DataSyncer interface {
 }
 
 func NewSyncer(syncerName string, namespace string, client k8sclient.Client) DataSyncer {
-	if syncerName == SyncToolJuiceSync {
-		return &JuiceSync{
-			namespace: namespace,
-			apiClient: client,
-		}
-	}
-
-	return &RClone{
+	return &JuiceSync{
 		namespace: namespace,
 		apiClient: client,
 	}

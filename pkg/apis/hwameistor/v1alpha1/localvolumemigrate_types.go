@@ -25,7 +25,7 @@ type LocalVolumeMigrateSpec struct {
 
 	// *** common section of all the operations ***
 
-	// +kubebuilder:default:=false
+	// +kubebuilder:default:=true
 	MigrateAllVols bool `json:"migrateAllVols,omitempty"`
 
 	// +kubebuilder:default:=false

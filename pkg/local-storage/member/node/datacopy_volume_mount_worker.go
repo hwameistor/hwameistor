@@ -74,13 +74,13 @@ func (m *manager) processSyncVolumeMount(lvName string) error {
 		return err
 	}
 
-	sourceNodeName := cm.Data[datacopy.SyncConfigSrcNodeNameKey]
-	targetNodeName := cm.Data[datacopy.SyncConfigDstNodeNameKey]
+	sourceNodeName := cm.Data[datacopy.SyncConfigSourceNodeNameKey]
+	targetNodeName := cm.Data[datacopy.SyncConfigTargetNodeNameKey]
 	mountPoint := ""
 	if m.name == sourceNodeName {
-		mountPoint = datacopy.SyncSrcMountPoint + lvName
+		mountPoint = datacopy.SyncSourceMountPoint + lvName
 	} else if m.name == targetNodeName {
-		mountPoint = datacopy.SyncDstMountPoint + lvName
+		mountPoint = datacopy.SyncTargetMountPoint + lvName
 	} else {
 		return nil
 	}
@@ -114,11 +114,13 @@ func (m *manager) processSyncVolumeMount(lvName string) error {
 			return nil
 		}
 		cm.Data[datacopy.SyncConfigSourceNodeReadyKey] = datacopy.SyncTrue
+		cm.Data[datacopy.SyncConfigSourceMountPointKey] = mountPoint
 	} else {
-		if cm.Data[datacopy.SyncConfigRemoteNodeReadyKey] == datacopy.SyncTrue {
+		if cm.Data[datacopy.SyncConfigTargetNodeReadyKey] == datacopy.SyncTrue {
 			return nil
 		}
-		cm.Data[datacopy.SyncConfigRemoteNodeReadyKey] = datacopy.SyncTrue
+		cm.Data[datacopy.SyncConfigTargetNodeReadyKey] = datacopy.SyncTrue
+		cm.Data[datacopy.SyncConfigTargetMountPointKey] = mountPoint
 	}
 	if err := m.apiClient.Update(ctx, cm); err != nil {
 		m.logger.WithField("configmap", cm.Name).WithError(err).Error("Failed to update rclone's config")

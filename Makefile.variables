@@ -89,6 +89,13 @@ BUILDER_TAG = latest
 BUILDER_DOCKERFILE = ${PROJECT_SOURCE_CODE_DIR}/build/builder/Dockerfile
 BUILDER_MOUNT_DST_DIR = /go/src/github.com/hwameistor/hwameistor
 
+# [ JUICESYNC ]
+#----------------
+JUICESYNC_NAME = ${IMAGE_REGISTRY}/${MODULE_NAME}-juicesync
+JUICESYNC_TAG = v1.0.4-01
+JUICESYNC_DOCKERFILE = ${PROJECT_SOURCE_CODE_DIR}/build/juicesync/Dockerfile
+JUICESYNC_MOUNT_DST_DIR = /go/src/github.com/hwameistor/hwameistor
+
 # [OPERATOR]
 #----------------
 # Operator tools

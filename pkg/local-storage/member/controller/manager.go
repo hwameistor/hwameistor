@@ -446,10 +446,10 @@ func (m *manager) handlePodUpdateEvent(_, nObj interface{}) {
 	pod, _ := nObj.(*corev1.Pod)
 
 	// this is for the pod orphan pod which is abandoned by migration rclone job
-	m.rclonePodGC(pod)
+	m.gcSyncJobPod(pod)
 }
 
 func (m *manager) handlePodAddEvent(obj interface{}) {
 	pod, _ := obj.(*corev1.Pod)
-	m.rclonePodGC(pod)
+	m.gcSyncJobPod(pod)
 }

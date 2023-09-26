@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -195,7 +194,7 @@ func (m *manager) isPhysicalNode() bool {
 */
 
 func (m *manager) initForDataSync() {
-	keyFilePath := filepath.Join(datacopy.SyncKeyDir, "authorized_keys")
+	keyFilePath := "/root/.ssh/authorized_keys"
 	if err := utils.TouchFile(keyFilePath); err != nil {
 		m.logger.WithField("file", keyFilePath).WithError(err).Panic("Failed to create a keys file for data copy")
 	}

@@ -446,7 +446,7 @@ func (m *manager) getAllVolumesInGroup(lvg *apisv1alpha1.LocalVolumeGroup) ([]*a
 	return vols, nil
 }
 
-func (m *manager) rclonePodGC(pod *corev1.Pod) error {
+func (m *manager) gcSyncJobPod(pod *corev1.Pod) error {
 	if pod.Namespace == m.namespace && pod.Labels["app"] == datacopy.SyncJobLabelApp && len(pod.OwnerReferences) == 0 && pod.Status.Phase == corev1.PodSucceeded {
 		return m.apiClient.Delete(context.TODO(), pod)
 	}

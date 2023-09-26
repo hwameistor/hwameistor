@@ -58,7 +58,7 @@ spec:
                 default: false
                 type: boolean
               migrateAllVols:
-                default: false
+                default: true
                 type: boolean
               sourceNode:
                 description: source NodeNames
