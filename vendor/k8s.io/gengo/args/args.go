@@ -32,6 +32,7 @@ import (
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/namer"
 	"k8s.io/gengo/parser"
+	"k8s.io/gengo/types"
 
 	"github.com/spf13/pflag"
 )
@@ -152,6 +153,24 @@ func (g *GeneratorArgs) NewBuilder() (*parser.Builder, error) {
 		}
 	}
 	return b, nil
+}
+
+// InputIncludes returns true if the given package is a (sub) package of one of
+// the InputDirs.
+func (g *GeneratorArgs) InputIncludes(p *types.Package) bool {
+	for _, dir := range g.InputDirs {
+		d := dir
+		if strings.HasSuffix(d, "...") {
+			d = strings.TrimSuffix(d, "...")
+		}
+		if strings.HasPrefix(d, "./vendor/") {
+			d = strings.TrimPrefix(d, "./vendor/")
+		}
+		if strings.HasPrefix(p.Path, d) {
+			return true
+		}
+	}
+	return false
 }
 
 // DefaultSourceTree returns the /src directory of the first entry in $GOPATH.

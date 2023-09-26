@@ -68,7 +68,8 @@ func (wh *Webhook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// verify the content type is accurate
-	if contentType := r.Header.Get("Content-Type"); contentType != "application/json" {
+	contentType := r.Header.Get("Content-Type")
+	if contentType != "application/json" {
 		err = fmt.Errorf("contentType=%s, expected application/json", contentType)
 		wh.log.Error(err, "unable to process a request with an unknown content type", "content type", contentType)
 		reviewResponse = Errored(http.StatusBadRequest, err)
@@ -124,7 +125,8 @@ func (wh *Webhook) writeResponseTyped(w io.Writer, response Response, admRevGVK 
 
 // writeAdmissionResponse writes ar to w.
 func (wh *Webhook) writeAdmissionResponse(w io.Writer, ar v1.AdmissionReview) {
-	if err := json.NewEncoder(w).Encode(ar); err != nil {
+	err := json.NewEncoder(w).Encode(ar)
+	if err != nil {
 		wh.log.Error(err, "unable to encode the response")
 		wh.writeResponse(w, Errored(http.StatusInternalServerError, err))
 	} else {

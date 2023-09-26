@@ -18,7 +18,6 @@ package dynamiccertificates
 
 import (
 	"bytes"
-	"context"
 	"crypto/x509"
 	"strings"
 
@@ -27,6 +26,7 @@ import (
 
 type unionCAContent []CAContentProvider
 
+var _ Notifier = &unionCAContent{}
 var _ CAContentProvider = &unionCAContent{}
 var _ ControllerRunner = &unionCAContent{}
 
@@ -77,16 +77,18 @@ func (c unionCAContent) VerifyOptions() (x509.VerifyOptions, bool) {
 // AddListener adds a listener to be notified when the CA content changes.
 func (c unionCAContent) AddListener(listener Listener) {
 	for _, curr := range c {
-		curr.AddListener(listener)
+		if notifier, ok := curr.(Notifier); ok {
+			notifier.AddListener(listener)
+		}
 	}
 }
 
 // AddListener adds a listener to be notified when the CA content changes.
-func (c unionCAContent) RunOnce(ctx context.Context) error {
+func (c unionCAContent) RunOnce() error {
 	errors := []error{}
 	for _, curr := range c {
 		if controller, ok := curr.(ControllerRunner); ok {
-			if err := controller.RunOnce(ctx); err != nil {
+			if err := controller.RunOnce(); err != nil {
 				errors = append(errors, err)
 			}
 		}
@@ -96,10 +98,10 @@ func (c unionCAContent) RunOnce(ctx context.Context) error {
 }
 
 // Run runs the controller
-func (c unionCAContent) Run(ctx context.Context, workers int) {
+func (c unionCAContent) Run(workers int, stopCh <-chan struct{}) {
 	for _, curr := range c {
 		if controller, ok := curr.(ControllerRunner); ok {
-			go controller.Run(ctx, workers)
+			go controller.Run(workers, stopCh)
 		}
 	}
 }

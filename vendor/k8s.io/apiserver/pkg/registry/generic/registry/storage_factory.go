@@ -36,7 +36,7 @@ import (
 // Creates a cacher based given storageConfig.
 func StorageWithCacher() generic.StorageDecorator {
 	return func(
-		storageConfig *storagebackend.ConfigForResource,
+		storageConfig *storagebackend.Config,
 		resourcePrefix string,
 		keyFunc func(obj runtime.Object) (string, error),
 		newFunc func() runtime.Object,
@@ -49,9 +49,8 @@ func StorageWithCacher() generic.StorageDecorator {
 		if err != nil {
 			return s, d, err
 		}
-		if klogV := klog.V(5); klogV.Enabled() {
-			//nolint:logcheck // It complains about the key/value pairs because it cannot check them.
-			klogV.InfoS("Storage caching is enabled", objectTypeToArgs(newFunc())...)
+		if klog.V(5).Enabled() {
+			klog.Infof("Storage caching is enabled for %s", objectTypeToString(newFunc()))
 		}
 
 		cacherConfig := cacherstorage.Config{
@@ -84,16 +83,15 @@ func StorageWithCacher() generic.StorageDecorator {
 	}
 }
 
-func objectTypeToArgs(obj runtime.Object) []interface{} {
+func objectTypeToString(obj runtime.Object) string {
 	// special-case unstructured objects that tell us their apiVersion/kind
 	if u, isUnstructured := obj.(*unstructured.Unstructured); isUnstructured {
 		if apiVersion, kind := u.GetAPIVersion(), u.GetKind(); len(apiVersion) > 0 && len(kind) > 0 {
-			return []interface{}{"apiVersion", apiVersion, "kind", kind}
+			return fmt.Sprintf("apiVersion=%s, kind=%s", apiVersion, kind)
 		}
 	}
-
 	// otherwise just return the type
-	return []interface{}{"type", fmt.Sprintf("%T", obj)}
+	return fmt.Sprintf("%T", obj)
 }
 
 // TODO : Remove all the code below when PR

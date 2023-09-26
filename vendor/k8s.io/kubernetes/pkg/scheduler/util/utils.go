@@ -56,7 +56,7 @@ func GetPodStartTime(pod *v1.Pod) *metav1.Time {
 func GetEarliestPodStartTime(victims *extenderv1.Victims) *metav1.Time {
 	if len(victims.Pods) == 0 {
 		// should not reach here.
-		klog.ErrorS(fmt.Errorf("victims.Pods is empty. Should not reach here"), "")
+		klog.Errorf("victims.Pods is empty. Should not reach here.")
 		return nil
 	}
 
@@ -90,19 +90,15 @@ func MoreImportantPod(pod1, pod2 *v1.Pod) bool {
 	return GetPodStartTime(pod1).Before(GetPodStartTime(pod2))
 }
 
-// PatchPodStatus calculates the delta bytes change from <old.Status> to <newStatus>,
+// PatchPod calculates the delta bytes change from <old> to <new>,
 // and then submit a request to API server to patch the pod changes.
-func PatchPodStatus(cs kubernetes.Interface, old *v1.Pod, newStatus *v1.PodStatus) error {
-	if newStatus == nil {
-		return nil
-	}
-
-	oldData, err := json.Marshal(v1.Pod{Status: old.Status})
+func PatchPod(cs kubernetes.Interface, old *v1.Pod, new *v1.Pod) error {
+	oldData, err := json.Marshal(old)
 	if err != nil {
 		return err
 	}
 
-	newData, err := json.Marshal(v1.Pod{Status: *newStatus})
+	newData, err := json.Marshal(new)
 	if err != nil {
 		return err
 	}
@@ -132,9 +128,9 @@ func ClearNominatedNodeName(cs kubernetes.Interface, pods ...*v1.Pod) utilerrors
 		if len(p.Status.NominatedNodeName) == 0 {
 			continue
 		}
-		podStatusCopy := p.Status.DeepCopy()
-		podStatusCopy.NominatedNodeName = ""
-		if err := PatchPodStatus(cs, p, podStatusCopy); err != nil {
+		podCopy := p.DeepCopy()
+		podCopy.Status.NominatedNodeName = ""
+		if err := PatchPod(cs, p, podCopy); err != nil {
 			errs = append(errs, err)
 		}
 	}

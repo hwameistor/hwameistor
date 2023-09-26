@@ -300,7 +300,6 @@ func (ns *NameStrategy) Name(t *types.Type) string {
 // import. You can implement yourself or use the one in the generation package.
 type ImportTracker interface {
 	AddType(*types.Type)
-	AddSymbol(types.Name)
 	LocalNameOf(packagePath string) string
 	PathOf(localName string) (string, bool)
 	ImportLines() []string

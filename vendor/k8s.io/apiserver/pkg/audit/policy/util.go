@@ -24,10 +24,10 @@ import (
 // AllStages returns all possible stages
 func AllStages() sets.String {
 	return sets.NewString(
-		string(audit.StageRequestReceived),
-		string(audit.StageResponseStarted),
-		string(audit.StageResponseComplete),
-		string(audit.StagePanic),
+		audit.StageRequestReceived,
+		audit.StageResponseStarted,
+		audit.StageResponseComplete,
+		audit.StagePanic,
 	)
 }
 

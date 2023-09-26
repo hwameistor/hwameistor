@@ -15,7 +15,6 @@
 package cmux
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -62,9 +61,6 @@ func (e errListenerClosed) Timeout() bool   { return false }
 // listener is closed.
 var ErrListenerClosed = errListenerClosed("mux: listener closed")
 
-// ErrServerClosed is returned from muxListener.Accept when mux server is closed.
-var ErrServerClosed = errors.New("mux: server closed")
-
 // for readability of readTimeout
 var noTimeout time.Duration
 
@@ -97,8 +93,6 @@ type CMux interface {
 	// Serve starts multiplexing the listener. Serve blocks and perhaps
 	// should be invoked concurrently within a go routine.
 	Serve() error
-	// Closes cmux server and stops accepting any connections on listener
-	Close()
 	// HandleError registers an error handler that handles listener errors.
 	HandleError(ErrorHandler)
 	// sets a timeout for the read of matchers
@@ -114,10 +108,9 @@ type cMux struct {
 	root        net.Listener
 	bufLen      int
 	errh        ErrorHandler
+	donec       chan struct{}
 	sls         []matchersListener
 	readTimeout time.Duration
-	donec       chan struct{}
-	mu          sync.Mutex
 }
 
 func matchersToMatchWriters(matchers []Matcher) []MatchWriter {
@@ -140,7 +133,6 @@ func (m *cMux) MatchWithWriters(matchers ...MatchWriter) net.Listener {
 	ml := muxListener{
 		Listener: m.root,
 		connc:    make(chan net.Conn, m.bufLen),
-		donec:    make(chan struct{}),
 	}
 	m.sls = append(m.sls, matchersListener{ss: matchers, l: ml})
 	return ml
@@ -154,7 +146,7 @@ func (m *cMux) Serve() error {
 	var wg sync.WaitGroup
 
 	defer func() {
-		m.closeDoneChans()
+		close(m.donec)
 		wg.Wait()
 
 		for _, sl := range m.sls {
@@ -212,30 +204,6 @@ func (m *cMux) serve(c net.Conn, donec <-chan struct{}, wg *sync.WaitGroup) {
 	}
 }
 
-func (m *cMux) Close() {
-	m.closeDoneChans()
-}
-
-func (m *cMux) closeDoneChans() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	select {
-	case <-m.donec:
-		// Already closed. Don't close again
-	default:
-		close(m.donec)
-	}
-	for _, sl := range m.sls {
-		select {
-		case <-sl.l.donec:
-			// Already closed. Don't close again
-		default:
-			close(sl.l.donec)
-		}
-	}
-}
-
 func (m *cMux) HandleError(h ErrorHandler) {
 	m.errh = h
 }
@@ -255,19 +223,14 @@ func (m *cMux) handleErr(err error) bool {
 type muxListener struct {
 	net.Listener
 	connc chan net.Conn
-	donec chan struct{}
 }
 
 func (l muxListener) Accept() (net.Conn, error) {
-	select {
-	case c, ok := <-l.connc:
-		if !ok {
-			return nil, ErrListenerClosed
-		}
-		return c, nil
-	case <-l.donec:
-		return nil, ErrServerClosed
+	c, ok := <-l.connc
+	if !ok {
+		return nil, ErrListenerClosed
 	}
+	return c, nil
 }
 
 // MuxConn wraps a net.Conn and provides transparent sniffing of connection data.

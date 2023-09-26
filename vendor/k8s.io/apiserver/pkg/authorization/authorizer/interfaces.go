@@ -71,10 +71,10 @@ type Authorizer interface {
 	Authorize(ctx context.Context, a Attributes) (authorized Decision, reason string, err error)
 }
 
-type AuthorizerFunc func(ctx context.Context, a Attributes) (Decision, string, error)
+type AuthorizerFunc func(a Attributes) (Decision, string, error)
 
 func (f AuthorizerFunc) Authorize(ctx context.Context, a Attributes) (Decision, string, error) {
-	return f(ctx, a)
+	return f(a)
 }
 
 // RuleResolver provides a mechanism for resolving the list of rules that apply to a given user within a namespace.

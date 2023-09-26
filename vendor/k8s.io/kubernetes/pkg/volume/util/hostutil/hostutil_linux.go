@@ -1,4 +1,3 @@
-//go:build linux
 // +build linux
 
 /*
@@ -27,7 +26,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/opencontainers/selinux/go-selinux"
 	"golang.org/x/sys/unix"
 	"k8s.io/klog/v2"
 	"k8s.io/mount-utils"
@@ -231,16 +229,8 @@ func DoMakeRShared(path string, mountInfoFilename string) error {
 	return nil
 }
 
-// selinux.SELinuxEnabled implementation for unit tests
-type seLinuxEnabledFunc func() bool
-
 // GetSELinux is common implementation of GetSELinuxSupport on Linux.
-func GetSELinux(path string, mountInfoFilename string, selinuxEnabled seLinuxEnabledFunc) (bool, error) {
-	// Skip /proc/mounts parsing if SELinux is disabled.
-	if !selinuxEnabled() {
-		return false, nil
-	}
-
+func GetSELinux(path string, mountInfoFilename string) (bool, error) {
 	info, err := findMountInfo(path, mountInfoFilename)
 	if err != nil {
 		return false, err
@@ -263,7 +253,7 @@ func GetSELinux(path string, mountInfoFilename string, selinuxEnabled seLinuxEna
 // GetSELinuxSupport returns true if given path is on a mount that supports
 // SELinux.
 func (hu *HostUtil) GetSELinuxSupport(pathname string) (bool, error) {
-	return GetSELinux(pathname, procMountInfoPath, selinux.GetEnabled)
+	return GetSELinux(pathname, procMountInfoPath)
 }
 
 // GetOwner returns the integer ID for the user and group of the given path

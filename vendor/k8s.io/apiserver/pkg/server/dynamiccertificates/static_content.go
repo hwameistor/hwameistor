@@ -46,8 +46,6 @@ func (c *staticCAContent) Name() string {
 	return c.name
 }
 
-func (c *staticCAContent) AddListener(Listener) {}
-
 // CurrentCABundleContent provides ca bundle byte content
 func (c *staticCAContent) CurrentCABundleContent() (cabundle []byte) {
 	return c.caBundle.caBundle
@@ -63,6 +61,11 @@ type staticCertKeyContent struct {
 	key  []byte
 }
 
+type staticSNICertKeyContent struct {
+	staticCertKeyContent
+	sniNames []string
+}
+
 // NewStaticCertKeyContent returns a CertKeyContentProvider that always returns the same value
 func NewStaticCertKeyContent(name string, cert, key []byte) (CertKeyContentProvider, error) {
 	// Ensure that the key matches the cert and both are valid
@@ -76,23 +79,6 @@ func NewStaticCertKeyContent(name string, cert, key []byte) (CertKeyContentProvi
 		cert: cert,
 		key:  key,
 	}, nil
-}
-
-// Name is just an identifier
-func (c *staticCertKeyContent) Name() string {
-	return c.name
-}
-
-func (c *staticCertKeyContent) AddListener(Listener) {}
-
-// CurrentCertKeyContent provides cert and key content
-func (c *staticCertKeyContent) CurrentCertKeyContent() ([]byte, []byte) {
-	return c.cert, c.key
-}
-
-type staticSNICertKeyContent struct {
-	staticCertKeyContent
-	sniNames []string
 }
 
 // NewStaticSNICertKeyContent returns a SNICertKeyContentProvider that always returns the same value
@@ -113,8 +99,16 @@ func NewStaticSNICertKeyContent(name string, cert, key []byte, sniNames ...strin
 	}, nil
 }
 
+// Name is just an identifier
+func (c *staticCertKeyContent) Name() string {
+	return c.name
+}
+
+// CurrentCertKeyContent provides cert and key content
+func (c *staticCertKeyContent) CurrentCertKeyContent() ([]byte, []byte) {
+	return c.cert, c.key
+}
+
 func (c *staticSNICertKeyContent) SNINames() []string {
 	return c.sniNames
 }
-
-func (c *staticSNICertKeyContent) AddListener(Listener) {}

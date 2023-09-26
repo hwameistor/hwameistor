@@ -32,7 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/audit"
-	"k8s.io/apiserver/pkg/endpoints/handlers/finisher"
 	"k8s.io/apiserver/pkg/endpoints/handlers/negotiation"
 	"k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/features"
@@ -67,7 +66,8 @@ func DeleteResource(r rest.GracefulDeleter, allowsOptions bool, scope *RequestSc
 		defer cancel()
 
 		ctx = request.WithNamespace(ctx, namespace)
-		admit = admission.WithAudit(admit)
+		ae := request.AuditEventFrom(ctx)
+		admit = admission.WithAudit(admit, ae)
 
 		outputMediaType, _, err := negotiation.NegotiateOutputMediaType(req, scope.Serializer, scope)
 		if err != nil {
@@ -91,7 +91,7 @@ func DeleteResource(r rest.GracefulDeleter, allowsOptions bool, scope *RequestSc
 				// For backwards compatibility, we need to allow existing clients to submit per group DeleteOptions
 				// It is also allowed to pass a body with meta.k8s.io/v1.DeleteOptions
 				defaultGVK := scope.MetaGroupVersion.WithKind("DeleteOptions")
-				obj, gvk, err := metainternalversionscheme.Codecs.DecoderToVersion(s.Serializer, defaultGVK.GroupVersion()).Decode(body, &defaultGVK, options)
+				obj, _, err := metainternalversionscheme.Codecs.DecoderToVersion(s.Serializer, defaultGVK.GroupVersion()).Decode(body, &defaultGVK, options)
 				if err != nil {
 					scope.err(err, w, req)
 					return
@@ -102,8 +102,8 @@ func DeleteResource(r rest.GracefulDeleter, allowsOptions bool, scope *RequestSc
 				}
 				trace.Step("Decoded delete options")
 
-				objGV := gvk.GroupVersion()
-				audit.LogRequestObject(req.Context(), obj, objGV, scope.Resource, scope.Subresource, scope.Serializer)
+				ae := request.AuditEventFrom(ctx)
+				audit.LogRequestObject(ae, obj, scope.Resource, scope.Subresource, scope.Serializer)
 				trace.Step("Recorded the audit event")
 			} else {
 				if err := metainternalversionscheme.ParameterCodec.DecodeParameters(req.URL.Query(), scope.MetaGroupVersion, options); err != nil {
@@ -124,7 +124,7 @@ func DeleteResource(r rest.GracefulDeleter, allowsOptions bool, scope *RequestSc
 		wasDeleted := true
 		userInfo, _ := request.UserFrom(ctx)
 		staticAdmissionAttrs := admission.NewAttributesRecord(nil, nil, scope.Kind, namespace, name, scope.Resource, scope.Subresource, admission.Delete, options, dryrun.IsDryRun(options.DryRun), userInfo)
-		result, err := finisher.FinishRequest(ctx, func() (runtime.Object, error) {
+		result, err := finishRequest(ctx, func() (runtime.Object, error) {
 			obj, deleted, err := r.Delete(ctx, name, rest.AdmissionToValidateObjectDeleteFunc(admit, staticAdmissionAttrs, scope), options)
 			wasDeleted = deleted
 			return obj, err
@@ -142,8 +142,7 @@ func DeleteResource(r rest.GracefulDeleter, allowsOptions bool, scope *RequestSc
 		// that will break existing clients.
 		// Other cases where resource is not instantly deleted are: namespace deletion
 		// and pod graceful deletion.
-		//nolint:staticcheck // SA1019 backwards compatibility
-		//nolint: staticcheck
+		//lint:ignore SA1019 backwards compatibility
 		if !wasDeleted && options.OrphanDependents != nil && !*options.OrphanDependents {
 			status = http.StatusAccepted
 		}
@@ -160,8 +159,6 @@ func DeleteResource(r rest.GracefulDeleter, allowsOptions bool, scope *RequestSc
 			}
 		}
 
-		trace.Step("About to write a response")
-		defer trace.Step("Writing http response done")
 		transformResponseObject(ctx, scope, trace, req, w, status, outputMediaType, result)
 	}
 }
@@ -189,6 +186,7 @@ func DeleteCollection(r rest.CollectionDeleter, checkBody bool, scope *RequestSc
 		defer cancel()
 
 		ctx = request.WithNamespace(ctx, namespace)
+		ae := request.AuditEventFrom(ctx)
 
 		outputMediaType, _, err := negotiation.NegotiateOutputMediaType(req, scope.Serializer, scope)
 		if err != nil {
@@ -239,7 +237,7 @@ func DeleteCollection(r rest.CollectionDeleter, checkBody bool, scope *RequestSc
 				// For backwards compatibility, we need to allow existing clients to submit per group DeleteOptions
 				// It is also allowed to pass a body with meta.k8s.io/v1.DeleteOptions
 				defaultGVK := scope.Kind.GroupVersion().WithKind("DeleteOptions")
-				obj, gvk, err := scope.Serializer.DecoderToVersion(s.Serializer, defaultGVK.GroupVersion()).Decode(body, &defaultGVK, options)
+				obj, _, err := scope.Serializer.DecoderToVersion(s.Serializer, defaultGVK.GroupVersion()).Decode(body, &defaultGVK, options)
 				if err != nil {
 					scope.err(err, w, req)
 					return
@@ -249,8 +247,8 @@ func DeleteCollection(r rest.CollectionDeleter, checkBody bool, scope *RequestSc
 					return
 				}
 
-				objGV := gvk.GroupVersion()
-				audit.LogRequestObject(req.Context(), obj, objGV, scope.Resource, scope.Subresource, scope.Serializer)
+				ae := request.AuditEventFrom(ctx)
+				audit.LogRequestObject(ae, obj, scope.Resource, scope.Subresource, scope.Serializer)
 			} else {
 				if err := metainternalversionscheme.ParameterCodec.DecodeParameters(req.URL.Query(), scope.MetaGroupVersion, options); err != nil {
 					err = errors.NewBadRequest(err.Error())
@@ -266,10 +264,10 @@ func DeleteCollection(r rest.CollectionDeleter, checkBody bool, scope *RequestSc
 		}
 		options.TypeMeta.SetGroupVersionKind(metav1.SchemeGroupVersion.WithKind("DeleteOptions"))
 
-		admit = admission.WithAudit(admit)
+		admit = admission.WithAudit(admit, ae)
 		userInfo, _ := request.UserFrom(ctx)
 		staticAdmissionAttrs := admission.NewAttributesRecord(nil, nil, scope.Kind, namespace, "", scope.Resource, scope.Subresource, admission.Delete, options, dryrun.IsDryRun(options.DryRun), userInfo)
-		result, err := finisher.FinishRequest(ctx, func() (runtime.Object, error) {
+		result, err := finishRequest(ctx, func() (runtime.Object, error) {
 			return r.DeleteCollection(ctx, rest.AdmissionToValidateObjectDeleteFunc(admit, staticAdmissionAttrs, scope), options, &listOptions)
 		})
 		if err != nil {
@@ -289,8 +287,6 @@ func DeleteCollection(r rest.CollectionDeleter, checkBody bool, scope *RequestSc
 			}
 		}
 
-		trace.Step("About to write a response")
-		defer trace.Step("Writing http response done")
 		transformResponseObject(ctx, scope, trace, req, w, http.StatusOK, outputMediaType, result)
 	}
 }

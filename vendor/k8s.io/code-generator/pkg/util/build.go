@@ -18,12 +18,10 @@ package util
 
 import (
 	gobuild "go/build"
-	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
-
-	"golang.org/x/tools/go/packages"
 )
 
 type empty struct{}
@@ -57,37 +55,9 @@ func hasSubdir(root, dir string) (rel string, ok bool) {
 	return filepath.ToSlash(dir[len(root):]), true
 }
 
-// BoilerplatePath returns the path to the boilerplate file in code-generator,
-// or "" if the default boilerplate.go.txt file cannot be located.
+// BoilerplatePath uses the boilerplate in code-generator by calculating the relative path to it.
 func BoilerplatePath() string {
-	// set up paths to check
-	paths := []string{
-		// works when run from root of $GOPATH containing k8s.io/code-generator
-		filepath.Join(reflect.TypeOf(empty{}).PkgPath(), "/../../hack/boilerplate.go.txt"),
-		// works when run from root of module vendoring k8s.io/code-generator
-		"vendor/k8s.io/code-generator/hack/boilerplate.go.txt",
-		// works when run from root of $GOPATH containing k8s.io/kubernetes
-		"k8s.io/kubernetes/vendor/k8s.io/code-generator/hack/boilerplate.go.txt",
-	}
-
-	// see if we can locate the module directory and add that to the list
-	config := packages.Config{Mode: packages.NeedModule}
-	if loadedPackages, err := packages.Load(&config, "k8s.io/code-generator/pkg/util"); err == nil {
-		for _, loadedPackage := range loadedPackages {
-			if loadedPackage.Module != nil && loadedPackage.Module.Dir != "" {
-				paths = append(paths, filepath.Join(loadedPackage.Module.Dir, "hack/boilerplate.go.txt"))
-			}
-		}
-	}
-
-	// try all paths and return the first that exists
-	for _, path := range paths {
-		if _, err := os.Stat(path); err == nil {
-			return path
-		}
-	}
-	// cannot be located, invoker will have to explicitly specify boilerplate file
-	return ""
+	return path.Join(reflect.TypeOf(empty{}).PkgPath(), "/../../hack/boilerplate.go.txt")
 }
 
 // Vendorless trims vendor prefix from a package path to make it canonical

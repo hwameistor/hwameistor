@@ -40,7 +40,7 @@ type KubeAwareEncoder struct {
 	Verbose bool
 }
 
-// namespacedNameWrapper is a zapcore.ObjectMarshaler for Kubernetes NamespacedName.
+// namespacedNameWrapper is a zapcore.ObjectMarshaler for Kubernetes NamespacedName
 type namespacedNameWrapper struct {
 	types.NamespacedName
 }
@@ -60,11 +60,12 @@ type kubeObjectWrapper struct {
 	obj runtime.Object
 }
 
-// MarshalLogObject implements zapcore.ObjectMarshaler.
+// MarshalLogObject implements zapcore.ObjectMarshaler
 func (w kubeObjectWrapper) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	// TODO(directxman12): log kind and apiversion if not set explicitly (common case)
 	// -- needs an a scheme to convert to the GVK.
-	if gvk := w.obj.GetObjectKind().GroupVersionKind(); gvk.Version != "" {
+	gvk := w.obj.GetObjectKind().GroupVersionKind()
+	if gvk.Version != "" {
 		enc.AddString("apiVersion", gvk.GroupVersion().String())
 		enc.AddString("kind", gvk.Kind)
 	}
@@ -74,7 +75,8 @@ func (w kubeObjectWrapper) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 		return fmt.Errorf("got runtime.Object without object metadata: %v", w.obj)
 	}
 
-	if ns := objMeta.GetNamespace(); ns != "" {
+	ns := objMeta.GetNamespace()
+	if ns != "" {
 		enc.AddString("namespace", ns)
 	}
 	enc.AddString("name", objMeta.GetName())
@@ -84,14 +86,14 @@ func (w kubeObjectWrapper) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 
 // NB(directxman12): can't just override AddReflected, since the encoder calls AddReflected on itself directly
 
-// Clone implements zapcore.Encoder.
+// Clone implements zapcore.Encoder
 func (k *KubeAwareEncoder) Clone() zapcore.Encoder {
 	return &KubeAwareEncoder{
 		Encoder: k.Encoder.Clone(),
 	}
 }
 
-// EncodeEntry implements zapcore.Encoder.
+// EncodeEntry implements zapcore.Encoder
 func (k *KubeAwareEncoder) EncodeEntry(entry zapcore.Entry, fields []zapcore.Field) (*buffer.Buffer, error) {
 	if k.Verbose {
 		// Kubernetes objects implement fmt.Stringer, so if we

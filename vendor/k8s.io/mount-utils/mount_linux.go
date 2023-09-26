@@ -1,4 +1,3 @@
-//go:build linux
 // +build linux
 
 /*
@@ -46,8 +45,6 @@ const (
 	fsckErrorsCorrected = 1
 	// 'fsck' found errors but exited without correcting them
 	fsckErrorsUncorrected = 4
-	// Error thrown by exec cmd.Run() when process spawned by cmd.Start() completes before cmd.Wait() is called (see - k/k issue #103753)
-	errNoChildProcesses = "wait: no child processes"
 )
 
 // Mounter provides the default implementation of mount.Interface
@@ -90,11 +87,11 @@ func (mounter *Mounter) MountSensitive(source string, target string, fstype stri
 	mounterPath := ""
 	bind, bindOpts, bindRemountOpts, bindRemountOptsSensitive := MakeBindOptsSensitive(options, sensitiveOptions)
 	if bind {
-		err := mounter.doMount(mounterPath, defaultMountCommand, source, target, fstype, bindOpts, bindRemountOptsSensitive, nil /* mountFlags */, true)
+		err := mounter.doMount(mounterPath, defaultMountCommand, source, target, fstype, bindOpts, bindRemountOptsSensitive, true)
 		if err != nil {
 			return err
 		}
-		return mounter.doMount(mounterPath, defaultMountCommand, source, target, fstype, bindRemountOpts, bindRemountOptsSensitive, nil /* mountFlags */, true)
+		return mounter.doMount(mounterPath, defaultMountCommand, source, target, fstype, bindRemountOpts, bindRemountOptsSensitive, true)
 	}
 	// The list of filesystems that require containerized mounter on GCI image cluster
 	fsTypesNeedMounter := map[string]struct{}{
@@ -106,24 +103,19 @@ func (mounter *Mounter) MountSensitive(source string, target string, fstype stri
 	if _, ok := fsTypesNeedMounter[fstype]; ok {
 		mounterPath = mounter.mounterPath
 	}
-	return mounter.doMount(mounterPath, defaultMountCommand, source, target, fstype, options, sensitiveOptions, nil /* mountFlags */, true)
+	return mounter.doMount(mounterPath, defaultMountCommand, source, target, fstype, options, sensitiveOptions, true)
 }
 
 // MountSensitiveWithoutSystemd is the same as MountSensitive() but disable using systemd mount.
 func (mounter *Mounter) MountSensitiveWithoutSystemd(source string, target string, fstype string, options []string, sensitiveOptions []string) error {
-	return mounter.MountSensitiveWithoutSystemdWithMountFlags(source, target, fstype, options, sensitiveOptions, nil /* mountFlags */)
-}
-
-// MountSensitiveWithoutSystemdWithMountFlags is the same as MountSensitiveWithoutSystemd with additional mount flags.
-func (mounter *Mounter) MountSensitiveWithoutSystemdWithMountFlags(source string, target string, fstype string, options []string, sensitiveOptions []string, mountFlags []string) error {
 	mounterPath := ""
 	bind, bindOpts, bindRemountOpts, bindRemountOptsSensitive := MakeBindOptsSensitive(options, sensitiveOptions)
 	if bind {
-		err := mounter.doMount(mounterPath, defaultMountCommand, source, target, fstype, bindOpts, bindRemountOptsSensitive, mountFlags, false)
+		err := mounter.doMount(mounterPath, defaultMountCommand, source, target, fstype, bindOpts, bindRemountOptsSensitive, false)
 		if err != nil {
 			return err
 		}
-		return mounter.doMount(mounterPath, defaultMountCommand, source, target, fstype, bindRemountOpts, bindRemountOptsSensitive, mountFlags, false)
+		return mounter.doMount(mounterPath, defaultMountCommand, source, target, fstype, bindRemountOpts, bindRemountOptsSensitive, false)
 	}
 	// The list of filesystems that require containerized mounter on GCI image cluster
 	fsTypesNeedMounter := map[string]struct{}{
@@ -135,14 +127,14 @@ func (mounter *Mounter) MountSensitiveWithoutSystemdWithMountFlags(source string
 	if _, ok := fsTypesNeedMounter[fstype]; ok {
 		mounterPath = mounter.mounterPath
 	}
-	return mounter.doMount(mounterPath, defaultMountCommand, source, target, fstype, options, sensitiveOptions, mountFlags, false)
+	return mounter.doMount(mounterPath, defaultMountCommand, source, target, fstype, options, sensitiveOptions, false)
 }
 
 // doMount runs the mount command. mounterPath is the path to mounter binary if containerized mounter is used.
 // sensitiveOptions is an extension of options except they will not be logged (because they may contain sensitive material)
 // systemdMountRequired is an extension of option to decide whether uses systemd mount.
-func (mounter *Mounter) doMount(mounterPath string, mountCmd string, source string, target string, fstype string, options []string, sensitiveOptions []string, mountFlags []string, systemdMountRequired bool) error {
-	mountArgs, mountArgsLogStr := MakeMountArgsSensitiveWithMountFlags(source, target, fstype, options, sensitiveOptions, mountFlags)
+func (mounter *Mounter) doMount(mounterPath string, mountCmd string, source string, target string, fstype string, options []string, sensitiveOptions []string, systemdMountRequired bool) error {
+	mountArgs, mountArgsLogStr := MakeMountArgsSensitive(source, target, fstype, options, sensitiveOptions)
 	if len(mounterPath) > 0 {
 		mountArgs = append([]string{mountCmd}, mountArgs...)
 		mountArgsLogStr = mountCmd + " " + mountArgsLogStr
@@ -184,14 +176,6 @@ func (mounter *Mounter) doMount(mounterPath string, mountCmd string, source stri
 	command := exec.Command(mountCmd, mountArgs...)
 	output, err := command.CombinedOutput()
 	if err != nil {
-		if err.Error() == errNoChildProcesses {
-			if command.ProcessState.Success() {
-				// We don't consider errNoChildProcesses an error if the process itself succeeded (see - k/k issue #103753).
-				return nil
-			}
-			// Rewrite err with the actual exit error of the process.
-			err = &exec.ExitError{ProcessState: command.ProcessState}
-		}
 		klog.Errorf("Mount failed: %v\nMounting command: %s\nMounting arguments: %s\nOutput: %s\n", err, mountCmd, mountArgsLogStr, string(output))
 		return fmt.Errorf("mount failed: %v\nMounting command: %s\nMounting arguments: %s\nOutput: %s",
 			err, mountCmd, mountArgsLogStr, string(output))
@@ -233,22 +217,10 @@ func MakeMountArgs(source, target, fstype string, options []string) (mountArgs [
 // MakeMountArgsSensitive makes the arguments to the mount(8) command.
 // sensitiveOptions is an extension of options except they will not be logged (because they may contain sensitive material)
 func MakeMountArgsSensitive(source, target, fstype string, options []string, sensitiveOptions []string) (mountArgs []string, mountArgsLogStr string) {
-	return MakeMountArgsSensitiveWithMountFlags(source, target, fstype, options, sensitiveOptions, nil /* mountFlags */)
-}
-
-// MakeMountArgsSensitiveWithMountFlags makes the arguments to the mount(8) command.
-// sensitiveOptions is an extension of options except they will not be logged (because they may contain sensitive material)
-// mountFlags are additional mount flags that are not related with the fstype
-// and mount options
-func MakeMountArgsSensitiveWithMountFlags(source, target, fstype string, options []string, sensitiveOptions []string, mountFlags []string) (mountArgs []string, mountArgsLogStr string) {
 	// Build mount command as follows:
-	//   mount [$mountFlags] [-t $fstype] [-o $options] [$source] $target
+	//   mount [-t $fstype] [-o $options] [$source] $target
 	mountArgs = []string{}
 	mountArgsLogStr = ""
-
-	mountArgs = append(mountArgs, mountFlags...)
-	mountArgsLogStr += strings.Join(mountFlags, " ")
-
 	if len(fstype) > 0 {
 		mountArgs = append(mountArgs, "-t", fstype)
 		mountArgsLogStr += strings.Join(mountArgs, " ")
@@ -295,14 +267,6 @@ func (mounter *Mounter) Unmount(target string) error {
 	command := exec.Command("umount", target)
 	output, err := command.CombinedOutput()
 	if err != nil {
-		if err.Error() == errNoChildProcesses {
-			if command.ProcessState.Success() {
-				// We don't consider errNoChildProcesses an error if the process itself succeeded (see - k/k issue #103753).
-				return nil
-			}
-			// Rewrite err with the actual exit error of the process.
-			err = &exec.ExitError{ProcessState: command.ProcessState}
-		}
 		return fmt.Errorf("unmount failed: %v\nUnmounting arguments: %s\nOutput: %s", err, target, string(output))
 	}
 	return nil
@@ -437,11 +401,6 @@ func (mounter *SafeFormatAndMount) formatAndMountSensitive(source string, target
 			args = []string{
 				"-F",  // Force flag
 				"-m0", // Zero blocks reserved for super-user
-				source,
-			}
-		} else if fstype == "xfs" {
-			args = []string{
-				"-f", // force flag
 				source,
 			}
 		}
