@@ -1,12 +1,12 @@
 package udev
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
-	"k8s.io/apimachinery/pkg/util/json"
 )
 
 type Device struct {
