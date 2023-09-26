@@ -24,7 +24,8 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/kubernetes"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 )
@@ -44,7 +45,7 @@ type Provider struct {
 	scheme *runtime.Scheme
 	// logger is the logger to use when logging diagnostic event info
 	logger          logr.Logger
-	evtClient       corev1client.EventInterface
+	evtClient       typedcorev1.EventInterface
 	makeBroadcaster EventBroadcasterProducer
 
 	broadcasterOnce sync.Once
@@ -97,7 +98,7 @@ func (p *Provider) getBroadcaster() record.EventBroadcaster {
 
 	p.broadcasterOnce.Do(func() {
 		broadcaster, stop := p.makeBroadcaster()
-		broadcaster.StartRecordingToSink(&corev1client.EventSinkImpl{Interface: p.evtClient})
+		broadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: p.evtClient})
 		broadcaster.StartEventWatcher(
 			func(e *corev1.Event) {
 				p.logger.V(1).Info(e.Type, "object", e.InvolvedObject, "reason", e.Reason, "message", e.Message)
@@ -111,12 +112,12 @@ func (p *Provider) getBroadcaster() record.EventBroadcaster {
 
 // NewProvider create a new Provider instance.
 func NewProvider(config *rest.Config, scheme *runtime.Scheme, logger logr.Logger, makeBroadcaster EventBroadcasterProducer) (*Provider, error) {
-	corev1Client, err := corev1client.NewForConfig(config)
+	clientSet, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to init client: %w", err)
+		return nil, fmt.Errorf("failed to init clientSet: %w", err)
 	}
 
-	p := &Provider{scheme: scheme, logger: logger, makeBroadcaster: makeBroadcaster, evtClient: corev1Client.Events("")}
+	p := &Provider{scheme: scheme, logger: logger, makeBroadcaster: makeBroadcaster, evtClient: clientSet.CoreV1().Events("")}
 	return p, nil
 }
 

@@ -41,18 +41,18 @@ type StateKey string
 // StateData stored by one plugin can be read, altered, or deleted by another plugin.
 // CycleState does not provide any data protection, as all plugins are assumed to be
 // trusted.
-// Note: CycleState uses a sync.Map to back the storage. It's aimed to optimize for the "write once and read many times" scenarios.
-// It is the recommended pattern used in all in-tree plugins - plugin-specific state is written once in PreFilter/PreScore and afterwards read many times in Filter/Score.
 type CycleState struct {
-	// storage is keyed with StateKey, and valued with StateData.
-	storage sync.Map
+	mx      sync.RWMutex
+	storage map[StateKey]StateData
 	// if recordPluginMetrics is true, PluginExecutionDuration will be recorded for this cycle.
 	recordPluginMetrics bool
 }
 
 // NewCycleState initializes a new CycleState and returns its pointer.
 func NewCycleState() *CycleState {
-	return &CycleState{}
+	return &CycleState{
+		storage: make(map[StateKey]StateData),
+	}
 }
 
 // ShouldRecordPluginMetrics returns whether PluginExecutionDuration metrics should be recorded.
@@ -78,32 +78,53 @@ func (c *CycleState) Clone() *CycleState {
 		return nil
 	}
 	copy := NewCycleState()
-	c.storage.Range(func(k, v interface{}) bool {
-		copy.storage.Store(k, v.(StateData).Clone())
-		return true
-	})
-
+	for k, v := range c.storage {
+		copy.Write(k, v.Clone())
+	}
 	return copy
 }
 
 // Read retrieves data with the given "key" from CycleState. If the key is not
 // present an error is returned.
-// This function is thread safe by using sync.Map.
+// This function is not thread safe. In multi-threaded code, lock should be
+// acquired first.
 func (c *CycleState) Read(key StateKey) (StateData, error) {
-	if v, ok := c.storage.Load(key); ok {
-		return v.(StateData), nil
+	if v, ok := c.storage[key]; ok {
+		return v, nil
 	}
 	return nil, ErrNotFound
 }
 
 // Write stores the given "val" in CycleState with the given "key".
-// This function is thread safe by using sync.Map.
+// This function is not thread safe. In multi-threaded code, lock should be
+// acquired first.
 func (c *CycleState) Write(key StateKey, val StateData) {
-	c.storage.Store(key, val)
+	c.storage[key] = val
 }
 
 // Delete deletes data with the given key from CycleState.
-// This function is thread safe by using sync.Map.
+// This function is not thread safe. In multi-threaded code, lock should be
+// acquired first.
 func (c *CycleState) Delete(key StateKey) {
-	c.storage.Delete(key)
+	delete(c.storage, key)
+}
+
+// Lock acquires CycleState lock.
+func (c *CycleState) Lock() {
+	c.mx.Lock()
+}
+
+// Unlock releases CycleState lock.
+func (c *CycleState) Unlock() {
+	c.mx.Unlock()
+}
+
+// RLock acquires CycleState read lock.
+func (c *CycleState) RLock() {
+	c.mx.RLock()
+}
+
+// RUnlock releases CycleState read lock.
+func (c *CycleState) RUnlock() {
+	c.mx.RUnlock()
 }

@@ -24,13 +24,11 @@ import (
 	"net/http"
 	"runtime"
 	"sync"
-	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apiserver/pkg/endpoints/metrics"
 	apirequest "k8s.io/apiserver/pkg/endpoints/request"
-	"k8s.io/apiserver/pkg/endpoints/responsewriter"
 )
 
 // WithTimeoutForNonLongRunningRequests times out non-long-running requests after the time given by timeout.
@@ -91,12 +89,7 @@ func (t *timeoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// resultCh is used as both errCh and stopCh
 	resultCh := make(chan interface{})
-	var tw timeoutWriter
-	tw, w = newTimeoutWriter(w)
-
-	// Make a copy of request and work on it in new goroutine
-	// to avoid race condition when accessing/modifying request (e.g. headers)
-	rCopy := r.Clone(r.Context())
+	tw := newTimeoutWriter(w)
 	go func() {
 		defer func() {
 			err := recover()
@@ -111,7 +104,7 @@ func (t *timeoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			resultCh <- err
 		}()
-		t.handler.ServeHTTP(w, rCopy)
+		t.handler.ServeHTTP(tw, r)
 	}()
 	select {
 	case err := <-resultCh:
@@ -126,23 +119,19 @@ func (t *timeoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			// the work needs to send to it. This is defer'd to ensure it runs
 			// ever if the post timeout work itself panics.
 			go func() {
-				timedOutAt := time.Now()
 				res := <-resultCh
-
-				status := metrics.PostTimeoutHandlerOK
 				if res != nil {
-					// a non nil res indicates that there was a panic.
-					status = metrics.PostTimeoutHandlerPanic
+					switch t := res.(type) {
+					case error:
+						utilruntime.HandleError(t)
+					default:
+						utilruntime.HandleError(fmt.Errorf("%v", res))
+					}
 				}
-
-				metrics.RecordRequestPostTimeout(metrics.PostTimeoutSourceTimeoutHandler, status)
-				err := fmt.Errorf("post-timeout activity - time-elapsed: %s, %v %q result: %v",
-					time.Since(timedOutAt), r.Method, r.URL.Path, res)
-				utilruntime.HandleError(err)
 			}()
 		}()
 
-		defer postTimeoutFn()
+		postTimeoutFn()
 		tw.timeout(err)
 	}
 }
@@ -152,21 +141,26 @@ type timeoutWriter interface {
 	timeout(*apierrors.StatusError)
 }
 
-func newTimeoutWriter(w http.ResponseWriter) (timeoutWriter, http.ResponseWriter) {
-	base := &baseTimeoutWriter{w: w, handlerHeaders: w.Header().Clone()}
-	wrapped := responsewriter.WrapForHTTP1Or2(base)
+func newTimeoutWriter(w http.ResponseWriter) timeoutWriter {
+	base := &baseTimeoutWriter{w: w}
 
-	return base, wrapped
+	_, notifiable := w.(http.CloseNotifier)
+	_, hijackable := w.(http.Hijacker)
+
+	switch {
+	case notifiable && hijackable:
+		return &closeHijackTimeoutWriter{base}
+	case notifiable:
+		return &closeTimeoutWriter{base}
+	case hijackable:
+		return &hijackTimeoutWriter{base}
+	default:
+		return base
+	}
 }
-
-var _ http.ResponseWriter = &baseTimeoutWriter{}
-var _ responsewriter.UserProvidedDecorator = &baseTimeoutWriter{}
 
 type baseTimeoutWriter struct {
 	w http.ResponseWriter
-
-	// headers written by the normal handler
-	handlerHeaders http.Header
 
 	mu sync.Mutex
 	// if the timeout handler has timeout
@@ -177,10 +171,6 @@ type baseTimeoutWriter struct {
 	hijacked bool
 }
 
-func (tw *baseTimeoutWriter) Unwrap() http.ResponseWriter {
-	return tw.w
-}
-
 func (tw *baseTimeoutWriter) Header() http.Header {
 	tw.mu.Lock()
 	defer tw.mu.Unlock()
@@ -189,7 +179,7 @@ func (tw *baseTimeoutWriter) Header() http.Header {
 		return http.Header{}
 	}
 
-	return tw.handlerHeaders
+	return tw.w.Header()
 }
 
 func (tw *baseTimeoutWriter) Write(p []byte) (int, error) {
@@ -203,10 +193,7 @@ func (tw *baseTimeoutWriter) Write(p []byte) (int, error) {
 		return 0, http.ErrHijacked
 	}
 
-	if !tw.wroteHeader {
-		copyHeaders(tw.w.Header(), tw.handlerHeaders)
-		tw.wroteHeader = true
-	}
+	tw.wroteHeader = true
 	return tw.w.Write(p)
 }
 
@@ -218,9 +205,9 @@ func (tw *baseTimeoutWriter) Flush() {
 		return
 	}
 
-	// the outer ResponseWriter object returned by WrapForHTTP1Or2 implements
-	// http.Flusher if the inner object (tw.w) implements http.Flusher.
-	tw.w.(http.Flusher).Flush()
+	if flusher, ok := tw.w.(http.Flusher); ok {
+		flusher.Flush()
+	}
 }
 
 func (tw *baseTimeoutWriter) WriteHeader(code int) {
@@ -231,15 +218,8 @@ func (tw *baseTimeoutWriter) WriteHeader(code int) {
 		return
 	}
 
-	copyHeaders(tw.w.Header(), tw.handlerHeaders)
 	tw.wroteHeader = true
 	tw.w.WriteHeader(code)
-}
-
-func copyHeaders(dst, src http.Header) {
-	for k, v := range src {
-		dst[k] = v
-	}
 }
 
 func (tw *baseTimeoutWriter) timeout(err *apierrors.StatusError) {
@@ -274,7 +254,7 @@ func (tw *baseTimeoutWriter) timeout(err *apierrors.StatusError) {
 	}
 }
 
-func (tw *baseTimeoutWriter) CloseNotify() <-chan bool {
+func (tw *baseTimeoutWriter) closeNotify() <-chan bool {
 	tw.mu.Lock()
 	defer tw.mu.Unlock()
 
@@ -284,24 +264,47 @@ func (tw *baseTimeoutWriter) CloseNotify() <-chan bool {
 		return done
 	}
 
-	// the outer ResponseWriter object returned by WrapForHTTP1Or2 implements
-	// http.CloseNotifier if the inner object (tw.w) implements http.CloseNotifier.
 	return tw.w.(http.CloseNotifier).CloseNotify()
 }
 
-func (tw *baseTimeoutWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+func (tw *baseTimeoutWriter) hijack() (net.Conn, *bufio.ReadWriter, error) {
 	tw.mu.Lock()
 	defer tw.mu.Unlock()
 
 	if tw.timedOut {
 		return nil, nil, http.ErrHandlerTimeout
 	}
-
-	// the outer ResponseWriter object returned by WrapForHTTP1Or2 implements
-	// http.Hijacker if the inner object (tw.w) implements http.Hijacker.
 	conn, rw, err := tw.w.(http.Hijacker).Hijack()
 	if err == nil {
 		tw.hijacked = true
 	}
 	return conn, rw, err
+}
+
+type closeTimeoutWriter struct {
+	*baseTimeoutWriter
+}
+
+func (tw *closeTimeoutWriter) CloseNotify() <-chan bool {
+	return tw.closeNotify()
+}
+
+type hijackTimeoutWriter struct {
+	*baseTimeoutWriter
+}
+
+func (tw *hijackTimeoutWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return tw.hijack()
+}
+
+type closeHijackTimeoutWriter struct {
+	*baseTimeoutWriter
+}
+
+func (tw *closeHijackTimeoutWriter) CloseNotify() <-chan bool {
+	return tw.closeNotify()
+}
+
+func (tw *closeHijackTimeoutWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return tw.hijack()
 }

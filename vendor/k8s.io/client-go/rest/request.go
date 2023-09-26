@@ -39,13 +39,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/streaming"
+	utilclock "k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apimachinery/pkg/watch"
 	restclientwatch "k8s.io/client-go/rest/watch"
 	"k8s.io/client-go/tools/metrics"
 	"k8s.io/client-go/util/flowcontrol"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/clock"
 )
 
 var (
@@ -82,12 +82,6 @@ func (r *RequestConstructionError) Error() string {
 
 var noBackoff = &NoBackoff{}
 
-type requestRetryFunc func(maxRetries int) WithRetry
-
-func defaultRequestRetryFn(maxRetries int) WithRetry {
-	return &withRetry{maxRetries: maxRetries}
-}
-
 // Request allows for building up a request to a server in a chained fashion.
 // Any errors are stored until the end of your call, so you only have to
 // check once.
@@ -118,8 +112,6 @@ type Request struct {
 	// output
 	err  error
 	body io.Reader
-
-	retryFn requestRetryFunc
 }
 
 // NewRequest creates a new request helper object for accessing runtime.Objects on a server.
@@ -151,7 +143,6 @@ func NewRequest(c *RESTClient) *Request {
 		timeout:        timeout,
 		pathPrefix:     pathPrefix,
 		maxRetries:     10,
-		retryFn:        defaultRequestRetryFn,
 		warningHandler: c.warningHandler,
 	}
 
@@ -508,6 +499,84 @@ func (r *Request) URL() *url.URL {
 	return finalURL
 }
 
+// finalURLTemplate is similar to URL(), but will make all specific parameter values equal
+// - instead of name or namespace, "{name}" and "{namespace}" will be used, and all query
+// parameters will be reset. This creates a copy of the url so as not to change the
+// underlying object.
+func (r Request) finalURLTemplate() url.URL {
+	newParams := url.Values{}
+	v := []string{"{value}"}
+	for k := range r.params {
+		newParams[k] = v
+	}
+	r.params = newParams
+	url := r.URL()
+
+	segments := strings.Split(url.Path, "/")
+	groupIndex := 0
+	index := 0
+	trimmedBasePath := ""
+	if url != nil && r.c.base != nil && strings.Contains(url.Path, r.c.base.Path) {
+		p := strings.TrimPrefix(url.Path, r.c.base.Path)
+		if !strings.HasPrefix(p, "/") {
+			p = "/" + p
+		}
+		// store the base path that we have trimmed so we can append it
+		// before returning the URL
+		trimmedBasePath = r.c.base.Path
+		segments = strings.Split(p, "/")
+		groupIndex = 1
+	}
+	if len(segments) <= 2 {
+		return *url
+	}
+
+	const CoreGroupPrefix = "api"
+	const NamedGroupPrefix = "apis"
+	isCoreGroup := segments[groupIndex] == CoreGroupPrefix
+	isNamedGroup := segments[groupIndex] == NamedGroupPrefix
+	if isCoreGroup {
+		// checking the case of core group with /api/v1/... format
+		index = groupIndex + 2
+	} else if isNamedGroup {
+		// checking the case of named group with /apis/apps/v1/... format
+		index = groupIndex + 3
+	} else {
+		// this should not happen that the only two possibilities are /api... and /apis..., just want to put an
+		// outlet here in case more API groups are added in future if ever possible:
+		// https://kubernetes.io/docs/concepts/overview/kubernetes-api/#api-groups
+		// if a wrong API groups name is encountered, return the {prefix} for url.Path
+		url.Path = "/{prefix}"
+		url.RawQuery = ""
+		return *url
+	}
+	//switch segLength := len(segments) - index; segLength {
+	switch {
+	// case len(segments) - index == 1:
+	// resource (with no name) do nothing
+	case len(segments)-index == 2:
+		// /$RESOURCE/$NAME: replace $NAME with {name}
+		segments[index+1] = "{name}"
+	case len(segments)-index == 3:
+		if segments[index+2] == "finalize" || segments[index+2] == "status" {
+			// /$RESOURCE/$NAME/$SUBRESOURCE: replace $NAME with {name}
+			segments[index+1] = "{name}"
+		} else {
+			// /namespace/$NAMESPACE/$RESOURCE: replace $NAMESPACE with {namespace}
+			segments[index+1] = "{namespace}"
+		}
+	case len(segments)-index >= 4:
+		segments[index+1] = "{namespace}"
+		// /namespace/$NAMESPACE/$RESOURCE/$NAME: replace $NAMESPACE with {namespace},  $NAME with {name}
+		if segments[index+3] != "finalize" && segments[index+3] != "status" {
+			// /$RESOURCE/$NAME/$SUBRESOURCE: replace $NAME with {name}
+			segments[index+3] = "{name}"
+		}
+	}
+	url.Path = path.Join(trimmedBasePath, path.Join(segments...))
+	return *url
+}
+
 func (r *Request) tryThrottleWithInfo(ctx context.Context, retryInfo string) error {
 	if r.rateLimiter == nil {
 		return nil
@@ -516,9 +585,7 @@ func (r *Request) tryThrottleWithInfo(ctx context.Context, retryInfo string) err
 	now := time.Now()
 
 	err := r.rateLimiter.Wait(ctx)
-	if err != nil {
-		err = fmt.Errorf("client rate limiter Wait returned an error: %w", err)
-	}
+
 	latency := time.Since(now)
 
 	var message string
@@ -535,9 +602,9 @@ func (r *Request) tryThrottleWithInfo(ctx context.Context, retryInfo string) err
 	if latency > extraLongThrottleLatency {
 		// If the rate limiter latency is very high, the log message should be printed at a higher log level,
 		// but we use a throttled logger to prevent spamming.
-		globalThrottledLogger.Infof("%s", message)
+		globalThrottledLogger.Infof(message)
 	}
-	metrics.RateLimiterLatency.Observe(ctx, r.verb, *r.URL(), latency)
+	metrics.RateLimiterLatency.Observe(ctx, r.verb, r.finalURLTemplate(), latency)
 
 	return err
 }
@@ -555,12 +622,12 @@ type throttleSettings struct {
 }
 
 type throttledLogger struct {
-	clock    clock.PassiveClock
+	clock    utilclock.PassiveClock
 	settings []*throttleSettings
 }
 
 var globalThrottledLogger = &throttledLogger{
-	clock: clock.RealClock{},
+	clock: utilclock.RealClock{},
 	settings: []*throttleSettings{
 		{
 			logLevel:       2,
@@ -611,69 +678,43 @@ func (r *Request) Watch(ctx context.Context) (watch.Interface, error) {
 		return nil, r.err
 	}
 
+	url := r.URL().String()
+	req, err := http.NewRequest(r.verb, url, r.body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	req.Header = r.headers
 	client := r.c.Client
 	if client == nil {
 		client = http.DefaultClient
 	}
-
-	isErrRetryableFunc := func(request *http.Request, err error) bool {
+	r.backoff.Sleep(r.backoff.CalculateBackoff(r.URL()))
+	resp, err := client.Do(req)
+	updateURLMetrics(ctx, r, resp, err)
+	if r.c.base != nil {
+		if err != nil {
+			r.backoff.UpdateBackoff(r.c.base, err, 0)
+		} else {
+			r.backoff.UpdateBackoff(r.c.base, err, resp.StatusCode)
+		}
+	}
+	if err != nil {
 		// The watch stream mechanism handles many common partial data errors, so closed
 		// connections can be retried in many cases.
 		if net.IsProbableEOF(err) || net.IsTimeout(err) {
-			return true
+			return watch.NewEmptyWatch(), nil
 		}
-		return false
+		return nil, err
 	}
-	retry := r.retryFn(r.maxRetries)
-	url := r.URL().String()
-	for {
-		if err := retry.Before(ctx, r); err != nil {
-			return nil, retry.WrapPreviousError(err)
+	if resp.StatusCode != http.StatusOK {
+		defer resp.Body.Close()
+		if result := r.transformResponse(resp, req); result.err != nil {
+			return nil, result.err
 		}
-
-		req, err := r.newHTTPRequest(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		resp, err := client.Do(req)
-		updateURLMetrics(ctx, r, resp, err)
-		retry.After(ctx, r, resp, err)
-		if err == nil && resp.StatusCode == http.StatusOK {
-			return r.newStreamWatcher(resp)
-		}
-
-		done, transformErr := func() (bool, error) {
-			defer readAndCloseResponseBody(resp)
-
-			if retry.IsNextRetry(ctx, r, req, resp, err, isErrRetryableFunc) {
-				return false, nil
-			}
-
-			if resp == nil {
-				// the server must have sent us an error in 'err'
-				return true, nil
-			}
-			if result := r.transformResponse(resp, req); result.err != nil {
-				return true, result.err
-			}
-			return true, fmt.Errorf("for request %s, got status: %v", url, resp.StatusCode)
-		}()
-		if done {
-			if isErrRetryableFunc(req, err) {
-				return watch.NewEmptyWatch(), nil
-			}
-			if err == nil {
-				// if the server sent us an HTTP Response object,
-				// we need to return the error object from that.
-				err = transformErr
-			}
-			return nil, retry.WrapPreviousError(err)
-		}
+		return nil, fmt.Errorf("for request %s, got status: %v", url, resp.StatusCode)
 	}
-}
 
-func (r *Request) newStreamWatcher(resp *http.Response) (watch.Interface, error) {
 	contentType := resp.Header.Get("Content-Type")
 	mediaType, params, err := mime.ParseMediaType(contentType)
 	if err != nil {
@@ -728,55 +769,49 @@ func (r *Request) Stream(ctx context.Context) (io.ReadCloser, error) {
 		return nil, err
 	}
 
+	url := r.URL().String()
+	req, err := http.NewRequest(r.verb, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	if r.body != nil {
+		req.Body = ioutil.NopCloser(r.body)
+	}
+	req = req.WithContext(ctx)
+	req.Header = r.headers
 	client := r.c.Client
 	if client == nil {
 		client = http.DefaultClient
 	}
-
-	retry := r.retryFn(r.maxRetries)
-	url := r.URL().String()
-	for {
-		if err := retry.Before(ctx, r); err != nil {
-			return nil, err
-		}
-
-		req, err := r.newHTTPRequest(ctx)
+	r.backoff.Sleep(r.backoff.CalculateBackoff(r.URL()))
+	resp, err := client.Do(req)
+	updateURLMetrics(ctx, r, resp, err)
+	if r.c.base != nil {
 		if err != nil {
-			return nil, err
+			r.backoff.UpdateBackoff(r.URL(), err, 0)
+		} else {
+			r.backoff.UpdateBackoff(r.URL(), err, resp.StatusCode)
 		}
-		if r.body != nil {
-			req.Body = ioutil.NopCloser(r.body)
-		}
-		resp, err := client.Do(req)
-		updateURLMetrics(ctx, r, resp, err)
-		retry.After(ctx, r, resp, err)
-		if err != nil {
-			// we only retry on an HTTP response with 'Retry-After' header
-			return nil, err
-		}
+	}
+	if err != nil {
+		return nil, err
+	}
 
-		switch {
-		case (resp.StatusCode >= 200) && (resp.StatusCode < 300):
-			handleWarnings(resp.Header, r.warningHandler)
-			return resp.Body, nil
+	switch {
+	case (resp.StatusCode >= 200) && (resp.StatusCode < 300):
+		handleWarnings(resp.Header, r.warningHandler)
+		return resp.Body, nil
 
-		default:
-			done, transformErr := func() (bool, error) {
-				defer resp.Body.Close()
+	default:
+		// ensure we close the body before returning the error
+		defer resp.Body.Close()
 
-				if retry.IsNextRetry(ctx, r, req, resp, err, neverRetryError) {
-					return false, nil
-				}
-				result := r.transformResponse(resp, req)
-				if err := result.Error(); err != nil {
-					return true, err
-				}
-				return true, fmt.Errorf("%d while accessing %v: %s", result.statusCode, url, string(result.body))
-			}()
-			if done {
-				return nil, transformErr
-			}
+		result := r.transformResponse(resp, req)
+		err := result.Error()
+		if err == nil {
+			err = fmt.Errorf("%d while accessing %v: %s", result.statusCode, url, string(result.body))
 		}
+		return nil, err
 	}
 }
 
@@ -807,17 +842,6 @@ func (r *Request) requestPreflightCheck() error {
 	return nil
 }
 
-func (r *Request) newHTTPRequest(ctx context.Context) (*http.Request, error) {
-	url := r.URL().String()
-	req, err := http.NewRequest(r.verb, url, r.body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	req.Header = r.headers
-	return req, nil
-}
-
 // request connects to the server and invokes the provided function when a server response is
 // received. It handles retry behavior and up front validation of requests. It will invoke
 // fn at most once. It will return an error if a problem occurred prior to connecting to the
@@ -826,7 +850,7 @@ func (r *Request) request(ctx context.Context, fn func(*http.Request, *http.Resp
 	//Metrics for total request latency
 	start := time.Now()
 	defer func() {
-		metrics.RequestLatency.Observe(ctx, r.verb, *r.URL(), time.Since(start))
+		metrics.RequestLatency.Observe(ctx, r.verb, r.finalURLTemplate(), time.Since(start))
 	}()
 
 	if r.err != nil {
@@ -856,59 +880,91 @@ func (r *Request) request(ctx context.Context, fn func(*http.Request, *http.Resp
 		defer cancel()
 	}
 
-	isErrRetryableFunc := func(req *http.Request, err error) bool {
-		// "Connection reset by peer" or "apiserver is shutting down" are usually a transient errors.
-		// Thus in case of "GET" operations, we simply retry it.
-		// We are not automatically retrying "write" operations, as they are not idempotent.
-		if req.Method != "GET" {
-			return false
-		}
-		// For connection errors and apiserver shutdown errors retry.
-		if net.IsConnectionReset(err) || net.IsProbableEOF(err) {
-			return true
-		}
-		return false
-	}
-
 	// Right now we make about ten retry attempts if we get a Retry-After response.
-	retry := r.retryFn(r.maxRetries)
+	retries := 0
+	var retryInfo string
 	for {
-		if err := retry.Before(ctx, r); err != nil {
-			return retry.WrapPreviousError(err)
-		}
-		req, err := r.newHTTPRequest(ctx)
+
+		url := r.URL().String()
+		req, err := http.NewRequest(r.verb, url, r.body)
 		if err != nil {
 			return err
 		}
+		req = req.WithContext(ctx)
+		req.Header = r.headers
+
+		r.backoff.Sleep(r.backoff.CalculateBackoff(r.URL()))
+		if retries > 0 {
+			// We are retrying the request that we already send to apiserver
+			// at least once before.
+			// This request should also be throttled with the client-internal rate limiter.
+			if err := r.tryThrottleWithInfo(ctx, retryInfo); err != nil {
+				return err
+			}
+			retryInfo = ""
+		}
 		resp, err := client.Do(req)
 		updateURLMetrics(ctx, r, resp, err)
-		// The value -1 or a value of 0 with a non-nil Body indicates that the length is unknown.
-		// https://pkg.go.dev/net/http#Request
-		if req.ContentLength >= 0 && !(req.Body != nil && req.ContentLength == 0) {
-			metrics.RequestSize.Observe(ctx, r.verb, r.URL().Host, float64(req.ContentLength))
+		if err != nil {
+			r.backoff.UpdateBackoff(r.URL(), err, 0)
+		} else {
+			r.backoff.UpdateBackoff(r.URL(), err, resp.StatusCode)
 		}
-		retry.After(ctx, r, resp, err)
+		if err != nil {
+			// "Connection reset by peer" or "apiserver is shutting down" are usually a transient errors.
+			// Thus in case of "GET" operations, we simply retry it.
+			// We are not automatically retrying "write" operations, as
+			// they are not idempotent.
+			if r.verb != "GET" {
+				return err
+			}
+			// For connection errors and apiserver shutdown errors retry.
+			if net.IsConnectionReset(err) || net.IsProbableEOF(err) {
+				// For the purpose of retry, we set the artificial "retry-after" response.
+				// TODO: Should we clean the original response if it exists?
+				resp = &http.Response{
+					StatusCode: http.StatusInternalServerError,
+					Header:     http.Header{"Retry-After": []string{"1"}},
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte{})),
+				}
+			} else {
+				return err
+			}
+		}
 
 		done := func() bool {
-			defer readAndCloseResponseBody(resp)
-
-			// if the the server returns an error in err, the response will be nil.
-			f := func(req *http.Request, resp *http.Response) {
-				if resp == nil {
-					return
+			// Ensure the response body is fully read and closed
+			// before we reconnect, so that we reuse the same TCP
+			// connection.
+			defer func() {
+				const maxBodySlurpSize = 2 << 10
+				if resp.ContentLength <= maxBodySlurpSize {
+					io.Copy(ioutil.Discard, &io.LimitedReader{R: resp.Body, N: maxBodySlurpSize})
 				}
-				fn(req, resp)
-			}
+				resp.Body.Close()
+			}()
 
-			if retry.IsNextRetry(ctx, r, req, resp, err, isErrRetryableFunc) {
+			retries++
+			if seconds, wait := checkWait(resp); wait && retries <= r.maxRetries {
+				retryInfo = getRetryReason(retries, seconds, resp, err)
+				if seeker, ok := r.body.(io.Seeker); ok && r.body != nil {
+					_, err := seeker.Seek(0, 0)
+					if err != nil {
+						klog.V(4).Infof("Could not retry request, can't Seek() back to beginning of body for %T", r.body)
+						fn(req, resp)
+						return true
+					}
+				}
+
+				klog.V(4).Infof("Got a Retry-After %ds response for attempt %d to %v", seconds, retries, url)
+				r.backoff.Sleep(time.Duration(seconds) * time.Second)
 				return false
 			}
-
-			f(req, resp)
+			fn(req, resp)
 			return true
 		}()
 		if done {
-			return retry.WrapPreviousError(err)
+			return nil
 		}
 	}
 }
@@ -927,9 +983,6 @@ func (r *Request) Do(ctx context.Context) Result {
 	if err != nil {
 		return Result{err: err}
 	}
-	if result.err == nil || len(result.body) > 0 {
-		metrics.ResponseSize.Observe(ctx, r.verb, r.URL().Host, float64(len(result.body)))
-	}
 	return result
 }
 
@@ -945,9 +998,6 @@ func (r *Request) DoRaw(ctx context.Context) ([]byte, error) {
 	})
 	if err != nil {
 		return nil, err
-	}
-	if result.err == nil || len(result.body) > 0 {
-		metrics.ResponseSize.Observe(ctx, r.verb, r.URL().Host, float64(len(result.body)))
 	}
 	return result.body, result.err
 }
@@ -969,13 +1019,13 @@ func (r *Request) transformResponse(resp *http.Response, req *http.Request) Resu
 			// 3. Apiserver closes connection.
 			// 4. client-go should catch this and return an error.
 			klog.V(2).Infof("Stream error %#v when reading response body, may be caused by closed connection.", err)
-			streamErr := fmt.Errorf("stream error when reading response body, may be caused by closed connection. Please retry. Original error: %w", err)
+			streamErr := fmt.Errorf("stream error when reading response body, may be caused by closed connection. Please retry. Original error: %v", err)
 			return Result{
 				err: streamErr,
 			}
 		default:
 			klog.Errorf("Unexpected error when reading response body: %v", err)
-			unexpectedErr := fmt.Errorf("unexpected error when reading response body. Please retry. Original error: %w", err)
+			unexpectedErr := fmt.Errorf("unexpected error when reading response body. Please retry. Original error: %v", err)
 			return Result{
 				err: unexpectedErr,
 			}
@@ -1064,13 +1114,13 @@ func truncateBody(body string) string {
 // allocating a new string for the body output unless necessary. Uses a simple heuristic to determine
 // whether the body is printable.
 func glogBody(prefix string, body []byte) {
-	if klogV := klog.V(8); klogV.Enabled() {
+	if klog.V(8).Enabled() {
 		if bytes.IndexFunc(body, func(r rune) bool {
 			return r < 0x0a
 		}) != -1 {
-			klogV.Infof("%s:\n%s", prefix, truncateBody(hex.Dump(body)))
+			klog.Infof("%s:\n%s", prefix, truncateBody(hex.Dump(body)))
 		} else {
-			klogV.Infof("%s: %s", prefix, truncateBody(string(body)))
+			klog.Infof("%s: %s", prefix, truncateBody(string(body)))
 		}
 	}
 }
@@ -1146,6 +1196,19 @@ func isTextResponse(resp *http.Response) bool {
 	return strings.HasPrefix(media, "text/")
 }
 
+// checkWait returns true along with a number of seconds if the server instructed us to wait
+// before retrying.
+func checkWait(resp *http.Response) (int, bool) {
+	switch r := resp.StatusCode; {
+	// any 500 error code and 429 can trigger a wait
+	case r == http.StatusTooManyRequests, r >= 500:
+	default:
+		return 0, false
+	}
+	i, ok := retryAfterSeconds(resp)
+	return i, ok
+}
+
 // retryAfterSeconds returns the value of the Retry-After header and true, or 0 and false if
 // the header was missing or not a valid number.
 func retryAfterSeconds(resp *http.Response) (int, bool) {
@@ -1155,6 +1218,26 @@ func retryAfterSeconds(resp *http.Response) (int, bool) {
 		}
 	}
 	return 0, false
+}
+
+func getRetryReason(retries, seconds int, resp *http.Response, err error) string {
+	// priority and fairness sets the UID of the FlowSchema associated with a request
+	// in the following response Header.
+	const responseHeaderMatchedFlowSchemaUID = "X-Kubernetes-PF-FlowSchema-UID"
+
+	message := fmt.Sprintf("retries: %d, retry-after: %ds", retries, seconds)
+
+	switch {
+	case resp.StatusCode == http.StatusTooManyRequests:
+		// it is server-side throttling from priority and fairness
+		flowSchemaUID := resp.Header.Get(responseHeaderMatchedFlowSchemaUID)
+		return fmt.Sprintf("%s - retry-reason: due to server-side throttling, FlowSchema UID: %q", message, flowSchemaUID)
+	case err != nil:
+		// it's a retriable error
+		return fmt.Sprintf("%s - retry-reason: due to retriable error, error: %v", message, err)
+	default:
+		return fmt.Sprintf("%s - retry-reason: %d", message, resp.StatusCode)
+	}
 }
 
 // Result contains the result of calling Request.Do().

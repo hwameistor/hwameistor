@@ -19,6 +19,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/pflag"
 	"k8s.io/code-generator/pkg/util"
@@ -33,7 +34,7 @@ func main() {
 	arguments := args.Default()
 
 	// Override defaults.
-	arguments.GoHeaderFilePath = util.BoilerplatePath()
+	arguments.GoHeaderFilePath = filepath.Join(args.DefaultSourceTree(), util.BoilerplatePath())
 	pflag.CommandLine.BoolVar(&arguments.IncludeTestFiles, "include-test-files", false, "If true, include *_test.go files.")
 
 	if err := arguments.Execute(

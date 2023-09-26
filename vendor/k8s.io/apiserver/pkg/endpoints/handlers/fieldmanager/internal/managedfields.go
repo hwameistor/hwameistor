@@ -213,11 +213,7 @@ func sortEncodedManagedFields(encodedManagedFields []metav1.ManagedFieldsEntry) 
 		if p.Manager != q.Manager {
 			return p.Manager < q.Manager
 		}
-
-		if p.APIVersion != q.APIVersion {
-			return p.APIVersion < q.APIVersion
-		}
-		return p.Subresource < q.Subresource
+		return p.APIVersion < q.APIVersion
 	})
 
 	return encodedManagedFields, nil

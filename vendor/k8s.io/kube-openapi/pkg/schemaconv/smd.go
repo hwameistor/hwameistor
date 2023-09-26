@@ -449,7 +449,10 @@ func (c *convert) VisitPrimitive(p *proto.Primitive) {
 }
 
 func (c *convert) VisitArbitrary(a *proto.Arbitrary) {
-	*c.top() = deducedDef.Atom
+	*c.top() = untypedDef.Atom
+	if c.preserveUnknownFields {
+		*c.top() = deducedDef.Atom
+	}
 }
 
 func (c *convert) VisitReference(proto.Reference) {

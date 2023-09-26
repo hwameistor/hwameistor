@@ -21,14 +21,11 @@ import (
 	"time"
 
 	"github.com/spf13/pflag"
-	"k8s.io/apiserver/pkg/features"
 	"k8s.io/apiserver/pkg/server"
-	"k8s.io/apiserver/pkg/util/feature"
 	clientgoinformers "k8s.io/client-go/informers"
 	clientgoclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/component-base/traces"
 )
 
 // CoreAPIOptions contains options to configure the connection to a core API Kubernetes apiserver.
@@ -71,9 +68,6 @@ func (o *CoreAPIOptions) ApplyTo(config *server.RecommendedConfig) error {
 		if err != nil {
 			return err
 		}
-	}
-	if feature.DefaultFeatureGate.Enabled(features.APIServerTracing) {
-		kubeconfig.Wrap(traces.WrapperFor(config.TracerProvider))
 	}
 	clientgoExternalClient, err := clientgoclientset.NewForConfig(kubeconfig)
 	if err != nil {

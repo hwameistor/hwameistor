@@ -22,7 +22,7 @@ import (
 
 	"k8s.io/component-base/metrics"
 	"k8s.io/component-base/metrics/legacyregistry"
-	volumebindingmetrics "k8s.io/kubernetes/pkg/scheduler/framework/plugins/volumebinding/metrics"
+	volumeschedulingmetrics "k8s.io/kubernetes/pkg/controller/volume/scheduling/metrics"
 )
 
 const (
@@ -44,25 +44,16 @@ var (
 			Subsystem:      SchedulerSubsystem,
 			Name:           "schedule_attempts_total",
 			Help:           "Number of attempts to schedule pods, by the result. 'unschedulable' means a pod could not be scheduled, while 'error' means an internal scheduler problem.",
-			StabilityLevel: metrics.STABLE,
+			StabilityLevel: metrics.ALPHA,
 		}, []string{"result", "profile"})
 
 	e2eSchedulingLatency = metrics.NewHistogramVec(
 		&metrics.HistogramOpts{
-			Subsystem:         SchedulerSubsystem,
-			Name:              "e2e_scheduling_duration_seconds",
-			DeprecatedVersion: "1.23.0",
-			Help:              "E2e scheduling latency in seconds (scheduling algorithm + binding). This metric is replaced by scheduling_attempt_duration_seconds.",
-			Buckets:           metrics.ExponentialBuckets(0.001, 2, 15),
-			StabilityLevel:    metrics.ALPHA,
-		}, []string{"result", "profile"})
-	schedulingLatency = metrics.NewHistogramVec(
-		&metrics.HistogramOpts{
 			Subsystem:      SchedulerSubsystem,
-			Name:           "scheduling_attempt_duration_seconds",
-			Help:           "Scheduling attempt latency in seconds (scheduling algorithm + binding)",
+			Name:           "e2e_scheduling_duration_seconds",
+			Help:           "E2e scheduling latency in seconds (scheduling algorithm + binding)",
 			Buckets:        metrics.ExponentialBuckets(0.001, 2, 15),
-			StabilityLevel: metrics.STABLE,
+			StabilityLevel: metrics.ALPHA,
 		}, []string{"result", "profile"})
 	SchedulingAlgorithmLatency = metrics.NewHistogram(
 		&metrics.HistogramOpts{
@@ -80,21 +71,21 @@ var (
 			Help:      "Number of selected preemption victims",
 			// we think #victims>50 is pretty rare, therefore [50, +Inf) is considered a single bucket.
 			Buckets:        metrics.LinearBuckets(5, 5, 10),
-			StabilityLevel: metrics.STABLE,
+			StabilityLevel: metrics.ALPHA,
 		})
 	PreemptionAttempts = metrics.NewCounter(
 		&metrics.CounterOpts{
 			Subsystem:      SchedulerSubsystem,
 			Name:           "preemption_attempts_total",
 			Help:           "Total preemption attempts in the cluster till now",
-			StabilityLevel: metrics.STABLE,
+			StabilityLevel: metrics.ALPHA,
 		})
 	pendingPods = metrics.NewGaugeVec(
 		&metrics.GaugeOpts{
 			Subsystem:      SchedulerSubsystem,
 			Name:           "pending_pods",
-			Help:           "Number of pending pods, by the queue type. 'active' means number of pods in activeQ; 'backoff' means number of pods in backoffQ; 'unschedulable' means number of pods in unschedulablePods.",
-			StabilityLevel: metrics.STABLE,
+			Help:           "Number of pending pods, by the queue type. 'active' means number of pods in activeQ; 'backoff' means number of pods in backoffQ; 'unschedulable' means number of pods in unschedulableQ.",
+			StabilityLevel: metrics.ALPHA,
 		}, []string{"queue"})
 	SchedulerGoroutines = metrics.NewGaugeVec(
 		&metrics.GaugeOpts{
@@ -111,7 +102,7 @@ var (
 			Help:      "E2e latency for a pod being scheduled which may include multiple scheduling attempts.",
 			// Start with 10ms with the last bucket being [~88m, Inf).
 			Buckets:        metrics.ExponentialBuckets(0.01, 2, 20),
-			StabilityLevel: metrics.STABLE,
+			StabilityLevel: metrics.ALPHA,
 		},
 		[]string{"attempts"})
 
@@ -121,7 +112,7 @@ var (
 			Name:           "pod_scheduling_attempts",
 			Help:           "Number of attempts to successfully schedule a pod.",
 			Buckets:        metrics.ExponentialBuckets(1, 2, 5),
-			StabilityLevel: metrics.STABLE,
+			StabilityLevel: metrics.ALPHA,
 		})
 
 	FrameworkExtensionPointDuration = metrics.NewHistogramVec(
@@ -131,7 +122,7 @@ var (
 			Help:      "Latency for running all plugins of a specific extension point.",
 			// Start with 0.1ms with the last bucket being [~200ms, Inf)
 			Buckets:        metrics.ExponentialBuckets(0.0001, 2, 12),
-			StabilityLevel: metrics.STABLE,
+			StabilityLevel: metrics.ALPHA,
 		},
 		[]string{"extension_point", "status", "profile"})
 
@@ -152,7 +143,7 @@ var (
 			Subsystem:      SchedulerSubsystem,
 			Name:           "queue_incoming_pods_total",
 			Help:           "Number of pods added to scheduling queues by event and queue type.",
-			StabilityLevel: metrics.STABLE,
+			StabilityLevel: metrics.ALPHA,
 		}, []string{"queue", "event"})
 
 	PermitWaitDuration = metrics.NewHistogramVec(
@@ -173,18 +164,9 @@ var (
 			StabilityLevel: metrics.ALPHA,
 		}, []string{"type"})
 
-	unschedulableReasons = metrics.NewGaugeVec(
-		&metrics.GaugeOpts{
-			Subsystem:      SchedulerSubsystem,
-			Name:           "unschedulable_pods",
-			Help:           "The number of unschedulable pods broken down by plugin name. A pod will increment the gauge for all plugins that caused it to not schedule and so this metric have meaning only when broken down by plugin.",
-			StabilityLevel: metrics.ALPHA,
-		}, []string{"plugin", "profile"})
-
 	metricsList = []metrics.Registerable{
 		scheduleAttempts,
 		e2eSchedulingLatency,
-		schedulingLatency,
 		SchedulingAlgorithmLatency,
 		PreemptionVictims,
 		PreemptionAttempts,
@@ -197,7 +179,6 @@ var (
 		SchedulerGoroutines,
 		PermitWaitDuration,
 		CacheSize,
-		unschedulableReasons,
 	}
 )
 
@@ -208,7 +189,7 @@ func Register() {
 	// Register the metrics.
 	registerMetrics.Do(func() {
 		RegisterMetrics(metricsList...)
-		volumebindingmetrics.RegisterVolumeSchedulingMetrics()
+		volumeschedulingmetrics.RegisterVolumeSchedulingMetrics()
 	})
 }
 
@@ -243,8 +224,4 @@ func UnschedulablePods() metrics.GaugeMetric {
 // SinceInSeconds gets the time since the specified start in seconds.
 func SinceInSeconds(start time.Time) float64 {
 	return time.Since(start).Seconds()
-}
-
-func UnschedulableReason(plugin string, profile string) metrics.GaugeMetric {
-	return unschedulableReasons.With(metrics.Labels{"plugin": plugin, "profile": profile})
 }

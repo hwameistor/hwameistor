@@ -22,6 +22,7 @@ type DynamicFileSNIContent struct {
 	sniNames []string
 }
 
+var _ Notifier = &DynamicFileSNIContent{}
 var _ SNICertKeyContentProvider = &DynamicFileSNIContent{}
 var _ ControllerRunner = &DynamicFileSNIContent{}
 

@@ -87,8 +87,10 @@ package main
 
 import (
 	"flag"
+	"path/filepath"
 
 	"github.com/spf13/pflag"
+	"k8s.io/gengo/args"
 	"k8s.io/klog/v2"
 
 	generatorargs "k8s.io/code-generator/cmd/conversion-gen/args"
@@ -102,7 +104,7 @@ func main() {
 
 	// Override defaults.
 	// TODO: move this out of conversion-gen
-	genericArgs.GoHeaderFilePath = util.BoilerplatePath()
+	genericArgs.GoHeaderFilePath = filepath.Join(args.DefaultSourceTree(), util.BoilerplatePath())
 
 	genericArgs.AddFlags(pflag.CommandLine)
 	customArgs.AddFlags(pflag.CommandLine)

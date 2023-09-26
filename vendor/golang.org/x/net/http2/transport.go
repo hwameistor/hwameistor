@@ -47,6 +47,10 @@ const (
 	// we buffer per stream.
 	transportDefaultStreamFlow = 4 << 20
 
+	// transportDefaultStreamMinRefresh is the minimum number of bytes we'll send
+	// a stream-level WINDOW_UPDATE for at a time.
+	transportDefaultStreamMinRefresh = 4 << 10
+
 	defaultUserAgent = "Go-http-client/2.0"
 
 	// initialMaxConcurrentStreams is a connections maxConcurrentStreams until
@@ -306,8 +310,8 @@ type ClientConn struct {
 
 	mu              sync.Mutex // guards following
 	cond            *sync.Cond // hold mu; broadcast on flow/closed changes
-	flow            outflow    // our conn-level flow control quota (cs.outflow is per stream)
-	inflow          inflow     // peer's conn-level flow control
+	flow            flow       // our conn-level flow control quota (cs.flow is per stream)
+	inflow          flow       // peer's conn-level flow control
 	doNotReuse      bool       // whether conn is marked to not be reused for any future requests
 	closing         bool
 	closed          bool
@@ -372,10 +376,10 @@ type clientStream struct {
 	respHeaderRecv chan struct{}  // closed when headers are received
 	res            *http.Response // set if respHeaderRecv is closed
 
-	flow        outflow // guarded by cc.mu
-	inflow      inflow  // guarded by cc.mu
-	bytesRemain int64   // -1 means unknown; owned by transportResponseBody.Read
-	readErr     error   // sticky read error; owned by transportResponseBody.Read
+	flow        flow  // guarded by cc.mu
+	inflow      flow  // guarded by cc.mu
+	bytesRemain int64 // -1 means unknown; owned by transportResponseBody.Read
+	readErr     error // sticky read error; owned by transportResponseBody.Read
 
 	reqBody              io.ReadCloser
 	reqBodyContentLength int64         // -1 means unknown
@@ -807,7 +811,7 @@ func (t *Transport) newClientConn(c net.Conn, singleUse bool) (*ClientConn, erro
 	cc.bw.Write(clientPreface)
 	cc.fr.WriteSettings(initialSettings...)
 	cc.fr.WriteWindowUpdate(0, transportDefaultConnFlow)
-	cc.inflow.init(transportDefaultConnFlow + initialWindowSize)
+	cc.inflow.add(transportDefaultConnFlow + initialWindowSize)
 	cc.bw.Flush()
 	if cc.werr != nil {
 		cc.Close()
@@ -1569,7 +1573,7 @@ func (cs *clientStream) cleanupWriteRequest(err error) {
 	close(cs.donec)
 }
 
-// awaitOpenSlotForStreamLocked waits until len(streams) < maxConcurrentStreams.
+// awaitOpenSlotForStream waits until len(streams) < maxConcurrentStreams.
 // Must hold cc.mu.
 func (cc *ClientConn) awaitOpenSlotForStreamLocked(cs *clientStream) error {
 	for {
@@ -2069,7 +2073,8 @@ type resAndError struct {
 func (cc *ClientConn) addStreamLocked(cs *clientStream) {
 	cs.flow.add(int32(cc.initialWindowSize))
 	cs.flow.setConnFlow(&cc.flow)
-	cs.inflow.init(transportDefaultStreamFlow)
+	cs.inflow.add(transportDefaultStreamFlow)
+	cs.inflow.setConnFlow(&cc.inflow)
 	cs.ID = cc.nextStreamID
 	cc.nextStreamID += 2
 	cc.streams[cs.ID] = cs
@@ -2528,10 +2533,21 @@ func (b transportResponseBody) Read(p []byte) (n int, err error) {
 	}
 
 	cc.mu.Lock()
-	connAdd := cc.inflow.add(n)
-	var streamAdd int32
+	var connAdd, streamAdd int32
+	// Check the conn-level first, before the stream-level.
+	if v := cc.inflow.available(); v < transportDefaultConnFlow/2 {
+		connAdd = transportDefaultConnFlow - v
+		cc.inflow.add(connAdd)
+	}
 	if err == nil { // No need to refresh if the stream is over or failed.
-		streamAdd = cs.inflow.add(n)
+		// Consider any buffered body data (read from the conn but not
+		// consumed by the client) when computing flow control for this
+		// stream.
+		v := int(cs.inflow.available()) + cs.bufPipe.Len()
+		if v < transportDefaultStreamFlow-transportDefaultStreamMinRefresh {
+			streamAdd = int32(transportDefaultStreamFlow - v)
+			cs.inflow.add(streamAdd)
+		}
 	}
 	cc.mu.Unlock()
 
@@ -2559,15 +2575,17 @@ func (b transportResponseBody) Close() error {
 	if unread > 0 {
 		cc.mu.Lock()
 		// Return connection-level flow control.
-		connAdd := cc.inflow.add(unread)
+		if unread > 0 {
+			cc.inflow.add(int32(unread))
+		}
 		cc.mu.Unlock()
 
 		// TODO(dneil): Acquiring this mutex can block indefinitely.
 		// Move flow control return to a goroutine?
 		cc.wmu.Lock()
 		// Return connection-level flow control.
-		if connAdd > 0 {
-			cc.fr.WriteWindowUpdate(0, uint32(connAdd))
+		if unread > 0 {
+			cc.fr.WriteWindowUpdate(0, uint32(unread))
 		}
 		cc.bw.Flush()
 		cc.wmu.Unlock()
@@ -2610,18 +2628,13 @@ func (rl *clientConnReadLoop) processData(f *DataFrame) error {
 		// But at least return their flow control:
 		if f.Length > 0 {
 			cc.mu.Lock()
-			ok := cc.inflow.take(f.Length)
-			connAdd := cc.inflow.add(int(f.Length))
+			cc.inflow.add(int32(f.Length))
 			cc.mu.Unlock()
-			if !ok {
-				return ConnectionError(ErrCodeFlowControl)
-			}
-			if connAdd > 0 {
-				cc.wmu.Lock()
-				cc.fr.WriteWindowUpdate(0, uint32(connAdd))
-				cc.bw.Flush()
-				cc.wmu.Unlock()
-			}
+
+			cc.wmu.Lock()
+			cc.fr.WriteWindowUpdate(0, uint32(f.Length))
+			cc.bw.Flush()
+			cc.wmu.Unlock()
 		}
 		return nil
 	}
@@ -2652,7 +2665,9 @@ func (rl *clientConnReadLoop) processData(f *DataFrame) error {
 		}
 		// Check connection-level flow control.
 		cc.mu.Lock()
-		if !takeInflows(&cc.inflow, &cs.inflow, f.Length) {
+		if cs.inflow.available() >= int32(f.Length) {
+			cs.inflow.take(int32(f.Length))
+		} else {
 			cc.mu.Unlock()
 			return ConnectionError(ErrCodeFlowControl)
 		}
@@ -2674,20 +2689,19 @@ func (rl *clientConnReadLoop) processData(f *DataFrame) error {
 			}
 		}
 
-		sendConn := cc.inflow.add(refund)
-		var sendStream int32
-		if !didReset {
-			sendStream = cs.inflow.add(refund)
+		if refund > 0 {
+			cc.inflow.add(int32(refund))
+			if !didReset {
+				cs.inflow.add(int32(refund))
+			}
 		}
 		cc.mu.Unlock()
 
-		if sendConn > 0 || sendStream > 0 {
+		if refund > 0 {
 			cc.wmu.Lock()
-			if sendConn > 0 {
-				cc.fr.WriteWindowUpdate(0, uint32(sendConn))
-			}
-			if sendStream > 0 {
-				cc.fr.WriteWindowUpdate(cs.ID, uint32(sendStream))
+			cc.fr.WriteWindowUpdate(0, uint32(refund))
+			if !didReset {
+				cc.fr.WriteWindowUpdate(cs.ID, uint32(refund))
 			}
 			cc.bw.Flush()
 			cc.wmu.Unlock()
