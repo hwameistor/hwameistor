@@ -100,9 +100,9 @@ func (m *manager) processVolumeMigrate(vmName string) error {
 	case apisv1alpha1.OperationStateSubmitted:
 		return m.volumeMigrateStart(migrate, vol, lvg)
 	case apisv1alpha1.OperationStateMigrateAddReplica:
-		return m.volumeMigrateAddReplica(migrate, vol, lvg)
+		return m.volumeMigrateAddReplica(migrate, vol)
 	case apisv1alpha1.OperationStateMigrateSyncReplica:
-		return m.volumeMigrateSyncReplica(migrate, vol, lvg)
+		return m.volumeMigrateSyncReplica(migrate, vol)
 	case apisv1alpha1.OperationStateMigratePruneReplica:
 		return m.volumeMigratePruneReplica(migrate, vol, lvg)
 	case apisv1alpha1.OperationStateToBeAborted:
@@ -145,27 +145,28 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 			return err
 		}
 		migrate.Status.TargetNode = tgtNodeName
-		migrate.Status.Message = "Selected target node"
-		return m.apiClient.Status().Update(ctx, migrate)
 	}
 
-	volList := []*apisv1alpha1.LocalVolume{vol}
-	if migrate.Spec.MigrateAllVols {
-		vols, err := m.getAllVolumesInGroup(lvg)
-		if err != nil {
-			logCtx.WithField("LocalVolumeGroup", lvg.Name).WithError(err).Error("Failed to get all volumes in the group")
-			migrate.Status.Message = err.Error()
-			m.apiClient.Status().Update(ctx, migrate)
-			return err
+	if len(migrate.Status.Volumes) == 0 {
+		volList := []*apisv1alpha1.LocalVolume{vol}
+		if migrate.Spec.MigrateAllVols {
+			vols, err := m.getAllVolumesInGroup(lvg)
+			if err != nil {
+				logCtx.WithField("LocalVolumeGroup", lvg.Name).WithError(err).Error("Failed to get all volumes in the group")
+				migrate.Status.Message = err.Error()
+				m.apiClient.Status().Update(ctx, migrate)
+				return err
+			}
+			volList = vols
 		}
-		volList = vols
-	}
-	for i := range volList {
-		if err := m.checkReplicasForVolume(volList[i]); err != nil {
-			logCtx.WithField("LocalVolume", volList[i].Name).WithError(err).Error("Replicas are in problem")
-			migrate.Status.Message = err.Error()
-			m.apiClient.Status().Update(ctx, migrate)
-			return err
+		for i := range volList {
+			if err := m.checkReplicasForVolume(volList[i]); err != nil {
+				logCtx.WithField("LocalVolume", volList[i].Name).WithError(err).Error("Replicas are in problem")
+				migrate.Status.Message = err.Error()
+				m.apiClient.Status().Update(ctx, migrate)
+				return err
+			}
+			migrate.Status.Volumes = append(migrate.Status.Volumes, volList[i].Name)
 		}
 	}
 
@@ -193,7 +194,7 @@ func (m *manager) volumeMigrateStart(migrate *apisv1alpha1.LocalVolumeMigrate, v
 	return m.apiClient.Status().Update(ctx, migrate)
 }
 
-func (m *manager) volumeMigrateAddReplica(migrate *apisv1alpha1.LocalVolumeMigrate, vol *apisv1alpha1.LocalVolume, lvg *apisv1alpha1.LocalVolumeGroup) error {
+func (m *manager) volumeMigrateAddReplica(migrate *apisv1alpha1.LocalVolumeMigrate, vol *apisv1alpha1.LocalVolume) error {
 	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "spec": migrate.Spec, "status": migrate.Status})
 	logCtx.Debug("Start adding replicas")
 
@@ -207,45 +208,37 @@ func (m *manager) volumeMigrateAddReplica(migrate *apisv1alpha1.LocalVolumeMigra
 		return err
 	}
 
-	volList := []*apisv1alpha1.LocalVolume{vol}
-	if migrate.Spec.MigrateAllVols {
-		vols, err := m.getAllVolumesInGroup(lvg)
-		if err != nil {
-			logCtx.WithField("LocalVolumeGroup", lvg.Name).WithError(err).Error("Failed to get all volumes in the group")
-			migrate.Status.Message = err.Error()
-			m.apiClient.Status().Update(ctx, migrate)
+	for _, volName := range migrate.Status.Volumes {
+		vol := &apisv1alpha1.LocalVolume{}
+		if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: volName}, vol); err != nil {
 			return err
 		}
-		volList = vols
-	}
-
-	for i := range volList {
-		if volList[i].Spec.ReplicaNumber > migrate.Status.OriginalReplicaNumber {
-			if err := m.checkReplicasForVolume(volList[i]); err != nil {
-				logCtx.WithField("LocalVolume", volList[i].Name).WithError(err).Debug("Volume migration is still in process")
+		if vol.Spec.ReplicaNumber > migrate.Status.OriginalReplicaNumber {
+			if err := m.checkReplicasForVolume(vol); err != nil {
+				logCtx.WithField("LocalVolume", volName).WithError(err).Debug("Volume migration is still in process")
 				migrate.Status.Message = fmt.Sprintf("In progress: %s", err.Error())
 				m.apiClient.Status().Update(ctx, migrate)
 				return err
 			}
-			logCtx.WithField("LocalVolume", volList[i].Name).Debug("Volume has added a new replica successfully")
+			logCtx.WithField("LocalVolume", volName).Debug("Volume has added a new replica successfully")
 			continue
 		}
-		volList[i].Spec.ReplicaNumber++
-		conf, err := m.volumeScheduler.ConfigureVolumeOnAdditionalNodes(volList[i], []*apisv1alpha1.LocalStorageNode{lsNode})
+		vol.Spec.ReplicaNumber++
+		conf, err := m.volumeScheduler.ConfigureVolumeOnAdditionalNodes(vol, []*apisv1alpha1.LocalStorageNode{lsNode})
 		if err != nil {
-			logCtx.WithField("volume", volList[i].Name).WithError(err).Error("Failed to configure LocalVolume")
-			migrate.Status.Message = fmt.Sprintf("Failed to configure LocalVolume %s", volList[i].Name)
+			logCtx.WithField("volume", volName).WithError(err).Error("Failed to configure LocalVolume")
+			migrate.Status.Message = fmt.Sprintf("Failed to configure LocalVolume %s", volName)
 			m.apiClient.Status().Update(ctx, migrate)
 			return err
 		}
-		volList[i].Spec.Config = conf
-		if err := m.apiClient.Update(ctx, volList[i]); err != nil {
-			logCtx.WithField("LocalVolume", volList[i].Name).WithError(err).Error("Failed to add a new replica to the volume")
-			migrate.Status.Message = fmt.Sprintf("Failed to migrate volume %s", volList[i].Name)
+		vol.Spec.Config = conf
+		if err := m.apiClient.Update(ctx, vol); err != nil {
+			logCtx.WithField("LocalVolume", volName).WithError(err).Error("Failed to add a new replica to the volume")
+			migrate.Status.Message = fmt.Sprintf("Failed to migrate volume %s", volName)
 			m.apiClient.Status().Update(ctx, migrate)
-			return fmt.Errorf("failed to migrate volume %s", volList[i].Name)
+			return fmt.Errorf("failed to migrate volume %s", volName)
 		}
-		migrate.Status.Message = fmt.Sprintf("Adding a new replica to volume %s", volList[i].Name)
+		migrate.Status.Message = fmt.Sprintf("Adding a new replica to volume %s", volName)
 		m.apiClient.Status().Update(ctx, migrate)
 		return fmt.Errorf("still in progress")
 	}
@@ -256,31 +249,23 @@ func (m *manager) volumeMigrateAddReplica(migrate *apisv1alpha1.LocalVolumeMigra
 	return m.apiClient.Status().Update(ctx, migrate)
 }
 
-func (m *manager) volumeMigrateSyncReplica(migrate *apisv1alpha1.LocalVolumeMigrate, vol *apisv1alpha1.LocalVolume, lvg *apisv1alpha1.LocalVolumeGroup) error {
+func (m *manager) volumeMigrateSyncReplica(migrate *apisv1alpha1.LocalVolumeMigrate, vol *apisv1alpha1.LocalVolume) error {
 	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "spec": migrate.Spec, "status": migrate.Status})
 	logCtx.Debug("Start syncing replicas")
 
 	ctx := context.TODO()
-
-	volList := []*apisv1alpha1.LocalVolume{vol}
-	if migrate.Spec.MigrateAllVols {
-		vols, err := m.getAllVolumesInGroup(lvg)
-		if err != nil {
-			logCtx.WithField("LocalVolumeGroup", lvg.Name).WithError(err).Error("Failed to get all volumes in the group")
-			migrate.Status.Message = err.Error()
-			m.apiClient.Status().Update(ctx, migrate)
+	for _, volName := range migrate.Status.Volumes {
+		vol := &apisv1alpha1.LocalVolume{}
+		if err := m.apiClient.Get(ctx, types.NamespacedName{Name: volName}, vol); err != nil {
 			return err
 		}
-		volList = vols
-	}
 
-	for i := range volList {
-		if volList[i].Spec.Convertible {
+		if vol.Spec.Convertible {
 			continue
 		}
 		// non-convertible volume
-		if err := m.syncReplica(migrate, volList[i]); err != nil {
-			logCtx.WithField("LocalVolume", volList[i].Name).WithError(err).Error("Failed to synchronize replicas")
+		if err := m.syncReplica(migrate, vol); err != nil {
+			logCtx.WithField("LocalVolume", volName).WithError(err).Error("Failed to synchronize replicas")
 			migrate.Status.Message = err.Error()
 			m.apiClient.Status().Update(ctx, migrate)
 			return err
@@ -316,42 +301,35 @@ func (m *manager) volumeMigratePruneReplica(migrate *apisv1alpha1.LocalVolumeMig
 		}
 	}
 
-	volList := []*apisv1alpha1.LocalVolume{vol}
-	if migrate.Spec.MigrateAllVols {
-		vols, err := m.getAllVolumesInGroup(lvg)
-		if err != nil {
-			logCtx.WithField("LocalVolumeGroup", lvg.Name).WithError(err).Error("Failed to get all volumes in the group")
-			migrate.Status.Message = err.Error()
-			m.apiClient.Status().Update(ctx, migrate)
+	for _, volName := range migrate.Status.Volumes {
+		vol := &apisv1alpha1.LocalVolume{}
+		if err := m.apiClient.Get(ctx, types.NamespacedName{Name: volName}, vol); err != nil {
 			return err
 		}
-		volList = vols
-	}
 
-	for i := range volList {
 		// New replica is added and synced successfully, will remove the to-be-migrated replica from Volume's config
-		if volList[i].Spec.ReplicaNumber > migrate.Status.OriginalReplicaNumber {
+		if vol.Spec.ReplicaNumber > migrate.Status.OriginalReplicaNumber {
 			// prune the to-be-migrated replica
 			replicas := []apisv1alpha1.VolumeReplica{}
-			for j := range volList[i].Spec.Config.Replicas {
-				if volList[i].Spec.Config.Replicas[j].Hostname != migrate.Spec.SourceNode {
-					replicas = append(replicas, volList[i].Spec.Config.Replicas[j])
+			for j := range vol.Spec.Config.Replicas {
+				if vol.Spec.Config.Replicas[j].Hostname != migrate.Spec.SourceNode {
+					replicas = append(replicas, vol.Spec.Config.Replicas[j])
 				}
 			}
-			volList[i].Spec.Config.Replicas = replicas
-			volList[i].Spec.ReplicaNumber = migrate.Status.OriginalReplicaNumber
-			if err := m.apiClient.Update(ctx, volList[i]); err != nil {
-				logCtx.WithField("LocalVolume", volList[i].Name).WithError(err).Error("Failed to prune a replica")
-				migrate.Status.Message = fmt.Sprintf("Failed to prune a replica of volume %s", volList[i].Name)
+			vol.Spec.Config.Replicas = replicas
+			vol.Spec.ReplicaNumber = migrate.Status.OriginalReplicaNumber
+			if err := m.apiClient.Update(ctx, vol); err != nil {
+				logCtx.WithField("LocalVolume", volName).WithError(err).Error("Failed to prune a replica")
+				migrate.Status.Message = fmt.Sprintf("Failed to prune a replica of volume %s", volName)
 				m.apiClient.Status().Update(ctx, migrate)
-				return fmt.Errorf("failed to prune a replica of volume %s", volList[i].Name)
+				return fmt.Errorf("failed to prune a replica of volume %s", volName)
 			}
-			migrate.Status.Message = fmt.Sprintf("Pruning a replica of volume %s", volList[i].Name)
+			migrate.Status.Message = fmt.Sprintf("Pruning a replica of volume %s", volName)
 			m.apiClient.Status().Update(ctx, migrate)
 			return fmt.Errorf("pruning replicas in progress")
 		}
-		if err := m.checkReplicasForVolume(volList[i]); err != nil {
-			logCtx.WithField("LocalVolume", volList[i].Name).WithError(err).Debug("Still pruning the replica")
+		if err := m.checkReplicasForVolume(vol); err != nil {
+			logCtx.WithField("LocalVolume", volName).WithError(err).Debug("Still pruning the replica")
 			return err
 		}
 	}
@@ -374,16 +352,23 @@ func (m *manager) volumeMigrateCleanup(migrate *apisv1alpha1.LocalVolumeMigrate)
 	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "spec": migrate.Spec, "status": migrate.Status})
 	logCtx.Debug("Cleanup a VolumeMigrate")
 
-	return m.apiClient.Delete(context.TODO(), migrate)
+	ctx := context.TODO()
+	for _, volName := range migrate.Status.Volumes {
+		cmName := datacopy.GetConfigMapName(datacopy.SyncConfigMapName, volName)
+		cm := &corev1.ConfigMap{}
+		if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: cmName}, cm); err == nil {
+			logCtx.WithField("configmap", cmName).Debug("Cleanup the migrate config")
+			m.apiClient.Delete(ctx, cm)
+		}
+	}
+
+	return m.apiClient.Delete(ctx, migrate)
 }
 
 func (m *manager) checkReplicasForVolume(vol *apisv1alpha1.LocalVolume) error {
 	if vol.Spec.Config == nil {
 		return fmt.Errorf("invalid volume configuration")
 	}
-	// if len(vol.Status.PublishedNodeName) > 0 {
-	// 	return fmt.Errorf("volume still in use")
-	// }
 
 	replicas, err := m.getReplicasForVolume(vol.Name)
 	if err != nil {

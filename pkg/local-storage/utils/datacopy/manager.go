@@ -90,7 +90,7 @@ func (dcm *DataCopyManager) Sync(jobName, srcNodeName, dstNodeName, volName stri
 
 	cmName := GetConfigMapName(SyncConfigMapName, volName)
 	cm := &corev1.ConfigMap{}
-	if err := dcm.k8sControllerClient.Get(context.TODO(), types.NamespacedName{Namespace: dcm.workingNamespace, Name: cmName}, cm); err != nil {
+	if err := dcm.k8sControllerClient.Get(ctx, types.NamespacedName{Namespace: dcm.workingNamespace, Name: cmName}, cm); err != nil {
 		logCtx.WithField("configmap", cmName).Error("Not found the data sync configmap")
 		return err
 	}
@@ -130,7 +130,7 @@ func (dcm *DataCopyManager) Sync(jobName, srcNodeName, dstNodeName, volName stri
 			}).Debug("The replicas have already been synchronized successfully")
 
 			cm.Data[SyncConfigSyncDoneKey] = SyncTrue
-			if err := dcm.k8sControllerClient.Update(ctx, cm, &k8sclient.UpdateOptions{Raw: &metav1.UpdateOptions{}}); err != nil {
+			if err := dcm.k8sControllerClient.Update(ctx, cm); err != nil {
 				logCtx.WithField("configmap", cmName).WithError(err).Error("Failed to update sync configmap")
 				return err
 			}
@@ -150,9 +150,6 @@ func (dcm *DataCopyManager) Sync(jobName, srcNodeName, dstNodeName, volName stri
 					logCtx.WithField("Job", syncJob).WithError(err).Error("Failed to cleanup the job")
 					return err
 				}
-			}
-			if err := dcm.k8sControllerClient.Delete(ctx, cm); err != nil {
-				logCtx.WithField("configmap", cm.Name).WithError(err).Warning("Failed to cleanup the sync configmap, just leak it")
 			}
 			isJobCompleted = true
 			break

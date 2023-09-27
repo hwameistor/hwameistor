@@ -392,7 +392,7 @@ func Test_manager_volumeMigrateInProgress(t *testing.T) {
 				localNodes:                  map[string]v1alpha1.State{},
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
-			if err := m.volumeMigrateAddReplica(tt.args.migrate, lv, lvg); (err != nil) != tt.wantErr {
+			if err := m.volumeMigrateAddReplica(tt.args.migrate, lv); (err != nil) != tt.wantErr {
 				t.Errorf("volumeMigrateInProgress() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

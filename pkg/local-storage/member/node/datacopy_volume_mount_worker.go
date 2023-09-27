@@ -63,7 +63,7 @@ func (m *manager) processSyncVolumeMount(lvName string) error {
 
 	cmName := datacopy.GetConfigMapName(datacopy.SyncConfigMapName, lvName)
 	cm := &corev1.ConfigMap{}
-	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: m.namespace, Name: cmName}, cm); err != nil {
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: cmName}, cm); err != nil {
 		logCtx.WithField("configmap", cmName).Error("Not found the data sync configmap")
 		return err
 	}
@@ -86,6 +86,7 @@ func (m *manager) processSyncVolumeMount(lvName string) error {
 	}
 
 	if cm.Data[datacopy.SyncConfigSyncDoneKey] == datacopy.SyncTrue {
+		m.logger.WithField("mountpoint", mountPoint).Debug("Trying to umount volume")
 		if err := m.mounter.Unmount(mountPoint); err != nil {
 			m.logger.WithField("mountpoint", mountPoint).WithError(err).Error("Failed to Unmount volume")
 			return err
@@ -103,6 +104,7 @@ func (m *manager) processSyncVolumeMount(lvName string) error {
 	}
 	// return directly if device has already mounted at TargetPath
 	if !isStringInArray(mountPoint, m.mounter.GetDeviceMountPoints(devPath)) {
+		m.logger.WithField("mountpoint", mountPoint).Debug("Trying to format and mount volume")
 		if err := m.mounter.FormatAndMount(devPath, mountPoint, fsType, []string{}); err != nil {
 			m.logger.WithField("mountpoint", mountPoint).WithError(err).Error("Failed to FormatAndMount volume")
 			return err

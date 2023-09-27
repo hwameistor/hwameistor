@@ -585,8 +585,7 @@ func (m *manager) handleConfigMapAddEvent(newObj interface{}) {
 		if lvName, exist := cm.Data[datacopy.SyncConfigVolumeNameKey]; exist && len(lvName) > 0 {
 			m.syncVolumeMountTaskQueue.Add(lvName)
 		}
-	}
-	if cm.Name == datacopy.SyncKeyConfigMapName {
+	} else if cm.Name == datacopy.SyncKeyConfigMapName {
 		if pubKeyData, exist := cm.Data[datacopy.SyncPubKeyFileName]; exist && len(pubKeyData) > 0 {
 			if err := utils.AddPubKeyIntoAuthorizedKeys(pubKeyData); err != nil {
 				m.logger.WithError(err).Error("Failed to write public key into authorized keys file")
@@ -609,8 +608,7 @@ func (m *manager) handleConfigMapDeleteEvent(newObj interface{}) {
 			m.syncVolumeMountTaskQueue.Forget(lvName)
 			m.syncVolumeMountTaskQueue.Done(lvName)
 		}
-	}
-	if cm.Name == datacopy.SyncKeyConfigMapName {
+	} else if cm.Name == datacopy.SyncKeyConfigMapName {
 		if pubKeyData, exist := cm.Data[datacopy.SyncPubKeyFileName]; exist && len(pubKeyData) > 0 {
 			if err := utils.RemovePubKeyFromAuthorizedKeys(); err != nil {
 				m.logger.WithError(err).Error("Failed to cleanup the public key from authorized keys file")

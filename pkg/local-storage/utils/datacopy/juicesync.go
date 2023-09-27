@@ -29,7 +29,7 @@ func (js *JuiceSync) Prepare(targetNodeName, sourceNodeName, volName string) err
 	cmName := GetConfigMapName(SyncConfigMapName, volName)
 
 	cm := &corev1.ConfigMap{}
-	if err := js.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: js.namespace, Name: cmName}, cm); err == nil {
+	if err := js.apiClient.Get(ctx, types.NamespacedName{Namespace: js.namespace, Name: cmName}, cm); err == nil {
 		logger.WithField("configmap", cmName).Debug("The config of data sync already exists")
 		return nil
 	}
