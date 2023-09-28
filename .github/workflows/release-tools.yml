@@ -2,6 +2,10 @@ name: Release Tools
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        required: true
+        type: string
 
 jobs:
   release-image:
@@ -26,9 +30,10 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Set env
         run: |
-          echo "RELEASE_TAG=`echo $(git describe --tags --abbrev=0)`" >> $GITHUB_ENV
+          echo "RELEASE_TAG=`[ "${{ inputs.release_tag }}" != "" ] && echo ${{ inputs.release_tag }} || echo $(git describe --tags --abbrev=0)`" >> $GITHUB_ENV
           echo "PROJECT_SOURCE_CODE_DIR=`echo ${GITHUB_WORKSPACE}`" >> $GITHUB_ENV
           echo "IMAGE_REGISTRY=`echo ghcr.io/$(echo ${{ github.repository_owner }} | tr 'A-Z' 'a-z')`" >> $GITHUB_ENV
+          echo "SCAN_IMAGES=true" >> $GITHUB_ENV
       - name: Release tools
         run: |
-          PROJECT_SOURCE_CODE_DIR=${PROJECT_SOURCE_CODE_DIR} IMAGE_REGISTRY=${IMAGE_REGISTRY} RELEASE_TAG=${RELEASE_TAG} make tools
+          PROJECT_SOURCE_CODE_DIR=${PROJECT_SOURCE_CODE_DIR} IMAGE_REGISTRY=${IMAGE_REGISTRY} RELEASE_TAG=${RELEASE_TAG} SCAN_IMAGES=${SCAN_IMAGES} make tools
