@@ -133,10 +133,9 @@ localStorage:
     tag: ""
     resources: {}
   migrate:
-    rclone:
-      # can use daocloud.io/daocloud/hwameistor-migrate-rclone:v1.1.2 which is exactly same as the following
-      imageRepository: rclone/rclone
-      tag: 1.53.2
+    juicesync:
+      imageRepository: hwameistor/hwameistor-juicesync
+      tag: v1.0.4-01
   hostPaths:
     sshDir: /root/.ssh
     drbdDir: /etc/drbd.d

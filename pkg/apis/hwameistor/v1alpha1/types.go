@@ -256,6 +256,7 @@ type SystemConfig struct {
 	Mode             SystemMode        `json:"mode"`
 	DRBD             *DRBDSystemConfig `json:"drbd"`
 	MaxHAVolumeCount int               `json:"maxVolumeCount"`
+	SyncToolName     string            `json:"syncTool"`
 }
 
 //go:generate mockgen -source=types.go -destination=../../../member/controller/volumegroup/manager_mock.go  -package=volumegroup

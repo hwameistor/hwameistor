@@ -13,34 +13,34 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils/datacopy"
 )
 
-func (m *manager) startRcloneVolumeMountTaskWorker(stopCh <-chan struct{}) {
+func (m *manager) startSyncVolumeMountTaskWorker(stopCh <-chan struct{}) {
 
 	m.logger.Debug("VolumeBlockMount Assignment Worker is working now")
 	go func() {
 		for {
-			task, shutdown := m.rcloneVolumeMountTaskQueue.Get()
+			task, shutdown := m.syncVolumeMountTaskQueue.Get()
 			if shutdown {
 				m.logger.WithFields(log.Fields{"task": task}).Debug("Stop the volumeBlockMountTask Assignment worker")
 				break
 			}
-			if err := m.processRcloneVolumeMount(task); err != nil {
+			if err := m.processSyncVolumeMount(task); err != nil {
 				m.logger.WithFields(log.Fields{"task": task, "error": err.Error()}).Error("Failed to process assignment, retry later")
-				m.rcloneVolumeMountTaskQueue.AddRateLimited(task)
+				m.syncVolumeMountTaskQueue.AddRateLimited(task)
 			} else {
 				m.logger.WithFields(log.Fields{"task": task}).Debug("Completed an assignment.")
-				m.rcloneVolumeMountTaskQueue.Forget(task)
+				m.syncVolumeMountTaskQueue.Forget(task)
 			}
-			m.rcloneVolumeMountTaskQueue.Done(task)
+			m.syncVolumeMountTaskQueue.Done(task)
 		}
 	}()
 
 	<-stopCh
-	m.rcloneVolumeMountTaskQueue.Shutdown()
+	m.syncVolumeMountTaskQueue.Shutdown()
 }
 
-func (m *manager) processRcloneVolumeMount(lvName string) error {
+func (m *manager) processSyncVolumeMount(lvName string) error {
 	logCtx := m.logger.WithFields(log.Fields{"LocalVolume": lvName, "nodeName": m.name})
-	logCtx.Debug("Working on a rclone volume mount Task")
+	logCtx.Debug("Working on a data sync volume mount Task")
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -61,10 +61,10 @@ func (m *manager) processRcloneVolumeMount(lvName string) error {
 		}
 	}
 
-	cmName := datacopy.GetConfigMapName(datacopy.RCloneConfigMapName, lvName)
+	cmName := datacopy.GetConfigMapName(datacopy.SyncConfigMapName, lvName)
 	cm := &corev1.ConfigMap{}
-	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: m.namespace, Name: cmName}, cm); err != nil {
-		logCtx.WithField("configmap", cmName).Error("Not found the rclone configmap")
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: cmName}, cm); err != nil {
+		logCtx.WithField("configmap", cmName).Error("Not found the data sync configmap")
 		return err
 	}
 
@@ -74,18 +74,19 @@ func (m *manager) processRcloneVolumeMount(lvName string) error {
 		return err
 	}
 
-	sourceNodeName := cm.Data[datacopy.RCloneConfigSrcNodeNameKey]
-	targetNodeName := cm.Data[datacopy.RCloneConfigDstNodeNameKey]
+	sourceNodeName := cm.Data[datacopy.SyncConfigSourceNodeNameKey]
+	targetNodeName := cm.Data[datacopy.SyncConfigTargetNodeNameKey]
 	mountPoint := ""
 	if m.name == sourceNodeName {
-		mountPoint = datacopy.RCloneSrcMountPoint + lvName
+		mountPoint = datacopy.SyncSourceMountPoint + lvName
 	} else if m.name == targetNodeName {
-		mountPoint = datacopy.RCloneDstMountPoint + lvName
+		mountPoint = datacopy.SyncTargetMountPoint + lvName
 	} else {
 		return nil
 	}
 
-	if cm.Data[datacopy.RCloneConfigSyncDoneKey] == datacopy.RCloneTrue {
+	if cm.Data[datacopy.SyncConfigSyncDoneKey] == datacopy.SyncTrue {
+		m.logger.WithField("mountpoint", mountPoint).Debug("Trying to umount volume")
 		if err := m.mounter.Unmount(mountPoint); err != nil {
 			m.logger.WithField("mountpoint", mountPoint).WithError(err).Error("Failed to Unmount volume")
 			return err
@@ -103,6 +104,7 @@ func (m *manager) processRcloneVolumeMount(lvName string) error {
 	}
 	// return directly if device has already mounted at TargetPath
 	if !isStringInArray(mountPoint, m.mounter.GetDeviceMountPoints(devPath)) {
+		m.logger.WithField("mountpoint", mountPoint).Debug("Trying to format and mount volume")
 		if err := m.mounter.FormatAndMount(devPath, mountPoint, fsType, []string{}); err != nil {
 			m.logger.WithField("mountpoint", mountPoint).WithError(err).Error("Failed to FormatAndMount volume")
 			return err
@@ -110,15 +112,17 @@ func (m *manager) processRcloneVolumeMount(lvName string) error {
 	}
 
 	if m.name == sourceNodeName {
-		if cm.Data[datacopy.RCloneConfigSourceNodeReadyKey] == datacopy.RCloneTrue {
+		if cm.Data[datacopy.SyncConfigSourceNodeReadyKey] == datacopy.SyncTrue {
 			return nil
 		}
-		cm.Data[datacopy.RCloneConfigSourceNodeReadyKey] = datacopy.RCloneTrue
+		cm.Data[datacopy.SyncConfigSourceNodeReadyKey] = datacopy.SyncTrue
+		cm.Data[datacopy.SyncConfigSourceMountPointKey] = mountPoint
 	} else {
-		if cm.Data[datacopy.RCloneConfigRemoteNodeReadyKey] == datacopy.RCloneTrue {
+		if cm.Data[datacopy.SyncConfigTargetNodeReadyKey] == datacopy.SyncTrue {
 			return nil
 		}
-		cm.Data[datacopy.RCloneConfigRemoteNodeReadyKey] = datacopy.RCloneTrue
+		cm.Data[datacopy.SyncConfigTargetNodeReadyKey] = datacopy.SyncTrue
+		cm.Data[datacopy.SyncConfigTargetMountPointKey] = mountPoint
 	}
 	if err := m.apiClient.Update(ctx, cm); err != nil {
 		m.logger.WithField("configmap", cm.Name).WithError(err).Error("Failed to update rclone's config")

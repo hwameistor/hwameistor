@@ -25,7 +25,7 @@ type LocalVolumeMigrateSpec struct {
 
 	// *** common section of all the operations ***
 
-	// +kubebuilder:default:=false
+	// +kubebuilder:default:=true
 	MigrateAllVols bool `json:"migrateAllVols,omitempty"`
 
 	// +kubebuilder:default:=false
@@ -42,6 +42,8 @@ type LocalVolumeMigrateStatus struct {
 	OriginalReplicaNumber int64 `json:"originalReplicaNumber,omitempty"`
 	// record the node where the specified replica is migrated to
 	TargetNode string `json:"targetNode,omitempty"`
+	// record all the volumes to be migrated
+	Volumes []string `json:"volumes"`
 
 	// State of the operation, e.g. submitted, started, completed, abort, ...
 	State State `json:"state,omitempty"`

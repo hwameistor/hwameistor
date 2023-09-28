@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -135,7 +136,7 @@ func (statusGenerator *statusGenerator) isReleted(job *batchv1.Job) bool {
 	if job.Labels == nil {
 		return false
 	}
-	return job.Labels["app"] == RcloneJobLabelApp
+	return job.Labels["app"] == SyncJobLabelApp
 }
 
 func (statusGenerator *statusGenerator) Run() {
@@ -225,7 +226,7 @@ func (statusGenerator *statusGenerator) gc(job *batchv1.Job, runningStatus *Data
 		return
 	}
 	for _, pod := range jobPods.Items {
-		if pod.Labels["job-name"] != job.Name && pod.Labels["app"] != RcloneJobLabelApp {
+		if pod.Labels["job-name"] != job.Name && pod.Labels["app"] != SyncJobLabelApp {
 			continue
 		}
 		logger.Debugf("Start deleting pod %s, namesapce %s", pod.Name, pod.Namespace)

@@ -77,7 +77,7 @@ type manager struct {
 // New cluster manager
 func New(name string, namespace string, cli client.Client, scheme *runtime.Scheme, informersCache runtimecache.Cache, systemConfig apisv1alpha1.SystemConfig) (apis.ControllerManager, error) {
 	dataCopyStatusCh := make(chan *datacopyutil.DataCopyStatus, 100)
-	dcm, _ := datacopyutil.NewDataCopyManager(context.TODO(), "", cli, dataCopyStatusCh, namespace)
+	dcm, _ := datacopyutil.NewDataCopyManager(context.TODO(), systemConfig.SyncToolName, "", cli, dataCopyStatusCh, namespace)
 	return &manager{
 		name:               name,
 		namespace:          namespace,
@@ -278,7 +278,7 @@ func (m *manager) handleVolumeSnapshotRestoreAddEvent(newObject interface{}) {
 		m.volumeSnapshotRestoreTaskQueue.Add(volumeReplicaSnapshotRestore.Spec.VolumeSnapshotRestore)
 		return
 	}
-	return
+
 }
 
 func (m *manager) handleVolumeSnapshotRestoreUpdateEvent(oldObj, newObj interface{}) {
@@ -446,10 +446,10 @@ func (m *manager) handlePodUpdateEvent(_, nObj interface{}) {
 	pod, _ := nObj.(*corev1.Pod)
 
 	// this is for the pod orphan pod which is abandoned by migration rclone job
-	m.rclonePodGC(pod)
+	m.gcSyncJobPod(pod)
 }
 
 func (m *manager) handlePodAddEvent(obj interface{}) {
 	pod, _ := obj.(*corev1.Pod)
-	m.rclonePodGC(pod)
+	m.gcSyncJobPod(pod)
 }

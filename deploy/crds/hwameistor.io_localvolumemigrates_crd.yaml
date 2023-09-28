@@ -58,7 +58,7 @@ spec:
                 default: false
                 type: boolean
               migrateAllVols:
-                default: false
+                default: true
                 type: boolean
               sourceNode:
                 description: source NodeNames
@@ -93,6 +93,13 @@ spec:
                 description: record the node where the specified replica is migrated
                   to
                 type: string
+              volumes:
+                description: record all the volumes to be migrated
+                items:
+                  type: string
+                type: array
+            required:
+            - volumes
             type: object
         type: object
     served: true

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -67,7 +66,7 @@ type manager struct {
 
 	volumeSnapshotTaskQueue *common.TaskQueue
 
-	rcloneVolumeMountTaskQueue *common.TaskQueue
+	syncVolumeMountTaskQueue *common.TaskQueue
 
 	volumeReplicaTaskQueue *common.TaskQueue
 
@@ -114,7 +113,7 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 		replicaRecords:                        map[string]string{},
 		replicaSnapshotsRecords:               map[string]string{},
 		volumeTaskQueue:                       common.NewTaskQueue("VolumeTask", maxRetries),
-		rcloneVolumeMountTaskQueue:            common.NewTaskQueue("RcloneVolumeMount", maxRetries),
+		syncVolumeMountTaskQueue:              common.NewTaskQueue("RcloneVolumeMount", maxRetries),
 		volumeReplicaTaskQueue:                common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 		localDiskClaimTaskQueue:               common.NewTaskQueue("LocalDiskClaim", maxRetries),
 		localDiskTaskQueue:                    common.NewTaskQueue("LocalDisk", maxRetries),
@@ -134,7 +133,7 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 
 func (m *manager) Run(stopCh <-chan struct{}) {
 
-	m.initForRClone()
+	m.initForDataSync()
 
 	m.initCache()
 
@@ -152,7 +151,7 @@ func (m *manager) Run(stopCh <-chan struct{}) {
 
 	go m.startDiskEventWorker(stopCh)
 
-	go m.startRcloneVolumeMountTaskWorker(stopCh)
+	go m.startSyncVolumeMountTaskWorker(stopCh)
 
 	go m.startVolumeSnapshotTaskWorker(stopCh)
 
@@ -194,9 +193,10 @@ func (m *manager) isPhysicalNode() bool {
 }
 */
 
-func (m *manager) initForRClone() {
-	if err := utils.TouchFile(filepath.Join(datacopy.RCloneKeyDir, "authorized_keys")); err != nil {
-		m.logger.WithField("file", filepath.Join(datacopy.RCloneKeyDir, "authorized_keys")).WithError(err).Panic("Failed to create a rclone file")
+func (m *manager) initForDataSync() {
+	keyFilePath := "/root/.ssh/authorized_keys"
+	if err := utils.TouchFile(keyFilePath); err != nil {
+		m.logger.WithField("file", keyFilePath).WithError(err).Panic("Failed to create a keys file for data copy")
 	}
 
 }
@@ -581,13 +581,12 @@ func (m *manager) handleConfigMapAddEvent(newObj interface{}) {
 	if cm.Namespace != m.namespace {
 		return
 	}
-	if strings.HasPrefix(cm.Name, datacopy.RCloneConfigMapName) {
-		if lvName, exist := cm.Data[datacopy.RCloneConfigVolumeNameKey]; exist && len(lvName) > 0 {
-			m.rcloneVolumeMountTaskQueue.Add(lvName)
+	if strings.HasPrefix(cm.Name, datacopy.SyncConfigMapName) {
+		if lvName, exist := cm.Data[datacopy.SyncConfigVolumeNameKey]; exist && len(lvName) > 0 {
+			m.syncVolumeMountTaskQueue.Add(lvName)
 		}
-	}
-	if cm.Name == datacopy.RCloneKeyConfigMapName {
-		if pubKeyData, exist := cm.Data[datacopy.RClonePubKeyFileName]; exist && len(pubKeyData) > 0 {
+	} else if cm.Name == datacopy.SyncKeyConfigMapName {
+		if pubKeyData, exist := cm.Data[datacopy.SyncPubKeyFileName]; exist && len(pubKeyData) > 0 {
 			if err := utils.AddPubKeyIntoAuthorizedKeys(pubKeyData); err != nil {
 				m.logger.WithError(err).Error("Failed to write public key into authorized keys file")
 			}
@@ -604,14 +603,13 @@ func (m *manager) handleConfigMapDeleteEvent(newObj interface{}) {
 	if cm.Namespace != m.namespace {
 		return
 	}
-	if strings.HasPrefix(cm.Name, datacopy.RCloneConfigMapName) {
-		if lvName, exist := cm.Data[datacopy.RCloneConfigVolumeNameKey]; exist && len(lvName) > 0 {
-			m.rcloneVolumeMountTaskQueue.Forget(lvName)
-			m.rcloneVolumeMountTaskQueue.Done(lvName)
+	if strings.HasPrefix(cm.Name, datacopy.SyncConfigMapName) {
+		if lvName, exist := cm.Data[datacopy.SyncConfigVolumeNameKey]; exist && len(lvName) > 0 {
+			m.syncVolumeMountTaskQueue.Forget(lvName)
+			m.syncVolumeMountTaskQueue.Done(lvName)
 		}
-	}
-	if cm.Name == datacopy.RCloneKeyConfigMapName {
-		if pubKeyData, exist := cm.Data[datacopy.RClonePubKeyFileName]; exist && len(pubKeyData) > 0 {
+	} else if cm.Name == datacopy.SyncKeyConfigMapName {
+		if pubKeyData, exist := cm.Data[datacopy.SyncPubKeyFileName]; exist && len(pubKeyData) > 0 {
 			if err := utils.RemovePubKeyFromAuthorizedKeys(); err != nil {
 				m.logger.WithError(err).Error("Failed to cleanup the public key from authorized keys file")
 			}
