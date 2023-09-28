@@ -147,7 +147,10 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 		migrate.Status.TargetNode = tgtNodeName
 	}
 
-	if len(migrate.Status.Volumes) == 0 {
+	logCtx.WithField("volumes", migrate.Status.Volumes).Debug("Checking for volumes to be migrated ...")
+
+	if migrate.Status.Volumes == nil || len(migrate.Status.Volumes) == 0 {
+		logCtx.Debug("Looking for the associated volumes to be migrated ...")
 		volList := []*apisv1alpha1.LocalVolume{vol}
 		if migrate.Spec.MigrateAllVols {
 			vols, err := m.getAllVolumesInGroup(lvg)
@@ -159,6 +162,7 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 			}
 			volList = vols
 		}
+		migrate.Status.Volumes = []string{}
 		for i := range volList {
 			if err := m.checkReplicasForVolume(volList[i]); err != nil {
 				logCtx.WithField("LocalVolume", volList[i].Name).WithError(err).Error("Replicas are in problem")
