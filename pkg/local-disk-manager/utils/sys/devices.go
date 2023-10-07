@@ -37,6 +37,8 @@ const (
 	// DriveTypeSSD represents a solid state drive
 	DriveTypeSSD = "SSD"
 
+	DriverTypeNVMe = "NVMe"
+
 	// DriveTypeUnknown is used when the drive type of the disk could not be determined.
 	DriveTypeUnknown = "Unknown"
 )
@@ -195,6 +197,10 @@ func (s Device) GetDriveType() (string, error) {
 	if rotational == 1 {
 		return DriveTypeHDD, nil
 	} else if rotational == 0 {
+		// for nvme devices, it has different syspath format - /devices/pci0000:d7/0000:d7:02.0/0000:da:00.0/nvme/nvme0/nvme0n1
+		if strings.Contains(s.sysPath, NVMeSubSystem) {
+			return DriverTypeNVMe, nil
+		}
 		return DriveTypeSSD, nil
 	}
 	return DriveTypeUnknown, fmt.Errorf("undefined rotational value %d", rotational)
