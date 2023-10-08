@@ -12,12 +12,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	storagev1lister "k8s.io/client-go/listers/storage/v1"
-	framework "k8s.io/kubernetes/pkg/scheduler/framework"
+	"k8s.io/kubernetes/pkg/scheduler/framework"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apis "github.com/hwameistor/hwameistor/pkg/apis/hwameistor"
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 const VolumeSnapshot = "VolumeSnapshot"
@@ -147,6 +147,12 @@ func (s *LVMVolumeScheduler) filterForExistingLocalVolumes(lvs []string, node *c
 		if !isLocalNode {
 			log.WithFields(log.Fields{"localvolume": lvName, "node": node.Name}).Debug("LocalVolume doesn't locate at this node")
 			return false, fmt.Errorf("not right node")
+		}
+
+		// if volume is already Published, also check if this node is the published node, see #1155 for more details.
+		if lv.Status.PublishedNodeName != "" && lv.Status.PublishedNodeName != node.Name {
+			log.WithFields(log.Fields{"localvolume": lvName, "node": node.Name}).Debug("LocalVolume doesn't publish at this node")
+			return false, fmt.Errorf("not published node")
 		}
 	}
 
