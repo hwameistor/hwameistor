@@ -39,6 +39,7 @@ func (ld *LocalDiskFilter) Available() *LocalDiskFilter {
 	if ld.localDisk.Status.State == v1alpha1.LocalDiskAvailable {
 		ld.setResult(TRUE)
 	} else {
+		log.Debugf("disk %s state %s mismatch", ld.localDisk.Name, ld.localDisk.Status.State)
 		ld.setResult(FALSE)
 	}
 
@@ -49,6 +50,7 @@ func (ld *LocalDiskFilter) HasNotReserved() *LocalDiskFilter {
 	if !ld.localDisk.Spec.Reserved {
 		ld.setResult(TRUE)
 	} else {
+		log.Debugf("disk %s state is reserved", ld.localDisk.Name)
 		ld.setResult(FALSE)
 	}
 
@@ -59,6 +61,7 @@ func (ld *LocalDiskFilter) NodeMatch(wantNode string) *LocalDiskFilter {
 	if wantNode == ld.localDisk.Spec.NodeName {
 		ld.setResult(TRUE)
 	} else {
+		log.Debugf("disk %s nodeName(%s) missmatch, wantNode %s", ld.localDisk.Name, ld.localDisk.Spec.NodeName, wantNode)
 		ld.setResult(FALSE)
 	}
 	return ld
@@ -80,6 +83,7 @@ func (ld *LocalDiskFilter) Capacity(cap int64) *LocalDiskFilter {
 	if ld.localDisk.Spec.Capacity >= cap {
 		ld.setResult(TRUE)
 	} else {
+		log.Debugf("disk %s capacity(%d) missmatch, want capacity %d", ld.localDisk.Name, ld.localDisk.Spec.Capacity, cap)
 		ld.setResult(FALSE)
 	}
 
@@ -95,6 +99,7 @@ func (ld *LocalDiskFilter) DiskType(diskType string) *LocalDiskFilter {
 	if ld.localDisk.Spec.DiskAttributes.Type == diskType {
 		ld.setResult(TRUE)
 	} else {
+		log.Debugf("disk %s type(%s) missmatch, wantType %s", ld.localDisk.Name, ld.localDisk.Spec.DiskAttributes.Type, diskType)
 		ld.setResult(FALSE)
 	}
 
@@ -105,6 +110,7 @@ func (ld *LocalDiskFilter) DevType() *LocalDiskFilter {
 	if ld.localDisk.Spec.DiskAttributes.DevType == sys.BlockDeviceTypeDisk {
 		ld.setResult(TRUE)
 	} else {
+		log.Debugf("disk %s devType(%s) missmatch, wantType %s", ld.localDisk.Name, ld.localDisk.Spec.DiskAttributes.DevType, sys.BlockDeviceTypeDisk)
 		ld.setResult(FALSE)
 	}
 
@@ -113,6 +119,7 @@ func (ld *LocalDiskFilter) DevType() *LocalDiskFilter {
 
 func (ld *LocalDiskFilter) NoPartition() *LocalDiskFilter {
 	if len(ld.localDisk.Spec.PartitionInfo) > 0 {
+		log.Debugf("disk %s is already partitioned(%d)", ld.localDisk.Name, len(ld.localDisk.Spec.PartitionInfo))
 		ld.setResult(FALSE)
 	} else {
 		ld.setResult(TRUE)
@@ -152,6 +159,7 @@ func (ld *LocalDiskFilter) IsNameFormatMatch() *LocalDiskFilter {
 	if strings.HasPrefix(ld.localDisk.Name, v1alpha1.LocalDiskObjectPrefix) {
 		ld.setResult(TRUE)
 	} else {
+		log.Debugf("disk %s has deprecated format of name, this disk can be safely removed", ld.localDisk.Name)
 		ld.setResult(FALSE)
 	}
 
@@ -176,6 +184,7 @@ func (ld *LocalDiskFilter) LdNameMatch(ldNames []string) *LocalDiskFilter {
 	if found {
 		ld.setResult(TRUE)
 	} else {
+		log.Debugf("disk %s is not specified in diskClaim", ld.localDisk.Name)
 		ld.setResult(FALSE)
 	}
 	return ld
@@ -199,6 +208,7 @@ func (ld *LocalDiskFilter) DevPathMatch(devPaths []string) *LocalDiskFilter {
 	if found {
 		ld.setResult(TRUE)
 	} else {
+		log.Debugf("disk %s devPath %s is not specified in diskClaim", ld.localDisk.Name, ld.localDisk.Spec.DevicePath)
 		ld.setResult(FALSE)
 	}
 	return ld

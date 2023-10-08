@@ -78,7 +78,7 @@ func (ldcHandler *Handler) For(ldc *v1alpha1.LocalDiskClaim) *Handler {
 func (ldcHandler *Handler) AssignFreeDisk() error {
 	localDiskHandler := diskHandler.NewLocalDiskHandler(ldcHandler.Client, ldcHandler.EventRecorder)
 	diskClaim := ldcHandler.diskClaim.DeepCopy()
-	diskList, err := localDiskHandler.ListLocalDisk()
+	diskList, err := localDiskHandler.ListNodeLocalDisk(diskClaim.Spec.NodeName)
 	if err != nil {
 		return err
 	}
