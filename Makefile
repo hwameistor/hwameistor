@@ -504,8 +504,9 @@ lint-fix: golangci-lint
 
 .PHONY: golangci-lint
 golangci-lint:
-ifeq (, $(shell which golangci-lint))
-    GO111MODULE=on go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50
+ifeq (, $(shell command -v golangci-lint))
+	@echo "Installing golangci-lint"
+	GO111MODULE=on go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50
 GOLANGLINT_BIN=$(shell go env GOPATH)/bin/golangci-lint
 else
 GOLANGLINT_BIN=$(shell which golangci-lint)
