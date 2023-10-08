@@ -19,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	lscsi "github.com/hwameistor/hwameistor/pkg/local-storage/member/csi"
 )
@@ -86,7 +86,7 @@ func (v *DiskVolumeHandler) ReconcileMount() (reconcile.Result, error) {
 
 		// check if the volume can mount safely, more details see issue #1116
 		if _, err = v.CanSafelyMount(); err != nil {
-			log.WithError(err).Errorf("Failed to mount %s to %s", volPath, mountPoint.TargetPath)
+			log.WithError(err).Errorf("Volume %s can't be safely mount to %s", volPath, mountPoint.TargetPath)
 			result.Requeue = true
 			continue
 		}
@@ -512,7 +512,7 @@ func (v *DiskVolumeHandler) CanSafelyMount() (bool, error) {
 // this is only used for disk volume
 func getDeviceLinkByVolume(volumePath string) (string, error) {
 	// device path example: ../disk/pci-0000:03:00.0-scsi-0:0:30:0
-	devicePath, err := utils.Bash(fmt.Sprintf("readlink %v", volumePath))
+	devicePath, err := utils.Bash(fmt.Sprintf("readlink -n %v", volumePath))
 	if err != nil {
 		return "", err
 	}
@@ -520,5 +520,5 @@ func getDeviceLinkByVolume(volumePath string) (string, error) {
 	devicePath = path.Join(types.GetLocalDiskPoolPathFromVolume(volumePath), strings.TrimPrefix(devicePath, "../"))
 
 	// final output: /dev/disk/by-path/pci-0000:03:00.0-scsi-0:0:30:0
-	return utils.Bash(fmt.Sprintf("readlink %v", devicePath))
+	return utils.Bash(fmt.Sprintf("readlink -n %v", devicePath))
 }

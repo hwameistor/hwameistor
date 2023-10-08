@@ -46,7 +46,7 @@ func ComposePoolVolumePath(poolName, volumeName string) string {
 }
 
 func GetLocalDiskPoolPathFromVolume(volumePath string) string {
-	return strings.Split(volumePath, diskSubPath)[0]
+	return strings.Split(volumePath, volumeSubPath)[0]
 }
 
 func GetDefaultDiskPoolPath() (dps []string) {
