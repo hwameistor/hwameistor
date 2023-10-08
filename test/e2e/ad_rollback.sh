@@ -21,7 +21,7 @@ if [ $1 == "k8s1.27" ]; then
   export snapshot="k8s127"
   kubectl config use-context k8s1.27
 fi
-if [ $1 == "k8s1.27" ]; then
+if [ $1 == "k8s1.28" ]; then
   export GOVC_RESOURCE_POOL="fupan-adaptation-test"
   export hosts="adaptation-master adaptation-node1 adaptation-node2"
   export snapshot="k8s128"
