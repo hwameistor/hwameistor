@@ -473,21 +473,6 @@ _gen-apis:
 	${OPERATOR_CMD} generate crds
 	GOPROXY=https://goproxy.cn,direct /code-generator/generate-groups.sh all github.com/hwameistor/hwameistor/pkg/apis/client github.com/hwameistor/hwameistor/pkg/apis "hwameistor:v1alpha1" --go-header-file /go/src/github.com/hwameistor/hwameistor/build/boilerplate.go.txt
 
-
-.PHONY: _enable_buildx
-_enable_buildx:
-	@echo "Checking if buildx enabled"
-	@if [[ "$(shell docker version -f '{{.Server.Experimental}}')" == "true" ]]; \
-	then \
-		docker buildx inspect mutil-platform-builder &>/dev/null; \
-	        [ $$? == 0 ] && echo "ok" && exit 0; \
-		docker buildx create --name mutil-platform-builder &>/dev/null&& echo "ok" && exit 0; \
-	else \
-		echo "experimental config of docker is false"; \
-		exit 1; \
-	fi
-
-
 .PHONY: e2e-test
 e2e-test:
 	bash test/e2e-test.sh
@@ -508,3 +493,20 @@ shutdownvm:
 .PHONY: render-chart-values
 render-chart-values:
 	${RENDER_CHART_VALUES}
+
+.PHONY: lint
+lint: golangci-lint
+	$(GOLANGLINT_BIN) run
+
+.PHONY: lint-fix
+lint-fix: golangci-lint
+	$(GOLANGLINT_BIN) run --fix
+
+.PHONY: golangci-lint
+golangci-lint:
+ifeq (, $(shell which golangci-lint))
+    GO111MODULE=on go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50
+GOLANGLINT_BIN=$(shell go env GOPATH)/bin/golangci-lint
+else
+GOLANGLINT_BIN=$(shell which golangci-lint)
+endif
