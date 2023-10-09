@@ -189,13 +189,17 @@ func (r *resources) initilizeResources() {
 // poolname -> volumes
 func (r *resources) getAssociatedVolumes(vol *apisv1alpha1.LocalVolume) map[string][]*apisv1alpha1.LocalVolume {
 	lvs := map[string][]*apisv1alpha1.LocalVolume{}
-	lvs[vol.Spec.PoolName] = []*apisv1alpha1.LocalVolume{vol}
 	pvcs := []string{}
+
 	r.logger.WithFields(log.Fields{"pvcToPods": r.pvcToPods, "namespace": vol.Spec.PersistentVolumeClaimNamespace, "name": vol.Spec.PersistentVolumeClaimName}).Debug("Getting associated volumes")
 	pods, exists := r.pvcToPods[NamespacedName(vol.Spec.PersistentVolumeClaimNamespace, vol.Spec.PersistentVolumeClaimName)]
 	if !exists && len(vol.Spec.VolumeGroup) == 0 {
+		lvs[vol.Spec.PoolName] = []*apisv1alpha1.LocalVolume{vol}
 		return lvs
 	}
+
+	r.logger.Debugf("get %d pod(s) from cache", len(pods))
+
 	if len(pods) > 0 {
 		marks := map[string]bool{}
 		for _, podNamespacedName := range pods {
@@ -203,6 +207,7 @@ func (r *resources) getAssociatedVolumes(vol *apisv1alpha1.LocalVolume) map[stri
 				for _, pvcNamespacedName := range ps {
 					if _, in := marks[pvcNamespacedName]; !in {
 						marks[pvcNamespacedName] = true
+						r.logger.Debugf("found associated PVC %s from pod %s", pvcNamespacedName, podNamespacedName)
 						pvcs = append(pvcs, pvcNamespacedName)
 					}
 				}
@@ -214,9 +219,12 @@ func (r *resources) getAssociatedVolumes(vol *apisv1alpha1.LocalVolume) map[stri
 			return lvs
 		}
 		for _, v := range lvg.Spec.Volumes {
+			r.logger.Debugf("found associated PVC %s from VolumeGroup %s", NamespacedName(lvg.Spec.Namespace, v.PersistentVolumeClaimName), lvg.Name)
 			pvcs = append(pvcs, NamespacedName(lvg.Spec.Namespace, v.PersistentVolumeClaimName))
 		}
 	}
+
+	r.logger.Debugf("found %d associated PVC(s)", len(pvcs))
 
 	for _, pvcNamespacedName := range pvcs {
 		pvc, exists := r.pvcsMap[pvcNamespacedName]
@@ -245,6 +253,7 @@ func (r *resources) getAssociatedVolumes(vol *apisv1alpha1.LocalVolume) map[stri
 		replica, _ := strconv.Atoi(sc.Parameters[apisv1alpha1.VolumeParameterReplicaNumberKey])
 		lv.Spec.ReplicaNumber = int64(replica)
 		lvs[poolName] = append(lvs[poolName], lv)
+		r.logger.Debugf("adding associated LV(capacity: %d) to pool %s, current %d volume(s)", lv.Spec.RequiredCapacityBytes, poolName, len(lvs[poolName]))
 	}
 
 	return lvs
@@ -266,8 +275,12 @@ func (r *resources) predicate(vol *apisv1alpha1.LocalVolume, nodeName string) er
 		volumeMaxCapacityBytes := int64(0)
 		requiredVolumeCount := len(lvs)
 		requiredCapacityBytes := int64(0)
+
+		r.logger.Debugf("found %d volume(s) in pool %s", len(lvs), poolName)
+
 		for _, lv := range lvs {
 			requiredCapacityBytes += lv.Spec.RequiredCapacityBytes
+			r.logger.Debugf("adding requiredCapacity %d to pool %s, current requiredCapacity %d", lv.Spec.RequiredCapacityBytes, poolName, requiredCapacityBytes)
 			if lv.Spec.RequiredCapacityBytes > volumeMaxCapacityBytes {
 				volumeMaxCapacityBytes = lv.Spec.RequiredCapacityBytes
 			}
@@ -277,7 +290,10 @@ func (r *resources) predicate(vol *apisv1alpha1.LocalVolume, nodeName string) er
 		allocatedPool := r.allocatedStorages.pools[poolName]
 
 		if requiredCapacityBytes > totalPool.capacities[nodeName]-allocatedPool.capacities[nodeName] {
-			r.logger.WithField("pool", poolName).Error("No enough capacity")
+			r.logger.WithFields(log.Fields{"pool": poolName,
+				"requireCapacityBytes":   requiredCapacityBytes,
+				"totalPoolCapacityBytes": totalPool.capacities[nodeName],
+				"allocatedCapacityBytes": allocatedPool.capacities[nodeName]}).Error("No enough capacity")
 			return fmt.Errorf("not enough capacity in pool %s", poolName)
 		}
 		if totalPool.volumeCount[nodeName] < allocatedPool.volumeCount[nodeName]+int64(requiredVolumeCount) {
@@ -464,6 +480,8 @@ func (r *resources) addAllocatedStorage(vol *apisv1alpha1.LocalVolume) {
 		return
 	}
 
+	r.logger.Infof("add allocated storage for %v", vol.Name)
+
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -486,6 +504,8 @@ func (r *resources) recycleAllocatedStorage(vol *apisv1alpha1.LocalVolume) {
 	if vol.Spec.Config == nil || len(vol.Spec.Config.Replicas) == 0 {
 		return
 	}
+
+	r.logger.Infof("recycle allocated storage for %v", vol.Name)
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
