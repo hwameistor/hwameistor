@@ -11,6 +11,7 @@ on:
         options:
           - ALL
           - k8s1.25.3 & kylin10_arm
+          - k8s1.24.0 & centos7.6
           - k8s1.25.0 & centos7.6
           - k8s1.26.0 & centos7.6
           - k8s1.27.0 & centos7.6
@@ -24,6 +25,24 @@ on:
 
 
 jobs:
+  k8s1_24-test:
+    if: ${{ inputs.k8s-version == 'k8s1.24.0 & centos7.6' || inputs.k8s-version == 'ALL' || inputs.k8s-version == ''  }}
+    runs-on: [ "e2e" ]
+    timeout-minutes: 180
+    steps:
+      - name: delete
+        run: |
+          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
+          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
+          sudo rm -rf /home/github/actions-runner/_work/hwameistor/hwameistor/_build
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: e2e test
+        env:
+          E2E_TESTING_LEVEL: "k8s1.24"
+        run: make e2e-test
   k8s1_25-test:
     if: ${{ inputs.k8s-version == 'k8s1.25.0 & centos7.6' || inputs.k8s-version == 'ALL' || inputs.k8s-version == ''  }}
     runs-on: ["e2e"]
