@@ -24,8 +24,8 @@ type LocalVolumeSnapshotRestoreSpec struct {
 	// +kubebuilder:validation:Required
 	SourceVolumeSnapshot string `json:"sourceVolumeSnapshot"`
 
-	// RestoreType is the type about how to restore the volume, e.g. rollback, create. By default create.
-	// +kubebuilder:default:=create
+	// RestoreType is the type about how to restore the volume, e.g., rollback, create. By default, create.
+	// +Kubebuilder:default:=create
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum:=rollback;create
 	RestoreType RestoreType `json:"restoreType"`
@@ -49,7 +49,7 @@ type LocalVolumeSnapshotRestoreStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// LocalVolumeSnapshotRestore is user's request for either restoring a local volume snapshot to a new volume, or merging into the old volume.
+// LocalVolumeSnapshotRestore is a user's request for either restoring a local volume snapshot to a new volume, or merging into the old volume.
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=localvolumesnapshotrestores,scope=Cluster,shortName=lvsrestore;lvsnaprestore
 // +kubebuilder:printcolumn:name="targetvolume",type=string,JSONPath=`.spec.targetVolume`,description="Target for the restore"
