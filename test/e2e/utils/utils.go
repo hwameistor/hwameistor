@@ -202,7 +202,10 @@ func ConfigureadEnvironment(ctx context.Context, k8s string) error {
 
 		if k8serror.IsNotFound(err1) && k8serror.IsNotFound(err2) {
 			return true, nil
+		} else if drbd1.Status.Succeeded == int32(1) && drbd2.Status.Succeeded == int32(1) {
+			return true, nil
 		}
+
 		return false, nil
 	})
 
