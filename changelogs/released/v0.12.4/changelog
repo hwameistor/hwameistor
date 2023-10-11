@@ -1,0 +1,27 @@
+v0.12.4/ 2023-10-11
+========================
+
+
+## LVM volume management enhancements
+- added an option of juicesync to migrate data #1148 (@sun7927 )
+
+## Disk Management Enhancements
+- fix: correct safelyMount check #1165(@SSmallMonster )
+- chore(disk-filter): add logger for debugging disk claim process #1162(@SSmallMonster )
+- feat: parse disk type of NVMe #1160(@SSmallMonster )
+
+## Scheduler
+- fix getAssociatedVolumes double count error #1171(@SSmallMonster )
+- fix(scheduler): schedule the published node when ha-volume is published #1167(@SSmallMonster )
+
+## Tests
+- fix e2e-test #1153 (@FloatXD )
+- add 1.28 Adaptation-test #1164 (@FloatXD )
+- fix ad-test #1166 (@FloatXD )
+- add 1.24 ad-test #1172 (@FloatXD )
+
+## Others
+- Add hwameictl release ci #1146 (@Vacant2333）
+- fixed the workflow for tools #1156 (@sun7927 )
+- chroe: fix golangci-lint #1163(@SSmallMonster )
+- chore(lint): add golangci-lint #1161(@SSmallMonster )
