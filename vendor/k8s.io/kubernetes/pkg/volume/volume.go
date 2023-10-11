@@ -48,6 +48,14 @@ type BlockVolume interface {
 	// and name of a symbolic link associated to a block device.
 	// ex. pods/{podUid}/{DefaultKubeletVolumeDevicesDirName}/{escapeQualifiedPluginName}/, {volumeName}
 	GetPodDeviceMapPath() (string, string)
+
+	// SupportsMetrics should return true if the MetricsProvider is
+	// initialized
+	SupportsMetrics() bool
+
+	// MetricsProvider embeds methods for exposing metrics (e.g.
+	// used, available space).
+	MetricsProvider
 }
 
 // MetricsProvider exposes metrics (e.g. used,available space) related to a
@@ -107,9 +115,9 @@ type Metrics struct {
 
 // Attributes represents the attributes of this mounter.
 type Attributes struct {
-	ReadOnly        bool
-	Managed         bool
-	SupportsSELinux bool
+	ReadOnly       bool
+	Managed        bool
+	SELinuxRelabel bool
 }
 
 // MounterArgs provides more easily extensible arguments to Mounter
@@ -127,17 +135,6 @@ type MounterArgs struct {
 type Mounter interface {
 	// Uses Interface to provide the path for Docker binds.
 	Volume
-
-	// CanMount is called immediately prior to Setup to check if
-	// the required components (binaries, etc.) are available on
-	// the underlying node to complete the subsequent SetUp (mount)
-	// operation. If CanMount returns error, the mount operation is
-	// aborted and an event is generated indicating that the node
-	// does not have the required binaries to complete the mount.
-	// If CanMount succeeds, the mount operation continues
-	// normally. The CanMount check can be enabled or disabled
-	// using the experimental-check-mount-binaries binary flag
-	CanMount() error
 
 	// SetUp prepares and mounts/unpacks the volume to a
 	// self-determined directory path. The mount point and its
@@ -263,6 +260,11 @@ type Attacher interface {
 	WaitForAttach(spec *Spec, devicePath string, pod *v1.Pod, timeout time.Duration) (string, error)
 }
 
+// DeviceMounterArgs provides auxiliary, optional arguments to DeviceMounter.
+type DeviceMounterArgs struct {
+	FsGroup *int64
+}
+
 // DeviceMounter can mount a block volume to a global path.
 type DeviceMounter interface {
 	// GetDeviceMountPath returns a path where the device should
@@ -277,7 +279,7 @@ type DeviceMounter interface {
 	//   - TransientOperationFailure
 	//   - UncertainProgressError
 	//   - Error of any other type should be considered a final error
-	MountDevice(spec *Spec, devicePath string, deviceMountPath string) error
+	MountDevice(spec *Spec, devicePath string, deviceMountPath string, deviceMounterArgs DeviceMounterArgs) error
 }
 
 type BulkVolumeVerifier interface {

@@ -23,6 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/kubernetes/pkg/scheduler/framework"
+	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/names"
 )
 
 // NodePorts is a plugin that checks if a node has free ports for the requested pod ports.
@@ -30,10 +31,11 @@ type NodePorts struct{}
 
 var _ framework.PreFilterPlugin = &NodePorts{}
 var _ framework.FilterPlugin = &NodePorts{}
+var _ framework.EnqueueExtensions = &NodePorts{}
 
 const (
 	// Name is the name of the plugin used in the plugin registry and configurations.
-	Name = "NodePorts"
+	Name = names.NodePorts
 
 	// preFilterStateKey is the key in CycleState to NodePorts pre-computed data.
 	// Using the name of the plugin will likely help us avoid collisions with other plugins.
@@ -72,10 +74,10 @@ func getContainerPorts(pods ...*v1.Pod) []*v1.ContainerPort {
 }
 
 // PreFilter invoked at the prefilter extension point.
-func (pl *NodePorts) PreFilter(ctx context.Context, cycleState *framework.CycleState, pod *v1.Pod) *framework.Status {
+func (pl *NodePorts) PreFilter(ctx context.Context, cycleState *framework.CycleState, pod *v1.Pod) (*framework.PreFilterResult, *framework.Status) {
 	s := getContainerPorts(pod)
 	cycleState.Write(preFilterStateKey, preFilterState(s))
-	return nil
+	return nil, nil
 }
 
 // PreFilterExtensions do not exist for this plugin.
@@ -95,6 +97,16 @@ func getPreFilterState(cycleState *framework.CycleState) (preFilterState, error)
 		return nil, fmt.Errorf("%+v  convert to nodeports.preFilterState error", c)
 	}
 	return s, nil
+}
+
+// EventsToRegister returns the possible events that may make a Pod
+// failed by this plugin schedulable.
+func (pl *NodePorts) EventsToRegister() []framework.ClusterEvent {
+	return []framework.ClusterEvent{
+		// Due to immutable fields `spec.containers[*].ports`, pod update events are ignored.
+		{Resource: framework.Pod, ActionType: framework.Delete},
+		{Resource: framework.Node, ActionType: framework.Add | framework.Update},
+	}
 }
 
 // Filter invoked at the filter extension point.

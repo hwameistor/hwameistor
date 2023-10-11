@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -32,13 +33,21 @@ import (
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 const (
 	defaultLeaseDuration = 15 * time.Second
 	defaultRenewDeadline = 10 * time.Second
 	defaultRetryPeriod   = 5 * time.Second
+
+	DefaultHealthCheckTimeout = 20 * time.Second
+
+	// HealthCheckerAddress is the address at which the leader election health
+	// checker reports status.
+	// The caller sidecar should document this address in appropriate flag
+	// descriptions.
+	HealthCheckerAddress = "/healthz/leader-election"
 )
 
 // leaderElection is a convenience wrapper around client-go's leader election library.
@@ -52,13 +61,17 @@ type leaderElection struct {
 	// the namespace to store the lock resource
 	namespace string
 	// resourceLock defines the type of leaderelection that should be used
-	// valid options are resourcelock.LeasesResourceLock, resourcelock.EndpointsResourceLock,
-	// and resourcelock.ConfigMapsResourceLock
+	// Only resourcelock.LeasesResourceLock is valid at the moment.
 	resourceLock string
+	// healthCheck reports unhealthy if leader election fails to renew leadership
+	// within a timeout period.
+	healthCheck *leaderelection.HealthzAdaptor
 
 	leaseDuration time.Duration
 	renewDeadline time.Duration
 	retryPeriod   time.Duration
+
+	ctx context.Context
 
 	clientset kubernetes.Interface
 }
@@ -74,32 +87,6 @@ func NewLeaderElectionWithLeases(clientset kubernetes.Interface, lockName string
 		runFunc:       runFunc,
 		lockName:      lockName,
 		resourceLock:  resourcelock.LeasesResourceLock,
-		leaseDuration: defaultLeaseDuration,
-		renewDeadline: defaultRenewDeadline,
-		retryPeriod:   defaultRetryPeriod,
-		clientset:     clientset,
-	}
-}
-
-// NewLeaderElectionWithEndpoints returns an implementation of leader election using Endpoints
-func NewLeaderElectionWithEndpoints(clientset kubernetes.Interface, lockName string, runFunc func(ctx context.Context)) *leaderElection {
-	return &leaderElection{
-		runFunc:       runFunc,
-		lockName:      lockName,
-		resourceLock:  resourcelock.EndpointsResourceLock,
-		leaseDuration: defaultLeaseDuration,
-		renewDeadline: defaultRenewDeadline,
-		retryPeriod:   defaultRetryPeriod,
-		clientset:     clientset,
-	}
-}
-
-// NewLeaderElectionWithConfigMaps returns an implementation of leader election using ConfigMaps
-func NewLeaderElectionWithConfigMaps(clientset kubernetes.Interface, lockName string, runFunc func(ctx context.Context)) *leaderElection {
-	return &leaderElection{
-		runFunc:       runFunc,
-		lockName:      lockName,
-		resourceLock:  resourcelock.ConfigMapsResourceLock,
 		leaseDuration: defaultLeaseDuration,
 		renewDeadline: defaultRenewDeadline,
 		retryPeriod:   defaultRetryPeriod,
@@ -125,6 +112,32 @@ func (l *leaderElection) WithRenewDeadline(renewDeadline time.Duration) {
 
 func (l *leaderElection) WithRetryPeriod(retryPeriod time.Duration) {
 	l.retryPeriod = retryPeriod
+}
+
+// WithContext Add context
+func (l *leaderElection) WithContext(ctx context.Context) {
+	l.ctx = ctx
+}
+
+// Server represents any type that could serve HTTP requests for the leader
+// election health check endpoint.
+type Server interface {
+	Handle(pattern string, handler http.Handler)
+}
+
+// PrepareHealthCheck creates a health check for this leader election object
+// with the given healthCheckTimeout and registers its HTTP handler to the given
+// server at the path specified by the constant "healthCheckerAddress".
+// healthCheckTimeout determines the max duration beyond lease expiration
+// allowed before reporting unhealthy.
+// The caller sidecar should document the handler address in appropriate flag
+// descriptions.
+func (l *leaderElection) PrepareHealthCheck(
+	s Server,
+	healthCheckTimeout time.Duration) {
+
+	l.healthCheck = leaderelection.NewLeaderHealthzAdaptor(healthCheckTimeout)
+	s.Handle(HealthCheckerAddress, adaptCheckToHandler(l.healthCheck.Check))
 }
 
 func (l *leaderElection) Run() error {
@@ -172,9 +185,14 @@ func (l *leaderElection) Run() error {
 				klog.V(3).Infof("new leader detected, current leader: %s", identity)
 			},
 		},
+		WatchDog: l.healthCheck,
 	}
 
-	leaderelection.RunOrDie(context.TODO(), leaderConfig)
+	ctx := l.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	leaderelection.RunOrDie(ctx, leaderConfig)
 	return nil // should never reach here
 }
 
@@ -208,4 +226,16 @@ func inClusterNamespace() string {
 	}
 
 	return "default"
+}
+
+// adaptCheckToHandler returns an http.HandlerFunc that serves the provided checks.
+func adaptCheckToHandler(c func(r *http.Request) error) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := c(r)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("internal server error: %v", err), http.StatusInternalServerError)
+		} else {
+			fmt.Fprint(w, "ok")
+		}
+	})
 }

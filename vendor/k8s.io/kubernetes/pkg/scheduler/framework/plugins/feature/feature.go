@@ -20,5 +20,9 @@ package feature
 // This struct allows us to break the dependency of the plugins on
 // the internal k8s features pkg.
 type Features struct {
-	EnablePodAffinityNamespaceSelector bool
+	EnablePodAffinityNamespaceSelector  bool
+	EnablePodDisruptionBudget           bool
+	EnableReadWriteOncePod              bool
+	EnableVolumeCapacityPriority        bool
+	EnableMinDomainsInPodTopologySpread bool
 }
