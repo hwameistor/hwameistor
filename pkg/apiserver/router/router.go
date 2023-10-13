@@ -44,6 +44,9 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	metricsController := controller.NewMetricsController(sm)
 	v1.GET("/cluster/status", metricsController.ModuleStatus)
 	v1.GET("/cluster/operations", metricsController.OperationList)
+	v1.GET("/cluster/operations/:operationName", metricsController.OperationGet)
+	v1.GET("/cluster/events", metricsController.EventList)
+	v1.GET("/cluster/events/:eventName", metricsController.EventGet)
 
 	volumeController := controller.NewVolumeController(sm)
 
@@ -58,11 +61,23 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	v1.GET("/cluster/volumes/:volumeName/convert", volumeController.GetVolumeConvertOperation)
 	v1.POST("/cluster/volumes/:volumeName/convert", volumeController.VolumeConvertOperation)
 
+	//volumes expand
+	v1.GET("/cluster/volumes/:volumeName/expand", volumeController.GetVolumeExpandOperation)
+	v1.POST("/cluster/volumes/:volumeName/expand", volumeController.VolumeExpandOperation)
+
 	v1.GET("/cluster/volumes/:volumeName/operations", volumeController.VolumeOperationGet)
+	v1.GET("/cluster/volumes/:volumeName/events", volumeController.VolumeEventList)
+	//volumes snapshots
+	v1.GET("/cluster/volumes/:volumeName/snapshot", volumeController.VolumeSnapshotList)
 
 	volumeGroupController := controller.NewVolumeGroupController(sm)
 	v1.GET("/cluster/volumegroups/:vgName", volumeGroupController.VolumeGroupGet)
 	v1.GET("/cluster/volumegroups", volumeGroupController.VolumeGroupList)
+
+	//snapshots
+	snapController := controller.NewSnapshotController(sm)
+	v1.GET("/cluster/snapshots", snapController.SnapshotList)
+	v1.GET("/cluster/snapshot/:snapshotName/snapshot", snapController.SnapshotGet)
 
 	ldController := controller.NewLocalDiskController(sm)
 	v1.GET("/cluster/localdisks", ldController.LocalDiskList)

@@ -1,6 +1,7 @@
 package api
 
 import (
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"time"
 
 	apiv1alpha1 "github.com/hwameistor/hwameistor-operator/api/v1alpha1"
@@ -183,4 +184,26 @@ func (p NodeStorageUseRatios) Swap(i, j int) {
 type NodeStorageUseCollection struct {
 	// 存储节点资源使用率
 	NodeStorageUseRatios []*NodeStorageUseRatio `json:"nodeStorageUseRatios"`
+}
+
+type EventList struct {
+	Event []*Event `json:"items"`
+	// page 信息
+	Page *Pagination `json:"pagination,omitempty"`
+}
+
+type Event struct {
+	apisv1alpha1.Event
+}
+
+type EventActionList struct {
+	EventActions []*EventAction `json:"items"`
+	// page 信息
+	Page *Pagination `json:"pagination,omitempty"`
+}
+
+type EventAction struct {
+	EventRecord  apisv1alpha1.EventRecord `json:"eventRecord"`
+	ResourceName string                   `json:"resourceName"`
+	ResourceType string                   `json:"resourceType"`
 }

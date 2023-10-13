@@ -151,6 +151,95 @@
                 }
             }
         },
+        "/cluster/events": {
+            "get": {
+                "description": "EventList 排序  resourceType枚举（Cluster;StorageNode;DiskNode;Pool;Volume;DiskVolume;Disk）  sort枚举 （time、name、type）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metric"
+                ],
+                "summary": "摘要 获取审计日志",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pageSize",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "resourceName",
+                        "name": "resourceName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "resourceType",
+                        "name": "resourceType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sort",
+                        "name": "sort",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.EventActionList"
+                        }
+                    }
+                }
+            }
+        },
+        "/cluster/events/:eventName": {
+            "get": {
+                "description": "EventGet",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metric"
+                ],
+                "summary": "摘要 获取指定事件",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "eventName",
+                        "name": "eventName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Event"
+                        }
+                    }
+                }
+            }
+        },
         "/cluster/localdisknodes": {
             "get": {
                 "description": "get LocalDiskNodeList",
@@ -418,6 +507,59 @@
                     "Node"
                 ],
                 "summary": "摘要 更新磁盘",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "nodeName",
+                        "name": "nodeName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "devicePath",
+                        "name": "devicePath",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "reqBody",
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/api.DiskReqBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.DiskReqBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.RspFailBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/cluster/nodes/{nodeName}/disks/{devicePath}/owner": {
+            "post": {
+                "description": "post SetStorageNodeDiskOwner devicePath i.g /dev/sdb /dev/sdc ...",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Node"
+                ],
+                "summary": "摘要 更新磁盘owner",
                 "parameters": [
                     {
                         "type": "string",
@@ -830,6 +972,45 @@
                 }
             }
         },
+        "/cluster/operations/:operationName": {
+            "get": {
+                "description": "OperationGet eventType枚举 (Migrate、Expand、Convert)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metric"
+                ],
+                "summary": "摘要 获取指定操作记录",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "operationName",
+                        "name": "operationName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "eventType",
+                        "name": "eventType",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Operation"
+                        }
+                    }
+                }
+            }
+        },
         "/cluster/pools": {
             "get": {
                 "description": "list StoragePools",
@@ -1083,6 +1264,63 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.NodeDiskListByPool"
+                        }
+                    }
+                }
+            }
+        },
+        "/cluster/snapshots": {
+            "get": {
+                "description": "list Snapshot",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Snapshot"
+                ],
+                "summary": "摘要 全局快照列表展式",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pageSize",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "snapshotName",
+                        "name": "snapshotName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "state",
+                        "name": "state",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "volumeName",
+                        "name": "volumeName",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.SnapshotList"
                         }
                     }
                 }
@@ -1371,6 +1609,147 @@
                 }
             }
         },
+        "/cluster/volumes/{volumeName}/events": {
+            "get": {
+                "description": "get VolumeOperation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Volume"
+                ],
+                "summary": "摘要 获取指定数据卷审计日志  sort=time ,先不做按操作查询",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "volumeName",
+                        "name": "volumeName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pageSize",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "action",
+                        "name": "action",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sort",
+                        "name": "sort",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.EventActionList"
+                        }
+                    }
+                }
+            }
+        },
+        "/cluster/volumes/{volumeName}/expand": {
+            "get": {
+                "description": "get GetVolumeExpandOperation 状态枚举 （Submitted、InProgress、Completed、ToBeAborted、Aborted）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Volume"
+                ],
+                "summary": "摘要 获取指定数据卷扩容操作",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "volumeName",
+                        "name": "volumeName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.VolumeExpandOperation"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.RspFailBody"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "post VolumeExpandOperation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Volume"
+                ],
+                "summary": "摘要 指定数据卷扩容操作",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "volumeName",
+                        "name": "volumeName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "reqBody",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.VolumeExpandReqBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.VolumeExpandRspBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.RspFailBody"
+                        }
+                    }
+                }
+            }
+        },
         "/cluster/volumes/{volumeName}/migrate": {
             "get": {
                 "description": "get GetVolumeMigrateOperation 状态枚举 （Submitted、AddReplica、SyncReplica、PruneReplica、InProgress、Completed、ToBeAborted、Cancelled、Aborted、Failed）",
@@ -1541,6 +1920,70 @@
                     }
                 }
             }
+        },
+        "/cluster/volumes/{volumeName}/snapshot": {
+            "get": {
+                "description": "get VolumeSnapshotList",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Volume"
+                ],
+                "summary": "摘要 获取指定数据卷快照操作 快照状态枚举 (Creating, Ready, NotReady, ToBeDeleted, Deleted）",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "volumeName",
+                        "name": "volumeName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pageSize",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "state",
+                        "name": "state",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "snapshotName",
+                        "name": "snapshotName",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.SnapshotList"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.RspFailBody"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1617,6 +2060,61 @@
             "properties": {
                 "data": {
                     "$ref": "#/definitions/api.DrbdEnableSetting"
+                }
+            }
+        },
+        "api.Event": {
+            "type": "object",
+            "properties": {
+                "apiVersion": {
+                    "description": "APIVersion defines the versioned schema of this representation of an object.\nServers should convert recognized schemas to the latest internal value, and\nmay reject unrecognized values.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources\n+optional",
+                    "type": "string"
+                },
+                "kind": {
+                    "description": "Kind is a string value representing the REST resource this object represents.\nServers may infer this from the endpoint the client submits requests to.\nCannot be updated.\nIn CamelCase.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds\n+optional",
+                    "type": "string"
+                },
+                "metadata": {
+                    "$ref": "#/definitions/v1.ObjectMeta"
+                },
+                "spec": {
+                    "$ref": "#/definitions/v1alpha1.EventSpec"
+                },
+                "status": {
+                    "$ref": "#/definitions/v1alpha1.EventStatus"
+                }
+            }
+        },
+        "api.EventAction": {
+            "type": "object",
+            "properties": {
+                "eventRecord": {
+                    "$ref": "#/definitions/v1alpha1.EventRecord"
+                },
+                "resourceName": {
+                    "type": "string"
+                },
+                "resourceType": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.EventActionList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.EventAction"
+                    }
+                },
+                "pagination": {
+                    "description": "page 信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.Pagination"
+                        }
+                    ]
                 }
             }
         },
@@ -1897,6 +2395,47 @@
                 },
                 "errcode": {
                     "type": "integer"
+                }
+            }
+        },
+        "api.Snapshot": {
+            "type": "object",
+            "properties": {
+                "apiVersion": {
+                    "description": "APIVersion defines the versioned schema of this representation of an object.\nServers should convert recognized schemas to the latest internal value, and\nmay reject unrecognized values.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources\n+optional",
+                    "type": "string"
+                },
+                "kind": {
+                    "description": "Kind is a string value representing the REST resource this object represents.\nServers may infer this from the endpoint the client submits requests to.\nCannot be updated.\nIn CamelCase.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds\n+optional",
+                    "type": "string"
+                },
+                "metadata": {
+                    "$ref": "#/definitions/v1.ObjectMeta"
+                },
+                "spec": {
+                    "$ref": "#/definitions/v1alpha1.LocalVolumeSnapshotSpec"
+                },
+                "status": {
+                    "$ref": "#/definitions/v1alpha1.LocalVolumeSnapshotStatus"
+                }
+            }
+        },
+        "api.SnapshotList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Snapshot"
+                    }
+                },
+                "pagination": {
+                    "description": "page 信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.Pagination"
+                        }
+                    ]
                 }
             }
         },
@@ -2291,6 +2830,17 @@
                 }
             }
         },
+        "api.VolumeExpandInfo": {
+            "type": "object",
+            "properties": {
+                "targetCapacityBytes": {
+                    "type": "integer"
+                },
+                "volumeName": {
+                    "type": "string"
+                }
+            }
+        },
         "api.VolumeExpandOperation": {
             "type": "object",
             "properties": {
@@ -2310,6 +2860,26 @@
                 },
                 "status": {
                     "$ref": "#/definitions/v1alpha1.LocalVolumeExpandStatus"
+                }
+            }
+        },
+        "api.VolumeExpandReqBody": {
+            "type": "object",
+            "properties": {
+                "abort": {
+                    "type": "boolean"
+                },
+                "targetCapacity": {
+                    "description": "VolumeName     string `json:\"volumeName,omitempty\"`",
+                    "type": "string"
+                }
+            }
+        },
+        "api.VolumeExpandRspBody": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/api.VolumeExpandInfo"
                 }
             }
         },
@@ -2599,7 +3169,7 @@
             "type": "object",
             "properties": {
                 "names": {
-                    "description": "Names by which this image is known.\ne.g. [\"k8s.gcr.io/hyperkube:v1.0.7\", \"dockerhub.io/google_containers/hyperkube:v1.0.7\"]",
+                    "description": "Names by which this image is known.\ne.g. [\"k8s.gcr.io/hyperkube:v1.0.7\", \"dockerhub.io/google_containers/hyperkube:v1.0.7\"]\n+optional",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -2654,8 +3224,12 @@
                         }
                     ]
                 },
+                "subresource": {
+                    "description": "Subresource is the name of the subresource used to update that object, or\nempty string if the object was updated through the main resource. The\nvalue of this field is used to distinguish between managers, even if they\nshare the same name. For example, a status update will be distinct from a\nregular update using the same manager name.\nNote that the APIVersion field is not related to the Subresource field and\nit always corresponds to the version of the main resource.",
+                    "type": "string"
+                },
                 "time": {
-                    "description": "Time is timestamp of when these fields were set. It should always be empty if Operation is 'Apply'\n+optional",
+                    "description": "Time is the timestamp of when the ManagedFields entry was added. The\ntimestamp will also be updated if a field is added, the manager\nchanges any of the owned fields value or removes a field. The\ntimestamp does not update when a field is removed from the entry\nbecause another manager took it over.\n+optional",
                     "type": "string"
                 }
             }
@@ -2729,17 +3303,17 @@
             "type": "string",
             "enum": [
                 "Hostname",
-                "ExternalIP",
                 "InternalIP",
-                "ExternalDNS",
-                "InternalDNS"
+                "ExternalIP",
+                "InternalDNS",
+                "ExternalDNS"
             ],
             "x-enum-varnames": [
                 "NodeHostName",
-                "NodeExternalIP",
                 "NodeInternalIP",
-                "NodeExternalDNS",
-                "NodeInternalDNS"
+                "NodeExternalIP",
+                "NodeInternalDNS",
+                "NodeExternalDNS"
             ]
         },
         "v1.NodeCondition": {
@@ -2872,7 +3446,7 @@
             "type": "object",
             "properties": {
                 "configSource": {
-                    "description": "If specified, the source to get node configuration from\nThe DynamicKubeletConfig feature gate must be enabled for the Kubelet to use this field\n+optional",
+                    "description": "Deprecated: Previously used to specify the source of the node's configuration for the DynamicKubeletConfig feature. This feature is removed from Kubelets as of 1.24 and will be fully removed in 1.26.\n+optional",
                     "allOf": [
                         {
                             "$ref": "#/definitions/v1.NodeConfigSource"
@@ -3011,7 +3585,7 @@
                     "type": "string"
                 },
                 "containerRuntimeVersion": {
-                    "description": "ContainerRuntime Version reported by the node through runtime remote API (e.g. docker://1.5.0).",
+                    "description": "ContainerRuntime Version reported by the node through runtime remote API (e.g. containerd://1.4.2).",
                     "type": "string"
                 },
                 "kernelVersion": {
@@ -3055,7 +3629,7 @@
                     }
                 },
                 "clusterName": {
-                    "description": "The name of the cluster which the object belongs to.\nThis is used to distinguish resources with same name and namespace in different clusters.\nThis field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.\n+optional",
+                    "description": "Deprecated: ClusterName is a legacy field that was always cleared by\nthe system and never used; it will be removed completely in 1.25.\n\nThe name in the go struct is changed to help clients detect\naccidental use.\n\n+optional",
                     "type": "string"
                 },
                 "creationTimestamp": {
@@ -3078,7 +3652,7 @@
                     }
                 },
                 "generateName": {
-                    "description": "GenerateName is an optional prefix, used by the server, to generate a unique\nname ONLY IF the Name field has not been provided.\nIf this field is used, the name returned to the client will be different\nthan the name passed. This value will also be combined with a unique suffix.\nThe provided value has the same validation rules as the Name field,\nand may be truncated by the length of the suffix required to make the value\nunique on the server.\n\nIf this field is specified and the generated name exists, the server will\nNOT return a 409 - instead, it will either return 201 Created or 500 with Reason\nServerTimeout indicating a unique name could not be found in the time allotted, and the client\nshould retry (optionally after the time indicated in the Retry-After header).\n\nApplied only if Name is not specified.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency\n+optional",
+                    "description": "GenerateName is an optional prefix, used by the server, to generate a unique\nname ONLY IF the Name field has not been provided.\nIf this field is used, the name returned to the client will be different\nthan the name passed. This value will also be combined with a unique suffix.\nThe provided value has the same validation rules as the Name field,\nand may be truncated by the length of the suffix required to make the value\nunique on the server.\n\nIf this field is specified and the generated name exists, the server will return a 409.\n\nApplied only if Name is not specified.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency\n+optional",
                     "type": "string"
                 },
                 "generation": {
@@ -3119,7 +3693,7 @@
                     "type": "string"
                 },
                 "selfLink": {
-                    "description": "SelfLink is a URL representing this object.\nPopulated by the system.\nRead-only.\n\nDEPRECATED\nKubernetes will stop propagating this field in 1.20 release and the field is planned\nto be removed in 1.21 release.\n+optional",
+                    "description": "Deprecated: selfLink is a legacy read-only field that is no longer populated by the system.\n+optional",
                     "type": "string"
                 },
                 "uid": {
@@ -3169,7 +3743,7 @@
                     "type": "string"
                 },
                 "blockOwnerDeletion": {
-                    "description": "If true, AND if the owner has the \"foregroundDeletion\" finalizer, then\nthe owner cannot be deleted from the key-value store until this\nreference is removed.\nDefaults to false.\nTo set this field, a user needs \"delete\" permission of the owner,\notherwise 422 (Unprocessable Entity) will be returned.\n+optional",
+                    "description": "If true, AND if the owner has the \"foregroundDeletion\" finalizer, then\nthe owner cannot be deleted from the key-value store until this\nreference is removed.\nSee https://kubernetes.io/docs/concepts/architecture/garbage-collection/#foreground-deletion\nfor how the garbage collector interacts with this field and enforces the foreground deletion.\nDefaults to false.\nTo set this field, a user needs \"delete\" permission of the owner,\notherwise 422 (Unprocessable Entity) will be returned.\n+optional",
                     "type": "boolean"
                 },
                 "controller": {
@@ -3383,11 +3957,76 @@
                     "description": "Capacity of the disk in bytes",
                     "type": "integer"
                 },
+                "devicePaths": {
+                    "description": "Match the device path of Localdisk\nDevicePaths match all disks if DevicePaths are empty",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "diskType": {
                     "description": "DiskType represents the type of drive like SSD, HDD etc.,\n+optional",
                     "type": "string"
+                },
+                "localDiskNames": {
+                    "description": "Match the name of Localdisk\nLocalDiskNames match all disks if LocalDiskNames are empty",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
+        },
+        "v1alpha1.EventRecord": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "description": "The action is the operation on the resource, such as Migrate a LocalVolume",
+                    "type": "string"
+                },
+                "actionContent": {
+                    "description": "The content of the action which is a JSON string",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "id is unique",
+                    "type": "string"
+                },
+                "state": {
+                    "description": "The state of the action",
+                    "type": "string"
+                },
+                "stateContent": {
+                    "description": "The content of the action state which is a JSON string",
+                    "type": "string"
+                },
+                "time": {
+                    "description": "The time when does the action happen",
+                    "type": "string"
+                }
+            }
+        },
+        "v1alpha1.EventSpec": {
+            "type": "object",
+            "properties": {
+                "records": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1alpha1.EventRecord"
+                    }
+                },
+                "resourceName": {
+                    "description": "Name of the resource",
+                    "type": "string"
+                },
+                "resourceType": {
+                    "description": "HwameiStor resource type: Cluster, LocalStorageNode, LocalDiskNode, Pool,  LocalVolume, LocalDiskVolume, LocalDisk,\n+kubebuilder:validation:Enum:=Cluster;StorageNode;DiskNode;Pool;Volume;DiskVolume;Disk",
+                    "type": "string"
+                }
+            }
+        },
+        "v1alpha1.EventStatus": {
+            "type": "object"
         },
         "v1alpha1.EvictorStatus": {
             "type": "object",
@@ -4027,7 +4666,7 @@
                     "type": "boolean"
                 },
                 "migrateAllVols": {
-                    "description": "+kubebuilder:default:=false",
+                    "description": "+kubebuilder:default:=true",
                     "type": "boolean"
                 },
                 "sourceNode": {
@@ -4068,6 +4707,13 @@
                 "targetNode": {
                     "description": "record the node where the specified replica is migrated to",
                     "type": "string"
+                },
+                "volumes": {
+                    "description": "record all the volumes to be migrated",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -4149,6 +4795,71 @@
                 "synced": {
                     "description": "Synced is the sync state of the volume replica, which is important in HA volume\n+kubebuilder:default:=false",
                     "type": "boolean"
+                }
+            }
+        },
+        "v1alpha1.LocalVolumeSnapshotSpec": {
+            "type": "object",
+            "properties": {
+                "accessibility": {
+                    "description": "NOTE: We only take snapshots on the volume replica exist at the moment!\nAccessibility is the topology requirement of the volume snapshot. It describes how to locate and distribute the volume replicas snapshot.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1alpha1.AccessibilityTopology"
+                        }
+                    ]
+                },
+                "delete": {
+                    "description": "+kubebuilder:default:=false",
+                    "type": "boolean"
+                },
+                "requiredCapacityBytes": {
+                    "description": "RequiredCapacityBytes specifies the space reserved for the snapshot\n+kubebuilder:validation:Required\n+kubebuilder:validation:Minimum:=4194304",
+                    "type": "integer"
+                },
+                "sourceVolume": {
+                    "description": "SourceVolume specifies the source volume of the snapshot\n+kubebuilder:validation:Required",
+                    "type": "string"
+                }
+            }
+        },
+        "v1alpha1.LocalVolumeSnapshotStatus": {
+            "type": "object",
+            "properties": {
+                "allocatedCapacityBytes": {
+                    "description": "AllocatedCapacityBytes is the real allocated capacity in bytes\nIn case of HA volume with multiple replicas, the value is equal to the one of a replica's snapshot size",
+                    "type": "integer"
+                },
+                "attr": {
+                    "description": "Attribute indicates attr on snapshot",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1alpha1.VolumeSnapshotAttr"
+                        }
+                    ]
+                },
+                "creationTime": {
+                    "description": "CreationTime is the host real snapshot creation time\nIn case of HA volume with multiple replicas, the value is equal to the one of a replica's snapshot creation time",
+                    "type": "string"
+                },
+                "message": {
+                    "description": "Message error message to describe some states",
+                    "type": "string"
+                },
+                "replicaSnapshots": {
+                    "description": "ReplicaSnapshots represents the actual snapshots of replica",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "state": {
+                    "description": "State is the phase of volume replica, e.g. Creating, Ready, NotReady, ToBeDeleted, Deleted",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1alpha1.State"
+                        }
+                    ]
                 }
             }
         },
@@ -4343,6 +5054,11 @@
         "v1alpha1.State": {
             "type": "string",
             "enum": [
+                "",
+                "ToBeMounted",
+                "ToBeUnMount",
+                "Mounted",
+                "NotReady",
                 "Ready",
                 "Maintain",
                 "Offline",
@@ -4376,14 +5092,14 @@
                 "Failed",
                 "Available",
                 "InUse",
-                "Offline",
-                "",
-                "ToBeMounted",
-                "ToBeUnMount",
-                "Mounted",
-                "NotReady"
+                "Offline"
             ],
             "x-enum-varnames": [
+                "MountPointStateEmpty",
+                "MountPointToBeMounted",
+                "MountPointToBeUnMount",
+                "MountPointMounted",
+                "MountPointNotReady",
                 "NodeStateReady",
                 "NodeStateMaintain",
                 "NodeStateOffline",
@@ -4417,12 +5133,7 @@
                 "OperationStateFailed",
                 "DiskStateAvailable",
                 "DiskStateInUse",
-                "DiskStateOffline",
-                "MountPointStateEmpty",
-                "MountPointToBeMounted",
-                "MountPointToBeUnMount",
-                "MountPointMounted",
-                "MountPointNotReady"
+                "DiskStateOffline"
             ]
         },
         "v1alpha1.StorageNodeCondition": {
@@ -4566,6 +5277,19 @@
                     "type": "string"
                 },
                 "primary": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "v1alpha1.VolumeSnapshotAttr": {
+            "type": "object",
+            "properties": {
+                "invalid": {
+                    "description": "Invalid set true if snapshot is expiration",
+                    "type": "boolean"
+                },
+                "merging": {
+                    "description": "Merging set true if snapshot is merging now",
                     "type": "boolean"
                 }
             }

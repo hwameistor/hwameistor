@@ -80,6 +80,10 @@ type VolumeExpandOperation struct {
 	apisv1alpha1.LocalVolumeExpand
 }
 
+type VolumeSnapshotOperation struct {
+	apisv1alpha1.LocalVolumeSnapshot
+}
+
 // LocalVolumeMigrateSpec defines the desired state of LocalVolumeMigrate
 type LocalVolumeMigrateSpec struct {
 	// volumeName
@@ -225,7 +229,9 @@ type VolumeConvertInfo struct {
 }
 
 type VolumeExpandReqBody struct {
-	VolumeName string `json:"volumeName,omitempty"`
+	//VolumeName     string `json:"volumeName,omitempty"`
+	TargetCapacity string `json:"targetCapacity"`
+	Abort          bool   `json:"abort"`
 }
 
 type VolumeExpandRspBody struct {
@@ -235,4 +241,20 @@ type VolumeExpandRspBody struct {
 type VolumeExpandInfo struct {
 	VolumeName          string `json:"volumeName"`
 	TargetCapacityBytes int64  `json:"targetCapacityBytes"`
+}
+
+type VolumeSnapshotRepBody struct {
+	VolumeName string `json:"volumeName,omitempty"`
+	Capacity   string `json:"capacity"`
+	Abort      bool   `json:"abort"`
+}
+
+type VolumeSnapshotRspBody struct {
+	VolumeSnapshotInfo *VolumeSnapshotInfo `json:"data,omitempty"`
+}
+
+type VolumeSnapshotInfo struct {
+	Name          string `json:"Name"`
+	CapacityBytes int64  `json:"capacityBytes"`
+	SourceVolume  string `json:"sourceVolume"`
 }

@@ -348,10 +348,16 @@ type QueryPage struct {
 	OperationState    apisv1alpha1.State
 	DriverState       apisv1alpha1.State
 	DiskState         apisv1alpha1.LocalDiskState
+	SnapshotState     apisv1alpha1.State
+	SnapshotName      string
 	VolumeName        string
 	VolumeReplicaName string
 	VolumeEventName   string
 	Synced            string
 	OperationName     string
 	Owner             string
+	ResourceType      string
+	ResourceName      string
+	Action            string
+	Sort              string
 }
