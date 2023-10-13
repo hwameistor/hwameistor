@@ -22,3 +22,5 @@ spec:
         - name: pvc-autoresizer
           image: {{ .Values.global.hwameistorImageRegistry}}/{{ .Values.pvcAutoResizer.imageRepository}}:{{ template "hwameistor.pvcautoresizerImageTag" . }}
           imagePullPolicy: IfNotPresent
+          resources: 
+            {{- toYaml .Values.pvcAutoResizer.resources | nindent 12 }}
