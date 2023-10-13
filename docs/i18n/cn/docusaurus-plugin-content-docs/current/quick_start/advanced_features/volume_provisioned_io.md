@@ -162,8 +162,8 @@ pvc-cac82087-6f6c-493a-afcd-09480de712ed   LocalStorage_PoolHDD   1          107
 
 ### 修改 LocalVolume CR
 
-```
-$ kubectl edit localvolume pvc-cac82087-6f6c-493a-afcd-09480de712ed
+```bash
+kubectl edit localvolume pvc-cac82087-6f6c-493a-afcd-09480de712ed
 ```
 
 在编辑器中，找到 `spec.volumeQoS` 部分并修改 `iops` 和 `throughput` 字段。 顺便说一下，空值意味着没有限制。
@@ -177,7 +177,7 @@ $ kubectl edit localvolume pvc-cac82087-6f6c-493a-afcd-09480de712ed
 HwameiStor 使用 [cgroupv1](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt) 或 [cgroupv2](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)
 来限制数据卷的 IOPS 和吞吐量，因此您可以使用以下命令来检查数据卷的实际 IOPS 和吞吐量。
 
-```
+```console
 $ lsblk
 NAME            MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
 sda               8:0    0   160G  0 disk

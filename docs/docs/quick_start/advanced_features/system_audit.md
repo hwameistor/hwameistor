@@ -9,7 +9,7 @@ It's important to record the information about the system operation history. Hwa
 
 The audit information is easier for user to understant and parse for various purposes.
 
-# How to use
+## How to use
 
 HwameiStor designs a new CRD for every resource as below:
 
@@ -22,13 +22,13 @@ spec:
   resourceName:
   records:
   - action:
-    actionContent: #in JSON format
+    actionContent: # in JSON format
     time:
     state:
-    stateContent: #in JSON format
+    stateContent: # in JSON format
 ```
 
-For instance, let's look a audit information of a volume:
+For instance, let's look at audit information of a volume:
 
 ```yaml
 apiVersion: hwameistor.io/v1alpha1
