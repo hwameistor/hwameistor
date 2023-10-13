@@ -173,3 +173,39 @@ localStorageCSIController:
       requests:
         cpu: 1m
         memory: 20Mi
+  snapshotController:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      requests:
+        cpu: 1m
+        memory: 20Mi
+  snapshotter:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      requests:
+        cpu: 1m
+        memory: 20Mi
+
+pvcAutoResizer:
+  replicas: 2
+  resources:
+    limits:
+      cpu: 300m
+      memory: 300Mi
+    requests:
+      cpu: 1m
+      memory: 20Mi
+
+localDiskActionController:
+  replicas: 2
+  resources:
+    limits:
+      cpu: 300m
+      memory: 300Mi
+    requests:
+      cpu: 1m
+      memory: 20Mi
