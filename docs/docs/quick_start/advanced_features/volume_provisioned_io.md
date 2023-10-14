@@ -164,8 +164,8 @@ According to the print out, the LocalVolume CR for the PVC is `pvc-cac82087-6f6c
 
 ### Modify the LocalVolume CR
 
-```
-$ kubectl edit localvolume pvc-cac82087-6f6c-493a-afcd-09480de712ed
+```bash
+kubectl edit localvolume pvc-cac82087-6f6c-493a-afcd-09480de712ed
 ```
 
 In the editor, find the `spec.volumeQoS` section and modify the `iops` and `throughput` fields. By the way, an empty value means no limit.
@@ -180,7 +180,7 @@ once the Kubernetes supports [it](https://github.com/kubernetes/enhancements/tre
 HwameiStor uses the [cgroupv1](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt) or [cgroupv2](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)
 to limit the IOPS and throughput of a volume, so you can use the following command to check the actual IOPS and throughput of a volume.
 
-```
+```console
 $ lsblk
 NAME            MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
 sda               8:0    0   160G  0 disk
@@ -214,6 +214,7 @@ $ cat /sys/fs/cgroup/blkio/blkio.throttle.write_bps_device
 253:3 1048576
 
 # if cgroup version is v2.
+
 # cat /sys/fs/cgroup/kubepods.slice/io.max
 253:0 rbps=1048576 wbps=1048576 riops=100 wiops=100
 ```

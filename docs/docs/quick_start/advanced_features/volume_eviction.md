@@ -71,8 +71,8 @@ status:
       usedVolumeCount: 1
       volumeCapacityBytesLimit: 17175674880
       # ** make sure volumes is empty ** #
-      volumes:  
-  state: Ready  
+      volumes:
+  state: Ready
 ```
 
 Check if there is any volume replica still located in the evicted node by running:

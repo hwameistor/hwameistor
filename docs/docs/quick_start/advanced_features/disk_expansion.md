@@ -72,6 +72,8 @@ Finally, check if the new disk has been added into the node's storage pool succe
 kubectl get localstoragenode k8s-worker-4
 ```
 
+The output may look like:
+
 ```yaml
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalStorageNode

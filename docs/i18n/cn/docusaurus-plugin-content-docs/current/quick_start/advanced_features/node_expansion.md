@@ -40,7 +40,8 @@ k8s-worker-4   10.6.182.103       Ready    8d
 
 ## 添加新增存储节点到 HwameiStor 系统
 
-为增加存储节点创建资源 LocalStorageClaim，以此为新增存储节点构建存储池。这样，节点就已经成功加入 HwameiStor 系统。具体如下：
+为增加存储节点创建资源 LocalStorageClaim，以此为新增存储节点构建存储池。
+这样，节点就已经成功加入 HwameiStor 系统。具体如下：
 
 ```console
 $ kubectl apply -f - <<EOF
@@ -60,8 +61,13 @@ EOF
 
 完成上述步骤后，检查新增存储节点及其存储池的状态，确保节点和 HwameiStor 系统的正常运行。具体如下：
 
-```console
-$ kubectl get localstoragenode k8s-worker-4 -o yaml
+```bash
+kubectl get localstoragenode k8s-worker-4 -o yaml
+```
+
+输出类似于：
+
+```yaml
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalStorageNode
 metadata:
