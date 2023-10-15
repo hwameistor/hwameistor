@@ -226,17 +226,13 @@ func (lsnController *LocalStorageNodeController) getStorageNodeMigrateOperations
 		vmo.LocalVolumeMigrate = lvm
 		if queryPage.OperationName == "" && queryPage.Name == "" && queryPage.NodeState == hwameistorapi.NodeStateEmpty {
 			vmos = append(vmos, vmo)
-		} else if (queryPage.OperationName != "" && queryPage.OperationName == lvm.Name) && queryPage.VolumeName == "" && queryPage.OperationState == apisv1alpha1.VolumeStateEmpty {
+		} else if (queryPage.OperationName != "" && queryPage.OperationName == lvm.Name) && queryPage.VolumeName == "" && (queryPage.OperationState == apisv1alpha1.VolumeStateEmpty || queryPage.OperationState == lvm.Status.State) {
 			vmos = append(vmos, vmo)
-		} else if (queryPage.OperationName != "" && queryPage.OperationName == lvm.Name) && (queryPage.VolumeName != "" && queryPage.VolumeName == lvm.Spec.VolumeName) && queryPage.OperationState == apisv1alpha1.VolumeStateEmpty {
+		} else if (queryPage.OperationName != "" && queryPage.OperationName == lvm.Name) && (queryPage.VolumeName != "" && queryPage.VolumeName == lvm.Spec.VolumeName) && (queryPage.OperationState == apisv1alpha1.VolumeStateEmpty || queryPage.OperationState == lvm.Status.State) {
 			vmos = append(vmos, vmo)
-		} else if (queryPage.OperationName != "" && queryPage.OperationName == lvm.Name) && (queryPage.VolumeName != "" && queryPage.VolumeName == lvm.Spec.VolumeName) && (queryPage.OperationState == apisv1alpha1.VolumeStateEmpty && queryPage.OperationState == lvm.Status.State) {
+		} else if (queryPage.OperationName == "") && (queryPage.VolumeName != "" && queryPage.VolumeName == lvm.Spec.VolumeName) && (queryPage.OperationState == apisv1alpha1.VolumeStateEmpty || queryPage.OperationState == lvm.Status.State) {
 			vmos = append(vmos, vmo)
-		} else if (queryPage.OperationName == "") && (queryPage.VolumeName != "" && queryPage.VolumeName == lvm.Spec.VolumeName) && (queryPage.OperationState == apisv1alpha1.VolumeStateEmpty) {
-			vmos = append(vmos, vmo)
-		} else if (queryPage.OperationName == "") && (queryPage.VolumeName != "" && queryPage.VolumeName == lvm.Spec.VolumeName) && (queryPage.OperationState == apisv1alpha1.VolumeStateEmpty && queryPage.OperationState == lvm.Status.State) {
-			vmos = append(vmos, vmo)
-		} else if (queryPage.OperationName == "") && (queryPage.VolumeName == "") && (queryPage.OperationState == apisv1alpha1.VolumeStateEmpty && queryPage.OperationState == lvm.Status.State) {
+		} else if (queryPage.OperationName == "") && (queryPage.VolumeName == "") && (queryPage.OperationState == apisv1alpha1.VolumeStateEmpty || queryPage.OperationState == lvm.Status.State) {
 			vmos = append(vmos, vmo)
 		}
 	}
