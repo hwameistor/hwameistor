@@ -221,23 +221,22 @@ func (lsnController *LocalStorageNodeController) getStorageNodeMigrateOperations
 
 	log.Infof("getStorageNodeMigrateOperations lvmList = %v", lvmList)
 	var vmos []*hwameistorapi.VolumeMigrateOperation
-	for _, lvm := range lvmList.Items {
-		var vmo = &hwameistorapi.VolumeMigrateOperation{}
-		vmo.LocalVolumeMigrate = lvm
-		if queryPage.OperationName == "" && queryPage.Name == "" && queryPage.NodeState == hwameistorapi.NodeStateEmpty {
-			vmos = append(vmos, vmo)
-		} else if (queryPage.OperationName != "" && queryPage.OperationName == lvm.Name) && queryPage.VolumeName == "" && queryPage.OperationState == apisv1alpha1.VolumeStateEmpty {
-			vmos = append(vmos, vmo)
-		} else if (queryPage.OperationName != "" && queryPage.OperationName == lvm.Name) && (queryPage.VolumeName != "" && queryPage.VolumeName == lvm.Spec.VolumeName) && queryPage.OperationState == apisv1alpha1.VolumeStateEmpty {
-			vmos = append(vmos, vmo)
-		} else if (queryPage.OperationName != "" && queryPage.OperationName == lvm.Name) && (queryPage.VolumeName != "" && queryPage.VolumeName == lvm.Spec.VolumeName) && (queryPage.OperationState == apisv1alpha1.VolumeStateEmpty && queryPage.OperationState == lvm.Status.State) {
-			vmos = append(vmos, vmo)
-		} else if (queryPage.OperationName == "") && (queryPage.VolumeName != "" && queryPage.VolumeName == lvm.Spec.VolumeName) && (queryPage.OperationState == apisv1alpha1.VolumeStateEmpty) {
-			vmos = append(vmos, vmo)
-		} else if (queryPage.OperationName == "") && (queryPage.VolumeName != "" && queryPage.VolumeName == lvm.Spec.VolumeName) && (queryPage.OperationState == apisv1alpha1.VolumeStateEmpty && queryPage.OperationState == lvm.Status.State) {
-			vmos = append(vmos, vmo)
-		} else if (queryPage.OperationName == "") && (queryPage.VolumeName == "") && (queryPage.OperationState == apisv1alpha1.VolumeStateEmpty && queryPage.OperationState == lvm.Status.State) {
-			vmos = append(vmos, vmo)
+	for i := range lvmList.Items {
+		lvm := lvmList.Items[i]
+		if lvm.Spec.SourceNode == queryPage.NodeName || lvm.Status.TargetNode == queryPage.NodeName {
+			var vmo = &hwameistorapi.VolumeMigrateOperation{}
+			vmo.LocalVolumeMigrate = lvm
+			if queryPage.OperationName == "" && queryPage.Name == "" && queryPage.NodeState == hwameistorapi.NodeStateEmpty {
+				vmos = append(vmos, vmo)
+			} else if (queryPage.OperationName != "" && queryPage.OperationName == lvm.Name) && queryPage.VolumeName == "" && (queryPage.OperationState == apisv1alpha1.VolumeStateEmpty || queryPage.OperationState == lvm.Status.State) {
+				vmos = append(vmos, vmo)
+			} else if (queryPage.OperationName != "" && queryPage.OperationName == lvm.Name) && (queryPage.VolumeName != "" && queryPage.VolumeName == lvm.Spec.VolumeName) && (queryPage.OperationState == apisv1alpha1.VolumeStateEmpty || queryPage.OperationState == lvm.Status.State) {
+				vmos = append(vmos, vmo)
+			} else if (queryPage.OperationName == "") && (queryPage.VolumeName != "" && queryPage.VolumeName == lvm.Spec.VolumeName) && (queryPage.OperationState == apisv1alpha1.VolumeStateEmpty || queryPage.OperationState == lvm.Status.State) {
+				vmos = append(vmos, vmo)
+			} else if (queryPage.OperationName == "") && (queryPage.VolumeName == "") && (queryPage.OperationState == apisv1alpha1.VolumeStateEmpty || queryPage.OperationState == lvm.Status.State) {
+				vmos = append(vmos, vmo)
+			}
 		}
 	}
 
