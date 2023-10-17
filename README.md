@@ -29,14 +29,17 @@ See [current releases](https://github.com/hwameistor/hwameistor/releases).
 
 ### Kubernetes compatiblity
 
-| kubernetes     | v0.4.3 | >=v0.5.0 |
-| -------------- | ------ | -------- |
-| >=1.18&&<=1.20 | Yes    | No       |
-| 1.21           | Yes    | Yes      |
-| 1.22           | Yes    | Yes      |
-| 1.23           | Yes    | Yes      |
-| 1.24           | Yes    | Yes      |
-| 1.25           | No     | Yes      |
+| kubernetes     | v0.4.3 | >=v0.5.0 | >= 0.13.0 |
+| -------------- | ------ | -------- | --------- |
+| >=1.18&&<=1.20 | Yes    | No       | No        |
+| 1.21           | Yes    | Yes      | No        |
+| 1.22           | Yes    | Yes      | No        |
+| 1.23           | Yes    | Yes      | No        |
+| 1.24           | Yes    | Yes      | Yes       |
+| 1.25           | No     | Yes      | Yes       |
+| 1.26           | No     | Yes      | Yes       |
+| 1.27           | No     | No       | Yes       |
+| 1.28           | No     | No       | Yes       |
 
 ## Modules and Code
 
