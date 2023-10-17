@@ -11,6 +11,8 @@ spec:
     metadata:
       labels:
         app: hwameistor-local-storage 
+      annotations:
+        kubectl.kubernetes.io/default-container: member
     spec:
       affinity:
         nodeAffinity:
