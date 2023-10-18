@@ -1,0 +1,17 @@
+v0.13.0/ 2023-10-18
+========================
+
+
+## LVM snaprestore enhancement
+- fix(snaprestore): set restore timeout 600s as default #1178 (@SSmallMonster )
+
+## Apiserver
+- fix nodeName filter error (@hikariwo )
+
+## Adapt k8s v1.28
+- Adapt k8s v1.28 #1154 (@buffalo1024 )
+
+## Others
+- Clean up advanced_features #1179 (@windsonsea )
+- add resources value in values.extra.prod.yaml for new components #1180 (@buffalo1024 )
+- set member is default log container #1183 (@zgfh )
