@@ -107,6 +107,11 @@ type Pagination struct {
 	//Search string `protobuf:"bytes,5,opt,name=search,proto3" json:"search,omitempty"`
 }
 
+// disk path
+const (
+	DEV = "/dev/"
+)
+
 // disk class
 const (
 	DiskClassNameHDD  = "HDD"
@@ -348,4 +353,5 @@ type QueryPage struct {
 	VolumeEventName   string
 	Synced            string
 	OperationName     string
+	Owner             string
 }

@@ -3,6 +3,7 @@ package hwameistor
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"math"
@@ -270,9 +271,10 @@ func (lspController *LocalStoragePoolController) ExpandStoragePool(nodeName, dis
 		return err
 	}
 
+	u := uuid.New()
 	claim := &apisv1alpha1.LocalDiskClaim{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: strings.ToLower(fmt.Sprintf("%s-%s-claim", nodeName, diskType)),
+			Name: strings.ToLower(fmt.Sprintf("%s-%s-claim-%s", nodeName, diskType, u)),
 		},
 		Spec: apisv1alpha1.LocalDiskClaimSpec{
 			Owner:    owner,

@@ -1,8 +1,11 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -71,11 +74,11 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	v1.GET("/cluster/nodes", nodeController.StorageNodeList)
 	v1.GET("/cluster/nodes/:nodeName", nodeController.StorageNodeGet)
 	v1.GET("/cluster/nodes/:nodeName/migrates", nodeController.StorageNodeMigrateGet)
-
 	v1.GET("/cluster/nodes/:nodeName/disks", nodeController.StorageNodeDisksList)
+	//diskName is devicePath, not really ld-name
 	v1.GET("/cluster/nodes/:nodeName/disks/:diskName", nodeController.GetStorageNodeDisk)
-
 	v1.POST("/cluster/nodes/:nodeName/disks/:devicePath", nodeController.UpdateStorageNodeDisk)
+	v1.POST("/cluster/nodes/:nodeName/disks/:devicePath/owner", nodeController.SetStorageNodeDiskOwner)
 	v1.POST("/cluster/nodes/:nodeName", nodeController.StorageNodeUpdate)
 
 	v1.GET("/cluster/nodes/:nodeName/pools", nodeController.StorageNodePoolsList)
@@ -131,6 +134,8 @@ func BuildServerMgr() (*manager.ServerManager, mgrpkg.Manager) {
 		os.Exit(1)
 	}
 
+	setIndexField(mgr.GetCache())
+
 	// Setup all Controllers
 	if err = controller.AddToManager(mgr); err != nil {
 		log.Error(err)
@@ -160,4 +165,39 @@ func BuildServerMgr() (*manager.ServerManager, mgrpkg.Manager) {
 		os.Exit(1)
 	}
 	return smgr, mgr
+}
+
+// setIndexField must be called after scheme has been added
+func setIndexField(cache cache.Cache) {
+	indexes := []struct {
+		field string
+		Func  func(client.Object) []string
+	}{
+		{
+			field: "spec.nodeName",
+			Func: func(obj client.Object) []string {
+				return []string{obj.(*apisv1alpha1.LocalDisk).Spec.NodeName}
+			},
+		},
+		{
+			field: "spec.devicePath",
+			Func: func(obj client.Object) []string {
+				return []string{obj.(*apisv1alpha1.LocalDisk).Spec.DevicePath}
+			},
+		},
+		{
+			field: "spec.nodeName/devicePath",
+			Func: func(obj client.Object) []string {
+				return []string{obj.(*apisv1alpha1.LocalDisk).Spec.NodeName + "/" + obj.(*apisv1alpha1.LocalDisk).Spec.DevicePath}
+			},
+		},
+	}
+
+	for _, index := range indexes {
+		if err := cache.IndexField(context.Background(), &apisv1alpha1.LocalDisk{}, index.field, index.Func); err != nil {
+			log.Error(err, "failed to setup index field %s", index.field)
+			continue
+		}
+		log.Info("setup index field successfully", "field", index.field)
+	}
 }

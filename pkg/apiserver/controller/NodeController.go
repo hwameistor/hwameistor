@@ -19,6 +19,7 @@ type INodeController interface {
 	StorageNodeMigrateGet(ctx *gin.Context)
 	StorageNodeDisksList(ctx *gin.Context)
 	UpdateStorageNodeDisk(ctx *gin.Context)
+	SetStorageNodeDiskOwner(ctx *gin.Context)
 	GetStorageNodeDisk(ctx *gin.Context)
 	StorageNodePoolsList(ctx *gin.Context)
 	StorageNodePoolGet(ctx *gin.Context)
@@ -33,11 +34,48 @@ type NodeController struct {
 }
 
 func NewNodeController(m *manager.ServerManager, mgr mgrpkg.Manager) INodeController {
+
+	//setIndexField(mgr.GetCache())
 	diskHandler := localdisk.NewLocalDiskHandler(mgr.GetClient(),
 		mgr.GetEventRecorderFor("localdisk-controller"))
 
 	return &NodeController{m, diskHandler}
 }
+
+//// setIndexField must be called after scheme has been added
+//func setIndexField(cache cache.Cache) {
+//	indexes := []struct {
+//		field string
+//		Func  func(client.Object) []string
+//	}{
+//		{
+//			field: "spec.nodeName",
+//			Func: func(obj client.Object) []string {
+//				return []string{obj.(*v1alpha1.LocalDisk).Spec.NodeName}
+//			},
+//		},
+//		{
+//			field: "spec.devicePath",
+//			Func: func(obj client.Object) []string {
+//				return []string{obj.(*v1alpha1.LocalDisk).Spec.DevicePath}
+//			},
+//		},
+//		{
+//			field: "spec.nodeName/devicePath",
+//			Func: func(obj client.Object) []string {
+//				return []string{obj.(*v1alpha1.LocalDisk).Spec.NodeName + "/" + obj.(*v1alpha1.LocalDisk).Spec.DevicePath}
+//			},
+//		},
+//	}
+//
+//	for _, index := range indexes {
+//		if err := cache.IndexField(context.Background(), &v1alpha1.LocalDisk{}, index.field, index.Func); err != nil {
+//			log.Error(err, "failed to setup index field %s", index.field)
+//			continue
+//		}
+//		log.Info("setup index field successfully", "field", index.field)
+//	}
+//}
 
 // StorageNodeGet godoc
 // @Summary 摘要 获取指定存储节点
@@ -299,6 +337,59 @@ func (n *NodeController) UpdateStorageNodeDisk(ctx *gin.Context) {
 
 		ctx.JSON(http.StatusOK, removeDiskReservedRsp)
 	}
+}
+
+// SetStorageNodeDiskOwner godoc
+// @Summary 摘要 更新磁盘owner
+// @Description post SetStorageNodeDiskOwner devicePath i.g /dev/sdb /dev/sdc ...
+// @Tags        Node
+// @Param       nodeName path string true "nodeName"
+// @Param       devicePath path string true "devicePath"
+// @Param       body body api.DiskReqBody false "reqBody"
+// @Accept      json
+// @Produce     json
+// @Success     200 {object}  api.DiskReqBody
+// @Failure     500 {object}  api.RspFailBody
+// @Router      /cluster/nodes/{nodeName}/disks/{devicePath}/owner [post]
+func (n *NodeController) SetStorageNodeDiskOwner(ctx *gin.Context) {
+	var failRsp hwameistorapi.RspFailBody
+	nodeName := ctx.Param("nodeName")
+	devicePath := ctx.Param("devicePath")
+	log.Infof("devicePath = %v", devicePath)
+
+	var drb hwameistorapi.DiskOwnerReqBody
+	err := ctx.ShouldBind(&drb)
+	if err != nil {
+		log.Errorf("Unmarshal err = %v", err)
+		failRsp.ErrCode = 203
+		failRsp.Desc = err.Error()
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
+		return
+	}
+	owner := drb.Owner
+
+	if nodeName == "" || devicePath == "" {
+		failRsp.ErrCode = 203
+		failRsp.Desc = "nodeName or devicePath cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
+		return
+	}
+
+	var queryPage hwameistorapi.QueryPage
+	queryPage.NodeName = nodeName
+	queryPage.DeviceShortPath = devicePath
+	queryPage.Owner = owner
+
+	//if owner is system, can`t change owner
+	ownerRspBody, err := n.m.StorageNodeController().SetStorageNodeDiskOwner(queryPage, n.diskHandler)
+	if err != nil {
+		failRsp.ErrCode = 500
+		failRsp.Desc = "ReserveStorageNodeDisk Failed:" + err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
+		return
+	}
+	ctx.JSON(http.StatusOK, ownerRspBody)
+
 }
 
 // GetStorageNodeDisk godoc

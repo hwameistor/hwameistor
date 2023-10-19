@@ -45,3 +45,17 @@ type DiskRemoveReservedRsp struct {
 type DiskRemoveReservedRspBody struct {
 	DiskRemoveReservedRsp DiskRemoveReservedRsp `json:"data,omitempty"`
 }
+
+type DiskOwnerReqBody struct {
+	//[ local-storage]  [local-disk-manager] [system]
+	Owner string `json:"owner,omitempty"`
+}
+
+type DiskOwnerRsp struct {
+	DiskName string `json:"diskName,omitempty"`
+	Owner    string `json:"owner,omitempty"`
+}
+
+type DiskOwnerRspBody struct {
+	DiskOwnerRsp DiskOwnerRsp `json:"data,omitempty"`
+}
