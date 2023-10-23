@@ -33,7 +33,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: LocalVolumeSnapshotRestore is user's request for either restoring
+        description: LocalVolumeSnapshotRestore is a user's request for either restoring
           a local volume snapshot to a new volume, or merging into the old volume.
         properties:
           apiVersion:
@@ -58,9 +58,8 @@ spec:
                   clean up sub resources created by the restore operation automatically
                 type: boolean
               restoreType:
-                default: create
                 description: RestoreType is the type about how to restore the volume,
-                  e.g. rollback, create. By default create.
+                  e.g., rollback, create. By default, create.
                 enum:
                 - rollback
                 - create

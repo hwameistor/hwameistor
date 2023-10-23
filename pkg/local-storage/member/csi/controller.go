@@ -548,6 +548,11 @@ func (p *plugin) validateVolumeCreateRequestForSnapshot(ctx context.Context, req
 	return nil
 }
 
+// cloneVolume creates a new volume from the given volume
+// Main steps
+// 1. take a snapshot of the given volume
+// 2. create a new volume with the given StorageClass
+// 3. restore the snapshot(from step1) to the new volume(from step2)
 func (p *plugin) cloneVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	logCtx := p.logger.WithFields(log.Fields{
 		"volume":           req.Name,
