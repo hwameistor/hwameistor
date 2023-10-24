@@ -1,7 +1,7 @@
 package csi
 
 import (
-	csi "github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -133,7 +133,7 @@ func (p *plugin) initControllerServiceCapabilities() {
 		csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
 		csi.ControllerServiceCapability_RPC_LIST_SNAPSHOTS,
 		// for clone
-		//csi.ControllerServiceCapability_RPC_CLONE_VOLUME,
+		csi.ControllerServiceCapability_RPC_CLONE_VOLUME,
 	}
 	for _, c := range caps {
 		p.logger.WithField("capability", c.String()).Debug("Enabling controller service capability.")
