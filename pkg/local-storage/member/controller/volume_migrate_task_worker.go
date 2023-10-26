@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
@@ -448,5 +449,21 @@ func generateJobName(mName string, pvcName string) string {
 	if len(pvcName) > 25 {
 		pvcName = pvcName[:25]
 	}
-	return fmt.Sprintf("%s-datacopy-%s", mName, pvcName)
+	jobName := fmt.Sprintf("%s-datacopy-%s", mName, pvcName)
+	ensuredJobName := ensureNameMatchDNS1123Subdomain(jobName)
+	return ensuredJobName
+}
+
+func ensureNameMatchDNS1123Subdomain(name string) string {
+	for {
+		errs := validation.IsDNS1123Subdomain(name)
+		if len(errs) != 0 {
+			log.Infof("object name %v doesn't match DNS1123Subdomain rule, modify it", name)
+			length := len(name)
+			name = name[:(length-1)]
+			log.Infof("object name modifie to %v", name)
+			continue
+		}
+		return name
+	}
 }
