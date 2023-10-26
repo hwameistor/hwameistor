@@ -78,7 +78,7 @@ func (lsb LSBlk) partitionInfo() ([]manager.PartitionInfo, error) {
 			if err = device.ParseDeviceInfo(); err != nil {
 				return nil, err
 			}
-
+			p.Path = device.DevName
 			p.Label = device.PartName
 			p.Filesystem = device.FSType
 

@@ -29,4 +29,7 @@ type PartitionInfo struct {
 
 	// Filesystem
 	Filesystem string
+
+	// Path
+	Path string
 }

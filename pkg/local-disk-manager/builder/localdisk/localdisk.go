@@ -105,6 +105,7 @@ func (builder *Builder) SetupPartitionInfo(originParts []manager.PartitionInfo) 
 		builder.disk.Spec.HasPartition = true
 		p := v1alpha1.PartitionInfo{}
 		p.HasFileSystem = true
+		p.Path = part.Path
 		p.FileSystem.Type = part.Filesystem
 		builder.disk.Spec.PartitionInfo = append(builder.disk.Spec.PartitionInfo, p)
 	}
