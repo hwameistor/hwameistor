@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	csi "github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	corev1 "k8s.io/api/core/v1"
@@ -36,6 +36,8 @@ var (
 
 const (
 	RetryInterval = 1 * time.Second
+	// SnapshotSize 1 GB snapshot size by default
+	SnapshotSize = "1073741824"
 )
 
 // ControllerGetCapabilities implementation
@@ -425,7 +427,7 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 		return p.apiClient.Update(ctx, &volumeSnapshotRestore)
 	}
 
-	// 0. finish directly if snapshot restore has already been completed
+	// 0. finishes directly if snapshot restore has already been completed
 	if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.Name}, &volume); err != nil {
 		if !errors.IsNotFound(err) {
 			return resp, err
@@ -457,17 +459,23 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 		return resp, status.Errorf(codes.Internal, "failed to create LocalVolume")
 	}
 
-	// 2. wait for LocalVolume ready to use
+	// 2. waits for LocalVolume ready to use
 	logCtx.Debugf("Step2: Checking if LocalVolume %s ready to use", req.Name)
 	tryCount := 0
 	if err := wait.PollUntil(RetryInterval, func() (done bool, err error) {
 		tryCount++
+		// don't retry if err happens when fetch volume
 		if err = p.apiClient.Get(ctx, client.ObjectKey{Name: req.Name}, &volume); err != nil {
 			p.logger.WithError(err).Errorf("failed to get volume %v", err)
-			return false, err
+			return true, err
 		}
 		if volume.Status.State != apisv1alpha1.VolumeStateReady {
-			return tryCount >= 1, status.Errorf(codes.Internal, "LocalVolume %s is NotReady", volume.Name)
+			if tryCount >= 10 {
+				// stop retrying, return error immediately
+				return true, status.Errorf(codes.Internal, "LocalVolume %s is NotReady after %d retries", volume.Name, tryCount)
+			}
+			p.logger.WithField("tryCount", tryCount).Debugf("LocalVolume %s is NotReady", volume.Name)
+			return false, nil
 		}
 		// Volume is ready and prepare to restore snapshot, return immediately
 		return true, nil
@@ -492,19 +500,23 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 		}
 	}
 
-	// 4. wait for LocalVolumeSnapshotRestore completed
+	// 4. waits for LocalVolumeSnapshotRestore completed
 	//
 	// The LocalVolumeSnapshotRestore is an operation on the VolumeSnapshot, so it will be deleted when the operation is completed.
-	// Thus, we need to hung up the delete operation before we confirm that the operation is completed.
+	// Thus, we need to hold the delete operation before we confirm that the operation is completed.
 	logCtx.Debugf("Step4: Checking if LocalVolumeSnapshotRestore %s ready to use", snapshotRestoreName)
 	tryCount = 0
 	if err := wait.PollUntil(RetryInterval, func() (done bool, err error) {
 		if err = p.apiClient.Get(ctx, client.ObjectKey{Name: snapshotRestoreName}, &volumeSnapshotRestore); err != nil {
 			p.logger.WithError(err).Errorf("failed to get volumeSnapshotRestore %v", err)
-			return tryCount >= 1, err
+			return true, err
 		}
 		if volumeSnapshotRestore.Status.State != apisv1alpha1.OperationStateCompleted {
-			return tryCount >= 1, status.Errorf(codes.Internal, "LocalVolumeSnapshotRestore %s is NotReady", volumeSnapshotRestore.Name)
+			if tryCount >= 10 {
+				return true, status.Errorf(codes.Internal, "LocalVolumeSnapshotRestore %s is not completed after %d retries", volumeSnapshotRestore.Name, tryCount)
+			}
+			p.logger.WithField("tryCount", tryCount).Debugf("LocalVolumeSnapshotRestore %s is not completed", volume.Name)
+			return false, nil
 		}
 		// LocalVolumeSnapshotRestore is ready, remove the protection finalizer from the object
 		volumeSnapshotRestore.SetFinalizers(utils.RemoveStringItem(volumeSnapshotRestore.Finalizers, apisv1alpha1.SnapshotRestoringFinalizer))
@@ -548,10 +560,15 @@ func (p *plugin) validateVolumeCreateRequestForSnapshot(ctx context.Context, req
 	return nil
 }
 
+// cloneVolume creates a new volume from the given volume
+// Main steps
+// 1. take a snapshot of the given volume
+// 2. create a new volume with the given StorageClass
+// 3. restore the snapshot(from step1) to the new volume(from step2)
 func (p *plugin) cloneVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	logCtx := p.logger.WithFields(log.Fields{
 		"volume":           req.Name,
-		"snapshot":         req.VolumeContentSource.GetVolume().VolumeId,
+		"sourceVolume":     req.VolumeContentSource.GetVolume().VolumeId,
 		"requiredCapacity": req.CapacityRange.RequiredBytes,
 		"limitedCapacity":  req.CapacityRange.LimitBytes,
 		"parameters":       req.Parameters,
@@ -560,7 +577,49 @@ func (p *plugin) cloneVolume(ctx context.Context, req *csi.CreateVolumeRequest) 
 	})
 	logCtx.Debug("cloneVolume")
 
-	return &csi.CreateVolumeResponse{}, fmt.Errorf("not implemented")
+	resp := &csi.CreateVolumeResponse{Volume: &csi.Volume{VolumeId: req.Name, VolumeContext: req.Parameters}}
+	sourceVolumeCopy := *req.VolumeContentSource
+	snapshotName := fmt.Sprintf("%v-%v", "snapshot-for", req.Name)
+	params := map[string]string{apisv1alpha1.SnapshotParameterSizeKey: SnapshotSize}
+	snapshotRestoreRequest := req
+	snapshotDeleteRequest := &csi.DeleteSnapshotRequest{}
+	snapshotCreateRequest := &csi.CreateSnapshotRequest{
+		Name:           snapshotName,
+		SourceVolumeId: req.VolumeContentSource.GetVolume().VolumeId,
+		Parameters:     params,
+	}
+
+	// Step1: take a snapshot for the source volume
+	logCtx.Debug("Step1: Creating snapshot")
+	if snapshotResp, err := p.CreateSnapshot(ctx, snapshotCreateRequest); err != nil {
+		return resp, status.Errorf(codes.Internal, "Failed to create snapshot %v", err)
+	} else {
+		// construct volume restore request with the actual snapshot in response
+		snapshotRestoreRequest.VolumeContentSource = &csi.VolumeContentSource{
+			Type: &csi.VolumeContentSource_Snapshot{
+				Snapshot: &csi.VolumeContentSource_SnapshotSource{
+					SnapshotId: snapshotResp.Snapshot.SnapshotId,
+				},
+			},
+		}
+	}
+
+	// Step2: restore volume from snapshot
+	logCtx.Debug("Step2: Restoring snapshot")
+	if snapResp, err := p.restoreVolumeFromSnapshot(ctx, snapshotRestoreRequest); err != nil {
+		return resp, status.Errorf(codes.Internal, "Failed to restore volume from snapshot %v", err)
+	} else {
+		snapshotDeleteRequest.SnapshotId = snapResp.GetVolume().GetVolumeContext()[apisv1alpha1.SourceVolumeSnapshotAnnoKey]
+		resp.Volume.ContentSource = &sourceVolumeCopy
+	}
+
+	// Step3: clean up the snapshot
+	logCtx.Debug("Step3: Cleaning up snapshot")
+	if _, err := p.DeleteSnapshot(ctx, snapshotDeleteRequest); err != nil {
+		return resp, status.Errorf(codes.Internal, "Failed to delete snapshot %v", err)
+	}
+	logCtx.Debug("volume clone successful")
+	return resp, nil
 }
 
 // ControllerGetVolume implementation, idempotent
@@ -984,7 +1043,7 @@ func (p *plugin) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequ
 		}
 	}
 
-	// 2. check if snapshot ready to use per 3 seconds
+	// 2. checks if snapshot ready to use per 3 seconds
 	return resp, wait.PollUntil(RetryInterval, func() (bool, error) {
 		logCtx.Debug("Checking if snapshot ready to use")
 		if err = p.apiClient.Get(ctx, types.NamespacedName{Name: snapshotID}, snapshot); err != nil {
