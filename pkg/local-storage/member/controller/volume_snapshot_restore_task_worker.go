@@ -349,7 +349,7 @@ func (m *manager) isReplicaSnapshotRestoreExistOnNode(nodeName, volumeSnapshotRe
 
 	// 1. check apiserver
 	for _, replicaRestore := range replicaSnapshotRestore.Items {
-		if replicaRestore.Spec.NodeName == nodeName {
+		if replicaRestore.Spec.NodeName == nodeName && replicaRestore.Spec.VolumeSnapshotRestore == volumeSnapshotRestoreName {
 			return true, replicaRestore.DeepCopy(), nil
 		}
 	}
