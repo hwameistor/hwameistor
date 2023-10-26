@@ -104,7 +104,7 @@ func (d *Device) ParseDeviceInfo() error {
 	if err != nil {
 		return err
 	}
-	return d.parseDiskAttribute(info)
+	return d.ParseDiskAttribute(info)
 }
 
 func (d *Device) Info() (map[string]interface{}, error) {
@@ -122,13 +122,18 @@ func (d *Device) Info() (map[string]interface{}, error) {
 	return parseUdevInfo(out), nil
 }
 
-func (d *Device) parseDiskAttribute(info map[string]interface{}) error {
+func (d *Device) ParseDiskAttribute(info map[string]interface{}) error {
 	// Why do we need to convert the map information into JSON data
 	// instead of directly converting the map into a structure
 	//
 	// The main reason is that if the udev field is converted into a structure,
 	// each key in the structure must be consistent with the udev information,
 	// which will make the disk DiskAttribute structure information difficult to understand
+	if idType, ok := info["DEVTYPE"]; ok && idType == "partition" {
+		if _, ok := info["NAME"]; ok {
+			d.PartName = info["NAME"].(string)
+		}
+	}
 	jsonStr, err := json.Marshal(info)
 	if err != nil {
 		return err
