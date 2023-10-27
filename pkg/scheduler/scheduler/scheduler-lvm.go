@@ -21,6 +21,7 @@ import (
 )
 
 const VolumeSnapshot = "VolumeSnapshot"
+const VolumeClaim = "PersistentVolumeClaim"
 
 type LVMVolumeScheduler struct {
 	fHandle   framework.Handle
@@ -170,10 +171,16 @@ func (s *LVMVolumeScheduler) filterForNewPVCs(pvcs []*corev1.PersistentVolumeCla
 		return false, fmt.Errorf("node %v is not the expected snapshot node, error: %v", node.Name, err)
 	}
 
+	// the scheduled node must keep consistent with the existing clone volume node
+	// NOTES: we only support clone volume in place, if remote clone supported, this should be removed
+	if ok, err := s.validateNodeForPVCsFromClone(pvcs, node); !ok {
+		return false, fmt.Errorf("node %v is not the expected clone node, error: %v", node.Name, err)
+	}
+
 	for _, pvc := range pvcs {
 		log.WithField("pvc", pvc.Name).WithField("node", node.Name).Debug("New PVC")
 	}
-	lvs := []*v1alpha1.LocalVolume{}
+	var lvs []*v1alpha1.LocalVolume
 	for i := range pvcs {
 		lv, err := s.constructLocalVolumeForPVC(pvcs[i])
 		if err != nil {
@@ -230,6 +237,50 @@ func (s *LVMVolumeScheduler) validateNodeForPVCsFromSnapshot(pvcs []*corev1.Pers
 
 		if _, ok := utils.StrFind(snapshot.Spec.Accessibility.Nodes, node.Name); !ok {
 			return false, fmt.Errorf("node %s is not matchable with snapshot accessibility node(s) %v", node.Name, snapshot.Spec.Accessibility.Nodes)
+		}
+	}
+
+	return true, nil
+}
+
+// validateNodeForPVCsFromClone ensures that the node can be scheduled at the node where source volume located
+func (s *LVMVolumeScheduler) validateNodeForPVCsFromClone(pvcs []*corev1.PersistentVolumeClaim, node *corev1.Node) (bool, error) {
+	var sourceVolumes, sourcePVCs []string
+	for _, pvc := range pvcs {
+		if !isVolumeFromClone(pvc) {
+			continue
+		}
+		sourcePVCs = append(sourcePVCs, fmt.Sprintf("%s/%s", pvc.Namespace, pvc.Spec.DataSource.Name))
+	}
+	if len(sourcePVCs) == 0 {
+		return true, nil
+	}
+
+	// fetch all volumes backing the pvc
+	for _, pvcNamespaceName := range sourcePVCs {
+		pvc := &corev1.PersistentVolumeClaim{}
+		if err := s.apiClient.Get(context.Background(), client.ObjectKey{
+			Namespace: strings.Split(pvcNamespaceName, "/")[0],
+			Name:      strings.Split(pvcNamespaceName, "/")[1]}, pvc); err != nil {
+			return false, err
+		}
+		sourceVolumes = append(sourceVolumes, pvc.Spec.VolumeName)
+	}
+
+	// range each source volume and compare the node
+	for _, sourceVolumeName := range sourceVolumes {
+		sourceVolume := v1alpha1.LocalVolume{}
+		if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: sourceVolumeName}, &sourceVolume); err != nil {
+			return false, err
+		}
+
+		// check if source volume is already
+		if sourceVolume.Status.State != v1alpha1.VolumeStateReady {
+			return false, fmt.Errorf("source volume %s is not ready to use", sourceVolume.Name)
+		}
+
+		if _, ok := utils.StrFind(sourceVolume.Spec.Accessibility.Nodes, node.Name); !ok {
+			return false, fmt.Errorf("node %s is not matchable with source volume accessibility node(s) %v", node.Name, sourceVolume.Spec.Accessibility.Nodes)
 		}
 	}
 
@@ -309,4 +360,8 @@ func (s *LVMVolumeScheduler) Unreserve(pendingPVCs []*corev1.PersistentVolumeCla
 
 func isVolumeFromSnapshot(pvc *corev1.PersistentVolumeClaim) bool {
 	return pvc.Spec.DataSource != nil && pvc.Spec.DataSource.Kind == VolumeSnapshot
+}
+
+func isVolumeFromClone(pvc *corev1.PersistentVolumeClaim) bool {
+	return pvc.Spec.DataSource != nil && pvc.Spec.DataSource.Kind == VolumeClaim
 }

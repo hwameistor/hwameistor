@@ -13,11 +13,11 @@ import (
 	storagev1lister "k8s.io/client-go/listers/storage/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
-	framework "k8s.io/kubernetes/pkg/scheduler/framework"
+	"k8s.io/kubernetes/pkg/scheduler/framework"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	lvmscheduler "github.com/hwameistor/hwameistor/pkg/local-storage/member/controller/scheduler"
 )
 
@@ -220,7 +220,9 @@ func (s *Scheduler) getHwameiStorPVCs(pod *corev1.Pod) ([]*corev1.PersistentVolu
 			// can't found storageclass in the cluster, the pod should not be able to be scheduled
 			return lvmProvisionedClaims, lvmNewClaims, diskProvisionedClaims, diskNewClaims, err
 		}
-		if sc.Provisioner == lvmCSIDriverName {
+
+		switch sc.Provisioner {
+		case lvmCSIDriverName:
 			if pvc.Status.Phase == corev1.ClaimBound {
 				lvmProvisionedClaims = append(lvmProvisionedClaims, pvc)
 			} else if pvc.Status.Phase == corev1.ClaimPending {
@@ -228,8 +230,8 @@ func (s *Scheduler) getHwameiStorPVCs(pod *corev1.Pod) ([]*corev1.PersistentVolu
 			} else {
 				return lvmProvisionedClaims, lvmNewClaims, diskProvisionedClaims, diskNewClaims, fmt.Errorf("unhealthy HwameiStor LVM pvc")
 			}
-		}
-		if sc.Provisioner == diskCSIDriverName {
+
+		case diskCSIDriverName:
 			if pvc.Status.Phase == corev1.ClaimBound {
 				diskProvisionedClaims = append(diskProvisionedClaims, pvc)
 			} else if pvc.Status.Phase == corev1.ClaimPending {
@@ -237,6 +239,9 @@ func (s *Scheduler) getHwameiStorPVCs(pod *corev1.Pod) ([]*corev1.PersistentVolu
 			} else {
 				return lvmProvisionedClaims, lvmNewClaims, diskProvisionedClaims, diskNewClaims, fmt.Errorf("unhealthy HwameiStor Disk pvc")
 			}
+
+		default:
+			continue
 		}
 	}
 
