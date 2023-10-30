@@ -181,6 +181,10 @@ func (ldHandler *Handler) ReserveDisk() {
 	ldHandler.localDisk.Spec.Reserved = true
 }
 
+func (ldHandler *Handler) SetOwnerDisk(owner string) {
+	ldHandler.localDisk.Spec.Owner = owner
+}
+
 func (ldHandler *Handler) FilterDisk(ldc *v1alpha1.LocalDiskClaim) bool {
 	// Bound disk
 	if ldHandler.filter.HasBoundWith(ldc.UID) {

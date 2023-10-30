@@ -356,7 +356,7 @@ func (lsnController *LocalStorageNodeController) ListStorageNodeDisks(queryPage 
 			disk.TotalCapacityBytes = diskList.Items[i].Spec.Capacity
 			availableCapacityBytes := lsnController.getAvailableDiskCapacity(queryPage.NodeName, diskList.Items[i].Spec.DevicePath, diskList.Items[i].Spec.DiskAttributes.Type)
 			disk.AvailableCapacityBytes = availableCapacityBytes
-			diskShortName := strings.Split(diskList.Items[i].Spec.DevicePath, "/dev/")[1]
+			diskShortName := strings.Split(diskList.Items[i].Spec.DevicePath, hwameistorapi.DEV)[1]
 			disk.DiskPathShort = diskShortName
 
 			log.Infof("ListStorageNodeDisks queryPage.DiskState = %v", queryPage.DiskState)
@@ -377,11 +377,13 @@ func (lsnController *LocalStorageNodeController) ReserveStorageNodeDisk(queryPag
 
 	diskName := utils.ConvertNodeName(queryPage.NodeName) + "-" + deviceShortPath
 
-	ld, err := diskHandler.GetLocalDisk(client.ObjectKey{Name: diskName})
+	//ld, err := diskHandler.GetLocalDisk(client.ObjectKey{Name: diskName})
+	localDisks, err := diskHandler.ListLocalDiskByNodeDevicePath(queryPage.NodeName, hwameistorapi.DEV+queryPage.DeviceShortPath)
 	if err != nil {
 		log.Errorf("failed to get localDisk %s", err.Error())
 		return RspBody, err
 	}
+	ld := &localDisks[0]
 	log.Infof("ReserveStorageNodeDisk ld = %v", ld)
 	diskHandler = diskHandler.For(ld)
 	diskHandler.ReserveDisk()
@@ -408,11 +410,13 @@ func (lsnController *LocalStorageNodeController) RemoveReserveStorageNodeDisk(qu
 
 	diskName := utils.ConvertNodeName(queryPage.NodeName) + "-" + deviceShortPath
 
-	ld, err := diskHandler.GetLocalDisk(client.ObjectKey{Name: diskName})
+	//ld, err := diskHandler.GetLocalDisk(client.ObjectKey{Name: diskName})
+	localDisks, err := diskHandler.ListLocalDiskByNodeDevicePath(queryPage.NodeName, hwameistorapi.DEV+queryPage.DeviceShortPath)
 	if err != nil {
 		log.Errorf("failed to get localDisk %s", err.Error())
 		return RspBody, err
 	}
+	ld := &localDisks[0]
 	ld.Spec.Reserved = false
 	diskHandler = diskHandler.For(ld)
 
@@ -428,31 +432,66 @@ func (lsnController *LocalStorageNodeController) RemoveReserveStorageNodeDisk(qu
 	return RspBody, nil
 }
 
+func (lsnController *LocalStorageNodeController) SetStorageNodeDiskOwner(queryPage hwameistorapi.QueryPage, diskHandler *localdisk.Handler) (*hwameistorapi.DiskOwnerRspBody, error) {
+	var RspBody = &hwameistorapi.DiskOwnerRspBody{}
+	var diskOwnerRsp hwameistorapi.DiskOwnerRsp
+	deviceShortPath := queryPage.DeviceShortPath
+	RspBody.DiskOwnerRsp = diskOwnerRsp
+
+	diskName := utils.ConvertNodeName(queryPage.NodeName) + "-" + deviceShortPath
+
+	localDisks, err := diskHandler.ListLocalDiskByNodeDevicePath(queryPage.NodeName, hwameistorapi.DEV+queryPage.DeviceShortPath)
+	if err != nil {
+		log.Errorf("failed to get localDisk %s", err.Error())
+		return RspBody, err
+	}
+	ld := &localDisks[0]
+	//Unable to operate the operating system disk
+	if ld.Spec.Owner != "" {
+		log.Errorf("Only unclaimed disks can modify the disk owner")
+		return RspBody, err
+	}
+
+	log.Infof("SetStorageNodeDiskOwner ld = %v", ld)
+	diskHandler = diskHandler.For(ld)
+	diskHandler.SetOwnerDisk(queryPage.Owner)
+
+	err = diskHandler.Update()
+	if err != nil {
+		return RspBody, err
+	}
+
+	diskOwnerRsp.Owner = queryPage.Owner
+	diskOwnerRsp.DiskName = diskName
+
+	RspBody.DiskOwnerRsp = diskOwnerRsp
+
+	return RspBody, nil
+}
+
 func (lsnController *LocalStorageNodeController) GetStorageNodeDisk(page hwameistorapi.QueryPage, diskHandler *localdisk.Handler) (*hwameistorapi.LocalDiskInfo, error) {
 	var ldi = &hwameistorapi.LocalDiskInfo{}
-	nodeKey := client.ObjectKey{
-		Name: page.NodeName,
-	}
-	if lsn, err := lsnController.GetLocalStorageNode(nodeKey); err == nil {
-		for _, pool := range lsn.Status.Pools {
-			for _, disk := range pool.Disks {
-				ldi.LocalStoragePooLName = pool.Name
-				ldi.AvailableCapacityBytes = disk.CapacityBytes
 
-				localDisk, err := diskHandler.GetLocalDisk(types.NamespacedName{Name: page.DiskName})
-				if err != nil {
-					log.Errorf("failed to get localDisk %s", err.Error())
-					return ldi, err
-				}
-				ldi.LocalDisk = *localDisk
-				ldi.TotalCapacityBytes = localDisk.Spec.Capacity
-				diskShortName := strings.Split(localDisk.Spec.DevicePath, "/dev/")[1]
-				ldi.DiskPathShort = diskShortName
-			}
-		}
-	} else {
+	devicePath := hwameistorapi.DEV + page.DiskName
+	localDisks, err := diskHandler.ListLocalDiskByNodeDevicePath(page.NodeName, devicePath)
+	if err != nil {
+		log.Errorf("failed to get localDisk by path %s", err.Error())
 		return ldi, err
 	}
+
+	ldi.LocalDisk = localDisks[0]
+	ldi.TotalCapacityBytes = localDisks[0].Spec.Capacity
+	diskShortName := strings.Split(localDisks[0].Spec.DevicePath, hwameistorapi.DEV)[1]
+	ldi.DiskPathShort = diskShortName
+	if localDisks[0].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameHDD {
+		ldi.LocalStoragePooLName = hwameistorapi.PoolNameForHDD
+	} else if localDisks[0].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameSSD {
+		ldi.LocalStoragePooLName = hwameistorapi.PoolNameForSSD
+	} else if localDisks[0].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameNVMe {
+		ldi.LocalStoragePooLName = hwameistorapi.PoolNameForNVMe
+	}
+	ldi.AvailableCapacityBytes = lsnController.getAvailableDiskCapacity(page.NodeName, devicePath, ldi.Spec.DiskAttributes.Type)
+
 	return ldi, nil
 }
 
@@ -523,7 +562,7 @@ func (lsnController *LocalStorageNodeController) StorageNodePoolDisksList(page h
 					ldi.LocalStoragePooLName = pool.Name
 					ldi.AvailableCapacityBytes = disk.CapacityBytes
 
-					diskName := strings.Split(disk.DevPath, "/dev/")[1]
+					diskName := strings.Split(disk.DevPath, hwameistorapi.DEV)[1]
 					ldname := utils.ConvertNodeName(lsn.Spec.HostName) + "-" + diskName
 
 					log.Infof("StorageNodePoolDisksList ldname = %v", ldname)
