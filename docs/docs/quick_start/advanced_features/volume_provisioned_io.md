@@ -118,8 +118,8 @@ After the Deployment is created, you can test the volume's IOPS and throughput b
 shell 1:
 
 ```bash
-$ kubectl exec -it pod-sample-5f5f8f6f6f-5q4q5 -- /bin/sh
-$ dd if=/dev/zero of=/data/test bs=4k count=1000000 oflag=direct
+kubectl exec -it pod-sample-5f5f8f6f6f-5q4q5 -- /bin/sh
+dd if=/dev/zero of=/data/test bs=4k count=1000000 oflag=direct
 ```
 
 shell 2:
@@ -127,10 +127,13 @@ shell 2:
 `/dev/LocalStorage_PoolHDD/pvc-c623054b-e7e9-41d7-a987-77acd8727e66` is the path of the volume on the node. you can find it by using the `kubectl get lvr` command.
 
 ```bash
-$ iostat -d /dev/LocalStorage_PoolHDD/pvc-c623054b-e7e9-41d7-a987-77acd8727e66  -x -k 2
+iostat -d /dev/LocalStorage_PoolHDD/pvc-c623054b-e7e9-41d7-a987-77acd8727e66  -x -k 2
 ```
 
-**Note**: due to the cgroupv1 limitation, the settings of the maximum IOPS and throughput may not take effect on non-direct IO. However, it will take effect on non-direct IO in cgroupv2.
+:::note
+Due to the cgroupv1 limitation, the settings of the maximum IOPS and throughput may not take effect
+on non-direct IO. However, it will take effect on non-direct IO in cgroupv2.
+:::
 
 ## How to change the maximum IOPS and throughput of a volume
 
@@ -145,7 +148,7 @@ The following steps show how to change the maximum IOPS and throughput of a volu
 
 ### Find the corresponding LocalVolume CR for the given PVC
 
-```
+```console
 $ kubectl get pvc pvc-sample
 
 NAME             STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS                        AGE
@@ -172,13 +175,16 @@ In the editor, find the `spec.volumeQoS` section and modify the `iops` and `thro
 
 At last, save the changes and exit the editor. The settings will take effect in a few seconds.
 
-**Note**: In the future, we will allow users to modify the maximum IOPS and throughput of a volume directly
+:::note
+In the future, we will allow users to modify the maximum IOPS and throughput of a volume directly
 once the Kubernetes supports [it](https://github.com/kubernetes/enhancements/tree/master/keps/sig-storage/3751-volume-attributes-class#motivation).
+:::
 
 ## How to check the actual IOPS and throughput of a volume
 
-HwameiStor uses the [cgroupv1](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt) or [cgroupv2](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)
-to limit the IOPS and throughput of a volume, so you can use the following command to check the actual IOPS and throughput of a volume.
+HwameiStor uses the [cgroupv1](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)
+or [cgroupv2](https://www.kernel.org/doc/Documentation/cgroup-v2.txt) to limit the IOPS and throughput
+of a volume, so you can use the following command to check the actual IOPS and throughput of a volume.
 
 ```console
 $ lsblk

@@ -16,7 +16,7 @@ cgroup v2 具有以下要求：
 - 操作系统发行版启用 cgroup v2
 - Linux 内核为 5.8 或更高版本
 
-更多信息, 请参见 [Kubernetes 官网](https://kubernetes.io/zh-cn/docs/concepts/architecture/cgroups/) 
+更多信息, 请参见 [Kubernetes 官网](https://kubernetes.io/zh-cn/docs/concepts/architecture/cgroups/)。
 
 ## 使用最大 IOPS 和吞吐量参数创建新的 StorageClass
 
@@ -118,26 +118,30 @@ status: {}
 终端1:
 
 ```bash
-$ kubectl exec -it pod-sample-5f5f8f6f6f-5q4q5 -- /bin/sh
-$ dd if=/dev/zero of=/data/test bs=4k count=1000000 oflag=direct
+kubectl exec -it pod-sample-5f5f8f6f6f-5q4q5 -- /bin/sh
+dd if=/dev/zero of=/data/test bs=4k count=1000000 oflag=direct
 ```
 
 终端2:
 
-`/dev/LocalStorage_PoolHDD/pvc-c623054b-e7e9-41d7-a987-77acd8727e66` 是节点上卷的路径。 您可以使用 `kubectl get lvr` 命令找到它。
+`/dev/LocalStorage_PoolHDD/pvc-c623054b-e7e9-41d7-a987-77acd8727e66` 是节点上卷的路径。
+您可以使用 `kubectl get lvr` 命令找到它。
 
 ```bash
-$ iostat -d /dev/LocalStorage_PoolHDD/pvc-c623054b-e7e9-41d7-a987-77acd8727e66  -x -k 2
+iostat -d /dev/LocalStorage_PoolHDD/pvc-c623054b-e7e9-41d7-a987-77acd8727e66  -x -k 2
 ```
 
-**注意**：由于 cgroupv1 限制，最大 IOPS 和吞吐量的设置可能对非直接 IO 不生效。然而, 如果您使用 cgroupv2，那么最大 IOPS 和吞吐量的设置将对非直接 IO 生效。
+:::note
+由于 cgroupv1 限制，最大 IOPS 和吞吐量的设置可能对非直接 IO 不生效。
+然而, 如果您使用 cgroupv2，那么最大 IOPS 和吞吐量的设置将对非直接 IO 生效。
+:::
 
 ## 如何更改数据卷的最大 IOPS 和吞吐量
 
 最大 IOPS 和吞吐量在 StorageClass 的参数上指定，您不能直接更改它，因为它现在是不可变的。
 
-与其他存储厂商不同的是，HwameiStor 是一个基于 Kubernetes 的存储解决方案，它定义了一组操作原语
-基于 Kubernetes CRD。 这意味着您可以修改相关的 CRD 来更改卷的实际最大 IOPS 和吞吐量。
+与其他存储厂商不同的是，HwameiStor 是一个基于 Kubernetes 的存储解决方案，它定义了一组操作原语基于
+Kubernetes CRD。这意味着您可以修改相关的 CRD 来更改卷的实际最大 IOPS 和吞吐量。
 
 以下步骤显示如何更改数据卷的最大 IOPS 和吞吐量。
 
@@ -166,15 +170,19 @@ pvc-cac82087-6f6c-493a-afcd-09480de712ed   LocalStorage_PoolHDD   1          107
 kubectl edit localvolume pvc-cac82087-6f6c-493a-afcd-09480de712ed
 ```
 
-在编辑器中，找到 `spec.volumeQoS` 部分并修改 `iops` 和 `throughput` 字段。 顺便说一下，空值意味着没有限制。
+在编辑器中，找到 `spec.volumeQoS` 部分并修改 `iops` 和 `throughput` 字段。顺便说一下，空值意味着没有限制。
 
 最后，保存更改并退出编辑器。设置将在几秒钟后生效。
 
-**注意**：将来，一旦 Kubernetes 支持[它](https://github.com/kubernetes/enhancements/tree/master/keps/sig-storage/3751-volume-attributes-class#motivation)，我们将允许用户直接修改卷的最大 IOPS 和吞吐量。
+:::note
+将来，一旦 Kubernetes 支持[它](https://github.com/kubernetes/enhancements/tree/master/keps/sig-storage/3751-volume-attributes-class#motivation)，
+我们将允许用户直接修改卷的最大 IOPS 和吞吐量。
+:::
 
 ## 如何检查数据卷的实际 IOPS 和吞吐量
 
-HwameiStor 使用 [cgroupv1](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt) 或 [cgroupv2](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)
+HwameiStor 使用 [cgroupv1](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)
+或 [cgroupv2](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)
 来限制数据卷的 IOPS 和吞吐量，因此您可以使用以下命令来检查数据卷的实际 IOPS 和吞吐量。
 
 ```console
