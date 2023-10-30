@@ -192,9 +192,9 @@ func (lvController *LocalVolumeController) GetVolumeReplicas(queryPage hwameisto
 			vrs = append(vrs, vr)
 		} else if (queryPage.Synced != "" && convertedSynced == vr.Status.Synced) && (queryPage.VolumeReplicaName != "" && strings.Contains(vr.Name, queryPage.VolumeReplicaName)) && (queryPage.VolumeState == apisv1alpha1.VolumeStateEmpty) {
 			vrs = append(vrs, vr)
-		} else if (queryPage.Synced != "" && convertedSynced == vr.Status.Synced) && (queryPage.VolumeState != "") && (queryPage.VolumeReplicaName == "") {
+		} else if (queryPage.Synced != "" && convertedSynced == vr.Status.Synced) && (queryPage.VolumeState != "" && queryPage.VolumeState == vr.Status.State) && queryPage.VolumeReplicaName == "" {
 			vrs = append(vrs, vr)
-		} else if (queryPage.VolumeReplicaName != "" && strings.Contains(vr.Name, queryPage.VolumeReplicaName)) && (queryPage.VolumeState != "") && (queryPage.Synced == "") {
+		} else if (queryPage.VolumeReplicaName != "" && strings.Contains(vr.Name, queryPage.VolumeReplicaName)) && (queryPage.VolumeState != "" && queryPage.VolumeState == vr.Status.State) && (queryPage.Synced == "") {
 			vrs = append(vrs, vr)
 		} else if (queryPage.VolumeReplicaName != "" && strings.Contains(vr.Name, queryPage.VolumeReplicaName)) &&
 			(queryPage.VolumeState != "" && vr.Status.State == queryPage.VolumeState) &&
