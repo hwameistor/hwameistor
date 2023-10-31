@@ -5,10 +5,13 @@ sidebar_label: "PVC Autoresizing"
 
 # PVC Autoresizing
 
-The component hwameistor-pvc-autoresizer provide the ability to autoresize pvc.The resize behavior is controlled by the crd resizepolicy.
+The component "hwameistor-pvc-autoresizer" provides the ability to automatically resize Persistent Volume Claims (PVCs).
+The resizing behavior is controlled by the `ResizePolicy` custom resource definition (CRD).
 
 ## ResizePolicy
-A example cr is as below:
+
+An example of CR is as below:
+
 ```yaml
 apiVersion: hwameistor.io/v1alpha1
 kind: ResizePolicy
@@ -20,10 +23,19 @@ spec:
   nodePoolUsageLimit: 90
 ```
 
-The warningThreshold,resizeThreshold,resizeThreshold three fields of type int all present a percentage.The resizeThreshold specifies the usage percentage of volume beyond which the resizing action will be triggered. The field warningThreshold is not relative with any warning action temporarily, it's just for the resize action that volume usage percentage is expected to under the warningThreshold after resize action done. The field nodePoolUsageLimit means a limit of pool usage percentage of localstoragenode, when a pool usage percentage reached this limit, the autoresizer will not do autoresizing for a volume located on the localstoragenode. 
+The three fields `warningThreshold`, `resizeThreshold`, and `nodePoolUsageLimit` are all of type integer and represent percentages.
+
+- `warningThreshold` currently does not have any associated alert actions. It serves as a
+  target ratio, indicating that the usage rate of the volume will be below this percentage
+  after resizing is completed.
+- `resizeThreshold` indicates a usage rate at which the resizing action will be triggered
+  when the volume's usage rate reaches this percentage.
+- `nodePoolUsageLimit` represents the upper limit of storage pool usage on a node. If the
+  usage rate of a pool reaches this percentage, volumes assigned to that pool will not automatically resize.
 
 ## Match Rules
-This is a examle cr with label selectors.
+
+This is an examle of CR with label selectors.
 
 ```yaml
 apiVersion: hwameistor.io/v1alpha1
@@ -45,4 +57,16 @@ spec:
       pvc-resize: auto
 ```
 
-ResizePolicy have three label selectors. pvcSelector means pvc selected by the selector of the resizepolicy will autoresize according to the policy that select it. namespaceSelector means pvc in the namespace selected by the policy will autoresize according to the policy. storageClassSelector means pvc created from storageclass selected by the policy will autoresize according to the policy. It's a "&&" relation between the three selectors, if you specify more than one selector in a resizepolicy, the pvc match all the selector you specified will match this policy. If no selector specified in the resizepolicy, it's a cluster resizepolicy, it's like default policy for all pvc in the cluster.
+The `ResizePolicy` has three label selectors:
+
+- `pvcSelector` indicates that PVCs selected by this selector will automatically resize according
+  to the policy that selected them.
+- `namespaceSelector` indicates that PVCs under namespaces selected by this selector will
+  automatically resize according to this policy.
+- `storageClassSelector` indicates that PVCs created from storage classes selected by this
+  selector will automatically resize according to this policy.
+
+These three selectors have an "AND" relationship. If you specify multiple selectors in a `ResizePolicy`,
+the PVCs must match all of the selectors in order to be associated with that policy. If no selectors are
+specified in the `ResizePolicy`, it becomes a cluster-wide `ResizePolicy`, acting as the default policy
+for all PVCs in the entire cluster.
