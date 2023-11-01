@@ -161,7 +161,7 @@ please check the [adopters list](./adopters.md).
 | Data encryption           | Unplaned  |         | Data encryption                                   |
 | System Consistency        | Planed    |         | Consistent check and recovery from a disaster     |
 | Volume backup             | Planed    |         | Backup the volume data to remote server and restore  |
-| HwameiStor CLI command    | In Progress  |      | CLI command is to manage the HwameiStor cluster  |
+| HwameiStor CLI command    | Completed | v0.12.4 | CLI command is to manage the HwameiStor cluster  |
 | HwameiStor GUI            | Completed | v0.11.0 | Manage the HwameiStor cluster  |
 
 
