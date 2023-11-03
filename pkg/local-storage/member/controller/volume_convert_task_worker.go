@@ -185,15 +185,14 @@ func (m *manager) volumeConvertStart(convert *apisv1alpha1.LocalVolumeConvert) e
 			for _, vol := range volList.Items {
 				if vol.Spec.VolumeGroup == lvg.Name {
 					if vol.Spec.ReplicaNumber == convert.Spec.ReplicaNumber {
-						convert.Status.State = apisv1alpha1.OperationStateInProgress
-						m.apiClient.Status().Update(ctx, convert)
+						continue
 					}
-
 					vol.Spec.ReplicaNumber = convert.Spec.ReplicaNumber
 					if err := m.apiClient.Update(ctx, &vol); err != nil {
 						logCtx.WithField("volName", vol.Name).WithError(err).Error("Volume failed to start the volume convert")
 						convert.Status.Message = err.Error()
 						m.apiClient.Status().Update(ctx, convert)
+						return err
 					}
 				}
 			}
