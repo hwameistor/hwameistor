@@ -160,6 +160,9 @@ spec:
                   vendor:
                     description: Vendor is who provides the disk
                     type: string
+                  wwn:
+                    description: Wwn is an unique identifier for the storage device
+                    type: string
                 type: object
               isRaid:
                 description: HasRAID identifies if the disk is a raid disk or not

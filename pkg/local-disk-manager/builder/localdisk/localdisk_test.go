@@ -73,7 +73,7 @@ func TestSetupAttribute(t *testing.T) {
 	protocol := "scsi"
 	serialNumber := "testSerialNumber"
 	devType := "disk"
-
+	wwn := "0x5000c298825951d9"
 	tests := []struct {
 		name string
 		want *Builder
@@ -91,6 +91,7 @@ func TestSetupAttribute(t *testing.T) {
 							Protocol:     protocol,
 							SerialNumber: serialNumber,
 							DevType:      devType,
+							Wwn:          wwn,
 						},
 					},
 				},
@@ -108,6 +109,7 @@ func TestSetupAttribute(t *testing.T) {
 		Bus:        protocol,
 		Serial:     serialNumber,
 		DevType:    devType,
+		WWN:        wwn,
 	}
 
 	for _, tt := range tests {

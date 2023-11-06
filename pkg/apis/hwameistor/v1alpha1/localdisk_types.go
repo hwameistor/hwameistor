@@ -81,6 +81,9 @@ type DiskAttributes struct {
 
 	// Protocol is for data transport, such as ATA, SCSI, NVMe
 	Protocol string `json:"protocol,omitempty"`
+
+	// Wwn is an unique identifier for the storage device,like 0x5000c298825951d9
+	Wwn string `json:"wwn,omitempty"`
 }
 
 // FileSystemInfo defines the filesystem type and mountpoint of the disk if it exists
