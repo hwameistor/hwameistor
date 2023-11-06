@@ -32,7 +32,7 @@ import (
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/controller"
 	csidriver "github.com/hwameistor/hwameistor/pkg/local-disk-manager/csi/driver"
 	mc "github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/controller"
@@ -413,8 +413,9 @@ func setIndexField(cache cache.Cache) {
 
 	for _, index := range indexes {
 		if err := cache.IndexField(context.Background(), &v1alpha1.LocalDisk{}, index.field, index.Func); err != nil {
-			log.Error(err, "failed to setup index field %s", index.field)
-			continue
+			log.Error(err, "failed to setup index field", "field", index.field)
+			// indexer is required, exit immediately if it fails, more details see issue: #1209
+			os.Exit(1)
 		}
 		log.Info("setup index field successfully", "field", index.field)
 	}
