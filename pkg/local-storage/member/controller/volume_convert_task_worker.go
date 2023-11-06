@@ -97,7 +97,11 @@ func (m *manager) volumeConvertSubmit(convert *apisv1alpha1.LocalVolumeConvert) 
 
 	vol := &apisv1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: convert.Spec.VolumeName}, vol); err != nil {
-		logCtx.WithError(err).Error("Failed to query volume")
+		if errors.IsNotFound(err) {
+			logCtx.WithField("LocalVolume", convert.Spec.VolumeName).Info("Not found the LocalVolume")
+		} else {
+			logCtx.WithError(err).WithField("LocalVolume", convert.Spec.VolumeName).Error("Failed to query LocalVolume")
+		}
 		convert.Status.Message = err.Error()
 		m.apiClient.Status().Update(ctx, convert)
 		return err
@@ -107,7 +111,11 @@ func (m *manager) volumeConvertSubmit(convert *apisv1alpha1.LocalVolumeConvert) 
 
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: localVolumeGroupName}, lvg); err != nil {
-		logCtx.WithError(err).Error("Failed to query lvg")
+		if errors.IsNotFound(err) {
+			logCtx.WithField("LocalVolumeGroup", localVolumeGroupName).Info("Not found the LocalVolumeGroup")
+		} else {
+			logCtx.WithError(err).WithField("LocalVolumeGroup", localVolumeGroupName).Error("Failed to query LocalVolumeGroup")
+		}
 		convert.Status.Message = err.Error()
 		m.apiClient.Status().Update(ctx, convert)
 		return err
@@ -286,7 +294,11 @@ func (m *manager) volumeConvertCleanup(convert *apisv1alpha1.LocalVolumeConvert)
 func (m *manager) queryLocalVolume(ctx context.Context, volumeName string) (*apisv1alpha1.LocalVolume, error) {
 	vol := &apisv1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: volumeName}, vol); err != nil {
-		m.logger.WithError(err).WithField("LocalVolume", volumeName).Error("Failed to query LocalVolume")
+		if errors.IsNotFound(err) {
+			m.logger.WithField("LocalVolume", volumeName).Info("Not found the LocalVolume")
+		} else {
+			m.logger.WithError(err).WithField("LocalVolume", volumeName).Error("Failed to query LocalVolume")
+		}
 		return nil, err
 	}
 	return vol, nil
@@ -295,7 +307,11 @@ func (m *manager) queryLocalVolume(ctx context.Context, volumeName string) (*api
 func (m *manager) queryLocalVolumeGroup(ctx context.Context, volumeGroupName string) (*apisv1alpha1.LocalVolumeGroup, error) {
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
 	if err := m.apiClient.Get(ctx, types.NamespacedName{Name: volumeGroupName}, lvg); err != nil {
-		m.logger.WithError(err).WithField("LocalVolumeGroup", volumeGroupName).Error("Failed to query LocalVolumeGroup")
+		if errors.IsNotFound(err) {
+			m.logger.WithField("LocalVolumeGroup", volumeGroupName).Info("Not found the LocalVolumeGroup")
+		} else {
+			m.logger.WithError(err).WithField("LocalVolumeGroup", volumeGroupName).Error("Failed to query LocalVolumeGroup")
+		}
 		return nil, err
 	}
 	return lvg, nil
