@@ -2,6 +2,9 @@ package configer
 
 import (
 	"fmt"
+	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -277,4 +280,57 @@ func Test_drbdConfigure_GetReplicaHAState(t *testing.T) {
 	haState, err := m.GetReplicaHAState(localVolumeReplica)
 
 	fmt.Printf("Test_drbdConfigure_GetReplicaHAState haState = %v err = %v", haState, err)
+}
+func Test_handleDRBDEvent(t *testing.T) {
+
+	testCases := []struct {
+		Description  string
+		HostName     string
+		SysCfg       apisv1alpha1.SystemConfig
+		ApiClient    client.Client
+		SyncFunc     SyncReplicaStatus
+		Events       []string
+		ExpectResult map[string]*Resource
+	}{
+		{
+			Description: "It is a drbdsetup events2 scsivol(resourceName) command result,caller:drbd-node3,peer-hostname:drbd-node1,peer-node-id:0",
+			HostName:    "drbd-node3",
+			SysCfg:      apisv1alpha1.SystemConfig{},
+			ApiClient:   nil,
+			SyncFunc:    nil,
+			Events: strings.Split("exists resource name:scsivol role:Primary suspended:no\n"+
+				"exists connection name:scsivol peer-node-id:0 conn-name:drbd-node1 connection:Connected role:Secondary\n"+
+				"exists device name:scsivol volume:0 minor:0 disk:UpToDate client:no quorum:yes\n"+
+				"exists peer-device name:scsivol peer-node-id:0 conn-name:drbd-node1 volume:0 replication:Established peer-disk:UpToDate peer-client:no resync-suspended:no", "\n"),
+			ExpectResult: map[string]*Resource{"scsivol": &Resource{
+				Name:        "scsivol",
+				Role:        "Primary",
+				Device:      struct{ State string }{State: "UpToDate"},
+				Replication: "",
+				PeerDevices: map[string]*PeerDevice{
+					"drbd-node1": &PeerDevice{
+						NodeID: 0, ConnectionName: "drbd-node1", Replication: "Established",
+						DiskState: "UpToDate",
+					},
+				},
+			},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Description, func(t *testing.T) {
+			configer, err := NewDRBDConfiger(testCase.HostName, testCase.SysCfg, testCase.ApiClient, testCase.SyncFunc)
+			if err != nil {
+				t.Fatal("init DRBDConfiger failed")
+			}
+			for _, e := range testCase.Events {
+				configer.handleDRBDEvent(e)
+			}
+			if !reflect.DeepEqual(configer.resourceCache, testCase.ExpectResult) {
+				t.Fatal("resourceCache should be the same with the ExpectResult")
+			}
+		})
+	}
+
 }
