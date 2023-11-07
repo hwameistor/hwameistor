@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/wxnacy/wgo/arrays"
@@ -281,13 +282,22 @@ func (m *manager) volumeMigrateSyncReplica(migrate *apisv1alpha1.LocalVolumeMigr
 	return m.apiClient.Status().Update(ctx, migrate)
 }
 
-func (m *manager) syncReplica(migrate *apisv1alpha1.LocalVolumeMigrate, vol *apisv1alpha1.LocalVolume) error {
+func (m *manager) syncReplica(migrate *apisv1alpha1.LocalVolumeMigrate, vol *apisv1alpha1.LocalVolume) (err error) {
 	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "volume": vol.Name})
 	logCtx.Debug("Preparing the resources for data sync ...")
 
 	jobName := generateJobName(migrate.Name, vol.Spec.PersistentVolumeClaimName)
 
-	return m.dataCopyManager.Sync(jobName, migrate.Spec.SourceNode, migrate.Status.TargetNode, vol.Name)
+	// use StorageNodeIP instead of nodeName, more details see #1195
+	var sourceNodeIP, targetNodeIP string
+	if sourceNodeIP, err = m.getStorageNodeIP(migrate.Spec.SourceNode); err != nil {
+		return err
+	}
+	if targetNodeIP, err = m.getStorageNodeIP(migrate.Status.TargetNode); err != nil {
+		return err
+	}
+
+	return m.dataCopyManager.Sync(jobName, sourceNodeIP, targetNodeIP, vol.Name)
 
 }
 
@@ -442,6 +452,15 @@ func (m *manager) gcSyncJobPod(pod *corev1.Pod) error {
 	return nil
 }
 
+// getStorageNodeIP returns the StorageIP configured in the corresponding LocalStorageNode
+func (m *manager) getStorageNodeIP(nodeName string) (string, error) {
+	storageNode := apisv1alpha1.LocalStorageNode{}
+	if err := m.apiClient.Get(context.TODO(), client.ObjectKey{Name: nodeName}, &storageNode); err != nil {
+		return "", err
+	}
+	return storageNode.Spec.StorageIP, nil
+}
+
 func generateJobName(mName string, pvcName string) string {
 	if len(mName) > 25 {
 		mName = mName[:25]
@@ -460,7 +479,7 @@ func ensureNameMatchDNS1123Subdomain(name string) string {
 		if len(errs) != 0 {
 			log.Infof("object name %v doesn't match DNS1123Subdomain rule, modify it", name)
 			length := len(name)
-			name = name[:(length-1)]
+			name = name[:(length - 1)]
 			log.Infof("object name modifie to %v", name)
 			continue
 		}
