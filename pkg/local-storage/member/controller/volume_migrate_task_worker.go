@@ -307,6 +307,21 @@ func (m *manager) volumeMigratePruneReplica(migrate *apisv1alpha1.LocalVolumeMig
 
 	ctx := context.TODO()
 
+	// check if source volume can be pruned safely
+	{
+		cm := &corev1.ConfigMap{}
+		cmName := datacopy.GetConfigMapName(datacopy.SyncConfigMapName, migrate.Spec.VolumeName)
+		if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: cmName}, cm); err != nil {
+			logCtx.WithField("configmap", cmName).Error("Not found the data sync configmap")
+			return err
+		}
+		if cm.Data[datacopy.SyncConfigSourceUnpublishKey] != datacopy.SyncTrue {
+			logCtx.WithField("configmap", cmName).Error("source volume is published, can't prune it now")
+			return fmt.Errorf("source volume is published, can't prune it")
+		}
+		logCtx.WithField("configmap", cmName).Info("source volume is unpublished, start pruning it")
+	}
+
 	if arrays.ContainsString(lvg.Spec.Accessibility.Nodes, migrate.Spec.SourceNode) != -1 {
 		lvg.Spec.Accessibility.Nodes = utils.RemoveStringItem(lvg.Spec.Accessibility.Nodes, migrate.Spec.SourceNode)
 		if err := m.apiClient.Update(ctx, lvg); err != nil {
