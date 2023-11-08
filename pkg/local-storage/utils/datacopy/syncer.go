@@ -24,6 +24,7 @@ const (
 	SyncConfigSourceNodeReadyKey  = "sourceReady"
 	SyncConfigTargetNodeReadyKey  = "targetReady"
 	SyncConfigSyncDoneKey         = "completed"
+	SyncConfigSourceUnpublishKey  = "sourceUnpublished"
 
 	SyncTrue  string = "yes"
 	SyncFalse string = "no"

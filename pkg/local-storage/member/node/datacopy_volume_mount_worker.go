@@ -91,6 +91,13 @@ func (m *manager) processSyncVolumeMount(lvName string) error {
 			m.logger.WithField("mountpoint", mountPoint).WithError(err).Error("Failed to Unmount volume")
 			return err
 		}
+
+		// update cm to indicate that source volume is unpublished
+		cm.Data[datacopy.SyncConfigSourceUnpublishKey] = datacopy.SyncTrue
+		if err = m.apiClient.Update(ctx, cm); err != nil {
+			m.logger.WithField("configmap", cm.Name).WithError(err).Error("Failed to update rclone's config as unpublished")
+			return err
+		}
 		return nil
 	}
 
