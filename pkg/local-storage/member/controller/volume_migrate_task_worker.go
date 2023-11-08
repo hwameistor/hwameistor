@@ -287,18 +287,7 @@ func (m *manager) syncReplica(migrate *apisv1alpha1.LocalVolumeMigrate, vol *api
 	logCtx.Debug("Preparing the resources for data sync ...")
 
 	jobName := generateJobName(migrate.Name, vol.Spec.PersistentVolumeClaimName)
-
-	// use StorageNodeIP instead of nodeName, more details see #1195
-	var sourceNodeIP, targetNodeIP string
-	if sourceNodeIP, err = m.getStorageNodeIP(migrate.Spec.SourceNode); err != nil {
-		return err
-	}
-	if targetNodeIP, err = m.getStorageNodeIP(migrate.Status.TargetNode); err != nil {
-		return err
-	}
-
-	return m.dataCopyManager.Sync(jobName, sourceNodeIP, targetNodeIP, vol.Name)
-
+	return m.dataCopyManager.Sync(jobName, migrate.Spec.SourceNode, migrate.Status.TargetNode, vol.Name)
 }
 
 func (m *manager) volumeMigratePruneReplica(migrate *apisv1alpha1.LocalVolumeMigrate, vol *apisv1alpha1.LocalVolume, lvg *apisv1alpha1.LocalVolumeGroup) error {
