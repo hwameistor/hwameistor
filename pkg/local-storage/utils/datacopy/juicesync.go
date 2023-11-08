@@ -3,6 +3,7 @@ package datacopy
 import (
 	"context"
 	"fmt"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"os"
 	"strings"
 
@@ -23,13 +24,13 @@ type JuiceSync struct {
 	apiClient k8sclient.Client
 }
 
-func (js *JuiceSync) Prepare(targetNodeName, sourceNodeName, volName string) error {
+func (js *JuiceSync) Prepare(targetNodeName, sourceNodeName, volName string) (err error) {
 	ctx := context.TODO()
 
 	cmName := GetConfigMapName(SyncConfigMapName, volName)
 
 	cm := &corev1.ConfigMap{}
-	if err := js.apiClient.Get(ctx, types.NamespacedName{Namespace: js.namespace, Name: cmName}, cm); err == nil {
+	if err = js.apiClient.Get(ctx, types.NamespacedName{Namespace: js.namespace, Name: cmName}, cm); err == nil {
 		logger.WithField("configmap", cmName).Debug("The config of data sync already exists")
 		return nil
 	}
@@ -48,12 +49,21 @@ func (js *JuiceSync) Prepare(targetNodeName, sourceNodeName, volName string) err
 		Data: data,
 	}
 
-	if err := js.apiClient.Create(ctx, cm); err != nil {
+	if err = js.apiClient.Create(ctx, cm); err != nil {
 		logger.WithError(err).Error("Failed to create MigrateConfigmap")
 		return err
 	}
 
 	return nil
+}
+
+// getStorageNodeIP returns the StorageIP configured in the corresponding LocalStorageNode
+func (js *JuiceSync) getStorageNodeIP(nodeName string) (string, error) {
+	storageNode := apisv1alpha1.LocalStorageNode{}
+	if err := js.apiClient.Get(context.TODO(), k8sclient.ObjectKey{Name: nodeName}, &storageNode); err != nil {
+		return "", err
+	}
+	return storageNode.Spec.StorageIP, nil
 }
 
 func (js *JuiceSync) StartSync(jobName, volName, excludedRunningNodeName, runningNodeName string) error {
@@ -96,6 +106,23 @@ func (js *JuiceSync) buildJob(jobName string, volName string, excludedRunningNod
 
 	}
 
+	// use StorageNodeIP instead of nodeName, more details see #1195
+	var sourceNodeIP, targetNodeIP string
+	cm, err := js.getConfigMap(volName)
+	if err != nil {
+		logger.WithError(err).Error("failed to get config map for job")
+		return nil
+	} else {
+		if sourceNodeIP, err = js.getStorageNodeIP(cm.Data[SyncConfigSourceNodeNameKey]); err != nil {
+			logger.WithError(err).Error("failed to get source node ip from config map for job")
+			return nil
+		}
+		if targetNodeIP, err = js.getStorageNodeIP(cm.Data[SyncConfigTargetNodeNameKey]); err != nil {
+			logger.WithError(err).Error("failed to get target node ip from config map for job")
+			return nil
+		}
+	}
+
 	var privileged = true
 	baseStruct := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -132,6 +159,17 @@ func (js *JuiceSync) buildJob(jobName string, volName string, excludedRunningNod
 									ConfigMapRef: &corev1.ConfigMapEnvSource{
 										LocalObjectReference: corev1.LocalObjectReference{Name: GetConfigMapName(SyncConfigMapName, volName)},
 									},
+								},
+							},
+							// overwrite sourceNode and targetNode with src/dst node ip
+							Env: []corev1.EnvVar{
+								{
+									Name:  SyncConfigSourceNodeNameKey,
+									Value: sourceNodeIP,
+								},
+								{
+									Name:  SyncConfigTargetNodeNameKey,
+									Value: targetNodeIP,
 								},
 							},
 						},
@@ -226,4 +264,10 @@ func (js *JuiceSync) buildJob(jobName string, volName string, excludedRunningNod
 	baseStruct.Spec.Template.Spec.Volumes = append(baseStruct.Spec.Template.Spec.Volumes, etchostsVolume)
 
 	return baseStruct
+}
+
+func (js *JuiceSync) getConfigMap(volName string) (*corev1.ConfigMap, error) {
+	cmName := GetConfigMapName(SyncConfigMapName, volName)
+	cm := &corev1.ConfigMap{}
+	return cm, js.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: js.namespace, Name: cmName}, cm)
 }
