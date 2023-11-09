@@ -31,6 +31,7 @@ metadata:
 parameters:
   snapsize: "1073741824"
 driver: lvm.hwameistor.io
+deletionPolicy: Delete
 ```
 
 - snapsize：It specifies the size of VolumeSnapshot
