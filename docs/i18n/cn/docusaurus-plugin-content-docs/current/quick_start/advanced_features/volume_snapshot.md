@@ -31,6 +31,7 @@ metadata:
 parameters:
   snapsize: "1073741824"
 driver: lvm.hwameistor.io
+deletionPolicy: Delete
 ```
 
 - snapsize：指定创建卷快照的大小。
