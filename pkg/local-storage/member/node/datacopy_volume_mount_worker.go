@@ -92,11 +92,15 @@ func (m *manager) processSyncVolumeMount(lvName string) error {
 			return err
 		}
 
-		// update cm to indicate that source volume is unpublished
-		cm.Data[datacopy.SyncConfigSourceUnpublishKey] = datacopy.SyncTrue
-		if err = m.apiClient.Update(ctx, cm); err != nil {
-			m.logger.WithField("configmap", cm.Name).WithError(err).Error("Failed to update rclone's config as unpublished")
-			return err
+		// only update cm in source volume node
+		if m.name == sourceNodeName {
+			// update cm to indicate that source volume is unpublished
+			cm.Data[datacopy.SyncConfigSourceUnpublishKey] = datacopy.SyncTrue
+			if err = m.apiClient.Update(ctx, cm); err != nil {
+				m.logger.WithField("configmap", cm.Name).WithError(err).Error("Failed to update config as unpublished")
+				return err
+			}
+			m.logger.WithField("configmap", cm.Name).Debug("Successes to update config as unpublished")
 		}
 		return nil
 	}
