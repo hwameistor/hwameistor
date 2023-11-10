@@ -229,10 +229,19 @@ func (r *resources) getAssociatedVolumes(vol *apisv1alpha1.LocalVolume) map[stri
 	for _, pvcNamespacedName := range pvcs {
 		pvc, exists := r.pvcsMap[pvcNamespacedName]
 		if !exists || pvc == nil {
-			continue
+			pvcNamespace, pvcName := GetNamespaceAndName(pvcNamespacedName)
+			r.logger.WithFields(log.Fields{"pvc": pvcName, "namespace": pvcNamespace}).Debugf("not found in the map")
+			pvcInCluster := &corev1.PersistentVolumeClaim{}
+			if err := r.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: pvcNamespace, Name: pvcName}, pvcInCluster); err != nil {
+				r.logger.WithError(err).WithFields(log.Fields{"pvc": pvcName, "namespace": pvcNamespace}).Errorf("get pvc in cluster err")
+				continue
+			}
+			r.cachePVC(pvcInCluster)
+			pvc = pvcInCluster
 		}
 		sc, exists := r.scsMap[*pvc.Spec.StorageClassName]
 		if !exists || sc == nil {
+			r.logger.WithField("sc", sc.Name).Debugf("not found in the map")
 			continue
 		}
 
@@ -240,6 +249,7 @@ func (r *resources) getAssociatedVolumes(vol *apisv1alpha1.LocalVolume) map[stri
 			sc.Parameters[apisv1alpha1.VolumeParameterPoolClassKey],
 			sc.Parameters[apisv1alpha1.VolumeParameterPoolTypeKey])
 		if err != nil {
+			r.logger.WithError(err).Errorf("build storagepoolname err")
 			return lvs
 		}
 		if _, exists := lvs[poolName]; !exists {
@@ -654,10 +664,15 @@ func (r *resources) cleanupPod(namespace string, podName string) {
 func (r *resources) handlePVCAdd(obj interface{}) {
 	pvc := obj.(*corev1.PersistentVolumeClaim)
 
+	r.cachePVC(pvc)
+}
+
+func (r *resources) cachePVC(pvc *corev1.PersistentVolumeClaim) {
 	if pvc.Spec.StorageClassName == nil {
 		return
 	}
 	if _, exists := r.scsMap[*pvc.Spec.StorageClassName]; !exists {
+		r.logger.WithFields(log.Fields{"pvc": pvc.Name, "namespace": pvc.Namespace, "storageclassname": pvc.Spec.StorageClassName}).Errorf("storageclass not found in map")
 		return
 	}
 
@@ -668,6 +683,7 @@ func (r *resources) handlePVCAdd(obj interface{}) {
 	}
 
 	r.pvcsMap[pvcNamespacedName] = pvc
+	r.logger.WithField("pvc", pvcNamespacedName).Debugf("added into cache map")
 }
 
 func (r *resources) handlePVCUpdate(oldObj, newObj interface{}) {
