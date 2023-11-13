@@ -104,7 +104,7 @@ func (m *manager) volumeReplicaSnapshotRestorePreCheck(snapshotRestore *apisv1al
 
 	// consider data security, abort if target volume has been mounted
 	// fixme: device path fetched by lvm will be better
-	devicePath := path.Join("dev", snapshotRestore.Spec.TargetPoolName, snapshotRestore.Spec.TargetVolume)
+	devicePath := path.Join("/dev", snapshotRestore.Spec.TargetPoolName, snapshotRestore.Spec.TargetVolume)
 	if len(m.mounter.GetDeviceMountPoints(devicePath)) > 0 {
 		err := fmt.Errorf(
 			"target volume is already mounted, cannot %s from snapshot now", snapshotRestore.Spec.RestoreType)
