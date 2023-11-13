@@ -224,19 +224,39 @@ func (lr *localRegistry) rebuildRegistryReplicas() error {
 }
 
 func (lr *localRegistry) Disks() map[string]*apisv1alpha1.LocalDevice {
-	return lr.disks
+	lr.lock.Lock()
+	defer lr.lock.Unlock()
+	dumpDisks := make(map[string]*apisv1alpha1.LocalDevice)
+	for devPath, disk := range lr.disks {
+		dumpDisks[devPath] = disk
+	}
+	return dumpDisks
 }
 
 func (lr *localRegistry) Pools() map[string]*apisv1alpha1.LocalPool {
-	return lr.pools
+	lr.lock.Lock()
+	defer lr.lock.Unlock()
+	dumpPool := make(map[string]*apisv1alpha1.LocalPool)
+	for poolName, pool := range lr.pools {
+		dumpPool[poolName] = pool
+	}
+	return dumpPool
 }
 
 func (lr *localRegistry) VolumeReplicas() map[string]*apisv1alpha1.LocalVolumeReplica {
+	lr.lock.Lock()
+	defer lr.lock.Unlock()
 	lr.showReplicaOnHost()
-	return lr.replicas
+	dumpReplicas := make(map[string]*apisv1alpha1.LocalVolumeReplica)
+	for volumeName, volumeReplica := range lr.replicas {
+		dumpReplicas[volumeName] = volumeReplica
+	}
+	return dumpReplicas
 }
 
 func (lr *localRegistry) HasVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica) bool {
+	lr.lock.Lock()
+	defer lr.lock.Unlock()
 	lr.showReplicaOnHost()
 	_, has := lr.replicas[vr.Spec.VolumeName]
 	return has
