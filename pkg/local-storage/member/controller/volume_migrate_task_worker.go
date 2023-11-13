@@ -122,6 +122,19 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 	logCtx.Debug("Submit a VolumeMigrate")
 
 	ctx := context.TODO()
+	//Indicates that lvm is being migrated
+	var anno map[string]string
+	if anno = vol.GetAnnotations(); anno == nil {
+		anno = make(map[string]string)
+	}
+	anno[apisv1alpha1.VolumeMigrateCompletedAnnoKey] = apisv1alpha1.MigrateStarted
+	vol.SetAnnotations(anno)
+	err := m.apiClient.Update(ctx, vol)
+	if err != nil {
+		logCtx.WithField("LocalVolume", vol.Name).WithError(err).Debug("lvm anno set file")
+		return err
+	}
+
 	// if LV is still in use, waiting for it to be released
 	if vol.Status.PublishedNodeName == migrate.Spec.SourceNode {
 		logCtx.WithField("PublishedNode", vol.Status.PublishedNodeName).Warning("LocalVolume is still in use by source node, try it later")
@@ -175,7 +188,6 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 			migrate.Status.Volumes = append(migrate.Status.Volumes, volList[i].Name)
 		}
 	}
-
 	migrate.Status.OriginalReplicaNumber = vol.Spec.ReplicaNumber
 	migrate.Status.State = apisv1alpha1.OperationStateSubmitted
 	return m.apiClient.Status().Update(ctx, migrate)
@@ -277,7 +289,6 @@ func (m *manager) volumeMigrateSyncReplica(migrate *apisv1alpha1.LocalVolumeMigr
 			return err
 		}
 	}
-
 	migrate.Status.State = apisv1alpha1.OperationStateMigratePruneReplica
 	return m.apiClient.Status().Update(ctx, migrate)
 }
@@ -350,6 +361,19 @@ func (m *manager) volumeMigratePruneReplica(migrate *apisv1alpha1.LocalVolumeMig
 			logCtx.WithField("LocalVolume", volName).WithError(err).Debug("Still pruning the replica")
 			return err
 		}
+	}
+
+	//Indicates lvm migration is complete
+	var anno map[string]string
+	if anno = vol.GetAnnotations(); anno == nil {
+		anno = make(map[string]string)
+	}
+	anno[apisv1alpha1.VolumeMigrateCompletedAnnoKey] = apisv1alpha1.MigrateCompleted
+	vol.SetAnnotations(anno)
+	err := m.apiClient.Update(ctx, vol)
+	if err != nil {
+		logCtx.WithField("LocalVolume", vol.Name).WithError(err).Debug("lvm anno is stall migrateStarted")
+		return err
 	}
 
 	logCtx.Debug("Successfully prune the replicas to be migrated, and completed the volume migration task")
