@@ -69,6 +69,9 @@ type LocalRegistry interface {
 	Disks() map[string]*apisv1alpha1.LocalDevice
 	Pools() map[string]*apisv1alpha1.LocalPool
 	VolumeReplicas() map[string]*apisv1alpha1.LocalVolumeReplica
+	QueryVolumeReplica(volumeName string) (*apisv1alpha1.LocalVolumeReplica, bool)
+	QueryDisk(devPath string) (*apisv1alpha1.LocalDevice, bool)
+	QueryPool(poolName string) (*apisv1alpha1.LocalPool, bool)
 	HasVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) bool
 	UpdateNodeForVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica)
 	SyncNodeResources() error

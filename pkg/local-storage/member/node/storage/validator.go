@@ -80,8 +80,7 @@ func (cr *validator) canExpandVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica,
 }
 
 func (cr *validator) checkPoolVolumeCount(vr *apisv1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
-	pools := reg.Pools()
-	if pool, has := pools[vr.Spec.PoolName]; has {
+	if pool, has := reg.QueryPool(vr.Spec.PoolName); has {
 		if pool.FreeVolumeCount <= 0 {
 			return ErrorInsufficientRequestResources
 		}
@@ -92,8 +91,7 @@ func (cr *validator) checkPoolVolumeCount(vr *apisv1alpha1.LocalVolumeReplica, r
 }
 
 func (cr *validator) checkPoolCapacity(vr *apisv1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
-	pools := reg.Pools()
-	if pool, has := pools[vr.Spec.PoolName]; has {
+	if pool, has := reg.QueryPool(vr.Spec.PoolName); has {
 		if pool.FreeCapacityBytes < utils.NumericToLVMBytes(vr.Spec.RequiredCapacityBytes) {
 			return ErrorInsufficientRequestResources
 		}
@@ -104,8 +102,7 @@ func (cr *validator) checkPoolCapacity(vr *apisv1alpha1.LocalVolumeReplica, reg 
 }
 
 func (cr *validator) checkPerVolumeCapacityLimit(vr *apisv1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
-	pools := reg.Pools()
-	if pool, has := pools[vr.Spec.PoolName]; has {
+	if pool, has := reg.QueryPool(vr.Spec.PoolName); has {
 		if pool.VolumeCapacityBytesLimit < utils.NumericToLVMBytes(vr.Spec.RequiredCapacityBytes) {
 			return ErrorOverLimitedRequestResource
 		}

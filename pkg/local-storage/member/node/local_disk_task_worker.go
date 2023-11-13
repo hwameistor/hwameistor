@@ -104,8 +104,7 @@ func (m *manager) processLocalDiskAvailable(_ *apisv1alpha1.LocalDisk) error {
 func (m *manager) resizeStoragePoolCapacity(localDisk *apisv1alpha1.LocalDisk) error {
 	// find out if disk has used in StoragePool and compare recorded capacity and current capacity
 	// if capacity has been resized, rebuild localstorage registry and update node resource
-	registeredDisks := m.Storage().Registry().Disks()
-	registeredDisk, exist := registeredDisks[localDisk.Spec.DevicePath]
+	registeredDisk, exist := m.Storage().Registry().QueryDisk(localDisk.Spec.DevicePath)
 	if !exist {
 		return nil
 	}

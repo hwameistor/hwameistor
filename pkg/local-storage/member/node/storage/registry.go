@@ -261,6 +261,33 @@ func (lr *localRegistry) HasVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica) b
 	_, has := lr.replicas[vr.Spec.VolumeName]
 	return has
 }
+func (lr *localRegistry) QueryVolumeReplica(volumeName string) (*apisv1alpha1.LocalVolumeReplica, bool) {
+	lr.lock.Lock()
+	defer lr.lock.Unlock()
+	volumeReplica, has := lr.replicas[volumeName]
+	if has {
+		volumeReplica = volumeReplica.DeepCopy()
+	}
+	return volumeReplica, has
+}
+func (lr *localRegistry) QueryDisk(devPath string) (*apisv1alpha1.LocalDevice, bool) {
+	lr.lock.Lock()
+	defer lr.lock.Unlock()
+	disk, has := lr.disks[devPath]
+	if has {
+		disk = disk.DeepCopy()
+	}
+	return disk, has
+}
+func (lr *localRegistry) QueryPool(poolName string) (*apisv1alpha1.LocalPool, bool) {
+	lr.lock.Lock()
+	defer lr.lock.Unlock()
+	pool, has := lr.pools[poolName]
+	if has {
+		pool = pool.DeepCopy()
+	}
+	return pool, has
+}
 
 // UpdateCondition append current condition about LocalStorageNode, i.e. StorageExpandSuccess, StorageExpandFail, UnAvailable
 func (lr *localRegistry) UpdateCondition(condition apisv1alpha1.StorageNodeCondition) error {

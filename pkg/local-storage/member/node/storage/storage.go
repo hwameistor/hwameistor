@@ -33,7 +33,7 @@ func (mgr *localVolumeReplicaManager) CreateVolumeReplica(replica *apisv1alpha1.
 		if err == ErrorReplicaExists {
 			mgr.logger.Infof("Replica %s has already exists.", replica.Spec.VolumeName)
 			newReplica := replica.DeepCopy()
-			currentReplica := mgr.registry.VolumeReplicas()[replica.Spec.VolumeName]
+			currentReplica, _ := mgr.registry.QueryVolumeReplica(replica.Spec.VolumeName)
 			newReplica.Status.AllocatedCapacityBytes = currentReplica.Status.AllocatedCapacityBytes
 			newReplica.Status.StoragePath = currentReplica.Status.StoragePath
 			newReplica.Status.DevicePath = currentReplica.Status.DevicePath
@@ -92,7 +92,7 @@ func (mgr *localVolumeReplicaManager) ExpandVolumeReplica(replica *apisv1alpha1.
 
 func (mgr *localVolumeReplicaManager) GetVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error) {
 
-	currentReplica, exists := mgr.registry.VolumeReplicas()[replica.Spec.VolumeName]
+	currentReplica, exists := mgr.registry.QueryVolumeReplica(replica.Spec.VolumeName)
 	if !exists {
 		return nil, fmt.Errorf("not found")
 	}
