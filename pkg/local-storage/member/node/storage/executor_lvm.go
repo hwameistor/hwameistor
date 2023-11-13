@@ -500,9 +500,9 @@ func (lvm *lvmExecutor) CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha
 		logCtx.WithError(err).Error("Failed to get source volume replica on host")
 		return ErrReplicaNotFound
 	}
-
+	lvPath := path.Join("/dev", replicaSnapshot.Spec.PoolName, replicaSnapshot.Spec.SourceVolume)
 	// use volume snapshot name as snapshot volume key - avoid duplicate volume replica snapshot with the same snapshot
-	if err = lvm.lvSnapCreate(replicaSnapshot.Spec.VolumeSnapshotName, path.Join(replicaSnapshot.Spec.PoolName, replicaSnapshot.Spec.SourceVolume),
+	if err = lvm.lvSnapCreate(replicaSnapshot.Spec.VolumeSnapshotName, lvPath,
 		replicaSnapshot.Spec.RequiredCapacityBytes); err != nil {
 		lvm.logger.WithError(err).Error("Failed to create volume replica snapshot")
 		return err
