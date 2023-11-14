@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/fields"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -156,6 +157,16 @@ func (m *manager) processVolumeReplicaDelete(replica *apisv1alpha1.LocalVolumeRe
 	logCtx := m.logger.WithFields(log.Fields{"replica": replica.Name, "spec": replica.Spec, "status": replica.Status})
 	logCtx.Debug("Deleting a VolumeReplica")
 
+	// delay volume deletion until all snapshots removed, more details see: #1240
+	if snapshots, err := m.listVolumeReplicaSnapshots(replica); err != nil || len(snapshots) > 0 {
+		if err == nil {
+			err = fmt.Errorf("found %d snapshot(s) exist on volume", len(snapshots))
+		}
+		logCtx.WithError(err).Debug("Failed to check VolumeReplica snapshots before deleting")
+		return err
+	}
+	logCtx.Debugf("no snapshots found, volume %s can safely delete now", replica.Name)
+
 	if err := m.configManager.DeleteConfig(replica); err != nil {
 		logCtx.WithError(err).Debug("Failed to remove the config")
 		return err
@@ -177,4 +188,13 @@ func (m *manager) processVolumeReplicaCleanup(replica *apisv1alpha1.LocalVolumeR
 	logCtx.Debug("Cleanup a VolumeReplica")
 
 	return m.apiClient.Delete(context.TODO(), replica)
+}
+
+func (m *manager) listVolumeReplicaSnapshots(replica *apisv1alpha1.LocalVolumeReplica) ([]apisv1alpha1.LocalVolumeSnapshot, error) {
+	snapList := apisv1alpha1.LocalVolumeSnapshotList{}
+	if err := m.apiClient.List(context.TODO(), &snapList, &client.ListOptions{
+		FieldSelector: fields.ParseSelectorOrDie("spec.sourceVolume=" + replica.Spec.VolumeName)}); err != nil {
+		return nil, err
+	}
+	return snapList.Items, nil
 }
