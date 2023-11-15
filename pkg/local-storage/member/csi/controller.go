@@ -2,6 +2,7 @@ package csi
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/fields"
 	"math"
 	"strconv"
 	"strings"
@@ -707,6 +708,10 @@ func (p *plugin) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 		return resp, nil
 	}
 	if vol.Status.State == apisv1alpha1.VolumeStateToBeDeleted {
+		// volume will be deleted after all snapshots removed, return directly here
+		if vss, _ := listVolumeSnapshots(vol.Name, p.apiClient); len(vss) > 0 {
+			return resp, nil
+		}
 		return resp, fmt.Errorf("volume in deleting")
 	}
 	vol.Spec.Delete = true
@@ -1255,4 +1260,13 @@ func getSourceVolumeFromSnapshot(volumeSnapshotName string, apiClient client.Cli
 	}
 
 	return &volume, nil
+}
+
+func listVolumeSnapshots(volumeName string, apiClient client.Client) ([]apisv1alpha1.LocalVolumeSnapshot, error) {
+	snapList := apisv1alpha1.LocalVolumeSnapshotList{}
+	if err := apiClient.List(context.TODO(), &snapList, &client.ListOptions{
+		FieldSelector: fields.ParseSelectorOrDie("spec.sourceVolume=" + volumeName)}); err != nil {
+		return nil, err
+	}
+	return snapList.Items, nil
 }

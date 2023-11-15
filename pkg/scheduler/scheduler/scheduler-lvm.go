@@ -288,22 +288,11 @@ func (s *LVMVolumeScheduler) validateNodeForPVCsFromClone(pvcs []*corev1.Persist
 }
 
 func (s *LVMVolumeScheduler) constructLocalVolumeForPVC(pvc *corev1.PersistentVolumeClaim) (*v1alpha1.LocalVolume, error) {
-	var scName string
-	if pvc.Spec.DataSource != nil && pvc.Spec.DataSource.Kind == VolumeSnapshot {
-		// for volume create from snapshot, use sc from the source volume
-		if srcPVC, err := s.getSourcePVCFromSnapshot(pvc.Namespace, pvc.Spec.DataSource.Name); err != nil {
-			return nil, err
-		} else {
-			scName = *srcPVC.Spec.StorageClassName
-		}
-	} else {
-		scName = *pvc.Spec.StorageClassName
-	}
-
-	sc, err := s.scLister.Get(scName)
+	sc, err := s.scLister.Get(*pvc.Spec.StorageClassName)
 	if err != nil {
 		return nil, err
 	}
+
 	localVolume := v1alpha1.LocalVolume{}
 	poolName, err := buildStoragePoolName(
 		sc.Parameters[v1alpha1.VolumeParameterPoolClassKey],
@@ -312,7 +301,6 @@ func (s *LVMVolumeScheduler) constructLocalVolumeForPVC(pvc *corev1.PersistentVo
 		return nil, err
 	}
 
-	//localVolume.Name = pvc.Name
 	localVolume.Spec.PersistentVolumeClaimName = pvc.Name
 	localVolume.Spec.PersistentVolumeClaimNamespace = pvc.Namespace
 	localVolume.Spec.PoolName = poolName
@@ -333,6 +321,18 @@ func (s *LVMVolumeScheduler) getSourcePVCFromSnapshot(vsNamespace, vsName string
 		return nil, err
 	}
 	return &pvc, nil
+}
+
+func (s *LVMVolumeScheduler) getSourceVolumeFromSnapshot(vsNamespace, vsName string) (*v1alpha1.LocalVolume, error) {
+	vs := v1.VolumeSnapshot{}
+	if err := s.apiClient.Get(context.Background(), client.ObjectKey{Namespace: vsNamespace, Name: vsName}, &vs); err != nil {
+		return nil, err
+	}
+	localVolume := v1alpha1.LocalVolume{}
+	if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: *vs.Spec.Source.VolumeSnapshotContentName}, &localVolume); err != nil {
+		return nil, err
+	}
+	return &localVolume, nil
 }
 
 func buildStoragePoolName(poolClass string, poolType string) (string, error) {
