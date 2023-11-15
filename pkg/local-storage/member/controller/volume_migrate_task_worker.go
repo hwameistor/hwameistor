@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	log "github.com/sirupsen/logrus"
@@ -315,9 +316,9 @@ func (m *manager) volumeMigratePruneReplica(migrate *apisv1alpha1.LocalVolumeMig
 			logCtx.WithField("configmap", cmName).Error("Not found the data sync configmap")
 			return err
 		}
-		if cm.Data[datacopy.SyncConfigSourceUnpublishKey] != datacopy.SyncTrue {
-			logCtx.WithField("configmap", cmName).Error("source volume is published, can't prune it now")
-			return fmt.Errorf("source volume is published, can't prune it")
+		if cm.Data[datacopy.SyncConfigSourceNodeCompleteKey] != datacopy.SyncTrue || cm.Data[datacopy.SyncConfigTargetNodeCompleteKey] != datacopy.SyncTrue {
+			logCtx.WithField("configmap", cmName).Error("either source or target node is not completed, can't prune it now")
+			return fmt.Errorf("either source or target node is not completed, can't prune it")
 		}
 		logCtx.WithField("configmap", cmName).Info("source volume is unpublished, start pruning it")
 	}

@@ -129,7 +129,7 @@ func (dcm *DataCopyManager) Sync(jobName, srcNodeName, dstNodeName, volName stri
 				"CompleteTime": syncJob.Status.CompletionTime.String(),
 			}).Debug("The replicas have already been synchronized successfully")
 
-			cm.Data[SyncConfigSyncDoneKey] = SyncTrue
+			cm.Data[SyncConfigSyncCompleteKey] = SyncTrue
 			if err := dcm.k8sControllerClient.Update(ctx, cm); err != nil {
 				logCtx.WithField("configmap", cmName).WithError(err).Error("Failed to update sync configmap")
 				return err
