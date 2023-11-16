@@ -134,6 +134,16 @@ func (s *LVMVolumeScheduler) filterForExistingLocalVolumes(lvs []string, node *c
 			log.WithFields(log.Fields{"localvolume": lvName}).WithError(err).Error("Failed to fetch LocalVolume")
 			return false, err
 		}
+
+		//Determine whether lvm is being migrated
+		if lv.GetAnnotations() != nil {
+			if migrate, ok := lv.GetAnnotations()[v1alpha1.VolumeMigrateCompletedAnnoKey]; ok {
+				if migrate == v1alpha1.MigrateStarted {
+					return false, fmt.Errorf("lvm is being migrated")
+				}
+			}
+		}
+
 		if lv.Spec.Config == nil {
 			log.WithFields(log.Fields{"localvolume": lvName}).Error("Not found replicas info in the LocalVolume")
 			return false, fmt.Errorf("pending localvolume")
@@ -155,6 +165,7 @@ func (s *LVMVolumeScheduler) filterForExistingLocalVolumes(lvs []string, node *c
 			log.WithFields(log.Fields{"localvolume": lvName, "node": node.Name}).Debug("LocalVolume doesn't publish at this node")
 			return false, fmt.Errorf("not published node")
 		}
+
 	}
 
 	log.WithFields(log.Fields{"localvolumes": lvs, "node": node.Name}).Debug("Filtered in this node for all existing LVM volumes")
