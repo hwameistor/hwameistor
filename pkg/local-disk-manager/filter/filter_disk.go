@@ -19,19 +19,22 @@ const (
 )
 
 type LocalDiskFilter struct {
-	localDisk *v1alpha1.LocalDisk
-	Result    Bool
+	localDisk     *v1alpha1.LocalDisk
+	Result        Bool
+	FailedMessage map[string]struct{}
 }
 
 func NewLocalDiskFilter(ld *v1alpha1.LocalDisk) LocalDiskFilter {
 	return LocalDiskFilter{
-		localDisk: ld,
-		Result:    TRUE,
+		localDisk:     ld,
+		Result:        TRUE,
+		FailedMessage: make(map[string]struct{}),
 	}
 }
 
 func (ld *LocalDiskFilter) Init() *LocalDiskFilter {
 	ld.Result = TRUE
+	ld.FailedMessage = make(map[string]struct{})
 	return ld
 }
 
@@ -50,6 +53,7 @@ func (ld *LocalDiskFilter) HasNotReserved() *LocalDiskFilter {
 	if !ld.localDisk.Spec.Reserved {
 		ld.setResult(TRUE)
 	} else {
+		ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonHasReserved] = struct{}{}
 		log.Debugf("disk %s state is reserved", ld.localDisk.Name)
 		ld.setResult(FALSE)
 	}
@@ -83,6 +87,7 @@ func (ld *LocalDiskFilter) Capacity(cap int64) *LocalDiskFilter {
 	if ld.localDisk.Spec.Capacity >= cap {
 		ld.setResult(TRUE)
 	} else {
+		ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonInsufficientCapacity] = struct{}{}
 		log.Debugf("disk %s capacity(%d) missmatch, want capacity %d", ld.localDisk.Name, ld.localDisk.Spec.Capacity, cap)
 		ld.setResult(FALSE)
 	}
@@ -99,6 +104,7 @@ func (ld *LocalDiskFilter) DiskType(diskType string) *LocalDiskFilter {
 	if ld.localDisk.Spec.DiskAttributes.Type == diskType {
 		ld.setResult(TRUE)
 	} else {
+		ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonDiskTypeUnMatch] = struct{}{}
 		log.Debugf("disk %s type(%s) missmatch, wantType %s", ld.localDisk.Name, ld.localDisk.Spec.DiskAttributes.Type, diskType)
 		ld.setResult(FALSE)
 	}
@@ -110,6 +116,7 @@ func (ld *LocalDiskFilter) DevType() *LocalDiskFilter {
 	if ld.localDisk.Spec.DiskAttributes.DevType == sys.BlockDeviceTypeDisk {
 		ld.setResult(TRUE)
 	} else {
+		ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonDiskIsNotBlockDevice] = struct{}{}
 		log.Debugf("disk %s devType(%s) missmatch, wantType %s", ld.localDisk.Name, ld.localDisk.Spec.DiskAttributes.DevType, sys.BlockDeviceTypeDisk)
 		ld.setResult(FALSE)
 	}
@@ -133,6 +140,7 @@ func (ld *LocalDiskFilter) OwnerMatch(owner string) *LocalDiskFilter {
 		ld.localDisk.Spec.Owner == owner {
 		ld.setResult(TRUE)
 	} else {
+		ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonOwnerUnMatch] = struct{}{}
 		log.Infof("disk %s owner(%s) mismatch, owner in localdiskclaim is %s", ld.localDisk.Name, ld.localDisk.Spec.Owner, owner)
 		ld.setResult(FALSE)
 	}
@@ -159,6 +167,7 @@ func (ld *LocalDiskFilter) IsNameFormatMatch() *LocalDiskFilter {
 	if strings.HasPrefix(ld.localDisk.Name, v1alpha1.LocalDiskObjectPrefix) {
 		ld.setResult(TRUE)
 	} else {
+		ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonLocalDiskNameFormatUnMatch] = struct{}{}
 		log.Debugf("disk %s has deprecated format of name, this disk can be safely removed", ld.localDisk.Name)
 		ld.setResult(FALSE)
 	}
@@ -184,6 +193,7 @@ func (ld *LocalDiskFilter) LdNameMatch(ldNames []string) *LocalDiskFilter {
 	if found {
 		ld.setResult(TRUE)
 	} else {
+		ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonLocalDiskNameUnMatch] = struct{}{}
 		log.Debugf("disk %s is not specified in diskClaim", ld.localDisk.Name)
 		ld.setResult(FALSE)
 	}
@@ -208,6 +218,7 @@ func (ld *LocalDiskFilter) DevPathMatch(devPaths []string) *LocalDiskFilter {
 	if found {
 		ld.setResult(TRUE)
 	} else {
+		ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonDevPathUnMatch] = struct{}{}
 		log.Debugf("disk %s devPath %s is not specified in diskClaim", ld.localDisk.Name, ld.localDisk.Spec.DevicePath)
 		ld.setResult(FALSE)
 	}

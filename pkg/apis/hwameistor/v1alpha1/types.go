@@ -24,10 +24,30 @@ const (
 type LocalDiskClaimEventReason = string
 
 const (
-	LocalDiskClaimEventReasonBound      LocalDiskClaimEventReason = "LocalDiskClaimBound"
-	LocalDiskClaimEventReasonBoundFail  LocalDiskClaimEventReason = "LocalDiskClaimBoundFail"
-	LocalDiskClaimEventReasonAssignFail LocalDiskClaimEventReason = "LocalDiskClaimAssignFail"
-	LocalDiskClaimEventReasonExtend     LocalDiskClaimEventReason = "LocalDiskClaimExtend"
+	LocalDiskClaimEventReasonBound        LocalDiskClaimEventReason = "LocalDiskClaimBound"
+	LocalDiskClaimEventReasonBoundFail    LocalDiskClaimEventReason = "LocalDiskClaimBoundFail"
+	LocalDiskClaimEventReasonAssign       LocalDiskClaimEventReason = "LocalDiskClaimAssign"
+	LocalDiskClaimEventReasonAssignFail   LocalDiskClaimEventReason = "LocalDiskClaimAssignFail"
+	LocalDiskClaimEventReasonExtendFail   LocalDiskClaimEventReason = "LocalDiskClaimExtendFail"
+	LocalDiskClaimEventReasonExtend       LocalDiskClaimEventReason = "LocalDiskClaimExtend"
+	LocalDiskClaimEventReasonConsumed     LocalDiskClaimEventReason = "LocalDiskClaimConsumed"
+	LocalDiskClaimEventReasonConsumedFail LocalDiskClaimEventReason = "LocalDiskClaimConsumedFail"
+)
+
+type LocalDiskAssignFailReason = string
+
+const (
+	LocalDiskAssignFailReasonHasPartition               LocalDiskAssignFailReason = "LocalDiskAlreadyHasPartition"
+	LocalDiskAssignFailReasonUnAvailable                LocalDiskAssignFailReason = "LocalDiskUnAvailable"
+	LocalDiskAssignFailReasonOwnerUnMatch               LocalDiskAssignFailReason = "LocalDiskOwnerUnMatch"
+	LocalDiskAssignFailReasonInsufficientCapacity       LocalDiskAssignFailReason = "LocalDiskInsufficientCapacity"
+	LocalDiskAssignFailReasonDiskTypeUnMatch            LocalDiskAssignFailReason = "LocalDiskTypeUnMatch"
+	LocalDiskAssignFailReasonLocalDiskNameUnMatch       LocalDiskAssignFailReason = "LocalDiskNameUnMatch"
+	LocalDiskAssignFailReasonDevPathUnMatch             LocalDiskAssignFailReason = "LocalDiskDevPathUnMatch"
+	LocalDiskAssignFailReasonHasReserved                LocalDiskAssignFailReason = "LocalDiskHasReserved"
+	LocalDiskAssignFailReasonLocalDiskNameFormatUnMatch LocalDiskAssignFailReason = "LocalDiskNameFormatUnMatch"
+	LocalDiskAssignFailReasonNodeUnMatch                LocalDiskAssignFailReason = "LocalDiskNodeUnMatch"
+	LocalDiskAssignFailReasonDiskIsNotBlockDevice       LocalDiskAssignFailReason = "LocalDiskIsNotBlockDevice"
 )
 
 // states

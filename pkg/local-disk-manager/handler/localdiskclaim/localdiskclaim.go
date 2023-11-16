@@ -3,6 +3,7 @@ package localdiskclaim
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -79,6 +80,7 @@ func (ldcHandler *Handler) AssignFreeDisk() error {
 	localDiskHandler := diskHandler.NewLocalDiskHandler(ldcHandler.Client, ldcHandler.EventRecorder)
 	diskClaim := ldcHandler.diskClaim.DeepCopy()
 	diskList, err := localDiskHandler.ListNodeLocalDisk(diskClaim.Spec.NodeName)
+	localDiskFailedMessages := make(map[string][]string)
 	if err != nil {
 		return err
 	}
@@ -88,9 +90,16 @@ func (ldcHandler *Handler) AssignFreeDisk() error {
 	// Find suitable disks
 	for _, disk := range diskList.Items {
 		localDiskHandler.For(&disk)
-
 		// Disks that already assigned to this diskClaim will also be filtered in
 		if !localDiskHandler.FilterDisk(diskClaim) {
+			// append the disk name to failed message map when localdisk is assigned failed
+			filterFailMessages := localDiskHandler.GetFilterFailMessages()
+			for reason, _ := range filterFailMessages {
+				if _, ok := localDiskFailedMessages[reason]; !ok {
+					localDiskFailedMessages[reason] = []string{}
+				}
+				localDiskFailedMessages[reason] = append(localDiskFailedMessages[reason], disk.Name)
+			}
 			continue
 		}
 
@@ -104,6 +113,13 @@ func (ldcHandler *Handler) AssignFreeDisk() error {
 
 	// NOTE: Once found disk(s) already bound to this claim, return true directly
 	if len(finalAssignedDisks) <= 0 {
+		var fullFailMessages []string
+		for reason, diskNames := range localDiskFailedMessages {
+			fullMsg := reason + ": " + strings.Join(diskNames, ",")
+			fullFailMessages = append(fullFailMessages, fullMsg)
+		}
+		ldcHandler.EventRecorder.Event(diskClaim, v1.EventTypeWarning, v1alpha1.LocalDiskClaimEventReasonAssignFail, strings.Join(fullFailMessages, "/"))
+
 		log.Infof("There is no available disk assigned to %v", diskClaim.GetName())
 		return fmt.Errorf("there is no available disk assigned to %v", diskClaim.GetName())
 	}
