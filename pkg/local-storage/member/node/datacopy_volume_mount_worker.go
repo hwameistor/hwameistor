@@ -85,23 +85,23 @@ func (m *manager) processSyncVolumeMount(lvName string) error {
 		return nil
 	}
 
-	if cm.Data[datacopy.SyncConfigSyncDoneKey] == datacopy.SyncTrue {
+	if cm.Data[datacopy.SyncConfigSyncCompleteKey] == datacopy.SyncTrue {
 		m.logger.WithField("mountpoint", mountPoint).Debug("Trying to umount volume")
 		if err := m.mounter.Unmount(mountPoint); err != nil {
 			m.logger.WithField("mountpoint", mountPoint).WithError(err).Error("Failed to Unmount volume")
 			return err
 		}
 
-		// only update cm in source volume node
 		if m.name == sourceNodeName {
-			// update cm to indicate that source volume is unpublished
-			cm.Data[datacopy.SyncConfigSourceUnpublishKey] = datacopy.SyncTrue
-			if err = m.apiClient.Update(ctx, cm); err != nil {
-				m.logger.WithField("configmap", cm.Name).WithError(err).Error("Failed to update config as unpublished")
-				return err
-			}
-			m.logger.WithField("configmap", cm.Name).Debug("Successes to update config as unpublished")
+			cm.Data[datacopy.SyncConfigSourceNodeCompleteKey] = datacopy.SyncTrue
+		} else {
+			cm.Data[datacopy.SyncConfigTargetNodeCompleteKey] = datacopy.SyncTrue
 		}
+		if err = m.apiClient.Update(ctx, cm); err != nil {
+			m.logger.WithField("configmap", cm.Name).WithError(err).Error("Failed to update config for target node complete")
+			return err
+		}
+		m.logger.WithField("configmap", cm.Name).Debug("Successes to update config for nodes complete")
 		return nil
 	}
 
