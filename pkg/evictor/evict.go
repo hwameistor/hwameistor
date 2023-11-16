@@ -135,6 +135,9 @@ func (ev *evictor) Run(stopCh <-chan struct{}) error {
 	}
 	ev.lvMigrateInformer = lsFactory.Hwameistor().V1alpha1().LocalVolumeMigrates()
 	ev.lvMigrateInformer.Informer().AddIndexers(cache.Indexers{volumeNameIndex: lvMigrateVolumeNameIndexFunc})
+	ev.lvMigrateInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: ev.onMigrateAdd,
+	})
 	go ev.lvMigrateInformer.Informer().Run(stopCh)
 
 	go ev.startVolumeWorker(stopCh)
@@ -176,4 +179,13 @@ func isPodEvicted(pod *corev1.Pod) bool {
 	podFailed := pod.Status.Phase == corev1.PodFailed
 	podEvicted := pod.Status.Reason == "Evicted"
 	return podFailed && podEvicted
+}
+
+func (ev *evictor) onMigrateAdd(obj interface{}) {
+	lvm, _ := obj.(*localstorageapis.LocalVolumeMigrate)
+	for _, fnr := range lvm.Finalizers {
+		if fnr == evictionFinalizer {
+			ev.addEvictVolume(lvm.Spec.VolumeName, lvm.Spec.SourceNode)
+		}
+	}
 }
