@@ -7,6 +7,8 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
 
@@ -136,6 +138,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Setup Cache for field index
+	setIndexField(mgr.GetCache())
+
 	// if err := corev1.AddToScheme(mgr.GetScheme()); err != nil {
 	// 	log.WithError(err).Error("Failed to setup scheme for all core resources")
 	// 	os.Exit(1)
@@ -229,4 +234,29 @@ func getSystemConfig() (apisv1alpha1.SystemConfig, error) {
 		}
 	}
 	return config, nil
+}
+
+// setIndexField must be called after scheme has been added
+func setIndexField(cache cache.Cache) {
+	indexes := []struct {
+		field string
+		Func  func(client.Object) []string
+	}{
+		// indexer for LocalVolumeSnapshot
+		{
+			field: "spec.sourceVolume",
+			Func: func(obj client.Object) []string {
+				return []string{obj.(*apisv1alpha1.LocalVolumeSnapshot).Spec.SourceVolume}
+			},
+		},
+	}
+
+	for _, index := range indexes {
+		if err := cache.IndexField(context.Background(), &apisv1alpha1.LocalVolumeSnapshot{}, index.field, index.Func); err != nil {
+			log.Error(err, "failed to setup index field", "field", index.field)
+			// indexer is required, exit immediately if it fails, more details see issue: #1209
+			os.Exit(1)
+		}
+		log.Info("setup index field successfully", "field", index.field)
+	}
 }
