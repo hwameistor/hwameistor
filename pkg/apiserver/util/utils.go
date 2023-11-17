@@ -11,6 +11,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"os"
 	"strconv"
 	"strings"
@@ -77,4 +78,56 @@ func DataPatination[T any](origin []T, page, pageSize int32) []T {
 // ConvertNodeName e.g.(10.23.10.12 => 10-23-10-12)
 func ConvertNodeName(node string) string {
 	return strings.Replace(node, ".", "-", -1)
+}
+
+type ByEventName []*api.EventAction
+
+func (a ByEventName) Len() int {
+	return len(a)
+}
+
+func (a ByEventName) Less(i, j int) bool {
+	flag := false
+	compare := strings.Compare(a[i].ResourceName, a[j].ResourceName)
+	if compare < 0 {
+		flag = true
+	}
+	return flag
+}
+
+func (a ByEventName) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+type ByEventType []*api.EventAction
+
+func (a ByEventType) Len() int {
+	return len(a)
+}
+
+func (a ByEventType) Less(i, j int) bool {
+	flag := false
+	compare := strings.Compare(a[i].ResourceType, a[j].ResourceType)
+	if compare < 0 {
+		flag = true
+	}
+	return flag
+}
+
+func (a ByEventType) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+type ByEventTime []*api.EventAction
+
+func (a ByEventTime) Len() int {
+	return len(a)
+}
+
+func (a ByEventTime) Less(i, j int) bool {
+	return a[i].EventRecord.Time.Time.After(a[j].EventRecord.Time.Time)
+}
+
+func (a ByEventTime) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
 }

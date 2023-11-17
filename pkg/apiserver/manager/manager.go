@@ -25,6 +25,7 @@ type ServerManager struct {
 	ldController      *hwameistorctr.LocalDiskController
 	ldnController     *hwameistorctr.LocalDiskNodeController
 	authController    *hwameistorctr.AuthController
+	lvsController     *hwameistorctr.LocalSnapshotController
 }
 
 func NewServerManager(mgr mgrpkg.Manager, clientset *kubernetes.Clientset) (*ServerManager, error) {
@@ -106,4 +107,12 @@ func (m *ServerManager) AuthController() *hwameistorctr.AuthController {
 		m.authController = hwameistorctr.NewAuthController(m.mgr.GetClient(), recorder)
 	}
 	return m.authController
+}
+
+func (m *ServerManager) SnapshotController() *hwameistorctr.LocalSnapshotController {
+	var recorder record.EventRecorder
+	if m.lvsController == nil {
+		m.lvsController = hwameistorctr.NewLocalSnapshotController(m.mgr.GetClient(), recorder)
+	}
+	return m.lvsController
 }

@@ -47,6 +47,52 @@ definitions:
       data:
         $ref: '#/definitions/api.DrbdEnableSetting'
     type: object
+  api.Event:
+    properties:
+      apiVersion:
+        description: |-
+          APIVersion defines the versioned schema of this representation of an object.
+          Servers should convert recognized schemas to the latest internal value, and
+          may reject unrecognized values.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+          +optional
+        type: string
+      kind:
+        description: |-
+          Kind is a string value representing the REST resource this object represents.
+          Servers may infer this from the endpoint the client submits requests to.
+          Cannot be updated.
+          In CamelCase.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+          +optional
+        type: string
+      metadata:
+        $ref: '#/definitions/v1.ObjectMeta'
+      spec:
+        $ref: '#/definitions/v1alpha1.EventSpec'
+      status:
+        $ref: '#/definitions/v1alpha1.EventStatus'
+    type: object
+  api.EventAction:
+    properties:
+      eventRecord:
+        $ref: '#/definitions/v1alpha1.EventRecord'
+      resourceName:
+        type: string
+      resourceType:
+        type: string
+    type: object
+  api.EventActionList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/api.EventAction'
+        type: array
+      pagination:
+        allOf:
+        - $ref: '#/definitions/api.Pagination'
+        description: page 信息
+    type: object
   api.LocalDiskInfo:
     properties:
       apiVersion:
@@ -243,6 +289,43 @@ definitions:
         type: string
       errcode:
         type: integer
+    type: object
+  api.Snapshot:
+    properties:
+      apiVersion:
+        description: |-
+          APIVersion defines the versioned schema of this representation of an object.
+          Servers should convert recognized schemas to the latest internal value, and
+          may reject unrecognized values.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+          +optional
+        type: string
+      kind:
+        description: |-
+          Kind is a string value representing the REST resource this object represents.
+          Servers may infer this from the endpoint the client submits requests to.
+          Cannot be updated.
+          In CamelCase.
+          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+          +optional
+        type: string
+      metadata:
+        $ref: '#/definitions/v1.ObjectMeta'
+      spec:
+        $ref: '#/definitions/v1alpha1.LocalVolumeSnapshotSpec'
+      status:
+        $ref: '#/definitions/v1alpha1.LocalVolumeSnapshotStatus'
+    type: object
+  api.SnapshotList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/api.Snapshot'
+        type: array
+      pagination:
+        allOf:
+        - $ref: '#/definitions/api.Pagination'
+        description: page 信息
     type: object
   api.State:
     enum:
@@ -568,6 +651,13 @@ definitions:
       data:
         $ref: '#/definitions/api.VolumeConvertInfo'
     type: object
+  api.VolumeExpandInfo:
+    properties:
+      targetCapacityBytes:
+        type: integer
+      volumeName:
+        type: string
+    type: object
   api.VolumeExpandOperation:
     properties:
       apiVersion:
@@ -593,6 +683,19 @@ definitions:
         $ref: '#/definitions/v1alpha1.LocalVolumeExpandSpec'
       status:
         $ref: '#/definitions/v1alpha1.LocalVolumeExpandStatus'
+    type: object
+  api.VolumeExpandReqBody:
+    properties:
+      abort:
+        type: boolean
+      targetCapacity:
+        description: VolumeName     string `json:"volumeName,omitempty"`
+        type: string
+    type: object
+  api.VolumeExpandRspBody:
+    properties:
+      data:
+        $ref: '#/definitions/api.VolumeExpandInfo'
     type: object
   api.VolumeGroup:
     properties:
@@ -840,6 +943,7 @@ definitions:
         description: |-
           Names by which this image is known.
           e.g. ["k8s.gcr.io/hyperkube:v1.0.7", "dockerhub.io/google_containers/hyperkube:v1.0.7"]
+          +optional
         items:
           type: string
         type: array
@@ -886,9 +990,23 @@ definitions:
         description: |-
           Operation is the type of operation which lead to this ManagedFieldsEntry being created.
           The only valid values for this field are 'Apply' and 'Update'.
+      subresource:
+        description: |-
+          Subresource is the name of the subresource used to update that object, or
+          empty string if the object was updated through the main resource. The
+          value of this field is used to distinguish between managers, even if they
+          share the same name. For example, a status update will be distinct from a
+          regular update using the same manager name.
+          Note that the APIVersion field is not related to the Subresource field and
+          it always corresponds to the version of the main resource.
+        type: string
       time:
         description: |-
-          Time is timestamp of when these fields were set. It should always be empty if Operation is 'Apply'
+          Time is the timestamp of when the ManagedFields entry was added. The
+          timestamp will also be updated if a field is added, the manager
+          changes any of the owned fields value or removes a field. The
+          timestamp does not update when a field is removed from the entry
+          because another manager took it over.
           +optional
         type: string
     type: object
@@ -956,17 +1074,17 @@ definitions:
   v1.NodeAddressType:
     enum:
     - Hostname
-    - ExternalIP
     - InternalIP
-    - ExternalDNS
+    - ExternalIP
     - InternalDNS
+    - ExternalDNS
     type: string
     x-enum-varnames:
     - NodeHostName
-    - NodeExternalIP
     - NodeInternalIP
-    - NodeExternalDNS
+    - NodeExternalIP
     - NodeInternalDNS
+    - NodeExternalDNS
   v1.NodeCondition:
     properties:
       lastHeartbeatTime:
@@ -1101,8 +1219,7 @@ definitions:
         allOf:
         - $ref: '#/definitions/v1.NodeConfigSource'
         description: |-
-          If specified, the source to get node configuration from
-          The DynamicKubeletConfig feature gate must be enabled for the Kubelet to use this field
+          Deprecated: Previously used to specify the source of the node's configuration for the DynamicKubeletConfig feature. This feature is removed from Kubelets as of 1.24 and will be fully removed in 1.26.
           +optional
       externalID:
         description: |-
@@ -1243,7 +1360,7 @@ definitions:
         type: string
       containerRuntimeVersion:
         description: ContainerRuntime Version reported by the node through runtime
-          remote API (e.g. docker://1.5.0).
+          remote API (e.g. containerd://1.4.2).
         type: string
       kernelVersion:
         description: Kernel Version reported by the node from 'uname -r' (e.g. 3.16.0-0.bpo.4-amd64).
@@ -1288,9 +1405,12 @@ definitions:
         type: object
       clusterName:
         description: |-
-          The name of the cluster which the object belongs to.
-          This is used to distinguish resources with same name and namespace in different clusters.
-          This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.
+          Deprecated: ClusterName is a legacy field that was always cleared by
+          the system and never used; it will be removed completely in 1.25.
+
+          The name in the go struct is changed to help clients detect
+          accidental use.
+
           +optional
         type: string
       creationTimestamp:
@@ -1365,10 +1485,7 @@ definitions:
           and may be truncated by the length of the suffix required to make the value
           unique on the server.
 
-          If this field is specified and the generated name exists, the server will
-          NOT return a 409 - instead, it will either return 201 Created or 500 with Reason
-          ServerTimeout indicating a unique name could not be found in the time allotted, and the client
-          should retry (optionally after the time indicated in the Retry-After header).
+          If this field is specified and the generated name exists, the server will return a 409.
 
           Applied only if Name is not specified.
           More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency
@@ -1454,13 +1571,7 @@ definitions:
         type: string
       selfLink:
         description: |-
-          SelfLink is a URL representing this object.
-          Populated by the system.
-          Read-only.
-
-          DEPRECATED
-          Kubernetes will stop propagating this field in 1.20 release and the field is planned
-          to be removed in 1.21 release.
+          Deprecated: selfLink is a legacy read-only field that is no longer populated by the system.
           +optional
         type: string
       uid:
@@ -1535,6 +1646,8 @@ definitions:
           If true, AND if the owner has the "foregroundDeletion" finalizer, then
           the owner cannot be deleted from the key-value store until this
           reference is removed.
+          See https://kubernetes.io/docs/concepts/architecture/garbage-collection/#foreground-deletion
+          for how the garbage collector interacts with this field and enforces the foreground deletion.
           Defaults to false.
           To set this field, a user needs "delete" permission of the owner,
           otherwise 422 (Unprocessable Entity) will be returned.
@@ -1708,11 +1821,64 @@ definitions:
       capacity:
         description: Capacity of the disk in bytes
         type: integer
+      devicePaths:
+        description: |-
+          Match the device path of Localdisk
+          DevicePaths match all disks if DevicePaths are empty
+        items:
+          type: string
+        type: array
       diskType:
         description: |-
           DiskType represents the type of drive like SSD, HDD etc.,
           +optional
         type: string
+      localDiskNames:
+        description: |-
+          Match the name of Localdisk
+          LocalDiskNames match all disks if LocalDiskNames are empty
+        items:
+          type: string
+        type: array
+    type: object
+  v1alpha1.EventRecord:
+    properties:
+      action:
+        description: The action is the operation on the resource, such as Migrate
+          a LocalVolume
+        type: string
+      actionContent:
+        description: The content of the action which is a JSON string
+        type: string
+      id:
+        description: id is unique
+        type: string
+      state:
+        description: The state of the action
+        type: string
+      stateContent:
+        description: The content of the action state which is a JSON string
+        type: string
+      time:
+        description: The time when does the action happen
+        type: string
+    type: object
+  v1alpha1.EventSpec:
+    properties:
+      records:
+        items:
+          $ref: '#/definitions/v1alpha1.EventRecord'
+        type: array
+      resourceName:
+        description: Name of the resource
+        type: string
+      resourceType:
+        description: |-
+          HwameiStor resource type: Cluster, LocalStorageNode, LocalDiskNode, Pool,  LocalVolume, LocalDiskVolume, LocalDisk,
+          +kubebuilder:validation:Enum:=Cluster;StorageNode;DiskNode;Pool;Volume;DiskVolume;Disk
+        type: string
+    type: object
+  v1alpha1.EventStatus:
     type: object
   v1alpha1.EvictorStatus:
     properties:
@@ -2242,7 +2408,7 @@ definitions:
         description: +kubebuilder:default:=false
         type: boolean
       migrateAllVols:
-        description: +kubebuilder:default:=false
+        description: +kubebuilder:default:=true
         type: boolean
       sourceNode:
         description: source NodeNames
@@ -2271,6 +2437,11 @@ definitions:
       targetNode:
         description: record the node where the specified replica is migrated to
         type: string
+      volumes:
+        description: record all the volumes to be migrated
+        items:
+          type: string
+        type: array
     type: object
   v1alpha1.LocalVolumeReplicaSpec:
     properties:
@@ -2338,6 +2509,59 @@ definitions:
           Synced is the sync state of the volume replica, which is important in HA volume
           +kubebuilder:default:=false
         type: boolean
+    type: object
+  v1alpha1.LocalVolumeSnapshotSpec:
+    properties:
+      accessibility:
+        allOf:
+        - $ref: '#/definitions/v1alpha1.AccessibilityTopology'
+        description: |-
+          NOTE: We only take snapshots on the volume replica exist at the moment!
+          Accessibility is the topology requirement of the volume snapshot. It describes how to locate and distribute the volume replicas snapshot.
+      delete:
+        description: +kubebuilder:default:=false
+        type: boolean
+      requiredCapacityBytes:
+        description: |-
+          RequiredCapacityBytes specifies the space reserved for the snapshot
+          +kubebuilder:validation:Required
+          +kubebuilder:validation:Minimum:=4194304
+        type: integer
+      sourceVolume:
+        description: |-
+          SourceVolume specifies the source volume of the snapshot
+          +kubebuilder:validation:Required
+        type: string
+    type: object
+  v1alpha1.LocalVolumeSnapshotStatus:
+    properties:
+      allocatedCapacityBytes:
+        description: |-
+          AllocatedCapacityBytes is the real allocated capacity in bytes
+          In case of HA volume with multiple replicas, the value is equal to the one of a replica's snapshot size
+        type: integer
+      attr:
+        allOf:
+        - $ref: '#/definitions/v1alpha1.VolumeSnapshotAttr'
+        description: Attribute indicates attr on snapshot
+      creationTime:
+        description: |-
+          CreationTime is the host real snapshot creation time
+          In case of HA volume with multiple replicas, the value is equal to the one of a replica's snapshot creation time
+        type: string
+      message:
+        description: Message error message to describe some states
+        type: string
+      replicaSnapshots:
+        description: ReplicaSnapshots represents the actual snapshots of replica
+        items:
+          type: string
+        type: array
+      state:
+        allOf:
+        - $ref: '#/definitions/v1alpha1.State'
+        description: State is the phase of volume replica, e.g. Creating, Ready, NotReady,
+          ToBeDeleted, Deleted
     type: object
   v1alpha1.LocalVolumeSpec:
     properties:
@@ -2490,6 +2714,11 @@ definitions:
     type: object
   v1alpha1.State:
     enum:
+    - ""
+    - ToBeMounted
+    - ToBeUnMount
+    - Mounted
+    - NotReady
     - Ready
     - Maintain
     - Offline
@@ -2524,13 +2753,13 @@ definitions:
     - Available
     - InUse
     - Offline
-    - ""
-    - ToBeMounted
-    - ToBeUnMount
-    - Mounted
-    - NotReady
     type: string
     x-enum-varnames:
+    - MountPointStateEmpty
+    - MountPointToBeMounted
+    - MountPointToBeUnMount
+    - MountPointMounted
+    - MountPointNotReady
     - NodeStateReady
     - NodeStateMaintain
     - NodeStateOffline
@@ -2565,11 +2794,6 @@ definitions:
     - DiskStateAvailable
     - DiskStateInUse
     - DiskStateOffline
-    - MountPointStateEmpty
-    - MountPointToBeMounted
-    - MountPointToBeUnMount
-    - MountPointMounted
-    - MountPointNotReady
   v1alpha1.StorageNodeCondition:
     properties:
       lastTransitionTime:
@@ -2674,6 +2898,15 @@ definitions:
       primary:
         type: boolean
     type: object
+  v1alpha1.VolumeSnapshotAttr:
+    properties:
+      invalid:
+        description: Invalid set true if snapshot is expiration
+        type: boolean
+      merging:
+        description: Merging set true if snapshot is merging now
+        type: boolean
+    type: object
 info:
   contact: {}
 paths:
@@ -2774,6 +3007,66 @@ paths:
       summary: 摘要 高可用设置
       tags:
       - Setting
+  /cluster/events:
+    get:
+      consumes:
+      - application/json
+      description: EventList 排序  resourceType枚举（Cluster;StorageNode;DiskNode;Pool;Volume;DiskVolume;Disk）  sort枚举
+        （time、name、type）
+      parameters:
+      - description: page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      - description: resourceName
+        in: query
+        name: resourceName
+        type: string
+      - description: resourceType
+        in: query
+        name: resourceType
+        type: string
+      - description: sort
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.EventActionList'
+      summary: 摘要 获取审计日志
+      tags:
+      - Metric
+  /cluster/events/:eventName:
+    get:
+      consumes:
+      - application/json
+      description: EventGet
+      parameters:
+      - description: eventName
+        in: path
+        name: eventName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Event'
+      summary: 摘要 获取指定事件
+      tags:
+      - Metric
   /cluster/localdisknodes:
     get:
       consumes:
@@ -2977,6 +3270,41 @@ paths:
           schema:
             $ref: '#/definitions/api.RspFailBody'
       summary: 摘要 更新磁盘
+      tags:
+      - Node
+  /cluster/nodes/{nodeName}/disks/{devicePath}/owner:
+    post:
+      consumes:
+      - application/json
+      description: post SetStorageNodeDiskOwner devicePath i.g /dev/sdb /dev/sdc ...
+      parameters:
+      - description: nodeName
+        in: path
+        name: nodeName
+        required: true
+        type: string
+      - description: devicePath
+        in: path
+        name: devicePath
+        required: true
+        type: string
+      - description: reqBody
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/api.DiskReqBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.DiskReqBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 更新磁盘owner
       tags:
       - Node
   /cluster/nodes/{nodeName}/disks/{diskName}:
@@ -3228,6 +3556,32 @@ paths:
       summary: 摘要 获取操作记录列表
       tags:
       - Metric
+  /cluster/operations/:operationName:
+    get:
+      consumes:
+      - application/json
+      description: OperationGet eventType枚举 (Migrate、Expand、Convert)
+      parameters:
+      - description: operationName
+        in: path
+        name: operationName
+        required: true
+        type: string
+      - description: eventType
+        in: query
+        name: eventType
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Operation'
+      summary: 摘要 获取指定操作记录
+      tags:
+      - Metric
   /cluster/pools:
     get:
       consumes:
@@ -3400,6 +3754,44 @@ paths:
       summary: Storage pool expand
       tags:
       - Pool
+  /cluster/snapshots:
+    get:
+      consumes:
+      - application/json
+      description: list Snapshot
+      parameters:
+      - description: page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      - description: snapshotName
+        in: query
+        name: snapshotName
+        type: string
+      - description: state
+        in: query
+        name: state
+        type: string
+      - description: volumeName
+        in: query
+        name: volumeName
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.SnapshotList'
+      summary: 摘要 全局快照列表展式
+      tags:
+      - Snapshot
   /cluster/status:
     get:
       consumes:
@@ -3586,6 +3978,100 @@ paths:
       summary: 摘要 指定数据卷转换操作
       tags:
       - Volume
+  /cluster/volumes/{volumeName}/events:
+    get:
+      consumes:
+      - application/json
+      description: get VolumeOperation
+      parameters:
+      - description: volumeName
+        in: path
+        name: volumeName
+        required: true
+        type: string
+      - description: page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      - description: action
+        in: query
+        name: action
+        type: string
+      - description: sort
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.EventActionList'
+      summary: 摘要 获取指定数据卷审计日志  sort=time ,先不做按操作查询
+      tags:
+      - Volume
+  /cluster/volumes/{volumeName}/expand:
+    get:
+      consumes:
+      - application/json
+      description: get GetVolumeExpandOperation 状态枚举 （Submitted、InProgress、Completed、ToBeAborted、Aborted）
+      parameters:
+      - description: volumeName
+        in: path
+        name: volumeName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.VolumeExpandOperation'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 获取指定数据卷扩容操作
+      tags:
+      - Volume
+    post:
+      consumes:
+      - application/json
+      description: post VolumeExpandOperation
+      parameters:
+      - description: volumeName
+        in: path
+        name: volumeName
+        required: true
+        type: string
+      - description: reqBody
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.VolumeExpandReqBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.VolumeExpandRspBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 指定数据卷扩容操作
+      tags:
+      - Volume
   /cluster/volumes/{volumeName}/migrate:
     get:
       consumes:
@@ -3698,6 +4184,49 @@ paths:
           schema:
             $ref: '#/definitions/api.VolumeReplicaList'
       summary: 摘要 获取指定数据卷的副本列表信息
+      tags:
+      - Volume
+  /cluster/volumes/{volumeName}/snapshot:
+    get:
+      consumes:
+      - application/json
+      description: get VolumeSnapshotList
+      parameters:
+      - description: volumeName
+        in: path
+        name: volumeName
+        required: true
+        type: string
+      - description: page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: pageSize
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      - description: state
+        in: query
+        name: state
+        type: string
+      - description: snapshotName
+        in: query
+        name: snapshotName
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.SnapshotList'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.RspFailBody'
+      summary: 摘要 获取指定数据卷快照操作 快照状态枚举 (Creating, Ready, NotReady, ToBeDeleted, Deleted）
       tags:
       - Volume
 swagger: "2.0"

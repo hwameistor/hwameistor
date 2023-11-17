@@ -421,6 +421,29 @@ func (lvController *LocalVolumeController) CreateVolumeExpand(volName string, ta
 		return nil, fmt.Errorf("volume %v is not exists", volName)
 	}
 
+	//Determine whether there is enough space
+	nodes := lv.Spec.Accessibility.Nodes
+	var freeCount int64
+	for _, name := range nodes {
+		node := &apisv1alpha1.LocalStorageNode{}
+		if err := lvController.Client.Get(context.Background(), types.NamespacedName{Name: name}, node); err != nil {
+			return nil, err
+		}
+		if freeCount == 0 || node.Status.Pools[lv.Spec.PoolName].FreeCapacityBytes < freeCount {
+			freeCount = node.Status.Pools[lv.Spec.PoolName].FreeCapacityBytes
+		}
+	}
+	// Parse the targetCapacity
+	quantity, err := resource.ParseQuantity(targetCapacity)
+	if err != nil {
+		return nil, err
+	}
+
+	if quantity.Value() > freeCount {
+		log.Errorf("freeCount is %d , targetCapacity is %d", freeCount, quantity.Value())
+		return nil, fmt.Errorf("Insufficient space, expansion failed")
+	}
+
 	// Get the pvc
 	pvc := &corev1.PersistentVolumeClaim{}
 	pvcKey := types.NamespacedName{
@@ -428,12 +451,6 @@ func (lvController *LocalVolumeController) CreateVolumeExpand(volName string, ta
 		Name:      lv.Spec.PersistentVolumeClaimName,
 	}
 	err = lvController.Client.Get(context.TODO(), pvcKey, pvc)
-	if err != nil {
-		return nil, err
-	}
-
-	// Parse the targetCapacity
-	quantity, err := resource.ParseQuantity(targetCapacity)
 	if err != nil {
 		return nil, err
 	}

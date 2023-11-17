@@ -2,7 +2,9 @@ package hwameistor
 
 import (
 	"context"
+	"fmt"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"math"
 	"sort"
 	"strings"
@@ -24,6 +26,12 @@ import (
 const (
 	hwameistorPrefix   = "hwameistor"
 	nodeStorageSortNum = 5
+	TimeSort           = "time"
+	TypeSort           = "type"
+	NameSort           = "name"
+	Migrate            = "Migrate"
+	Expand             = "Expand"
+	Convert            = "Convert"
 )
 
 type MetricController struct {
@@ -125,7 +133,7 @@ func (mController *MetricController) GetNodeStorageUseMetric(storagepoolclass st
 	return nodeStorageUseMetric, nil
 }
 
-func (mController *MetricController) OperationListMetric(page, pageSize int32) (*hwameistorapi.OperationMetric, error) {
+func (mController *MetricController) OperationListMetric(page, pageSize int32, name string) (*hwameistorapi.OperationMetric, error) {
 	var operationMetric = &hwameistorapi.OperationMetric{}
 	var operationList []hwameistorapi.Operation
 	lvmList := apisv1alpha1.LocalVolumeMigrateList{}
@@ -134,14 +142,16 @@ func (mController *MetricController) OperationListMetric(page, pageSize int32) (
 	}
 
 	for _, item := range lvmList.Items {
-		var operation hwameistorapi.Operation
-		operation.EventName = item.Name
-		operation.EventType = item.Kind
-		operation.LocalVolumeName = item.Spec.VolumeName
-		operation.Status = hwameistorapi.StateConvert(item.Status.State)
-		operation.StartTime = item.CreationTimestamp.Time
-		operation.Description = item.Status.Message
-		operationList = append(operationList, operation)
+		if name != "" && strings.Contains(item.Name, name) {
+			var operation hwameistorapi.Operation
+			operation.EventName = item.Name
+			operation.EventType = item.Kind
+			operation.LocalVolumeName = item.Spec.VolumeName
+			operation.Status = hwameistorapi.StateConvert(item.Status.State)
+			operation.StartTime = item.CreationTimestamp.Time
+			operation.Description = item.Status.Message
+			operationList = append(operationList, operation)
+		}
 	}
 
 	lvcList := apisv1alpha1.LocalVolumeConvertList{}
@@ -150,14 +160,16 @@ func (mController *MetricController) OperationListMetric(page, pageSize int32) (
 	}
 
 	for _, item := range lvcList.Items {
-		var operation hwameistorapi.Operation
-		operation.EventName = item.Name
-		operation.EventType = item.Kind
-		operation.Status = hwameistorapi.StateConvert(item.Status.State)
-		operation.StartTime = item.CreationTimestamp.Time
-		operation.EndTime = time.Now()
-		operation.Description = item.Status.Message
-		operationList = append(operationList, operation)
+		if name != "" && strings.Contains(item.Name, name) {
+			var operation hwameistorapi.Operation
+			operation.EventName = item.Name
+			operation.EventType = item.Kind
+			operation.Status = hwameistorapi.StateConvert(item.Status.State)
+			operation.StartTime = item.CreationTimestamp.Time
+			operation.EndTime = time.Now()
+			operation.Description = item.Status.Message
+			operationList = append(operationList, operation)
+		}
 	}
 
 	lveList := apisv1alpha1.LocalVolumeExpandList{}
@@ -166,14 +178,16 @@ func (mController *MetricController) OperationListMetric(page, pageSize int32) (
 	}
 
 	for _, item := range lveList.Items {
-		var operation hwameistorapi.Operation
-		operation.EventName = item.Name
-		operation.EventType = item.Kind
-		operation.Status = hwameistorapi.StateConvert(item.Status.State)
-		operation.StartTime = item.CreationTimestamp.Time
-		operation.EndTime = time.Now()
-		operation.Description = item.Status.Message
-		operationList = append(operationList, operation)
+		if name != "" && strings.Contains(item.Name, name) {
+			var operation hwameistorapi.Operation
+			operation.EventName = item.Name
+			operation.EventType = item.Kind
+			operation.Status = hwameistorapi.StateConvert(item.Status.State)
+			operation.StartTime = item.CreationTimestamp.Time
+			operation.EndTime = time.Now()
+			operation.Description = item.Status.Message
+			operationList = append(operationList, operation)
+		}
 	}
 
 	var operations []hwameistorapi.Operation
@@ -194,6 +208,57 @@ func (mController *MetricController) OperationListMetric(page, pageSize int32) (
 	operationMetric.Page = pagination
 
 	return operationMetric, nil
+}
+
+func (mController *MetricController) GetOperation(eventName, eventType string) (*hwameistorapi.Operation, error) {
+
+	switch eventType {
+	case Migrate:
+		lvm := apisv1alpha1.LocalVolumeMigrate{}
+		if err := mController.Client.Get(context.Background(), types.NamespacedName{Name: eventName}, &lvm); err != nil {
+			return nil, err
+		}
+		var operation hwameistorapi.Operation
+		operation.EventName = lvm.Name
+		operation.EventType = lvm.Kind
+		operation.LocalVolumeName = lvm.Spec.VolumeName
+		operation.Status = hwameistorapi.StateConvert(lvm.Status.State)
+		operation.StartTime = lvm.CreationTimestamp.Time
+		operation.Description = lvm.Status.Message
+		return &operation, nil
+
+	case Convert:
+		lvc := apisv1alpha1.LocalVolumeConvert{}
+		if err := mController.Client.Get(context.Background(), types.NamespacedName{Name: eventName}, &lvc); err != nil {
+			return nil, err
+		}
+		var operation hwameistorapi.Operation
+		operation.EventName = lvc.Name
+		operation.EventType = lvc.Kind
+		operation.LocalVolumeName = lvc.Spec.VolumeName
+		operation.Status = hwameistorapi.StateConvert(lvc.Status.State)
+		operation.StartTime = lvc.CreationTimestamp.Time
+		operation.Description = lvc.Status.Message
+		return &operation, nil
+
+	case Expand:
+		lve := apisv1alpha1.LocalVolumeExpand{}
+		if err := mController.Client.Get(context.Background(), types.NamespacedName{Name: eventName}, &lve); err != nil {
+			return nil, err
+		}
+
+		var operation hwameistorapi.Operation
+		operation.EventName = lve.Name
+		operation.EventType = lve.Kind
+		operation.LocalVolumeName = lve.Spec.VolumeName
+		operation.Status = hwameistorapi.StateConvert(lve.Status.State)
+		operation.StartTime = lve.CreationTimestamp.Time
+		operation.Description = lve.Status.Message
+		return &operation, nil
+
+	default:
+		return nil, fmt.Errorf("Type error, only the following types are supported:Migrate,Expand,Convert")
+	}
 }
 
 func (mController *MetricController) getBaseCapacityMetric() error {
@@ -519,4 +584,111 @@ func (mController *MetricController) convertNodeStorageUseMetric(storagepoolclas
 	}
 
 	return nodeStorageUseMetric
+}
+
+func (mController *MetricController) EventList(queryPage hwameistorapi.QueryPage) (*hwameistorapi.EventActionList, error) {
+	var eventList = &hwameistorapi.EventActionList{}
+	evls, err := mController.listEvent(queryPage)
+	log.Infof("listEvent vols = %v", evls)
+	if err != nil {
+		log.WithError(err).Error("Failed to listEvent")
+		return nil, err
+	}
+
+	if queryPage.Sort == TimeSort {
+		a := utils.ByEventTime(evls)
+		sort.Sort(a)
+	} else if queryPage.Sort == TypeSort {
+		a := utils.ByEventType(evls)
+		sort.Sort(a)
+	} else if queryPage.Sort == NameSort {
+		a := utils.ByEventName(evls)
+		sort.Sort(a)
+	}
+
+	eventList.EventActions = utils.DataPatination(evls, queryPage.Page, queryPage.PageSize)
+	if len(evls) == 0 {
+		eventList.EventActions = []*hwameistorapi.EventAction{}
+	}
+
+	var pagination = &hwameistorapi.Pagination{}
+	pagination.Page = queryPage.Page
+	pagination.PageSize = queryPage.PageSize
+	pagination.Total = uint32(len(evls))
+	if len(evls) == 0 {
+		pagination.Pages = 0
+	} else {
+		pagination.Pages = int32(math.Ceil(float64(len(evls)) / float64(queryPage.PageSize)))
+	}
+	eventList.Page = pagination
+
+	return eventList, nil
+}
+
+func (mController *MetricController) listEvent(queryPage hwameistorapi.QueryPage) ([]*hwameistorapi.EventAction, error) {
+	evList := &apisv1alpha1.EventList{}
+	if err := mController.Client.List(context.TODO(), evList); err != nil {
+		log.WithError(err).Error("Failed to list LocalVolumes")
+		return nil, err
+	}
+	log.Infof("listLocalVolume queryPage = %v, queryPage.VolumeState = %v", queryPage, queryPage.VolumeState)
+
+	var eventActions []*hwameistorapi.EventAction
+	for _, ev := range evList.Items {
+		if (queryPage.ResourceName == "") && (queryPage.ResourceType == "") {
+			for _, action := range ev.Spec.Records {
+				ea := &hwameistorapi.EventAction{}
+				ea.EventRecord = action
+				ea.ResourceName = ev.Spec.ResourceName
+				ea.ResourceType = ev.Spec.ResourceType
+				eventActions = append(eventActions, ea)
+			}
+		} else if (queryPage.ResourceName != "" && strings.Contains(ev.Spec.ResourceName, queryPage.ResourceName)) && (queryPage.ResourceType == "") {
+			for _, action := range ev.Spec.Records {
+				ea := &hwameistorapi.EventAction{}
+				ea.EventRecord = action
+				ea.ResourceName = ev.Spec.ResourceName
+				ea.ResourceType = ev.Spec.ResourceType
+				eventActions = append(eventActions, ea)
+			}
+		} else if (queryPage.ResourceName == "") && (queryPage.ResourceType != "" && queryPage.ResourceType == ev.Spec.ResourceType) {
+			for _, action := range ev.Spec.Records {
+				ea := &hwameistorapi.EventAction{}
+				ea.EventRecord = action
+				ea.ResourceName = ev.Spec.ResourceName
+				ea.ResourceType = ev.Spec.ResourceType
+				eventActions = append(eventActions, ea)
+			}
+		} else if (queryPage.ResourceName != "" && strings.Contains(ev.Spec.ResourceName, queryPage.ResourceName)) && (queryPage.ResourceType != "" && queryPage.ResourceType == ev.Spec.ResourceType) {
+			for _, action := range ev.Spec.Records {
+				ea := &hwameistorapi.EventAction{}
+				ea.EventRecord = action
+				ea.ResourceName = ev.Spec.ResourceName
+				ea.ResourceType = ev.Spec.ResourceType
+				eventActions = append(eventActions, ea)
+			}
+		}
+	}
+
+	if queryPage.Action != "" {
+		var eas []*hwameistorapi.EventAction
+		for _, action := range eventActions {
+			if action.EventRecord.Action == queryPage.Action {
+				eas = append(eas, action)
+			}
+		}
+		eventActions = eas
+	}
+
+	return eventActions, nil
+}
+
+func (mController *MetricController) GetEvent(eventName string) (*hwameistorapi.Event, error) {
+	ev := apisv1alpha1.Event{}
+	if err := mController.Client.Get(context.Background(), types.NamespacedName{Name: eventName}, &ev); err != nil {
+		return nil, err
+	}
+	var event = &hwameistorapi.Event{}
+	event.Event = ev
+	return event, nil
 }

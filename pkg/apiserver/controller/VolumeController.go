@@ -20,6 +20,10 @@ type IVolumeController interface {
 	GetVolumeConvertOperation(ctx *gin.Context)
 	VolumeConvertOperation(ctx *gin.Context)
 	VolumeOperationGet(ctx *gin.Context)
+	VolumeEventList(ctx *gin.Context)
+	GetVolumeExpandOperation(ctx *gin.Context)
+	VolumeExpandOperation(ctx *gin.Context)
+	VolumeSnapshotList(ctx *gin.Context)
 }
 
 type VolumeController struct {
@@ -379,4 +383,189 @@ func (v *VolumeController) VolumeOperationGet(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, volumeOperation)
+}
+
+// VolumeEventList godoc
+// @Summary 摘要 获取指定数据卷审计日志  sort=time ,先不做按操作查询
+// @Description get VolumeOperation
+// @Tags        Volume
+// @Param       volumeName path string true "volumeName"
+// @Param       page query int32 true "page"
+// @Param       pageSize query int32 true "pageSize"
+// @Param       action query string false "action"
+// @Param       sort query string false "sort"
+// @Accept      json
+// @Produce     json
+// @Success     200 {object}  api.EventActionList
+// @Router      /cluster/volumes/{volumeName}/events [get]
+func (v *VolumeController) VolumeEventList(ctx *gin.Context) {
+	var failRsp hwameistorapi.RspFailBody
+
+	// 获取path中的name
+	volumeName := ctx.Param("volumeName")
+	action := ctx.Query("action")
+	sort := ctx.Query("sort")
+	page := ctx.Query("page")
+	pageSize := ctx.Query("pageSize")
+	p, _ := strconv.ParseInt(page, 10, 32)
+	ps, _ := strconv.ParseInt(pageSize, 10, 32)
+
+	if volumeName == "" {
+		failRsp.ErrCode = 203
+		failRsp.Desc = "volumeName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
+		return
+	}
+
+	var queryPage hwameistorapi.QueryPage
+	queryPage.ResourceName = volumeName
+	queryPage.Action = action
+	queryPage.Sort = sort
+	queryPage.Page = int32(p)
+	queryPage.PageSize = int32(ps)
+
+	events, err := v.m.MetricController().EventList(queryPage)
+	if err != nil {
+		failRsp.ErrCode = http.StatusInternalServerError
+		failRsp.Desc = "VolumeEventList Failed: " + err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, events)
+}
+
+// VolumeExpandOperation godoc
+// @Summary 摘要 指定数据卷扩容操作
+// @Description post VolumeExpandOperation
+// @Tags        Volume
+// @Param       volumeName path string true "volumeName"
+// @Param       body body api.VolumeExpandReqBody true "reqBody"
+// @Accept      json
+// @Produce     json
+// @Success     200 {object}  api.VolumeExpandRspBody
+// @Failure     500 {object}  api.RspFailBody
+// @Router      /cluster/volumes/{volumeName}/expand [post]
+func (v *VolumeController) VolumeExpandOperation(ctx *gin.Context) {
+	var failRsp hwameistorapi.RspFailBody
+
+	volumeName := ctx.Param("volumeName")
+
+	var verb hwameistorapi.VolumeExpandReqBody
+	err := ctx.ShouldBind(&verb)
+	if err != nil {
+		log.Errorf("Unmarshal err = %v", err)
+		failRsp.ErrCode = 203
+		failRsp.Desc = "Unmarshal Failed: " + err.Error()
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
+		return
+	}
+
+	targetCapacity := verb.TargetCapacity
+	abort := verb.Abort
+
+	log.Infof("VolumeCreateVolumeExpand volumeName = %v, targetCapacity = %v", volumeName, targetCapacity)
+	if volumeName == "" {
+		failRsp.ErrCode = 203
+		failRsp.Desc = "volumeName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
+		return
+	}
+
+	volumeExpandRspBody, err := v.m.VolumeController().CreateVolumeExpand(volumeName, targetCapacity, abort)
+	if err != nil {
+		failRsp.ErrCode = 500
+		failRsp.Desc = "VolumeConvertOperation Failed: " + err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, volumeExpandRspBody)
+}
+
+// GetVolumeExpandOperation godoc
+// @Summary 摘要 获取指定数据卷扩容操作
+// @Description get GetVolumeExpandOperation 状态枚举 （Submitted、InProgress、Completed、ToBeAborted、Aborted）
+// @Tags        Volume
+// @Param       volumeName path string true "volumeName"
+// @Accept      json
+// @Produce     json
+// @Success     200 {object}  api.VolumeExpandOperation
+// @Failure     500 {object}  api.RspFailBody
+// @Router      /cluster/volumes/{volumeName}/expand [get]
+func (v *VolumeController) GetVolumeExpandOperation(ctx *gin.Context) {
+
+	var failRsp hwameistorapi.RspFailBody
+
+	volumeName := ctx.Param("volumeName")
+
+	log.Infof("GetVolumeExpandOperation volumeName = %v", volumeName)
+
+	if volumeName == "" {
+		failRsp.ErrCode = 203
+		failRsp.Desc = "volumeName cannot be empty"
+		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
+		return
+	}
+
+	expandInfo, err := v.m.VolumeController().GetVolumeExpand(volumeName)
+
+	if err != nil {
+		failRsp.ErrCode = 500
+		failRsp.Desc = "GetVolumeExpand Failed: " + err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
+		return
+	}
+
+	if expandInfo == nil {
+		log.Warnf("not have LocalVolumeExpand")
+		ctx.JSON(http.StatusOK, hwameistorapi.VolumeExpandOperation{})
+	}
+
+	ctx.JSON(http.StatusOK, hwameistorapi.VolumeExpandOperation{LocalVolumeExpand: *expandInfo})
+}
+
+// VolumeSnapshotList godoc
+// @Summary 摘要 获取指定数据卷快照操作 快照状态枚举 (Creating, Ready, NotReady, ToBeDeleted, Deleted）
+// @Description get VolumeSnapshotList
+// @Tags        Volume
+// @Param       volumeName path string true "volumeName"
+// @Param       page query int32 true "page"
+// @Param       pageSize query int32 true "pageSize"
+// @Param       state query string false "state"
+// @Param       snapshotName query string false "snapshotName"
+// @Accept      json
+// @Produce     json
+// @Success     200 {object}  api.SnapshotList
+// @Failure     500 {object}  api.RspFailBody
+// @Router      /cluster/volumes/{volumeName}/snapshot [get]
+func (v *VolumeController) VolumeSnapshotList(ctx *gin.Context) {
+	var failRsp hwameistorapi.RspFailBody
+	volumeName := ctx.Param("volumeName")
+	page := ctx.Query("page")
+	pageSize := ctx.Query("pageSize")
+	snapshotName := ctx.Query("snapshotName")
+	log.Infof("SnapshotList snapshot = %v", snapshotName)
+	// 获取path中的state
+	state := ctx.Query("state")
+
+	p, _ := strconv.ParseInt(page, 10, 32)
+	ps, _ := strconv.ParseInt(pageSize, 10, 32)
+
+	var queryPage hwameistorapi.QueryPage
+	queryPage.Page = int32(p)
+	queryPage.PageSize = int32(ps)
+	queryPage.SnapshotName = snapshotName
+	queryPage.SnapshotState = hwameistorapi.VolumeStatefuzzyConvert(state)
+	queryPage.VolumeName = volumeName
+
+	lvs, err := v.m.SnapshotController().ListLocalSnapshot(queryPage)
+	if err != nil {
+		failRsp.ErrCode = 500
+		failRsp.Desc = err.Error()
+		ctx.JSON(http.StatusInternalServerError, failRsp)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, lvs)
 }
