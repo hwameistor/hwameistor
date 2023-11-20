@@ -143,12 +143,12 @@ func (r *localRegistry) DiskExist(devPath string) bool {
 	return ok
 }
 
-func (r *localRegistry) DiskSymbolLinkExist(symlink string) bool {
-	for _, devType := range types.DefaultDevTypes {
-		if exist, _ := r.hu.PathExists(path.Join(types.GetPoolDiskPath(devType), symlink)); exist {
-			return exist
-		}
+func (r *localRegistry) DiskSymbolLinkExist(symlink string, devType string) bool {
+	// judging a specified deviceType link path exist in system
+	if exist, _ := r.hu.PathExists(path.Join(types.GetPoolDiskPath(devType), symlink)); exist {
+		return exist
 	}
+
 	return false
 }
 

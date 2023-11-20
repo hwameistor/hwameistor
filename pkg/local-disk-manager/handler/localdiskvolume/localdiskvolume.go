@@ -59,7 +59,7 @@ func (v *DiskVolumeHandler) ReconcileCreated() (reconcile.Result, error) {
 	for _, links := range v.Ldv.Status.DevLinks {
 		for _, linkName := range links {
 			linkName = strings.Split(linkName, "/")[len(strings.Split(linkName, "/"))-1]
-			if v.hostRegistry.DiskSymbolLinkExist(linkName) {
+			if v.hostRegistry.DiskSymbolLinkExist(linkName, volumeType) {
 				selectedDisk = linkName
 			}
 		}

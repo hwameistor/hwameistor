@@ -23,5 +23,5 @@ type Manager interface {
 
 	DiskExist(devPath string) bool
 
-	DiskSymbolLinkExist(symlink string) bool
+	DiskSymbolLinkExist(symlink string, devType string) bool
 }
