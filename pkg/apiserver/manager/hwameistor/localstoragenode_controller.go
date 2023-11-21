@@ -454,7 +454,7 @@ func (lsnController *LocalStorageNodeController) SetStorageNodeDiskOwner(queryPa
 
 	log.Infof("SetStorageNodeDiskOwner ld = %v", ld)
 	diskHandler = diskHandler.For(ld)
-	diskHandler.SetOwnerDisk(queryPage.Owner)
+	diskHandler.SetOwner(queryPage.Owner)
 
 	err = diskHandler.Update()
 	if err != nil {
