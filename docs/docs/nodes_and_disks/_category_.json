@@ -1,0 +1,8 @@
+{
+  "label": "Nodes and Disks",
+  "position": 5,
+  "link" : {
+    "type": "generated-index",
+    "description": "In this section, we will provide some guides about nodes and disks:"
+  }
+}

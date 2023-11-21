@@ -1,8 +1,0 @@
-{
-  "label": "Create Hwameistor Volumes",
-  "position": 5,
-  "link" : {
-    "type": "generated-index",
-    "description": "In this section, we will introduce how to create the following volumes:"
-  }
-}
