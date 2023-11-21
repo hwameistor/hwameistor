@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
+	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"sync"
@@ -125,18 +126,24 @@ func (m *manager) processLocalDiskClaimBound(claim *apisv1alpha1.LocalDiskClaim)
 	boundDisks, err := m.getActiveBoundDisks(claim)
 	if err != nil {
 		logCtx.WithError(err).Error("Failed to getActiveBoundDisks")
+		m.recorder.Eventf(claim, v1.EventTypeWarning, apisv1alpha1.LocalDiskClaimEventReasonConsumedFail,
+			"Failed to getActiveBoundDisks, due to error: %v", err)
 		return err
 	}
 
 	// 1. add new disks to StoragePools
 	if extend, err = m.storageMgr.PoolManager().ExtendPools(boundDisks); err != nil {
 		logCtx.WithError(err).Error("Failed to ExtendPools")
+		m.recorder.Eventf(claim, v1.EventTypeWarning, apisv1alpha1.LocalDiskClaimEventReasonConsumedFail,
+			"Failed to ExtendPools, due to error: %v", err)
 		return err
 	}
 
 	// 2. rebuild Node resource
 	if err = m.storageMgr.Registry().SyncNodeResources(); err != nil {
 		logCtx.WithError(err).Error("Failed to SyncNodeResources")
+		m.recorder.Eventf(claim, v1.EventTypeWarning, apisv1alpha1.LocalDiskClaimEventReasonConsumedFail,
+			"Failed to SyncNodeResources, due to error: %v", err)
 		return err
 	}
 
@@ -144,8 +151,12 @@ func (m *manager) processLocalDiskClaimBound(claim *apisv1alpha1.LocalDiskClaim)
 	pool, _ := utils.BuildStoragePoolName(claim.Spec.Description.DiskType, apisv1alpha1.PoolTypeRegular)
 	if err = m.storageMgr.Registry().UpdatePoolExtendRecord(pool, claim.Spec); err != nil {
 		logCtx.WithError(err).Error("Failed to UpdatePoolExtendRecord")
+		m.recorder.Eventf(claim, v1.EventTypeWarning, apisv1alpha1.LocalDiskClaimEventReasonConsumedFail,
+			"Failed to UpdatePoolExtendRecord, due to error: %v", err)
 		return err
 	}
+	m.recorder.Eventf(claim, v1.EventTypeNormal, apisv1alpha1.LocalDiskClaimEventReasonConsumed,
+		"Consumed localdiskclaim %v succeed,localdiskclaim will be deleted later", claim.GetName())
 
 	// 4. consume disks over and update the claim
 	if err = m.updateDiskClaimConsumed(claim); err != nil {

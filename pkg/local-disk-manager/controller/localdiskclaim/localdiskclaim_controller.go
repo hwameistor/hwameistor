@@ -146,12 +146,21 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimPending(diskClaim *v1alpha1.Lo
 				"will try after %v", diskClaim.GetNamespace(), diskClaim.GetName(), RequeueInterval)
 			return err
 		}
+		log.WithFields(logCtx).Infof("Assign free disk succeed,at least one disk was assigned, "+
+			"localdiskclaim %v/%v", diskClaim.GetNamespace(), diskClaim.GetName())
+		r.Recorder.Eventf(diskClaim, v1.EventTypeNormal, v1alpha1.LocalDiskClaimEventReasonAssign,
+			"Assign free disk succeed,at least one disk was assigned")
 
 		// Update claim.spec.diskRefs according to disk status
 		if err = r.diskClaimHandler.PatchBoundDiskRef(); err != nil {
-			log.WithError(err).Errorf("Failed to extend for locadiskclaim %v fail, will try after %v",
-				diskClaim.GetName(), RequeueInterval)
+			r.Recorder.Eventf(diskClaim, v1.EventTypeWarning, v1alpha1.LocalDiskClaimEventReasonExtendFail,
+				"Failed to extend for localdiskclaim, due to error: %v", err)
+			log.WithError(err).Errorf("Failed to extend for localdiskclaim  %v/%v fail, "+
+				"will try after %v", diskClaim.GetNamespace(), diskClaim.GetName(), RequeueInterval)
+			return err
 		}
+		log.WithFields(logCtx).Infof("extend for localdiskclaim succeed,"+
+			"localdiskclaim %v/%v", diskClaim.GetNamespace(), diskClaim.GetName())
 		return err
 	default:
 		log.WithFields(log.Fields{"diskClaim": diskClaim.GetName(), "assignedDisks": len(diskClaim.Spec.DiskRefs)}).Info("Found Bounded disks")
@@ -168,6 +177,8 @@ func (r *ReconcileLocalDiskClaim) processDiskClaimBound(diskClaim *v1alpha1.Loca
 	if len(r.diskClaimHandler.DiskRefs()) == 0 {
 		log.WithField("diskClaim", diskClaim.GetName()).
 			Info("No disk(s) bound, change status to Pending and try to reclaim")
+		r.Recorder.Eventf(diskClaim, v1.EventTypeWarning, v1alpha1.LocalDiskClaimEventReasonBoundFail,
+			"No disk(s) bound, change status to Pending and try to reclaim")
 		r.diskClaimHandler.SetupClaimStatus(v1alpha1.LocalDiskClaimStatusPending)
 		return r.diskClaimHandler.UpdateClaimStatus()
 	}
