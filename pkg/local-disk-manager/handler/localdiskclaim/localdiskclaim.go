@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	diskHandler "github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
 )
 
@@ -94,7 +94,7 @@ func (ldcHandler *Handler) AssignFreeDisk() error {
 		if !localDiskHandler.FilterDisk(diskClaim) {
 			// append the disk name to failed message map when localdisk is assigned failed
 			filterFailMessages := localDiskHandler.GetFilterFailMessages()
-			for reason, _ := range filterFailMessages {
+			for reason := range filterFailMessages {
 				if _, ok := localDiskFailedMessages[reason]; !ok {
 					localDiskFailedMessages[reason] = []string{}
 				}
@@ -115,10 +115,10 @@ func (ldcHandler *Handler) AssignFreeDisk() error {
 	if len(finalAssignedDisks) <= 0 {
 		var fullFailMessages []string
 		for reason, diskNames := range localDiskFailedMessages {
-			fullMsg := reason + ": " + strings.Join(diskNames, ",")
+			fullMsg := strings.Join(diskNames, ",") + " are " + reason
 			fullFailMessages = append(fullFailMessages, fullMsg)
 		}
-		ldcHandler.EventRecorder.Event(diskClaim, v1.EventTypeWarning, v1alpha1.LocalDiskClaimEventReasonAssignFail, strings.Join(fullFailMessages, "/"))
+		ldcHandler.EventRecorder.Event(diskClaim, v1.EventTypeWarning, v1alpha1.LocalDiskClaimEventReasonAssignFail, strings.Join(fullFailMessages, ";"))
 
 		log.Infof("There is no available disk assigned to %v", diskClaim.GetName())
 		return fmt.Errorf("there is no available disk assigned to %v", diskClaim.GetName())
