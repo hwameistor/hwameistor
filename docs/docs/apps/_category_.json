@@ -1,8 +1,8 @@
 {
-  "label": "Use Cases",
-  "position": 5,
+  "label": "Applications",
+  "position": 8,
   "link" : {
     "type": "generated-index",
-    "description": "In this section, we will introduce different use cases:"
+    "description": "In this section, we will describe the application usage in HwameiStor:"
   }
 }

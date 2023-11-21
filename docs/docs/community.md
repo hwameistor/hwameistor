@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 15
 sidebar_label:  "Community"
 ---
 
