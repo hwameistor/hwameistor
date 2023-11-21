@@ -27,7 +27,7 @@ See [current releases](https://github.com/hwameistor/hwameistor/releases).
 
 ## Running Environments
 
-### Kubernetes compatiblity
+### Kubernetes compatibility
 
 | kubernetes     | v0.4.3 | >=v0.5.0 | >= 0.13.0 |
 | -------------- | ------ | -------- | --------- |
@@ -147,20 +147,20 @@ please check the [adopters list](./adopters.md).
 | LVM Volume migration      | Completed | v0.4.0  | Migrate a LVM volume replica to a different node  |
 | Volume Group              | Completed | v0.3.2  | Support volume group allocation                   |
 | Disk health check         | Completed | v0.7.0  | Disk fault prediction, status reporting           |  
-| LVM HA Volume Recovery    | Planed    |         | Recover the LVM HA volume in problem              |
+| LVM HA Volume Recovery    | Planned    |         | Recover the LVM HA volume in problem              |
 | HwameiStor Operator       | Completed | v0.9.0  | Operator for HwameiStor install, maintain, etc.   |
 | Observability             | Completed | v0.9.2  | Observability, such as metrics, logs, etc.        |
 | Failover                  | Completed | v0.12.0 | Fail over the pod with HwameiStor volume          |
-| IO throttling             | Completed | v0.11.0 | Limit IO bandwith to access the HwameiStor volume |
-| Disk replacement          | Planed    |         | Replace disk which fails or will fail soon        |
+| IO throttling             | Completed | v0.11.0 | Limit IO bandwidth to access the HwameiStor volume |
+| Disk replacement          | Planned    |         | Replace disk which fails or will fail soon        |
 | LVM volume auto-expansion | Completed | v0.12.0 | Expand LVM volume automatically                   |
 | LVM volume snapshot       | Completed | v0.12.0 | Snapshot of LVM volume                            |
-| LVM volume clone          | Planed    |         | Clone LVM volume                                  |
+| LVM volume clone          | Planned    |         | Clone LVM volume                                  |
 | LVM volume thin provision | Unplaned  |         | LVM volume thin provision                         |
 | LVM volume stripe mode    | Unplaned  |         | LVM volume stripe read/write                      |
 | Data encryption           | Unplaned  |         | Data encryption                                   |
-| System Consistency        | Planed    |         | Consistent check and recovery from a disaster     |
-| Volume backup             | Planed    |         | Backup the volume data to remote server and restore  |
+| System Consistency        | Planned    |         | Consistent check and recovery from a disaster     |
+| Volume backup             | Planned    |         | Backup the volume data to remote server and restore  |
 | HwameiStor CLI command    | Completed | v0.12.4 | CLI command is to manage the HwameiStor cluster  |
 | HwameiStor GUI            | Completed | v0.11.0 | Manage the HwameiStor cluster  |
 
