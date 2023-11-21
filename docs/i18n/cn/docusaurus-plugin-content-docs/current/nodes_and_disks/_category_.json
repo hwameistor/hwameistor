@@ -1,0 +1,8 @@
+{
+  "label": "节点和磁盘",
+  "position": 5,
+  "link" : {
+    "type": "generated-index",
+    "description": "本节提供了节点和磁盘的相关指导信息："
+  }
+}
