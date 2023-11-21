@@ -1,4 +1,8 @@
 {
-  "label": "使用场景",
-  "position": 5
+  "label": "应用",
+  "position": 8,
+  "link" : {
+    "type": "generated-index",
+    "description": "本节说明如何在应用中使用 HwameiStor 的卷："
+  }
 }
