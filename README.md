@@ -163,6 +163,7 @@ please check the [adopters list](./adopters.md).
 | Volume backup             | Planned    |         | Backup the volume data to remote server and restore  |
 | HwameiStor CLI command    | Completed | v0.12.4 | CLI command is to manage the HwameiStor cluster  |
 | HwameiStor GUI            | Completed | v0.11.0 | Manage the HwameiStor cluster  |
+| Fault Management          | Planned   |          | Assist users in effectively identifying, recording, and resolving system faults |
 
 
 ## Community
