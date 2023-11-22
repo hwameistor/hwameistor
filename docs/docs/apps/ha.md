@@ -1,9 +1,9 @@
 ---
 sidebar_position: 2
-sidebar_label:  "HA Volumes"
+sidebar_label:  "Use HA Volumes"
 ---
 
-# HA Volumes
+# Use HA Volumes
 
 When the HA module is enabled, HwameiStor Operator will generate a StorageClass of HA automatically.
 

@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-sidebar_label: "LVM Volume"
+sidebar_label: "Use LVM Volume"
 ---
 
 # Use LVM Volume

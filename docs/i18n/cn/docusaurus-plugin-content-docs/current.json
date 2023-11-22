@@ -3,104 +3,76 @@
     "message": "下一个",
     "description": "The label for version current"
   },
-  "sidebar.tutorialSidebar.category.Quick Start": {
-    "message": "快速入门",
-    "description": "The label for category Quick Start in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Installation": {
-    "message": "安装",
-    "description": "The label for category Installation in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Start a Stateful Application": {
-    "message": "部署一个有状态的应用",
-    "description": "The label for category Start a Stateful Application in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Advanced Features": {
-    "message": "高级功能",
-    "description": "The label for category Advanced Features in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Architecture of HwameiStor": {
-    "message": "HwameiStor 的架构",
-    "description": "The label for category Architecture of HwameiStor in sidebar tutorialSidebar"
-  },
   "sidebar.tutorialSidebar.category.Modules": {
-    "message": "模块",
+    "message": "组件介绍",
     "description": "The label for category Modules in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Development Designs": {
-    "message": "开发设计",
-    "description": "The label for category Development Designs in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Applications": {
-    "message": "应用",
-    "description": "The label for category Applications in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Terminologies": {
-    "message": "术语",
-    "description": "The label for category Terminologies in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Volumes and Nodes": {
-    "message": "卷和节点",
-    "description": "The label for category Volumes and Nodes in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Create Hwameistor Volumes": {
-    "message": "创建 HwameiStor 数据卷",
-    "description": "The label for category Create HwameiStor Volumes in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Node Expansion": {
-    "message": "扩容存储节点",
-    "description": "The label for category Node Expansion in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Quick Start.link.generated-index.description": {
-    "message": "本章节介绍以下内容：",
-    "description": "The generated-index page description for category Quick Start in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Installation.link.generated-index.description": {
-    "message": "本章节介绍以下内容：",
-    "description": "The generated-index page description for category Installation in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Start a Stateful Application.link.generated-index.description": {
-    "message": "本章节介绍以下内容：",
-    "description": "The generated-index page description for category Start a Stateful Application in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Advanced Features.link.generated-index.description": {
-    "message": "本章节介绍以下内容：",
-    "description": "The generated-index page description for category Advanced Features in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Architecture of HwameiStor.link.generated-index.description": {
-    "message": "本章节介绍以下内容：",
-    "description": "The generated-index page description for category Architecture of HwameiStor in sidebar tutorialSidebar"
   },
   "sidebar.tutorialSidebar.category.Modules.link.generated-index.description": {
     "message": "本章节介绍以下内容：",
     "description": "The generated-index page description for category Modules in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.Development Designs.link.generated-index.description": {
-    "message": "本章节介绍以下内容：",
-    "description": "The generated-index page description for category Development Designs in sidebar tutorialSidebar"
+  "sidebar.tutorialSidebar.category.Installation": {
+    "message": "安装",
+    "description": "The label for category Installation in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.Applications.link.generated-index.description": {
+  "sidebar.tutorialSidebar.category.Installation.link.generated-index.description": {
     "message": "本章节介绍以下内容：",
-    "description": "The generated-index page description for category Applications in sidebar tutorialSidebar"
+    "description": "The generated-index page description for category Installation in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Nodes and Disks": {
+    "message": "节点和磁盘",
+    "description": "The label for category Nodes and Disks in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Nodes and Disks.link.generated-index.description": {
+    "message": "本章节介绍以下内容：",
+    "description": "The generated-index page description for category Nodes and Disks of HwameiStor in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.StorageClass": {
+    "message": "存储池",
+    "description": "The label for category StorageClass in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.StorageClass.link.generated-index.description": {
+    "message": "本章节介绍以下内容：",
+    "description": "The generated-index page description for category StorageClass of HwameiStor in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Volumes": {
+    "message": "数据卷",
+    "description": "The label for category Volumes in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Volumes.link.generated-index.description": {
+    "message": "本章节介绍以下内容：",
+    "description": "The generated-index page description for category Volumes in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Volume Usage": {
+    "message": "使用数据卷",
+    "description": "The label for category Volume Usage in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Volume Usage.link.generated-index.description": {
+    "message": "本章节介绍以下内容：",
+    "description": "The generated-index page description for category Volume Usage in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Use Cases": {
+    "message": "用例场景",
+    "description": "The label for category Use Cases in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Use Cases.link.generated-index.description": {
+    "message": "本章节介绍以下内容：",
+    "description": "The generated-index page description for category Use Cases in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Terminologies": {
+    "message": "术语",
+    "description": "The label for category Terminologies in sidebar tutorialSidebar"
   },
   "sidebar.tutorialSidebar.category.Terminologies.link.generated-index.description": {
     "message": "本章节介绍以下内容：",
     "description": "The generated-index page description for category Terminologies in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.Basic Operations": {
-    "message": "基础操作",
-    "description": "The label for category Basic Operations in sidebar tutorialSidebar"
+  "sidebar.tutorialSidebar.category.Contribution": {
+    "message": "做贡献",
+    "description": "The label for category Contribution in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.Basic Operations.link.generated-index.description": {
+  "sidebar.tutorialSidebar.category.Contribution.link.generated-index.description": {
     "message": "本章节介绍以下内容：",
-    "description": "The generated-index page description for category Basic Operations in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Advanced Operations": {
-    "message": "高级操作",
-    "description": "The label for category Advanced Operations in sidebar tutorialSidebar"
-  },
-  "sidebar.tutorialSidebar.category.Advanced Operations.link.generated-index.description": {
-    "message": "本章节介绍以下内容：",
-    "description": "The generated-index page description for category Advanced Operations in sidebar tutorialSidebar"
+    "description": "The generated-index page description for category Contribution in sidebar tutorialSidebar"
   }
 }
