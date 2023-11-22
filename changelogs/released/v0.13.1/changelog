@@ -1,0 +1,54 @@
+v0.13.1/ 2023-11-22
+========================
+
+
+## LVM volume management enhancements
+- fix(snap-restore): filter replicaSnapRestoreName before commit tasks #1193(@SSmallMonster )
+- Feat(volume-clone): Support VolumeClone #1194(@SSmallMonster )
+- fix the localdisk.partitionInfo.path not display correctly #1199(@hikariwo )
+- optimize datacopy job name generating #1196(@buffalo1024 )
+- fix(LocalStorage): LocalVolumeConvert state transition error #1217(@SSmallMonster )
+- fix bug missing pvc in cache map #1235(@buffalo1024 )
+- fix(localStorage): imcomplete volumePath #1241(@hikariwo )
+- fix(local-storage): potential data race in registry #1238(@hikariwo )
+## Disk Management Enhancements
+- add more fleid validation on struct Device on udev_test #1204(@hikariwo )
+- fix: exit when indexer add failed #1211(@SSmallMonster )
+- add more events for localdiskclaim #1249(@hikariwo )
+- improve(diskclaim): only record disk claim events when disk is Available #1260(@SSmallMonster )
+## Volume Migration
+- fix(migrate): use storage node ip when migrate volume #1229(@SSmallMonster )
+- fix(data-copy): prune replica after unpublish #1231(@SSmallMonster )
+- fix(datacopy): overwrite node ip when create sync job #1232(@SSmallMonster )
+- fix(dcp): only update source unpublished in src node #1236(@SSmallMonster )
+- Migrate #1239(@peng9808 )
+- fixed the migrate prune #1246(@sun7927 )
+- add evict migrates into queue when evictor starts #1250(@sun7927 )
+## Volume Snapshot
+- feat(snapshot): delay volume deletion when snapshots found #1245(@SSmallMonster )
+- make indexer spec.sourceVolume for LocalVolumeSnapshot #1247(@SSmallMonster )
+- make indexer for snapshots #1248(@SSmallMonster )
+## Scheduler
+- feat(scheduler): filter node according to sourcevolume accessibility #1203(@SSmallMonster )
+## Apiserver
+- fix apiserver getnodedisk bug and add set-diskowner api #1188(@peng9808 )
+- fix(apiserver): filter VolumeState when list replicas #1202(@hikariwo )
+- add snapshot,expand api #1234(@peng9808 )
+## Tests
+- Disable k8s1.23.3 related tests #1190 (@FloatXD )
+- Temporarily remove adaptation test for version 1.23 #1214(@FloatXD )
+- e2e-test: add clone test #1215(@FloatXD )
+- Upgrade the k8s version for adaptation test #1223(@FloatXD )
+- add drbd parse event test example #1226(@hikariwo )
+## Documentation
+- docs: add user guide for volume clone #1205 (@SSmallMonster )
+- add docs for pvc autoresizing #1206 (@buffalo1024 )
+- update cli status as completed #1212(@SSmallMonster )
+- fix snapshot doc #1233(@FloatXD )
+- fix typos #1253(@yojay11717 )
+- [docs] add fault management in roadmap #1257(@SSmallMonster )
+- Clean up advanced_features #1179(@windsonsea )
+- Update docs: pvc_autoresizing.md, volume_clone, and volume_provisioned_io #1208(@windsonsea )
+- [i18n/cn] update the nav structure for docs #1256(@windsonsea )
+- [en] Update nav structure (a big update) #1258(@windsonsea )
+
