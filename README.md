@@ -45,49 +45,49 @@ See [current releases](https://github.com/hwameistor/hwameistor/releases).
 
 HwameiStor contains several modules:
 
- * [local-disk-manager](#local-disk-manager)
- * [local-storage](#local-storage)
- * [scheduler](#scheduler)
- * [admission-controller](#admission-controller)
- * [Evictor](#evictor)
- * [Exporter](#exporter)
- * [HA module installer](#ha-module-installer)
- * [Volume Snapshot](#volume-snapshot)
- * [Volume Auto Resize](#volume-auto-resize)
- * [Volume IO Throtting](#volume-io-throtting)
- * [App Failover](#app-failover)
- * [Audit](#audit)
- * [UI](#ui)
+* [local-disk-manager](#local-disk-manager)
+* [local-storage](#local-storage)
+* [scheduler](#scheduler)
+* [admission-controller](#admission-controller)
+* [Evictor](#evictor)
+* [Exporter](#exporter)
+* [HA module installer](#ha-module-installer)
+* [Volume Snapshot](#volume-snapshot)
+* [Volume Auto Resize](#volume-auto-resize)
+* [Volume IO Throtting](#volume-io-throtting)
+* [App Failover](#app-failover)
+* [Audit](#audit)
+* [UI](#ui)
 
 ### local-disk-manager
 
 local-disk-manager (LDM) is designed to hold the management of disks on nodes.
 Other modules such as local-storage can take advantage of the disk management feature provided by LDM.
-[Learn more](docs/docs/architecture/modules/ldm.md)
+[Learn more](docs/docs/modules/ldm.md)
 
 ### local-storage
 
 local-storage (LS) provides a cloud-native local storage system.
 It aims to provision high-performance persistent LVM volume with local access to applications.
-[Learn more](docs/docs/architecture/modules/ls.md)
+[Learn more](docs/docs/modules/ls.md)
 
 ### Scheduler
 
 Scheduler is to automatically schedule a pod to a correct node which has the associated HwameiStor volumes.
-[Learn more](docs/docs/architecture/modules/scheduler.md)
+[Learn more](docs/docs/modules/scheduler.md)
 
 ### admission-controller
 
 admission-controller is a webhook that can automatically determine which pod uses the HwameiStor volume and,
 help to modify the schedulerName to hwameistor-scheduler.
-[Learn more](docs/docs/architecture/modules/admission_controller.md)
+[Learn more](docs/docs/modules/admission_controller.md)
 
 ### Evictor
 
 Evictor is used to automatically migrate HwameiStor volumes in case of node or pod eviction.
 When a node or pod is evicted as either Planned or Unplanned, the associated HwameiStor volumes,
 which have a replica on the node, will be detected and migrated out this node automatically.
-[Learn more](docs/docs/architecture/modules/evictor.md)
+[Learn more](docs/docs/modules/evictor.md)
 
 ### HA module installer
 
@@ -95,38 +95,45 @@ DRBD (Distributed Replicated Block Device) is one of third-party HA modules whic
 It composed of Linux kernel modules and related scripts
 to build high available clusters. It is implemented by mirroring the entire device over the network,
 which can be thought of as a kind of network RAID. This installer can directly install DRBD to a
-container cluster. Currently this module is only for testing purposes.
+container cluster.
 
 ### Exporter
 
 Exporter will collect the system metrics including nodes, storage pools, volumes, disks. It supports Prometheus.
+[Learn more](docs/docs/modules/exporter.md)
 
 ### Volume Snapshot
 
-HwameiStor provides the feature of snapshot and the restore on the LVM volumes.
+HwameiStor provides the feature of snapshot and restore on the LVM volumes.
 Currently, the snapshot/restore feature works for LVM non-HA volume.
+[Learn more](docs/docs/volumes/volume_snapshot.md)
 
 ### Volume Auto Resize
 
 HwameiStor can automatically expand the LVM volume according the pre-defined resize policy.
 User can define the preferred policy and describe how and when to expand the volume, and HwameiStor will take the policy into effect.
+[Learn more](docs/docs/volumes/pvc_autoresizing.md)
 
 ### Volume IO Throtting
 
 HwameiStor can set a maxmium rate (e.g. bandwidth, IOPS) to access a volume.
-This feature is very important to prevent the Pod from crashing, especially in the low-resource condition. 
+This feature is very important to prevent the Pod from crashing, especially in the low-resource condition.
+[Learn more](docs/docs/volumes/volume_provisioned_io.md)
 
 ### App Failover
 
 The feature of failover is to actively help the application to fail over to another health node with the volume replica, and continue the working.
+[Learn more](docs/docs/fast_failover.md)
 
 ### Audit
 
-HwameiStor provides the information about the resource history, including cluster, node, storage pool, volume, etc..
+HwameiStor provides the information about the resource history, including cluster, node, storage pool, volume, etc.
+[Learn more](docs/docs/system_audit.md)
 
 ### UI
 
 HwameiStor provides a friendly UI to the user to operate the cluster.
+[Learn more](docs/docs/modules/gui.md)
 
 ## Documentation
 
@@ -135,36 +142,77 @@ For full documentation, please see our website [hwameistor.io](https://hwameisto
 For detailed adopters that have HwameiStor deployed in a production environment or a user acceptance testing environment,
 please check the [adopters list](./adopters.md).
 
+### Build and Preview Website Locally
+
+It's a good practice to build and preview your modifications locally before submit a PR to
+[HwameiStor Website](https://hwameistor.io/).
+You can run the following commands to preview locally:
+
+```bash
+cd docs
+npm run start  # for english
+npm run start -- --locale cn # for i18n/cn
+```
+
+### Change Navigation
+
+To change the navigation (left sidebar) sequence, you can change the content in `_category_.json` that exists in each folder:
+
+```json
+{
+  "label": "Installation", // The name displayed on the left sidebar
+  "position": 4, // The sequence identifier, 1 is listed at top
+  "link": {
+    "type": "generated-index",
+    "description": "In this section, we will introduce the installation procedure:"
+  }
+}
+```
+
+For i18n/cn, you can change the nav in `current.json`:
+
+```json
+{
+  "sidebar.tutorialSidebar.category.Modules": {
+    "message": "Modules", // The section titles displayed on the left sidebar
+    "description": "The label for category Modules in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Modules.link.generated-index.description": {
+    "message": "This chapter introduces the following modules included in HwameiStor:", // The description before sub-section cards
+    "description": "The generated-index page description for category Modules in sidebar tutorialSidebar"
+  }
+}
+```
+
 ## Roadmap
 
-| Features                  | Status    | Release | Description                                       |
-| ------------------------- |-----------|---------| ------------------------------------------------- |
-| CSI for LVM volume        | Completed | v0.3.2  | Provision volume with lvm                         |
-| CSI for disk volume       | Completed | v0.3.2  | Provision volume with disk                        |
-| HA LVM Volume             | Completed | v0.3.2  | Volume with HA                                    |
-| LVM Volume expansion      | Completed | v0.3.2  | Expand LVM volume capacity online                 |
-| LVM Volume conversion     | Completed | v0.3.2  | Convert a non-HA LVM volume to the HA             |
-| LVM Volume migration      | Completed | v0.4.0  | Migrate a LVM volume replica to a different node  |
-| Volume Group              | Completed | v0.3.2  | Support volume group allocation                   |
-| Disk health check         | Completed | v0.7.0  | Disk fault prediction, status reporting           |  
-| LVM HA Volume Recovery    | Planned    |         | Recover the LVM HA volume in problem              |
-| HwameiStor Operator       | Completed | v0.9.0  | Operator for HwameiStor install, maintain, etc.   |
-| Observability             | Completed | v0.9.2  | Observability, such as metrics, logs, etc.        |
-| Failover                  | Completed | v0.12.0 | Fail over the pod with HwameiStor volume          |
-| IO throttling             | Completed | v0.11.0 | Limit IO bandwidth to access the HwameiStor volume |
-| Disk replacement          | Planned    |         | Replace disk which fails or will fail soon        |
-| LVM volume auto-expansion | Completed | v0.12.0 | Expand LVM volume automatically                   |
-| LVM volume snapshot       | Completed | v0.12.0 | Snapshot of LVM volume                            |
-| LVM volume clone          | Planned    |         | Clone LVM volume                                  |
-| LVM volume thin provision | Unplaned  |         | LVM volume thin provision                         |
-| LVM volume stripe mode    | Unplaned  |         | LVM volume stripe read/write                      |
-| Data encryption           | Unplaned  |         | Data encryption                                   |
-| System Consistency        | Planned    |         | Consistent check and recovery from a disaster     |
-| Volume backup             | Planned    |         | Backup the volume data to remote server and restore  |
-| HwameiStor CLI command    | Completed | v0.12.4 | CLI command is to manage the HwameiStor cluster  |
-| HwameiStor GUI            | Completed | v0.11.0 | Manage the HwameiStor cluster  |
-| Fault Management          | Planned   |          | Assist users in effectively identifying, recording, and resolving system faults |
-
+| Features                  | Status    | Release | Description                                                                     |
+| ------------------------- | --------- | ------- | ------------------------------------------------------------------------------- |
+| CSI for LVM volume        | Completed | v0.3.2  | Provision volume with lvm                                                       |
+| CSI for disk volume       | Completed | v0.3.2  | Provision volume with disk                                                      |
+| HA LVM Volume             | Completed | v0.3.2  | Volume with HA                                                                  |
+| LVM Volume expansion      | Completed | v0.3.2  | Expand LVM volume capacity online                                               |
+| LVM Volume conversion     | Completed | v0.3.2  | Convert a non-HA LVM volume to the HA                                           |
+| LVM Volume migration      | Completed | v0.4.0  | Migrate a LVM volume replica to a different node                                |
+| Volume Group              | Completed | v0.3.2  | Support volume group allocation                                                 |
+| Disk health check         | Completed | v0.7.0  | Disk fault prediction, status reporting                                         |
+| LVM HA Volume Recovery    | Planned   |         | Recover the LVM HA volume in problem                                            |
+| HwameiStor Operator       | Completed | v0.9.0  | Operator for HwameiStor install, maintain, etc.                                 |
+| Observability             | Completed | v0.9.2  | Observability, such as metrics, logs, etc.                                      |
+| Failover                  | Completed | v0.12.0 | Fail over the pod with HwameiStor volume                                        |
+| IO throttling             | Completed | v0.11.0 | Limit IO bandwidth to access the HwameiStor volume                              |
+| Disk replacement          | Planned   |         | Replace disk which fails or will fail soon                                      |
+| LVM volume auto-expansion | Completed | v0.12.0 | Expand LVM volume automatically                                                 |
+| LVM volume snapshot       | Completed | v0.12.0 | Snapshot of LVM volume                                                          |
+| LVM volume clone          | Planned   |         | Clone LVM volume                                                                |
+| LVM volume thin provision | Unplaned  |         | LVM volume thin provision                                                       |
+| LVM volume stripe mode    | Unplaned  |         | LVM volume stripe read/write                                                    |
+| Data encryption           | Unplaned  |         | Data encryption                                                                 |
+| System Consistency        | Planned   |         | Consistent check and recovery from a disaster                                   |
+| Volume backup             | Planned   |         | Backup the volume data to remote server and restore                             |
+| HwameiStor CLI command    | Completed | v0.12.4 | CLI command is to manage the HwameiStor cluster                                 |
+| HwameiStor GUI            | Completed | v0.11.0 | Manage the HwameiStor cluster                                                   |
+| Fault Management          | Planned   |         | Assist users in effectively identifying, recording, and resolving system faults |
 
 ## Community
 
@@ -177,7 +225,7 @@ Please follow our [weekly blogs](https://hwameistor.io/blog).
 
 ### Slack
 
-If you want to join the hwameistor channel on CNCF slack, please **[get invite to CNCF slack](https://slack.cncf.io/)** 
+If you want to join the hwameistor channel on CNCF slack, please **[get invite to CNCF slack](https://slack.cncf.io/)**
 and then join the [#hwameistor](https://cloud-native.slack.com/messages/hwameistor) channel.
 
 ### WeChat
