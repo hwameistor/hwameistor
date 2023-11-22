@@ -11,7 +11,7 @@ persistence capabilities for stateful cloud-native workloads or components.
 
 ## Current Status
 
-<img src="https://github.com/cncf/artwork/blob/master/other/illustrations/ashley-mcnamara/transparent/cncf-cloud-gophers-transparent.png" style="width:600px;" />
+![CNCF logo](./docs/docs/img/cncf-cloud-gophers-transparent.png)
 
 **HwameiStor is a [Cloud Native Computing Foundation](https://cncf.io/) sandbox project.**
 
