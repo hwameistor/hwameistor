@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/filter"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/kubernetes"
 )
@@ -205,7 +205,7 @@ func (ldHandler *Handler) FilterDisk(ldc *v1alpha1.LocalDiskClaim) bool {
 		IsNameFormatMatch().
 		GetTotalResult()
 }
-func (ldHandler *Handler) GetFilterFailMessages() map[string]struct{} {
+func (ldHandler *Handler) GetFilterFailMessages() map[string]bool {
 	return ldHandler.filter.FailedMessage
 }
 

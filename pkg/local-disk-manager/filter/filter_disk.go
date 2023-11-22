@@ -7,7 +7,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/sys"
 )
 
@@ -21,20 +21,20 @@ const (
 type LocalDiskFilter struct {
 	localDisk     *v1alpha1.LocalDisk
 	Result        Bool
-	FailedMessage map[string]struct{}
+	FailedMessage map[string]bool
 }
 
 func NewLocalDiskFilter(ld *v1alpha1.LocalDisk) LocalDiskFilter {
 	return LocalDiskFilter{
 		localDisk:     ld,
 		Result:        TRUE,
-		FailedMessage: make(map[string]struct{}),
+		FailedMessage: make(map[string]bool),
 	}
 }
 
 func (ld *LocalDiskFilter) Init() *LocalDiskFilter {
 	ld.Result = TRUE
-	ld.FailedMessage = make(map[string]struct{})
+	ld.FailedMessage = make(map[string]bool)
 	return ld
 }
 
@@ -53,7 +53,10 @@ func (ld *LocalDiskFilter) HasNotReserved() *LocalDiskFilter {
 	if !ld.localDisk.Spec.Reserved {
 		ld.setResult(TRUE)
 	} else {
-		ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonHasReserved] = struct{}{}
+		// only record reserved events when disk is Available
+		if ld.localDisk.Status.State == v1alpha1.LocalDiskAvailable {
+			ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonHasReserved] = true
+		}
 		log.Debugf("disk %s state is reserved", ld.localDisk.Name)
 		ld.setResult(FALSE)
 	}
@@ -87,7 +90,10 @@ func (ld *LocalDiskFilter) Capacity(cap int64) *LocalDiskFilter {
 	if ld.localDisk.Spec.Capacity >= cap {
 		ld.setResult(TRUE)
 	} else {
-		ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonInsufficientCapacity] = struct{}{}
+		// only record reserved events when disk is Available
+		if ld.localDisk.Status.State == v1alpha1.LocalDiskAvailable {
+			ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonInsufficientCapacity] = true
+		}
 		log.Debugf("disk %s capacity(%d) missmatch, want capacity %d", ld.localDisk.Name, ld.localDisk.Spec.Capacity, cap)
 		ld.setResult(FALSE)
 	}
@@ -104,7 +110,10 @@ func (ld *LocalDiskFilter) DiskType(diskType string) *LocalDiskFilter {
 	if ld.localDisk.Spec.DiskAttributes.Type == diskType {
 		ld.setResult(TRUE)
 	} else {
-		ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonDiskTypeUnMatch] = struct{}{}
+		// only record reserved events when disk is Available
+		if ld.localDisk.Status.State == v1alpha1.LocalDiskAvailable {
+			ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonDiskTypeUnMatch] = true
+		}
 		log.Debugf("disk %s type(%s) missmatch, wantType %s", ld.localDisk.Name, ld.localDisk.Spec.DiskAttributes.Type, diskType)
 		ld.setResult(FALSE)
 	}
@@ -116,7 +125,10 @@ func (ld *LocalDiskFilter) DevType() *LocalDiskFilter {
 	if ld.localDisk.Spec.DiskAttributes.DevType == sys.BlockDeviceTypeDisk {
 		ld.setResult(TRUE)
 	} else {
-		ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonDiskIsNotBlockDevice] = struct{}{}
+		// only record reserved events when disk is Available
+		if ld.localDisk.Status.State == v1alpha1.LocalDiskAvailable {
+			ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonDiskIsNotBlockDevice] = true
+		}
 		log.Debugf("disk %s devType(%s) missmatch, wantType %s", ld.localDisk.Name, ld.localDisk.Spec.DiskAttributes.DevType, sys.BlockDeviceTypeDisk)
 		ld.setResult(FALSE)
 	}
@@ -140,7 +152,10 @@ func (ld *LocalDiskFilter) OwnerMatch(owner string) *LocalDiskFilter {
 		ld.localDisk.Spec.Owner == owner {
 		ld.setResult(TRUE)
 	} else {
-		ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonOwnerUnMatch] = struct{}{}
+		// only record reserved events when disk is Available
+		if ld.localDisk.Status.State == v1alpha1.LocalDiskAvailable {
+			ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonOwnerUnMatch] = true
+		}
 		log.Infof("disk %s owner(%s) mismatch, owner in localdiskclaim is %s", ld.localDisk.Name, ld.localDisk.Spec.Owner, owner)
 		ld.setResult(FALSE)
 	}
@@ -167,7 +182,10 @@ func (ld *LocalDiskFilter) IsNameFormatMatch() *LocalDiskFilter {
 	if strings.HasPrefix(ld.localDisk.Name, v1alpha1.LocalDiskObjectPrefix) {
 		ld.setResult(TRUE)
 	} else {
-		ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonLocalDiskNameFormatUnMatch] = struct{}{}
+		// only record reserved events when disk is Available
+		if ld.localDisk.Status.State == v1alpha1.LocalDiskAvailable {
+			ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonLocalDiskNameFormatUnMatch] = true
+		}
 		log.Debugf("disk %s has deprecated format of name, this disk can be safely removed", ld.localDisk.Name)
 		ld.setResult(FALSE)
 	}
@@ -193,7 +211,6 @@ func (ld *LocalDiskFilter) LdNameMatch(ldNames []string) *LocalDiskFilter {
 	if found {
 		ld.setResult(TRUE)
 	} else {
-		ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonLocalDiskNameUnMatch] = struct{}{}
 		log.Debugf("disk %s is not specified in diskClaim", ld.localDisk.Name)
 		ld.setResult(FALSE)
 	}
@@ -218,7 +235,10 @@ func (ld *LocalDiskFilter) DevPathMatch(devPaths []string) *LocalDiskFilter {
 	if found {
 		ld.setResult(TRUE)
 	} else {
-		ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonDevPathUnMatch] = struct{}{}
+		// only record reserved events when disk is Available
+		if ld.localDisk.Status.State == v1alpha1.LocalDiskAvailable {
+			ld.FailedMessage[v1alpha1.LocalDiskAssignFailReasonDevPathUnMatch] = true
+		}
 		log.Debugf("disk %s devPath %s is not specified in diskClaim", ld.localDisk.Name, ld.localDisk.Spec.DevicePath)
 		ld.setResult(FALSE)
 	}
