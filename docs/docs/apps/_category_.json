@@ -1,8 +1,8 @@
 {
-  "label": "Applications",
+  "label": "Volume Usage",
   "position": 8,
   "link" : {
     "type": "generated-index",
-    "description": "In this section, we will describe the application usage in HwameiStor:"
+    "description": "In this section, we will describe the volume usage in HwameiStor:"
   }
 }

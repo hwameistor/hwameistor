@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-sidebar_label: "HwameiStor 安装"
+sidebar_label: "安装 HwameiStor"
 ---
 
 # 通过 HwameiStor-Operator 安装

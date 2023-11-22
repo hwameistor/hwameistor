@@ -1,6 +1,6 @@
 ---
 sidebar_position: 4
-sidebar_label: "数据卷IO限速"
+sidebar_label: "数据卷 IO 限速"
 ---
 
 # 数据卷 IO 限速

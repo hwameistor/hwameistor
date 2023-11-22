@@ -1,9 +1,9 @@
 ---
 sidebar_position: 3
-sidebar_label:  "高可用卷"
+sidebar_label:  "使用高可用卷"
 ---
 
-# 高可用卷
+# 使用高可用卷
 
 当 HwameiStor 的 HA 模块被开启后，HwameiStor Operator 会自动创建一个 HA 的 StorageClass 用于创建 HA 数据卷。
 
