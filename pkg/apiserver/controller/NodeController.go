@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
@@ -361,7 +363,7 @@ func (n *NodeController) SetStorageNodeDiskOwner(ctx *gin.Context) {
 	err := ctx.ShouldBind(&drb)
 	if err != nil {
 		log.Errorf("Unmarshal err = %v", err)
-		failRsp.ErrCode = 203
+		failRsp.ErrCode = http.StatusNonAuthoritativeInfo
 		failRsp.Desc = err.Error()
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
@@ -369,12 +371,19 @@ func (n *NodeController) SetStorageNodeDiskOwner(ctx *gin.Context) {
 	owner := drb.Owner
 
 	if nodeName == "" || devicePath == "" {
-		failRsp.ErrCode = 203
+		failRsp.ErrCode = http.StatusNonAuthoritativeInfo
 		failRsp.Desc = "nodeName or devicePath cannot be empty"
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
-
+	if owner != apisv1alpha1.LocalStorage && owner != apisv1alpha1.LocalDiskManager {
+		// check owner reasonable
+		ctx.JSON(http.StatusNonAuthoritativeInfo, hwameistorapi.RspFailBody{
+			ErrCode: http.StatusNonAuthoritativeInfo,
+			Desc:    fmt.Sprintf("owner must be %s or %s", apisv1alpha1.LocalStorage, apisv1alpha1.LocalDiskManager),
+		})
+		return
+	}
 	var queryPage hwameistorapi.QueryPage
 	queryPage.NodeName = nodeName
 	queryPage.DeviceShortPath = devicePath
