@@ -8,11 +8,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	mgrpkg "sigs.k8s.io/controller-runtime/pkg/manager"
-
 	hwameistorapi "github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/manager"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
 )
 
 type INodeController interface {
@@ -31,17 +28,11 @@ type INodeController interface {
 }
 
 type NodeController struct {
-	m           *manager.ServerManager
-	diskHandler *localdisk.Handler
+	m *manager.ServerManager
 }
 
-func NewNodeController(m *manager.ServerManager, mgr mgrpkg.Manager) INodeController {
-
-	//setIndexField(mgr.GetCache())
-	diskHandler := localdisk.NewLocalDiskHandler(mgr.GetClient(),
-		mgr.GetEventRecorderFor("localdisk-controller"))
-
-	return &NodeController{m, diskHandler}
+func NewNodeController(m *manager.ServerManager) INodeController {
+	return &NodeController{m}
 }
 
 //// setIndexField must be called after scheme has been added
@@ -320,7 +311,7 @@ func (n *NodeController) UpdateStorageNodeDisk(ctx *gin.Context) {
 	queryPage.DeviceShortPath = devicePath
 
 	if reserve == true {
-		diskReservedRsp, err := n.m.StorageNodeController().ReserveStorageNodeDisk(queryPage, n.diskHandler)
+		diskReservedRsp, err := n.m.StorageNodeController().ReserveStorageNodeDisk(queryPage)
 		if err != nil {
 			failRsp.ErrCode = 500
 			failRsp.Desc = "ReserveStorageNodeDisk Failed:" + err.Error()
@@ -329,7 +320,7 @@ func (n *NodeController) UpdateStorageNodeDisk(ctx *gin.Context) {
 		}
 		ctx.JSON(http.StatusOK, diskReservedRsp)
 	} else {
-		removeDiskReservedRsp, err := n.m.StorageNodeController().RemoveReserveStorageNodeDisk(queryPage, n.diskHandler)
+		removeDiskReservedRsp, err := n.m.StorageNodeController().RemoveReserveStorageNodeDisk(queryPage)
 		if err != nil {
 			failRsp.ErrCode = 500
 			failRsp.Desc = "ReserveStorageNodeDisk Failed:" + err.Error()
@@ -390,7 +381,7 @@ func (n *NodeController) SetStorageNodeDiskOwner(ctx *gin.Context) {
 	queryPage.Owner = owner
 
 	//if owner is system, can`t change owner
-	ownerRspBody, err := n.m.StorageNodeController().SetStorageNodeDiskOwner(queryPage, n.diskHandler)
+	ownerRspBody, err := n.m.StorageNodeController().SetStorageNodeDiskOwner(queryPage)
 	if err != nil {
 		failRsp.ErrCode = 500
 		failRsp.Desc = "ReserveStorageNodeDisk Failed:" + err.Error()
@@ -434,7 +425,7 @@ func (n *NodeController) GetStorageNodeDisk(ctx *gin.Context) {
 	queryPage.NodeName = nodeName
 	queryPage.DiskName = diskName
 
-	localDiskInfo, err := n.m.StorageNodeController().GetStorageNodeDisk(queryPage, n.diskHandler)
+	localDiskInfo, err := n.m.StorageNodeController().GetStorageNodeDisk(queryPage)
 	if err != nil {
 		failRsp.ErrCode = 500
 		failRsp.Desc = "GetStorageNodeDisk Failed:" + err.Error()
@@ -483,7 +474,7 @@ func (n *NodeController) StorageNodePoolsList(ctx *gin.Context) {
 	queryPage.Page = int32(p)
 	queryPage.PageSize = int32(ps)
 
-	storagePoolList, err := n.m.StorageNodeController().StorageNodePoolsList(queryPage, n.diskHandler)
+	storagePoolList, err := n.m.StorageNodeController().StorageNodePoolsList(queryPage)
 	if err != nil {
 		failRsp.ErrCode = 500
 		failRsp.Desc = "StorageNodePoolsList Failed:" + err.Error()
@@ -525,7 +516,7 @@ func (n *NodeController) StorageNodePoolGet(ctx *gin.Context) {
 	queryPage.NodeName = nodeName
 	queryPage.PoolName = poolName
 
-	storagePool, err := n.m.StorageNodeController().StorageNodePoolGet(queryPage, n.diskHandler)
+	storagePool, err := n.m.StorageNodeController().StorageNodePoolGet(queryPage)
 	if err != nil {
 		failRsp.ErrCode = 500
 		failRsp.Desc = "StorageNodePoolGet Failed:" + err.Error()
@@ -568,7 +559,7 @@ func (n *NodeController) StorageNodePoolDisksList(ctx *gin.Context) {
 	queryPage.NodeName = nodeName
 	queryPage.PoolName = poolName
 
-	localDisksItemsList, err := n.m.StorageNodeController().StorageNodePoolDisksList(queryPage, n.diskHandler)
+	localDisksItemsList, err := n.m.StorageNodeController().StorageNodePoolDisksList(queryPage)
 	if err != nil {
 		failRsp.ErrCode = 500
 		failRsp.Desc = "StorageNodePoolDisksList Failed:" + err.Error()
@@ -615,7 +606,7 @@ func (n *NodeController) StorageNodePoolDiskGet(ctx *gin.Context) {
 	queryPage.DiskName = diskName
 	queryPage.PoolName = poolName
 
-	localDiskInfo, err := n.m.StorageNodeController().StorageNodePoolDiskGet(queryPage, n.diskHandler)
+	localDiskInfo, err := n.m.StorageNodeController().StorageNodePoolDiskGet(queryPage)
 	if err != nil {
 		failRsp.ErrCode = 500
 		failRsp.Desc = "StorageNodePoolDiskGet Failed:" + err.Error()
