@@ -561,16 +561,19 @@ func (lsnController *LocalStorageNodeController) StorageNodePoolDisksList(page h
 					var ldi = &hwameistorapi.LocalDiskInfo{}
 					ldi.LocalStoragePooLName = pool.Name
 					ldi.AvailableCapacityBytes = disk.CapacityBytes
-
-					diskName := strings.Split(disk.DevPath, hwameistorapi.DEV)[1]
-					ldname := utils.ConvertNodeName(lsn.Spec.HostName) + "-" + diskName
-
-					log.Infof("StorageNodePoolDisksList ldname = %v", ldname)
-					localDisk, err := diskHandler.GetLocalDisk(client.ObjectKey{Name: ldname})
+					// get localdisk which is specified node and devpath
+					localDisks, err := diskHandler.ListLocalDiskByNodeDevicePath(page.NodeName, disk.DevPath)
 					if err != nil {
 						log.Errorf("failed to get localDisk %s", err.Error())
 						return ldilist, err
 					}
+					if len(localDisks) == 0 {
+						log.Errorf("failed to get localDisk,nodeName: %v,devPath: %v", page.NodeName, disk.DevPath)
+						return ldilist, err
+					}
+					localDisk := &localDisks[0]
+					log.Infof("StorageNodePoolDisksList ldname = %v", localDisk.Name)
+
 					ldi.LocalDisk = *localDisk
 					ldi.TotalCapacityBytes = localDisk.Spec.Capacity
 					ldilist.LocalDisks = append(ldilist.LocalDisks, ldi)
