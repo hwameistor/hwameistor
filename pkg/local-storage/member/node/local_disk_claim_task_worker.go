@@ -58,7 +58,7 @@ func (m *manager) processLocalDiskClaim(localDiskNameSpacedName string) error {
 			logCtx.WithError(err).Error("Failed to get LocalDiskClaim from cache, retry it later ...")
 			return err
 		}
-		logCtx.Info("Not found the LocalDiskClaim from cache, should be deleted already. err = %v", err)
+		logCtx.Infof("Not found the LocalDiskClaim from cache, should be deleted already. err = %v", err)
 		return nil
 	}
 
@@ -270,7 +270,7 @@ func (m *manager) getLocalDiskListByName(localDiskNames []string, nameSpace stri
 			defer wg.Done()
 			localDisk, err := m.getLocalDiskByName(name, nameSpace)
 			if err != nil {
-				m.logger.Error("Failed to get LocalDisk: %v, err: %", name, err)
+				m.logger.Errorf("Failed to get LocalDisk: %v, err: %v", name, err)
 				return
 			}
 			localDiskList = append(localDiskList, localDisk)

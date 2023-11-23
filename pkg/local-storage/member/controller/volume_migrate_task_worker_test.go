@@ -62,7 +62,7 @@ func Test_manager_processVolumeMigrate(t *testing.T) {
 		t.Errorf("Create LocalVolumeGroup fail %v", err)
 	}
 
-	// Create LocalVolumeConvert
+	// Create LocalVolumeMigrate
 	lvm := GenFakeLocalVolumeMigrateObject()
 	lvm.Name = fakeLocalVolumeMigrateName
 	lvm.Namespace = fakeNamespace
