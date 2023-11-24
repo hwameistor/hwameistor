@@ -403,7 +403,7 @@ LDA_CONTROLLER_BUILD_INPUT = ${CMDS_DIR}/${LDA_CONTROLLER_MODULE_NAME}/main.go
 
 .PHONY: compile_lda
 compile_lda:
-	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${LDA_CONTROLLER_BUILD_OUTPUT} ${LDA_CONTROLLER_BUILD_INPUT}
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${FAULT-MANAGEMENT_BUILD_OUTPUT} ${LDA_CONTROLLER_BUILD_INPUT}
 
 .PHONY: compile_lda_arm64
 compile_lda_arm64:
@@ -431,6 +431,42 @@ release_lda:
 	${DOCKER_BUILDX_CMD_ARM64} -t ${LDA_CONTROLLER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${LDA_CONTROLLER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${LDA_CONTROLLER_IMAGE_NAME}:${RELEASE_TAG}
+
+
+#### for FaultManagement ##########
+FAULT_MANAGEMENT_MODULE_NAME = fault-management
+FAULT_MANAGEMENT_BUILD_INPUT = ${CMDS_DIR}/${FAULT_MANAGEMENT_MODULE_NAME}/main.go
+
+.PHONY: compile_fault_management
+compile_fault_management:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${FAULT_MANAGEMENT_BUILD_OUTPUT} ${FAULT_MANAGEMENT_BUILD_INPUT}
+
+.PHONY: compile_fault_management_arm64
+compile_fault_management_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${FAULT_MANAGEMENT_BUILD_OUTPUT} ${FAULT_MANAGEMENT_BUILD_INPUT}
+
+.PHONY: build_fault_management_image
+build_fault_management_image:
+	@echo "Build fault-management image ${FAULT_MANAGEMENT_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_fault_management
+	docker build -t ${FAULT_MANAGEMENT_IMAGE_NAME}:${IMAGE_TAG} -f ${FAULT_MANAGEMENT_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_fault_management_image_arm64
+build_fault_management_image_arm64:
+	@echo "Build fault-management image ${FAULT_MANAGEMENT_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_fault_management_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${FAULT_MANAGEMENT_IMAGE_NAME}:${IMAGE_TAG} -f ${FAULT_MANAGEMENT_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: release_fault_management
+release_fault_management:
+	# build for amd64 version
+	${DOCKER_MAKE_CMD} make compile_fault_management
+	${DOCKER_BUILDX_CMD_AMD64} -t ${FAULT_MANAGEMENT_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${FAULT_MANAGEMENT_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# build for arm64 version
+	${DOCKER_MAKE_CMD} make compile_fault_management_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${FAULT_MANAGEMENT_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${FAULT_MANAGEMENT_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# push to a public registry
+	${MUILT_ARCH_PUSH_CMD} -i ${FAULT_MANAGEMENT_IMAGE_NAME}:${RELEASE_TAG}
 
 ### for hwameictl ###
 HWAMEICTL_BUILD_INPUT = ${CMDS_DIR}/hwameictl/hwameictl.go

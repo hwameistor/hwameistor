@@ -1,0 +1,153 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: faulttickets.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: FaultTicket
+    listKind: FaultTicketList
+    plural: faulttickets
+    singular: faultticket
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.nodeName
+      name: NodeName
+      type: string
+    - jsonPath: .spec.type
+      name: Type
+      type: string
+    - jsonPath: .spec.source
+      name: Source
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: FaultTicket is the Schema for the faulttickets API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: FaultTicketSpec defines the desired state of FaultTicket
+            properties:
+              device:
+                description: Device represents which device the fault happened
+                properties:
+                  devLinks:
+                    description: DevLinks are symbol links for this fault device
+                    items:
+                      type: string
+                    type: array
+                  devPath:
+                    description: DevPath represents the path of the fault disk e.g.,
+                      /dev/sda
+                    type: string
+                  localDiskName:
+                    description: LocalDiskName represents the name of the LocalDisk
+                    type: string
+                  serialNumber:
+                    description: SerialNumber represents the serial number of the
+                      fault disk
+                    type: string
+                type: object
+              message:
+                description: Message represents the details of the fault which caused
+                  this fault actually
+                type: string
+              nodeName:
+                description: NodeName represents which node the fault happened at
+                type: string
+              source:
+                description: Source represents where the fault comes from e.g., prometheus,
+                  disk analysis tools
+                type: string
+              type:
+                description: Type represents what caused this fault e.g., Disk, Volume,
+                  Node
+                enum:
+                - Volume
+                - Node
+                type: string
+              volume:
+                description: Volume represents which volume the fault happened
+                properties:
+                  volume:
+                    description: FaultType represents the fault type of the fault
+                      volume
+                    type: string
+                  volumeName:
+                    description: Name represents the name of the fault volume, this
+                      can be pv name or lv name
+                    type: string
+                  volumePath:
+                    description: Path represents the path of the fault volume on the
+                      host
+                    type: string
+                type: object
+            required:
+            - nodeName
+            - source
+            - type
+            type: object
+          status:
+            description: FaultTicketStatus defines the observed state of FaultTicket
+            properties:
+              effectScope:
+                description: Effects represent these scopes that effected by this
+                  fault and the handle results
+                items:
+                  description: 'Effect represents the scope of the fault effects.
+                    The corresponding modules that care about this should handle these
+                    fault NOTES: which modules should handle this fault can be configured
+                    at somewhere'
+                  properties:
+                    recoverInfo:
+                      description: RecoverInfo represents info about if and how to
+                        recover this fault
+                      properties:
+                        message:
+                          description: Message represents the details of the recovery
+                          type: string
+                        phase:
+                          description: Phase represents the phase of the fault recovery
+                            The phase Completed indicates this effect is recovered
+                            totally
+                          type: string
+                        recoverable:
+                          description: Recoverable represents whether this fault is
+                            recoverable
+                          type: boolean
+                      required:
+                      - recoverable
+                      type: object
+                    scope:
+                      description: Scope represents the scope of the fault effects
+                      type: string
+                  type: object
+                type: array
+              phase:
+                description: "Phase represents the\tphase of the ticket The state
+                  machine operates as follows Empty -> Evaluating -> Recovering ->
+                  \                        -> Completed SubScope:                            Recovering
+                  -> Completed"
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
