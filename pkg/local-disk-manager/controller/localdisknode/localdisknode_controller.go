@@ -61,7 +61,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 			}
 
 			return []reconcile.Request{
-				reconcile.Request{
+				{
 					NamespacedName: types.NamespacedName{Name: ld.Spec.NodeName},
 				},
 			}
@@ -113,6 +113,6 @@ type ReconcileLocalDiskNode struct {
 
 // Reconcile reads that state of the cluster for a LocalDiskNode object and makes changes based on the state read
 func (r *ReconcileLocalDiskNode) Reconcile(_ context.Context, _ reconcile.Request) (reconcile.Result, error) {
-	// NOTE: Do nothing here, all events will br processed at member/node/manager.go
+	// NOTE: Do nothing here, all events will br processed at member/node/fault_management_manager.go
 	return reconcile.Result{}, nil
 }

@@ -16,6 +16,10 @@ func (c *FakeHwameistorV1alpha1) Events() v1alpha1.EventInterface {
 	return &FakeEvents{c}
 }
 
+func (c *FakeHwameistorV1alpha1) FaultTickets() v1alpha1.FaultTicketInterface {
+	return &FakeFaultTickets{c}
+}
+
 func (c *FakeHwameistorV1alpha1) LocalDisks() v1alpha1.LocalDiskInterface {
 	return &FakeLocalDisks{c}
 }

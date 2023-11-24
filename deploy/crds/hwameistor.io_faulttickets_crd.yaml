@@ -8,8 +8,10 @@ spec:
     kind: FaultTicket
     listKind: FaultTicketList
     plural: faulttickets
+    shortNames:
+    - ticket
     singular: faultticket
-  scope: Namespaced
+  scope: Cluster
   versions:
   - additionalPrinterColumns:
     - jsonPath: .spec.nodeName
@@ -81,6 +83,7 @@ spec:
                 enum:
                 - Volume
                 - Node
+                - Disk
                 type: string
               volume:
                 description: Volume represents which volume the fault happened

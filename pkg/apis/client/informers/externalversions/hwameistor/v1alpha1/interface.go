@@ -10,6 +10,8 @@ import (
 type Interface interface {
 	// Events returns a EventInformer.
 	Events() EventInformer
+	// FaultTickets returns a FaultTicketInformer.
+	FaultTickets() FaultTicketInformer
 	// LocalDisks returns a LocalDiskInformer.
 	LocalDisks() LocalDiskInformer
 	// LocalDiskActions returns a LocalDiskActionInformer.
@@ -50,6 +52,11 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // Events returns a EventInformer.
 func (v *version) Events() EventInformer {
 	return &eventInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// FaultTickets returns a FaultTicketInformer.
+func (v *version) FaultTickets() FaultTicketInformer {
+	return &faultTicketInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // LocalDisks returns a LocalDiskInformer.

@@ -36,7 +36,7 @@ type FaultTicketSpec struct {
 
 	// Type represents what caused this fault e.g., Disk, Volume, Node
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum:=Volume;Node
+	// +kubebuilder:validation:Enum:=Volume;Node;Disk
 	Type TicketType `json:"type"`
 
 	// Source represents where the fault comes from e.g., prometheus, disk analysis tools
@@ -115,12 +115,13 @@ type RecoverInfo struct {
 	Message string `json:"message,omitempty"`
 }
 
+// +genclient
+// +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // FaultTicket is the Schema for the faulttickets API
-// +kubebuilder:resource:scope=Cluster,shortName=ft;ticket
+// +kubebuilder:resource:scope=Cluster,shortName=ticket
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:path=faulttickets,scope=Namespaced
 // +kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeName,type=string
 // +kubebuilder:printcolumn:JSONPath=".spec.type",name=Type,type=string
 // +kubebuilder:printcolumn:JSONPath=".spec.source",name=Source,type=string

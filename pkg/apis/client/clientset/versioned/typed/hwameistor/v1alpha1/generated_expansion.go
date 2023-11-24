@@ -4,6 +4,8 @@ package v1alpha1
 
 type EventExpansion interface{}
 
+type FaultTicketExpansion interface{}
+
 type LocalDiskExpansion interface{}
 
 type LocalDiskActionExpansion interface{}

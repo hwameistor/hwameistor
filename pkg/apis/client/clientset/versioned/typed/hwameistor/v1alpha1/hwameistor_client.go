@@ -11,6 +11,7 @@ import (
 type HwameistorV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	EventsGetter
+	FaultTicketsGetter
 	LocalDisksGetter
 	LocalDiskActionsGetter
 	LocalDiskClaimsGetter
@@ -32,6 +33,10 @@ type HwameistorV1alpha1Client struct {
 
 func (c *HwameistorV1alpha1Client) Events() EventInterface {
 	return newEvents(c)
+}
+
+func (c *HwameistorV1alpha1Client) FaultTickets() FaultTicketInterface {
+	return newFaultTickets(c)
 }
 
 func (c *HwameistorV1alpha1Client) LocalDisks() LocalDiskInterface {

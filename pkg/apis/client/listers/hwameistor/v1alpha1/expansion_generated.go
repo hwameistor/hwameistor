@@ -6,6 +6,10 @@ package v1alpha1
 // EventLister.
 type EventListerExpansion interface{}
 
+// FaultTicketListerExpansion allows custom methods to be added to
+// FaultTicketLister.
+type FaultTicketListerExpansion interface{}
+
 // LocalDiskListerExpansion allows custom methods to be added to
 // LocalDiskLister.
 type LocalDiskListerExpansion interface{}
