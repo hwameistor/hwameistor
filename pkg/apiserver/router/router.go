@@ -31,7 +31,7 @@ var (
 func CollectRoute(r *gin.Engine) *gin.Engine {
 	log.Info("CollectRoute start ...")
 
-	sm, m := BuildServerMgr()
+	sm, _ := BuildServerMgr()
 	v1 := r.Group("/apis/hwameistor.io/v1alpha1")
 
 	authController := controller.NewAuthController(sm)
@@ -85,7 +85,7 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	ldnController := controller.NewLocalDiskNodeController(sm)
 	v1.GET("/cluster/localdisknodes", ldnController.LocalDiskNodeList)
 
-	nodeController := controller.NewNodeController(sm, m)
+	nodeController := controller.NewNodeController(sm)
 	v1.GET("/cluster/nodes", nodeController.StorageNodeList)
 	v1.GET("/cluster/nodes/:nodeName", nodeController.StorageNodeGet)
 	v1.GET("/cluster/nodes/:nodeName/migrates", nodeController.StorageNodeMigrateGet)

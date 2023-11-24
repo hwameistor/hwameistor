@@ -7,7 +7,6 @@ import (
 
 	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/manager"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
 )
 
 var diskReserve = &cobra.Command{
@@ -25,7 +24,6 @@ func diskReserveRunE(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	diskHandler := localdisk.NewLocalDiskHandler(c.Client, c.EventRecorder)
 	// Build the query parameters
 	parameters := api.QueryPage{
 		NodeName:        args[0],
@@ -35,11 +33,11 @@ func diskReserveRunE(_ *cobra.Command, args []string) error {
 	switch args[2] {
 	case "true":
 		// Set the disk reserved
-		_, err = c.ReserveStorageNodeDisk(parameters, diskHandler)
+		_, err = c.ReserveStorageNodeDisk(parameters)
 		return err
 	case "false":
 		// Set the disk unreserved
-		_, err = c.RemoveReserveStorageNodeDisk(parameters, diskHandler)
+		_, err = c.RemoveReserveStorageNodeDisk(parameters)
 		return err
 	}
 	return fmt.Errorf("the `reserve` parameter should be true/false")
