@@ -15,7 +15,7 @@ import (
 	mgrpkg "sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/controller"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/manager"
@@ -144,7 +144,7 @@ func BuildServerMgr() (*manager.ServerManager, mgrpkg.Manager) {
 		os.Exit(1)
 	}
 
-	if err = apisv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
+	if err = v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		log.Error(err, "Failed to setup scheme for ldm resources")
 		os.Exit(1)
 	}
@@ -191,27 +191,28 @@ func setIndexField(cache cache.Cache) {
 		{
 			field: "spec.nodeName",
 			Func: func(obj client.Object) []string {
-				return []string{obj.(*apisv1alpha1.LocalDisk).Spec.NodeName}
+				return []string{obj.(*v1alpha1.LocalDisk).Spec.NodeName}
 			},
 		},
 		{
 			field: "spec.devicePath",
 			Func: func(obj client.Object) []string {
-				return []string{obj.(*apisv1alpha1.LocalDisk).Spec.DevicePath}
+				return []string{obj.(*v1alpha1.LocalDisk).Spec.DevicePath}
 			},
 		},
 		{
 			field: "spec.nodeName/devicePath",
 			Func: func(obj client.Object) []string {
-				return []string{obj.(*apisv1alpha1.LocalDisk).Spec.NodeName + "/" + obj.(*apisv1alpha1.LocalDisk).Spec.DevicePath}
+				return []string{obj.(*v1alpha1.LocalDisk).Spec.NodeName + "/" + obj.(*v1alpha1.LocalDisk).Spec.DevicePath}
 			},
 		},
 	}
 
 	for _, index := range indexes {
-		if err := cache.IndexField(context.Background(), &apisv1alpha1.LocalDisk{}, index.field, index.Func); err != nil {
+		if err := cache.IndexField(context.Background(), &v1alpha1.LocalDisk{}, index.field, index.Func); err != nil {
 			log.Error(err, "failed to setup index field %s", index.field)
-			continue
+			// indexer is required, exit immediately if it fails, more details see issue: #1209
+			os.Exit(1)
 		}
 		log.Info("setup index field successfully", "field", index.field)
 	}
