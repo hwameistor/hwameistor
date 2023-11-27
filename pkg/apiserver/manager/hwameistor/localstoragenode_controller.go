@@ -273,12 +273,18 @@ func (lsnController *LocalStorageNodeController) getAvailableDiskCapacity(nodeNa
 	nodeKey := client.ObjectKey{
 		Name: nodeName,
 	}
+
 	if lsn, err := lsnController.GetLocalStorageNode(nodeKey); err != nil {
+		log.Errorf("GetLocalStorageNode err = %v", err)
+	} else {
 		for _, pool := range lsn.Status.Pools {
 			if pool.Class == diskClass {
 				for _, disk := range pool.Disks {
 					if disk.DevPath == devPath {
 						availableDiskCapacity = disk.CapacityBytes
+						log.WithField("availableDiskCapacity", availableDiskCapacity).WithField("devPath", devPath).
+							WithField("diskClass", diskClass).WithField("nodeName", nodeName).
+							Info("availableDiskCapacity is found")
 						break
 					}
 				}
