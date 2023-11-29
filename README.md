@@ -204,7 +204,7 @@ For i18n/cn, you can change the nav in `current.json`:
 | Disk replacement          | Planned   |         | Replace disk which fails or will fail soon                                      |
 | LVM volume auto-expansion | Completed | v0.12.0 | Expand LVM volume automatically                                                 |
 | LVM volume snapshot       | Completed | v0.12.0 | Snapshot of LVM volume                                                          |
-| LVM volume clone          | Planned   |         | Clone LVM volume                                                                |
+| LVM volume clone          | Completed | v0.13.1 | Clone LVM volume                                                                |
 | LVM volume thin provision | Unplaned  |         | LVM volume thin provision                                                       |
 | LVM volume stripe mode    | Unplaned  |         | LVM volume stripe read/write                                                    |
 | Data encryption           | Unplaned  |         | Data encryption                                                                 |
