@@ -446,8 +446,20 @@ func (m *manager) updateLocalVolumeGroupAccessibility(lvg *apisv1alpha1.LocalVol
 			}
 		}
 	}
-
-	if len(volumeAccessNodes) > len(lvg.Spec.Accessibility.Nodes) {
+	// judge the lvg access node is same as the localvolume access node
+	haveDiff := false
+	if len(volumeAccessNodes) != len(lvg.Spec.Accessibility.Nodes) {
+		haveDiff = true
+	} else {
+		// the len is same
+		for _, nodeName := range lvg.Spec.Accessibility.Nodes {
+			if _, found := volumeAccessNodes[nodeName]; !found {
+				haveDiff = true
+			}
+		}
+	}
+	if haveDiff {
+		// lvg access node have difference from localvolume access node
 		count := -1
 		var nodes []string
 		// check all volumes' replica are ready
@@ -464,6 +476,7 @@ func (m *manager) updateLocalVolumeGroupAccessibility(lvg *apisv1alpha1.LocalVol
 		// update Group's accessibility nodes
 		nLvg := lvg.DeepCopy()
 		nLvg.SetAccessibilityNodes(nodes)
+		m.logger.WithFields(log.Fields{"lvg": lvg.Name, "volumeAccessNodes": volumeAccessNodes}).Info("Try to update LocalVolumeGroup's Accessibility Nodes")
 		patch := client.MergeFrom(lvg)
 		return m.apiClient.Patch(context.TODO(), nLvg, patch)
 	}
