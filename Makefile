@@ -29,8 +29,8 @@ release: release_ldm release_ls release_scheduler release_admission release_evic
 
 .PHONY: unit-test
 unit-test:
-	go test -race -coverprofile=coverage.txt -covermode=atomic `go list ./pkg/... | grep -v -E './pkg/local-storage/member|./pkg/scheduler|./pkg/evictor|./pkg/apiserver'`
-	# curl -s https://codecov.io/bash | bash
+	go test -race -coverprofile=coverage.txt -covermode=atomic `go list ./pkg/... | grep -v -E './pkg/scheduler|./pkg/evictor|./pkg/apiserver'`
+	curl -s https://codecov.io/bash | bash
 
 .PHONY: vendor
 vendor:
