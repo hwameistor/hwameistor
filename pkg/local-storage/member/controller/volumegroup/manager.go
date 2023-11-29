@@ -578,7 +578,8 @@ func (m *manager) addLocalVolume(lv *apisv1alpha1.LocalVolume) error {
 				lv.Spec.Accessibility.DeepCopyInto(&lvg.Spec.Accessibility)
 				return m.apiClient.Update(context.TODO(), lvg, &client.UpdateOptions{})
 			}
-			return nil
+			// try to update lvg access node if possible
+			return m.updateLocalVolumeGroupAccessibility(lvg)
 		}
 		if vol.PersistentVolumeClaimName == lv.Spec.PersistentVolumeClaimName && lvg.Spec.Namespace == lv.Spec.PersistentVolumeClaimNamespace {
 			// localvolume is just created to serve PVC
