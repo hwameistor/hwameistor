@@ -466,7 +466,6 @@ func (m *manager) updateLocalVolumeGroupAccessibility(lvg *apisv1alpha1.LocalVol
 	sort.Strings(nodes)
 
 	m.logger.WithFields(log.Fields{"volumeGroup": lvg.Name, "accessibilityNodes": nodes}).Debugf("update LocalVolumeGroup accessibility nddes")
-
 	// update Group's accessibility nodes
 	nLvg := lvg.DeepCopy()
 	nLvg.SetAccessibilityNodes(nodes)
