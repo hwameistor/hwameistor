@@ -185,7 +185,7 @@ Possible causes of the error:
 
 
 possible reason:
-
+ 
 1. The node has no remaining bare disks that can be automatically managed. You can check it by running the following command:
 
     ```bash
