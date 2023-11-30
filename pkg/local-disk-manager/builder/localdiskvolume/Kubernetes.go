@@ -13,7 +13,7 @@ import (
 
 type Kubeclient struct {
 	// clientset
-	clientset *clientset.Clientset
+	clientset clientset.Interface
 
 	// kubeConfigPath
 	//kubeConfigPath string
@@ -48,4 +48,7 @@ func (k *Kubeclient) Get(name string) (*v1alpha1.LocalDiskVolume, error) {
 
 func (k *Kubeclient) Update(volume *v1alpha1.LocalDiskVolume) (*v1alpha1.LocalDiskVolume, error) {
 	return k.clientset.HwameistorV1alpha1().LocalDiskVolumes().Update(context.Background(), volume, v1.UpdateOptions{})
+}
+func (k *Kubeclient) SetClient(cli clientset.Interface) {
+	k.clientset = cli
 }
