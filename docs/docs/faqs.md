@@ -193,7 +193,8 @@ possible reason:
     kubectl get lsn <node-name> -o yaml # Check whether the disk is managed normally
     ```
 
-2. The hwameistor related components [excluding drbd-adapter] are not working properly. You can check it by running the following command:
+2. The hwameistor related components are not working properly. You can check it by running the following command:
+> module `drbd-adapter` is only needed when HA is enabled, if not, ignore the releated error.
 
     ```bash
     kubectl get pod -n hwameistor # Confirm whether the pod is running 
