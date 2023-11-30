@@ -309,7 +309,8 @@ func (m *manager) volumeMigratePruneReplica(migrate *apisv1alpha1.LocalVolumeMig
 	ctx := context.TODO()
 
 	// check if source volume can be pruned safely
-	{
+	// configmap will only be created for localvolumemigrate belongs to nonConvertible localvolume
+	if !vol.Spec.Convertible {
 		cm := &corev1.ConfigMap{}
 		cmName := datacopy.GetConfigMapName(datacopy.SyncConfigMapName, migrate.Spec.VolumeName)
 		if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: cmName}, cm); err != nil {
