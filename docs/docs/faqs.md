@@ -196,7 +196,7 @@ possible reason:
 2. The hwameistor related components are not working properly. You can check it by running the following command:
 > module `drbd-adapter` is only needed when HA is enabled, if not, ignore the releated error.
 
-    ```bash
-    kubectl get pod -n hwameistor # Confirm whether the pod is running 
-    kubectl get hmcluster -o yaml # View the health field
-    ```
+```bash
+kubectl get pod -n hwameistor # Confirm whether the pod is running 
+kubectl get hmcluster -o yaml # View the health field
+```
