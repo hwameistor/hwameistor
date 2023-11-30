@@ -3,6 +3,7 @@ package volumegroup
 import (
 	"context"
 	"os"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -2795,6 +2796,55 @@ func Test_parseNamespacedName(t *testing.T) {
 			}
 			if got1 != tt.want1 {
 				t.Logf("parseNamespacedName() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func Test_updateLocalVolumeGroupAccessibility(t *testing.T) {
+	tests := []struct {
+		Description         string
+		Lvg                 *apisv1alpha1.LocalVolumeGroup
+		Lv                  *apisv1alpha1.LocalVolume
+		ExpectLvgAccessNode []string
+	}{
+		{
+			Description:         "It is an update LocalVolumeGroup access node test,for LocalVolumeGroup keep a sync with LocalVolume access node",
+			Lvg:                 GenFakeLocalVolumeGroupObject(),
+			Lv:                  GenFakeLocalVolumeObject(),
+			ExpectLvgAccessNode: fakeNodenames,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Description, func(t *testing.T) {
+			fakeClient, _ := CreateFakeClient()
+			tt.Lv.Spec.VolumeGroup = tt.Lvg.Name
+			err := fakeClient.Create(context.Background(), tt.Lv)
+			if err != nil {
+				t.Fatalf("Create LocalVolume fail %v", err)
+			}
+			err = fakeClient.Create(context.Background(), tt.Lvg)
+			if err != nil {
+				t.Fatalf("Create LocalVolumeGroup fail %v", err)
+			}
+			m := &manager{
+				nameSpace:                 fakeNamespace,
+				apiClient:                 fakeClient,
+				localVolumeGroupQueue:     common.NewTaskQueue("localVolumeGroup", maxRetries),
+				localVolumeQueue:          common.NewTaskQueue("localVolume", maxRetries),
+				pvcQueue:                  common.NewTaskQueue("pvc", maxRetries),
+				podQueue:                  common.NewTaskQueue("pod", maxRetries),
+				localVolumeToVolumeGroups: make(map[string]string),
+				pvcToVolumeGroups:         make(map[string]string),
+				podToVolumeGroups:         make(map[string]string),
+				logger:                    log.WithField("Module", "ControllerManager"),
+			}
+			m.updateLocalVolumeGroupAccessibility(tt.Lvg)
+			var newLvg = &apisv1alpha1.LocalVolumeGroup{}
+			if err = fakeClient.Get(context.Background(), client.ObjectKey{Namespace: tt.Lvg.Namespace, Name: tt.Lvg.Name}, newLvg); err == nil {
+				if !reflect.DeepEqual(tt.ExpectLvgAccessNode, newLvg.Spec.Accessibility.Nodes) {
+					t.Fatal("test updateLocalVolumeGroupAccessibility failed")
+				}
 			}
 		})
 	}
