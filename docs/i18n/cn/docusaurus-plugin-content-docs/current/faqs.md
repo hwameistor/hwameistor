@@ -161,3 +161,21 @@ HwameiStor 可以立即将 Pods 调度到其他数据卷所在的可用节点，
    blkid /dev/sd*  # 确认磁盘分区是否干净
    wipefs -a /dev/sd* # 磁盘清理
    ```
+## Q5: 使用 Hwameistor-operator 安装后为什么没有自动创建StorageClasses
+
+
+可能的原因：
+
+1. 节点没有可自动纳管的剩余裸盘，可通过如下命令进行检查：
+
+   ```bash
+   kubectl get ld # 检查磁盘
+   kubectl get lsn <node-name> -o yaml # 检查磁盘是否被正常纳管
+   ```
+
+2. hwameistor相关组件【不包含drbd-adapter】没有正常工作，可通过如下命令进行检查：
+
+   ```bash
+   kubectl get pod -n hwameistor  # 确认pod是否运行正常
+   kubectl get hmcluster -o yaml # 查看health字段
+   ```

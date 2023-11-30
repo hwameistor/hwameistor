@@ -180,3 +180,22 @@ Possible causes of the error:
    blkid /dev/sd*  # Confirm if the disk partitions are clean
    wipefs -a /dev/sd*  # Clean the disk
    ```
+
+## Q5: Why is StorageClasses not automatically created after installation using Hwameistor-operator?
+
+
+possible reason:
+
+1. The node has no remaining bare disks that can be automatically managed. You can check it by running the following command:
+
+    ```bash
+    kubectl get ld # Check disk
+    kubectl get lsn <node-name> -o yaml # Check whether the disk is managed normally
+    ```
+
+2. The hwameistor related components [excluding drbd-adapter] are not working properly. You can check it by running the following command:
+
+    ```bash
+    kubectl get pod -n hwameistor # Confirm whether the pod is running 
+    kubectl get hmcluster -o yaml # View the health field
+    ```
