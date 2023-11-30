@@ -3,6 +3,7 @@ package hwameistor
 import (
 	"context"
 	"errors"
+	"fmt"
 	"k8s.io/apimachinery/pkg/types"
 	"math"
 	"strconv"
@@ -602,25 +603,26 @@ func (lsnController *LocalStorageNodeController) StorageNodePoolDiskGet(page hwa
 	nodeKey := client.ObjectKey{
 		Name: page.NodeName,
 	}
-
+	// get localdisk information
+	devicePath := hwameistorapi.DEV + page.DiskName
+	localDisks, e := lsnController.ldHandler.ListLocalDiskByNodeDevicePath(page.NodeName, devicePath)
+	if e != nil {
+		log.WithField("nodeName", page.NodeName).WithField("devPath", devicePath).WithError(e).Errorf("Failed to get localdisk")
+		return nil, e
+	}
+	if len(localDisks) == 0 {
+		log.WithField("nodeName", page.NodeName).WithField("devPath", devicePath).WithError(e).Errorf("no localdisks found")
+		return nil, fmt.Errorf("no localdisks found,nodeName:%v,devPath:%v", page.NodeName, devicePath)
+	}
+	localDisk := &localDisks[0]
+	// get the localstorage disk
 	if lsn, err := lsnController.GetLocalStorageNode(nodeKey); err == nil {
 		for _, pool := range lsn.Status.Pools {
 			if pool.Name == page.PoolName {
 				for _, disk := range pool.Disks {
-					localDisk, err := lsnController.ldHandler.GetLocalDisk(client.ObjectKey{Name: page.DiskName})
-					if err != nil {
-						log.Errorf("failed to get localDisk %s", err.Error())
-						return ldi, err
-					}
 					if localDisk.Spec.DevicePath == disk.DevPath {
 						ldi.LocalStoragePooLName = pool.Name
 						ldi.AvailableCapacityBytes = disk.CapacityBytes
-
-						localDisk, err := lsnController.ldHandler.GetLocalDisk(client.ObjectKey{Name: page.DiskName})
-						if err != nil {
-							log.Errorf("failed to get localDisk %s", err.Error())
-							return ldi, err
-						}
 						ldi.LocalDisk = *localDisk
 						ldi.TotalCapacityBytes = localDisk.Spec.Capacity
 						break
