@@ -174,6 +174,7 @@ HwameiStor 可以立即将 Pods 调度到其他数据卷所在的可用节点，
    ```
 
 2. hwameistor相关组件【不包含drbd-adapter】没有正常工作，可通过如下命令进行检查：
+> drbd-adapter 组件只有在 HA 启用时候才生效，如果没有启用，可以忽略相关错误
 
    ```bash
    kubectl get pod -n hwameistor  # 确认pod是否运行正常
