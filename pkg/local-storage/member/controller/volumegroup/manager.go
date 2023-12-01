@@ -146,7 +146,7 @@ func (m *manager) GetLocalVolumeByLocalVolumeGroup(lvg *apisv1alpha1.LocalVolume
 
 	for _, volume := range lvList.Items {
 		if volume.Spec.VolumeGroup == lvg.Name {
-			volumes = append(volumes, &volume)
+			volumes = append(volumes, volume.DeepCopy())
 		}
 	}
 	return volumes, nil
@@ -439,10 +439,12 @@ func (m *manager) updateLocalVolumeGroupAccessibility(lvg *apisv1alpha1.LocalVol
 		return err
 	}
 
+	m.logger.WithField("volumes", len(volumes)).Debugf("found associated volumes in LocalVolumeGroup %s", lvg.Name)
 	volumeAccessNodes := map[string]int{}
 	for _, volume := range volumes {
 		if volume.Spec.Config != nil {
 			for _, replica := range volume.Spec.Config.Replicas {
+				m.logger.WithField("volume", volume.Name).Debugf("found replica on host %s LocalVolumeGroup %s", replica.Hostname, lvg.Name)
 				volumeAccessNodes[replica.Hostname]++
 			}
 		}
@@ -463,6 +465,7 @@ func (m *manager) updateLocalVolumeGroupAccessibility(lvg *apisv1alpha1.LocalVol
 	}
 	sort.Strings(nodes)
 
+	m.logger.WithFields(log.Fields{"volumeGroup": lvg.Name, "accessibilityNodes": nodes}).Debugf("update LocalVolumeGroup accessibility nddes")
 	// update Group's accessibility nodes
 	nLvg := lvg.DeepCopy()
 	nLvg.SetAccessibilityNodes(nodes)
