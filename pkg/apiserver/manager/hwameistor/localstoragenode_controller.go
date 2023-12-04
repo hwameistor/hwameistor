@@ -100,6 +100,12 @@ func (lsnController *LocalStorageNodeController) ListLocalStorageNode(queryPage 
 		var sn = &hwameistorapi.StorageNode{}
 
 		sn.LocalStorageNode = lsnList.Items[i]
+		localDiskNode, err := lsnController.GetLocalDiskNode(lsnList.Items[i].Name)
+		if err != nil {
+			log.WithError(err).Error("Failed to list localDiskNode")
+			return nil, err
+		}
+		sn.LocalDiskNode = *localDiskNode
 		k8sNode, K8sNodeState := lsnController.getK8SNode(lsnList.Items[i].Name)
 		sn.K8sNode = k8sNode
 		sn.K8sNodeState = K8sNodeState
