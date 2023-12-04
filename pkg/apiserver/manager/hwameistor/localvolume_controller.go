@@ -420,6 +420,7 @@ func (lvController *LocalVolumeController) CreateVolumeExpand(volName string, ta
 	if lv == nil {
 		return nil, fmt.Errorf("volume %v is not exists", volName)
 	}
+	currentCapacityBytes := lv.Spec.RequiredCapacityBytes
 
 	//Determine whether there is enough space
 	nodes := lv.Spec.Accessibility.Nodes
@@ -438,10 +439,10 @@ func (lvController *LocalVolumeController) CreateVolumeExpand(volName string, ta
 	if err != nil {
 		return nil, err
 	}
-
-	if quantity.Value() > freeCount {
-		log.Errorf("freeCount is %d , targetCapacity is %d", freeCount, quantity.Value())
-		return nil, fmt.Errorf("Insufficient space, expansion failed")
+	targetCapacityBytes := quantity.Value()
+	if targetCapacityBytes-currentCapacityBytes > freeCount {
+		log.Errorf("Insufficient available space, freeCount is %d", freeCount)
+		return nil, fmt.Errorf("Insufficient available space ")
 	}
 
 	// Get the pvc
