@@ -37,18 +37,18 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 		client = f.GetClient()
 		utils.CreateLdc(ctx)
 	})
-	ginkgo.Context("create a HA-StorageClass", func() {
+	ginkgo.Context("create a StorageClass", func() {
 		ginkgo.It("create a sc", func() {
 			//create sc
 			deleteObj := corev1.PersistentVolumeReclaimDelete
 			waitForFirstConsumerObj := storagev1.VolumeBindingWaitForFirstConsumer
 			examplesc := &storagev1.StorageClass{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "local-storage-hdd-lvm-ha",
+					Name: "local-storage-hdd-lvm",
 				},
 				Provisioner: "lvm.hwameistor.io",
 				Parameters: map[string]string{
-					"replicaNumber":             "2",
+					"replicaNumber":             "1",
 					"poolClass":                 "HDD",
 					"poolType":                  "REGULAR",
 					"volumeKind":                "LVM",
@@ -69,10 +69,10 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 	ginkgo.Context("create a HA-PersistentVolumeClaim", func() {
 		ginkgo.It("create PVC", func() {
 			//create PVC
-			storageClassName := "local-storage-hdd-lvm-ha"
+			storageClassName := "local-storage-hdd-lvm"
 			examplePvc := &corev1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pvc-lvm-ha",
+					Name:      "pvc-lvm",
 					Namespace: "default",
 				},
 				Spec: corev1.PersistentVolumeClaimSpec{
@@ -102,7 +102,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 			_, _ = utils.RunInLinux("kubectl taint node --all node-role.kubernetes.io/master-")
 			exampleDeployment := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      utils.HaDeploymentName,
+					Name:      utils.DeploymentName,
 					Namespace: "default",
 				},
 				Spec: appsv1.DeploymentSpec{
@@ -146,7 +146,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 									Name: "2048-volume-lvm-ha",
 									VolumeSource: corev1.VolumeSource{
 										PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-											ClaimName: "pvc-lvm-ha",
+											ClaimName: "pvc-lvm",
 										},
 									},
 								},
@@ -167,7 +167,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 
 			pvc := &corev1.PersistentVolumeClaim{}
 			pvcKey := ctrlclient.ObjectKey{
-				Name:      "pvc-lvm-ha",
+				Name:      "pvc-lvm",
 				Namespace: "default",
 			}
 			err := client.Get(ctx, pvcKey, pvc)
@@ -191,7 +191,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 		ginkgo.It("deploy STATUS should be AVAILABLE", func() {
 			deployment := &appsv1.Deployment{}
 			deployKey := ctrlclient.ObjectKey{
-				Name:      utils.HaDeploymentName,
+				Name:      utils.DeploymentName,
 				Namespace: "default",
 			}
 			err := client.Get(ctx, deployKey, deployment)
@@ -224,7 +224,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 
 			deployment := &appsv1.Deployment{}
 			deployKey := ctrlclient.ObjectKey{
-				Name:      utils.HaDeploymentName,
+				Name:      utils.DeploymentName,
 				Namespace: "default",
 			}
 			err = client.Get(ctx, deployKey, deployment)
@@ -285,7 +285,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 		ginkgo.It("Stop the workload", func() {
 			deployment := &appsv1.Deployment{}
 			deployKey := ctrlclient.ObjectKey{
-				Name:      utils.HaDeploymentName,
+				Name:      utils.DeploymentName,
 				Namespace: "default",
 			}
 			err := client.Get(ctx, deployKey, deployment)
@@ -295,7 +295,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 			}
 			deployment.Spec.Replicas = utils.Int32Ptr(0)
 			err = client.Update(ctx, deployment)
-			logrus.Infof("waiting for the deployment to be stop ")
+			logrus.Infof("waiting for the deployment to be stop")
 			err = wait.PollImmediate(10*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(0) {
 					return false, nil
@@ -363,7 +363,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 
 			deployment := &appsv1.Deployment{}
 			deployKey := ctrlclient.ObjectKey{
-				Name:      utils.HaDeploymentName,
+				Name:      utils.DeploymentName,
 				Namespace: "default",
 			}
 
@@ -392,7 +392,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 				logrus.Printf("list lvr failed ：%+v ", err)
 			}
 
-			gomega.Expect(len(lvrList.Items)).To(gomega.Equal(2))
+			gomega.Expect(len(lvrList.Items)).To(gomega.Equal(1))
 			for _, lvr := range lvrList.Items {
 				gomega.Expect(SourceNode).To(gomega.Not(gomega.Equal(lvr.Spec.NodeName)))
 			}
@@ -401,7 +401,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 		ginkgo.It("Start the workload", func() {
 			deployment := &appsv1.Deployment{}
 			deployKey := ctrlclient.ObjectKey{
-				Name:      utils.HaDeploymentName,
+				Name:      utils.DeploymentName,
 				Namespace: "default",
 			}
 			err := client.Get(ctx, deployKey, deployment)
@@ -411,7 +411,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 			}
 			deployment.Spec.Replicas = utils.Int32Ptr(1)
 			err = client.Update(ctx, deployment)
-			logrus.Infof("waiting for the workload to be start ")
+			logrus.Infof("waiting for the workload to be start")
 			err = wait.PollImmediate(10*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(1) {
 					return false, nil
@@ -432,7 +432,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 
 			deployment := &appsv1.Deployment{}
 			deployKey := ctrlclient.ObjectKey{
-				Name:      utils.HaDeploymentName,
+				Name:      utils.DeploymentName,
 				Namespace: "default",
 			}
 			err = client.Get(ctx, deployKey, deployment)
@@ -473,7 +473,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 			//delete deploy
 			deployment := &appsv1.Deployment{}
 			deployKey := ctrlclient.ObjectKey{
-				Name:      utils.HaDeploymentName,
+				Name:      utils.DeploymentName,
 				Namespace: "default",
 			}
 			err := client.Get(ctx, deployKey, deployment)
