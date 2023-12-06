@@ -175,17 +175,18 @@ func (lsnController *LocalStorageNodeController) convertStorageNode(lsn apisv1al
 func (lsnController *LocalStorageNodeController) GetStorageNode(nodeName string) (*hwameistorapi.StorageNode, error) {
 	var queryPage hwameistorapi.QueryPage
 	queryPage.NodeName = nodeName
-	sns, err := lsnController.ListLocalStorageNode(queryPage)
+	var sn = &hwameistorapi.StorageNode{}
+	lsn := &apisv1alpha1.LocalStorageNode{}
+	objectKey := client.ObjectKey{Name: nodeName}
+	lsn, err := lsnController.GetLocalStorageNode(objectKey)
 	if err != nil {
-		log.WithError(err).Error("Failed to ListLocalStorageNode")
+		log.WithError(err).Error("failed to get localstoragenode,nodeName: %v", nodeName)
 		return nil, err
 	}
-
-	for _, sn := range sns {
-		if sn.LocalStorageNode.Name == nodeName {
-			return sn, nil
-		}
-	}
+	sn.LocalStorageNode = *lsn
+	k8sNode, K8sNodeState := lsnController.getK8SNode(lsn.Name)
+	sn.K8sNode = k8sNode
+	sn.K8sNodeState = K8sNodeState
 
 	return nil, nil
 }
@@ -345,37 +346,36 @@ func (lsnController *LocalStorageNodeController) GetLocalDiskNode(nodeName strin
 }
 
 func (lsnController *LocalStorageNodeController) ListStorageNodeDisks(queryPage hwameistorapi.QueryPage) ([]*hwameistorapi.LocalDiskInfo, error) {
-	diskList := &apisv1alpha1.LocalDiskList{}
-	if err := lsnController.Client.List(context.TODO(), diskList); err != nil {
+	diskList, err := lsnController.ldHandler.ListNodeLocalDisk(queryPage.NodeName)
+	if err != nil {
 		log.WithError(err).Error("Failed to list LocalDisks")
 		return nil, err
 	}
 
 	var disks []*hwameistorapi.LocalDiskInfo
 	for i := range diskList.Items {
-		if diskList.Items[i].Spec.NodeName == queryPage.NodeName {
-			var disk = &hwameistorapi.LocalDiskInfo{}
-			disk.LocalDisk = diskList.Items[i]
+		var disk = &hwameistorapi.LocalDiskInfo{}
+		disk.LocalDisk = diskList.Items[i]
 
-			if diskList.Items[i].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameHDD {
-				disk.LocalStoragePooLName = hwameistorapi.PoolNameForHDD
-			} else if diskList.Items[i].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameSSD {
-				disk.LocalStoragePooLName = hwameistorapi.PoolNameForSSD
-			} else if diskList.Items[i].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameNVMe {
-				disk.LocalStoragePooLName = hwameistorapi.PoolNameForNVMe
-			}
-
-			disk.TotalCapacityBytes = diskList.Items[i].Spec.Capacity
-			availableCapacityBytes := lsnController.getAvailableDiskCapacity(queryPage.NodeName, diskList.Items[i].Spec.DevicePath, diskList.Items[i].Spec.DiskAttributes.Type)
-			disk.AvailableCapacityBytes = availableCapacityBytes
-			diskShortName := strings.Split(diskList.Items[i].Spec.DevicePath, hwameistorapi.DEV)[1]
-			disk.DiskPathShort = diskShortName
-
-			log.Infof("ListStorageNodeDisks queryPage.DiskState = %v", queryPage.DiskState)
-			if queryPage.DiskState == "" || (queryPage.DiskState != "" && queryPage.DiskState == disk.Status.State) {
-				disks = append(disks, disk)
-			}
+		if diskList.Items[i].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameHDD {
+			disk.LocalStoragePooLName = hwameistorapi.PoolNameForHDD
+		} else if diskList.Items[i].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameSSD {
+			disk.LocalStoragePooLName = hwameistorapi.PoolNameForSSD
+		} else if diskList.Items[i].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameNVMe {
+			disk.LocalStoragePooLName = hwameistorapi.PoolNameForNVMe
 		}
+
+		disk.TotalCapacityBytes = diskList.Items[i].Spec.Capacity
+		availableCapacityBytes := lsnController.getAvailableDiskCapacity(queryPage.NodeName, diskList.Items[i].Spec.DevicePath, diskList.Items[i].Spec.DiskAttributes.Type)
+		disk.AvailableCapacityBytes = availableCapacityBytes
+		diskShortName := strings.Split(diskList.Items[i].Spec.DevicePath, hwameistorapi.DEV)[1]
+		disk.DiskPathShort = diskShortName
+
+		log.Infof("ListStorageNodeDisks queryPage.DiskState = %v", queryPage.DiskState)
+		if queryPage.DiskState == "" || (queryPage.DiskState != "" && queryPage.DiskState == disk.Status.State) {
+			disks = append(disks, disk)
+		}
+
 	}
 
 	return disks, nil
