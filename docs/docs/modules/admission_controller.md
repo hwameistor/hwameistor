@@ -5,7 +5,9 @@ sidebar_label: "Admission Controller"
 
 # admission-controller
 
-`admission-controller` is a webhook that can automatically verify which pod uses the HwameiStor volume and help to modify the schedulerName to hwameistor-scheduler. For the specific principle, refer to [K8S Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/).
+`admission-controller` is a webhook that can automatically verify which pod uses the HwameiStor volume
+and help to modify the schedulerName to hwameistor-scheduler. For the specific principle, refer to
+[K8s Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/).
 
 ## How to identify a HwameiStor volume?
 
