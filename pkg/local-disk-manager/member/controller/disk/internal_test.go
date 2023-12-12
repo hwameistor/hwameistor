@@ -260,3 +260,53 @@ func Test_GetNodeDisks(t *testing.T) {
 		})
 	}
 }
+
+func Test_GetNodeAvailableDisks(t *testing.T) {
+	testcases := []struct {
+		Description  string
+		DiskNodeName string
+		DiskNode     *v1alpha1.LocalDiskNode
+		ExpectDisk   []types2.Disk
+	}{
+		// TODO: Add More test case
+		{
+			Description:  "It is a GetNodeAvailableDisks test.",
+			DiskNodeName: fakeLocalDiskNodeName,
+			DiskNode:     GenFakeLocalDiskNodeObject(),
+			ExpectDisk: []types2.Disk{
+				{
+					AttachNode: fakeLocalDiskNodeName,
+					Name:       fakeDevPath,
+					DevPath:    fakeDevPath,
+					Capacity:   fakeTotalCapacityBytes,
+					DiskType:   types2.DevTypeHDD,
+					Status:     types2.DiskStatus(v1alpha1.DiskStateAvailable),
+				},
+			},
+		},
+	}
+
+	for _, testcase := range testcases {
+		t.Run(testcase.Description, func(t *testing.T) {
+			client, err := CreateFakeKubeClient()
+			if err != nil {
+				t.Fatal("create a fake client failed")
+			}
+			_, err = client.Create(testcase.DiskNode)
+			if err != nil {
+				t.Fatal("create LocalDiskNode failed")
+			}
+			getFakeClient := func() (*localdisknode.Kubeclient, error) {
+				return client, nil
+			}
+			ldnManager := localDiskNodesManager{}
+			ldnManager.GetClient = getFakeClient
+			fakeClient := GenFakeClient()
+			ldnManager.DiskHandler = localdisk2.NewLocalDiskHandler(fakeClient, fakeRecorder)
+			disks, err := ldnManager.GetNodeAvailableDisks(testcase.DiskNodeName)
+			if !reflect.DeepEqual(disks, testcase.ExpectDisk) {
+				t.Fatal("get a disks not same as expectDisk")
+			}
+		})
+	}
+}
