@@ -446,6 +446,42 @@ else
 	CGO_ENABLED=0 GOOS=${OS} GOARCH=${ARCH} ${BUILD_CMD} -o "_build/hwameictl/hwameictl-${OS}-${ARCH}" ${BUILD_OPTIONS} ${HWAMEICTL_BUILD_INPUT}
 endif
 
+###for disk-health-prediction###
+DISK_MODULE_NAME = disk-health-prediction
+DISK_BUILD_INPUT = ${CMDS_DIR}/${DISK_MODULE_NAME}/main.go
+
+.PHONY: compile_disk-health-prediction
+compile_disk-health-prediction:
+	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${DISK_BUILD_OUTPUT} ${DISK_BUILD_INPUT}
+
+.PHONY: compile_disk-health-prediction_arm64
+compile_disk-health-prediction_arm64:
+	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${DISK_BUILD_OUTPUT} ${DISK_BUILD_INPUT}
+
+.PHONY: build_disk-health-prediction_image
+build_disk-health-prediction_image:
+	@echo "Build hwameistor disk-health-prediction image ${DISK_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_disk-health-prediction
+	docker build -t ${DISK_IMAGE_NAME}:${IMAGE_TAG} -f ${DISK_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: build_disk-health-prediction_image_arm64
+build_disk-health-prediction_image_arm64:
+	@echo "Build hwameistor disk-health-prediction image ${DISK_IMAGE_NAME}:${IMAGE_TAG}"
+	${DOCKER_MAKE_CMD} make compile_disk-health-prediction_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${DISK_IMAGE_NAME}:${IMAGE_TAG} -f ${DISK_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+.PHONY: release_disk-health-prediction
+release_disk-health-prediction:
+	# build for amd64 version
+	${DOCKER_MAKE_CMD} make compile_disk-health-prediction
+	${DOCKER_BUILDX_CMD_AMD64} -t ${DISK_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${DISK_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# build for arm64 version
+	${DOCKER_MAKE_CMD} make compile_disk-health-prediction_arm64
+	${DOCKER_BUILDX_CMD_ARM64} -t ${DISK_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${DISK_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# push to a public registry
+	${MUILT_ARCH_PUSH_CMD} -i ${DISK_IMAGE_NAME}:${RELEASE_TAG}
+
+
 .PHONY: apis
 apis:
 	${DOCKER_MAKE_CMD} make _gen-apis
