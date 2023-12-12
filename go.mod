@@ -44,6 +44,7 @@ require (
 	github.com/containerd/cgroups/v3 v3.0.2
 	github.com/gin-gonic/gin v1.8.1
 	github.com/gobwas/glob v0.2.3
+	github.com/gocarina/gocsv v0.0.0-20231116093920-b87c2d0e983a
 	github.com/hwameistor/hwameistor-operator v0.10.7
 	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/jinzhu/gorm v1.9.16

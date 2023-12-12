@@ -132,6 +132,9 @@ github.com/gobwas/glob/syntax/ast
 github.com/gobwas/glob/syntax/lexer
 github.com/gobwas/glob/util/runes
 github.com/gobwas/glob/util/strings
+# github.com/gocarina/gocsv v0.0.0-20231116093920-b87c2d0e983a
+## explicit; go 1.13
+github.com/gocarina/gocsv
 # github.com/goccy/go-json v0.9.7
 ## explicit; go 1.12
 github.com/goccy/go-json
