@@ -73,10 +73,10 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		"capabilities":     req.VolumeCapabilities,
 	})
 	logCtx.Debug("CreateVolume")
-
 	var (
-		volume = apisv1alpha1.LocalVolume{}
-		resp   = &csi.CreateVolumeResponse{}
+		volume         = apisv1alpha1.LocalVolume{}
+		resp           = &csi.CreateVolumeResponse{Volume: &csi.Volume{}}
+		lastSavedError error
 	)
 
 	// 1. create volume if not exist
@@ -86,29 +86,44 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		}
 
 		if err = p.createEmptyVolumeFromRequest(ctx, req); err != nil {
-			return resp, status.Errorf(codes.Internal, "failed to create volume %v", err)
+			return resp, status.Errorf(codes.InvalidArgument, "failed to create volume %v", err)
 		}
 	}
 
 	// 2. check if volume is ready to use per 2 seconds
-	return resp, wait.PollUntil(RetryInterval, func() (done bool, err error) {
-		logCtx.Debug("Checking if LocalVolume ready to use")
+	if err := wait.PollUntil(RetryInterval, func() (done bool, err error) {
+		logCtx.Debugf("Checking if LocalVolume ready to use")
 		if err = p.apiClient.Get(ctx, client.ObjectKey{Name: req.Name}, &volume); err != nil {
-			p.logger.WithError(err).Errorf("failed to get volume %v", err)
-			return false, err
+			lastSavedError = status.Errorf(codes.Unavailable, "failed to get volume %s %v", volume.Name, err)
+			return false, nil
 		}
 
 		if volume.Status.State != apisv1alpha1.VolumeStateReady {
-			return false, status.Errorf(codes.Internal, "LocalVolume %s is NotReady", volume.Name)
+			lastSavedError = status.Errorf(codes.Unavailable, "LocalVolume %s is NotReady", volume.Name)
+			return false, nil
 		}
 
+		// volume finally ready update response info
 		resp.Volume = &csi.Volume{
 			VolumeId:      volume.Name,
 			CapacityBytes: volume.Status.AllocatedCapacityBytes,
 			VolumeContext: req.Parameters,
 		}
+		lastSavedError = nil
 		return true, nil
-	}, ctx.Done())
+	}, ctx.Done()); err != nil {
+		// must be timeout error
+		lastSavedError = status.Errorf(codes.Unavailable, "LocalVolume %s is NotReady(deadline exceeded)", volume.Name)
+	}
+
+	// complete the request when context deadline exceeded or volume is ready to use
+	if lastSavedError != nil {
+		logCtx.Debugf("CreateVolume failed due to at context deadline exceeded, lastSavedError => %v", lastSavedError)
+	} else {
+		logCtx.Debugf("CreateVolume successfully, volume info => %v", resp.Volume)
+	}
+
+	return resp, lastSavedError
 }
 
 // createEmptyVolumeFromRequest creates a volume with the given request - without snapshot and clone
@@ -482,7 +497,7 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 		return true, nil
 	}, ctx.Done()); err != nil {
 		logCtx.WithError(err).Errorf("LocalVolume %s is NotReady", req.Name)
-		return resp, status.Errorf(codes.Internal, "failed to check LocalVolume %s Ready or Not: %v", volume.Name, err)
+		return resp, status.Errorf(codes.Unavailable, "failed to check LocalVolume %s Ready or Not: %v", volume.Name, err)
 	}
 
 	// 3. create LocalVolumeSnapshotRestore instance
@@ -497,7 +512,7 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 	if err := p.apiClient.Create(ctx, &volumeSnapshotRestore); err != nil {
 		if !errors.IsAlreadyExists(err) {
 			logCtx.WithError(err).Errorf("failed to create LocalVolumeSnapshotRestore %s", snapshotRestoreName)
-			return resp, status.Errorf(codes.Internal, "failed to create LocalVolumeSnapshotRestore: %v", err)
+			return resp, status.Errorf(codes.Unavailable, "failed to create LocalVolumeSnapshotRestore: %v", err)
 		}
 	}
 
@@ -514,7 +529,7 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 		}
 		if volumeSnapshotRestore.Status.State != apisv1alpha1.OperationStateCompleted {
 			if tryCount >= 10 {
-				return true, status.Errorf(codes.Internal, "LocalVolumeSnapshotRestore %s is not completed after %d retries", volumeSnapshotRestore.Name, tryCount)
+				return true, status.Errorf(codes.Unavailable, "LocalVolumeSnapshotRestore %s is not completed after %d retries", volumeSnapshotRestore.Name, tryCount)
 			}
 			p.logger.WithField("tryCount", tryCount).Debugf("LocalVolumeSnapshotRestore %s is not completed", volume.Name)
 			return false, nil
@@ -608,7 +623,7 @@ func (p *plugin) cloneVolume(ctx context.Context, req *csi.CreateVolumeRequest) 
 	// Step2: restore volume from snapshot
 	logCtx.Debug("Step2: Restoring snapshot")
 	if snapResp, err := p.restoreVolumeFromSnapshot(ctx, snapshotRestoreRequest); err != nil {
-		return resp, status.Errorf(codes.Internal, "Failed to restore volume from snapshot %v", err)
+		return resp, status.Errorf(codes.Unavailable, "Failed to restore volume from snapshot %v", err)
 	} else {
 		snapshotDeleteRequest.SnapshotId = snapResp.GetVolume().GetVolumeContext()[apisv1alpha1.SourceVolumeSnapshotAnnoKey]
 		resp.Volume.ContentSource = &sourceVolumeCopy
@@ -617,7 +632,7 @@ func (p *plugin) cloneVolume(ctx context.Context, req *csi.CreateVolumeRequest) 
 	// Step3: clean up the snapshot
 	logCtx.Debug("Step3: Cleaning up snapshot")
 	if _, err := p.DeleteSnapshot(ctx, snapshotDeleteRequest); err != nil {
-		return resp, status.Errorf(codes.Internal, "Failed to delete snapshot %v", err)
+		return resp, status.Errorf(codes.Unavailable, "Failed to delete snapshot %v", err)
 	}
 	logCtx.Debug("volume clone successful")
 	return resp, nil
