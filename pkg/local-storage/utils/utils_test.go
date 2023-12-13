@@ -48,7 +48,7 @@ func TestBuildStoragePoolName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := BuildStoragePoolName(tt.args.poolClass, tt.args.poolType)
+			got, err := BuildStoragePoolName(tt.args.poolClass)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BuildStoragePoolName() error = %v, wantErr %v", err, tt.wantErr)
 				return

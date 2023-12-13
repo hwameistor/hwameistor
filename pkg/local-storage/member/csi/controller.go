@@ -356,7 +356,7 @@ func constructLocalVolumeForPVC(pvc *corev1.PersistentVolumeClaim, sc *storagev1
 	lv := apisv1alpha1.LocalVolume{}
 	poolName, err := buildStoragePoolName(
 		sc.Parameters[apisv1alpha1.VolumeParameterPoolClassKey],
-		sc.Parameters[apisv1alpha1.VolumeParameterPoolTypeKey])
+		)
 	if err != nil {
 		return nil, err
 	}
@@ -372,15 +372,15 @@ func constructLocalVolumeForPVC(pvc *corev1.PersistentVolumeClaim, sc *storagev1
 	return &lv, nil
 }
 
-func buildStoragePoolName(poolClass string, poolType string) (string, error) {
+func buildStoragePoolName(poolClass string) (string, error) {
 
-	if poolClass == apisv1alpha1.DiskClassNameHDD && poolType == apisv1alpha1.PoolTypeRegular {
+	if poolClass == apisv1alpha1.DiskClassNameHDD {
 		return apisv1alpha1.PoolNameForHDD, nil
 	}
-	if poolClass == apisv1alpha1.DiskClassNameSSD && poolType == apisv1alpha1.PoolTypeRegular {
+	if poolClass == apisv1alpha1.DiskClassNameSSD {
 		return apisv1alpha1.PoolNameForSSD, nil
 	}
-	if poolClass == apisv1alpha1.DiskClassNameNVMe && poolType == apisv1alpha1.PoolTypeRegular {
+	if poolClass == apisv1alpha1.DiskClassNameNVMe {
 		return apisv1alpha1.PoolNameForNVMe, nil
 	}
 
