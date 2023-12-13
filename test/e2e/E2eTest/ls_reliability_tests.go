@@ -52,8 +52,6 @@ var _ = ginkgo.Describe("reliability test ", ginkgo.Label("periodCheck"), func()
 					"replicaNumber":             "1",
 					"poolClass":                 "HDD",
 					"poolType":                  "REGULAR",
-					"volumeKind":                "LVM",
-					"striped":                   "true",
 					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,
