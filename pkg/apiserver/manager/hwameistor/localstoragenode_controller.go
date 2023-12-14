@@ -491,6 +491,10 @@ func (lsnController *LocalStorageNodeController) SetStorageNodeDiskOwner(queryPa
 		log.Errorf("failed to get localDisk %s", err.Error())
 		return RspBody, err
 	}
+	if len(localDisks) == 0 {
+		log.WithField("nodeName", queryPage.NodeName).WithField("devPath", hwameistorapi.DEV+queryPage.DeviceShortPath).Errorf("no localdisks found")
+		return RspBody, fmt.Errorf("no localdisks found,nodeName:%v,devPath:%v", queryPage.NodeName, hwameistorapi.DEV+queryPage.DeviceShortPath)
+	}
 	ld := &localDisks[0]
 	//Unable to operate the operating system disk
 	if ld.Spec.Owner != "" {
