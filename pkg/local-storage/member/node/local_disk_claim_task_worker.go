@@ -148,7 +148,7 @@ func (m *manager) processLocalDiskClaimBound(claim *apisv1alpha1.LocalDiskClaim)
 	}
 
 	// 3. record claim and disks backing this claim to StorageNode
-	pool, _ := utils.BuildStoragePoolName(claim.Spec.Description.DiskType, apisv1alpha1.PoolTypeRegular)
+	pool, _ := utils.BuildStoragePoolName(claim.Spec.Description.DiskType)
 	if err = m.storageMgr.Registry().UpdatePoolExtendRecord(pool, claim.Spec); err != nil {
 		logCtx.WithError(err).Error("Failed to UpdatePoolExtendRecord")
 		m.recorder.Eventf(claim, v1.EventTypeWarning, apisv1alpha1.LocalDiskClaimEventReasonConsumedFail,
