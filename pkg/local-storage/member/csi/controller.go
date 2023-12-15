@@ -73,10 +73,10 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		"capabilities":     req.VolumeCapabilities,
 	})
 	logCtx.Debug("CreateVolume")
-
 	var (
-		volume = apisv1alpha1.LocalVolume{}
-		resp   = &csi.CreateVolumeResponse{}
+		volume         = apisv1alpha1.LocalVolume{}
+		resp           = &csi.CreateVolumeResponse{Volume: &csi.Volume{}}
+		lastSavedError error
 	)
 
 	// 1. create volume if not exist
@@ -91,24 +91,39 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	}
 
 	// 2. check if volume is ready to use per 2 seconds
-	return resp, wait.PollUntil(RetryInterval, func() (done bool, err error) {
-		logCtx.Debug("Checking if LocalVolume ready to use")
+	if err := wait.PollUntil(RetryInterval, func() (done bool, err error) {
+		logCtx.Debugf("Checking if LocalVolume ready to use")
 		if err = p.apiClient.Get(ctx, client.ObjectKey{Name: req.Name}, &volume); err != nil {
-			p.logger.WithError(err).Errorf("failed to get volume %v", err)
-			return false, err
+			lastSavedError = status.Errorf(codes.Unavailable, "failed to get volume %s %v", volume.Name, err)
+			return false, nil
 		}
 
 		if volume.Status.State != apisv1alpha1.VolumeStateReady {
-			return false, status.Errorf(codes.Unavailable, "LocalVolume %s is NotReady", volume.Name)
+			lastSavedError = status.Errorf(codes.Unavailable, "LocalVolume %s is NotReady", volume.Name)
+			return false, nil
 		}
 
+		// volume finally ready update response info
 		resp.Volume = &csi.Volume{
 			VolumeId:      volume.Name,
 			CapacityBytes: volume.Status.AllocatedCapacityBytes,
 			VolumeContext: req.Parameters,
 		}
+		lastSavedError = nil
 		return true, nil
-	}, ctx.Done())
+	}, ctx.Done()); err != nil {
+		// must be timeout error
+		lastSavedError = status.Errorf(codes.Unavailable, "LocalVolume %s is NotReady(deadline exceeded)", volume.Name)
+	}
+
+	// complete the request when context deadline exceeded or volume is ready to use
+	if lastSavedError != nil {
+		logCtx.Debugf("CreateVolume failed due to at context deadline exceeded, lastSavedError => %v", lastSavedError)
+	} else {
+		logCtx.Debugf("CreateVolume successfully, volume info => %v", resp.Volume)
+	}
+
+	return resp, lastSavedError
 }
 
 // createEmptyVolumeFromRequest creates a volume with the given request - without snapshot and clone
