@@ -2,6 +2,7 @@ package faultmanagement
 
 import (
 	"fmt"
+	hwameistorclient "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned"
 	"github.com/hwameistor/hwameistor/pkg/apis/client/informers/externalversions/hwameistor/v1alpha1"
 	listers "github.com/hwameistor/hwameistor/pkg/apis/client/listers/hwameistor/v1alpha1"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
@@ -17,17 +18,19 @@ type manager struct {
 	logger    *log.Entry
 	kclient   client.Client
 
+	hmClient          hwameistorclient.Interface
 	faultTicketLister listers.FaultTicketLister
 	faultTicketSynced cache.InformerSynced
 
 	faultTicketTaskQueue *common.TaskQueue
 }
 
-func New(name, namespace string, kclient client.Client, faultTickerInformer v1alpha1.FaultTicketInformer) *manager {
+func New(name, namespace string, kclient client.Client, hmClient hwameistorclient.Interface, faultTickerInformer v1alpha1.FaultTicketInformer) *manager {
 	m := &manager{
 		name:      name,
 		namespace: namespace,
 		kclient:   kclient,
+		hmClient:  hmClient,
 		// don't set maxRetries, 0 means no limit, and events won't be dropped
 		faultTicketTaskQueue: common.NewTaskQueue("FaultTicketTaskQueue", 0),
 		logger:               log.WithField("Module", "FaultManagement"),

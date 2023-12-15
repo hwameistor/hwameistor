@@ -38,8 +38,8 @@ func main() {
 		logrus.WithError(err).Fatal("Failed to get kubernetes cluster config")
 	}
 
-	var hwClientSet *hwclientset.Clientset
-	if hwClientSet, err = hwclientset.NewForConfig(cfg); err != nil {
+	var hmClientSet *hwclientset.Clientset
+	if hmClientSet, err = hwclientset.NewForConfig(cfg); err != nil {
 		logrus.WithError(err).Fatal("Failed to create hwameistor clientset")
 	}
 
@@ -48,12 +48,12 @@ func main() {
 		logrus.WithError(err).Fatal("Failed to create Kubernetes client")
 	}
 
-	hwShareInformer := hwinformers.NewSharedInformerFactory(hwClientSet, 0)
+	hwShareInformer := hwinformers.NewSharedInformerFactory(hmClientSet, 0)
 	_ = apisv1alpha.AddToScheme(scheme.Scheme)
 
 	ctx := signals.SetupSignalHandler()
 	if err = utils.RunWithLease(namespace, podName, "hwameistor-fault-management", func(_ context.Context) {
-		faultmanager := faultmanagement.New(nodeName, namespace, kclient,
+		faultmanager := faultmanagement.New(nodeName, namespace, kclient, hmClientSet,
 			hwShareInformer.Hwameistor().V1alpha1().FaultTickets())
 		hwShareInformer.Start(ctx.Done())
 

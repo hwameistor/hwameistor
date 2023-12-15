@@ -20,9 +20,10 @@ const (
 	Volume FaultEffectScope = "Volume"
 	App    FaultEffectScope = "App"
 
-	Evaluating TicketPhase = "Evaluating"
-	Recovering TicketPhase = "Recovering"
-	Completed  TicketPhase = "Completed"
+	TicketPhaseEmpty      TicketPhase = ""
+	TicketPhaseEvaluating TicketPhase = "Evaluating"
+	TicketPhaseRecovering TicketPhase = "Recovering"
+	TicketPhaseCompleted  TicketPhase = "Completed"
 
 	FileSystemFault VolumeFaultType = "filesystem"
 	BadBlockFault   VolumeFaultType = "badblock"
