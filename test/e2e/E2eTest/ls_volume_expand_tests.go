@@ -48,7 +48,6 @@ var _ = ginkgo.Describe("localstorage expand volume test", ginkgo.Label("periodC
 				Parameters: map[string]string{
 					"replicaNumber":             "1",
 					"poolClass":                 "HDD",
-					"poolType":                  "REGULAR",
 					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,

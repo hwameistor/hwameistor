@@ -51,7 +51,6 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("periodCheck")
 				Parameters: map[string]string{
 					"replicaNumber":             "1",
 					"poolClass":                 "HDD",
-					"poolType":                  "REGULAR",
 					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,

@@ -55,7 +55,6 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 				Parameters: map[string]string{
 					"replicaNumber":             "1",
 					"poolClass":                 "HDD",
-					"poolType":                  "REGULAR",
 					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,

@@ -47,7 +47,6 @@ var _ = ginkgo.Describe("Deduplication test ", ginkgo.Label("stress-test"), func
 				Parameters: map[string]string{
 					"replicaNumber":             "2",
 					"poolClass":                 "HDD",
-					"poolType":                  "REGULAR",
 					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,

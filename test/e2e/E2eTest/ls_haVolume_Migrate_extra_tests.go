@@ -50,7 +50,6 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 				Parameters: map[string]string{
 					"replicaNumber":             "2",
 					"poolClass":                 "HDD",
-					"poolType":                  "REGULAR",
 					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,

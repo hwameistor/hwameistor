@@ -53,7 +53,6 @@ var _ = ginkgo.Describe("test convertible localstorage volume ", ginkgo.Label("p
 					"replicaNumber":             "1",
 					"convertible":               "true",
 					"poolClass":                 "HDD",
-					"poolType":                  "REGULAR",
 					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,
