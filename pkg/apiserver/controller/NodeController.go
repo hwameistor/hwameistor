@@ -2,17 +2,14 @@ package controller
 
 import (
 	"fmt"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	mgrpkg "sigs.k8s.io/controller-runtime/pkg/manager"
-
 	hwameistorapi "github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	"github.com/hwameistor/hwameistor/pkg/apiserver/manager"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
 )
 
 type INodeController interface {
@@ -31,53 +28,12 @@ type INodeController interface {
 }
 
 type NodeController struct {
-	m           *manager.ServerManager
-	diskHandler *localdisk.Handler
+	m *manager.ServerManager
 }
 
-func NewNodeController(m *manager.ServerManager, mgr mgrpkg.Manager) INodeController {
-
-	//setIndexField(mgr.GetCache())
-	diskHandler := localdisk.NewLocalDiskHandler(mgr.GetClient(),
-		mgr.GetEventRecorderFor("localdisk-controller"))
-
-	return &NodeController{m, diskHandler}
+func NewNodeController(m *manager.ServerManager) INodeController {
+	return &NodeController{m}
 }
-
-//// setIndexField must be called after scheme has been added
-//func setIndexField(cache cache.Cache) {
-//	indexes := []struct {
-//		field string
-//		Func  func(client.Object) []string
-//	}{
-//		{
-//			field: "spec.nodeName",
-//			Func: func(obj client.Object) []string {
-//				return []string{obj.(*v1alpha1.LocalDisk).Spec.NodeName}
-//			},
-//		},
-//		{
-//			field: "spec.devicePath",
-//			Func: func(obj client.Object) []string {
-//				return []string{obj.(*v1alpha1.LocalDisk).Spec.DevicePath}
-//			},
-//		},
-//		{
-//			field: "spec.nodeName/devicePath",
-//			Func: func(obj client.Object) []string {
-//				return []string{obj.(*v1alpha1.LocalDisk).Spec.NodeName + "/" + obj.(*v1alpha1.LocalDisk).Spec.DevicePath}
-//			},
-//		},
-//	}
-//
-//	for _, index := range indexes {
-//		if err := cache.IndexField(context.Background(), &v1alpha1.LocalDisk{}, index.field, index.Func); err != nil {
-//			log.Error(err, "failed to setup index field %s", index.field)
-//			continue
-//		}
-//		log.Info("setup index field successfully", "field", index.field)
-//	}
-//}
 
 // StorageNodeGet godoc
 // @Summary 摘要 获取指定存储节点
@@ -95,14 +51,14 @@ func (n *NodeController) StorageNodeGet(ctx *gin.Context) {
 	nodeName := ctx.Param("nodeName")
 
 	if nodeName == "" {
-		failRsp.ErrCode = 203
+		failRsp.ErrCode = http.StatusNonAuthoritativeInfo
 		failRsp.Desc = "nodeName cannot be empty"
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 	sn, err := n.m.StorageNodeController().GetStorageNode(nodeName)
 	if err != nil {
-		failRsp.ErrCode = 500
+		failRsp.ErrCode = http.StatusInternalServerError
 		failRsp.Desc = err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
@@ -154,7 +110,7 @@ func (n *NodeController) StorageNodeList(ctx *gin.Context) {
 
 	sns, err := n.m.StorageNodeController().StorageNodeList(queryPage)
 	if err != nil {
-		failRsp.ErrCode = 500
+		failRsp.ErrCode = http.StatusInternalServerError
 		failRsp.Desc = err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
@@ -183,7 +139,7 @@ func (n *NodeController) StorageNodeMigrateGet(ctx *gin.Context) {
 	// 获取path中的name
 	nodeName := ctx.Param("nodeName")
 	if nodeName == "" {
-		failRsp.ErrCode = 203
+		failRsp.ErrCode = http.StatusNonAuthoritativeInfo
 		failRsp.Desc = "nodeName cannot be empty"
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
@@ -213,7 +169,7 @@ func (n *NodeController) StorageNodeMigrateGet(ctx *gin.Context) {
 
 	sns, err := n.m.StorageNodeController().GetStorageNodeMigrate(queryPage)
 	if err != nil {
-		failRsp.ErrCode = 500
+		failRsp.ErrCode = http.StatusInternalServerError
 		failRsp.Desc = err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
 	}
@@ -241,7 +197,7 @@ func (n *NodeController) StorageNodeDisksList(ctx *gin.Context) {
 	// 获取path中的name
 	nodeName := ctx.Param("nodeName")
 	if nodeName == "" {
-		failRsp.ErrCode = 203
+		failRsp.ErrCode = http.StatusNonAuthoritativeInfo
 		failRsp.Desc = "nodeName cannot be empty"
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
@@ -266,7 +222,7 @@ func (n *NodeController) StorageNodeDisksList(ctx *gin.Context) {
 
 	lds, err := n.m.StorageNodeController().LocalDiskListByNode(queryPage)
 	if err != nil {
-		failRsp.ErrCode = 500
+		failRsp.ErrCode = http.StatusInternalServerError
 		failRsp.Desc = err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
@@ -301,7 +257,7 @@ func (n *NodeController) UpdateStorageNodeDisk(ctx *gin.Context) {
 	err := ctx.ShouldBind(&drb)
 	if err != nil {
 		log.Errorf("Unmarshal err = %v", err)
-		failRsp.ErrCode = 203
+		failRsp.ErrCode = http.StatusNonAuthoritativeInfo
 		failRsp.Desc = err.Error()
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
@@ -309,7 +265,7 @@ func (n *NodeController) UpdateStorageNodeDisk(ctx *gin.Context) {
 	reserve := drb.Reserve
 
 	if nodeName == "" || devicePath == "" {
-		failRsp.ErrCode = 203
+		failRsp.ErrCode = http.StatusNonAuthoritativeInfo
 		failRsp.Desc = "nodeName or devicePath cannot be empty"
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
@@ -320,18 +276,18 @@ func (n *NodeController) UpdateStorageNodeDisk(ctx *gin.Context) {
 	queryPage.DeviceShortPath = devicePath
 
 	if reserve == true {
-		diskReservedRsp, err := n.m.StorageNodeController().ReserveStorageNodeDisk(queryPage, n.diskHandler)
+		diskReservedRsp, err := n.m.StorageNodeController().ReserveStorageNodeDisk(queryPage)
 		if err != nil {
-			failRsp.ErrCode = 500
+			failRsp.ErrCode = http.StatusInternalServerError
 			failRsp.Desc = "ReserveStorageNodeDisk Failed:" + err.Error()
 			ctx.JSON(http.StatusInternalServerError, failRsp)
 			return
 		}
 		ctx.JSON(http.StatusOK, diskReservedRsp)
 	} else {
-		removeDiskReservedRsp, err := n.m.StorageNodeController().RemoveReserveStorageNodeDisk(queryPage, n.diskHandler)
+		removeDiskReservedRsp, err := n.m.StorageNodeController().RemoveReserveStorageNodeDisk(queryPage)
 		if err != nil {
-			failRsp.ErrCode = 500
+			failRsp.ErrCode = http.StatusInternalServerError
 			failRsp.Desc = "ReserveStorageNodeDisk Failed:" + err.Error()
 			ctx.JSON(http.StatusInternalServerError, failRsp)
 			return
@@ -376,11 +332,11 @@ func (n *NodeController) SetStorageNodeDiskOwner(ctx *gin.Context) {
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
-	if owner != apisv1alpha1.LocalStorage && owner != apisv1alpha1.LocalDiskManager {
+	if owner != v1alpha1.LocalStorage && owner != v1alpha1.LocalDiskManager {
 		// check owner reasonable
 		ctx.JSON(http.StatusNonAuthoritativeInfo, hwameistorapi.RspFailBody{
 			ErrCode: http.StatusNonAuthoritativeInfo,
-			Desc:    fmt.Sprintf("owner must be %s or %s", apisv1alpha1.LocalStorage, apisv1alpha1.LocalDiskManager),
+			Desc:    fmt.Sprintf("owner must be %s or %s", v1alpha1.LocalStorage, v1alpha1.LocalDiskManager),
 		})
 		return
 	}
@@ -390,9 +346,9 @@ func (n *NodeController) SetStorageNodeDiskOwner(ctx *gin.Context) {
 	queryPage.Owner = owner
 
 	//if owner is system, can`t change owner
-	ownerRspBody, err := n.m.StorageNodeController().SetStorageNodeDiskOwner(queryPage, n.diskHandler)
+	ownerRspBody, err := n.m.StorageNodeController().SetStorageNodeDiskOwner(queryPage)
 	if err != nil {
-		failRsp.ErrCode = 500
+		failRsp.ErrCode = http.StatusInternalServerError
 		failRsp.Desc = "ReserveStorageNodeDisk Failed:" + err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
@@ -424,7 +380,7 @@ func (n *NodeController) GetStorageNodeDisk(ctx *gin.Context) {
 	diskName := ctx.Param("diskName")
 
 	if nodeName == "" || diskName == "" {
-		failRsp.ErrCode = 203
+		failRsp.ErrCode = http.StatusNonAuthoritativeInfo
 		failRsp.Desc = "nodeName or diskName cannot be empty"
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
@@ -434,9 +390,9 @@ func (n *NodeController) GetStorageNodeDisk(ctx *gin.Context) {
 	queryPage.NodeName = nodeName
 	queryPage.DiskName = diskName
 
-	localDiskInfo, err := n.m.StorageNodeController().GetStorageNodeDisk(queryPage, n.diskHandler)
+	localDiskInfo, err := n.m.StorageNodeController().GetStorageNodeDisk(queryPage)
 	if err != nil {
-		failRsp.ErrCode = 500
+		failRsp.ErrCode = http.StatusInternalServerError
 		failRsp.Desc = "GetStorageNodeDisk Failed:" + err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
@@ -465,7 +421,7 @@ func (n *NodeController) StorageNodePoolsList(ctx *gin.Context) {
 	nodeName := ctx.Param("nodeName")
 
 	if nodeName == "" {
-		failRsp.ErrCode = 203
+		failRsp.ErrCode = http.StatusNonAuthoritativeInfo
 		failRsp.Desc = "nodeName cannot be empty"
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
@@ -483,9 +439,9 @@ func (n *NodeController) StorageNodePoolsList(ctx *gin.Context) {
 	queryPage.Page = int32(p)
 	queryPage.PageSize = int32(ps)
 
-	storagePoolList, err := n.m.StorageNodeController().StorageNodePoolsList(queryPage, n.diskHandler)
+	storagePoolList, err := n.m.StorageNodeController().StorageNodePoolsList(queryPage)
 	if err != nil {
-		failRsp.ErrCode = 500
+		failRsp.ErrCode = http.StatusInternalServerError
 		failRsp.Desc = "StorageNodePoolsList Failed:" + err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
@@ -515,7 +471,7 @@ func (n *NodeController) StorageNodePoolGet(ctx *gin.Context) {
 	poolName := ctx.Param("poolName")
 
 	if nodeName == "" || poolName == "" {
-		failRsp.ErrCode = 203
+		failRsp.ErrCode = http.StatusNonAuthoritativeInfo
 		failRsp.Desc = "nodeName or poolName cannot be empty"
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
@@ -525,9 +481,9 @@ func (n *NodeController) StorageNodePoolGet(ctx *gin.Context) {
 	queryPage.NodeName = nodeName
 	queryPage.PoolName = poolName
 
-	storagePool, err := n.m.StorageNodeController().StorageNodePoolGet(queryPage, n.diskHandler)
+	storagePool, err := n.m.StorageNodeController().StorageNodePoolGet(queryPage)
 	if err != nil {
-		failRsp.ErrCode = 500
+		failRsp.ErrCode = http.StatusInternalServerError
 		failRsp.Desc = "StorageNodePoolGet Failed:" + err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
@@ -558,7 +514,7 @@ func (n *NodeController) StorageNodePoolDisksList(ctx *gin.Context) {
 	poolName := ctx.Param("poolName")
 
 	if nodeName == "" || poolName == "" {
-		failRsp.ErrCode = 203
+		failRsp.ErrCode = http.StatusNonAuthoritativeInfo
 		failRsp.Desc = "nodeName or poolName cannot be empty"
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
@@ -568,9 +524,9 @@ func (n *NodeController) StorageNodePoolDisksList(ctx *gin.Context) {
 	queryPage.NodeName = nodeName
 	queryPage.PoolName = poolName
 
-	localDisksItemsList, err := n.m.StorageNodeController().StorageNodePoolDisksList(queryPage, n.diskHandler)
+	localDisksItemsList, err := n.m.StorageNodeController().StorageNodePoolDisksList(queryPage)
 	if err != nil {
-		failRsp.ErrCode = 500
+		failRsp.ErrCode = http.StatusInternalServerError
 		failRsp.Desc = "StorageNodePoolDisksList Failed:" + err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
@@ -604,7 +560,7 @@ func (n *NodeController) StorageNodePoolDiskGet(ctx *gin.Context) {
 	diskName := ctx.Param("diskName")
 
 	if nodeName == "" || diskName == "" || poolName == "" {
-		failRsp.ErrCode = 203
+		failRsp.ErrCode = http.StatusNonAuthoritativeInfo
 		failRsp.Desc = "nodeName or diskName or poolName cannot be empty"
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
@@ -615,9 +571,9 @@ func (n *NodeController) StorageNodePoolDiskGet(ctx *gin.Context) {
 	queryPage.DiskName = diskName
 	queryPage.PoolName = poolName
 
-	localDiskInfo, err := n.m.StorageNodeController().StorageNodePoolDiskGet(queryPage, n.diskHandler)
+	localDiskInfo, err := n.m.StorageNodeController().StorageNodePoolDiskGet(queryPage)
 	if err != nil {
-		failRsp.ErrCode = 500
+		failRsp.ErrCode = http.StatusInternalServerError
 		failRsp.Desc = "StorageNodePoolDiskGet Failed:" + err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return

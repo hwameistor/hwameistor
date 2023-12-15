@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdisk"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
@@ -41,6 +42,10 @@ func (m *ServerManager) StorageNodeController() *hwameistorctr.LocalStorageNodeC
 	var recorder record.EventRecorder
 	if m.lsnController == nil {
 		m.lsnController = hwameistorctr.NewLocalStorageNodeController(m.mgr.GetClient(), m.clientset, recorder)
+		// set localdisk handler
+		localDiskRecorder := m.mgr.GetEventRecorderFor("apiserver-localdisk-controller")
+		diskHandler := localdisk.NewLocalDiskHandler(m.mgr.GetClient(), localDiskRecorder)
+		m.lsnController.SetLdHandler(diskHandler)
 	}
 	return m.lsnController
 }

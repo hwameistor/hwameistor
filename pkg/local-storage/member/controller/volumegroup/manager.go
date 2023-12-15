@@ -3,6 +3,7 @@ package volumegroup
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 
@@ -145,7 +146,7 @@ func (m *manager) GetLocalVolumeByLocalVolumeGroup(lvg *apisv1alpha1.LocalVolume
 
 	for _, volume := range lvList.Items {
 		if volume.Spec.VolumeGroup == lvg.Name {
-			volumes = append(volumes, &volume)
+			volumes = append(volumes, volume.DeepCopy())
 		}
 	}
 	return volumes, nil
@@ -438,37 +439,37 @@ func (m *manager) updateLocalVolumeGroupAccessibility(lvg *apisv1alpha1.LocalVol
 		return err
 	}
 
+	m.logger.WithField("volumes", len(volumes)).Debugf("found associated volumes in LocalVolumeGroup %s", lvg.Name)
 	volumeAccessNodes := map[string]int{}
 	for _, volume := range volumes {
 		if volume.Spec.Config != nil {
 			for _, replica := range volume.Spec.Config.Replicas {
+				m.logger.WithField("volume", volume.Name).Debugf("found replica on host %s LocalVolumeGroup %s", replica.Hostname, lvg.Name)
 				volumeAccessNodes[replica.Hostname]++
 			}
 		}
 	}
 
-	if len(volumeAccessNodes) > len(lvg.Spec.Accessibility.Nodes) {
-		count := -1
-		var nodes []string
-		// check all volumes' replica are ready
-		for nodeName, nodeReadyVolumeCount := range volumeAccessNodes {
-			if count == -1 {
-				count = nodeReadyVolumeCount
-			} else if count != nodeReadyVolumeCount {
-				m.logger.WithFields(log.Fields{"lvg": lvg.Name, "volumeAccessNodes": volumeAccessNodes}).
-					Error("Fail to update LocalVolumeGroup's Accessibility Nodes, replicas are not all ready.")
-				return nil
-			}
-			nodes = append(nodes, nodeName)
+	count := -1
+	var nodes []string
+	// volumes in one group should always have the same accessibility with others
+	for nodeName, volumeCount := range volumeAccessNodes {
+		if count == -1 {
+			count = volumeCount
+		} else if count != volumeCount {
+			err = fmt.Errorf("found inconsistent node accessibility in LocalVolumeGroup %s", lvg.Name)
+			m.logger.WithError(err).WithField("volumeAccessNodes", volumeAccessNodes).Error("failed to update volume group accessibility")
+			return err
 		}
-		// update Group's accessibility nodes
-		nLvg := lvg.DeepCopy()
-		nLvg.SetAccessibilityNodes(nodes)
-		patch := client.MergeFrom(lvg)
-		return m.apiClient.Patch(context.TODO(), nLvg, patch)
+		nodes = append(nodes, nodeName)
 	}
+	sort.Strings(nodes)
 
-	return nil
+	m.logger.WithFields(log.Fields{"volumeGroup": lvg.Name, "accessibilityNodes": nodes}).Debugf("update LocalVolumeGroup accessibility nddes")
+	// update Group's accessibility nodes
+	nLvg := lvg.DeepCopy()
+	nLvg.SetAccessibilityNodes(nodes)
+	return m.apiClient.Patch(context.TODO(), nLvg, client.MergeFrom(lvg))
 }
 
 func (m *manager) deleteLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) error {

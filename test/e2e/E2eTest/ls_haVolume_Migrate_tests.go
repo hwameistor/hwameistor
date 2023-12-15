@@ -215,6 +215,8 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 
 	})
 	ginkgo.Context("test HA-volumes migrate", func() {
+		SourceNode := ""
+		TargetNode := ""
 		ginkgo.It("Write test file", func() {
 			config, err := config.GetConfig()
 			if err != nil {
@@ -276,18 +278,6 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 				logrus.Error("%+v ", err)
 				f.ExpectNoError(err)
 			}
-			deployment := &appsv1.Deployment{}
-			deployKey := ctrlclient.ObjectKey{
-				Name:      utils.HaDeploymentName,
-				Namespace: "default",
-			}
-
-			err = client.Get(ctx, deployKey, deployment)
-			if err != nil {
-				logrus.Printf("%+v ", err)
-				f.ExpectNoError(err)
-			}
-
 			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
 			selector := labels.NewSelector()
 			selector = selector.Add(*apps)
@@ -305,7 +295,6 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 
 			lvname := lvlist.Items[0].Name
 
-			SourceNode := ""
 			for _, lvr := range lvrList.Items {
 				if lvr.Spec.NodeName != podlist.Items[0].Spec.NodeName {
 					SourceNode = lvr.Spec.NodeName
@@ -332,23 +321,25 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 				logrus.Printf("Create lvgm failed ：%+v ", err)
 				f.ExpectNoError(err)
 			}
-			logrus.Infof("wait 3 minutes for migrate lv")
-			time.Sleep(3 * time.Minute)
 
 		})
 		ginkgo.It("check localvolumemigrate", func() {
+			logrus.Infof("wait 10 minutes for migrate lv")
+			err := wait.PollImmediate(10*time.Second, 20*time.Minute, func() (done bool, err error) {
+				lmgList := &v1alpha1.LocalVolumeMigrateList{}
+				err = client.List(ctx, lmgList)
+				if err != nil {
+					logrus.Printf("list lmg failed ：%+v ", err)
+				}
+				if len(lmgList.Items) != 0 {
+					return false, nil
+				} else {
+					logrus.Info("migrate ready")
+					return true, nil
+				}
 
-			lvrList := &v1alpha1.LocalVolumeReplicaList{}
-			err := client.List(ctx, lvrList)
-			if err != nil {
-				logrus.Printf("list lvr failed ：%+v ", err)
-			}
-			lvlist := &v1alpha1.LocalVolumeList{}
-			err = client.List(ctx, lvlist)
-			if err != nil {
-				logrus.Error("%+v ", err)
-				f.ExpectNoError(err)
-			}
+			})
+
 			deployment := &appsv1.Deployment{}
 			deployKey := ctrlclient.ObjectKey{
 				Name:      utils.HaDeploymentName,
@@ -374,14 +365,21 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 				f.ExpectNoError(err)
 			}
 
-			SourceNode := ""
+			lvrList := &v1alpha1.LocalVolumeReplicaList{}
+			err = client.List(ctx, lvrList)
+			if err != nil {
+				logrus.Printf("list lvr failed ：%+v ", err)
+			}
+
+			gomega.Expect(len(lvrList.Items)).To(gomega.Equal(2))
 			for _, lvr := range lvrList.Items {
 				if lvr.Spec.NodeName != podlist.Items[0].Spec.NodeName {
-					SourceNode = lvr.Spec.NodeName
+					TargetNode = lvr.Spec.NodeName
 				}
 
 			}
-			logrus.Infof("After migrate The node where the replica is located is: " + SourceNode)
+			logrus.Infof("After migrate The node where the replica is located is: " + TargetNode)
+			gomega.Expect(SourceNode).To(gomega.Not(gomega.Equal(TargetNode)))
 
 		})
 		ginkgo.It("check test file", func() {

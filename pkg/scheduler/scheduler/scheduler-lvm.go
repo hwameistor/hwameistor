@@ -104,7 +104,7 @@ func (s *LVMVolumeScheduler) scoreOneVolume(pvc *corev1.PersistentVolumeClaim, n
 
 	volumeClass := relatedSC.Parameters[v1alpha1.VolumeParameterPoolClassKey]
 	volumeCapacity := pvc.Spec.Resources.Requests.Storage().Value()
-	poolClass, err := buildStoragePoolName(volumeClass, v1alpha1.PoolTypeRegular)
+	poolClass, err := buildStoragePoolName(volumeClass)
 	if err != nil {
 		return 0, err
 	}
@@ -307,7 +307,7 @@ func (s *LVMVolumeScheduler) constructLocalVolumeForPVC(pvc *corev1.PersistentVo
 	localVolume := v1alpha1.LocalVolume{}
 	poolName, err := buildStoragePoolName(
 		sc.Parameters[v1alpha1.VolumeParameterPoolClassKey],
-		sc.Parameters[v1alpha1.VolumeParameterPoolTypeKey])
+		)
 	if err != nil {
 		return nil, err
 	}
@@ -346,15 +346,15 @@ func (s *LVMVolumeScheduler) getSourceVolumeFromSnapshot(vsNamespace, vsName str
 	return &localVolume, nil
 }
 
-func buildStoragePoolName(poolClass string, poolType string) (string, error) {
+func buildStoragePoolName(poolClass string) (string, error) {
 
-	if poolClass == v1alpha1.DiskClassNameHDD && poolType == v1alpha1.PoolTypeRegular {
+	if poolClass == v1alpha1.DiskClassNameHDD {
 		return v1alpha1.PoolNameForHDD, nil
 	}
-	if poolClass == v1alpha1.DiskClassNameSSD && poolType == v1alpha1.PoolTypeRegular {
+	if poolClass == v1alpha1.DiskClassNameSSD {
 		return v1alpha1.PoolNameForSSD, nil
 	}
-	if poolClass == v1alpha1.DiskClassNameNVMe && poolType == v1alpha1.PoolTypeRegular {
+	if poolClass == v1alpha1.DiskClassNameNVMe {
 		return v1alpha1.PoolNameForNVMe, nil
 	}
 

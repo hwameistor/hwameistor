@@ -2,20 +2,17 @@ package localdisknode
 
 import (
 	"context"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
+	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
-
-	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned"
-	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type Kubeclient struct {
 	// clientset
-	clientset *clientset.Clientset
-
+	clientset clientset.Interface
 	// kubeConfigPath
 	//	kubeConfigPath string
 }
@@ -66,4 +63,7 @@ func (k *Kubeclient) Patch(ldnOld, ldnNew *v1alpha1.LocalDiskNode) error {
 	}
 	_, err = k.clientset.HwameistorV1alpha1().LocalDiskNodes().Patch(context.Background(), ldnNew.GetName(), patch.Type(), patchData, v1.PatchOptions{})
 	return err
+}
+func (k *Kubeclient) SetClient(cli clientset.Interface) {
+	k.clientset = cli
 }
