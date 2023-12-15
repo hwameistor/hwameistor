@@ -22,7 +22,7 @@ import (
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("Deduplication test ", ginkgo.Label("stress-test"), func() {
+var _ = ginkgo.Describe("Deduplication test", ginkgo.Label("stress-test"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
