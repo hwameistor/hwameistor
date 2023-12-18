@@ -7,7 +7,9 @@ import (
 	listers "github.com/hwameistor/hwameistor/pkg/apis/client/listers/hwameistor/v1alpha1"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/common"
+	"github.com/hwameistor/hwameistor/pkg/fault-management/graph"
 	log "github.com/sirupsen/logrus"
+	informercorev1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -17,15 +19,27 @@ type manager struct {
 	namespace string
 	logger    *log.Entry
 	kclient   client.Client
+	graph     *graph.Topology[string, string]
 
-	hmClient          hwameistorclient.Interface
-	faultTicketLister listers.FaultTicketLister
-	faultTicketSynced cache.InformerSynced
+	topologyGraph       graph.TopologyGraphManager
+	hmClient            hwameistorclient.Interface
+	faultTicketInformer v1alpha1.FaultTicketInformer
+	faultTicketLister   listers.FaultTicketLister
+	faultTicketSynced   cache.InformerSynced
 
 	faultTicketTaskQueue *common.TaskQueue
 }
 
-func New(name, namespace string, kclient client.Client, hmClient hwameistorclient.Interface, faultTickerInformer v1alpha1.FaultTicketInformer) *manager {
+func New(name, namespace string,
+	kclient client.Client,
+	hmClient hwameistorclient.Interface,
+	podInformer informercorev1.PodInformer,
+	pvcInformer informercorev1.PersistentVolumeClaimInformer,
+	pvInformer informercorev1.PersistentVolumeInformer,
+	lvInformer v1alpha1.LocalVolumeInformer,
+	lsnInformer v1alpha1.LocalStorageNodeInformer,
+	faultTickerInformer v1alpha1.FaultTicketInformer,
+) *manager {
 	m := &manager{
 		name:      name,
 		namespace: namespace,
@@ -34,15 +48,11 @@ func New(name, namespace string, kclient client.Client, hmClient hwameistorclien
 		// don't set maxRetries, 0 means no limit, and events won't be dropped
 		faultTicketTaskQueue: common.NewTaskQueue("FaultTicketTaskQueue", 0),
 		logger:               log.WithField("Module", "FaultManagement"),
+		faultTicketInformer:  faultTickerInformer,
 		faultTicketLister:    faultTickerInformer.Lister(),
 		faultTicketSynced:    faultTickerInformer.Informer().HasSynced,
+		topologyGraph:        graph.New(name, namespace, kclient, hmClient, podInformer, pvcInformer, pvInformer, lsnInformer, lvInformer),
 	}
-
-	// setup informer for FaultTicket
-	faultTickerInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    m.handleTicketAdd,
-		UpdateFunc: m.handleTicketUpdate,
-	})
 
 	return m
 }
@@ -53,6 +63,12 @@ func (m *manager) Run(stopCh <-chan struct{}) error {
 	if ok := cache.WaitForCacheSync(stopCh, m.faultTicketSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
+
+	// setup informer for FaultTicket
+	m.faultTicketInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.handleTicketAdd,
+		UpdateFunc: m.handleTicketUpdate,
+	})
 
 	m.logger.Info("Start FaultTicket worker")
 	go m.startFaultTicketTaskWorker(stopCh)

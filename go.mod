@@ -42,6 +42,7 @@ require (
 
 require (
 	github.com/containerd/cgroups/v3 v3.0.2
+	github.com/dominikbraun/graph v0.23.0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/gobwas/glob v0.2.3
 	github.com/hwameistor/hwameistor-operator v0.10.7

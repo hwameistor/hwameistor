@@ -67,6 +67,9 @@ github.com/davecgh/go-spew/spew
 ## explicit
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
+# github.com/dominikbraun/graph v0.23.0
+## explicit; go 1.18
+github.com/dominikbraun/graph
 # github.com/emicklei/go-restful v2.9.5+incompatible => github.com/emicklei/go-restful v2.16.1-0.20220930181236-19cadd947697+incompatible
 ## explicit
 github.com/emicklei/go-restful

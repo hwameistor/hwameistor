@@ -11,6 +11,8 @@ import (
 	faultmanagement "github.com/hwameistor/hwameistor/pkg/fault-management"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	"github.com/sirupsen/logrus"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
 	"path"
 	"runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,6 +40,11 @@ func main() {
 		logrus.WithError(err).Fatal("Failed to get kubernetes cluster config")
 	}
 
+	var clientset kubernetes.Interface
+	if clientset, err = kubernetes.NewForConfig(cfg); err != nil {
+		logrus.WithError(err).Fatal("Failed to create Kubernetes clientset")
+	}
+
 	var hmClientSet *hwclientset.Clientset
 	if hmClientSet, err = hwclientset.NewForConfig(cfg); err != nil {
 		logrus.WithError(err).Fatal("Failed to create hwameistor clientset")
@@ -51,14 +58,25 @@ func main() {
 	hwShareInformer := hwinformers.NewSharedInformerFactory(hmClientSet, 0)
 	_ = apisv1alpha.AddToScheme(scheme.Scheme)
 
+	// ----------------------------------------
+	// informers requested
+	factory := informers.NewSharedInformerFactory(clientset, 0)
+	pvcInformer := factory.Core().V1().PersistentVolumeClaims()
+	pvInformer := factory.Core().V1().PersistentVolumes()
+	podInformer := factory.Core().V1().Pods()
+	lvInformer := hwShareInformer.Hwameistor().V1alpha1().LocalVolumes()
+	lsnInformer := hwShareInformer.Hwameistor().V1alpha1().LocalStorageNodes()
+	ftInformer := hwShareInformer.Hwameistor().V1alpha1().FaultTickets()
+
 	ctx := signals.SetupSignalHandler()
 	if err = utils.RunWithLease(namespace, podName, "hwameistor-fault-management", func(_ context.Context) {
-		faultmanager := faultmanagement.New(nodeName, namespace, kclient, hmClientSet,
-			hwShareInformer.Hwameistor().V1alpha1().FaultTickets())
+		// start all the requested informer
+		factory.Start(ctx.Done())
 		hwShareInformer.Start(ctx.Done())
 
 		// run faultmanagement controller
-		if err = faultmanager.Run(ctx.Done()); err != nil {
+		if err = faultmanagement.New(nodeName, namespace, kclient, hmClientSet, podInformer, pvcInformer, pvInformer,
+			lvInformer, lsnInformer, ftInformer).Run(ctx.Done()); err != nil {
 			logrus.WithError(err).Fatal("Failed to run faultmanagement controller")
 			return
 		}
