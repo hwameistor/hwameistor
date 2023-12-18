@@ -8,6 +8,7 @@ import (
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/common"
 	"github.com/hwameistor/hwameistor/pkg/fault-management/graph"
+	"github.com/hwameistor/hwameistor/pkg/fault-management/graph/topology"
 	log "github.com/sirupsen/logrus"
 	informercorev1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -19,7 +20,7 @@ type manager struct {
 	namespace string
 	logger    *log.Entry
 	kclient   client.Client
-	graph     *graph.Topology[string, string]
+	graph     *topology.Topology[string, string]
 
 	topologyGraph       graph.TopologyGraphManager
 	hmClient            hwameistorclient.Interface
@@ -54,6 +55,12 @@ func New(name, namespace string,
 		topologyGraph:        graph.New(name, namespace, kclient, hmClient, podInformer, pvcInformer, pvInformer, lsnInformer, lvInformer),
 	}
 
+	// setup informer for FaultTicket
+	m.faultTicketInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.handleTicketAdd,
+		UpdateFunc: m.handleTicketUpdate,
+	})
+
 	return m
 }
 
@@ -64,14 +71,15 @@ func (m *manager) Run(stopCh <-chan struct{}) error {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	// setup informer for FaultTicket
-	m.faultTicketInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    m.handleTicketAdd,
-		UpdateFunc: m.handleTicketUpdate,
-	})
+	m.logger.Info("Starting FaultTicket worker")
+	if err := m.topologyGraph.Run(stopCh); err != nil {
+		m.logger.WithError(err).Error("Failed to start topology graph manager")
+		return err
+	}
 
-	m.logger.Info("Start FaultTicket worker")
+	m.logger.Info("Starting FaultTicket worker")
 	go m.startFaultTicketTaskWorker(stopCh)
+
 	return nil
 }
 

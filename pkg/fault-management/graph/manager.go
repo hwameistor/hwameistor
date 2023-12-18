@@ -22,6 +22,7 @@ type TopologyGraphManager interface {
 	GetPoolUnderLocalDisk(nodeName, diskPath string) (string, error)
 	GetVolumesUnderStoragePool(nodeName, poolName string) ([]string, error)
 	GetPodsUnderLocalVolume(nodeName, volumeName string) ([]string, error)
+	Run(stopCh <-chan struct{}) error
 }
 
 var _ TopologyGraphManager = &manager{}
@@ -63,7 +64,7 @@ func New(name, namespace string, kclient client.Client, hmClient hwameistorclien
 	storageNodeInformer v1alpha1.LocalStorageNodeInformer,
 	localVolumeInformer v1alpha1.LocalVolumeInformer,
 ) TopologyGraphManager {
-	return &manager{
+	m := &manager{
 		name:                 name,
 		namespace:            namespace,
 		hmClient:             hmClient,
@@ -75,15 +76,21 @@ func New(name, namespace string, kclient client.Client, hmClient hwameistorclien
 		pvcSynced:            pvcInformer.Informer().HasSynced,
 		pvInformer:           pvInformer,
 		pvSynced:             pvInformer.Informer().HasSynced,
+		localVolumeInformer:  localVolumeInformer,
 		localVolumeLister:    localVolumeInformer.Lister(),
 		localVolumeSynced:    localVolumeInformer.Informer().HasSynced,
+		storageNodeInformer:  storageNodeInformer,
 		storageNodeLister:    storageNodeInformer.Lister(),
 		storageNodeSynced:    storageNodeInformer.Informer().HasSynced,
 		podTaskQueue:         common.NewTaskQueue("GraphManagerPodTaskQueue", 0),
+		pvcTaskQueue:         common.NewTaskQueue("GraphManagerPVCTaskQueue", 0),
+		pvTaskQueue:          common.NewTaskQueue("GraphManagerPVTaskQueue", 0),
 		localVolumeTaskQueue: common.NewTaskQueue("GraphManagerLocalVolumeTaskQueue", 0),
 		storageNodeTaskQueue: common.NewTaskQueue("GraphManagerStorageNodeTaskQueue", 0),
 		logger:               log.WithField("Module", "GraphManager"),
 	}
+	m.setupInformers()
+	return m
 }
 
 func (m *manager) Run(stopCh <-chan struct{}) error {
@@ -93,9 +100,6 @@ func (m *manager) Run(stopCh <-chan struct{}) error {
 		m.logger.Error("Timeout waiting for caches to sync")
 		return fmt.Errorf("timeout waiting caches to sync")
 	}
-
-	m.logger.Info("Setting up informers")
-	m.setupInformers()
 
 	m.logger.Info("Starting GraphManager worker")
 	go m.startGraphManagementTaskWorker(stopCh)

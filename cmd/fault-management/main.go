@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"strings"
+	"time"
 )
 
 var (
@@ -55,7 +56,7 @@ func main() {
 		logrus.WithError(err).Fatal("Failed to create Kubernetes client")
 	}
 
-	hwShareInformer := hwinformers.NewSharedInformerFactory(hmClientSet, 0)
+	hmFactory := hwinformers.NewSharedInformerFactory(hmClientSet, time.Second*10)
 	_ = apisv1alpha.AddToScheme(scheme.Scheme)
 
 	// ----------------------------------------
@@ -64,19 +65,21 @@ func main() {
 	pvcInformer := factory.Core().V1().PersistentVolumeClaims()
 	pvInformer := factory.Core().V1().PersistentVolumes()
 	podInformer := factory.Core().V1().Pods()
-	lvInformer := hwShareInformer.Hwameistor().V1alpha1().LocalVolumes()
-	lsnInformer := hwShareInformer.Hwameistor().V1alpha1().LocalStorageNodes()
-	ftInformer := hwShareInformer.Hwameistor().V1alpha1().FaultTickets()
+	lvInformer := hmFactory.Hwameistor().V1alpha1().LocalVolumes()
+	lsnInformer := hmFactory.Hwameistor().V1alpha1().LocalStorageNodes()
+	ftInformer := hmFactory.Hwameistor().V1alpha1().FaultTickets()
 
 	ctx := signals.SetupSignalHandler()
 	if err = utils.RunWithLease(namespace, podName, "hwameistor-fault-management", func(_ context.Context) {
+		// run faultmanagement controller
+		ftManager := faultmanagement.New(nodeName, namespace, kclient, hmClientSet, podInformer, pvcInformer, pvInformer,
+			lvInformer, lsnInformer, ftInformer)
+
 		// start all the requested informer
 		factory.Start(ctx.Done())
-		hwShareInformer.Start(ctx.Done())
+		hmFactory.Start(ctx.Done())
 
-		// run faultmanagement controller
-		if err = faultmanagement.New(nodeName, namespace, kclient, hmClientSet, podInformer, pvcInformer, pvInformer,
-			lvInformer, lsnInformer, ftInformer).Run(ctx.Done()); err != nil {
+		if err = ftManager.Run(ctx.Done()); err != nil {
 			logrus.WithError(err).Fatal("Failed to run faultmanagement controller")
 			return
 		}
@@ -99,6 +102,7 @@ func setupLogging() {
 
 	logrus.SetLevel(level)
 	logrus.SetFormatter(&logrus.JSONFormatter{
+		DisableHTMLEscape: true,
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
 			s := strings.Split(f.Function, ".")
 			funcName := s[len(s)-1]
