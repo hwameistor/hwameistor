@@ -40,6 +40,33 @@ func (m *manager) processFaultTicketEvaluating(faultTicket *v1alpha1.FaultTicket
 
 func (m *manager) evaluatingDiskFault(faultTicket *v1alpha1.FaultTicket) error {
 	// m.topologyGraph.Draw()
+
+	var err error
+	var effectedPoolName string
+	if effectedPoolName, err = m.topologyGraph.GetPoolUnderLocalDisk(faultTicket.Spec.NodeName, faultTicket.Spec.Device.DevPath); err != nil {
+		m.logger.WithError(err).Error("Failed to get pool under local disk")
+		return err
+	}
+	m.logger.Debugf("effected poolName %s", effectedPoolName)
+
+	// get volumes
+	var effectedVolumes []string
+	if effectedVolumes, err = m.topologyGraph.GetVolumesUnderStoragePool(faultTicket.Spec.NodeName, effectedPoolName); err != nil {
+		m.logger.WithError(err).Error("Failed to get volumes under pool")
+		return err
+	}
+	m.logger.Debugf("effected volumes %v", effectedVolumes)
+
+	// get pods
+	for _, volumeName := range effectedVolumes {
+		var effectedPods []string
+		if effectedPods, err = m.topologyGraph.GetPodsUnderLocalVolume(faultTicket.Spec.NodeName, volumeName); err != nil {
+			m.logger.WithError(err).Error("Failed to get pods under volume")
+			return err
+		}
+		m.logger.Debugf("effected pods %v by volume %s", effectedPods, volumeName)
+	}
+
 	return nil
 }
 

@@ -14,6 +14,8 @@ import (
 
 const separator = "_"
 
+var notFoundError = fmt.Errorf("not found")
+
 type ResourceType = string
 
 const (
@@ -27,18 +29,102 @@ const (
 )
 
 func (t *Topology[K, T]) GetPoolUnderLocalDisk(nodeName, diskPath string) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	diskKey := GenerateDiskKey(nodeName, diskPath)
+	var poolKey string
+	if err := graph.BFS(t.Graph, diskKey, func(s string) bool {
+		poolKey = s
+		return true
+	}); err != nil {
+		return "", err
+	}
+
+	_, poolInfo, err := t.Graph.VertexWithProperties(graph.StringHash(poolKey))
+	if err != nil {
+		return "", err
+	}
+
+	if poolInfo.Attributes == nil {
+		return "", notFoundError
+	}
+	if _, ok := poolInfo.Attributes["name"]; !ok {
+		return "", notFoundError
+	}
+
+	return poolInfo.Attributes["name"], nil
 }
 
 func (t *Topology[K, T]) GetVolumesUnderStoragePool(nodeName, poolName string) ([]string, error) {
-	//TODO implement me
-	panic("implement me")
+	poolKey := GeneratePoolKey(nodeName, poolName)
+	var volumeKeys []string
+	if err := graph.BFS(t.Graph, poolKey, func(s string) bool {
+		volumeKeys = append(volumeKeys, s)
+		return false
+	}); err != nil {
+		return nil, err
+	}
+
+	getVolumeName := func(volumeKey string) (string, error) {
+		_, volumeInfo, err := t.Graph.VertexWithProperties(graph.StringHash(volumeKey))
+		if err != nil {
+			return "", err
+		}
+
+		if volumeInfo.Attributes == nil {
+			return "", notFoundError
+		}
+		if _, ok := volumeInfo.Attributes["name"]; !ok {
+			return "", notFoundError
+		}
+		return volumeInfo.Attributes["name"], nil
+	}
+
+	var volumes []string
+	for _, volumeKey := range volumeKeys {
+		if volume, err := getVolumeName(volumeKey); err != nil {
+			return nil, err
+		} else {
+			volumes = append(volumes, volume)
+		}
+	}
+
+	return volumes, nil
 }
 
 func (t *Topology[K, T]) GetPodsUnderLocalVolume(nodeName, volumeName string) ([]string, error) {
-	//TODO implement me
-	panic("implement me")
+	volumeKey := GeneratePVKey(volumeName)
+	var podKeys []string
+	if err := graph.BFS(t.Graph, volumeKey, func(s string) bool {
+		podKeys = append(podKeys, s)
+		return false
+	}); err != nil {
+		return nil, err
+	}
+
+	getPodName := func(podKey string) (string, error) {
+		_, podInfo, err := t.Graph.VertexWithProperties(graph.StringHash(podKey))
+		if err != nil {
+			return "", err
+		}
+
+		if podInfo.Attributes == nil {
+			return "", notFoundError
+		}
+		if _, ok := podInfo.Attributes["name"]; !ok {
+			return "", notFoundError
+		}
+		return podInfo.Attributes["name"], nil
+	}
+
+	var pods []string
+	for _, podKey := range podKeys {
+		if podName, err := getPodName(podKey); err != nil {
+			return nil, err
+		} else {
+			pods = append(pods, podName)
+		}
+	}
+
+	return pods, nil
 }
 
 type Topology[K string, T string] struct {
@@ -55,11 +141,12 @@ func NewTopologyStore() Topology[string, string] {
 
 // AddStorageNode inserts a Vertex as the roots of the node
 func (t *Topology[K, T]) AddStorageNode(node *v1alpha1.LocalStorageNode) error {
-	if t.IsVertexExist(node.Name) {
+	nodeKey := GenerateNodeKey(node.Name)
+	if t.IsVertexExist(nodeKey) {
 		return nil
 	}
 
-	err := t.Graph.AddVertex(node.Name, graph.VertexAttributes(map[string]string{
+	err := t.Graph.AddVertex(nodeKey, graph.VertexAttributes(map[string]string{
 		"type":      Node,
 		"name":      node.Name,
 		"hostName":  node.Spec.HostName,
@@ -69,7 +156,7 @@ func (t *Topology[K, T]) AddStorageNode(node *v1alpha1.LocalStorageNode) error {
 		return err
 	}
 
-	t.logger.WithField("nodeName", node.Name).Debug("added node vertex")
+	t.logger.WithField("nodeName", nodeKey).Debug("added node vertex")
 	return nil
 }
 
@@ -88,7 +175,7 @@ func (t *Topology[K, T]) AddStoragePool(node *v1alpha1.LocalStorageNode) error {
 	// key format: storageNodeName/poolName
 	for poolName, pool := range node.Status.Pools {
 		// insert pool
-		poolKey := node.Name + separator + poolName
+		poolKey := GeneratePoolKey(node.Name, poolName)
 		if !t.IsVertexExist(poolKey) {
 			if err = t.Graph.AddVertex(poolKey, graph.VertexAttributes(map[string]string{
 				"type":  Pool,
@@ -101,7 +188,7 @@ func (t *Topology[K, T]) AddStoragePool(node *v1alpha1.LocalStorageNode) error {
 		}
 
 		for _, disk := range pool.Disks {
-			diskKey := node.Name + separator + disk.DevPath
+			diskKey := GenerateDiskKey(node.Name, disk.DevPath)
 			// construct edge: disk -> pool
 			if err = t.Graph.AddEdge(diskKey, poolKey); err != nil {
 				if errors.Is(err, graph.ErrEdgeAlreadyExists) {
@@ -117,8 +204,9 @@ func (t *Topology[K, T]) AddStoragePool(node *v1alpha1.LocalStorageNode) error {
 
 // AddLocalVolume inserts Vertex(s) under the pool according to the pool exist in StoragePool
 func (t *Topology[K, T]) AddLocalVolume(volume *v1alpha1.LocalVolume) error {
+	volumeKey := GenerateLVKey(volume.Name)
 	if !t.IsVertexExist(volume.Name) {
-		if err := t.Graph.AddVertex(volume.Name, graph.VertexAttributes(map[string]string{
+		if err := t.Graph.AddVertex(volumeKey, graph.VertexAttributes(map[string]string{
 			"type":          Volume,
 			"name":          volume.Name,
 			"poolName":      volume.Spec.PoolName,
@@ -126,26 +214,27 @@ func (t *Topology[K, T]) AddLocalVolume(volume *v1alpha1.LocalVolume) error {
 		})); err != nil && !errors.Is(err, graph.ErrVertexAlreadyExists) {
 			return err
 		}
-		t.logger.WithField("volumeName", volume.Name).Debug("added volume vertex")
+		t.logger.WithField("volumeName", volumeKey).Debug("added volume vertex")
 	}
 
 	// construct edge: pool -> volume
 	for _, replica := range volume.Spec.Config.Replicas {
-		poolKey := replica.Hostname + separator + volume.Spec.PoolName
-		if err := t.Graph.AddEdge(poolKey, volume.Name); err != nil {
+		poolKey := GeneratePoolKey(replica.Hostname, volume.Spec.PoolName)
+		if err := t.Graph.AddEdge(poolKey, volumeKey); err != nil {
 			if errors.Is(err, graph.ErrEdgeAlreadyExists) {
 				continue
 			}
 			return err
 		}
-		t.logger.Debugf("draw edge between pool and volume: %s", fmt.Sprintf("%s -> %s", poolKey, volume.Name))
+		t.logger.Debugf("draw edge between pool and volume: %s", fmt.Sprintf("%s -> %s", poolKey, volumeKey))
 	}
 	return nil
 }
 
 // AddLocalDisk inserts Vertex(s) under the pool according to the disk exist in StoragePool
 func (t *Topology[K, T]) AddLocalDisk(node *v1alpha1.LocalStorageNode) error {
-	if !t.IsVertexExist(node.Name) {
+	nodeKey := GenerateNodeKey(node.Name)
+	if !t.IsVertexExist(nodeKey) {
 		if err := t.AddStorageNode(node); err != nil {
 			return err
 		}
@@ -154,7 +243,7 @@ func (t *Topology[K, T]) AddLocalDisk(node *v1alpha1.LocalStorageNode) error {
 	for _, pool := range node.Status.Pools {
 		for _, poolDisk := range pool.Disks {
 			// key format: storageNodeName/devPath
-			diskKey := node.Name + separator + poolDisk.DevPath
+			diskKey := GenerateDiskKey(node.Name, poolDisk.DevPath)
 			if !t.IsVertexExist(diskKey) {
 				err := t.Graph.AddVertex(diskKey, graph.VertexAttributes(map[string]string{
 					"type":    Disk,
@@ -168,13 +257,13 @@ func (t *Topology[K, T]) AddLocalDisk(node *v1alpha1.LocalStorageNode) error {
 			}
 
 			// construct edge: node -> poolDisk
-			if err := t.Graph.AddEdge(node.Name, diskKey); err != nil {
+			if err := t.Graph.AddEdge(nodeKey, diskKey); err != nil {
 				if errors.Is(err, graph.ErrEdgeAlreadyExists) {
 					continue
 				}
 				return err
 			}
-			t.logger.Debugf("draw edge between node and poolDisk: %s", fmt.Sprintf("%s -> %s", node.Name, diskKey))
+			t.logger.Debugf("draw edge between node and poolDisk: %s", fmt.Sprintf("%s -> %s", nodeKey, diskKey))
 		}
 	}
 	return nil
@@ -182,7 +271,7 @@ func (t *Topology[K, T]) AddLocalDisk(node *v1alpha1.LocalStorageNode) error {
 
 // AddPod inserts Vertex(s) under the PersistentVolumeClaim
 func (t *Topology[K, T]) AddPod(pod *v1.Pod, volumes ...string) error {
-	podKey := types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name}.String()
+	podKey := GeneratePodKey(pod.Namespace, pod.Name)
 	if !t.IsVertexExist(podKey) {
 		err := t.Graph.AddVertex(podKey, graph.VertexAttributes(map[string]string{
 			"type":      Pod,
@@ -210,7 +299,7 @@ func (t *Topology[K, T]) AddPod(pod *v1.Pod, volumes ...string) error {
 // AddPVC inserts Vertex(s) under the volume
 func (t *Topology[K, T]) AddPVC(pvc *v1.PersistentVolumeClaim) error {
 	// todo: relation between pvc and pv can be changed, maybe updated edge or remove vertex for this pvc is better
-	pvcKey := types.NamespacedName{Namespace: pvc.Namespace, Name: pvc.Name}.String()
+	pvcKey := GeneratePVCKey(pvc.Namespace, pvc.Name)
 	if t.IsVertexExist(pvcKey) {
 		return nil
 	}
@@ -225,32 +314,67 @@ func (t *Topology[K, T]) AddPVC(pvc *v1.PersistentVolumeClaim) error {
 		return err
 	}
 
-	t.logger.WithField("namespacedName", pvc.Namespace+"/"+pvc.Name).Debug("added pvc vertex")
+	t.logger.WithField("namespacedName", pvcKey).Debug("added pvc vertex")
 	return nil
 }
 
 // AddPV draw edge between pvc and localvolume
 func (t *Topology[K, T]) AddPV(pv *v1.PersistentVolume) error {
 	// localvolume use the same key with pv, don't insert pv again
-	if !t.IsVertexExist(pv.Name) {
+	pvKey := GeneratePVKey(pv.Name)
+	if !t.IsVertexExist(pvKey) {
 		return fmt.Errorf("not found vertex, waiting for localvolume to create it")
 	}
 
 	// construct edge: pv -> pvc
-	pvcKey := types.NamespacedName{Namespace: pv.Spec.ClaimRef.Namespace, Name: pv.Spec.ClaimRef.Name}.String()
-	if err := t.Graph.AddEdge(pv.Name, pvcKey); err != nil {
+	pvcKey := GeneratePVCKey(pv.Spec.ClaimRef.Namespace, pv.Spec.ClaimRef.Name)
+	if err := t.Graph.AddEdge(pvKey, pvcKey); err != nil {
 		if errors.Is(err, graph.ErrEdgeAlreadyExists) {
 			return nil
 		}
 		return err
 	}
-	t.logger.Debugf("draw edge between pv and pvc: %s", fmt.Sprintf("%s -> %s", pv.Name, pvcKey))
+	t.logger.Debugf("draw edge between pv and pvc: %s", fmt.Sprintf("%s -> %s", pvKey, pvcKey))
 	return nil
 }
 
 func (t *Topology[K, T]) Draw() {
 	//file, _ := os.Create("./k_string_graph.gv")
 	//_ = draw.DOT(t.Graph, file)
+}
+
+func GeneratePodKey(namespace, name string) string {
+	return types.NamespacedName{
+		Namespace: namespace,
+		Name:      name,
+	}.String()
+}
+
+func GeneratePVCKey(namespace, name string) string {
+	return types.NamespacedName{
+		Namespace: namespace,
+		Name:      name,
+	}.String()
+}
+
+func GeneratePVKey(name string) string {
+	return name
+}
+
+func GenerateLVKey(name string) string {
+	return name
+}
+
+func GenerateDiskKey(nodeName, devPath string) string {
+	return nodeName + separator + devPath
+}
+
+func GeneratePoolKey(nodeName, name string) string {
+	return nodeName + separator + name
+}
+
+func GenerateNodeKey(nodeName string) string {
+	return nodeName
 }
 
 func isHwameiStorVolume(provisioner string) bool {
