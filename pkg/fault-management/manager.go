@@ -8,9 +8,9 @@ import (
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/common"
 	"github.com/hwameistor/hwameistor/pkg/fault-management/graph"
-	"github.com/hwameistor/hwameistor/pkg/fault-management/graph/topology"
 	log "github.com/sirupsen/logrus"
 	informercorev1 "k8s.io/client-go/informers/core/v1"
+	storagev1lister "k8s.io/client-go/listers/storage/v1"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -20,7 +20,6 @@ type manager struct {
 	namespace string
 	logger    *log.Entry
 	kclient   client.Client
-	graph     *topology.Topology[string, string]
 
 	topologyGraph       graph.TopologyGraphManager
 	hmClient            hwameistorclient.Interface
@@ -40,6 +39,7 @@ func New(name, namespace string,
 	lvInformer v1alpha1.LocalVolumeInformer,
 	lsnInformer v1alpha1.LocalStorageNodeInformer,
 	faultTickerInformer v1alpha1.FaultTicketInformer,
+	scLister storagev1lister.StorageClassLister,
 ) *manager {
 	m := &manager{
 		name:      name,
@@ -52,7 +52,7 @@ func New(name, namespace string,
 		faultTicketInformer:  faultTickerInformer,
 		faultTicketLister:    faultTickerInformer.Lister(),
 		faultTicketSynced:    faultTickerInformer.Informer().HasSynced,
-		topologyGraph:        graph.New(name, namespace, kclient, hmClient, podInformer, pvcInformer, pvInformer, lsnInformer, lvInformer),
+		topologyGraph:        graph.New(name, namespace, kclient, hmClient, podInformer, pvcInformer, pvInformer, lsnInformer, lvInformer, scLister),
 	}
 
 	// setup informer for FaultTicket

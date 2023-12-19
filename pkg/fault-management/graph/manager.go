@@ -11,9 +11,10 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	informercorev1 "k8s.io/client-go/informers/core/v1"
+	v12 "k8s.io/client-go/listers/core/v1"
+	storagev1lister "k8s.io/client-go/listers/storage/v1"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 const hwameistorDomain = "hwameistor.io"
@@ -22,6 +23,7 @@ type TopologyGraphManager interface {
 	GetPoolUnderLocalDisk(nodeName, diskPath string) (string, error)
 	GetVolumesUnderStoragePool(nodeName, poolName string) ([]string, error)
 	GetPodsUnderLocalVolume(nodeName, volumeName string) ([]string, error)
+	Draw()
 	Run(stopCh <-chan struct{}) error
 }
 
@@ -36,6 +38,10 @@ type manager struct {
 	hmClient          hwameistorclient.Interface
 	localVolumeLister listers.LocalVolumeLister
 	storageNodeLister listers.LocalStorageNodeLister
+	pvLister          v12.PersistentVolumeLister
+	pvcLister         v12.PersistentVolumeClaimLister
+	podLister         v12.PodLister
+	scLister          storagev1lister.StorageClassLister
 
 	storageNodeInformer v1alpha1.LocalStorageNodeInformer
 	storageNodeSynced   cache.InformerSynced
@@ -63,6 +69,7 @@ func New(name, namespace string, kclient client.Client, hmClient hwameistorclien
 	pvInformer informercorev1.PersistentVolumeInformer,
 	storageNodeInformer v1alpha1.LocalStorageNodeInformer,
 	localVolumeInformer v1alpha1.LocalVolumeInformer,
+	scLister storagev1lister.StorageClassLister,
 ) TopologyGraphManager {
 	m := &manager{
 		name:                 name,
@@ -71,11 +78,15 @@ func New(name, namespace string, kclient client.Client, hmClient hwameistorclien
 		kclient:              kclient,
 		Topology:             NewTopologyStore(),
 		podInformer:          podInformer,
+		podLister:            podInformer.Lister(),
 		podSynced:            podInformer.Informer().HasSynced,
 		pvcInformer:          pvcInformer,
+		pvcLister:            pvcInformer.Lister(),
 		pvcSynced:            pvcInformer.Informer().HasSynced,
 		pvInformer:           pvInformer,
+		pvLister:             pvInformer.Lister(),
 		pvSynced:             pvInformer.Informer().HasSynced,
+		scLister:             scLister,
 		localVolumeInformer:  localVolumeInformer,
 		localVolumeLister:    localVolumeInformer.Lister(),
 		localVolumeSynced:    localVolumeInformer.Informer().HasSynced,
@@ -153,7 +164,8 @@ func (m *manager) handlePVCAdd(obj interface{}) {
 		return
 	}
 	pvc := obj.(*v1.PersistentVolumeClaim)
-	if pvc.Spec.StorageClassName == nil || !isHwameiStorVolume(*pvc.Spec.StorageClassName) {
+	if pvc.Spec.StorageClassName == nil {
+		m.logger.WithField("pvcNamespacedName", pvc.Namespace+"/"+pvc.Name).Debug("not hwameistor volume, drop it")
 		return
 	}
 	m.pvcTaskQueue.Add(types.NamespacedName{Namespace: pvc.Namespace, Name: pvc.Name}.String())
@@ -168,10 +180,10 @@ func (m *manager) handlePVAdd(obj interface{}) {
 		return
 	}
 	pv := obj.(*v1.PersistentVolume)
-	if pv.Spec.StorageClassName == "" || !isHwameiStorVolume(pv.Spec.StorageClassName) {
+	if pv.Spec.StorageClassName == "" {
 		return
 	}
-	m.pvcTaskQueue.Add(pv.Name)
+	m.pvTaskQueue.Add(pv.Name)
 }
 
 func (m *manager) handlePodUpdate(_, obj interface{}) {
@@ -182,7 +194,19 @@ func (m *manager) handlePodAdd(obj interface{}) {
 	if _, ok := obj.(*v1.Pod); !ok {
 		return
 	}
+
 	p := obj.(*v1.Pod)
+	hasVolume := func(pod *v1.Pod) bool {
+		for _, volume := range pod.Spec.Volumes {
+			if volume.PersistentVolumeClaim != nil {
+				return true
+			}
+		}
+		return false
+	}
+	if !hasVolume(p) {
+		return
+	}
 	m.podTaskQueue.Add(types.NamespacedName{Namespace: p.Namespace, Name: p.Name}.String())
 }
 
@@ -206,8 +230,4 @@ func (m *manager) handleLocalStorageNodeAdd(obj interface{}) {
 		return
 	}
 	m.storageNodeTaskQueue.Add(obj.(*apisv1alpha1.LocalStorageNode).Name)
-}
-
-func isHwameiStorVolume(storageClassName string) bool {
-	return strings.HasSuffix(storageClassName, hwameistorDomain)
 }

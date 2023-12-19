@@ -68,12 +68,13 @@ func main() {
 	lvInformer := hmFactory.Hwameistor().V1alpha1().LocalVolumes()
 	lsnInformer := hmFactory.Hwameistor().V1alpha1().LocalStorageNodes()
 	ftInformer := hmFactory.Hwameistor().V1alpha1().FaultTickets()
+	scLister := factory.Storage().V1().StorageClasses().Lister()
 
 	ctx := signals.SetupSignalHandler()
 	if err = utils.RunWithLease(namespace, podName, "hwameistor-fault-management", func(_ context.Context) {
 		// run faultmanagement controller
 		ftManager := faultmanagement.New(nodeName, namespace, kclient, hmClientSet, podInformer, pvcInformer, pvInformer,
-			lvInformer, lsnInformer, ftInformer)
+			lvInformer, lsnInformer, ftInformer, scLister)
 
 		// start all the requested informer
 		factory.Start(ctx.Done())

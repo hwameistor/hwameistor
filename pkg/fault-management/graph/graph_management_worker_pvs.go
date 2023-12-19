@@ -1,6 +1,8 @@
 package graph
 
-import log "github.com/sirupsen/logrus"
+import (
+	log "github.com/sirupsen/logrus"
+)
 
 func (m *manager) startPVTaskWorker() {
 	m.logger.Debug("GraphManagement PV Worker is working now")
@@ -22,5 +24,28 @@ func (m *manager) startPVTaskWorker() {
 }
 
 func (m *manager) processPVs(pvName string) error {
+	logger := m.logger.WithField("pvName", pvName)
+	logger.Debug("Processing pv")
+
+	pv, err := m.pvLister.Get(pvName)
+	if err != nil {
+		return err
+	}
+
+	sc, err := m.fetchSC(pv.Spec.StorageClassName)
+	if err != nil {
+		return err
+	}
+
+	if !isHwameiStorVolume(sc.Provisioner) {
+		logger.WithFields(log.Fields{"provisioner": sc.Provisioner, "volume": pvName}).Debug("not hwameistor volume, drop it")
+		return nil
+	}
+
+	// add/update pv as Vertex if necessary
+	if err = m.Topology.AddPV(pv); err != nil {
+		logger.WithError(err).Error("Failed to add pv to topology graph")
+		return err
+	}
 	return nil
 }
