@@ -31,9 +31,12 @@ const (
 func (t *Topology[K, T]) GetPoolUnderLocalDisk(nodeName, diskPath string) (string, error) {
 	diskKey := GenerateDiskKey(nodeName, diskPath)
 	var poolKey string
-	if err := graph.BFS(t.Graph, diskKey, func(s string) bool {
-		poolKey = s
-		return true
+	if err := graph.BFS(t.Graph, diskKey, func(vertex string) bool {
+		if isPoolResource(vertex) {
+			poolKey = vertex
+			return true
+		}
+		return false
 	}); err != nil {
 		return "", err
 	}
@@ -56,8 +59,10 @@ func (t *Topology[K, T]) GetPoolUnderLocalDisk(nodeName, diskPath string) (strin
 func (t *Topology[K, T]) GetVolumesUnderStoragePool(nodeName, poolName string) ([]string, error) {
 	poolKey := GeneratePoolKey(nodeName, poolName)
 	var volumeKeys []string
-	if err := graph.BFS(t.Graph, poolKey, func(s string) bool {
-		volumeKeys = append(volumeKeys, s)
+	if err := graph.BFS(t.Graph, poolKey, func(vertex string) bool {
+		if isVolumeResource(vertex) {
+			volumeKeys = append(volumeKeys, vertex)
+		}
 		return false
 	}); err != nil {
 		return nil, err
@@ -91,10 +96,12 @@ func (t *Topology[K, T]) GetVolumesUnderStoragePool(nodeName, poolName string) (
 }
 
 func (t *Topology[K, T]) GetPodsUnderLocalVolume(nodeName, volumeName string) ([]string, error) {
-	volumeKey := GeneratePVKey(volumeName)
+	volumeKey := GenerateLVKey(volumeName)
 	var podKeys []string
-	if err := graph.BFS(t.Graph, volumeKey, func(s string) bool {
-		podKeys = append(podKeys, s)
+	if err := graph.BFS(t.Graph, volumeKey, func(vertex string) bool {
+		if isPodResource(vertex) {
+			podKeys = append(podKeys, vertex)
+		}
 		return false
 	}); err != nil {
 		return nil, err
@@ -321,20 +328,20 @@ func (t *Topology[K, T]) AddPVC(pvc *v1.PersistentVolumeClaim) error {
 // AddPV draw edge between pvc and localvolume
 func (t *Topology[K, T]) AddPV(pv *v1.PersistentVolume) error {
 	// localvolume use the same key with pv, don't insert pv again
-	pvKey := GeneratePVKey(pv.Name)
-	if !t.IsVertexExist(pvKey) {
+	lvKey := GenerateLVKey(pv.Name)
+	if !t.IsVertexExist(lvKey) {
 		return fmt.Errorf("not found vertex, waiting for localvolume to create it")
 	}
 
-	// construct edge: pv -> pvc
+	// construct edge: pv(lv) -> pvc
 	pvcKey := GeneratePVCKey(pv.Spec.ClaimRef.Namespace, pv.Spec.ClaimRef.Name)
-	if err := t.Graph.AddEdge(pvKey, pvcKey); err != nil {
+	if err := t.Graph.AddEdge(lvKey, pvcKey); err != nil {
 		if errors.Is(err, graph.ErrEdgeAlreadyExists) {
 			return nil
 		}
 		return err
 	}
-	t.logger.Debugf("draw edge between pv and pvc: %s", fmt.Sprintf("%s -> %s", pvKey, pvcKey))
+	t.logger.Debugf("draw edge between pv(lv) and pvc: %s", fmt.Sprintf("%s -> %s", lvKey, pvcKey))
 	return nil
 }
 
@@ -344,39 +351,51 @@ func (t *Topology[K, T]) Draw() {
 }
 
 func GeneratePodKey(namespace, name string) string {
-	return types.NamespacedName{
+	return Pod + separator + types.NamespacedName{
 		Namespace: namespace,
 		Name:      name,
 	}.String()
 }
 
 func GeneratePVCKey(namespace, name string) string {
-	return types.NamespacedName{
+	return Pvc + separator + types.NamespacedName{
 		Namespace: namespace,
 		Name:      name,
 	}.String()
 }
 
 func GeneratePVKey(name string) string {
-	return name
+	return PV + separator + name
 }
 
 func GenerateLVKey(name string) string {
-	return name
+	return Volume + separator + name
 }
 
 func GenerateDiskKey(nodeName, devPath string) string {
-	return nodeName + separator + devPath
+	return Disk + separator + nodeName + separator + devPath
 }
 
 func GeneratePoolKey(nodeName, name string) string {
-	return nodeName + separator + name
+	return Pool + separator + nodeName + separator + name
 }
 
 func GenerateNodeKey(nodeName string) string {
-	return nodeName
+	return Node + separator + nodeName
 }
 
 func isHwameiStorVolume(provisioner string) bool {
 	return strings.HasSuffix(provisioner, hwameistorDomain)
+}
+
+func isPoolResource(key string) bool {
+	return strings.HasPrefix(key, Pool+separator)
+}
+
+func isVolumeResource(key string) bool {
+	return strings.HasPrefix(key, Volume+separator)
+}
+
+func isPodResource(key string) bool {
+	return strings.HasPrefix(key, Pod+separator)
 }

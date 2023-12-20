@@ -39,7 +39,7 @@ func (m *manager) processFaultTicketEvaluating(faultTicket *v1alpha1.FaultTicket
 }
 
 func (m *manager) evaluatingDiskFault(faultTicket *v1alpha1.FaultTicket) error {
-	// m.topologyGraph.Draw()
+	m.topologyGraph.Draw()
 
 	var err error
 	var effectedPoolName string

@@ -1,6 +1,9 @@
 package graph
 
-import log "github.com/sirupsen/logrus"
+import (
+	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/api/errors"
+)
 
 func (m *manager) startLocalVolumeTaskWorker() {
 	m.logger.Debug("GraphManagement LocalVolume Worker is working now")
@@ -26,6 +29,10 @@ func (m *manager) processLocalVolumes(localVolumeName string) error {
 	logger.Debug("Processing localvolume")
 	localVolume, err := m.localVolumeLister.Get(localVolumeName)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			logger.Debug("Not found local volume drop it")
+			return nil
+		}
 		logger.WithError(err).Error("Failed to process localvolume")
 		return err
 	}

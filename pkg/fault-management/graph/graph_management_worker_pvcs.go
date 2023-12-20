@@ -2,6 +2,7 @@ package graph
 
 import (
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"strings"
 )
@@ -33,12 +34,20 @@ func (m *manager) processPVCs(pvcNamespaceName string) error {
 	name := strings.Split(pvcNamespaceName, "/")[1]
 	pvc, err := m.pvcLister.PersistentVolumeClaims(namespace).Get(name)
 	if err != nil {
-		logger.WithError(err).Error("Failed to process pvc")
+		if errors.IsNotFound(err) {
+			logger.Debug("Not found pvc, may be deleted from the cache already")
+			return nil
+		}
+		logger.WithError(err).Error("Failed to get pvc")
 		return err
 	}
 
 	sc, err := m.fetchSC(*pvc.Spec.StorageClassName)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			logger.Debug("Can not determine provisioned by hwameistor whether or not because of not found sc drop it")
+			return nil
+		}
 		return err
 	}
 

@@ -1,6 +1,9 @@
 package graph
 
-import log "github.com/sirupsen/logrus"
+import (
+	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/api/errors"
+)
 
 func (m *manager) startStorageNodeTaskWorker() {
 	m.logger.Debug("GraphManagement LocalStorageNode Worker is working now")
@@ -26,6 +29,10 @@ func (m *manager) processStorageNodes(storageNodeName string) error {
 	logger.Debug("Processing storage nodes")
 	storageNode, err := m.storageNodeLister.Get(storageNodeName)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			logger.Debug("Not found storage node drop it")
+			return nil
+		}
 		logger.WithError(err).Error("Failed to process storage node")
 		return err
 	}

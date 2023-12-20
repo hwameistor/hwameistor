@@ -2,6 +2,7 @@ package graph
 
 import (
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/api/errors"
 )
 
 func (m *manager) startPVTaskWorker() {
@@ -29,16 +30,24 @@ func (m *manager) processPVs(pvName string) error {
 
 	pv, err := m.pvLister.Get(pvName)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			logger.Debug("Not found pv, may be deleted from the cache already")
+			return nil
+		}
 		return err
 	}
 
 	sc, err := m.fetchSC(pv.Spec.StorageClassName)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			logger.Debug("Can not determine provisioned by hwameistor whether or not because of not found sc drop it")
+			return nil
+		}
 		return err
 	}
 
 	if !isHwameiStorVolume(sc.Provisioner) {
-		logger.WithFields(log.Fields{"provisioner": sc.Provisioner, "volume": pvName}).Debug("not hwameistor volume, drop it")
+		logger.WithFields(log.Fields{"provisioner": sc.Provisioner, "volume": pvName}).Debug("Not hwameistor volume, drop it")
 		return nil
 	}
 

@@ -4,7 +4,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
-	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"strings"
 )
 
@@ -35,7 +35,11 @@ func (m *manager) processPods(podNamespaceName string) error {
 	name := strings.Split(podNamespaceName, "/")[1]
 	pod, err := m.podLister.Pods(namespace).Get(name)
 	if err != nil {
-		logger.WithError(err).Error("Failed to process pod")
+		if errors.IsNotFound(err) {
+			logger.Debug("Not found pod may be deleted from cache already")
+			return nil
+		}
+		logger.WithError(err).Error("Failed to get pod")
 		return err
 	}
 
@@ -52,17 +56,22 @@ func (m *manager) processPods(podNamespaceName string) error {
 		)
 
 		if pvc, err = m.fetchPVC(pod.Namespace, volume.PersistentVolumeClaim.ClaimName); err != nil {
+			if errors.IsNotFound(err) {
+				logger.Debug("Not found pvc, may be deleted from the cache already, ignore this pod")
+				return nil
+			}
 			return err
 		}
 		if sc, err = m.fetchSC(*pvc.Spec.StorageClassName); err != nil {
+			if errors.IsNotFound(err) {
+				logger.Debug("Can not determine provisioned by hwameistor whether or not because of not found sc, ignore this pod")
+				return nil
+			}
 			return err
 		}
 
 		if isHwameiStorVolume(sc.Provisioner) {
-			hwameistorVolumes = append(hwameistorVolumes, types.NamespacedName{
-				Namespace: pod.Namespace,
-				Name:      volume.PersistentVolumeClaim.ClaimName,
-			}.String())
+			hwameistorVolumes = append(hwameistorVolumes, GeneratePVCKey(pod.Namespace, volume.PersistentVolumeClaim.ClaimName))
 		}
 	}
 
