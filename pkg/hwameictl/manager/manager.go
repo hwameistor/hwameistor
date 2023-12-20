@@ -34,3 +34,8 @@ func NewLocalDiskController() (*hwameistor.LocalDiskController, error) {
 	_, kClient, recorder, err := buildControllerParameters()
 	return hwameistor.NewLocalDiskController(kClient, recorder), err
 }
+
+func NewSnapShotClassController() (*hwameistor.SnapShotClassController, error) {
+	_, kClient, recorder, err := buildControllerParameters()
+	return hwameistor.NewSnapShotClassController(kClient, recorder), err
+}
