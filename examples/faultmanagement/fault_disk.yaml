@@ -1,0 +1,11 @@
+apiVersion: hwameistor.io/v1alpha1
+kind: FaultTicket
+metadata:
+  name: ticket-disk
+spec:
+  nodeName: 172-30-46-10
+  type: Disk
+  source: "manually fault"
+  device:
+    devPath: "/dev/sda"
+  message: "this is a test fault for disk"

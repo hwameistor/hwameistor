@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hwameistor-fault-management-config
+  namespace: hwameistor
+data:
+  hwameistor-fault-management-config.yaml: |    
+    apiVersion: hwameistor.io/v1alpha1
+    kind: FaultManagementConfiguration
+    evaluatorProfiles:
+      - evaluatorName: hwameistor-evaluator
+        plugins:          
+          volume:
+            enabled:
+              - name: xfs-checker
+            disabled:
+              - name: VolumeEvaluator              
+    recoveryProfiles:
+      - evaluatorName: hwameistor-recovery
+        plugins:          
+          volume:
+            enabled:
+              - name: xfs-recover
+            disabled:
+              - name: VolumeEvaluator        
+    plugins:
+      - name: xfs-checker
+        extender:
+          shell:
+            command: "xfs_repair"
+            args:
+              - "-n"
+              - "{device}"
+            succeedAt:
+              returnCode: "0"
+      - name: xfs-recover
+        extender:
+          shell:
+            command: "xfs_repair"
+            args:
+              - "-n"
+              - "{device}"
+            succeedAt:
+              returnCode: "0"
