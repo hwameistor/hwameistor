@@ -88,6 +88,10 @@ type FaultTicketStatus struct {
 	// SubScope:                            Recovering -> Completed
 	Phase TicketPhase `json:"phase,omitempty"`
 
+	// RootCause represents the real cause of this failure —
+	// for example, for a volume, it could be a disk fault
+	RootCause *Effect `json:"rootCause,omitempty"`
+
 	// Effects represent these scopes that effected by this fault and the handle results
 	Effects []Effect `json:"effectScope,omitempty"`
 }
@@ -98,16 +102,16 @@ type Effect struct {
 	// Scope represents the scope of the fault effects
 	Scope FaultEffectScope `json:"scope,omitempty"`
 
+	// Recoverable represents whether this fault is recoverable
+	// +kubebuilder:validation:Required
+	Recoverable bool `json:"recoverable,omitempty"`
+
 	// RecoverInfo represents info about if and how to recover this fault
 	RecoverInfo RecoverInfo `json:"recoverInfo,omitempty"`
 }
 
 // RecoverInfo represents information about if this fault is recoverable and the recover phase
 type RecoverInfo struct {
-	// Recoverable represents whether this fault is recoverable
-	// +kubebuilder:validation:Required
-	Recoverable bool `json:"recoverable"`
-
 	// Phase represents the phase of the fault recovery
 	// The phase Completed indicates this effect is recovered totally
 	Phase TicketPhase `json:"phase,omitempty"`

@@ -130,13 +130,10 @@ spec:
                             The phase Completed indicates this effect is recovered
                             totally
                           type: string
-                        recoverable:
-                          description: Recoverable represents whether this fault is
-                            recoverable
-                          type: boolean
-                      required:
-                      - recoverable
                       type: object
+                    recoverable:
+                      description: Recoverable represents whether this fault is recoverable
+                      type: boolean
                     scope:
                       description: Scope represents the scope of the fault effects
                       type: string
@@ -148,6 +145,29 @@ spec:
                   \                        -> Completed SubScope:                            Recovering
                   -> Completed"
                 type: string
+              rootCause:
+                description: RootCause represents the real cause of this failure —
+                  for example, for a volume, it could be a disk fault
+                properties:
+                  recoverInfo:
+                    description: RecoverInfo represents info about if and how to recover
+                      this fault
+                    properties:
+                      message:
+                        description: Message represents the details of the recovery
+                        type: string
+                      phase:
+                        description: Phase represents the phase of the fault recovery
+                          The phase Completed indicates this effect is recovered totally
+                        type: string
+                    type: object
+                  recoverable:
+                    description: Recoverable represents whether this fault is recoverable
+                    type: boolean
+                  scope:
+                    description: Scope represents the scope of the fault effects
+                    type: string
+                type: object
             type: object
         type: object
     served: true
