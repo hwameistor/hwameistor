@@ -52,6 +52,11 @@ type FaultTicketSpec struct {
 
 	// Message represents the details of the fault which caused this fault actually
 	Message string `json:"message,omitempty"`
+
+	// Suspend specifies whether the controller should evaluate or not.
+	// If a Ticket is created with suspend set to true, the controller will do nothing
+	// with the Ticket. Defaults to false.
+	Suspend bool `json:"suspend,omitempty"`
 }
 
 // FaultDevice can be used to identify the device

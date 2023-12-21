@@ -3,6 +3,8 @@ package faultmanagement
 import (
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // processFaultTicketEvaluating a new faultTicket that should be evaluated first, it has the following steps:
@@ -71,7 +73,34 @@ func (m *manager) evaluatingDiskFault(faultTicket *v1alpha1.FaultTicket) error {
 }
 
 func (m *manager) evaluatingVolumeFault(faultTicket *v1alpha1.FaultTicket) error {
-	return nil
+	logger := m.logger.WithFields(log.Fields{
+		"nodeName":        faultTicket.Spec.NodeName,
+		"volumeName":      faultTicket.Spec.Volume.Name,
+		"volumePath":      faultTicket.Spec.Volume.Path,
+		"volumeFaultType": faultTicket.Spec.Volume.FaultType,
+	})
+	logger.Debug("evaluating a volume fault")
+
+	// find out pods that use this volume currently
+	relevantPods, err := m.topologyGraph.GetPodsUnderLocalVolume(faultTicket.Spec.NodeName, faultTicket.Spec.Volume.Name)
+	if err != nil {
+		logger.WithError(err).Error("Failed to get pods under local volume")
+	}
+
+	var effectedPods []v1alpha1.Effect
+	for _, podName := range relevantPods {
+		effectedPods = append(effectedPods, v1alpha1.Effect{Scope: v1alpha1.App})
+		logger.Debugf("Pod %s is effected by this fault volume", podName)
+	}
+	logger.Debugf("Found %d effected pod(s)", len(effectedPods))
+
+	faultTicket.Status.Effects = effectedPods
+	faultTicket.Status.Phase = v1alpha1.TicketPhaseRecovering
+
+	if _, err = m.hmClient.HwameistorV1alpha1().FaultTickets().UpdateStatus(context.Background(), faultTicket, v1.UpdateOptions{}); err != nil {
+		logger.WithError(err).Error("Failed to update fault tickets status")
+	}
+	return err
 }
 
 func (m *manager) evaluatingNodeFault(faultTicket *v1alpha1.FaultTicket) error {

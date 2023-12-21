@@ -71,7 +71,7 @@ func main() {
 	scLister := factory.Storage().V1().StorageClasses().Lister()
 
 	ctx := signals.SetupSignalHandler()
-	if err = utils.RunWithLease(namespace, podName, "hwameistor-fault-management", func(_ context.Context) {
+	if err = utils.RunWithLease(namespace, podName, fmt.Sprintf("hwameistor-fault-management-%s", nodeName), func(_ context.Context) {
 		// run faultmanagement controller
 		ftManager := faultmanagement.New(nodeName, namespace, kclient, hmClientSet, podInformer, pvcInformer, pvInformer,
 			lvInformer, lsnInformer, ftInformer, scLister)

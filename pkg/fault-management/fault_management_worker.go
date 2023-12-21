@@ -50,6 +50,12 @@ func (m *manager) processFaultTicket(faultTicketName string) error {
 		return err
 	}
 
+	// stop everything
+	if faultTicket.Spec.Suspend {
+		logger.Debug("faultTicket is suspended, ignore this fault")
+		return nil
+	}
+
 	// proceed with faultticket deletion and remove finalizers when needed
 	if faultTicket.ObjectMeta.DeletionTimestamp != nil {
 		return m.processFaultTicketDeletion(faultTicket)
@@ -80,10 +86,6 @@ func (m *manager) processFaultTicket(faultTicketName string) error {
 		m.logger.WithError(err).Error("failed to process faultTicker")
 	}
 	return err
-}
-
-func (m *manager) processFaultTicketRecovering(faultTicket *v1alpha1.FaultTicket) error {
-	return nil
 }
 
 func (m *manager) processFaultTicketCompleted(faultTicket *v1alpha1.FaultTicket) error {

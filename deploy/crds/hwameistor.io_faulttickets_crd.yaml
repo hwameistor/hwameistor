@@ -77,6 +77,11 @@ spec:
                 description: Source represents where the fault comes from e.g., prometheus,
                   disk analysis tools
                 type: string
+              suspend:
+                description: Suspend specifies whether the controller should evaluate
+                  or not. If a Ticket is created with suspend set to true, the controller
+                  will do nothing with the Ticket. Defaults to false.
+                type: boolean
               type:
                 description: Type represents what caused this fault e.g., Disk, Volume,
                   Node

@@ -7,9 +7,12 @@ import (
 	listers "github.com/hwameistor/hwameistor/pkg/apis/client/listers/hwameistor/v1alpha1"
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/common"
+	"github.com/hwameistor/hwameistor/pkg/exechelper"
+	"github.com/hwameistor/hwameistor/pkg/exechelper/basicexecutor"
 	"github.com/hwameistor/hwameistor/pkg/fault-management/graph"
 	log "github.com/sirupsen/logrus"
 	informercorev1 "k8s.io/client-go/informers/core/v1"
+	v1 "k8s.io/client-go/listers/core/v1"
 	storagev1lister "k8s.io/client-go/listers/storage/v1"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -25,9 +28,13 @@ type manager struct {
 	hmClient            hwameistorclient.Interface
 	faultTicketInformer v1alpha1.FaultTicketInformer
 	faultTicketLister   listers.FaultTicketLister
+	localVolumeLister   listers.LocalVolumeLister
+	storageClassLister  storagev1lister.StorageClassLister
+	pvcLister           v1.PersistentVolumeClaimLister
 	faultTicketSynced   cache.InformerSynced
 
 	faultTicketTaskQueue *common.TaskQueue
+	cmdExec              exechelper.Executor
 }
 
 func New(name, namespace string,
@@ -53,6 +60,10 @@ func New(name, namespace string,
 		faultTicketLister:    faultTickerInformer.Lister(),
 		faultTicketSynced:    faultTickerInformer.Informer().HasSynced,
 		topologyGraph:        graph.New(name, namespace, kclient, hmClient, podInformer, pvcInformer, pvInformer, lsnInformer, lvInformer, scLister),
+		storageClassLister:   scLister,
+		pvcLister:            pvcInformer.Lister(),
+		localVolumeLister:    lvInformer.Lister(),
+		cmdExec:              basicexecutor.New(),
 	}
 
 	// setup informer for FaultTicket
