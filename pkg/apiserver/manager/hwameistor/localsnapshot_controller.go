@@ -6,6 +6,7 @@ import (
 	hwameistorapi "github.com/hwameistor/hwameistor/pkg/apiserver/api"
 	utils "github.com/hwameistor/hwameistor/pkg/apiserver/util"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	"math"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -103,4 +104,37 @@ func (lvsController *LocalSnapshotController) GetLocalSnapshot(lvsname string) (
 		}
 	}
 	return nil, nil
+}
+
+func (lvsController *LocalSnapshotController) RollbackVolumeSnapshot(lvsname string) error {
+
+	s := &apisv1alpha1.LocalVolumeSnapshot{}
+	obj := client.ObjectKey{
+		Name:      lvsname,
+		Namespace: "default",
+	}
+
+	err := lvsController.Client.Get(context.TODO(), obj, s)
+	if err != nil {
+		return err
+	}
+	restore := &apisv1alpha1.LocalVolumeSnapshotRestore{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "LocalVolumeSnapshotRestore",
+			APIVersion: "hwameistor.io/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "restore-" + lvsname,
+			Namespace: defaultNamespace,
+		},
+		Spec: apisv1alpha1.LocalVolumeSnapshotRestoreSpec{
+			SourceVolumeSnapshot: lvsname,
+			RestoreType:          "rollback",
+		},
+	}
+	if err := lvsController.Client.Create(context.TODO(), restore); err != nil {
+		log.Errorf("create LocalVolumeSnapshotRestore err: %v", err)
+		return err
+	}
+	return nil
 }
