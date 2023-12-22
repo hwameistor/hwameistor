@@ -93,15 +93,18 @@ spec:
               volume:
                 description: Volume represents which volume the fault happened
                 properties:
-                  volume:
+                  faultType:
                     description: FaultType represents the fault type of the fault
-                      volume
+                      volume(e.g. filesystem, badblock)
+                    enum:
+                    - filesystem
+                    - badblock
                     type: string
-                  volumeName:
+                  name:
                     description: Name represents the name of the fault volume, this
                       can be pv name or lv name
                     type: string
-                  volumePath:
+                  path:
                     description: Path represents the path of the fault volume on the
                       host
                     type: string

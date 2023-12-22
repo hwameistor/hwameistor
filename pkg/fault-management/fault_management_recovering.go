@@ -1,16 +1,23 @@
 package faultmanagement
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/exechelper"
 	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
 	XFSREPAIR = "xfs_repair"
 	EXTREPAIR = "fsck"
 	fsTypeKey = "csi.storage.k8s.io/fstype"
+)
+
+var (
+	UnsupportedFaultError = fmt.Errorf("unsupported fault type")
 )
 
 func (m *manager) processFaultTicketRecovering(faultTicket *v1alpha1.FaultTicket) error {
@@ -39,6 +46,17 @@ func (m *manager) processFaultTicketRecovering(faultTicket *v1alpha1.FaultTicket
 		logger.Debug("Unknown Fault Type, ignore it")
 	}
 
+	// recover finished, there are some possible results as below:
+	// 1. recover successfully and ticket's status should be updated to Completed
+	// 2. unsupported Fault Type and  suspend the ticket
+	if errors.Is(err, UnsupportedFaultError) {
+		faultTicket.Spec.Suspend = true
+		_, err = m.hmClient.HwameistorV1alpha1().FaultTickets().Update(context.Background(), faultTicket, v1.UpdateOptions{})
+	} else if err == nil {
+		faultTicket.Status.Phase = v1alpha1.TicketPhaseCompleted
+		_, err = m.hmClient.HwameistorV1alpha1().FaultTickets().UpdateStatus(context.Background(), faultTicket, v1.UpdateOptions{})
+	}
+
 	return err
 }
 
@@ -62,7 +80,13 @@ func (m *manager) recoveringVolumeFault(faultTicket *v1alpha1.FaultTicket) error
 	case v1alpha1.FileSystemFault:
 		err = m.recoverVolumeFromFilesystem(faultTicket)
 	default:
-		err = fmt.Errorf("UNKNOWN volume fault type: %v", faultTicket.Spec.Volume.FaultType)
+		err = UnsupportedFaultError
+	}
+
+	if err != nil {
+		logger.WithError(err).Error("Failed to recover volume fault")
+	} else {
+		logger.Info("Recover volume fault successfully")
 	}
 
 	return err
@@ -93,6 +117,8 @@ func (m *manager) recoverVolumeFromBadblock(faultTicket *v1alpha1.FaultTicket) e
 		repairBadblock = exechelper.ExecParams{CmdName: XFSREPAIR}
 	case "ext2", "ext3", "ext4":
 		repairBadblock = exechelper.ExecParams{CmdName: EXTREPAIR}
+	default:
+		return fmt.Errorf("unsupport fstype %s", fsType)
 	}
 
 	res := m.cmdExec.RunCommand(repairBadblock)

@@ -76,13 +76,14 @@ type FaultDevice struct {
 
 type FaultVolume struct {
 	// Name represents the name of the fault volume, this can be pv name or lv name
-	Name string `json:"volumeName,omitempty"`
+	Name string `json:"name,omitempty"`
 
 	// Path represents the path of the fault volume on the host
-	Path string `json:"volumePath,omitempty"`
+	Path string `json:"path,omitempty"`
 
-	// FaultType represents the fault type of the fault volume
-	FaultType VolumeFaultType `json:"volume,omitempty"`
+	// FaultType represents the fault type of the fault volume(e.g. filesystem, badblock)
+	// +kubebuilder:validation:Enum:=filesystem;badblock
+	FaultType VolumeFaultType `json:"faultType,omitempty"`
 }
 
 // FaultTicketStatus defines the observed state of FaultTicket

@@ -19,7 +19,7 @@ import (
 )
 
 type manager struct {
-	name      string
+	nodeName  string
 	namespace string
 	logger    *log.Entry
 	kclient   client.Client
@@ -37,7 +37,7 @@ type manager struct {
 	cmdExec              exechelper.Executor
 }
 
-func New(name, namespace string,
+func New(nodeName, namespace string,
 	kclient client.Client,
 	hmClient hwameistorclient.Interface,
 	podInformer informercorev1.PodInformer,
@@ -49,7 +49,7 @@ func New(name, namespace string,
 	scLister storagev1lister.StorageClassLister,
 ) *manager {
 	m := &manager{
-		name:      name,
+		nodeName:  nodeName,
 		namespace: namespace,
 		kclient:   kclient,
 		hmClient:  hmClient,
@@ -59,7 +59,7 @@ func New(name, namespace string,
 		faultTicketInformer:  faultTickerInformer,
 		faultTicketLister:    faultTickerInformer.Lister(),
 		faultTicketSynced:    faultTickerInformer.Informer().HasSynced,
-		topologyGraph:        graph.New(name, namespace, kclient, hmClient, podInformer, pvcInformer, pvInformer, lsnInformer, lvInformer, scLister),
+		topologyGraph:        graph.New(nodeName, namespace, kclient, hmClient, podInformer, pvcInformer, pvInformer, lsnInformer, lvInformer, scLister),
 		storageClassLister:   scLister,
 		pvcLister:            pvcInformer.Lister(),
 		localVolumeLister:    lvInformer.Lister(),
@@ -98,7 +98,11 @@ func (m *manager) handleTicketAdd(obj interface{}) {
 	if _, ok := obj.(*apisv1alpha1.FaultTicket); !ok {
 		return
 	}
-	m.faultTicketTaskQueue.Add(obj.(*apisv1alpha1.FaultTicket).Name)
+	faultTicket := obj.(*apisv1alpha1.FaultTicket)
+	if m.nodeName != faultTicket.Spec.NodeName {
+		return
+	}
+	m.faultTicketTaskQueue.Add(faultTicket.Name)
 }
 
 func (m *manager) handleTicketUpdate(_, newObj interface{}) {

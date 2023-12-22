@@ -19,7 +19,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"strings"
-	"time"
 )
 
 var (
@@ -56,7 +55,7 @@ func main() {
 		logrus.WithError(err).Fatal("Failed to create Kubernetes client")
 	}
 
-	hmFactory := hwinformers.NewSharedInformerFactory(hmClientSet, time.Second*10)
+	hmFactory := hwinformers.NewSharedInformerFactory(hmClientSet, 0)
 	_ = apisv1alpha.AddToScheme(scheme.Scheme)
 
 	// ----------------------------------------
