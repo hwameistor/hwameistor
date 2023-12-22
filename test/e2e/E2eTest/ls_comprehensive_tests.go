@@ -50,9 +50,6 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("periodCheck"), func(
 				Parameters: map[string]string{
 					"replicaNumber":             "2",
 					"poolClass":                 "HDD",
-					"poolType":                  "REGULAR",
-					"volumeKind":                "LVM",
-					"striped":                   "true",
 					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,
@@ -479,12 +476,10 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("periodCheck"), func(
 				},
 				Provisioner: "lvm.hwameistor.io",
 				Parameters: map[string]string{
-					"replicaNumber":             "1",
-					"convertible":               "true",
-					"poolClass":                 "HDD",
-					"poolType":                  "REGULAR",
-					"volumeKind":                "LVM",
-					"striped":                   "true",
+					"replicaNumber": "1",
+					"convertible":   "true",
+					"poolClass":     "HDD",
+
 					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,

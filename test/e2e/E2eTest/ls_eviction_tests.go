@@ -52,9 +52,6 @@ var _ = ginkgo.Describe("eviction test", ginkgo.Label("error"), func() {
 				Parameters: map[string]string{
 					"replicaNumber":             "1",
 					"poolClass":                 "HDD",
-					"poolType":                  "REGULAR",
-					"volumeKind":                "LVM",
-					"striped":                   "true",
 					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,
@@ -439,11 +436,9 @@ var _ = ginkgo.Describe("eviction test", ginkgo.Label("error"), func() {
 				},
 				Provisioner: "lvm.hwameistor.io",
 				Parameters: map[string]string{
-					"replicaNumber":             "2",
-					"poolClass":                 "HDD",
-					"poolType":                  "REGULAR",
-					"volumeKind":                "LVM",
-					"striped":                   "true",
+					"replicaNumber": "2",
+					"poolClass":     "HDD",
+
 					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,
