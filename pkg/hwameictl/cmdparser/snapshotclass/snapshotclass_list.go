@@ -28,7 +28,7 @@ func snapshotClassListRunE(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	scsHeader := table.Row{"#", "Name", "DRIVER", "DELETIONPOLICY", "SNAPSIZE"}
+	scsHeader := table.Row{"#", "NAME", "DRIVER", "DELETIONPOLICY", "SNAPSIZE"}
 	scsRows := make([]table.Row, len(scs))
 	for i, sc := range scs {
 		scsRows[i] = table.Row{i + 1, sc.Name, sc.Driver, sc.DeletionPolicy, ""}
