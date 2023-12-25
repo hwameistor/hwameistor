@@ -2,8 +2,6 @@ package manager
 
 import (
 	"fmt"
-	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
-	storagev1 "k8s.io/api/storage/v1"
 	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
