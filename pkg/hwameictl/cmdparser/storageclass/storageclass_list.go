@@ -29,7 +29,7 @@ func storageClassListRunE(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	scsHeader := table.Row{"#", "Name", "PROVISIONER", "RECLAIMPOLICY", "VOLUMEBINDINGMODE", "ALLOWVOLUMEEXPANSION"}
+	scsHeader := table.Row{"#", "NAME", "PROVISIONER", "RECLAIMPOLICY", "VOLUMEBINDINGMODE", "ALLOWVOLUMEEXPANSION"}
 	scsRows := make([]table.Row, len(scs))
 	for i, sc := range scs {
 		scsRows[i] = table.Row{i + 1, sc.Name, sc.Provisioner, *sc.ReclaimPolicy, *sc.VolumeBindingMode, *sc.AllowVolumeExpansion}
