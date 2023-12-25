@@ -15,7 +15,7 @@ var SnapshotRollback = &cobra.Command{
 }
 
 func init() {
-	snapshotAdd.Flags().StringVar(&ns, "ns", "default", "namespace")
+	SnapshotRollback.Flags().StringVar(&ns, "ns", "default", "namespace")
 }
 
 func VolumeSnapshotRollbackRunE(_ *cobra.Command, args []string) error {

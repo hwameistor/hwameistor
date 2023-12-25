@@ -19,7 +19,7 @@ var SnapshotRestore = &cobra.Command{
 func init() {
 	SnapshotRestore.Flags().StringVar(&pvcName, "pvc", "", "persistentVolumeClaimName")
 	SnapshotRestore.Flags().StringVar(&storage, "storage", "", "storage capacity")
-	snapshotAdd.Flags().StringVar(&ns, "ns", "default", "namespace")
+	SnapshotRestore.Flags().StringVar(&ns, "ns", "default", "namespace")
 
 }
 
