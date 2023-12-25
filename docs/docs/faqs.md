@@ -43,65 +43,65 @@ Follow these steps to remove a node:
 
 1. Drain node.
 
-    ```bash
-    kubectl drain NODE --ignore-daemonsets=true. --ignore-daemonsets=true
-    ```
+   ```bash
+   kubectl drain NODE --ignore-daemonsets=true. --ignore-daemonsets=true
+   ```
 
-    This command can evict and reschedule Pods on the node. It also automatically
-    triggers HwameiStor's data volume eviction behavior. HwameiStor will automatically
-    migrate all replicas of the data volumes from that node to other nodes, ensuring data availability.
+   This command can evict and reschedule Pods on the node. It also automatically
+   triggers HwameiStor's data volume eviction behavior. HwameiStor will automatically
+   migrate all replicas of the data volumes from that node to other nodes, ensuring data availability.
 
 2. Check the migration progress.
 
-    ```bash
-    kubectl get localstoragenode NODE -o yaml
-    ```
+   ```bash
+   kubectl get localstoragenode NODE -o yaml
+   ```
 
-    The output may look like:
+   The output may look like:
 
-    ```yaml
-    apiVersion: hwameistor.io/v1alpha1
-    kind: LocalStorageNode
-    metadata:
-      name: NODE
-    spec:
-      hostname: NODE
-      storageIP: 10.6.113.22
-      topogoly:
-        region: default
-        zone: default
-    status:
-      ...
-      pools:
-        LocalStorage_PoolHDD:
-          class: HDD
-          disks:
-          - capacityBytes: 17175674880
-            devPath: /dev/sdb
-            state: InUse
-            type: HDD
-          freeCapacityBytes: 16101933056
-          freeVolumeCount: 999
-          name: LocalStorage_PoolHDD
-          totalCapacityBytes: 17175674880
-          totalVolumeCount: 1000
-          type: REGULAR
-          usedCapacityBytes: 1073741824
-          usedVolumeCount: 1
-          volumeCapacityBytesLimit: 17175674880
-          ## **** make sure volumes is empty **** ##
-          volumes:  
-      state: Ready
-    ```
+   ```yaml
+   apiVersion: hwameistor.io/v1alpha1
+   kind: LocalStorageNode
+   metadata:
+     name: NODE
+   spec:
+     hostname: NODE
+     storageIP: 10.6.113.22
+     topogoly:
+       region: default
+       zone: default
+   status:
+     ...
+     pools:
+       LocalStorage_PoolHDD:
+         class: HDD
+         disks:
+         - capacityBytes: 17175674880
+           devPath: /dev/sdb
+           state: InUse
+           type: HDD
+         freeCapacityBytes: 16101933056
+         freeVolumeCount: 999
+         name: LocalStorage_PoolHDD
+         totalCapacityBytes: 17175674880
+         totalVolumeCount: 1000
+         type: REGULAR
+         usedCapacityBytes: 1073741824
+         usedVolumeCount: 1
+         volumeCapacityBytesLimit: 17175674880
+         ## **** make sure volumes is empty **** ##
+         volumes:  
+     state: Ready
+   ```
 
-    At the same time, HwameiStor will automatically reschedule the evicted Pods
-    to the other node which has the associated volume replica, and continue to run.
+   At the same time, HwameiStor will automatically reschedule the evicted Pods
+   to the other node which has the associated volume replica, and continue to run.
 
 3. Remove the NODE from the cluster.
 
-    ```bash
-    kubectl delete nodes NODE
-    ```
+   ```bash
+   kubectl delete nodes NODE
+   ```
 
 ### Reboot a node
 
@@ -120,31 +120,31 @@ replicas of the data volumes.
 
 1. Add a label (optional)
 
-    If it is not required to migrate the volumes during the node reboots,
-    you can add the following label to the node before draining it.
+   If it is not required to migrate the volumes during the node reboots,
+   you can add the following label to the node before draining it.
 
-    ```bash
-    kubectl label node NODE hwameistor.io/eviction=disable
-    ```
+   ```bash
+   kubectl label node NODE hwameistor.io/eviction=disable
+   ```
 
 2. Drain the node.
 
-    ```bash
-    kubectl drain NODE --ignore-daemonsets=true. --ignore-daemonsets=true
-    ```
+   ```bash
+   kubectl drain NODE --ignore-daemonsets=true. --ignore-daemonsets=true
+   ```
 
-    - If Step 1 has been performed, you can reboot the node after Step 2 is successful.
-    - If Step 1 has not been performed, you should check if the data migration is complete
-      after Step 2 is successful (similar to Step 2 in [remove node](#remove-a-node)).
-      After the data migration is complete, you can reboot the node.
+   - If Step 1 has been performed, you can reboot the node after Step 2 is successful.
+   - If Step 1 has not been performed, you should check if the data migration is complete
+     after Step 2 is successful (similar to Step 2 in [remove node](#remove-a-node)).
+     After the data migration is complete, you can reboot the node.
 
-    After the first two steps are successful, you can reboot the node and wait for the node system to return to normal.
+   After the first two steps are successful, you can reboot the node and wait for the node system to return to normal.
 
 3. Bring the node back to normal.
 
-    ```bash
-    kubectl uncordon NODE
-    ```
+   ```bash
+   kubectl uncordon NODE
+   ```
 
 ### Traditional shared storage
 
@@ -183,20 +183,20 @@ Possible causes of the error:
 
 ## Q5: Why is StorageClasses not automatically created after installation using Hwameistor-operator?
 
-
-possible reason:
+Probable reasons:
  
 1. The node has no remaining bare disks that can be automatically managed. You can check it by running the following command:
 
-    ```bash
-    kubectl get ld # Check disk
-    kubectl get lsn <node-name> -o yaml # Check whether the disk is managed normally
-    ```
+   ```bash
+   kubectl get ld # Check disk
+   kubectl get lsn <node-name> -o yaml # Check whether the disk is managed normally
+   ```
 
 2. The hwameistor related components are not working properly. You can check it by running the following command:
-> module `drbd-adapter` is only needed when HA is enabled, if not, ignore the releated error.
 
-```bash
-kubectl get pod -n hwameistor # Confirm whether the pod is running 
-kubectl get hmcluster -o yaml # View the health field
-```
+   > `drbd-adapter` is only needed when HA is enabled, if not, ignore the releated error.
+
+   ```bash
+   kubectl get pod -n hwameistor # Confirm whether the pod is running 
+   kubectl get hmcluster -o yaml # View the health field
+   ```
