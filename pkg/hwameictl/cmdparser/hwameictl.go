@@ -2,6 +2,7 @@ package cmdparser
 
 import (
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/snapshotclass"
+	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/storageclass"
 	"io"
 	"time"
 
@@ -34,7 +35,7 @@ func init() {
 	Hwameictl.PersistentFlags().DurationVar(&definitions.Timeout, "timeout", 3*time.Second, "Set the request timeout")
 
 	// Sub commands
-	Hwameictl.AddCommand(volume.Volume, node.Node, pool.Pool, disk.Disk, snapshotclass.SnapshotClass)
+	Hwameictl.AddCommand(volume.Volume, node.Node, pool.Pool, disk.Disk, storageclass.StorageClass, snapshotclass.SnapshotClass)
 
 	// Disable debug mode
 	if definitions.Debug == false {
