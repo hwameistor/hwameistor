@@ -1,6 +1,7 @@
 package cmdparser
 
 import (
+	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/localvolumesnapshot"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/snapshotclass"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/storageclass"
 	"io"
@@ -13,6 +14,7 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/disk"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/node"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/pool"
+	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/snapshot"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/volume"
 )
 
@@ -35,7 +37,7 @@ func init() {
 	Hwameictl.PersistentFlags().DurationVar(&definitions.Timeout, "timeout", 3*time.Second, "Set the request timeout")
 
 	// Sub commands
-	Hwameictl.AddCommand(volume.Volume, node.Node, pool.Pool, disk.Disk, storageclass.StorageClass, snapshotclass.SnapshotClass)
+	Hwameictl.AddCommand(volume.Volume, node.Node, pool.Pool, disk.Disk, storageclass.StorageClass, snapshotclass.SnapshotClass, snapshot.Snapshot, localvolumesnapshot.LocalSnapshot)
 
 	// Disable debug mode
 	if definitions.Debug == false {
