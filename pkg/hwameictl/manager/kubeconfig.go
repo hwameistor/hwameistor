@@ -12,6 +12,8 @@ import (
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/definitions"
+	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
+	storagev1 "k8s.io/api/storage/v1"
 )
 
 func BuildKubeClient(kubeConfigPath string) (*kubernetes.Clientset, client.Client, error) {
@@ -47,7 +49,16 @@ func BuildKubeClient(kubeConfigPath string) (*kubernetes.Clientset, client.Clien
 	if err = scheme.AddToScheme(options.Scheme); err != nil {
 		return nil, nil, err
 	}
+
 	if err = apisv1alpha1.AddToScheme(options.Scheme); err != nil {
+		return nil, nil, err
+	}
+
+	if err = storagev1.AddToScheme(options.Scheme); err != nil {
+		return nil, nil, err
+	}
+
+	if err = snapshotv1.AddToScheme(options.Scheme); err != nil {
 		return nil, nil, err
 	}
 

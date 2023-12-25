@@ -9,9 +9,9 @@ import (
 type StorageNode struct {
 	LocalStorageNode apisv1alpha1.LocalStorageNode `json:"localStorageNode,omitempty"`
 	LocalDiskNode    apisv1alpha1.LocalDiskNode    `json:"localDiskNode,omitempty"`
-
-	K8sNode      *k8sv1.Node
-	K8sNodeState State `json:"k8SNodeState,omitempty"`
+	TotalDisk        int                           `json:"totalDisk,omitempty"`
+	K8sNode          *k8sv1.Node
+	K8sNodeState     State `json:"k8SNodeState,omitempty"`
 }
 
 type LocalDisksItemsList struct {

@@ -50,9 +50,6 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 				Parameters: map[string]string{
 					"replicaNumber":             "2",
 					"poolClass":                 "HDD",
-					"poolType":                  "REGULAR",
-					"volumeKind":                "LVM",
-					"striped":                   "true",
 					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,
@@ -278,18 +275,6 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 				logrus.Error("%+v ", err)
 				f.ExpectNoError(err)
 			}
-			deployment := &appsv1.Deployment{}
-			deployKey := ctrlclient.ObjectKey{
-				Name:      utils.HaDeploymentName,
-				Namespace: "default",
-			}
-
-			err = client.Get(ctx, deployKey, deployment)
-			if err != nil {
-				logrus.Printf("%+v ", err)
-				f.ExpectNoError(err)
-			}
-
 			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
 			selector := labels.NewSelector()
 			selector = selector.Add(*apps)
@@ -346,7 +331,7 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 				if len(lmgList.Items) != 0 {
 					return false, nil
 				} else {
-					logrus.Info("k8s ready")
+					logrus.Info("migrate ready")
 					return true, nil
 				}
 
@@ -377,22 +362,12 @@ var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), f
 				f.ExpectNoError(err)
 			}
 
-			if err != nil {
-				logrus.Error("Migrate failed", err)
-				f.ExpectNoError(err)
-			}
-
 			lvrList := &v1alpha1.LocalVolumeReplicaList{}
 			err = client.List(ctx, lvrList)
 			if err != nil {
 				logrus.Printf("list lvr failed ：%+v ", err)
 			}
-			lvlist := &v1alpha1.LocalVolumeList{}
-			err = client.List(ctx, lvlist)
-			if err != nil {
-				logrus.Error("%+v ", err)
-				f.ExpectNoError(err)
-			}
+
 			gomega.Expect(len(lvrList.Items)).To(gomega.Equal(2))
 			for _, lvr := range lvrList.Items {
 				if lvr.Spec.NodeName != podlist.Items[0].Spec.NodeName {

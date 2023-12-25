@@ -53,8 +53,6 @@ var _ = ginkgo.Describe("localstorage volume IOPS test ", ginkgo.Label("periodCh
 					"replicaNumber":              "1",
 					"poolClass":                  "HDD",
 					"poolType":                   "REGULAR",
-					"volumeKind":                 "LVM",
-					"striped":                    "true",
 					"csi.storage.k8s.io/fstype":  "xfs",
 					"provision-iops-on-creation": "100",
 				},

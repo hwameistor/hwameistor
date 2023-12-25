@@ -1,10 +1,7 @@
 package E2eTest
 
 import (
-	"bufio"
 	"context"
-	"os"
-	"strings"
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
@@ -28,7 +25,7 @@ import (
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test"), func() {
+var _ = ginkgo.Describe("ha volume migrate test", ginkgo.Label("periodCheck"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
@@ -39,9 +36,7 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 		f = framework.NewDefaultFramework(clientset.AddToScheme)
 		client = f.GetClient()
 		utils.CreateLdc(ctx)
-
 	})
-
 	ginkgo.Context("create a StorageClass", func() {
 		ginkgo.It("create a sc", func() {
 			//create sc
@@ -68,7 +63,7 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 			}
 		})
 	})
-	ginkgo.Context("create a PVC", func() {
+	ginkgo.Context("create a HA-PersistentVolumeClaim", func() {
 		ginkgo.It("create PVC", func() {
 			//create PVC
 			storageClassName := "local-storage-hdd-lvm"
@@ -82,7 +77,7 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 					StorageClassName: &storageClassName,
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
-							corev1.ResourceStorage: resource.MustParse("2Gi"),
+							corev1.ResourceStorage: resource.MustParse("100Mi"),
 						},
 					},
 				},
@@ -99,8 +94,9 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 	})
 	ginkgo.Context("create a deployment", func() {
 
-		ginkgo.It("create deployment", func() {
+		ginkgo.It("create a deployment", func() {
 			//create deployment
+			_, _ = utils.RunInLinux("kubectl taint node --all node-role.kubernetes.io/master-")
 			exampleDeployment := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      utils.DeploymentName,
@@ -108,6 +104,9 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 				},
 				Spec: appsv1.DeploymentSpec{
 					Replicas: utils.Int32Ptr(1),
+					Strategy: appsv1.DeploymentStrategy{
+						Type: appsv1.RecreateDeploymentStrategyType,
+					},
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							"app": "demo",
@@ -120,11 +119,10 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 							},
 						},
 						Spec: corev1.PodSpec{
-							SchedulerName: "hwameistor-scheduler",
 							Containers: []corev1.Container{
 								{
 									Name:  "web",
-									Image: "daocloud.io/daocloud/testtools:latest",
+									Image: "10.6.112.210/hwameistor/dao-2048:v1.2.0",
 									Ports: []corev1.ContainerPort{
 										{
 											Name:          "http",
@@ -132,19 +130,9 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 											ContainerPort: 80,
 										},
 									},
-									Resources: corev1.ResourceRequirements{
-										Limits: corev1.ResourceList{
-											"cpu":    resource.MustParse("1000m"),
-											"memory": resource.MustParse("4Gi"),
-										},
-										Requests: corev1.ResourceList{
-											"cpu":    resource.MustParse("1000m"),
-											"memory": resource.MustParse("4Gi"),
-										},
-									},
 									VolumeMounts: []corev1.VolumeMount{
 										{
-											Name:      "2048-volume-lvm",
+											Name:      "2048-volume-lvm-ha",
 											MountPath: "/data",
 										},
 									},
@@ -152,7 +140,7 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 							},
 							Volumes: []corev1.Volume{
 								{
-									Name: "2048-volume-lvm",
+									Name: "2048-volume-lvm-ha",
 									VolumeSource: corev1.VolumeSource{
 										PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 											ClaimName: "pvc-lvm",
@@ -169,9 +157,11 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
+
 			gomega.Expect(err).To(gomega.BeNil())
 		})
 		ginkgo.It("PVC STATUS should be Bound", func() {
+
 			pvc := &corev1.PersistentVolumeClaim{}
 			pvcKey := ctrlclient.ObjectKey{
 				Name:      "pvc-lvm",
@@ -182,7 +172,6 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
-
 			logrus.Infof("Waiting for the PVC to be bound")
 			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
 				if err = client.Get(ctx, pvcKey, pvc); pvc.Status.Phase != corev1.ClaimBound {
@@ -219,31 +208,12 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 				logrus.Error(err)
 			}
 			gomega.Expect(err).To(gomega.BeNil())
-
 		})
 
 	})
-	ginkgo.Context("Test the volume", func() {
-		ginkgo.It("check lvg", func() {
-			lvrList := &v1alpha1.LocalVolumeReplicaList{}
-			err := client.List(ctx, lvrList)
-			if err != nil {
-				logrus.Printf("list lvr failed ：%+v ", err)
-			}
-			lvgList := &v1alpha1.LocalVolumeGroupList{}
-			err = client.List(ctx, lvgList)
-			if err != nil {
-				logrus.Printf("list lvg failed ：%+v ", err)
-			}
-			for _, lvr := range lvrList.Items {
-				for _, lvg := range lvgList.Items {
-					gomega.Expect(lvr.Spec.NodeName).To(gomega.Equal(lvg.Spec.Accessibility.Nodes[0]))
-				}
-			}
-
-		})
-		ginkgo.It("performance test", func() {
-
+	ginkgo.Context("test HA-volumes migrate", func() {
+		SourceNode := ""
+		ginkgo.It("Write test file", func() {
 			config, err := config.GetConfig()
 			if err != nil {
 				return
@@ -277,41 +247,220 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 			containers := deployment.Spec.Template.Spec.Containers
 			for _, pod := range podlist.Items {
 				for _, container := range containers {
-					output, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "fio -direct=1  -iodepth=128 -rw=randwrite -ioengine=libaio -bs=4K -size=1G -numjobs=1 -runtime=600 -group_reporting -filename=/data/file.txt -name=Rand_Write_IOPS_Test ", container.Name)
+					_, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && echo it-is-a-test >test", container.Name)
 					if err != nil {
 						logrus.Printf("%+v ", err)
 						f.ExpectNoError(err)
 					}
-					filePath1 := "/e2e-test/log/" + time.Now().Format(time.RFC3339) + ".txt"
-					logrus.Printf(filePath1)
-					file, err := os.OpenFile(filePath1, os.O_WRONLY|os.O_CREATE, 0666)
+					output, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
 					if err != nil {
-						logrus.Printf("open file err=%v\n", err)
-						return
+						logrus.Printf("%+v ", err)
+						f.ExpectNoError(err)
 					}
-					defer file.Close()
-					writer := bufio.NewWriter(file)
-					writer.WriteString(output)
-					writer.Flush()
+					gomega.Expect(output).To(gomega.Equal("it-is-a-test"))
+				}
+			}
+		})
+		ginkgo.It("Get the SourceNode", func() {
 
-					filePath2 := "/e2e-test/summary.txt"
-					file2, err := os.OpenFile(filePath2, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
+			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
+			selector := labels.NewSelector()
+			selector = selector.Add(*apps)
+			listOption := ctrlclient.ListOptions{
+				LabelSelector: selector,
+			}
+			podlist := &corev1.PodList{}
+			err = client.List(ctx, podlist, &listOption)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			logrus.Infof("The node where the application is located is: " + podlist.Items[0].Spec.NodeName)
+			SourceNode = podlist.Items[0].Spec.NodeName
+		})
+		ginkgo.It("Stop the workload", func() {
+			deployment := &appsv1.Deployment{}
+			deployKey := ctrlclient.ObjectKey{
+				Name:      utils.DeploymentName,
+				Namespace: "default",
+			}
+			err := client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+			deployment.Spec.Replicas = utils.Int32Ptr(0)
+			err = client.Update(ctx, deployment)
+			logrus.Infof("waiting for the deployment to be stop")
+			err = wait.PollImmediate(10*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
+				if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(0) {
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				logrus.Infof("deployment stop timeout")
+				logrus.Error(err)
+			}
+			gomega.Expect(err).To(gomega.BeNil())
+		})
+		ginkgo.It("create a localvolumemigrate", func() {
+
+			lvrList := &v1alpha1.LocalVolumeReplicaList{}
+			err := client.List(ctx, lvrList)
+			if err != nil {
+				logrus.Printf("list lvr failed ：%+v ", err)
+			}
+			lvlist := &v1alpha1.LocalVolumeList{}
+			err = client.List(ctx, lvlist)
+			if err != nil {
+				logrus.Error("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			lvname := lvlist.Items[0].Name
+			exlvm := &v1alpha1.LocalVolumeMigrate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "localvolumegroupmigrate-1",
+					Namespace: "default",
+				},
+				Spec: v1alpha1.LocalVolumeMigrateSpec{
+					TargetNodesSuggested: []string{},
+					SourceNode:           SourceNode,
+					VolumeName:           lvname,
+					MigrateAllVols:       true,
+				},
+			}
+
+			err = client.Create(ctx, exlvm)
+			logrus.Infof("create lvm")
+			if err != nil {
+				logrus.Printf("Create lvgm failed ：%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+		})
+		ginkgo.It("check localvolumemigrate", func() {
+			logrus.Infof("wait 20 minutes for migrate lv")
+			err := wait.PollImmediate(10*time.Second, 20*time.Minute, func() (done bool, err error) {
+				lmgList := &v1alpha1.LocalVolumeMigrateList{}
+				err = client.List(ctx, lmgList)
+				if err != nil {
+					logrus.Printf("list lmg failed ：%+v ", err)
+				}
+				if len(lmgList.Items) != 0 {
+					return false, nil
+				} else {
+					logrus.Info("migrate ready")
+					return true, nil
+				}
+
+			})
+
+			deployment := &appsv1.Deployment{}
+			deployKey := ctrlclient.ObjectKey{
+				Name:      utils.DeploymentName,
+				Namespace: "default",
+			}
+
+			err = client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
+			selector := labels.NewSelector()
+			selector = selector.Add(*apps)
+			listOption := ctrlclient.ListOptions{
+				LabelSelector: selector,
+			}
+			podlist := &corev1.PodList{}
+			err = client.List(ctx, podlist, &listOption)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			lvrList := &v1alpha1.LocalVolumeReplicaList{}
+			err = client.List(ctx, lvrList)
+			if err != nil {
+				logrus.Printf("list lvr failed ：%+v ", err)
+			}
+
+			gomega.Expect(len(lvrList.Items)).To(gomega.Equal(1))
+			for _, lvr := range lvrList.Items {
+				gomega.Expect(SourceNode).To(gomega.Not(gomega.Equal(lvr.Spec.NodeName)))
+			}
+
+		})
+		ginkgo.It("Start the workload", func() {
+			deployment := &appsv1.Deployment{}
+			deployKey := ctrlclient.ObjectKey{
+				Name:      utils.DeploymentName,
+				Namespace: "default",
+			}
+			err := client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+			deployment.Spec.Replicas = utils.Int32Ptr(1)
+			err = client.Update(ctx, deployment)
+			logrus.Infof("waiting for the workload to be start")
+			err = wait.PollImmediate(10*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
+				if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(1) {
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				logrus.Infof("workload start timeout")
+				logrus.Error(err)
+			}
+			gomega.Expect(err).To(gomega.BeNil())
+		})
+		ginkgo.It("check test file", func() {
+			config, err := config.GetConfig()
+			if err != nil {
+				return
+			}
+
+			deployment := &appsv1.Deployment{}
+			deployKey := ctrlclient.ObjectKey{
+				Name:      utils.DeploymentName,
+				Namespace: "default",
+			}
+			err = client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
+			selector := labels.NewSelector()
+			selector = selector.Add(*apps)
+			listOption := ctrlclient.ListOptions{
+				LabelSelector: selector,
+			}
+			podlist := &corev1.PodList{}
+			err = client.List(ctx, podlist, &listOption)
+
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			containers := deployment.Spec.Template.Spec.Containers
+			for _, pod := range podlist.Items {
+				for _, container := range containers {
+					output, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
 					if err != nil {
-						logrus.Printf("open file err=%v\n", err)
-						return
+						logrus.Printf("%+v ", err)
+						f.ExpectNoError(err)
 					}
-					defer file2.Close()
-					writer2 := bufio.NewWriter(file2)
-					result_head := strings.Index(output, "write: IOPS")
-					result_end := strings.Index(output, "slat")
-					result := time.Now().Format(time.RFC3339) + output[result_head:result_end]
-					if _, err = writer2.WriteString(result); err != nil {
-						logrus.Error(err)
-					}
-					if err = writer2.Flush(); err != nil {
-						logrus.Error(err)
-					}
-					logrus.Info(result)
+					gomega.Expect(output).To(gomega.Equal("it-is-a-test"))
 				}
 			}
 		})
@@ -326,11 +475,9 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 			}
 			err := client.Get(ctx, deployKey, deployment)
 			if err != nil {
-				logrus.Error(err)
+				logrus.Printf("%+v ", err)
 				f.ExpectNoError(err)
 			}
-			logrus.Infof("deleting test Deployment ")
-
 			err = client.Delete(ctx, deployment)
 			if err != nil {
 				logrus.Error(err)
@@ -348,7 +495,7 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 			gomega.Expect(err).To(gomega.BeNil())
 
 		})
-		ginkgo.It("delete all pvc ", func() {
+		ginkgo.It("delete all pvc", func() {
 			err := utils.DeleteAllPVC(ctx)
 			gomega.Expect(err).To(gomega.BeNil())
 		})
@@ -358,7 +505,9 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 		})
 		ginkgo.It("delete helm", func() {
 			utils.UninstallHelm()
+
 		})
+
 	})
 
 })

@@ -247,7 +247,7 @@ func (r *resources) getAssociatedVolumes(vol *apisv1alpha1.LocalVolume) map[stri
 
 		poolName, err := utils.BuildStoragePoolName(
 			sc.Parameters[apisv1alpha1.VolumeParameterPoolClassKey],
-			sc.Parameters[apisv1alpha1.VolumeParameterPoolTypeKey])
+			)
 		if err != nil {
 			r.logger.WithError(err).Errorf("build storagepoolname err")
 			return lvs

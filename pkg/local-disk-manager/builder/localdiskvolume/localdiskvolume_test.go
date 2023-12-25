@@ -1,8 +1,13 @@
 package localdiskvolume
 
 import (
+	"github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/fake"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	"reflect"
 	"testing"
+	"time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -388,6 +393,191 @@ func TestBuild(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got, _ := builder.Build(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Build() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+var (
+	fakeLocalDiskVolumeName          = "local-disk-volume-example"
+	fakeNodename                     = "10-6-118-10"
+	fakeLocalDiskName                = "localdisk-example"
+	fakeTotalDiskCount               = int64(1)
+	fakeDiskType                     = "HDD"
+	fakePoolClass                    = "HDD"
+	fakePoolType                     = "REGULAR"
+	fakeLocalDiskVolumeUID           = "local-disk-volume-uid"
+	fakeStorageClassName             = "sc-test"
+	fakeRequiredCapacityBytes  int64 = 10 * 1024 * 1024 * 1024
+	fakeAllocatedCapacityBytes int64 = 10 * 1024 * 1024 * 1024
+	fakeCanWipe                      = true
+	LocalDiskNodeKind                = "LocalDiskNode"
+	LocalDiskKind                    = "LocalDisk"
+	LeaseKind                        = "Lease"
+	LocalDiskClaimKind               = "LocalDiskClaim"
+	LocalDiskVolumeKind              = "LocalDiskVolume"
+	fakeNamespace                    = "local-disk-volume-test"
+	fakePersistentPvcName            = "pvc-test"
+	apiversion                       = "hwameistor.io/v1alpha1"
+	fakeRecorder                     = record.NewFakeRecorder(100)
+	fakeTimestamp                    = time.Now()
+	fakeAccessibility                = v1alpha1.AccessibilityTopology{Nodes: []string{fakeNodename}}
+	fakeDevlinks                     = map[v1alpha1.DevLinkType][]string{}
+	fakeMountPoint                   = []v1alpha1.MountPoint{
+		{
+			TargetPath: "/data",
+		},
+	}
+	fakeVolumePath = "/etc/hwameistor/LocalDisk_PoolHDD/volume/" + fakeLocalDiskVolumeName
+	fakeDevPath    = "/dev/sda"
+)
+
+func init() {
+	fakeDevlinks[v1alpha1.LinkByID] = []string{"ata-test", "wwn-test"}
+	fakeDevlinks[v1alpha1.LinkByPath] = []string{"pci-test"}
+}
+func CreateFakeKubeClient() (*Kubeclient, error) {
+	kubeclient := Kubeclient{}
+	clientset := fake.NewSimpleClientset()
+	kubeclient.SetClient(clientset)
+	return &kubeclient, nil
+}
+func GenFakePVCObject() *corev1.PersistentVolumeClaim {
+	pvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      fakePersistentPvcName,
+			Namespace: fakeNamespace,
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{
+				corev1.ReadWriteOnce,
+			},
+			StorageClassName: &fakeStorageClassName,
+		},
+	}
+	return pvc
+}
+
+func GenFakeLocalDiskVolumeObject() *v1alpha1.LocalDiskVolume {
+	ldv := &v1alpha1.LocalDiskVolume{}
+
+	typeMeta := v1.TypeMeta{
+		Kind:       LocalDiskVolumeKind,
+		APIVersion: apiversion,
+	}
+
+	objectMeta := v1.ObjectMeta{
+		Name:              fakeLocalDiskVolumeName,
+		ResourceVersion:   "",
+		UID:               types.UID(fakeLocalDiskVolumeUID),
+		CreationTimestamp: v1.Time{fakeTimestamp},
+	}
+
+	spec := v1alpha1.LocalDiskVolumeSpec{
+		Accessibility:         fakeAccessibility,
+		CanWipe:               fakeCanWipe,
+		DiskType:              fakeDiskType,
+		RequiredCapacityBytes: fakeRequiredCapacityBytes,
+	}
+
+	status := v1alpha1.LocalDiskVolumeStatus{
+		LocalDiskName:          fakeLocalDiskName,
+		DevLinks:               fakeDevlinks,
+		MountPoints:            fakeMountPoint,
+		VolumePath:             fakeVolumePath,
+		DevPath:                fakeDevPath,
+		AllocatedCapacityBytes: fakeAllocatedCapacityBytes,
+		UsedCapacityBytes:      fakeRequiredCapacityBytes,
+	}
+
+	ldv.Spec = spec
+	ldv.TypeMeta = typeMeta
+	ldv.ObjectMeta = objectMeta
+	ldv.Status = status
+
+	return ldv
+}
+
+func Test_KubeClient_Create(t *testing.T) {
+	testcases := []struct {
+		Description      string
+		DiskVolume       *v1alpha1.LocalDiskVolume
+		ExpectDiskVolume *v1alpha1.LocalDiskVolume
+	}{
+		// TODO: Add More test case
+		{
+			Description:      "It is a create localDiskVolume test.",
+			DiskVolume:       GenFakeLocalDiskVolumeObject(),
+			ExpectDiskVolume: GenFakeLocalDiskVolumeObject(),
+		},
+	}
+
+	for _, testcase := range testcases {
+		t.Run(testcase.Description, func(t *testing.T) {
+			client, err := CreateFakeKubeClient()
+			if err != nil {
+				t.Fatal("create a fake client failed")
+			}
+			_, err = client.Create(testcase.DiskVolume)
+			if err != nil {
+				t.Fatal("create a localDiskVolume on fake client failed")
+			}
+			ldn, err := client.Get(testcase.DiskVolume.Name)
+			if err != nil {
+				t.Fatal("get a specified localDiskVolume on fake client failed")
+			}
+			if !reflect.DeepEqual(ldn, testcase.ExpectDiskVolume) {
+				t.Fatal("get a localDiskVolume not same as expectDiskVolume")
+			}
+		})
+	}
+}
+
+func Test_KubeClient_Update(t *testing.T) {
+	type args struct {
+		CanWipe bool
+	}
+	testcases := []struct {
+		Description   string
+		DiskVolume    *v1alpha1.LocalDiskVolume
+		modifyArgs    args
+		ExpectCanWipe bool
+	}{
+		// TODO: Add More test case
+		{
+			Description: "It is an update localDiskVolume test.",
+			DiskVolume:  GenFakeLocalDiskVolumeObject(),
+			modifyArgs: args{
+				CanWipe: false,
+			},
+			ExpectCanWipe: false,
+		},
+	}
+
+	for _, testcase := range testcases {
+		t.Run(testcase.Description, func(t *testing.T) {
+			client, err := CreateFakeKubeClient()
+			if err != nil {
+				t.Fatal("create a fake client failed")
+			}
+			// ensure the source ldn exists in storage
+			_, err = client.Create(testcase.DiskVolume)
+			if err != nil {
+				t.Fatal("create a localDiskVolume on fake client failed")
+			}
+			ldv := testcase.DiskVolume.DeepCopy()
+			ldv.Spec.CanWipe = testcase.modifyArgs.CanWipe
+			_, err = client.Update(ldv)
+			if err != nil {
+				// the origin object must exist in cluster
+				t.Fatal("update a localDiskVolume on fake client failed")
+			}
+			newLdv, err := client.Get(testcase.DiskVolume.Name)
+			if err != nil {
+				t.Fatal("get a specified localDiskVolume on fake client failed")
+			}
+			if !reflect.DeepEqual(testcase.ExpectCanWipe, newLdv.Spec.CanWipe) {
+				t.Fatal("get a localDiskVolume not same as expectDiskVolume")
 			}
 		})
 	}

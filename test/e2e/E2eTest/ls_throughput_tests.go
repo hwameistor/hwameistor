@@ -53,8 +53,6 @@ var _ = ginkgo.Describe("localstorage volume throughput  test ", ginkgo.Label("p
 					"replicaNumber":                    "1",
 					"poolClass":                        "HDD",
 					"poolType":                         "REGULAR",
-					"volumeKind":                       "LVM",
-					"striped":                          "true",
 					"csi.storage.k8s.io/fstype":        "xfs",
 					"provision-throughput-on-creation": "900Ki",
 				},

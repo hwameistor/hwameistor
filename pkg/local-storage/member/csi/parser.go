@@ -35,11 +35,7 @@ func parseParameters(req *csi.CreateVolumeRequest) (*volumeParameters, error) {
 	if !ok {
 		return nil, fmt.Errorf("not found pool class")
 	}
-	poolType, ok := params[apisv1alpha1.VolumeParameterPoolTypeKey]
-	if !ok {
-		return nil, fmt.Errorf("not found pool type")
-	}
-	poolName, err := utils.BuildStoragePoolName(poolClass, poolType)
+	poolName, err := utils.BuildStoragePoolName(poolClass)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +77,7 @@ func parseParameters(req *csi.CreateVolumeRequest) (*volumeParameters, error) {
 
 	return &volumeParameters{
 		poolClass:     poolClass,
-		poolType:      poolType,
+		// poolType:      poolType,
 		poolName:      poolName,
 		replicaNumber: int64(replicaNumber),
 		convertible:   convertible,

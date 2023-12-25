@@ -149,14 +149,14 @@ func ConvertBytesToStr(size int64) string {
 }
 
 // BuildStoragePoolName constructs storage pool name
-func BuildStoragePoolName(poolClass string, poolType string) (string, error) {
-	if poolClass == apisv1alpha1.DiskClassNameHDD && poolType == apisv1alpha1.PoolTypeRegular {
+func BuildStoragePoolName(poolClass string) (string, error) {
+	if poolClass == apisv1alpha1.DiskClassNameHDD {
 		return apisv1alpha1.PoolNameForHDD, nil
 	}
-	if poolClass == apisv1alpha1.DiskClassNameSSD && poolType == apisv1alpha1.PoolTypeRegular {
+	if poolClass == apisv1alpha1.DiskClassNameSSD {
 		return apisv1alpha1.PoolNameForSSD, nil
 	}
-	if poolClass == apisv1alpha1.DiskClassNameNVMe && poolType == apisv1alpha1.PoolTypeRegular {
+	if poolClass == apisv1alpha1.DiskClassNameNVMe {
 		return apisv1alpha1.PoolNameForNVMe, nil
 	}
 
