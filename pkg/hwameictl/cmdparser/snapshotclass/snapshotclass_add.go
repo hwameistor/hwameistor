@@ -9,8 +9,8 @@ var snapsize string
 var snapshotclassAdd = &cobra.Command{
 	Use:   "add {sscName}",
 	Args:  cobra.ExactArgs(1),
-	Short: "add the Hwameistor's storage snapshotclass.",
-	Long:  "You can use 'hwameictl vsc add' to add hwameistor-snapshotclass.",
+	Short: "add the Hwameistor's storage VolumeSnapshotClass",
+	Long:  "You can use 'hwameictl vsc add' to add hwameistor-VolumeSnapshotClass.",
 	Example: "hwameictl ssc add example-vsc \n" +
 		"hwameictl sc add example-vsc --snapsize=1G",
 	RunE: snapshotClassAddRunE,
