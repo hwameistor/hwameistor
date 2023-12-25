@@ -27,6 +27,7 @@ type ServerManager struct {
 	ldnController     *hwameistorctr.LocalDiskNodeController
 	authController    *hwameistorctr.AuthController
 	lvsController     *hwameistorctr.LocalSnapshotController
+	scController      *hwameistorctr.StorageClassController
 }
 
 func NewServerManager(mgr mgrpkg.Manager, clientset *kubernetes.Clientset) (*ServerManager, error) {

@@ -22,7 +22,7 @@ import (
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("Deduplication test ", ginkgo.Label("stress-test"), func() {
+var _ = ginkgo.Describe("Deduplication test", ginkgo.Label("stress-test"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
@@ -47,9 +47,6 @@ var _ = ginkgo.Describe("Deduplication test ", ginkgo.Label("stress-test"), func
 				Parameters: map[string]string{
 					"replicaNumber":             "2",
 					"poolClass":                 "HDD",
-					"poolType":                  "REGULAR",
-					"volumeKind":                "LVM",
-					"striped":                   "true",
 					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,

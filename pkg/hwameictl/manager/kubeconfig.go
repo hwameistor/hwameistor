@@ -14,6 +14,8 @@ import (
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/definitions"
+	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
+	storagev1 "k8s.io/api/storage/v1"
 )
 
 func BuildKubeClient(kubeConfigPath string) (*kubernetes.Clientset, client.Client, error) {

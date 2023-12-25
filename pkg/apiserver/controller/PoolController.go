@@ -2,7 +2,7 @@ package controller
 
 import (
 	"fmt"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
@@ -45,14 +45,14 @@ func (n *PoolController) StoragePoolGet(ctx *gin.Context) {
 	poolName := ctx.Param("poolName")
 
 	if poolName == "" {
-		failRsp.ErrCode = 203
+		failRsp.ErrCode = http.StatusNonAuthoritativeInfo
 		failRsp.Desc = "poolName cannot be empty"
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
 	}
 	sp, err := n.m.StoragePoolController().GetStoragePool(poolName)
 	if err != nil {
-		failRsp.ErrCode = 500
+		failRsp.ErrCode = http.StatusInternalServerError
 		failRsp.Desc = err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
@@ -94,7 +94,7 @@ func (n *PoolController) StoragePoolList(ctx *gin.Context) {
 
 	lds, err := n.m.StoragePoolController().StoragePoolList(queryPage)
 	if err != nil {
-		failRsp.ErrCode = 500
+		failRsp.ErrCode = http.StatusInternalServerError
 		failRsp.Desc = err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
@@ -125,7 +125,7 @@ func (n *PoolController) StorageNodesGetByPoolName(ctx *gin.Context) {
 	storagePoolName := ctx.Param("poolName")
 
 	if storagePoolName == "" {
-		failRsp.ErrCode = 203
+		failRsp.ErrCode = http.StatusNonAuthoritativeInfo
 		failRsp.Desc = "storagePoolName cannot be empty"
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
@@ -153,7 +153,7 @@ func (n *PoolController) StorageNodesGetByPoolName(ctx *gin.Context) {
 
 	sn, err := n.m.StoragePoolController().GetStorageNodeByPoolName(queryPage)
 	if err != nil {
-		failRsp.ErrCode = 500
+		failRsp.ErrCode = http.StatusInternalServerError
 		failRsp.Desc = err.Error()
 		ctx.JSON(http.StatusInternalServerError, failRsp)
 		return
@@ -182,7 +182,7 @@ func (n *PoolController) StorageNodeDisksGetByPoolName(ctx *gin.Context) {
 	poolName := ctx.Param("poolName")
 
 	if poolName == "" {
-		failRsp.ErrCode = 203
+		failRsp.ErrCode = http.StatusNonAuthoritativeInfo
 		failRsp.Desc = "poolName cannot be empty"
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
@@ -192,7 +192,7 @@ func (n *PoolController) StorageNodeDisksGetByPoolName(ctx *gin.Context) {
 	nodeName := ctx.Param("nodeName")
 
 	if nodeName == "" {
-		failRsp.ErrCode = 203
+		failRsp.ErrCode = http.StatusNonAuthoritativeInfo
 		failRsp.Desc = "nodeName cannot be empty"
 		ctx.JSON(http.StatusNonAuthoritativeInfo, failRsp)
 		return
@@ -253,7 +253,7 @@ func (n *PoolController) StoragePoolExpand(ctx *gin.Context) {
 		return
 	}
 
-	if req.DiskType != "HDD" && req.DiskType != "SSD" && req.DiskType != "NVMe" {
+	if req.DiskType != v1alpha1.DiskClassNameHDD && req.DiskType != v1alpha1.DiskClassNameSSD && req.DiskType != v1alpha1.DiskClassNameNVMe {
 		ctx.JSON(http.StatusNonAuthoritativeInfo, hwameistorapi.RspFailBody{
 			ErrCode: http.StatusNonAuthoritativeInfo,
 			Desc:    "DiskType must be HDD/SSD/NVMe",
@@ -261,10 +261,10 @@ func (n *PoolController) StoragePoolExpand(ctx *gin.Context) {
 		return
 	}
 
-	if req.Owner != apisv1alpha1.LocalStorage && req.Owner != apisv1alpha1.LocalDiskManager {
+	if req.Owner != v1alpha1.LocalStorage && req.Owner != v1alpha1.LocalDiskManager {
 		ctx.JSON(http.StatusNonAuthoritativeInfo, hwameistorapi.RspFailBody{
 			ErrCode: http.StatusNonAuthoritativeInfo,
-			Desc:    fmt.Sprintf("owner must be %s or %s", apisv1alpha1.LocalStorage, apisv1alpha1.LocalDiskManager),
+			Desc:    fmt.Sprintf("owner must be %s or %s", v1alpha1.LocalStorage, v1alpha1.LocalDiskManager),
 		})
 		return
 	}

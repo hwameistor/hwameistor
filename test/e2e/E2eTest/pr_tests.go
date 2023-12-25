@@ -49,9 +49,6 @@ var _ = ginkgo.Describe("pr test ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), func
 				Parameters: map[string]string{
 					"replicaNumber":             "1",
 					"poolClass":                 "HDD",
-					"poolType":                  "REGULAR",
-					"volumeKind":                "LVM",
-					"striped":                   "true",
 					"csi.storage.k8s.io/fstype": "xfs",
 				},
 				ReclaimPolicy:        &deleteObj,

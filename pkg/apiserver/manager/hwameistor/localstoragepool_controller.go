@@ -200,50 +200,36 @@ func (lspController *LocalStoragePoolController) getStorageNodeByPoolName(queryP
 }
 
 func (lspController *LocalStoragePoolController) StorageNodeDisksGetByPoolName(queryPage hwameistorapi.QueryPage) (*hwameistorapi.NodeDiskListByPool, error) {
-	storagePoolNodesCollectionMap, err := lspController.makeStoragePoolNodesCollectionMap()
-	if err != nil {
-		log.WithError(err).Error("Failed to makeStoragePoolNodesCollectionMap")
-		return nil, err
-	}
-
 	var nodeDiskListByPool = &hwameistorapi.NodeDiskListByPool{}
 	var lds []*hwameistorapi.LocalDiskInfo
 	lsnController := NewLocalStorageNodeController(lspController.Client, lspController.clientset, lspController.EventRecorder)
-	if spnc, exists := storagePoolNodesCollectionMap[queryPage.PoolName]; exists {
-		for _, nn := range spnc.ManagedNodeNames {
-			log.Infof("StorageNodeDisksGetByPoolName queryPage.NodeName = %v, spnc.ManagedNodeNames = %v", queryPage.NodeName, spnc.ManagedNodeNames)
-			if nn == queryPage.NodeName {
-				tmplds, err := lsnController.ListStorageNodeDisks(queryPage)
-				if err != nil {
-					log.WithError(err).Error("Failed to ListStorageNodeDisks")
-					return nil, err
-				}
-				log.Infof("StorageNodeDisksGetByPoolName tmplds = %v", tmplds)
 
-				//Only show disks being used by the pool
-				disks := make(map[string]string)
-				nodeKey := client.ObjectKey{
-					Name: queryPage.NodeName,
-				}
-				localStorageNode, err := lsnController.GetLocalStorageNode(nodeKey)
-				if err != nil {
-					log.WithError(err).Error("Failed to get localStorageNode")
-					return nil, err
-				}
-				for _, pool := range localStorageNode.Status.Pools {
-					if pool.Name == queryPage.PoolName {
-						for _, d := range pool.Disks {
-							diskShortName := strings.Split(d.DevPath, hwameistorapi.DEV)[1]
-							disks[diskShortName] = d.DevPath
-						}
-					}
-				}
-				for _, ld := range tmplds {
-					if ld.LocalStoragePooLName == queryPage.PoolName {
-						_, ok := disks[ld.DiskPathShort]
-						if ok {
-							lds = append(lds, ld)
-						}
+	// get specified nodename lsn
+	lsn, err := lsnController.GetLocalStorageNode(client.ObjectKey{Name: queryPage.NodeName})
+	if err != nil {
+		log.WithError(err).Error("Failed to query StorageNode")
+		return nil, err
+	}
+	for _, pool := range lsn.Status.Pools {
+		if pool.Name == queryPage.PoolName {
+			tmplds, err := lsnController.ListStorageNodeDisks(queryPage)
+			if err != nil {
+				log.WithError(err).Error("Failed to ListStorageNodeDisks")
+				return nil, err
+			}
+			log.Infof("StorageNodeDisksGetByPoolName tmplds = %v", tmplds)
+
+			//Only show disks being used by the pool
+			disks := make(map[string]string)
+			for _, d := range pool.Disks {
+				diskShortName := strings.Split(d.DevPath, hwameistorapi.DEV)[1]
+				disks[diskShortName] = d.DevPath
+			}
+			for _, ld := range tmplds {
+				if ld.LocalStoragePooLName == queryPage.PoolName {
+					_, ok := disks[ld.DiskPathShort]
+					if ok {
+						lds = append(lds, ld)
 					}
 				}
 			}
