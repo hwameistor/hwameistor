@@ -15,7 +15,7 @@ var snapshotDelete = &cobra.Command{
 }
 
 func init() {
-	snapshotAdd.Flags().StringVar(&ns, "ns", "default", "namespace")
+	snapshotDelete.Flags().StringVar(&ns, "ns", "default", "namespace")
 }
 
 func snapshotDeleteRunE(_ *cobra.Command, args []string) error {
