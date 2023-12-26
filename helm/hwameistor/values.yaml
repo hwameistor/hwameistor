@@ -177,3 +177,8 @@ localDiskActionController:
   imageRepository: hwameistor/local-disk-action-controller
   tag: ""
   resources: {}
+
+faultManagement:
+  imageRepository: hwameistor/fault-management
+  tag: ""
+  resources: {}

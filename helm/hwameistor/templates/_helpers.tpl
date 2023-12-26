@@ -63,6 +63,11 @@
   {{- default .Chart.Version .Values.localDiskActionController.tag -}}
 {{- end -}}
 
+{{/* Allow FaultManagement image tag to be overridden. */}}
+{{- define "hwameistor.faultManagementImageTag" -}}
+  {{- default .Chart.Version .Values.localDiskActionController.tag -}}
+{{- end -}}
+
 {{/* Allow KubeletRootDir to be overridden. */}}
 {{- define "hwameistor.kubeletRootDir" -}}
   {{- default "/var/lib/kubelet" .Values.kubeletRootDir -}}

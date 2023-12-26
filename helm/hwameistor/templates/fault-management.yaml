@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: hwameistor-fault-management
+  namespace: {{ .Release.Namespace}}
+spec:
+  selector:
+    matchLabels:
+      app: hwameistor-fault-management
+  template:
+    metadata:
+      labels:
+        app: hwameistor-fault-management
+    spec:
+      containers:
+      - args:
+        - --v=5
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: MY_NODENAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ .Values.global.hwameistorImageRegistry }}/{{ .Values.faultManagement.imageRepository }}:{{ template "hwameistor.faultManagementImageTag" . }}
+        imagePullPolicy: IfNotPresent
+        name: manager
+        resources:
+          {{- toYaml .Values.localStorage.member.resources | nindent 12 }}
+        securityContext:
+          #  allowPrivilegeEscalation: true
+          capabilities:
+            add:
+            - SYS_ADMIN
+          privileged: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /dev
+          name: host-dev
+      dnsPolicy: ClusterFirstWithHostNet
+      hostPID: true
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      serviceAccountName: hwameistor-admin
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - hostPath:
+          path: /dev
+          type: ""
+        name: host-dev
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
