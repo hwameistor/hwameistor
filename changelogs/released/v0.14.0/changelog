@@ -1,0 +1,48 @@
+v0.14.0/ 2023-12-26
+========================
+
+## LVM volume management enhancements
+- fix(volume-group): always keep accessibility consistent with all volumes in group #1284(@SSmallMonster )
+- fix(volume-group): fix node accessability incorrect caused by point reference #1291(@SSmallMonster )
+- remove meaningless poolType using #1318(@buffalo1024 )
+## Disk Management Enhancements
+- change client type for supporting fake client to test #1292(@hikariwo )
+## Volume Migration
+- fix bug pending when pruning replica for localvolumemigrate #1290(@buffalo1024 )
+## Volume Clone
+- update volumeclone #1279(@SSmallMonster )
+## Apiserver
+- Update readme_zh.md #1265(@hikariwo )
+- improve(apiserver):move ldHandler for improving cohesion #1268(@hikariwo )
+- fix(apiserver): add exit system statement when indexer setup failed #1270(@hikariwo )
+- fix(apiserver): getAvailableDiskCapacity found an empty capacity #1274(@hikariwo )
+- fix(apiserver): fix StorageNodePoolDiskGet get localdisk from a wrong path #1275(@hikariwo )
+- [unit-test] add more test for disk internal #1303(@hikariwo )
+- improve(apiserver): improve pool-controller query efficiency #1305(@hikariwo )
+- fix pool disk show bug #1308(@peng9808 )
+- fix(csi-volume): fix volume leaks when user delete pvc but pv not created #1316(@SSmallMonster )
+- improve(apiserver):check LocalDisks length when ListLocalDiskByNodeDevicePath returns #1321(@hikariwo )
+- add VolumeSnapshotClass #1325(@peng9808 )
+- Hwameictl snapshot #1331(@peng9808 )
+- fxi snapshot ctl bug #1333(@peng9808 )
+## Tests
+- [unit-test] add updateLocalVolumeGroupAccessibility test #1281(@hikariwo )
+- add ut for localdiskvolume handler #1282(@buffalo1024 )
+- [unit-test]add smartctl command result example #1288(@hikariwo )
+- update migrate e2e #1289(@FloatXD )
+- change client type for supporting fake client to test #1292(@hikariwo )
+- [unit-test] add more localdisknode test #1293(@hikariwo )
+- [unit-test] add more test for localDiskVolume #1294 (@hikariwo )
+- [unit-test] add disk interal test #1295(@hikariwo )
+- [unit-test]add volume internal test #1296(@hikariwo )
+- [unit-test] add localdiskclaim worker test #1297(@hikariwo )
+- update migrate test #1299(@FloatXD )
+- add more migrate test #1300(@FloatXD )
+- [unit-test] add more test for disk internal #1303(@hikariwo )
+- Use simplified sc for testing #1317(@FloatXD )
+## Documentation
+- [en] Add website preview instructions to README #1264(@windsonsea )
+- Update readme_zh.md #1265(@windsonsea )
+- update FAQ #1286(@FloatXD )
+- Remove architecture page and improve some text #1302(@windsonsea )
+- fix bullets consistency in faq page #1332(@windsonsea )
