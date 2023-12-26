@@ -100,6 +100,9 @@ type FaultTicketStatus struct {
 
 	// Effects represent these scopes that effected by this fault and the handle results
 	Effects []Effect `json:"effectScope,omitempty"`
+
+	// Messages contain summaries of different phases for this ticket
+	Messages map[TicketPhase]string `json:"messages,omitempty"`
 }
 
 // Effect represents the scope of the fault effects. The corresponding modules that care about this should handle these fault
@@ -108,12 +111,15 @@ type Effect struct {
 	// Scope represents the scope of the fault effects
 	Scope FaultEffectScope `json:"scope,omitempty"`
 
+	// Name represents the name of the effected resource
+	Name string `json:"name,omitempty"`
+
 	// Recoverable represents whether this fault is recoverable
 	// +kubebuilder:validation:Required
 	Recoverable bool `json:"recoverable,omitempty"`
 
 	// RecoverInfo represents info about if and how to recover this fault
-	RecoverInfo RecoverInfo `json:"recoverInfo,omitempty"`
+	RecoverInfo *RecoverInfo `json:"recoverInfo,omitempty"`
 }
 
 // RecoverInfo represents information about if this fault is recoverable and the recover phase

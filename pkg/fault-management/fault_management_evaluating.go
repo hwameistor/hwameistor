@@ -1,6 +1,7 @@
 package faultmanagement
 
 import (
+	"fmt"
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -89,13 +90,17 @@ func (m *manager) evaluatingVolumeFault(faultTicket *v1alpha1.FaultTicket) error
 
 	var effectedPods []v1alpha1.Effect
 	for _, podName := range relevantPods {
-		effectedPods = append(effectedPods, v1alpha1.Effect{Scope: v1alpha1.App})
+		effectedPods = append(effectedPods, v1alpha1.Effect{Scope: v1alpha1.App, Name: podName})
 		logger.Debugf("Pod %s is effected by this fault volume", podName)
 	}
 	logger.Debugf("Found %d effected pod(s)", len(effectedPods))
 
 	faultTicket.Status.Effects = effectedPods
 	faultTicket.Status.Phase = v1alpha1.TicketPhaseRecovering
+	if faultTicket.Status.Messages == nil {
+		faultTicket.Status.Messages = make(map[v1alpha1.TicketPhase]string)
+	}
+	faultTicket.Status.Messages[v1alpha1.TicketPhaseEvaluating] = summaryForEvaluating(effectedPods)
 
 	if _, err = m.hmClient.HwameistorV1alpha1().FaultTickets().UpdateStatus(context.Background(), faultTicket, v1.UpdateOptions{}); err != nil {
 		logger.WithError(err).Error("Failed to update fault tickets status")
@@ -105,4 +110,12 @@ func (m *manager) evaluatingVolumeFault(faultTicket *v1alpha1.FaultTicket) error
 
 func (m *manager) evaluatingNodeFault(faultTicket *v1alpha1.FaultTicket) error {
 	return nil
+}
+
+func summaryForEvaluating(effects []v1alpha1.Effect) string {
+	if len(effects) == 0 {
+		return fmt.Sprintf("No pods have effected by this fault")
+	}
+
+	return fmt.Sprintf("Found %d pod(s) effected by this fault", len(effects))
 }

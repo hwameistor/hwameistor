@@ -126,6 +126,9 @@ spec:
                     fault NOTES: which modules should handle this fault can be configured
                     at somewhere'
                   properties:
+                    name:
+                      description: Name represents the name of the effected resource
+                      type: string
                     recoverInfo:
                       description: RecoverInfo represents info about if and how to
                         recover this fault
@@ -147,6 +150,12 @@ spec:
                       type: string
                   type: object
                 type: array
+              messages:
+                additionalProperties:
+                  type: string
+                description: Messages contain summaries of different phases for this
+                  ticket
+                type: object
               phase:
                 description: "Phase represents the\tphase of the ticket The state
                   machine operates as follows Empty -> Evaluating -> Recovering ->
@@ -157,6 +166,9 @@ spec:
                 description: RootCause represents the real cause of this failure —
                   for example, for a volume, it could be a disk fault
                 properties:
+                  name:
+                    description: Name represents the name of the effected resource
+                    type: string
                   recoverInfo:
                     description: RecoverInfo represents info about if and how to recover
                       this fault

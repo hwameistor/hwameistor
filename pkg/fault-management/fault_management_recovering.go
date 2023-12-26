@@ -49,11 +49,20 @@ func (m *manager) processFaultTicketRecovering(faultTicket *v1alpha1.FaultTicket
 	// recover finished, there are some possible results as below:
 	// 1. recover successfully and ticket's status should be updated to Completed
 	// 2. unsupported Fault Type and  suspend the ticket
-	if errors.Is(err, UnsupportedFaultError) {
-		faultTicket.Spec.Suspend = true
-		_, err = m.hmClient.HwameistorV1alpha1().FaultTickets().Update(context.Background(), faultTicket, v1.UpdateOptions{})
-	} else if err == nil {
+	if faultTicket.Status.Messages == nil {
+		faultTicket.Status.Messages = make(map[v1alpha1.TicketPhase]string)
+	}
+	if err != nil {
+		if errors.Is(err, UnsupportedFaultError) {
+			faultTicket.Spec.Suspend = true
+			_, err = m.hmClient.HwameistorV1alpha1().FaultTickets().Update(context.Background(), faultTicket, v1.UpdateOptions{})
+		} else {
+			faultTicket.Status.Messages[v1alpha1.TicketPhaseRecovering] = fmt.Sprintf("Failed to recover %s due to err: %s", faultTicket.Spec.Type, err)
+			_, _ = m.hmClient.HwameistorV1alpha1().FaultTickets().UpdateStatus(context.Background(), faultTicket, v1.UpdateOptions{})
+		}
+	} else {
 		faultTicket.Status.Phase = v1alpha1.TicketPhaseCompleted
+		faultTicket.Status.Messages[v1alpha1.TicketPhaseRecovering] = fmt.Sprintf("Recover %s successfully", faultTicket.Spec.Type)
 		_, err = m.hmClient.HwameistorV1alpha1().FaultTickets().UpdateStatus(context.Background(), faultTicket, v1.UpdateOptions{})
 	}
 
@@ -78,7 +87,7 @@ func (m *manager) recoveringVolumeFault(faultTicket *v1alpha1.FaultTicket) error
 	case v1alpha1.BadBlockFault:
 		err = m.recoverVolumeFromBadblock(faultTicket)
 	case v1alpha1.FileSystemFault:
-		err = m.recoverVolumeFromFilesystem(faultTicket)
+		err = m.recoverVolumeFromBadblock(faultTicket)
 	default:
 		err = UnsupportedFaultError
 	}
@@ -114,9 +123,9 @@ func (m *manager) recoverVolumeFromBadblock(faultTicket *v1alpha1.FaultTicket) e
 	var repairBadblock exechelper.ExecParams
 	switch fsType {
 	case "xfs":
-		repairBadblock = exechelper.ExecParams{CmdName: XFSREPAIR}
+		repairBadblock = exechelper.ExecParams{CmdName: XFSREPAIR, CmdArgs: []string{faultTicket.Spec.Volume.Path}}
 	case "ext2", "ext3", "ext4":
-		repairBadblock = exechelper.ExecParams{CmdName: EXTREPAIR}
+		repairBadblock = exechelper.ExecParams{CmdName: EXTREPAIR, CmdArgs: []string{faultTicket.Spec.Volume.Path}}
 	default:
 		return fmt.Errorf("unsupport fstype %s", fsType)
 	}
