@@ -8,7 +8,7 @@ import (
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/common"
 	"github.com/hwameistor/hwameistor/pkg/exechelper"
-	"github.com/hwameistor/hwameistor/pkg/exechelper/basicexecutor"
+	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
 	"github.com/hwameistor/hwameistor/pkg/fault-management/graph"
 	log "github.com/sirupsen/logrus"
 	informercorev1 "k8s.io/client-go/informers/core/v1"
@@ -63,7 +63,7 @@ func New(nodeName, namespace string,
 		storageClassLister:   scLister,
 		pvcLister:            pvcInformer.Lister(),
 		localVolumeLister:    lvInformer.Lister(),
-		cmdExec:              basicexecutor.New(),
+		cmdExec:              nsexecutor.New(),
 	}
 
 	// setup informer for FaultTicket
