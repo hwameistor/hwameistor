@@ -62,8 +62,8 @@ func (m *manager) processLocalDiskClaim(localDiskNameSpacedName string) error {
 		return nil
 	}
 
-	logCtx.Debugf("Required node name %s, current node name %s.", localDiskClaim.Spec.NodeName, m.name)
-	if localDiskClaim.Spec.NodeName != m.name {
+	logCtx.Debugf("Required node nodeName %s, current node nodeName %s.", localDiskClaim.Spec.NodeName, m.nodeName)
+	if localDiskClaim.Spec.NodeName != m.nodeName {
 		return nil
 	}
 

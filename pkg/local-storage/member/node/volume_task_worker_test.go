@@ -55,7 +55,7 @@ var (
 	fakeSmartInfo                   = apisv1alpha1.SmartInfo{OverallHealth: apisv1alpha1.SmartAssessResult("test")}
 	fakeDiskAttributes              = apisv1alpha1.DiskAttributes{Type: "test"}
 	fakeDescription                 = "fakeDescription"
-	fakePersistentVolumeClaimName   = "pvc-name-test"
+	fakePersistentVolumeClaimName   = "pvc-nodeName-test"
 	fakePoolClass                   = "HDD"
 	fakePoolType                    = "REGULAR"
 	fakeHolderIdentity              = "fakeHolderIdentity"
@@ -145,7 +145,7 @@ func Test_manager_cleanupVolumeReplica(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -220,7 +220,7 @@ func Test_manager_createVolumeReplica(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -295,7 +295,7 @@ func Test_manager_deleteVolumeReplica(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -373,7 +373,7 @@ func Test_manager_getMyVolumeReplica(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -453,7 +453,7 @@ func Test_manager_processVolumeReplicaTaskAssignment(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -530,7 +530,7 @@ func Test_manager_updateVolumeReplica(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},

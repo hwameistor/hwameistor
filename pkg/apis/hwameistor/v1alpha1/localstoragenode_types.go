@@ -87,6 +87,7 @@ type StorageNodeCondition struct {
 // NodeConfig defines local storage system configurations
 type NodeConfig struct {
 	Name      string    `json:"name,omitempty"`
+	HostName  string    `json:"hostName,omitempty"`
 	StorageIP string    `json:"ip,omitempty"`
 	Topology  *Topology `json:"topology,omitempty"`
 }

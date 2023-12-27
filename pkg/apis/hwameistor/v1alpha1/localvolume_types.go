@@ -182,6 +182,7 @@ func (vc *VolumeConfig) DeepEqual(peer *VolumeConfig) bool {
 type VolumeReplica struct {
 	ID       int    `json:"id"`
 	Hostname string `json:"hostname"`
+	NodeName string `json:"nodeName"`
 	IP       string `json:"ip"`
 	Primary  bool   `json:"primary"`
 }

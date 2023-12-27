@@ -152,9 +152,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	//initialize the local storage node/member as:
+	// initialize the local storage node/member as:
 	log.Info("Configuring the Local Storage Member")
-	storageMember := member.Member().ConfigureBase(*nodeName, *namespace, systemConfig, mgr.GetClient(), mgr.GetCache(),
+
+	// hostname is required for drbd config, more details see: #1278
+	hostName, err := utils.GetHostName()
+	if err != nil {
+		log.WithError(err).Fatalf("Failed to get hostname for node %s", *nodeName)
+	}
+
+	storageMember := member.Member().ConfigureBase(*nodeName, hostName, *namespace, systemConfig, mgr.GetClient(), mgr.GetCache(),
 		mgr.GetEventRecorderFor(fmt.Sprintf("%s/%s", "localstoragemanager", *nodeName))).
 		ConfigureNode(mgr.GetScheme()).
 		ConfigureController(mgr.GetScheme()).

@@ -51,8 +51,8 @@ func (m *manager) processVolumeReplica(replicaName string) error {
 		return nil
 	}
 
-	m.logger.Debugf("Required node name %s, current node name %s.", replica.Spec.NodeName, m.name)
-	if replica.Spec.NodeName != m.name {
+	m.logger.Debugf("Required node nodeName %s, current node nodeName %s.", replica.Spec.NodeName, m.nodeName)
+	if replica.Spec.NodeName != m.nodeName {
 		return nil
 	}
 

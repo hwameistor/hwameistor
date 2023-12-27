@@ -52,7 +52,7 @@ func (m *manager) processReplicaSnapshot(replicaSnapName string) error {
 		return m.apiClient.Status().Update(context.TODO(), replicaSnapshot)
 	}
 
-	// log with namespace/name is enough
+	// log with namespace/nodeName is enough
 	logCtx = m.logger.WithFields(log.Fields{"Volume": replicaSnapshot.Spec.SourceVolume, "Snapshot": replicaSnapshot.Name, "Spec": replicaSnapshot.Spec, "Status": replicaSnapshot.Status})
 	logCtx.Debug("Starting to process a Volume Snapshot")
 	switch replicaSnapshot.Status.State {

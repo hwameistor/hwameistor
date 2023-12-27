@@ -59,7 +59,7 @@ func (m *manager) processVolumeSnapshotTaskAssignment(volumeSnapshotName string)
 	}
 
 	// cleanup replica snapshot according to volume snapshot if the node is removed from accessibility
-	if _, exist := utils.StrFind(volumeSnapshot.Spec.Accessibility.Nodes, m.name); !exist {
+	if _, exist := utils.StrFind(volumeSnapshot.Spec.Accessibility.Nodes, m.nodeName); !exist {
 		return m.cleanupVolumeReplicaSnapshot(volumeSnapshot)
 	}
 
@@ -69,7 +69,7 @@ func (m *manager) processVolumeSnapshotTaskAssignment(volumeSnapshotName string)
 		return m.createVolumeReplicaSnapshot(volumeSnapshot)
 	}
 
-	logCtx.WithFields(log.Fields{"node": m.name, "replicaSnapshot": replicaSnapshotName}).Debug("VolumeReplicaSnapshot is already exist on the node")
+	logCtx.WithFields(log.Fields{"node": m.nodeName, "replicaSnapshot": replicaSnapshotName}).Debug("VolumeReplicaSnapshot is already exist on the node")
 	return nil
 }
 
@@ -94,7 +94,7 @@ func (m *manager) createVolumeReplicaSnapshot(volumeSnapshot apisv1alpha.LocalVo
 			Name: fmt.Sprintf("%s-%s", volumeSnapshot.Name, utilrand.String(6)),
 		},
 		Spec: apisv1alpha.LocalVolumeReplicaSnapshotSpec{
-			NodeName:              m.name,
+			NodeName:              m.nodeName,
 			SourceVolumeReplica:   replica.Name,
 			PoolName:              replica.Spec.PoolName,
 			VolumeSnapshotName:    volumeSnapshot.Name,
@@ -136,7 +136,7 @@ func (m *manager) getOnHostVolumeReplica(volumeName string) (apisv1alpha.LocalVo
 			return apisv1alpha.LocalVolumeReplica{}, err
 		}
 
-		if replica.Spec.NodeName == m.name {
+		if replica.Spec.NodeName == m.nodeName {
 			return replica, nil
 		}
 	}
@@ -159,7 +159,7 @@ func (m *manager) getOnHostVolumeReplicaSnapshot(volumeSnapshotName string) (api
 			return apisv1alpha.LocalVolumeReplicaSnapshot{}, err
 		}
 
-		if replicaSnapshot.Spec.NodeName == m.name {
+		if replicaSnapshot.Spec.NodeName == m.nodeName {
 			return replicaSnapshot, nil
 		}
 	}

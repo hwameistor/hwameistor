@@ -39,7 +39,7 @@ func (m *manager) startSyncVolumeMountTaskWorker(stopCh <-chan struct{}) {
 }
 
 func (m *manager) processSyncVolumeMount(lvName string) error {
-	logCtx := m.logger.WithFields(log.Fields{"LocalVolume": lvName, "nodeName": m.name})
+	logCtx := m.logger.WithFields(log.Fields{"LocalVolume": lvName, "nodeName": m.nodeName})
 	logCtx.Debug("Working on a data sync volume mount Task")
 
 	m.lock.Lock()
@@ -77,9 +77,9 @@ func (m *manager) processSyncVolumeMount(lvName string) error {
 	sourceNodeName := cm.Data[datacopy.SyncConfigSourceNodeNameKey]
 	targetNodeName := cm.Data[datacopy.SyncConfigTargetNodeNameKey]
 	mountPoint := ""
-	if m.name == sourceNodeName {
+	if m.nodeName == sourceNodeName {
 		mountPoint = datacopy.SyncSourceMountPoint + lvName
-	} else if m.name == targetNodeName {
+	} else if m.nodeName == targetNodeName {
 		mountPoint = datacopy.SyncTargetMountPoint + lvName
 	} else {
 		return nil
@@ -92,7 +92,7 @@ func (m *manager) processSyncVolumeMount(lvName string) error {
 			return err
 		}
 
-		if m.name == sourceNodeName {
+		if m.nodeName == sourceNodeName {
 			cm.Data[datacopy.SyncConfigSourceNodeCompleteKey] = datacopy.SyncTrue
 		} else {
 			cm.Data[datacopy.SyncConfigTargetNodeCompleteKey] = datacopy.SyncTrue
@@ -122,7 +122,7 @@ func (m *manager) processSyncVolumeMount(lvName string) error {
 		}
 	}
 
-	if m.name == sourceNodeName {
+	if m.nodeName == sourceNodeName {
 		if cm.Data[datacopy.SyncConfigSourceNodeReadyKey] == datacopy.SyncTrue {
 			return nil
 		}

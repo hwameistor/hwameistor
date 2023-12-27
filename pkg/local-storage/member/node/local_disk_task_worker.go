@@ -59,8 +59,8 @@ func (m *manager) processLocalDisk(localDiskNameSpacedName string) error {
 		return nil
 	}
 
-	m.logger.Debugf("Required node name %s, current node name %s.", localDisk.Spec.NodeName, m.name)
-	if localDisk.Spec.NodeName != m.name {
+	m.logger.Debugf("Required node nodeName %s, current node nodeName %s.", localDisk.Spec.NodeName, m.nodeName)
+	if localDisk.Spec.NodeName != m.nodeName {
 		return nil
 	}
 
