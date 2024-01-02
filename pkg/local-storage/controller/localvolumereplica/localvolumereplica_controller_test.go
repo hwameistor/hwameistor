@@ -31,6 +31,7 @@ var (
 	fakeLocalVolumeUID               = "local-volume-uid"
 	fakeNamespace                    = "local-volume-test"
 	fakeNodename                     = "10-6-118-10"
+	fakeHostname                     = "node10"
 	fakeStorageIp                    = "10.6.118.11"
 	fakeZone                         = "zone-test"
 	fakeRegion                       = "region-test"
@@ -64,7 +65,7 @@ func TestNewLocalVolumeReplicaController(t *testing.T) {
 	r := ReconcileLocalVolumeReplica{
 		client:        cli,
 		scheme:        s,
-		storageMember: member.Member().ConfigureController(s).ConfigureBase(fakeNodename, fakeNamespace, systemConfig, cli, ca, fakeRecorder).ConfigureNode(s),
+		storageMember: member.Member().ConfigureController(s).ConfigureBase(fakeNodename, fakeHostname, fakeNamespace, systemConfig, cli, ca, fakeRecorder).ConfigureNode(s),
 	}
 
 	// Create LocalVolumeReplica

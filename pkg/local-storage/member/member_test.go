@@ -54,36 +54,31 @@ func Test_newMember(t *testing.T) {
 }
 
 func Test_localStorageMember_ConfigureBase(t *testing.T) {
-	var name string = "test2"
-	var namespace string = "test"
+	var name = "test2"
+	var hostName = "node1"
+	var namespace = "test"
 	var systemConfig apisv1alpha1.SystemConfig
 	var cli client.Client
 	var informersCache cache.Cache
 	var recorder record.EventRecorder
 
-	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
 	m := memmock.NewMockLocalStorageMember(ctrl)
 	m.
 		EXPECT().
-		ConfigureBase(name, namespace, systemConfig, cli, informersCache, recorder).
+		ConfigureBase(name, hostName, namespace, systemConfig, cli, informersCache, recorder).
 		Return(m).
 		Times(1)
 
-	v := m.ConfigureBase(name, namespace, systemConfig, cli, informersCache, recorder)
+	v := m.ConfigureBase(name, hostName, namespace, systemConfig, cli, informersCache, recorder)
 
 	fmt.Printf("Test_localStorageMember_ConfigureBase v= %+v", v)
 }
 
 func Test_localStorageMember_ConfigureNode(t *testing.T) {
-	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
 	m := memmock.NewMockLocalStorageMember(ctrl)
@@ -100,10 +95,7 @@ func Test_localStorageMember_ConfigureNode(t *testing.T) {
 
 func Test_localStorageMember_ConfigureController(t *testing.T) {
 	var scheme = &runtime.Scheme{}
-	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
 	m := memmock.NewMockLocalStorageMember(ctrl)
@@ -119,12 +111,9 @@ func Test_localStorageMember_ConfigureController(t *testing.T) {
 }
 
 func Test_localStorageMember_ConfigureCSIDriver(t *testing.T) {
-	var driverName string = "test_driver"
-	var sockAddr string = "1.1.1.1"
-	// 创建gomock控制器，用来记录后续的操作信息
+	var driverName = "test_driver"
+	var sockAddr = "1.1.1.1"
 	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
 	m := memmock.NewMockLocalStorageMember(ctrl)
@@ -140,12 +129,9 @@ func Test_localStorageMember_ConfigureCSIDriver(t *testing.T) {
 }
 
 func Test_localStorageMember_ConfigureRESTServer(t *testing.T) {
-	var httpPort int = 8080
+	var httpPort = 8080
 
-	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
 	m := memmock.NewMockLocalStorageMember(ctrl)
@@ -162,10 +148,7 @@ func Test_localStorageMember_ConfigureRESTServer(t *testing.T) {
 
 func Test_localStorageMember_Run(t *testing.T) {
 	var stopCh <-chan struct{}
-	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
 	m := memmock.NewMockLocalStorageMember(ctrl)
@@ -182,10 +165,7 @@ func Test_localStorageMember_Run(t *testing.T) {
 
 func Test_localStorageMember_Controller(t *testing.T) {
 	var cm apis.ControllerManager
-	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
 	m := memmock.NewMockLocalStorageMember(ctrl)
@@ -202,10 +182,7 @@ func Test_localStorageMember_Controller(t *testing.T) {
 
 func Test_localStorageMember_Node(t *testing.T) {
 	var nm apis.NodeManager
-	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
 	m := memmock.NewMockLocalStorageMember(ctrl)
@@ -222,10 +199,7 @@ func Test_localStorageMember_Node(t *testing.T) {
 
 func Test_localStorageMember_Name(t *testing.T) {
 	var str string
-	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
 	m := memmock.NewMockLocalStorageMember(ctrl)
@@ -242,10 +216,7 @@ func Test_localStorageMember_Name(t *testing.T) {
 
 func Test_localStorageMember_Version(t *testing.T) {
 	var version string
-	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
 	m := memmock.NewMockLocalStorageMember(ctrl)
@@ -262,10 +233,7 @@ func Test_localStorageMember_Version(t *testing.T) {
 
 func Test_localStorageMember_DriverName(t *testing.T) {
 	var driverName string
-	// 创建gomock控制器，用来记录后续的操作信息
 	ctrl := gomock.NewController(t)
-	// 断言期望的方法都被执行
-	// Go1.14+的单测中不再需要手动调用该方法
 	defer ctrl.Finish()
 
 	m := memmock.NewMockLocalStorageMember(ctrl)

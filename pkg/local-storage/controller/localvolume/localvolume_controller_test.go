@@ -30,6 +30,7 @@ var (
 	fakeNamespace                = "local-volume-test"
 	fakeNodenames                = []string{"10-6-118-10"}
 	fakeNodename                 = "10-6-118-10"
+	fakeHostname                 = "node10"
 	fakeStorageIp                = "10.6.118.11"
 	fakeZone                     = "zone-test"
 	fakeRegion                   = "region-test"
@@ -63,7 +64,7 @@ func TestNewLocalVolumeController(t *testing.T) {
 	r := ReconcileLocalVolume{
 		client:        cli,
 		scheme:        s,
-		storageMember: member.Member().ConfigureController(s).ConfigureBase(fakeNodename, fakeNamespace, systemConfig, cli, ca, fakeRecorder).ConfigureNode(s),
+		storageMember: member.Member().ConfigureController(s).ConfigureBase(fakeNodename, fakeHostname, fakeNamespace, systemConfig, cli, ca, fakeRecorder).ConfigureNode(s),
 	}
 
 	// Create LocalVolume

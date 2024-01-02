@@ -22,7 +22,7 @@ const (
 )
 
 // LocalStorageMember interface
-// //go:generate mockgen -source=member.go -destination=../member/member_mock.go  -package=member
+//go:generate mockgen -source=local_storage_member.go -destination=../../local-storage/member/member_mock.go  -package=member
 type LocalStorageMember interface {
 	Run(stopCh <-chan struct{})
 
@@ -51,7 +51,7 @@ type LocalStorageMember interface {
 
 // ControllerManager interface
 //
-//go:generate mockgen -source=member.go -destination=../member/controller/manager_mock.go  -package=controller
+//go:generate mockgen -source=local_storage_member.go -destination=../../local-storage/member/controller/manager_mock.go  -package=controller
 type ControllerManager interface {
 	Run(stopCh <-chan struct{})
 
@@ -73,7 +73,7 @@ type ControllerManager interface {
 }
 
 // NodeManager interface
-// //go:generate mockgen -source=member.go -destination=../member/node/manager_mock.go  -package=node
+//go:generate mockgen -source=local_storage_member.go -destination=../../local-storage/member/node/manager_mock.go  -package=node
 type NodeManager interface {
 	Run(stopCh <-chan struct{})
 
