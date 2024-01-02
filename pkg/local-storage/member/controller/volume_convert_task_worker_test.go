@@ -54,7 +54,7 @@ func Test_manager_processVolumeConvert(t *testing.T) {
 	// Create LocalVolumeGroup
 	lvg := GenFakeLocalVolumeGroupObject()
 	lvg.Name = fakeLocalVolumeGroupName
-	lvg.Namespace = fakeNamespace
+	lvg.Namespace = ""
 	err = client.Create(context.Background(), lvg)
 	if err != nil {
 		t.Errorf("Create LocalVolumeGroup fail %v", err)
@@ -151,7 +151,7 @@ func Test_manager_volumeConvertAbort(t *testing.T) {
 	// Create LocalVolumeGroup
 	lvg := GenFakeLocalVolumeGroupObject()
 	lvg.Name = fakeLocalVolumeGroupName
-	lvg.Namespace = fakeNamespace
+	lvg.Namespace = ""
 	err = client.Create(context.Background(), lvg)
 	if err != nil {
 		t.Errorf("Create LocalVolumeGroup fail %v", err)
@@ -249,7 +249,7 @@ func Test_manager_volumeConvertCleanup(t *testing.T) {
 	// Create LocalVolumeGroup
 	lvg := GenFakeLocalVolumeGroupObject()
 	lvg.Name = fakeLocalVolumeGroupName
-	lvg.Namespace = fakeNamespace
+	lvg.Namespace = ""
 	err = client.Create(context.Background(), lvg)
 	if err != nil {
 		t.Errorf("Create LocalVolumeGroup fail %v", err)
@@ -347,7 +347,7 @@ func Test_manager_volumeConvertInProgress(t *testing.T) {
 	// Create LocalVolumeGroup
 	lvg := GenFakeLocalVolumeGroupObject()
 	lvg.Name = fakeLocalVolumeGroupName
-	lvg.Namespace = fakeNamespace
+	lvg.Namespace = ""
 	err = client.Create(context.Background(), lvg)
 	if err != nil {
 		t.Errorf("Create LocalVolumeGroup fail %v", err)
@@ -445,7 +445,7 @@ func Test_manager_volumeConvertStart(t *testing.T) {
 	// Create LocalVolumeGroup
 	lvg := GenFakeLocalVolumeGroupObject()
 	lvg.Name = fakeLocalVolumeGroupName
-	lvg.Namespace = fakeNamespace
+	lvg.Namespace = ""
 	err = client.Create(context.Background(), lvg)
 	if err != nil {
 		t.Errorf("Create LocalVolumeGroup fail %v", err)
@@ -543,7 +543,7 @@ func Test_manager_volumeConvertSubmit(t *testing.T) {
 	// Create LocalVolumeGroup
 	lvg := GenFakeLocalVolumeGroupObject()
 	lvg.Name = fakeLocalVolumeGroupName
-	lvg.Namespace = fakeNamespace
+	lvg.Namespace = ""
 	err = client.Create(context.Background(), lvg)
 	if err != nil {
 		t.Errorf("Create LocalVolumeGroup fail %v", err)
