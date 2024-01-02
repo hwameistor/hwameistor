@@ -303,26 +303,6 @@ func Test_manager_volumeMigrateCleanup(t *testing.T) {
 }
 
 func Test_manager_volumeMigrateInProgress(t *testing.T) {
-	type fields struct {
-		name                        string
-		namespace                   string
-		apiClient                   client.Client
-		informersCache              cache.Cache
-		scheme                      *runtime.Scheme
-		volumeScheduler             v1alpha1.VolumeScheduler
-		volumeGroupManager          v1alpha1.VolumeGroupManager
-		nodeTaskQueue               *common.TaskQueue
-		k8sNodeTaskQueue            *common.TaskQueue
-		volumeTaskQueue             *common.TaskQueue
-		volumeExpandTaskQueue       *common.TaskQueue
-		volumeMigrateTaskQueue      *common.TaskQueue
-		volumeGroupMigrateTaskQueue *common.TaskQueue
-		volumeConvertTaskQueue      *common.TaskQueue
-		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]v1alpha1.State
-		logger                      *log.Entry
-		lock                        sync.Mutex
-	}
 	type args struct {
 		migrate *v1alpha1.LocalVolumeMigrate
 	}
@@ -349,13 +329,20 @@ func Test_manager_volumeMigrateInProgress(t *testing.T) {
 	if err != nil {
 		t.Errorf("Create LocalVolumeGroup fail %v", err)
 	}
-
+	lsn := GenFakeLocalStorageNodeObject()
+	lsn.ObjectMeta.Name = fakeLocalStorageNodename
+	lsn.ObjectMeta.Namespace = ""
+	err = client.Create(context.Background(), lsn)
+	if err != nil {
+		t.Errorf("Create LocalStorageNode fail %v", err)
+	}
 	// Create LocalVolumeConvert
 	lvm := GenFakeLocalVolumeMigrateObject()
 	lvm.Name = fakeLocalVolumeMigrateName
 	lvm.Namespace = fakeNamespace
 	lvm.Spec.VolumeName = fakeLocalVolumeName
 	lvm.Spec.TargetNodesSuggested = fakeNodenames
+	lvm.Status.TargetNode = fakeLocalStorageNodename
 	err = client.Create(context.Background(), lvm)
 	if err != nil {
 		t.Errorf("Create LocalVolumeMigrate fail %v", err)
@@ -363,7 +350,6 @@ func Test_manager_volumeMigrateInProgress(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
@@ -497,26 +483,6 @@ func Test_manager_volumeMigrateStart(t *testing.T) {
 }
 
 func Test_manager_volumeMigrateSubmit(t *testing.T) {
-	type fields struct {
-		name                        string
-		namespace                   string
-		apiClient                   client.Client
-		informersCache              cache.Cache
-		scheme                      *runtime.Scheme
-		volumeScheduler             v1alpha1.VolumeScheduler
-		volumeGroupManager          v1alpha1.VolumeGroupManager
-		nodeTaskQueue               *common.TaskQueue
-		k8sNodeTaskQueue            *common.TaskQueue
-		volumeTaskQueue             *common.TaskQueue
-		volumeExpandTaskQueue       *common.TaskQueue
-		volumeMigrateTaskQueue      *common.TaskQueue
-		volumeGroupMigrateTaskQueue *common.TaskQueue
-		volumeConvertTaskQueue      *common.TaskQueue
-		volumeGroupConvertTaskQueue *common.TaskQueue
-		localNodes                  map[string]v1alpha1.State
-		logger                      *log.Entry
-		lock                        sync.Mutex
-	}
 	type args struct {
 		migrate *v1alpha1.LocalVolumeMigrate
 	}
@@ -539,17 +505,27 @@ func Test_manager_volumeMigrateSubmit(t *testing.T) {
 	lvg := GenFakeLocalVolumeGroupObject()
 	lvg.Name = fakeLocalVolumeGroupName
 	lvg.Namespace = fakeNamespace
+	lvg.Spec.Accessibility.Nodes = []string{fakeLocalVolumeName}
+	lvg.Spec.Volumes = []v1alpha1.VolumeInfo{
+		{
+			LocalVolumeName: fakeLocalVolumeName,
+		},
+	}
 	err = client.Create(context.Background(), lvg)
 	if err != nil {
 		t.Errorf("Create LocalVolumeGroup fail %v", err)
 	}
-
-	// Create LocalVolumeConvert
+	//  Create LocalVolumeReplicaObject
+	lvr := GenFakeLocalVolumeReplicaObject()
+	lvr.Status.State = v1alpha1.VolumeReplicaStateReady
+	err = client.Create(context.Background(), lvr)
+	// Create LocalVolumeMigrateObject
 	lvm := GenFakeLocalVolumeMigrateObject()
 	lvm.Name = fakeLocalVolumeMigrateName
 	lvm.Namespace = fakeNamespace
 	lvm.Spec.VolumeName = fakeLocalVolumeName
 	lvm.Spec.TargetNodesSuggested = fakeNodenames
+	lvm.Status.TargetNode = fakeLocalStorageNodename
 	err = client.Create(context.Background(), lvm)
 	if err != nil {
 		t.Errorf("Create LocalVolumeMigrate fail %v", err)
@@ -557,7 +533,6 @@ func Test_manager_volumeMigrateSubmit(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
