@@ -528,7 +528,10 @@ func (lsnController *LocalStorageNodeController) GetStorageNodeDisk(page hwameis
 		log.Errorf("failed to get localDisk by path %s", err.Error())
 		return ldi, err
 	}
-
+	if len(localDisks) == 0 {
+		log.WithField("nodeName", page.NodeName).WithField("devPath", devicePath).Errorf("no localdisks found")
+		return nil, fmt.Errorf("no localdisks found,nodeName:%v,devPath:%v", page.NodeName, devicePath)
+	}
 	ldi.LocalDisk = localDisks[0]
 	ldi.TotalCapacityBytes = localDisks[0].Spec.Capacity
 	diskShortName := strings.Split(localDisks[0].Spec.DevicePath, hwameistorapi.DEV)[1]
