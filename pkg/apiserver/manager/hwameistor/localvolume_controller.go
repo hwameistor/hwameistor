@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -22,6 +23,8 @@ import (
 
 const (
 	ConvertReplicaNum = 2
+	DESC              = "DESC"
+	ASC               = "ASC"
 )
 
 type LocalVolumeController struct {
@@ -45,6 +48,33 @@ func (lvController *LocalVolumeController) ListLocalVolume(queryPage hwameistora
 		return nil, err
 	}
 
+	if queryPage.SortDir == DESC || queryPage.SortDir == "" {
+		switch queryPage.Sort {
+		case "name":
+			a := utils.ByVolumeNameDesc(vols)
+			sort.Sort(a)
+		case "", "time":
+			a := utils.ByVolumeTimeDesc(vols)
+			sort.Sort(a)
+		case "namespace":
+			a := utils.ByVolumeNsDesc(vols)
+			sort.Sort(a)
+		}
+	} else if queryPage.SortDir == ASC {
+		switch queryPage.Sort {
+		case "name":
+			a := utils.ByVolumeNameAsc(vols)
+			sort.Sort(a)
+		case "", "time":
+			a := utils.ByVolumeTimeAsc(vols)
+			sort.Sort(a)
+		case "namespace":
+			a := utils.ByVolumeNsAsc(vols)
+			sort.Sort(a)
+		}
+	}
+
+	//Pagination
 	volList.Volumes = utils.DataPatination(vols, queryPage.Page, queryPage.PageSize)
 	if len(vols) == 0 {
 		volList.Volumes = []*hwameistorapi.Volume{}
@@ -76,30 +106,59 @@ func (lvController *LocalVolumeController) listLocalVolume(queryPage hwameistora
 	for _, lv := range lvList.Items {
 		var vol = &hwameistorapi.Volume{}
 		vol.LocalVolume = lv
-
-		if (queryPage.VolumeName == "") && (queryPage.VolumeState == apisv1alpha1.VolumeStateEmpty) && (queryPage.NameSpace == "") {
+		if (queryPage.VolumeName == "") && (queryPage.VolumeState == "") && (queryPage.NameSpace == "") && (queryPage.VolumeGroup == "") {
 			vols = append(vols, vol)
-		} else if (queryPage.VolumeName != "" && strings.Contains(vol.Name, queryPage.VolumeName)) &&
-			(queryPage.VolumeState == apisv1alpha1.VolumeStateEmpty) && (queryPage.NameSpace == "") {
+		} else if (queryPage.VolumeName != "" && strings.Contains(vol.Name, queryPage.VolumeName)) && (queryPage.VolumeState == "") &&
+			(queryPage.NameSpace == "") && (queryPage.VolumeGroup == "") {
 			vols = append(vols, vol)
-		} else if (queryPage.VolumeState != "" && queryPage.VolumeState == vol.Status.State) &&
-			(queryPage.VolumeName == "") && (queryPage.NameSpace == "") {
+		} else if (queryPage.VolumeName != "" && strings.Contains(vol.Name, queryPage.VolumeName)) && (queryPage.VolumeState != "") &&
+			(queryPage.VolumeState == vol.Status.State) && (queryPage.NameSpace == "") && (queryPage.VolumeGroup == "") {
 			vols = append(vols, vol)
-		} else if (queryPage.NameSpace != "" && (queryPage.NameSpace == vol.Spec.PersistentVolumeClaimNamespace)) &&
-			(queryPage.VolumeName == "") && (queryPage.VolumeState == apisv1alpha1.VolumeStateEmpty) {
+		} else if (queryPage.VolumeName != "" && strings.Contains(vol.Name, queryPage.VolumeName)) && (queryPage.VolumeState == "") &&
+			(queryPage.NameSpace != "") && (queryPage.NameSpace == vol.Spec.PersistentVolumeClaimNamespace) && (queryPage.VolumeGroup == "") {
 			vols = append(vols, vol)
-		} else if (queryPage.VolumeName != "" && strings.Contains(vol.Name, queryPage.VolumeName)) &&
-			(queryPage.VolumeState != "" && queryPage.VolumeState == vol.Status.State) && (queryPage.NameSpace == "") {
+		} else if (queryPage.VolumeName != "" && strings.Contains(vol.Name, queryPage.VolumeName)) && (queryPage.VolumeState == "") &&
+			(queryPage.NameSpace == "") && (queryPage.VolumeGroup != "") && strings.Contains(vol.Spec.VolumeGroup, queryPage.VolumeGroup) {
 			vols = append(vols, vol)
-		} else if (queryPage.VolumeName != "" && strings.Contains(vol.Name, queryPage.VolumeName)) &&
-			(queryPage.NameSpace != "" && (queryPage.NameSpace == vol.Spec.PersistentVolumeClaimNamespace)) && (queryPage.VolumeState == apisv1alpha1.VolumeStateEmpty) {
+		} else if (queryPage.VolumeName == "") && (queryPage.VolumeState != "") && (queryPage.VolumeState == vol.Status.State) &&
+			(queryPage.NameSpace == "") && (queryPage.VolumeGroup == "") {
 			vols = append(vols, vol)
-		} else if (queryPage.VolumeState != "" && queryPage.VolumeState == vol.Status.State) &&
-			(queryPage.VolumeName == "") && (queryPage.NameSpace != "" && (queryPage.NameSpace == vol.Spec.PersistentVolumeClaimNamespace)) {
+		} else if (queryPage.VolumeName == "") && (queryPage.VolumeState != "") && (queryPage.VolumeState == vol.Status.State) &&
+			(queryPage.NameSpace != "") && (queryPage.NameSpace == vol.Spec.PersistentVolumeClaimNamespace) && (queryPage.VolumeGroup == "") {
 			vols = append(vols, vol)
-		} else if (queryPage.VolumeName != "" && strings.Contains(vol.Name, queryPage.VolumeName)) &&
-			(queryPage.VolumeState != "" && queryPage.VolumeState == vol.Status.State) &&
-			(queryPage.NameSpace != "" && (queryPage.NameSpace == vol.Spec.PersistentVolumeClaimNamespace)) {
+		} else if (queryPage.VolumeName == "") && (queryPage.VolumeState != "") && (queryPage.VolumeState == vol.Status.State) &&
+			(queryPage.NameSpace == "") && (queryPage.VolumeGroup != "") && strings.Contains(vol.Spec.VolumeGroup, queryPage.VolumeGroup) {
+			vols = append(vols, vol)
+		} else if (queryPage.VolumeName == "") && (queryPage.VolumeState == "") &&
+			(queryPage.NameSpace != "") && (queryPage.NameSpace == vol.Spec.PersistentVolumeClaimNamespace) && (queryPage.VolumeGroup == "") {
+			vols = append(vols, vol)
+		} else if (queryPage.VolumeName == "") && (queryPage.VolumeState == "") && (queryPage.NameSpace != "") &&
+			(queryPage.NameSpace == vol.Spec.PersistentVolumeClaimNamespace) && (queryPage.VolumeGroup != "") &&
+			strings.Contains(vol.Spec.VolumeGroup, queryPage.VolumeGroup) {
+			vols = append(vols, vol)
+		} else if (queryPage.VolumeName == "") && (queryPage.VolumeState == "") &&
+			(queryPage.NameSpace == "") && (queryPage.VolumeGroup != "") && strings.Contains(vol.Spec.VolumeGroup, queryPage.VolumeGroup) {
+			vols = append(vols, vol)
+		} else if (queryPage.VolumeName != "") && strings.Contains(vol.Name, queryPage.VolumeName) && (queryPage.VolumeState != "") &&
+			(queryPage.VolumeState == vol.Status.State) && (queryPage.NameSpace != "") &&
+			(queryPage.NameSpace == vol.Spec.PersistentVolumeClaimNamespace) && (queryPage.VolumeGroup == "") {
+			vols = append(vols, vol)
+		} else if (queryPage.VolumeName != "") && strings.Contains(vol.Name, queryPage.VolumeName) && (queryPage.VolumeState != "") &&
+			(queryPage.VolumeState == vol.Status.State) && (queryPage.NameSpace == "") &&
+			(queryPage.VolumeGroup != "") && strings.Contains(vol.Spec.VolumeGroup, queryPage.VolumeGroup) {
+			vols = append(vols, vol)
+		} else if (queryPage.VolumeName != "") && strings.Contains(vol.Name, queryPage.VolumeName) && (queryPage.VolumeState == "") &&
+			(queryPage.NameSpace != "") && (queryPage.NameSpace == vol.Spec.PersistentVolumeClaimNamespace) &&
+			(queryPage.VolumeGroup != "") && strings.Contains(vol.Spec.VolumeGroup, queryPage.VolumeGroup) {
+			vols = append(vols, vol)
+		} else if (queryPage.VolumeName == "") && (queryPage.VolumeState != "") && (queryPage.VolumeState == vol.Status.State) &&
+			(queryPage.NameSpace != "") && (queryPage.NameSpace == vol.Spec.PersistentVolumeClaimNamespace) &&
+			(queryPage.VolumeGroup != "") && strings.Contains(vol.Spec.VolumeGroup, queryPage.VolumeGroup) {
+			vols = append(vols, vol)
+		} else if (queryPage.VolumeName != "") && strings.Contains(vol.Name, queryPage.VolumeName) &&
+			(queryPage.VolumeState != "") && (queryPage.VolumeState == vol.Status.State) &&
+			(queryPage.NameSpace != "") && (queryPage.NameSpace == vol.Spec.PersistentVolumeClaimNamespace) &&
+			(queryPage.VolumeGroup != "") && strings.Contains(vol.Spec.VolumeGroup, queryPage.VolumeGroup) {
 			vols = append(vols, vol)
 		}
 	}

@@ -131,3 +131,109 @@ func (a ByEventTime) Less(i, j int) bool {
 func (a ByEventTime) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
 }
+
+// asc, desc
+
+type ByVolumeNameAsc []*api.Volume
+
+func (a ByVolumeNameAsc) Len() int {
+	return len(a)
+}
+
+func (a ByVolumeNameAsc) Less(i, j int) bool {
+	flag := false
+	compare := strings.Compare(a[i].Name, a[j].Name)
+	if compare < 0 {
+		flag = true
+	}
+	return flag
+}
+
+func (a ByVolumeNameAsc) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+type ByVolumeNameDesc []*api.Volume
+
+func (a ByVolumeNameDesc) Len() int {
+	return len(a)
+}
+
+func (a ByVolumeNameDesc) Less(i, j int) bool {
+	flag := false
+	compare := strings.Compare(a[i].Name, a[j].Name)
+	if compare > 0 {
+		flag = true
+	}
+	return flag
+}
+
+func (a ByVolumeNameDesc) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+type ByVolumeNsAsc []*api.Volume
+
+func (a ByVolumeNsAsc) Len() int {
+	return len(a)
+}
+
+func (a ByVolumeNsAsc) Less(i, j int) bool {
+	flag := false
+	compare := strings.Compare(a[i].Namespace, a[j].Namespace)
+	if compare < 0 {
+		flag = true
+	}
+	return flag
+}
+
+func (a ByVolumeNsAsc) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+type ByVolumeNsDesc []*api.Volume
+
+func (a ByVolumeNsDesc) Len() int {
+	return len(a)
+}
+
+func (a ByVolumeNsDesc) Less(i, j int) bool {
+	flag := false
+	compare := strings.Compare(a[i].Namespace, a[j].Namespace)
+	if compare > 0 {
+		flag = true
+	}
+	return flag
+}
+
+func (a ByVolumeNsDesc) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+type ByVolumeTimeAsc []*api.Volume
+
+func (a ByVolumeTimeAsc) Len() int {
+	return len(a)
+}
+
+func (a ByVolumeTimeAsc) Less(i, j int) bool {
+	return a[i].ObjectMeta.CreationTimestamp.Time.Before(a[j].ObjectMeta.CreationTimestamp.Time)
+}
+
+func (a ByVolumeTimeAsc) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+type ByVolumeTimeDesc []*api.Volume
+
+func (a ByVolumeTimeDesc) Len() int {
+	return len(a)
+}
+
+func (a ByVolumeTimeDesc) Less(i, j int) bool {
+	return a[i].ObjectMeta.CreationTimestamp.Time.After(a[j].ObjectMeta.CreationTimestamp.Time)
+}
+
+func (a ByVolumeTimeDesc) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}

@@ -457,6 +457,8 @@ definitions:
         $ref: '#/definitions/v1alpha1.LocalDiskNode'
       localStorageNode:
         $ref: '#/definitions/v1alpha1.LocalStorageNode'
+      totalDisk:
+        type: integer
     type: object
   api.StorageNodeList:
     properties:
@@ -3864,7 +3866,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: list Volume
+      description: list Volume 排序sortBy:"time","name","namespace"  sortDir:升序"ASC"
+        降序"DESC"
       parameters:
       - description: page
         in: query
@@ -3884,14 +3887,22 @@ paths:
         in: query
         name: state
         type: string
-      - description: fuzzy
+      - description: group
         in: query
-        name: fuzzy
-        type: boolean
-      - description: sort
+        name: group
+        type: string
+      - description: namespace
         in: query
-        name: sort
-        type: boolean
+        name: namespace
+        type: string
+      - description: sortBy
+        in: query
+        name: sortBy
+        type: string
+      - description: sortDir
+        in: query
+        name: sortDir
+        type: string
       produces:
       - application/json
       responses:

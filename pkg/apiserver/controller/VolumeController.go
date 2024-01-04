@@ -70,14 +70,16 @@ func (v *VolumeController) VolumeGet(ctx *gin.Context) {
 
 // VolumeList godoc
 // @Summary 摘要 获取数据卷列表信息 数据卷状态枚举 （ToBeMounted、Created、Creating、Ready、NotReady、ToBeDeleted、Deleted）
-// @Description list Volume
+// @Description list Volume sortBy排序:"time","name","namespace"  sortDir:升序"ASC" 降序"DESC" 默认按时间降序
 // @Tags        Volume
 // @Param       page query int32 true "page"
 // @Param       pageSize query int32 true "pageSize"
 // @Param       volumeName query string false "volumeName"
 // @Param       state query string false "state"
-// @Param       fuzzy query bool false "fuzzy"
-// @Param       sort query bool false "sort"
+// @Param       group query string false "group"
+// @Param       namespace query string false "namespace"
+// @Param       sortBy query string false "sortBy"
+// @Param       sortDir query string false "sortDir"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.VolumeList
@@ -97,6 +99,12 @@ func (v *VolumeController) VolumeList(ctx *gin.Context) {
 	// 获取path中的namespace
 	namespace := ctx.Query("namespace")
 
+	//get sort for path
+	sortBy := ctx.Query("sortBy")
+	sortDir := ctx.Query("sortDir")
+	//get volume-group
+	vg := ctx.Query("group")
+
 	p, _ := strconv.ParseInt(page, 10, 32)
 	ps, _ := strconv.ParseInt(pageSize, 10, 32)
 
@@ -106,6 +114,9 @@ func (v *VolumeController) VolumeList(ctx *gin.Context) {
 	queryPage.VolumeName = volumeName
 	queryPage.VolumeState = hwameistorapi.VolumeStatefuzzyConvert(state)
 	queryPage.NameSpace = namespace
+	queryPage.Sort = sortBy
+	queryPage.SortDir = sortDir
+	queryPage.VolumeGroup = vg
 
 	lvs, err := v.m.VolumeController().ListLocalVolume(queryPage)
 	if err != nil {
