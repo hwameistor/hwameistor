@@ -40,6 +40,7 @@ Above platforms are not supported currently but will be in the future.
 3. The HA features module cannot be automatically installed on nodes with some kernel versions and needs to be installed manually.
 <details>
 <summary>The compatible kernel version has been confirmed</summary>
+    <pre><code>
 5.8.0-1043-azure
 5.8.0-1042-azure
 5.8.0-1041-azure
@@ -154,6 +155,7 @@ Above platforms are not supported currently but will be in the future.
 2.6.32-642.1.1.el6
 2.6.32-573.1.1.el6
 2.6.32-504.el6
+</code></pre> 
 </details>
 
 4. For VolumeResize features, a tool to resize the filesystem is required. 
