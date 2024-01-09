@@ -322,8 +322,8 @@ func ConfigureEnvironment(ctx context.Context) error {
 	}
 
 	logrus.Infof("waiting for drbd ready")
-
-	err = wait.PollImmediate(3*time.Second, 15*time.Minute, func() (done bool, err error) {
+	time.Sleep(1 * time.Minute)
+	err = wait.PollImmediate(10*time.Second, 15*time.Minute, func() (done bool, err error) {
 		err = client.Get(ctx, drbdKey1, drbd1)
 		if err != nil {
 			logrus.Error(err)
