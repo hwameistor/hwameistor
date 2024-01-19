@@ -23,6 +23,8 @@ type HwameistorV1alpha1Interface interface {
 	LocalVolumeGroupsGetter
 	LocalVolumeMigratesGetter
 	LocalVolumeReplicasGetter
+	LocalVolumeSnapshotsGetter
+	LocalVolumeSnapshotRestoresGetter
 }
 
 // HwameistorV1alpha1Client is used to interact with features provided by the hwameistor.io group.
@@ -80,6 +82,14 @@ func (c *HwameistorV1alpha1Client) LocalVolumeMigrates() LocalVolumeMigrateInter
 
 func (c *HwameistorV1alpha1Client) LocalVolumeReplicas() LocalVolumeReplicaInterface {
 	return newLocalVolumeReplicas(c)
+}
+
+func (c *HwameistorV1alpha1Client) LocalVolumeSnapshots(namespace string) LocalVolumeSnapshotInterface {
+	return newLocalVolumeSnapshots(c, namespace)
+}
+
+func (c *HwameistorV1alpha1Client) LocalVolumeSnapshotRestores(namespace string) LocalVolumeSnapshotRestoreInterface {
+	return newLocalVolumeSnapshotRestores(c, namespace)
 }
 
 // NewForConfig creates a new HwameistorV1alpha1Client for the given config.

@@ -34,6 +34,10 @@ type Interface interface {
 	LocalVolumeMigrates() LocalVolumeMigrateInformer
 	// LocalVolumeReplicas returns a LocalVolumeReplicaInformer.
 	LocalVolumeReplicas() LocalVolumeReplicaInformer
+	// LocalVolumeSnapshots returns a LocalVolumeSnapshotInformer.
+	LocalVolumeSnapshots() LocalVolumeSnapshotInformer
+	// LocalVolumeSnapshotRestores returns a LocalVolumeSnapshotRestoreInformer.
+	LocalVolumeSnapshotRestores() LocalVolumeSnapshotRestoreInformer
 }
 
 type version struct {
@@ -110,4 +114,14 @@ func (v *version) LocalVolumeMigrates() LocalVolumeMigrateInformer {
 // LocalVolumeReplicas returns a LocalVolumeReplicaInformer.
 func (v *version) LocalVolumeReplicas() LocalVolumeReplicaInformer {
 	return &localVolumeReplicaInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// LocalVolumeSnapshots returns a LocalVolumeSnapshotInformer.
+func (v *version) LocalVolumeSnapshots() LocalVolumeSnapshotInformer {
+	return &localVolumeSnapshotInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// LocalVolumeSnapshotRestores returns a LocalVolumeSnapshotRestoreInformer.
+func (v *version) LocalVolumeSnapshotRestores() LocalVolumeSnapshotRestoreInformer {
+	return &localVolumeSnapshotRestoreInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
