@@ -26,6 +26,7 @@ var (
 	fakeLocalStorageNodeName        = "local-storage-node-example"
 	fakeLocalStorageNodeUID         = "local-storage-node-uid"
 	fakeLocalVolumeName             = "local-volume-example"
+	fakeLocalVolumeSnapshotName     = "local-volume-Snapshot-example"
 	fakeLocalDiskName               = "local-disk-example"
 	fakeLocalDiskNames              = []string{"local-disk-example"}
 	fakelocalDiskNameSpacedName     = "fakeNameSpace/fakeName"
@@ -78,6 +79,7 @@ var (
 	LocalStorageNodeKind        = "LocalStorageNode"
 	LeaseKind                   = "Lease"
 	LocalVolumeReplicaKind      = "LocalVolumeReplica"
+	LocalVolumeSnapshotKind     = "LocalVolumeSnapshotKind"
 	LocalVolumeConvertKind      = "LocalVolumeConvert"
 	LocalVolumeMigrateKind      = "LocalVolumeMigrate"
 	LocalVolumeGroupConvertKind = "LocalVolumeGroupConvert"
@@ -710,6 +712,40 @@ func GenFakeLocalVolumeReplicaObject() *apisv1alpha1.LocalVolumeReplica {
 	return lvr
 }
 
+// GenFakeLocalVolumeSnapShot Create lvs request
+func GenFakeLocalVolumeSnapShotObject() *apisv1alpha1.LocalVolumeSnapshot {
+	lvs := &apisv1alpha1.LocalVolumeSnapshot{}
+
+	TypeMeta := metav1.TypeMeta{
+		Kind:       LocalVolumeSnapshotKind,
+		APIVersion: apiversion,
+	}
+
+	ObjectMata := metav1.ObjectMeta{
+		Name:              fakeLocalVolumeSnapshotName,
+		ResourceVersion:   "",
+		UID:               types.UID(fakeLocalVolumeUID),
+		CreationTimestamp: metav1.Time{Time: time.Now()},
+	}
+
+	Spec := apisv1alpha1.LocalVolumeSnapshotSpec{
+		SourceVolume:          fakeLocalVolumeName,
+		RequiredCapacityBytes: fakeDiskCapacityBytes,
+		Accessibility: apisv1alpha1.AccessibilityTopology{
+			Nodes:   fakeNodenames,
+			Regions: []string{fakeRegion},
+			Zones:   []string{fakeZone},
+		},
+		Delete: false,
+	}
+
+	lvs.ObjectMeta = ObjectMata
+	lvs.TypeMeta = TypeMeta
+	lvs.Spec = Spec
+
+	return lvs
+}
+
 // CreateFakeClient Create LocalVolume resource
 func CreateFakeClient() (client.Client, *runtime.Scheme) {
 
@@ -745,6 +781,14 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 		},
 	}
 
+	lvs := GenFakeLocalVolumeSnapShotObject()
+	lvsList := &apisv1alpha1.LocalVolumeSnapshotList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       LocalVolumeSnapshotKind,
+			APIVersion: apiversion,
+		},
+	}
+
 	s := scheme.Scheme
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lv)
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvList)
@@ -754,6 +798,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, ldList)
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, ldc)
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, ldcList)
-
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvs)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvsList)
 	return fake.NewClientBuilder().WithScheme(s).Build(), s
 }

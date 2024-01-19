@@ -31,6 +31,7 @@ var (
 	fakeLocalVolumeReplicaName      = "local-volume-replica-example"
 	fakeLocalVolumeConvertName      = "local-volume-convert-example"
 	fakeLocalVolumeMigrateName      = "local-volume-migrate-example"
+	fakeLocalVolumeSnapshotName     = "local-volume-Snapshot-example"
 	fakeLocalVolumeGroupMigrateName = "local-volume-group-migrate-example"
 	fakeLocalVolumeGroupConvertName = "local-volume-group-convert-example"
 	fakeLocalVolumeUID              = "local-volume-uid"
@@ -67,6 +68,7 @@ var (
 	LocalVolumeReplicaKind      = "LocalVolumeReplica"
 	LocalVolumeConvertKind      = "LocalVolumeConvert"
 	LocalVolumeMigrateKind      = "LocalVolumeMigrate"
+	LocalVolumeSnapshotKind     = "LocalVolumeSnapshot"
 	LocalVolumeGroupConvertKind = "LocalVolumeGroupConvert"
 	LocalVolumeGroupMigrateKind = "LocalVolumeGroupMigrate"
 	fakeRecorder                = record.NewFakeRecorder(100)
@@ -192,7 +194,7 @@ func GenFakeLocalVolumeObject() *v1alpha1.LocalVolume {
 	return lv
 }
 
-// GenFakeLocalVolumeObject Create lv request
+// GenFakeLocalVolumeReplicaObject Create lvr request
 func GenFakeLocalVolumeReplicaObject() *v1alpha1.LocalVolumeReplica {
 	lvr := &v1alpha1.LocalVolumeReplica{}
 
@@ -226,6 +228,7 @@ func GenFakeLocalVolumeReplicaObject() *v1alpha1.LocalVolumeReplica {
 	return lvr
 }
 
+// GenFakeLocalVolumeConvertObject Create lvconvert request
 func GenFakeLocalVolumeConvertObject() *v1alpha1.LocalVolumeConvert {
 	lvc := &v1alpha1.LocalVolumeConvert{}
 
@@ -278,6 +281,40 @@ func GenFakeLocalVolumeMigrateObject() *v1alpha1.LocalVolumeMigrate {
 	lvm.Spec = Spec
 
 	return lvm
+}
+
+// GenFakeLocalVolumeSnapShot Create lvs request
+func GenFakeLocalVolumeSnapShotObject() *v1alpha1.LocalVolumeSnapshot {
+	lvs := &v1alpha1.LocalVolumeSnapshot{}
+
+	TypeMeta := metav1.TypeMeta{
+		Kind:       LocalVolumeSnapshotKind,
+		APIVersion: apiversion,
+	}
+
+	ObjectMata := metav1.ObjectMeta{
+		Name:              fakeLocalVolumeSnapshotName,
+		ResourceVersion:   "",
+		UID:               types.UID(fakeLocalVolumeUID),
+		CreationTimestamp: metav1.Time{Time: time.Now()},
+	}
+
+	Spec := v1alpha1.LocalVolumeSnapshotSpec{
+		SourceVolume:          fakeLocalVolumeName,
+		RequiredCapacityBytes: fakeDiskCapacityBytes,
+		Accessibility: v1alpha1.AccessibilityTopology{
+			Nodes:   fakeNodenames,
+			Regions: []string{fakeRegion},
+			Zones:   []string{fakeZone},
+		},
+		Delete: false,
+	}
+
+	lvs.ObjectMeta = ObjectMata
+	lvs.TypeMeta = TypeMeta
+	lvs.Spec = Spec
+
+	return lvs
 }
 
 func GenFakeLocalVolumeGroupObject() *v1alpha1.LocalVolumeGroup {
@@ -394,6 +431,14 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 		},
 	}
 
+	lvs := GenFakeLocalVolumeSnapShotObject()
+	lvsList := &v1alpha1.LocalVolumeSnapshotList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       LocalVolumeSnapshotKind,
+			APIVersion: apiversion,
+		},
+	}
+
 	lvr := GenFakeLocalVolumeReplicaObject()
 	lvrList := &v1alpha1.LocalVolumeReplicaList{
 		TypeMeta: metav1.TypeMeta{
@@ -433,6 +478,8 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvcList)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvm)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvmList)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvs)
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvsList)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvr)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvrList)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, lvg)
