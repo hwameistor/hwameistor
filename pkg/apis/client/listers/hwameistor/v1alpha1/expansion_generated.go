@@ -53,3 +53,19 @@ type LocalVolumeMigrateListerExpansion interface{}
 // LocalVolumeReplicaListerExpansion allows custom methods to be added to
 // LocalVolumeReplicaLister.
 type LocalVolumeReplicaListerExpansion interface{}
+
+// LocalVolumeSnapshotListerExpansion allows custom methods to be added to
+// LocalVolumeSnapshotLister.
+type LocalVolumeSnapshotListerExpansion interface{}
+
+// LocalVolumeSnapshotNamespaceListerExpansion allows custom methods to be added to
+// LocalVolumeSnapshotNamespaceLister.
+type LocalVolumeSnapshotNamespaceListerExpansion interface{}
+
+// LocalVolumeSnapshotRestoreListerExpansion allows custom methods to be added to
+// LocalVolumeSnapshotRestoreLister.
+type LocalVolumeSnapshotRestoreListerExpansion interface{}
+
+// LocalVolumeSnapshotRestoreNamespaceListerExpansion allows custom methods to be added to
+// LocalVolumeSnapshotRestoreNamespaceLister.
+type LocalVolumeSnapshotRestoreNamespaceListerExpansion interface{}

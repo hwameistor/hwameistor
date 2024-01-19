@@ -64,6 +64,14 @@ func (c *FakeHwameistorV1alpha1) LocalVolumeReplicas() v1alpha1.LocalVolumeRepli
 	return &FakeLocalVolumeReplicas{c}
 }
 
+func (c *FakeHwameistorV1alpha1) LocalVolumeSnapshots(namespace string) v1alpha1.LocalVolumeSnapshotInterface {
+	return &FakeLocalVolumeSnapshots{c, namespace}
+}
+
+func (c *FakeHwameistorV1alpha1) LocalVolumeSnapshotRestores(namespace string) v1alpha1.LocalVolumeSnapshotRestoreInterface {
+	return &FakeLocalVolumeSnapshotRestores{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeHwameistorV1alpha1) RESTClient() rest.Interface {
