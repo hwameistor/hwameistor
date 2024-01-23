@@ -7,15 +7,15 @@ import (
 	"io"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-
+	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/cluster"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/definitions"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/disk"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/node"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/pool"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/snapshot"
 	"github.com/hwameistor/hwameistor/pkg/hwameictl/cmdparser/volume"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 var Hwameictl = &cobra.Command{
@@ -37,7 +37,9 @@ func init() {
 	Hwameictl.PersistentFlags().DurationVar(&definitions.Timeout, "timeout", 3*time.Second, "Set the request timeout")
 
 	// Sub commands
-	Hwameictl.AddCommand(volume.Volume, node.Node, pool.Pool, disk.Disk, storageclass.StorageClass, snapshotclass.SnapshotClass, snapshot.Snapshot, localvolumesnapshot.LocalSnapshot)
+	Hwameictl.AddCommand(volume.Volume, node.Node, pool.Pool, disk.Disk,
+		storageclass.StorageClass, snapshotclass.SnapshotClass, snapshot.Snapshot,
+		localvolumesnapshot.LocalSnapshot, cluster.Cluster)
 
 	// Disable debug mode
 	if definitions.Debug == false {
