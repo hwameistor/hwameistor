@@ -113,11 +113,11 @@ func (p *patchSchedulerName) ResourceNeedHandle(req admission.AdmissionReview) (
 		}
 		ok, err := p.IsHwameiStorVolume(pod.GetNamespace(), volume.PersistentVolumeClaim.ClaimName)
 		if err != nil {
-			// case1: if FailurePolicy == Ignore and the StorageClass is not found, skip mutate
+			// case1: if FailurePolicy is Ignore and the StorageClass is not found, skip this volume
 			if errors.IsNotFound(err) && *config.GetFailurePolicy() == admissionregistrationv1.Ignore {
 				logrus.WithFields(logCtx).Infof("skip mutate this pod, because of pvc or storageclass is not found"+
 					"and FailurePolicy now is %s can't judge volume is hwameistor volume", admissionregistrationv1.Ignore)
-				return false, nil
+				continue
 			}
 
 			// default: reject!
