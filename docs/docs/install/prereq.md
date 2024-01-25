@@ -66,6 +66,7 @@ Above platforms are not supported currently but will be in the future.
 5.4.0-1057-aws
 5.4.0-1056-aws
 5.4.0-1055-aws
+5.4.247-1.el7
 5.3.18-57.3
 5.3.18-22.2
 5.14.0-1.7.1.el9
