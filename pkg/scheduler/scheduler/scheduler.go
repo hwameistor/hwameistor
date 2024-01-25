@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	"strings"
 	"time"
@@ -217,7 +218,12 @@ func (s *Scheduler) getHwameiStorPVCs(pod *corev1.Pod) ([]*corev1.PersistentVolu
 		}
 		sc, err := s.scLister.Get(*pvc.Spec.StorageClassName)
 		if err != nil {
-			// can't found storageclass in the cluster, the pod should not be able to be scheduled
+			// NOTES: in static volume(e.g. fluid volume), StorageClass may not exist even if StorageClassName is not empty
+			// treat this volume as a non-hwameistor volume
+			if errors.IsNotFound(err) {
+				log.WithField("StorageClassName", *pvc.Spec.StorageClassName).Debugf("Ignore volume %s because of StorageClass in not found", pvc.Name)
+				continue
+			}
 			return lvmProvisionedClaims, lvmNewClaims, diskProvisionedClaims, diskNewClaims, err
 		}
 
