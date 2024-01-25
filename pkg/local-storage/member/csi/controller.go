@@ -2,12 +2,13 @@ package csi
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/fields"
 	"math"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"k8s.io/apimachinery/pkg/fields"
 
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
@@ -303,8 +304,10 @@ func (p *plugin) getAssociatedVolumeGroupAndVolumesForPVC(pvcNamespace string, p
 			continue
 		}
 		for _, vol := range lvg.Spec.Volumes {
-			if vol.PersistentVolumeClaimName == pvcName {
-				return &lvgList.Items[i], lvs, nil
+			for _, lv := range lvs {
+				if vol.PersistentVolumeClaimName == lv.Spec.PersistentVolumeClaimName {
+					return &lvgList.Items[i], lvs, nil
+				}
 			}
 		}
 	}
@@ -371,7 +374,7 @@ func constructLocalVolumeForPVC(pvc *corev1.PersistentVolumeClaim, sc *storagev1
 	lv := apisv1alpha1.LocalVolume{}
 	poolName, err := buildStoragePoolName(
 		sc.Parameters[apisv1alpha1.VolumeParameterPoolClassKey],
-		)
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -52,6 +52,7 @@ type LocalVolumeSnapshotStatus struct {
 	Message string `json:"message,omitempty"`
 }
 
+// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // LocalVolumeSnapshot is a user's request for either creating a point-in-time

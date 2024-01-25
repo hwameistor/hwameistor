@@ -1,4 +1,4 @@
-FROM golang:alpine
+FROM golang:1.19-alpine
 
 # set mirror repository for the package management
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/' /etc/apk/repositories

@@ -27,3 +27,7 @@ type LocalVolumeGroupExpansion interface{}
 type LocalVolumeMigrateExpansion interface{}
 
 type LocalVolumeReplicaExpansion interface{}
+
+type LocalVolumeSnapshotExpansion interface{}
+
+type LocalVolumeSnapshotRestoreExpansion interface{}
