@@ -1,0 +1,28 @@
+v0.14.1/ 2024-1-26
+========================
+
+
+## LVM volume management enhancements
+- fixed a LVG issue: recreating a PVC can't find the correct LVG #1353(@sun7927 )
+- skip volume when failurepolicy is ignore #1379(@SSmallMonster )
+- skip volume when failurepolicy is ignore #1380(@SSmallMonster )
+## Apiserver
+- improve(apiserver):check localdisk exist before using #1339(@hikariwo )
+- update snapshot client #1367(@SSmallMonster )
+- Hwameictl snapshot #1331(@peng9808 )
+- fix getnode api #1375(@peng9808 )
+- fix ctl disk_list #1373(@peng9808 )
+- fxi snapshot ctl bug #1333(@peng9808 )
+- add cluster insatll ctl #1369(@peng9808 )
+## Tests
+- [unit-test]fix run failed volume_migrate_task test #1334 (@hikariwo )
+- [unit-test]fix run failed volume_convert_task test #1336(@hikariwo )
+## Documentation
+- Added documentation for DRBDs adapted kernel version #1347(@FloatXD )
+- Beautify document structure #1350(@FloatXD )
+- Add carlory into MAINTAINERS.md #1355(@carlory )
+- [docs] update readme #1365(@SSmallMonster )
+- update support list #1378(@FloatXD )
+- [docs] Update /install/prereq.md #1370(@windsonsea )
+## Others
+- specify the golang version in the builder #1357(@sun7927 )
