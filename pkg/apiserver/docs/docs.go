@@ -1445,7 +1445,7 @@ const docTemplate = `{
         },
         "/cluster/volumes": {
             "get": {
-                "description": "list Volume",
+                "description": "list Volume 排序sortBy:\"time\",\"name\",\"namespace\"  sortDir:升序\"ASC\" 降序\"DESC\"",
                 "consumes": [
                     "application/json"
                 ],
@@ -1484,15 +1484,27 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "boolean",
-                        "description": "fuzzy",
-                        "name": "fuzzy",
+                        "type": "string",
+                        "description": "group",
+                        "name": "group",
                         "in": "query"
                     },
                     {
-                        "type": "boolean",
-                        "description": "sort",
-                        "name": "sort",
+                        "type": "string",
+                        "description": "namespace",
+                        "name": "namespace",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sortBy",
+                        "name": "sortBy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sortDir",
+                        "name": "sortDir",
                         "in": "query"
                     }
                 ],
@@ -2588,6 +2600,9 @@ const docTemplate = `{
                 },
                 "localStorageNode": {
                     "$ref": "#/definitions/v1alpha1.LocalStorageNode"
+                },
+                "totalDisk": {
+                    "type": "integer"
                 }
             }
         },

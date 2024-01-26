@@ -353,6 +353,7 @@ type QueryPage struct {
 	VolumeName        string
 	VolumeReplicaName string
 	VolumeEventName   string
+	VolumeGroup       string
 	Synced            string
 	OperationName     string
 	Owner             string
@@ -360,4 +361,5 @@ type QueryPage struct {
 	ResourceName      string
 	Action            string
 	Sort              string
+	SortDir           string
 }
