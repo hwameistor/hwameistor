@@ -17,5 +17,5 @@ var Cluster = &cobra.Command{
 
 func init() {
 	// Cluster sub commands
-	Cluster.AddCommand(install)
+	Cluster.AddCommand(install, event)
 }

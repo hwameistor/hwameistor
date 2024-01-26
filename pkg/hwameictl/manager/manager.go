@@ -54,3 +54,8 @@ func NewSnapShotClassController() (*hwameistor.SnapShotClassController, error) {
 	_, kClient, recorder, err := buildControllerParameters()
 	return hwameistor.NewSnapShotClassController(kClient, recorder), err
 }
+
+func NewMetricsController() (*hwameistor.MetricController, error) {
+	clientSet, kClient, recorder, err := buildControllerParameters()
+	return hwameistor.NewMetricController(kClient, clientSet, recorder), err
+}
