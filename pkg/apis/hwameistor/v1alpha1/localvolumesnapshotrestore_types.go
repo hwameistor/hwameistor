@@ -47,6 +47,7 @@ type LocalVolumeSnapshotRestoreStatus struct {
 	Message string `json:"message,omitempty"`
 }
 
+// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // LocalVolumeSnapshotRestore is a user's request for either restoring a local volume snapshot to a new volume, or merging into the old volume.

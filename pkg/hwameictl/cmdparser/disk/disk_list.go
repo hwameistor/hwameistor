@@ -41,14 +41,14 @@ func diskListRunE(_ *cobra.Command, _ []string) error {
 	disksHeader := table.Row{"#", "DevPath", "Status", "Node", "Reserved", "Raid", "DiskType",
 		"Capacity", "Owner", "Partitioned", "Protocol"}
 	var disksRows []table.Row
-	for i, disk := range disks.Items {
-		if nodeName != "" && nodeName != disk.Spec.NodeName {
-			// Filter by nodeName
-			continue
+	index := 0
+	for _, disk := range disks.Items {
+		if nodeName == "" || nodeName == disk.Spec.NodeName {
+			index++
+			disksRows = append(disksRows, table.Row{index, disk.Spec.DevicePath, disk.Status.State, disk.Spec.NodeName,
+				disk.Spec.Reserved, disk.Spec.HasRAID, disk.Spec.DiskAttributes.Type, formatter.FormatBytesToSize(disk.Spec.Capacity),
+				disk.Spec.Owner, disk.Spec.HasPartition, disk.Spec.DiskAttributes.Protocol})
 		}
-		disksRows = append(disksRows, table.Row{i + 1, disk.Spec.DevicePath, disk.Status.State, disk.Spec.NodeName,
-			disk.Spec.Reserved, disk.Spec.HasRAID, disk.Spec.DiskAttributes.Type, formatter.FormatBytesToSize(disk.Spec.Capacity),
-			disk.Spec.Owner, disk.Spec.HasPartition, disk.Spec.DiskAttributes.Protocol})
 	}
 
 	formatter.PrintTable("Disks", disksHeader, disksRows)

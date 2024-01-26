@@ -188,8 +188,7 @@ func (lsnController *LocalStorageNodeController) convertStorageNode(lsn apisv1al
 }
 
 func (lsnController *LocalStorageNodeController) GetStorageNode(nodeName string) (*hwameistorapi.StorageNode, error) {
-	var queryPage hwameistorapi.QueryPage
-	queryPage.NodeName = nodeName
+
 	var sn = &hwameistorapi.StorageNode{}
 	lsn := &apisv1alpha1.LocalStorageNode{}
 	objectKey := client.ObjectKey{Name: nodeName}
@@ -203,7 +202,7 @@ func (lsnController *LocalStorageNodeController) GetStorageNode(nodeName string)
 	sn.K8sNode = k8sNode
 	sn.K8sNodeState = K8sNodeState
 
-	return nil, nil
+	return sn, nil
 }
 
 func (lsnController *LocalStorageNodeController) GetStorageNodeByPool(nodeName, poolName string) (*hwameistorapi.StorageNode, error) {
