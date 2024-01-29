@@ -721,6 +721,16 @@ func (p *plugin) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 		p.logger.WithError(err).WithField("volName", req.VolumeId).Error("Failed to abort volume restore operation")
 		return nil, err
 	}
+	//abort migrate  operation if needed
+	exist, err := p.volumeMigrateIfExist(vol)
+	if err != nil {
+		p.logger.WithError(err).WithField("volName", req.VolumeId).Error("Failed to get volume migrate operation")
+		return nil, err
+	}
+	if exist {
+		p.logger.WithError(err).WithField("volName", req.VolumeId).Error("The volume is being migrated. Please stop the migration task before deleting the pvc.")
+		return nil, err
+	}
 
 	if vol.Status.State == apisv1alpha1.VolumeStateDeleted {
 		return resp, nil
@@ -783,6 +793,20 @@ func (p *plugin) needAbortVolumeSnapshotRestore(volume *apisv1alpha1.LocalVolume
 	}
 
 	return snapRestore.Spec.Abort == false || isStringInArray(apisv1alpha1.SnapshotRestoringFinalizer, snapRestore.GetFinalizers()), nil
+}
+
+func (p *plugin) volumeMigrateIfExist(volume *apisv1alpha1.LocalVolume) (bool, error) {
+	lvmList := &apisv1alpha1.LocalVolumeMigrateList{}
+	if err := p.apiClient.List(context.Background(), lvmList); err != nil {
+		p.logger.WithError(err).WithFields(log.Fields{"volume": volume.Name}).Error("Failed to list Migrate")
+		return false, err
+	}
+	for _, item := range lvmList.Items {
+		if item.Spec.VolumeName == volume.Name {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // ControllerPublishVolume implementation, idempotent
