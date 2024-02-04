@@ -23,6 +23,7 @@ func (m *manager) startVolumeMigrateTaskWorker(stopCh <-chan struct{}) {
 	m.logger.Debug("VolumeMigrate Worker is working now")
 	go func() {
 		for {
+			<-m.volumeMigrateLimit
 			task, shutdown := m.volumeMigrateTaskQueue.Get()
 			if shutdown {
 				m.logger.WithFields(log.Fields{"task": task}).Debug("Stop the VolumeMigrate worker")
@@ -406,6 +407,7 @@ func (m *manager) volumeMigrateCleanup(migrate *apisv1alpha1.LocalVolumeMigrate)
 		}
 	}
 
+	m.volumeMigrateLimit <- struct{}{}
 	return m.apiClient.Delete(ctx, migrate)
 }
 

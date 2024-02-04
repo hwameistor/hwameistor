@@ -27,6 +27,7 @@ import (
 //
 // Infinitely retry
 const maxRetries = 0
+const MigrateQuantity = 1
 
 type manager struct {
 	name string
@@ -52,6 +53,8 @@ type manager struct {
 	volumeExpandTaskQueue *common.TaskQueue
 
 	volumeMigrateTaskQueue *common.TaskQueue
+
+	volumeMigrateLimit chan struct{}
 
 	volumeSnapshotTaskQueue *common.TaskQueue
 
@@ -93,6 +96,7 @@ func New(name string, namespace string, cli client.Client, scheme *runtime.Schem
 		volumeTaskQueue:        common.NewTaskQueue("VolumeTask", maxRetries),
 		volumeExpandTaskQueue:  common.NewTaskQueue("VolumeExpandTask", maxRetries),
 		volumeMigrateTaskQueue: common.NewTaskQueue("VolumeMigrateTask", maxRetries),
+		volumeMigrateLimit:     make(chan struct{}, MigrateQuantity),
 		volumeConvertTaskQueue: common.NewTaskQueue("VolumeConvertTask", maxRetries),
 
 		volumeGroupMigrateTaskQueue:    common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
