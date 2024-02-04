@@ -29,12 +29,14 @@ func (m *manager) startVolumeMigrateTaskWorker(stopCh <-chan struct{}) {
 				break
 			}
 			if err := m.processVolumeMigrate(task); err != nil {
+				m.volumeMigrateLimit <- struct{}{}
 				m.logger.WithFields(log.Fields{"task": task, "attempts": m.volumeMigrateTaskQueue.NumRequeues(task), "error": err.Error()}).Error("Failed to process VolumeMigrate task, retry later")
 				m.volumeMigrateTaskQueue.AddRateLimited(task)
 			} else {
 				m.logger.WithFields(log.Fields{"task": task}).Debug("Completed a VolumeMigrate task.")
 				m.volumeMigrateTaskQueue.Forget(task)
 			}
+			m.volumeMigrateLimit <- struct{}{}
 			m.volumeMigrateTaskQueue.Done(task)
 		}
 	}()
@@ -119,6 +121,8 @@ func (m *manager) processVolumeMigrate(vmName string) error {
 }
 
 func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, vol *apisv1alpha1.LocalVolume, lvg *apisv1alpha1.LocalVolumeGroup) error {
+	//Limit the number of concurrent migrations
+	<-m.volumeMigrateLimit
 	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "spec": migrate.Spec})
 	logCtx.Debug("Submit a VolumeMigrate")
 
