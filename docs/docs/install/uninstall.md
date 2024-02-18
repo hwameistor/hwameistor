@@ -3,7 +3,7 @@ sidebar_position: 5
 sidebar_label: "Uninstall"
 ---
 
-# Uninstallation (For test purpose, not use for production)
+# Uninstall (For test purposes only, not for production use)
 
 To ensure data security, it is strongly recommended not to uninstall the HwameiStor system in a production environment.
 This section introduces two uninstallation scenarios for testing environments.
@@ -17,13 +17,13 @@ $ kubectl get cluster.hwameistor.io
 NAME             AGE
 cluster-sample   21m
 
-$ kubectl delete clusters.hwameistor.io  hwameistor-cluster
+$ kubectl delete clusters.hwameistor.io hwameistor-cluster
 ```
 
 Finally, all the HwameiStor's components (i.e. Pods) will be deleted. Check by:
 
-```console
-$ kubectl -n hwameistor get pod
+```bash
+kubectl -n hwameistor get pod
 ```
 
 ## Uninstall and delete data volumes
@@ -46,13 +46,13 @@ If you confirm to delete your data volumes and uninstall HwameiStor, perform the
 
    1. Delete HwameiStor components.
 
-      ```console
-      $ kubectl delete clusters.hwameistor.io  hwameistor-cluster
+      ```bash
+      kubectl delete clusters.hwameistor.io hwameistor-cluster
       ```
 
    2. Delete hwameistor namespace.
 
-      ```console
+      ```bash
       kubectl delete ns hwameistor
       ```
 
@@ -78,7 +78,8 @@ If you confirm to delete your data volumes and uninstall HwameiStor, perform the
       helm uninstall hwameistor-operator -n hwameistor
       ```
 
-3. Finally, you still need to clean up the LVM configuration on each node, and also data on the disks by tools like `wipefs`.
+3. Finally, you still need to clean up the LVM configuration on each node,
+   and also data on the disks by tools like [wipefs](https://man7.org/linux/man-pages/man8/wipefs.8.html).
 
    ```bash
    wipefs -a /dev/sdx
