@@ -5,7 +5,7 @@ sidebar_label: "查看系统状态"
 
 # 查看安装系统的状态
 
-此处，以三个节点的 kubernetes 集群为例，安装 HwameiStor 存储系统。
+此处，以三个节点的 Kubernetes 集群为例，安装 HwameiStor 存储系统。
 
 ```console
 $ kubectl get node
@@ -45,7 +45,6 @@ hwameistor-volume-evictor-5db99cf979-4674n                 1/1     Running   0  
 ```
 
 :::info
-
 `local-disk-manager` 和 `local-storage` 组件是以 `DaemonSets` 方式进行部署的，必须在每个节点上运行。
 :::
 

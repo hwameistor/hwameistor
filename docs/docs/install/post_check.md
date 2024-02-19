@@ -75,7 +75,7 @@ localvolumesnapshots                 lvs                          hwameistor.io/
 resizepolicies                                                    hwameistor.io/v1alpha1   false        ResizePolicy
 ```
 
-For the details about CRDs, please also refer to [CRDs](../apis.md).
+Please refer to [CRDs](../apis.md) for details.
 
 ## Check `LocalDiskNodes` and `localDisks`
 
