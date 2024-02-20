@@ -5,7 +5,7 @@ sidebar_label: "卸载"
 
 # 卸载 (仅用于测试环境)
 
-为保证数据安全，强烈建议不要卸载生产环境的 HwameiStor 系统。本章节介绍下列两种测试环境的卸载场景。
+为保证数据安全，强烈建议不要卸载生产环境的 HwameiStor 系统。本节介绍下列两种测试环境的卸载场景。
 
 ## 卸载但保留已有数据卷
 
@@ -16,13 +16,13 @@ $ kubectl get cluster.hwameistor.io
 NAME             AGE
 cluster-sample   21m
 
-$ kubectl delete clusters.hwameistor.io  hwameistor-cluster
+$ kubectl delete clusters.hwameistor.io hwameistor-cluster
 ```
 
 最终，所有的 HwameiStor 系统组件（Pods）将被删除。用下列命令检查，结果为空。
 
-```console
-$ kubectl -n hwameistor get pod
+```bash
+kubectl -n hwameistor get pod
 ```
 
 ## 卸载并删除已有数据卷
@@ -45,13 +45,13 @@ $ kubectl -n hwameistor get pod
 
    1. 删除 HwameiStor 组件。
 
-      ```console
-      $ kubectl delete clusters.hwameistor.io  hwameistor-cluster
+      ```bash
+      kubectl delete clusters.hwameistor.io hwameistor-cluster
       ```
       
    2. 删除 HwameiStor 系统空间。
 
-      ```console
+      ```bash
       kubectl delete ns hwameistor
       ```
 
@@ -77,7 +77,8 @@ $ kubectl -n hwameistor get pod
       helm uninstall hwameistor-operator -n hwameistor
       ```
 
-3. 最后，您仍然需要清理每个节点上的 LVM 配置，并采用额外的系统工具（例如 wipefs）清除磁盘上的所有数据。
+3. 最后，您仍然需要清理每个节点上的 LVM 配置，并采用额外的系统工具
+  （例如 [wipefs](https://man7.org/linux/man-pages/man8/wipefs.8.html)）清除磁盘上的所有数据。
 
    ```bash
    wipefs -a /dev/sdx

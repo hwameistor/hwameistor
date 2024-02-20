@@ -36,7 +36,7 @@ You can use hwameistor-operator to deploy and manage HwameiStor system.
    If no available clean disk provided, the operator will not create StorageClass automatically.
    Operator will claim disk automatically while installing, the available disks will be added into
    pool of LocalStorageNode. If available clean disk provided after installing, it's needed to apply
-   a LocalDiskClaim manually to added the disk into pool of LocalStorageNode. Once LocalStorageNode has
+   a LocalDiskClaim manually to add the disk into pool of LocalStorageNode. Once LocalStorageNode has
    any disk available in its pool, the operator will create StorageClass automatically.
    That is to say, no capacity, no StorageClass.
    :::
@@ -49,20 +49,22 @@ Optional installation parameters:
 
 - Disk Reserve
 
-  Available clean disk will be claimed and added into pool of LocalStorageNode by default.If you want to
-  reserve some disks for other use before installing,you can set diskReserveConfigurations by helm values.
+  Available clean disk will be claimed and added into pool of LocalStorageNode by default. If you want to
+  reserve some disks for other use before installing, you can set diskReserveConfigurations by helm values.
 
   Method 1:
 
   ```console
-  helm install hwameistor-operator hwameistor-operator/hwameistor-operator  -n hwameistor --create-namespace \
+  helm install hwameistor-operator hwameistor-operator/hwameistor-operator -n hwameistor --create-namespace \
   --set diskReserve\[0\].nodeName=node1 \
   --set diskReserve\[0\].devices={/dev/sdc\,/dev/sdd} \
   --set diskReserve\[1\].nodeName=node2 \
   --set diskReserve\[1\].devices={/dev/sdc\,/dev/sde}
   ```
 
-  This is a example to set diskReserveConfigurations by helm install --set,it may be hard to write --set options like that.If it's possible, we suggest write the diskReserveConfigurations values into a file.
+  This is a example to set diskReserveConfigurations by `helm install --set`, it may be hard to
+  write `--set` options like that. If it's possible, we suggest write the diskReserveConfigurations
+  values into a file.
 
   Method 2:
 
@@ -78,7 +80,8 @@ Optional installation parameters:
     - /dev/sde
   ```
 
-  For example, you write values like this into a file call diskReserve.yaml, you can apply the file when helm install.
+  For example, you write values like this into a file call diskReserve.yaml,
+  you can apply the file when running `helm install`.
 
   ```console
   helm install hwameistor-operator hwameistor-operator/hwameistor-operator -n hwameistor --create-namespace -f diskReserve.yaml
