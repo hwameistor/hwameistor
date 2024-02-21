@@ -110,17 +110,27 @@ func (m *linuxMounter) bindMount(devPath string, mountPoint string) error {
 }
 
 func (m *linuxMounter) Unmount(mountPoint string) error {
+	if exist, err := isPathExist(mountPoint); err != nil {
+		m.logger.WithError(err).Errorf("failed to check if mountPoint %s exist", mountPoint)
+		return err
+	} else if !exist {
+		m.logger.WithFields(log.Fields{"mountpoint": mountPoint}).Info("Already unmounted and deleted")
+		return nil
+	}
 
 	notMounted, err := m.isNotMountPoint(mountPoint)
 	if err != nil {
 		m.logger.WithFields(log.Fields{"mountpoint": mountPoint, "error": err.Error()}).Error("Failed to check mountpoint")
 		return err
 	}
-	if notMounted {
-		m.logger.WithFields(log.Fields{"mountpoint": mountPoint}).Info("Already unmounted")
-		return nil
+	if !notMounted {
+		if err = m.mounter.Unmount(mountPoint); err != nil {
+			m.logger.WithFields(log.Fields{"mountpoint": mountPoint}).WithError(err).Error("Failed to unmount")
+			return err
+		}
+		m.logger.WithFields(log.Fields{"mountpoint": mountPoint}).Info("Succeed to unmount")
 	}
-	return m.mounter.Unmount(mountPoint)
+	return removeFile(mountPoint)
 }
 
 func (m *linuxMounter) isNotMountPoint(mountPoint string) (bool, error) {
@@ -162,6 +172,14 @@ func (m *linuxMounter) GetDeviceMountPoints(devPath string) []string {
 	return mps
 }
 
+func isPathExist(pathname string) (bool, error) {
+	if _, err := os.Stat(pathname); err != nil {
+		return false, err
+	}
+	// return true when this path is file or directory
+	return true, nil
+}
+
 func makeDir(pathname string) error {
 	err := os.MkdirAll(pathname, os.FileMode(0777))
 	if err != nil && !os.IsExist(err) {
@@ -170,10 +188,18 @@ func makeDir(pathname string) error {
 	return nil
 }
 
+func removeDir(pathname string) error {
+	return os.RemoveAll(pathname)
+}
+
 func makeFile(pathname string) error {
 	f, err := os.OpenFile(pathname, os.O_CREATE, os.FileMode(0666))
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
 	return f.Close()
+}
+
+func removeFile(pathname string) error {
+	return os.Remove(pathname)
 }
