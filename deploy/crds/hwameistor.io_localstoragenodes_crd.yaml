@@ -22,6 +22,21 @@ spec:
       jsonPath: .status.state
       name: status
       type: string
+    - description: Free Capacity bytes in HDD Pool
+      jsonPath: .status.pools.LocalStorage_PoolHDD.freeCapacityBytes
+      name: PoolHDD FreeCap
+      priority: 1
+      type: integer
+    - description: Free Capacity bytes in SSD Pool
+      jsonPath: .status.pools.LocalStorage_PoolSSD.freeCapacityBytes
+      name: PoolSSD FreeCap
+      priority: 1
+      type: integer
+    - description: Free Capacity bytes in NVMe Pool
+      jsonPath: .status.pools.LocalStorage_PoolNVMe.freeCapacityBytes
+      name: PoolNVMe FreeCap
+      priority: 1
+      type: integer
     - jsonPath: .metadata.creationTimestamp
       name: age
       type: date
