@@ -163,6 +163,9 @@ type LocalDevice struct {
 // +kubebuilder:resource:path=localstoragenodes,scope=Cluster,shortName=lsn
 // +kubebuilder:printcolumn:name="ip",type=string,JSONPath=`.spec.storageIP`,description="IPv4 address"
 // +kubebuilder:printcolumn:name="status",type=string,JSONPath=`.status.state`,description="State of the Local Storage Node"
+// +kubebuilder:printcolumn:name="PoolHDD FreeCap",type=integer,JSONPath=`.status.pools.LocalStorage_PoolHDD.freeCapacityBytes`,description="Free Capacity bytes in HDD Pool",priority=1
+// +kubebuilder:printcolumn:name="PoolSSD FreeCap",type=integer,JSONPath=`.status.pools.LocalStorage_PoolSSD.freeCapacityBytes`,description="Free Capacity bytes in SSD Pool",priority=1
+// +kubebuilder:printcolumn:name="PoolNVMe FreeCap",type=integer,JSONPath=`.status.pools.LocalStorage_PoolNVMe.freeCapacityBytes`,description="Free Capacity bytes in NVMe Pool",priority=1
 // +kubebuilder:printcolumn:name="age",type=date,JSONPath=`.metadata.creationTimestamp`
 type LocalStorageNode struct {
 	metav1.TypeMeta   `json:",inline"`
