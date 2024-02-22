@@ -3,19 +3,16 @@ package controller
 import (
 	"context"
 	"fmt"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils/datacopy"
 	log "github.com/sirupsen/logrus"
 	"github.com/wxnacy/wgo/arrays"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
-
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
-	"github.com/hwameistor/hwameistor/pkg/local-storage/utils/datacopy"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (m *manager) startVolumeMigrateTaskWorker(stopCh <-chan struct{}) {
@@ -23,6 +20,7 @@ func (m *manager) startVolumeMigrateTaskWorker(stopCh <-chan struct{}) {
 	m.logger.Debug("VolumeMigrate Worker is working now")
 	go func() {
 		for {
+
 			task, shutdown := m.volumeMigrateTaskQueue.Get()
 			if shutdown {
 				m.logger.WithFields(log.Fields{"task": task}).Debug("Stop the VolumeMigrate worker")
@@ -66,7 +64,6 @@ func (m *manager) processVolumeMigrate(vmName string) error {
 		migrate.Status.State = apisv1alpha1.OperationStateToBeAborted
 		return m.apiClient.Status().Update(context.TODO(), migrate)
 	}
-
 	ctx := context.TODO()
 
 	vol := &apisv1alpha1.LocalVolume{}
@@ -149,6 +146,29 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 		migrate.Status.Message = "Can't migrate the unconvertable raw block volume"
 		m.apiClient.Status().Update(ctx, migrate)
 		return fmt.Errorf("can't migrate the unconvertable raw block volume")
+	}
+
+	lvmList := &apisv1alpha1.LocalVolumeMigrateList{}
+	if err := m.apiClient.List(context.Background(), lvmList); err != nil {
+		logCtx.WithError(err).Error("Failed to list VolumeMigrate from cache")
+		return err
+	}
+
+	var count int
+	for _, lvm := range lvmList.Items {
+		if lvm.Name != migrate.Name {
+			if lvm.Status.State == apisv1alpha1.OperationStateSubmitted ||
+				lvm.Status.State == apisv1alpha1.OperationStateMigrateAddReplica ||
+				lvm.Status.State == apisv1alpha1.OperationStateMigrateSyncReplica ||
+				lvm.Status.State == apisv1alpha1.OperationStateMigratePruneReplica {
+				count++
+			}
+		}
+	}
+	if count >= m.migrateConcurrentNumber {
+		migrate.Status.Message = "Waiting for other migration tasks to complete"
+		m.apiClient.Status().Update(ctx, migrate)
+		return fmt.Errorf("the number of concurrent migrations has been reached:%d", m.migrateConcurrentNumber)
 	}
 
 	if len(migrate.Status.TargetNode) == 0 {
@@ -405,7 +425,6 @@ func (m *manager) volumeMigrateCleanup(migrate *apisv1alpha1.LocalVolumeMigrate)
 			m.apiClient.Delete(ctx, cm)
 		}
 	}
-
 	return m.apiClient.Delete(ctx, migrate)
 }
 
