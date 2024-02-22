@@ -3,7 +3,7 @@ package csi
 import (
 	"fmt"
 
-	csi "github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -158,7 +158,7 @@ func (p *plugin) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublish
 		return resp, fmt.Errorf("invalid target path")
 	}
 
-	// umount the target path
+	// umount and delete the target path, more info see: #1322
 	return resp, p.mounter.Unmount(req.TargetPath)
 }
 
