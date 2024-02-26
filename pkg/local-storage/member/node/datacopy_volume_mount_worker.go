@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -87,9 +88,14 @@ func (m *manager) processSyncVolumeMount(lvName string) error {
 
 	if cm.Data[datacopy.SyncConfigSyncCompleteKey] == datacopy.SyncTrue {
 		m.logger.WithField("mountpoint", mountPoint).Debug("Trying to umount volume")
+
 		if err := m.mounter.Unmount(mountPoint); err != nil {
-			m.logger.WithField("mountpoint", mountPoint).WithError(err).Error("Failed to Unmount volume")
-			return err
+			if !os.IsNotExist(err) {
+				m.logger.WithField("mountpoint", mountPoint).WithError(err).Error("Failed to Unmount volume")
+				return err
+			} else {
+				logCtx.Debugf("mountPoint delete success:%s", mountPoint)
+			}
 		}
 
 		if m.name == sourceNodeName {
