@@ -10,16 +10,17 @@ type State string
 
 const (
 	// purpose of the following CRDs is for operational job
-	OperationStateSubmitted           State = "Submitted"
-	OperationStateMigrateAddReplica   State = "AddReplica"
-	OperationStateMigrateSyncReplica  State = "SyncReplica"
-	OperationStateMigratePruneReplica State = "PruneReplica"
-	OperationStateInProgress          State = "InProgress"
-	OperationStateCompleted           State = "Completed"
-	OperationStateToBeAborted         State = "ToBeAborted"
-	OperationStateAborting            State = "Cancelled"
-	OperationStateAborted             State = "Aborted"
-	OperationStateFailed              State = "Failed"
+	OperationStateSubmitted            State = "Submitted"
+	OperationStateMigrateAddReplica    State = "AddReplica"
+	OperationStateMigrateSyncReplica   State = "SyncReplica"
+	OperationStateMigrateVerifyReplica State = "VerifyReplica"
+	OperationStateMigratePruneReplica  State = "PruneReplica"
+	OperationStateInProgress           State = "InProgress"
+	OperationStateCompleted            State = "Completed"
+	OperationStateToBeAborted          State = "ToBeAborted"
+	OperationStateAborting             State = "Cancelled"
+	OperationStateAborted              State = "Aborted"
+	OperationStateFailed               State = "Failed"
 
 	VolumeStateToBeUnmount State = "ToBeMounted"
 	VolumeStateEmpty       State = ""
@@ -155,6 +156,9 @@ func StateConvert(state apisv1alpha1.State) State {
 
 	case apisv1alpha1.OperationStateMigrateSyncReplica:
 		return OperationStateMigrateSyncReplica
+
+	case apisv1alpha1.OperationStateMigrateVerifyReplica:
+		return OperationStateMigrateVerifyReplica
 
 	case apisv1alpha1.OperationStateMigratePruneReplica:
 		return OperationStateMigratePruneReplica

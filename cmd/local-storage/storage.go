@@ -22,6 +22,7 @@ import (
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/controller"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member"
+	localctrl "github.com/hwameistor/hwameistor/pkg/local-storage/member/controller"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils/datacopy"
 )
@@ -47,6 +48,7 @@ var (
 	haVolumeTotalCount = flag.Int("max-ha-volume-count", defaultHAVolumeTotalCount, "max HA volume count")
 	httpPort           = flag.Int("http-port", restServerDefaultPort, "HTTP port for REST server")
 	logLevel           = flag.Int("v", 4 /*Log Info*/, "number for the log level verbosity")
+	dataVerifyLevel    = flag.Int("data-verify", 1, "number for the verify type") //0 not 1 full 2 random
 )
 
 var BUILDVERSION, BUILDTIME, GOVERSION string
@@ -106,6 +108,8 @@ func main() {
 		log.WithFields(log.Fields{"namespace": *namespace}).Error("Invalid namespace")
 		os.Exit(1)
 	}
+
+	localctrl.DataVerifyLevel = *dataVerifyLevel
 
 	systemConfig, err := getSystemConfig()
 	if err != nil {

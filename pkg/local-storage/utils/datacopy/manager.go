@@ -4,6 +4,7 @@ package datacopy
 import (
 	"context"
 	"fmt"
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"path/filepath"
 	"time"
 
@@ -78,11 +79,10 @@ func (dcm *DataCopyManager) Run() {
 	dcm.statusGenerator.Run()
 }
 
-func (dcm *DataCopyManager) Sync(jobName, srcNodeName, dstNodeName, volName string) error {
+func (dcm *DataCopyManager) Sync(jobName, volName string, migrate *apisv1alpha1.LocalVolumeMigrate) error {
 	logCtx := logger.WithFields(log.Fields{"job": jobName, "volume": volName})
 	logCtx.Debug("Preparing the resources for data sync ...")
-
-	if err := dcm.prepareForSync(jobName, srcNodeName, dstNodeName, volName); err != nil {
+	if err := dcm.prepareForSync(jobName, migrate.Spec.SourceNode, migrate.Status.TargetNode, volName); err != nil {
 		return err
 	}
 
@@ -108,7 +108,7 @@ func (dcm *DataCopyManager) Sync(jobName, srcNodeName, dstNodeName, volName stri
 	if err := dcm.k8sControllerClient.Get(ctx, types.NamespacedName{Namespace: dcm.workingNamespace, Name: jobName}, syncJob); err != nil {
 		if errors.IsNotFound(err) {
 			logCtx.WithField("Job", jobName).Info("No job is created to sync replicas, create one ...")
-			if err := dcm.syncer.StartSync(jobName, volName, srcNodeName, ""); err != nil {
+			if err := dcm.syncer.StartSync(jobName, volName, migrate.Spec.SourceNode, ""); err != nil {
 				logCtx.WithField("LocalVolume", volName).WithError(err).Error("Failed to start a job to sync replicas")
 				return fmt.Errorf("failed to start a job to sync replicas for volume %s", volName)
 			}
@@ -129,12 +129,15 @@ func (dcm *DataCopyManager) Sync(jobName, srcNodeName, dstNodeName, volName stri
 				"CompleteTime": syncJob.Status.CompletionTime.String(),
 			}).Debug("The replicas have already been synchronized successfully")
 
-			cm.Data[SyncConfigSyncCompleteKey] = SyncTrue
-			if err := dcm.k8sControllerClient.Update(ctx, cm); err != nil {
-				logCtx.WithField("configmap", cmName).WithError(err).Error("Failed to update sync configmap")
-				return err
+			if migrate.Status.VerifyType > 0 {
+				cm.Data[SyncConfigSyncVerifyKey] = "wait"
+				if err := dcm.k8sControllerClient.Update(ctx, cm); err != nil {
+					logCtx.WithField("configmap", cmName).WithError(err).Error("Failed to update sync configmap")
+					return err
+				}
+				logCtx.Debug("Sync has already been executed successfully,waiting verify...")
+
 			}
-			// remove the finalizer will release the job
 			syncJob.Finalizers = []string{}
 			if err := dcm.k8sControllerClient.Update(ctx, syncJob); err != nil {
 				logCtx.WithField("Job", syncJob).WithError(err).Error("Failed to remove finalizer")
@@ -292,4 +295,55 @@ func (dcm *DataCopyManager) RegisterRelatedJob(jobName string, resultCh chan *Da
 
 func (dcm *DataCopyManager) DeregisterRelatedJob(jobName string) {
 	delete(dcm.statusGenerator.relatedJobWithResultCh, jobName)
+}
+
+func (dcm *DataCopyManager) Verify(volName string, pvcName string) (bool, error) {
+	logCtx := logger.WithFields(log.Fields{"volume": volName})
+	logCtx.Debug("Handle data verification ...")
+	ctx := context.TODO()
+	verfySuccess := false
+
+	cmName := GetConfigMapName(SyncConfigMapName, volName)
+	cm := &corev1.ConfigMap{}
+	if err := dcm.k8sControllerClient.Get(ctx, types.NamespacedName{Namespace: dcm.workingNamespace, Name: cmName}, cm); err != nil {
+		logCtx.WithField("configmap", cmName).Error("Not found the data sync configmap")
+		return verfySuccess, err
+	}
+	if verifyState := cm.Data[SyncConfigSyncVerifyKey]; verifyState == SyncVerifyWait {
+		cm.Data[SyncConfigSyncVerifyKey] = SyncVerifyStart
+		if err := dcm.k8sControllerClient.Update(ctx, cm); err != nil {
+			logCtx.WithField("configmap", cmName).WithError(err).Error("Failed to update sync configmap")
+			return verfySuccess, err
+		}
+		return verfySuccess, fmt.Errorf("verification i still in progress")
+	} else if verifyState != SyncVerifyWait {
+		sourceDataHash, ok := cm.Data[SyncConfigSourceNodeDataHash]
+		if !ok {
+			logCtx.Debug("Wait for source data verification to complete ...")
+			return verfySuccess, fmt.Errorf("data verification is not complete")
+		}
+		targetDataHash, ok := cm.Data[SyncConfigTargetNodeDataHash]
+		if !ok {
+			logCtx.Debug("Wait for target data verification to complete ...")
+			return verfySuccess, fmt.Errorf("data verification is not complete")
+		}
+
+		if sourceDataHash == targetDataHash {
+			cm.Data[SyncConfigSyncCompleteKey] = SyncTrue
+			if err := dcm.k8sControllerClient.Update(ctx, cm); err != nil {
+				logCtx.WithField("configmap", cmName).WithError(err).Error("Failed to update sync configmap")
+				return verfySuccess, err
+			}
+			verfySuccess = true
+		} else {
+			logCtx.Debugf("data verify fail! SyncConfigSourceNodeDataHash :%s , SyncConfigTargetNodeDataHash :%s", sourceDataHash, sourceDataHash)
+			cm.Data[SyncConfigSyncVerifyKey] = SyncVerifyFail
+			if err := dcm.k8sControllerClient.Update(ctx, cm); err != nil {
+				logCtx.WithField("configmap", cmName).WithError(err).Error("Failed to update sync configmap")
+				return verfySuccess, err
+			}
+		}
+	}
+
+	return verfySuccess, nil
 }

@@ -18,6 +18,8 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils/datacopy"
 )
 
+var DataVerifyLevel = 0
+
 func (m *manager) startVolumeMigrateTaskWorker(stopCh <-chan struct{}) {
 
 	m.logger.Debug("VolumeMigrate Worker is working now")
@@ -93,8 +95,10 @@ func (m *manager) processVolumeMigrate(vmName string) error {
 		return err
 	}
 
-	// state chain: (empty) -> Submitted -> Start -> InProgress -> Completed
+	log.Debugf("migrate.Status.VerifyType :%d", DataVerifyLevel)
+	migrate.Status.VerifyType = DataVerifyLevel
 
+	// state chain: (empty) -> Submitted -> Start -> InProgress -> Completed
 	logCtx = m.logger.WithFields(log.Fields{"migration": migrate.Name, "spec": migrate.Spec, "status": migrate.Status})
 	logCtx.Debug("Starting to process a VolumeMigrate task")
 	switch migrate.Status.State {
@@ -106,6 +110,8 @@ func (m *manager) processVolumeMigrate(vmName string) error {
 		return m.volumeMigrateAddReplica(migrate, vol)
 	case apisv1alpha1.OperationStateMigrateSyncReplica:
 		return m.volumeMigrateSyncReplica(migrate, vol)
+	case apisv1alpha1.OperationStateMigrateVerifyReplica:
+		return m.volumeMigrateVerifyReplica(migrate, vol)
 	case apisv1alpha1.OperationStateMigratePruneReplica:
 		return m.volumeMigratePruneReplica(migrate, vol, lvg)
 	case apisv1alpha1.OperationStateToBeAborted:
@@ -189,6 +195,7 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 			migrate.Status.Volumes = append(migrate.Status.Volumes, volList[i].Name)
 		}
 	}
+	//migrate.Status.VerifyType = DataVerifyLevel
 	migrate.Status.OriginalReplicaNumber = vol.Spec.ReplicaNumber
 	migrate.Status.State = apisv1alpha1.OperationStateSubmitted
 	return m.apiClient.Status().Update(ctx, migrate)
@@ -290,7 +297,12 @@ func (m *manager) volumeMigrateSyncReplica(migrate *apisv1alpha1.LocalVolumeMigr
 			return err
 		}
 	}
-	migrate.Status.State = apisv1alpha1.OperationStateMigratePruneReplica
+	log.Debugf("migrate.status.VerifyType: %d", migrate.Status.VerifyType)
+	if migrate.Status.VerifyType > 0 {
+		migrate.Status.State = apisv1alpha1.OperationStateMigrateVerifyReplica
+	} else {
+		migrate.Status.State = apisv1alpha1.OperationStateMigratePruneReplica
+	}
 	return m.apiClient.Status().Update(ctx, migrate)
 }
 
@@ -299,7 +311,69 @@ func (m *manager) syncReplica(migrate *apisv1alpha1.LocalVolumeMigrate, vol *api
 	logCtx.Debug("Preparing the resources for data sync ...")
 
 	jobName := generateJobName(migrate.Name, vol.Spec.PersistentVolumeClaimName)
-	return m.dataCopyManager.Sync(jobName, migrate.Spec.SourceNode, migrate.Status.TargetNode, vol.Name)
+	return m.dataCopyManager.Sync(jobName, vol.Name, migrate)
+}
+
+func (m *manager) volumeMigrateVerifyReplica(migrate *apisv1alpha1.LocalVolumeMigrate, vol *apisv1alpha1.LocalVolume) error {
+	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "spec": migrate.Spec, "status": migrate.Status})
+	logCtx.Debug("Start verify replicas")
+
+	ctx := context.TODO()
+	var verifys []bool
+	for _, volName := range migrate.Status.Volumes {
+		vol := &apisv1alpha1.LocalVolume{}
+		if err := m.apiClient.Get(ctx, types.NamespacedName{Name: volName}, vol); err != nil {
+			return err
+		}
+
+		if vol.Spec.Convertible {
+			continue
+		}
+		// non-convertible volume
+		v, err := m.verifyReplica(migrate, vol)
+		if err != nil {
+			logCtx.WithField("LocalVolume", volName).WithError(err).Error("Failed to synchronize replicas")
+			migrate.Status.Message = err.Error()
+			m.apiClient.Status().Update(ctx, migrate)
+			return err
+		}
+		verifys = append(verifys, v)
+
+	}
+	allTrue := true
+	for _, value := range verifys {
+		if !value {
+			allTrue = false
+			break
+		}
+	}
+	if allTrue {
+		migrate.Status.State = apisv1alpha1.OperationStateMigratePruneReplica
+	} else {
+		migrate.Status.State = apisv1alpha1.OperationStateMigrateSyncReplica
+	}
+	return m.apiClient.Status().Update(ctx, migrate)
+}
+
+func (m *manager) verifyReplica(migrate *apisv1alpha1.LocalVolumeMigrate, vol *apisv1alpha1.LocalVolume) (v bool, err error) {
+	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "volume": vol.Name})
+	logCtx.Debug("start the resources for data verify ...")
+	ctx := context.TODO()
+	cmName := datacopy.GetConfigMapName(datacopy.SyncConfigMapName, vol.Name)
+	cm := &corev1.ConfigMap{}
+	if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: cmName}, cm); err != nil {
+		logCtx.WithField("configmap", cmName).Error("Not found the data sync configmap")
+		return false, err
+	}
+
+	verifySuccess, err := m.dataCopyManager.Verify(vol.Name, vol.Spec.PersistentVolumeClaimName)
+	if err != nil {
+		logCtx.WithField("LocalVolume", vol.Name).WithError(err).Error("Failed to verify replicas")
+		migrate.Status.Message = err.Error()
+		m.apiClient.Status().Update(ctx, migrate)
+		return verifySuccess, err
+	}
+	return verifySuccess, nil
 }
 
 func (m *manager) volumeMigratePruneReplica(migrate *apisv1alpha1.LocalVolumeMigrate, vol *apisv1alpha1.LocalVolume, lvg *apisv1alpha1.LocalVolumeGroup) error {

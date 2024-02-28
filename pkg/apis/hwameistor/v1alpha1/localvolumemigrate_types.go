@@ -55,6 +55,8 @@ type LocalVolumeMigrateStatus struct {
 	State State `json:"state,omitempty"`
 	// error message to describe some states
 	Message string `json:"message,omitempty"`
+
+	VerifyType int `json:"needVerify,omitempty"`
 }
 
 // +genclient

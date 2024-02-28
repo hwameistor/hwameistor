@@ -23,14 +23,19 @@ const (
 	SyncConfigVolumeNameKey         = "localVolume"
 	SyncConfigSourceNodeReadyKey    = "sourceReady"
 	SyncConfigTargetNodeReadyKey    = "targetReady"
+	SyncConfigSourceNodeDataHash    = "sourceDataHash"
+	SyncConfigTargetNodeDataHash    = "targetDataHash"
 	SyncConfigSourceNodeCompleteKey = "sourceCompleted"
 	SyncConfigTargetNodeCompleteKey = "targetCompleted"
 	SyncConfigSyncCompleteKey       = "syncCompleted"
+	SyncConfigSyncVerifyKey         = "syncVerify"
 
-	SyncTrue  string = "yes"
-	SyncFalse string = "no"
-
-	SyncJobFinalizer = "hwameistor.io/sync-job-protect"
+	SyncTrue         string = "yes"
+	SyncFalse        string = "no"
+	SyncVerifyStart  string = "start"
+	SyncVerifyFail   string = "fail"
+	SyncVerifyWait   string = "wait"
+	SyncJobFinalizer        = "hwameistor.io/sync-job-protect"
 
 	SyncToolJuiceSync = "juicesync"
 )
