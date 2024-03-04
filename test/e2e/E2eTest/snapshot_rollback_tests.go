@@ -119,7 +119,6 @@ var _ = ginkgo.Describe("snapshot rollback test ", ginkgo.Label("periodCheck"), 
 							},
 						},
 						Spec: corev1.PodSpec{
-							SchedulerName: "hwameistor-scheduler",
 							Containers: []corev1.Container{
 								{
 									Name:  "web",

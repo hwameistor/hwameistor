@@ -118,7 +118,6 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 							},
 						},
 						Spec: corev1.PodSpec{
-							SchedulerName: "hwameistor-scheduler",
 							Affinity: &corev1.Affinity{
 								NodeAffinity: &corev1.NodeAffinity{
 									RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
