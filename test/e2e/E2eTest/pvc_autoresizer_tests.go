@@ -116,7 +116,6 @@ var _ = ginkgo.Describe("pvc autoresize test", ginkgo.Label("pvc"), func() {
 							},
 						},
 						Spec: corev1.PodSpec{
-							SchedulerName: "hwameistor-scheduler",
 							Containers: []corev1.Container{
 								{
 									Name:  "web",
