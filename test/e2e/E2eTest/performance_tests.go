@@ -120,7 +120,6 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 							},
 						},
 						Spec: corev1.PodSpec{
-							SchedulerName: "hwameistor-scheduler",
 							Containers: []corev1.Container{
 								{
 									Name:  "web",

@@ -21,7 +21,7 @@ import (
 	"time"
 )
 
-var _ = ginkgo.Describe("apiserver test", ginkgo.Label("api"), func() {
+var _ = ginkgo.Describe("apiserver test", ginkgo.Label("api-no-run"), func() {
 	var f *framework.Framework
 	var client ctrlclient.Client
 	ctx := context.TODO()

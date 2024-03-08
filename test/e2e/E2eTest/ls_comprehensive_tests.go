@@ -545,7 +545,6 @@ var _ = ginkgo.Describe("comprehensive test", ginkgo.Label("periodCheck"), func(
 							},
 						},
 						Spec: corev1.PodSpec{
-							SchedulerName: "hwameistor-scheduler",
 							Containers: []corev1.Container{
 								{
 									Name:  "web",

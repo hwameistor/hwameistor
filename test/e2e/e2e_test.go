@@ -9,6 +9,7 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 
+	_ "github.com/hwameistor/hwameistor/test/e2e/API_Performance_Test"
 	_ "github.com/hwameistor/hwameistor/test/e2e/E2eTest"
 	_ "github.com/hwameistor/hwameistor/test/e2e/adaptation_test"
 )

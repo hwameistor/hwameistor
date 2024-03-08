@@ -90,8 +90,6 @@ build_ls_image:
 	@echo "Build local-storage image ${LS_IMAGE_NAME}:${IMAGE_TAG}"
 	${DOCKER_MAKE_CMD} make compile_ls
 	${DOCKER_BUILDX_CMD_AMD64} -t ${LS_IMAGE_NAME}:${IMAGE_TAG} -f ${LS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-	#docker build -t ${LS_IMAGE_NAME}:${IMAGE_TAG} -f ${LS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
 
 .PHONY: build_ls_image_arm64
 build_ls_image_arm64:

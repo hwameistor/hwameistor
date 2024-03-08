@@ -117,7 +117,6 @@ var _ = ginkgo.Describe("snapshot restore test ", ginkgo.Label("pvc"), func() {
 							},
 						},
 						Spec: corev1.PodSpec{
-							SchedulerName: "hwameistor-scheduler",
 							Containers: []corev1.Container{
 								{
 									Name:  "web",
@@ -432,7 +431,6 @@ var _ = ginkgo.Describe("snapshot restore test ", ginkgo.Label("pvc"), func() {
 							},
 						},
 						Spec: corev1.PodSpec{
-							SchedulerName: "hwameistor-scheduler",
 							Containers: []corev1.Container{
 								{
 									Name:  "web",

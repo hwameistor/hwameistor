@@ -116,7 +116,6 @@ var _ = ginkgo.Describe("pr test ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), func
 							},
 						},
 						Spec: corev1.PodSpec{
-							SchedulerName: "hwameistor-scheduler",
 							Containers: []corev1.Container{
 								{
 									Name:  "web",

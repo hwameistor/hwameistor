@@ -124,7 +124,6 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.26"), fun
 							},
 						},
 						Spec: corev1.PodSpec{
-							SchedulerName: "hwameistor-scheduler",
 							Containers: []corev1.Container{
 								{
 									Name:  "web",

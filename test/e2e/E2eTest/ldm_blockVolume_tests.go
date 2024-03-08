@@ -113,7 +113,6 @@ var _ = ginkgo.Describe("block volume test", ginkgo.Label("periodCheck"), func()
 							},
 						},
 						Spec: corev1.PodSpec{
-							SchedulerName: "hwameistor-scheduler",
 							Containers: []corev1.Container{
 								{
 									Name:  "web",

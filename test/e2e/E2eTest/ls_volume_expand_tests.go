@@ -112,7 +112,6 @@ var _ = ginkgo.Describe("localstorage expand volume test", ginkgo.Label("periodC
 							},
 						},
 						Spec: corev1.PodSpec{
-							SchedulerName: "hwameistor-scheduler",
 							Containers: []corev1.Container{
 								{
 									Name:  "web",
