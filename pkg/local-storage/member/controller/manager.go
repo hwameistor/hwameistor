@@ -28,6 +28,8 @@ import (
 // Infinitely retry
 const maxRetries = 0
 
+var MigrateConcurrentNumber = 1
+
 type manager struct {
 	name string
 
@@ -52,6 +54,8 @@ type manager struct {
 	volumeExpandTaskQueue *common.TaskQueue
 
 	volumeMigrateTaskQueue *common.TaskQueue
+
+	migrateConcurrentNumber int
 
 	volumeSnapshotTaskQueue *common.TaskQueue
 
@@ -78,6 +82,10 @@ type manager struct {
 func New(name string, namespace string, cli client.Client, scheme *runtime.Scheme, informersCache runtimecache.Cache, systemConfig apisv1alpha1.SystemConfig) (apis.ControllerManager, error) {
 	dataCopyStatusCh := make(chan *datacopyutil.DataCopyStatus, 100)
 	dcm, _ := datacopyutil.NewDataCopyManager(context.TODO(), systemConfig.SyncToolName, "", cli, dataCopyStatusCh, namespace)
+	//ch := make(chan struct{}, MigrateQuantity)
+	//for i := 0; i < MigrateQuantity; i++ {
+	//	ch <- struct{}{}
+	//}
 	return &manager{
 		name:               name,
 		namespace:          namespace,
@@ -90,10 +98,11 @@ func New(name string, namespace string, cli client.Client, scheme *runtime.Schem
 		nodeTaskQueue:    common.NewTaskQueue("NodeTask", maxRetries),
 		k8sNodeTaskQueue: common.NewTaskQueue("K8sNodeTask", maxRetries),
 
-		volumeTaskQueue:        common.NewTaskQueue("VolumeTask", maxRetries),
-		volumeExpandTaskQueue:  common.NewTaskQueue("VolumeExpandTask", maxRetries),
-		volumeMigrateTaskQueue: common.NewTaskQueue("VolumeMigrateTask", maxRetries),
-		volumeConvertTaskQueue: common.NewTaskQueue("VolumeConvertTask", maxRetries),
+		volumeTaskQueue:         common.NewTaskQueue("VolumeTask", maxRetries),
+		volumeExpandTaskQueue:   common.NewTaskQueue("VolumeExpandTask", maxRetries),
+		volumeMigrateTaskQueue:  common.NewTaskQueue("VolumeMigrateTask", maxRetries),
+		migrateConcurrentNumber: MigrateConcurrentNumber,
+		volumeConvertTaskQueue:  common.NewTaskQueue("VolumeConvertTask", maxRetries),
 
 		volumeGroupMigrateTaskQueue:    common.NewTaskQueue("VolumeGroupMigrateTask", maxRetries),
 		volumeGroupConvertTaskQueue:    common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
