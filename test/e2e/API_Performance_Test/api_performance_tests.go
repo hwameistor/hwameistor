@@ -386,7 +386,7 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("api"), func()
 				logrus.Error(err)
 			}
 			if result1 == result2 {
-				logrus.Printf(result1)
+				logrus.Printf("test pass")
 			} else {
 				logrus.Printf("error", result1)
 			}
