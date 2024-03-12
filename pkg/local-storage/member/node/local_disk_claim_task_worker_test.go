@@ -64,7 +64,7 @@ func Test_manager_getLocalDiskByName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -139,7 +139,7 @@ func Test_manager_getLocalDisksByDiskRefs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -218,7 +218,7 @@ func Test_manager_getLocalDisksByLocalDiskClaim(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -297,7 +297,7 @@ func Test_manager_getLocalDisksMapByLocalDiskClaim(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -376,7 +376,7 @@ func Test_manager_listAllAvailableLocalDisksByLocalClaimDisk(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -455,7 +455,7 @@ func Test_manager_listAllInUseLocalDisksByLocalClaimDisk(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -534,7 +534,7 @@ func Test_manager_listLocalDisksByLocalDiskClaim(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -612,7 +612,7 @@ func Test_manager_processLocalDiskClaim(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -685,7 +685,7 @@ func Test_manager_processLocalDiskClaimBound(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},

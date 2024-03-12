@@ -242,3 +242,28 @@ func TouchFile(filepath string) error {
 func GetSnapshotRestoreNameByVolume(volumeName string) string {
 	return fmt.Sprintf("snaprestore-%s", volumeName)
 }
+
+// GetHostName returns hostname where this pod is attached
+func GetHostName() (string, error) {
+	hostFile := "/etc/host/hostname"
+	if _, err := os.Stat(hostFile); err != nil {
+		return "", err
+	}
+
+	var buf [512]byte // enough for a hostname(usually 64 characters)
+	f, err := os.Open(hostFile)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	n, err := f.Read(buf[:])
+	if err != nil {
+		return "", err
+	}
+
+	if n > 0 && buf[n-1] == '\n' {
+		n--
+	}
+	return string(buf[:n]), nil
+}

@@ -35,7 +35,9 @@ func newMember() localapis.LocalStorageMember {
 
 // Member is struct of local storage node
 type localStorageMember struct {
-	name string
+	nodeName string
+
+	hostName string
 
 	version string
 
@@ -60,9 +62,10 @@ type localStorageMember struct {
 	recorder record.EventRecorder
 }
 
-func (m *localStorageMember) ConfigureBase(name string, namespace string, systemConfig apisv1alpha1.SystemConfig,
+func (m *localStorageMember) ConfigureBase(nodeName string, hostName string, namespace string, systemConfig apisv1alpha1.SystemConfig,
 	cli client.Client, informersCache cache.Cache, recorder record.EventRecorder) localapis.LocalStorageMember {
-	m.name = name
+	m.nodeName = nodeName
+	m.hostName = hostName
 	m.version = localapis.Version
 	m.namespace = namespace
 	m.apiClient = cli
@@ -75,7 +78,7 @@ func (m *localStorageMember) ConfigureBase(name string, namespace string, system
 func (m *localStorageMember) ConfigureNode(scheme *runtime.Scheme) localapis.LocalStorageMember {
 	if m.nodeManager == nil {
 		var err error
-		m.nodeManager, err = localnode.New(m.name, m.namespace, m.apiClient, m.informersCache, m.systemConfig, scheme, m.recorder)
+		m.nodeManager, err = localnode.New(m.nodeName, m.hostName, m.namespace, m.apiClient, m.informersCache, m.systemConfig, scheme, m.recorder)
 		if err != nil {
 			panic(err)
 		}
@@ -87,7 +90,7 @@ func (m *localStorageMember) ConfigureNode(scheme *runtime.Scheme) localapis.Loc
 func (m *localStorageMember) ConfigureController(scheme *runtime.Scheme) localapis.LocalStorageMember {
 	if m.controller == nil {
 		var err error
-		m.controller, err = localctrl.New(m.name, m.namespace, m.apiClient, scheme, m.informersCache, m.systemConfig)
+		m.controller, err = localctrl.New(m.nodeName, m.namespace, m.apiClient, scheme, m.informersCache, m.systemConfig)
 		if err != nil {
 			panic(err)
 		}
@@ -98,7 +101,7 @@ func (m *localStorageMember) ConfigureController(scheme *runtime.Scheme) localap
 
 func (m *localStorageMember) ConfigureCSIDriver(driverName string, sockAddr string) localapis.LocalStorageMember {
 	if m.csiDriver == nil {
-		m.csiDriver = localcsi.New(m.name, m.namespace, driverName, sockAddr, m, m.apiClient)
+		m.csiDriver = localcsi.New(m.nodeName, m.namespace, driverName, sockAddr, m, m.apiClient)
 		m.csiDriverName = driverName
 	}
 
@@ -107,7 +110,7 @@ func (m *localStorageMember) ConfigureCSIDriver(driverName string, sockAddr stri
 
 func (m *localStorageMember) ConfigureRESTServer(httpPort int) localapis.LocalStorageMember {
 	if m.restServer == nil {
-		m.restServer = localrest.New(m.name, m.namespace, httpPort, m, m.apiClient)
+		m.restServer = localrest.New(m.nodeName, m.namespace, httpPort, m, m.apiClient)
 	}
 
 	return m
@@ -138,7 +141,7 @@ func (m *localStorageMember) Node() localapis.NodeManager {
 }
 
 func (m *localStorageMember) Name() string {
-	return m.name
+	return m.nodeName
 }
 
 func (m *localStorageMember) Version() string {

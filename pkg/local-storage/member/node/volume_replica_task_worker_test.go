@@ -69,7 +69,7 @@ func Test_manager_processVolumeReplica(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -143,7 +143,7 @@ func Test_manager_processVolumeReplicaCheck(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -217,7 +217,7 @@ func Test_manager_processVolumeReplicaCleanup(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -291,7 +291,7 @@ func Test_manager_processVolumeReplicaCreate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -365,7 +365,7 @@ func Test_manager_processVolumeReplicaDelete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},
@@ -439,7 +439,7 @@ func Test_manager_processVolumeReplicaSubmit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &manager{
-				name:                    fakeManagerName,
+				nodeName:                fakeManagerName,
 				namespace:               fakeNamespace,
 				apiClient:               client,
 				replicaRecords:          map[string]string{},

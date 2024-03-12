@@ -157,10 +157,11 @@ func (s *scheduler) ConfigureVolumeOnAdditionalNodes(vol *apisv1alpha1.LocalVolu
 		replica := apisv1alpha1.VolumeReplica{
 			ID:       freeIDs[nodeIDIndex],
 			Hostname: nodes[nodeIndex].Spec.HostName,
+			NodeName: nodes[nodeIndex].Name,
 			IP:       nodes[nodeIndex].Spec.StorageIP,
 			Primary:  false,
 		}
-		if len(vol.Spec.Accessibility.Nodes) > 0 && replica.Hostname == vol.Spec.Accessibility.Nodes[0] {
+		if len(vol.Spec.Accessibility.Nodes) > 0 && replica.NodeName == vol.Spec.Accessibility.Nodes[0] {
 			replica.Primary = true
 		}
 		conf.Replicas = append(conf.Replicas, replica)

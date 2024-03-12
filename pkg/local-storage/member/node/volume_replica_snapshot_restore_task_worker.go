@@ -58,7 +58,7 @@ func (m *manager) processVolumeReplicaSnapshotRestore(restoreName string) error 
 		return m.apiClient.Status().Update(context.TODO(), replicaSnapshotRestore)
 	}
 
-	// log with namespace/name is enough
+	// log with namespace/nodeName is enough
 	logCtx = m.logger.WithFields(log.Fields{"TargetVolume": replicaSnapshotRestore.Spec.TargetVolume, "SnapshotRestore": replicaSnapshotRestore.Name, "Spec": replicaSnapshotRestore.Spec, "Status": replicaSnapshotRestore.Status})
 	logCtx.Debug("Starting to process a VolumeReplicaSnapshotRestore")
 

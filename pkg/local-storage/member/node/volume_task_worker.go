@@ -59,7 +59,7 @@ func (m *manager) processVolumeReplicaTaskAssignment(volName string) error {
 	}
 
 	for _, replicaTask := range vol.Spec.Config.Replicas {
-		if replicaTask.Hostname != m.name {
+		if replicaTask.Hostname != m.nodeName {
 			continue
 		}
 		// found my assignment
@@ -108,7 +108,7 @@ func (m *manager) createVolumeReplica(vol *apisv1alpha1.LocalVolume) error {
 			PoolName:              vol.Spec.PoolName,
 			RequiredCapacityBytes: vol.Spec.RequiredCapacityBytes,
 			VolumeQoS:             vol.Spec.VolumeQoS,
-			NodeName:              m.name,
+			NodeName:              m.nodeName,
 		},
 	}
 

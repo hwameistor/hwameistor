@@ -40,7 +40,9 @@ const (
 )
 
 type manager struct {
-	name string
+	nodeName string
+
+	hostName string
 
 	namespace string
 
@@ -94,19 +96,19 @@ type manager struct {
 }
 
 // New node manager
-func New(name string, namespace string, cli client.Client, informersCache runtimecache.Cache, config apisv1alpha1.SystemConfig,
+func New(nodeName string, hostName string, namespace string, cli client.Client, informersCache runtimecache.Cache, config apisv1alpha1.SystemConfig,
 	scheme *runtime.Scheme, recorder record.EventRecorder) (apis.NodeManager, error) {
-	configManager, err := NewConfigManager(name, config, cli)
+	configManager, err := NewConfigManager(nodeName, config, cli)
 	if err != nil {
 		return nil, err
 	}
-	volumeQoSManager, err := qos.NewVolumeQoSManager(name, cli)
+	volumeQoSManager, err := qos.NewVolumeQoSManager(nodeName, cli)
 	if err != nil {
 		return nil, err
 	}
 
 	return &manager{
-		name:                                  name,
+		nodeName:                              nodeName,
 		namespace:                             namespace,
 		apiClient:                             cli,
 		informersCache:                        informersCache,
@@ -164,7 +166,7 @@ func (m *manager) Run(stopCh <-chan struct{}) {
 	go m.configManager.Run(stopCh)
 
 	// move disk health check out, as a separate process
-	//go healths.NewDiskHealthManager(m.name, m.apiClient).Run(stopCh)
+	//go healths.NewDiskHealthManager(m.nodeName, m.apiClient).Run(stopCh)
 }
 
 /*
@@ -209,7 +211,7 @@ func (m *manager) initCache() {
 		m.logger.WithError(err).Fatal("Failed to list replicas")
 	}
 	for _, replica := range replicaList.Items {
-		if replica.Spec.NodeName == m.name {
+		if replica.Spec.NodeName == m.nodeName {
 			m.replicaRecords[replica.Spec.VolumeName] = replica.Name
 		}
 	}
@@ -221,7 +223,7 @@ func (m *manager) initCache() {
 		m.logger.WithError(err).Fatal("Failed to list replicas")
 	}
 	for _, replicaSnapshot := range replicaSnapshotList.Items {
-		if replicaSnapshot.Spec.NodeName == m.name {
+		if replicaSnapshot.Spec.NodeName == m.nodeName {
 			m.replicaSnapshotsRecords[replicaSnapshot.Spec.VolumeSnapshotName] = replicaSnapshot.Name
 		}
 	}
@@ -362,7 +364,7 @@ func (m *manager) handleVolumeReplicaSnapshotUpdateEvent(oldObj, newObj interfac
 
 func (m *manager) handleVolumeReplicaSnapshotAddEvent(newObject interface{}) {
 	volumeReplicaSnapshot, ok := newObject.(*apisv1alpha1.LocalVolumeReplicaSnapshot)
-	if !ok || volumeReplicaSnapshot.Spec.NodeName != m.name {
+	if !ok || volumeReplicaSnapshot.Spec.NodeName != m.nodeName {
 		return
 	}
 	m.volumeReplicaSnapshotTaskQueue.Add(volumeReplicaSnapshot.Name)
@@ -379,27 +381,27 @@ func (m *manager) TakeVolumeReplicaTaskAssignment(vol *apisv1alpha1.LocalVolume)
 }
 
 func (m *manager) ReconcileVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) {
-	if replica.Spec.NodeName == m.name {
+	if replica.Spec.NodeName == m.nodeName {
 		m.volumeReplicaTaskQueue.Add(replica.Name)
 	}
 }
 
 func (m *manager) register() {
 	var nodeConfig *apisv1alpha1.NodeConfig
-	logCtx := m.logger.WithFields(log.Fields{"node": m.name})
+	logCtx := m.logger.WithFields(log.Fields{"node": m.nodeName})
 	logCtx.Debug("Registering node into cluster")
 	k8sNode := &corev1.Node{}
-	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: m.name}, k8sNode); err != nil {
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: m.nodeName}, k8sNode); err != nil {
 		logCtx.WithError(err).Fatal("Can't find K8S node")
 	}
 
 	myNode := &apisv1alpha1.LocalStorageNode{}
-	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: m.name}, myNode); err != nil {
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: m.nodeName}, myNode); err != nil {
 		if !errors.IsNotFound(err) {
 			logCtx.WithError(err).Fatal("Failed to get Node info")
 		}
-		myNode.Name = m.name
-		myNode.Spec.HostName = m.name
+		myNode.Name = m.nodeName
+		myNode.Spec.HostName = m.hostName
 		nodeConfig, err = m.getConfByK8SNodeOrDefault(k8sNode)
 		if err != nil {
 			logCtx.WithError(err).Fatal("Failed to get Node configuration")
@@ -418,13 +420,18 @@ func (m *manager) register() {
 				logCtx.WithError(err).Fatal("Failed to get IPv4 address")
 			}
 			myNode.Spec.StorageIP = ipAddr
-			if err = m.apiClient.Update(context.TODO(), myNode); err != nil {
-				logCtx.WithError(err).Fatal("Failed to update Kubernetes Node for IP address")
-			}
 		}
+
+		// update node configuration anyway
+		myNode.Spec.HostName = m.hostName
+		if err = m.apiClient.Update(context.TODO(), myNode); err != nil {
+			logCtx.WithError(err).Fatal("Failed to update Kubernetes Node")
+		}
+
 		nodeConfig = m.getNodeConf(myNode)
 	}
-	nodeConfig.Name = m.name
+	nodeConfig.Name = m.nodeName
+	nodeConfig.HostName = m.hostName
 
 	m.storageMgr = storage.NewLocalManager(nodeConfig, m.apiClient, m.scheme, m.recorder)
 	if err := m.storageMgr.Register(); err != nil {
@@ -484,7 +491,7 @@ func (m *manager) getStorageIPv4Address(k8sNode *corev1.Node) (string, error) {
 
 func (m *manager) handleVolumeReplicaUpdate(oldObj, newObj interface{}) {
 	replica, _ := newObj.(*apisv1alpha1.LocalVolumeReplica)
-	if replica.Spec.NodeName != m.name {
+	if replica.Spec.NodeName != m.nodeName {
 		return
 	}
 	m.storageMgr.UpdateNodeForVolumeReplica(replica)
@@ -492,7 +499,7 @@ func (m *manager) handleVolumeReplicaUpdate(oldObj, newObj interface{}) {
 
 func (m *manager) handleVolumeReplicaDelete(obj interface{}) {
 	replica, _ := obj.(*apisv1alpha1.LocalVolumeReplica)
-	if replica.Spec.NodeName != m.name {
+	if replica.Spec.NodeName != m.nodeName {
 		return
 	}
 
@@ -520,7 +527,7 @@ func (m *manager) handleVolumeReplicaDelete(obj interface{}) {
 
 func (m *manager) handleLocalDiskClaimUpdate(oldObj, newObj interface{}) {
 	localDiskClaim, _ := newObj.(*apisv1alpha1.LocalDiskClaim)
-	if !(localDiskClaim.Spec.NodeName == m.name && localDiskClaim.Spec.Owner == localStorage &&
+	if !(localDiskClaim.Spec.NodeName == m.nodeName && localDiskClaim.Spec.Owner == localStorage &&
 		localDiskClaim.Status.Status == apisv1alpha1.LocalDiskClaimStatusBound) {
 		return
 	}
@@ -529,7 +536,7 @@ func (m *manager) handleLocalDiskClaimUpdate(oldObj, newObj interface{}) {
 
 func (m *manager) handleLocalDiskClaimAdd(obj interface{}) {
 	localDiskClaim, _ := obj.(*apisv1alpha1.LocalDiskClaim)
-	if !(localDiskClaim.Spec.NodeName == m.name && localDiskClaim.Spec.Owner == localStorage &&
+	if !(localDiskClaim.Spec.NodeName == m.nodeName && localDiskClaim.Spec.Owner == localStorage &&
 		localDiskClaim.Status.Status == apisv1alpha1.LocalDiskClaimStatusBound) {
 		return
 	}
@@ -538,7 +545,7 @@ func (m *manager) handleLocalDiskClaimAdd(obj interface{}) {
 
 func (m *manager) handleLocalDiskUpdate(oldObj, newObj interface{}) {
 	localDisk, _ := newObj.(*apisv1alpha1.LocalDisk)
-	if !(localDisk.Spec.NodeName == m.name && localDisk.Spec.Owner == localStorage &&
+	if !(localDisk.Spec.NodeName == m.nodeName && localDisk.Spec.Owner == localStorage &&
 		localDisk.Status.State == apisv1alpha1.LocalDiskBound) {
 		return
 	}
@@ -547,7 +554,7 @@ func (m *manager) handleLocalDiskUpdate(oldObj, newObj interface{}) {
 
 func (m *manager) handleLocalDiskAdd(newObj interface{}) {
 	localDisk, _ := newObj.(*apisv1alpha1.LocalDisk)
-	if !(localDisk.Spec.NodeName == m.name && localDisk.Spec.Owner == localStorage &&
+	if !(localDisk.Spec.NodeName == m.nodeName && localDisk.Spec.Owner == localStorage &&
 		localDisk.Status.State == apisv1alpha1.LocalDiskBound) {
 		return
 	}
@@ -556,7 +563,7 @@ func (m *manager) handleLocalDiskAdd(newObj interface{}) {
 
 func (m *manager) handleNodeDelete(obj interface{}) {
 	node, _ := obj.(*apisv1alpha1.LocalStorageNode)
-	if node.Name != m.name {
+	if node.Name != m.nodeName {
 		return
 	}
 	m.logger.WithFields(log.Fields{"node": node.Name}).Info("Observed a Node CRD deletion...")
