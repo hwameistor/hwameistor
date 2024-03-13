@@ -98,8 +98,6 @@ spec:
                 items:
                   type: string
                 type: array
-            required:
-            - volumes
             type: object
         type: object
     served: true

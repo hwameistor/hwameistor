@@ -49,7 +49,7 @@ type LocalVolumeMigrateStatus struct {
 	// record the node where the specified replica is migrated to
 	TargetNode string `json:"targetNode,omitempty"`
 	// record all the volumes to be migrated
-	Volumes []string `json:"volumes"`
+	Volumes []string `json:"volumes,omitempty"`
 
 	// State of the operation, e.g. submitted, started, completed, abort, ...
 	State State `json:"state,omitempty"`
