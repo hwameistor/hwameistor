@@ -360,7 +360,7 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("api"), func()
 	ginkgo.Context("test the api", func() {
 		ginkgo.It("start locust test", func() {
 			logrus.Printf("start api test")
-			_, err := utils.RunInLinux("locust -f API_Performance_Test/my_locust_file.py  -t 20s -u 100  --headless --spawn-rate 10 --csv hwamei -H ${API} ")
+			_, err := utils.RunInLinux("locust -f API_Performance_Test/my_locust_file.py  -t 20s -u 10000  --headless --spawn-rate 1000 --csv hwamei -H ${API} ")
 			if err != nil {
 				logrus.Error(err)
 			}

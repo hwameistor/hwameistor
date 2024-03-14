@@ -1,6 +1,6 @@
-from locust import HttpUser, task
+from locust import FastHttpUser, task
 
-class Apitest(HttpUser):
+class Apitest(FastHttpUser):
     @task
     def Apitest(self):
         self.client.get("/cluster/auth/info")
