@@ -2,9 +2,6 @@ package E2eTest
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"time"
-
 	clientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned/scheme"
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/test/e2e/framework"
@@ -19,9 +16,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"time"
 )
 
 var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("api"), func() {
@@ -361,7 +360,7 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("api"), func()
 	ginkgo.Context("test the api", func() {
 		ginkgo.It("start locust test", func() {
 			logrus.Printf("start api test")
-			_, err := utils.RunInLinux("locust -f API_Performance_Test/my_locust_file.py  -t 20s -u 100  --headless --spawn-rate 10 --csv hwamei -H ${API} ")
+			_, err := utils.RunInLinux("locust -f API_Performance_Test/my_locust_file.py  -t 20s -u 10000  --headless --spawn-rate 1000 --csv hwamei -H ${API} ")
 			if err != nil {
 				logrus.Error(err)
 			}
@@ -380,8 +379,8 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("api"), func()
 
 		ginkgo.It("print test results", func() {
 
-			result1, err := utils.RunInLinux(" cat hwamei_stats.json |grep \"Failure Count\"|wc -l")
-			result2, err := utils.RunInLinux(" cat hwamei_stats.json |grep '\"0\"'|wc -l")
+			result1, err := utils.RunInLinux(" grep -c '\"Failure Count\"' hwamei_stats.json ")
+			result2, err := utils.RunInLinux(" grep -c '\"0\"' hwamei_stats.json")
 			if err != nil {
 				logrus.Error(err)
 			}
