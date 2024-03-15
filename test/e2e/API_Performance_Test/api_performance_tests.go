@@ -360,7 +360,7 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("api"), func()
 	ginkgo.Context("test the api", func() {
 		ginkgo.It("start locust test", func() {
 			logrus.Printf("start api test")
-			_, err := utils.RunInLinux("locust -f API_Performance_Test/my_locust_file.py  -t 20s -u 10000  --headless --spawn-rate 1000 --csv hwamei -H ${API} ")
+			_, err := utils.RunInLinux("locust -f API_Performance_Test/my_locust_file.py  -t 20s -u 1000  --headless --spawn-rate 100 --csv hwamei -H ${API} --processes -1")
 			if err != nil {
 				logrus.Error(err)
 			}
@@ -380,17 +380,11 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("api"), func()
 		ginkgo.It("print test results", func() {
 
 			result1, err := utils.RunInLinux(" grep -c '\"Failure Count\"' hwamei_stats.json ")
-			result2, err := utils.RunInLinux(" grep -c '\"0\"' hwamei_stats.json")
+			result2, err := utils.RunInLinux(" grep -c '\"Failure Count\": \"0\"'  hwamei_stats.json")
 			if err != nil {
 				logrus.Error(err)
 			}
-			if result1 == result2 {
-				logrus.Printf(result1)
-			} else {
-				logrus.Printf("error", result1)
-			}
-
-			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(result1).To(gomega.Equal(result2))
 
 		})
 	})
