@@ -49,6 +49,7 @@ var (
 	httpPort                = flag.Int("http-port", restServerDefaultPort, "HTTP port for REST server")
 	logLevel                = flag.Int("v", 4 /*Log Info*/, "number for the log level verbosity")
 	MigrateConcurrentNumber = flag.Int("max-migrate-count", 1, "Limit the number of concurrent migrations")
+	MigrateDataNeedCheck    = flag.Bool("migrate-check", false, "Enable data verification during data migration")
 )
 
 var BUILDVERSION, BUILDTIME, GOVERSION string
@@ -110,6 +111,7 @@ func main() {
 	}
 
 	localctrl.MigrateConcurrentNumber = *MigrateConcurrentNumber
+	localctrl.MigrateDataNeedCheck = *MigrateDataNeedCheck
 
 	systemConfig, err := getSystemConfig()
 	if err != nil {

@@ -37,7 +37,7 @@ const (
 
 type DataSyncer interface {
 	Prepare(targetNodeName, sourceNodeName, lvName string) error
-	StartSync(jobName, lvName, excludedRunningNodeName, runningNodeName string) error
+	StartSync(jobName, lvName, excludedRunningNodeName, runningNodeName string, dataCheckNeed bool) error
 }
 
 func NewSyncer(syncerName string, namespace string, client k8sclient.Client) DataSyncer {

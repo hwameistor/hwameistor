@@ -29,6 +29,7 @@ import (
 const maxRetries = 0
 
 var MigrateConcurrentNumber = 1
+var MigrateDataNeedCheck = false
 
 type manager struct {
 	name string
@@ -81,7 +82,7 @@ type manager struct {
 // New cluster manager
 func New(name string, namespace string, cli client.Client, scheme *runtime.Scheme, informersCache runtimecache.Cache, systemConfig apisv1alpha1.SystemConfig) (apis.ControllerManager, error) {
 	dataCopyStatusCh := make(chan *datacopyutil.DataCopyStatus, 100)
-	dcm, _ := datacopyutil.NewDataCopyManager(context.TODO(), systemConfig.SyncToolName, "", cli, dataCopyStatusCh, namespace)
+	dcm, _ := datacopyutil.NewDataCopyManager(context.TODO(), systemConfig.SyncToolName, "", cli, dataCopyStatusCh, namespace, MigrateDataNeedCheck)
 	//ch := make(chan struct{}, MigrateQuantity)
 	//for i := 0; i < MigrateQuantity; i++ {
 	//	ch <- struct{}{}
