@@ -41,7 +41,7 @@ func NewController(mgr crmanager.Manager) *Controller {
 	}
 }
 
-// StartMonitor
+// StartMonitor sets up and starts monitoring of local disks
 func (ctr *Controller) StartMonitor() {
 	// Wait cache synced
 	ctr.localDiskController.Mgr.GetCache().WaitForCacheSync(context.TODO())
@@ -49,7 +49,7 @@ func (ctr *Controller) StartMonitor() {
 	// Start event handler
 	go ctr.HandleEvent()
 
-	// Start list disk exist
+	// Check existing disks and handle any that are no longer exist
 	existDisks := ctr.diskManager.ListExist()
 	ctr.handleStaleDisks(existDisks)
 
@@ -66,6 +66,8 @@ func (ctr *Controller) StartMonitor() {
 	}
 }
 
+// handleStaleDisks inactivates localdisks that were once recognized and registered in the system
+// but no longer exist on the node
 func (ctr *Controller) handleStaleDisks(existDisks []manager.Event) {
 	existDiskAttrs := make([]manager.Attribute, 0, len(existDisks))
 	for _, e := range existDisks {
@@ -121,7 +123,7 @@ func (ctr *Controller) handleStaleDisks(existDisks []manager.Event) {
 	}
 }
 
-// HandleEvent
+// HandleEvent processes disk events in the work queue
 func (ctr *Controller) HandleEvent() {
 	for {
 		event := ctr.Pop()
@@ -136,6 +138,9 @@ func (ctr *Controller) HandleEvent() {
 	}
 }
 
+// processSingleEvent processes a single event, applying different treatments based on the event type.
+// Primarily, it handles two main scenarios: creating or updating LocalDisk resources;
+// and for remove events, identifying and marking the corresponding LocalDisk as inactive.
 func (ctr *Controller) processSingleEvent(event manager.Event) error {
 	log.Infof("Receive disk event %+v", event)
 	diskParser.For(*manager.NewDiskIdentifyWithName(event.DevPath, event.DevName))
@@ -195,6 +200,8 @@ func (ctr *Controller) processSingleEvent(event manager.Event) error {
 	return nil
 }
 
+// markLocalDiskInactive marks the LocalDisk as inactive, updating its status and other attributes to reflect
+// that it is no longer active or exist on the node
 func (ctr *Controller) markLocalDiskInactive(localDisk v1alpha1.LocalDisk) error {
 	// NOTES: currently we are not doing anything about the event that the disk goes offline, just mark it as inactive here
 	localDisk.Spec.State = v1alpha1.LocalDiskInactive
@@ -211,7 +218,7 @@ func (ctr *Controller) markLocalDiskInactive(localDisk v1alpha1.LocalDisk) error
 	return nil
 }
 
-// defaultDiskParser
+// defaultDiskParser initializes and returns a default disk parser for parsing disk information
 func defaultDiskParser() *manager.DiskParser {
 	diskBase := &manager.DiskIdentify{}
 	return manager.NewDiskParser(
