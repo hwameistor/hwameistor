@@ -1,7 +1,10 @@
 package scheduler
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
 	"sync"
 
@@ -10,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // todo: design a better plugin register/enable
@@ -70,8 +74,202 @@ func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) (qualifi
 			}
 		}
 	}
+	if vols[0].Annotations == nil {
+		vols[0].Annotations = make(map[string]string)
+	}
+	if (vols[0].Spec.ReplicaNumber > 1 && vols[0].Annotations["hwameistor.io/replica-affinity"] != "forbid") || vols[0].Annotations["hwameistor.io/replica-affinity"] == "need" {
+		nodes, err := s.filterNodeByAffinity(vols[0], qualifiedNodes)
+		if err != nil {
+			logCtx.WithError(err).WithField("volumes", vols[0]).Debugf("fail to filterNodeByAffinity")
+		}
+		qualifiedNodes = nodes
+	}
 
+	log.Debugf("qualifiedNodes len is %d", len(qualifiedNodes))
 	return qualifiedNodes
+}
+
+func (s *scheduler) filterNodeByAffinity(vol *apisv1alpha1.LocalVolume, qualifiedNodes []*apisv1alpha1.LocalStorageNode) ([]*apisv1alpha1.LocalStorageNode, error) {
+	pvc := corev1.PersistentVolumeClaim{}
+	if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: vol.Spec.PersistentVolumeClaimName, Namespace: vol.Spec.PersistentVolumeClaimNamespace}, &pvc); err != nil {
+		return qualifiedNodes, err
+	}
+	if pvc.Annotations != nil {
+		if anntifyStr, ok := pvc.Annotations["hwameistor.io/affinity-annotations"]; ok && anntifyStr != "" {
+			var podAnntify corev1.Affinity
+			if err := json.Unmarshal([]byte(anntifyStr), &podAnntify); err != nil {
+				return qualifiedNodes, err
+			}
+
+			filteredNodes := make([]*apisv1alpha1.LocalStorageNode, 0, len(qualifiedNodes))
+			for _, lsn := range qualifiedNodes {
+				node := corev1.Node{}
+				if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: lsn.Name}, &node); err != nil {
+					return qualifiedNodes, err
+				}
+				if match := isAffinityMatch(&node, &podAnntify, s.apiClient); match {
+					filteredNodes = append(filteredNodes, lsn)
+				}
+			}
+
+			return filteredNodes, nil
+		}
+	}
+	return qualifiedNodes, nil
+}
+
+func isAffinityMatch(node *corev1.Node, affinity *corev1.Affinity, apiClient client.Client) bool {
+	if affinity == nil {
+		return true
+	}
+
+	nodeLabels := node.GetLabels()
+	if affinity.NodeAffinity != nil && affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
+		requiredNodeSelector := affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution
+		if requiredNodeSelector.NodeSelectorTerms != nil {
+			for _, term := range requiredNodeSelector.NodeSelectorTerms {
+				match := matchNodeSelectorTerm(term, nodeLabels)
+				if !match {
+					return false
+				}
+			}
+		}
+	}
+
+	if affinity.PodAffinity != nil && affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
+		podAffinityTerms := affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution
+		if podAffinityTerms != nil {
+			for _, term := range podAffinityTerms {
+				match := matchPodAffinityTerm(term, node.Name, apiClient)
+				if !match {
+					return false
+				}
+			}
+		}
+	}
+
+	if affinity.PodAntiAffinity != nil && affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
+		podAntiAffinityTerms := affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution
+		for _, term := range podAntiAffinityTerms {
+			match := matchPodAntiAffinityTerm(term, node.Name, apiClient)
+			if !match {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+func matchNodeSelectorTerm(term corev1.NodeSelectorTerm, nodeLabels map[string]string) bool {
+	if nodeLabels == nil && (term.MatchExpressions != nil || term.MatchFields != nil) {
+		return false
+	}
+	if nodeLabels == nil && term.MatchExpressions == nil && term.MatchFields == nil {
+		return true
+	}
+	if term.MatchExpressions == nil && term.MatchFields == nil {
+		return true
+	}
+	if term.MatchExpressions != nil {
+		for _, expression := range term.MatchExpressions {
+			nodeValue, ok := nodeLabels[expression.Key]
+			if !ok {
+				return false
+			}
+			matches := false
+			for _, value := range expression.Values {
+				if nodeValue == value {
+					matches = true
+					break
+				}
+			}
+			if !matches {
+				return false
+			}
+		}
+	}
+	for _, field := range term.MatchFields {
+		nodeValue, ok := nodeLabels[field.Key]
+		if !ok {
+			return false
+		}
+		matches := false
+		for _, value := range field.Values {
+			if nodeValue == value {
+				matches = true
+				break
+			}
+		}
+		if !matches {
+			return false
+		}
+	}
+	return true
+}
+
+func matchPodAffinityTerm(term corev1.PodAffinityTerm, nodeName string, apiClient client.Client) bool {
+	if term.LabelSelector != nil {
+		selector := metav1.LabelSelector{
+			MatchLabels:      term.LabelSelector.MatchLabels,
+			MatchExpressions: term.LabelSelector.MatchExpressions,
+		}
+		selectorSet, err := metav1.LabelSelectorAsSelector(&selector)
+		if err != nil {
+			log.Errorf("LabelSelectorAsSelector error: %v", err)
+			return true
+		}
+		listOption := client.ListOptions{
+			LabelSelector: selectorSet,
+		}
+		pods := &corev1.PodList{}
+		err = apiClient.List(context.TODO(), pods, &listOption)
+		if err != nil {
+			log.Errorf("list pods error: %v", err)
+			return true
+		}
+
+		for _, p := range pods.Items {
+			if p.Spec.NodeName == nodeName {
+				return true
+			}
+		}
+		return false
+	}
+	return true
+}
+
+func matchPodAntiAffinityTerm(term corev1.PodAffinityTerm, nodeName string, apiClient client.Client) bool {
+	if term.LabelSelector != nil {
+		selector := metav1.LabelSelector{
+			MatchLabels:      term.LabelSelector.MatchLabels,
+			MatchExpressions: term.LabelSelector.MatchExpressions,
+		}
+		selectorSet, err := metav1.LabelSelectorAsSelector(&selector)
+		if err != nil {
+			log.Errorf("LabelSelectorAsSelector error: %v", err)
+			return true
+		}
+
+		listOption := client.ListOptions{
+			LabelSelector: selectorSet,
+		}
+
+		pods := &corev1.PodList{}
+		err = apiClient.List(context.TODO(), pods, &listOption)
+		if err != nil {
+			log.Errorf("list pods error: %v", err)
+			return true
+		}
+
+		for _, pod := range pods.Items {
+			if pod.Spec.NodeName == nodeName {
+				return false
+			}
+		}
+	}
+
+	return true
 }
 
 // Allocate schedule right nodes and generate volume config

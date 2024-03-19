@@ -153,6 +153,20 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 
 	if len(migrate.Status.TargetNode) == 0 {
 		logCtx.Debug("Selecting the target node for the migration")
+
+		if lvg.Annotations == nil {
+			lvg.Annotations = make(map[string]string)
+		}
+		if migrate.Annotations != nil {
+			_, ok := migrate.Annotations["hwameistor.io/replica-affinity"]
+			if !ok {
+				migrate.Annotations["hwameistor.io/replica-affinity"] = "need"
+			}
+			lvg.Annotations["hwameistor.io/replica-affinity"] = migrate.Annotations["hwameistor.io/replica-affinity"]
+		} else {
+			lvg.Annotations["hwameistor.io/replica-affinity"] = "need"
+		}
+
 		tgtNodeName, err := m.selectMigrateTargetNode(migrate, lvg)
 		if err != nil {
 			logCtx.WithError(err).Error("No valid target node for the migration")
@@ -434,6 +448,14 @@ func (m *manager) selectMigrateTargetNode(migrate *apisv1alpha1.LocalVolumeMigra
 	vols, err := m.getAllVolumesInGroup(lvg)
 	if err != nil {
 		return "", fmt.Errorf("failed to get all the volumes in the group")
+	}
+	if lvg.Annotations != nil {
+		if lvg.Annotations["hwameistor.io/replica-affinity"] != "" {
+			if vols[0].Annotations == nil {
+				vols[0].Annotations = make(map[string]string)
+			}
+			vols[0].Annotations["hwameistor.io/replica-affinity"] = lvg.Annotations["hwameistor.io/replica-affinity"]
+		}
 	}
 
 	validNodes := m.VolumeScheduler().GetNodeCandidates(vols)
