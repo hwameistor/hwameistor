@@ -1,6 +1,8 @@
 package scheduler
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -10,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // todo: design a better plugin register/enable
@@ -71,7 +74,94 @@ func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) (qualifi
 		}
 	}
 
+	nodes, err := s.filterNodeByAffinity(vols[0], qualifiedNodes)
+	if err != nil {
+		logCtx.WithError(err).WithField("volumes", vols[0]).Debugf("fail to filterNodeByAffinity")
+	}
+	qualifiedNodes = nodes
+
+	log.Debugf("qualifiedNodes len is %d", len(qualifiedNodes))
 	return qualifiedNodes
+}
+
+func (s *scheduler) filterNodeByAffinity(vol *apisv1alpha1.LocalVolume, qualifiedNodes []*apisv1alpha1.LocalStorageNode) ([]*apisv1alpha1.LocalStorageNode, error) {
+	pvc := corev1.PersistentVolumeClaim{}
+	if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: vol.Spec.PersistentVolumeClaimName, Namespace: vol.Spec.PersistentVolumeClaimNamespace}, &pvc); err != nil {
+		return qualifiedNodes, err
+	}
+	if pvc.Annotations != nil {
+		if anntifyStr, ok := pvc.Annotations["my-provisioner/extra-metadata"]; ok && anntifyStr != "" {
+			var podAnntify corev1.Affinity
+			if err := json.Unmarshal([]byte(anntifyStr), &podAnntify); err != nil {
+				return qualifiedNodes, err
+			}
+
+			filteredNodes := make([]*apisv1alpha1.LocalStorageNode, 0, len(qualifiedNodes))
+			for _, lsn := range qualifiedNodes {
+				node := corev1.Node{}
+				if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: lsn.Name}, &node); err != nil {
+					return qualifiedNodes, err
+				}
+				if match := isNodeAffinityMatch(&node, &podAnntify); match {
+					filteredNodes = append(filteredNodes, lsn)
+				}
+			}
+
+			return filteredNodes, nil
+		}
+	}
+	return qualifiedNodes, nil
+}
+
+func isNodeAffinityMatch(node *corev1.Node, affinity *corev1.Affinity) bool {
+	if affinity == nil {
+		return true
+	}
+
+	nodeLabels := node.GetLabels()
+	if affinity.NodeAffinity != nil && affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
+		requiredNodeSelector := affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution
+		if requiredNodeSelector.NodeSelectorTerms != nil {
+			for _, term := range requiredNodeSelector.NodeSelectorTerms {
+				match := matchNodeSelectorTerm(term, nodeLabels)
+				if !match {
+					return false
+				}
+			}
+		}
+	}
+
+	//preferredNodeSelector := affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution
+	//if preferredNodeSelector != nil {
+	//	for _, term := range preferredNodeSelector {
+	//		match := matchNodeSelectorTerm(term.Preference, nodeLabels)
+	//		if match {
+	//			return true
+	//		}
+	//	}
+	//}
+
+	return true
+}
+
+func matchNodeSelectorTerm(term corev1.NodeSelectorTerm, nodeLabels map[string]string) bool {
+	for _, expression := range term.MatchExpressions {
+		nodeValue, ok := nodeLabels[expression.Key]
+		if !ok {
+			return false
+		}
+		matches := false
+		for _, value := range expression.Values {
+			if nodeValue == value {
+				matches = true
+				break
+			}
+		}
+		if !matches {
+			return false
+		}
+	}
+	return true
 }
 
 // Allocate schedule right nodes and generate volume config
