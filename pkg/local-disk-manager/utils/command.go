@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Bash executes a shell command and returns its standard output as a string
 func Bash(cmd string) (string, error) {
 	var (
 		stdout  bytes.Buffer
@@ -24,6 +25,7 @@ func Bash(cmd string) (string, error) {
 	return stdout.String(), err
 }
 
+// BashWithArgs executes a shell command with arguments and returns its standard output
 func BashWithArgs(cmd string, args ...string) (string, error) {
 	var (
 		stdout  bytes.Buffer
@@ -40,7 +42,7 @@ func BashWithArgs(cmd string, args ...string) (string, error) {
 	return stdout.String(), err
 }
 
-// ConvertShellOutputs
+// ConvertShellOutputs splits shell output string into a slice of strings, one per line
 func ConvertShellOutputs(outputs string) []string {
 	var result []string
 	if len(outputs) == 0 {
@@ -60,7 +62,7 @@ func ConvertShellOutputs(outputs string) []string {
 	return result
 }
 
-// GetAllIndex
+// GetAllIndex returns all indices of the substr in the given string
 func GetAllIndex(s string, substr string) []int {
 	var indexes []int
 
@@ -79,6 +81,7 @@ func GetAllIndex(s string, substr string) []int {
 	return indexes
 }
 
+// ExecCmd executes a shell command with arguments as a single string and returns its output
 func ExecCmd(command, args string) (out []byte, err error) {
 	var argArray []string
 	if args != "" {

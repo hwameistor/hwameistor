@@ -48,6 +48,8 @@ func NewSMARTParser(device *manager.DiskIdentify, options ...string) *manager.Sm
 	}
 }
 
+// ParseSmartInfo gets S.M.A.R.T info, including whether the disk supports SMART technology
+// and whether it has passed the health check
 func (c *controller) ParseSmartInfo() manager.SmartInfo {
 	var (
 		healthOK bool

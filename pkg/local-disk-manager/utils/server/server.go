@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// Parse splits the endpoint into protocol and address and returns them
 func Parse(ep string) (string, string, error) {
 	if strings.HasPrefix(strings.ToLower(ep), "unix://") || strings.HasPrefix(strings.ToLower(ep), "tcp://") {
 		s := strings.SplitN(ep, "://", 2)
@@ -19,6 +20,8 @@ func Parse(ep string) (string, string, error) {
 	return "unix", ep, nil
 }
 
+// Listen creates a listener for Unix socket or TCP based on the endpoint
+// and returns a cleanup function
 func Listen(endpoint string) (net.Listener, func(), error) {
 	proto, addr, err := Parse(endpoint)
 	if err != nil {

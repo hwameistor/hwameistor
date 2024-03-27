@@ -10,7 +10,7 @@ import (
 )
 
 type Device struct {
-	// DevicePath represents the disk hardware path.
+	// DevPath represents the disk hardware path.
 	// The general format is like /sys/devices/pci0000:ae/0000:ae:02.0/0000:b1:00.0/host2/target2:1:0/2:1:0:0/block/sdc/sdc
 	DevPath string `json:"devPath,omitempty"`
 
@@ -29,28 +29,31 @@ type Device struct {
 	// SubSystem identifies the device's system type, such as block
 	SubSystem string `json:"subSystem,omitempty"`
 
-	// Bus
+	// Bus represents the bus type of the device, such as USB, SATA
 	Bus string `json:"id_bus,omitempty"`
 
-	// FS_TYPE
+	// FSType represents the filesystem type such as ext4, ntfs
 	FSType string `json:"id_fs_type,omitempty"`
 
-	// Model
+	// Model represents the specific model of the storage device, usually specified by the manufacturer
 	Model string `json:"id_model,omitempty"`
 
-	// WWN
+	// WWN represents the World Wide Name(WWN) of the device.
+	// The general format is like 5001b444a89e5acd.
 	WWN string `json:"id_wwn,omitempty"`
 
-	// PartTableType
+	// PartTableType represents the partition table type, such as gpt or mbr
 	PartTableType string `json:"id_part_table_type,omitempty"`
 
-	// Serial
+	// Serial represents the Serial Number(SN) of the device.
+	// The general format is like 162061400553
 	Serial string `json:"id_serial,omitempty"`
 
-	// Vendor
+	// Vendor represents the manufacturer of the device
 	Vendor string `json:"id_vendor,omitempty"`
 
-	// ID_TYPE
+	// IDType specifies the detailed type of the device according to udev rules, such as 'cd', 'disk', or 'partition',
+	// providing a finer classification than DevType, usually the values of IDType and DevType are the same
 	IDType string `json:"id_type"`
 
 	// PartName such as EFI System Partition
@@ -59,7 +62,7 @@ type Device struct {
 	// Name is the name of the device node sda, sdb, dm-0 etc
 	Name string `json:"name"`
 
-	// DEVLINKS
+	// DevLinks is a symbolic link array for the device, containing all symbolic links for the device
 	DevLinks []string `json:"devLinks"`
 }
 
@@ -107,6 +110,7 @@ func (d *Device) ParseDeviceInfo() error {
 	return d.ParseDiskAttribute(info)
 }
 
+// Info gets detailed information about the device using udevadm
 func (d *Device) Info() (map[string]interface{}, error) {
 	var out string
 	var err error
