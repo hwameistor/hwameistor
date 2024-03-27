@@ -3,14 +3,16 @@ package localdiskvolume
 import (
 	"context"
 	"fmt"
+	"os"
+	"path"
+	"strings"
+	"time"
+
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/registry"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/volume"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/udev"
-	"path"
-	"strings"
-	"time"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
@@ -131,7 +133,11 @@ func (v *DiskVolumeHandler) ReconcileUnmount() (reconcile.Result, error) {
 				result.Requeue = true
 				continue
 			}
-
+			if err = os.Remove(mountPoint.TargetPath); err != nil {
+				log.WithError(err).Errorf("Failed to remove mount point target path %s", mountPoint.TargetPath)
+				result.Requeue = true
+				continue
+			}
 			v.RemoveMountPoint(mountPoint.TargetPath)
 		}
 	}
