@@ -42,9 +42,10 @@ func NewServerManager(mgr mgrpkg.Manager, clientset *kubernetes.Clientset) (*Ser
 func (m *ServerManager) StorageNodeController() *hwameistorctr.LocalStorageNodeController {
 	var recorder record.EventRecorder
 	if m.lsnController == nil {
+		recorder = m.mgr.GetEventRecorderFor("apiserver-localstoragenode-controller")
 		m.lsnController = hwameistorctr.NewLocalStorageNodeController(m.mgr.GetClient(), m.clientset, recorder)
 		// set localdisk handler
-		localDiskRecorder := m.mgr.GetEventRecorderFor("apiserver-localdisk-controller")
+		localDiskRecorder := m.mgr.GetEventRecorderFor("apiserver-localdiskhandler-controller")
 		diskHandler := localdisk.NewLocalDiskHandler(m.mgr.GetClient(), localDiskRecorder)
 		m.lsnController.SetLdHandler(diskHandler)
 	}
@@ -54,6 +55,7 @@ func (m *ServerManager) StorageNodeController() *hwameistorctr.LocalStorageNodeC
 func (m *ServerManager) VolumeController() *hwameistorctr.LocalVolumeController {
 	var recorder record.EventRecorder
 	if m.lvController == nil {
+		recorder = m.mgr.GetEventRecorderFor("apiserver-localvolume-controller")
 		m.lvController = hwameistorctr.NewLocalVolumeController(m.mgr.GetClient(), recorder)
 	}
 	return m.lvController
@@ -62,6 +64,7 @@ func (m *ServerManager) VolumeController() *hwameistorctr.LocalVolumeController 
 func (m *ServerManager) MetricController() *hwameistorctr.MetricController {
 	var recorder record.EventRecorder
 	if m.mController == nil {
+		recorder = m.mgr.GetEventRecorderFor("apiserver-metric-controller")
 		m.mController = hwameistorctr.NewMetricController(m.mgr.GetClient(), m.clientset, recorder)
 	}
 	return m.mController
@@ -70,6 +73,7 @@ func (m *ServerManager) MetricController() *hwameistorctr.MetricController {
 func (m *ServerManager) StoragePoolController() *hwameistorctr.LocalStoragePoolController {
 	var recorder record.EventRecorder
 	if m.lspController == nil {
+		recorder = m.mgr.GetEventRecorderFor("apiserver-storagepool-controller")
 		m.lspController = hwameistorctr.NewLocalStoragePoolController(m.mgr.GetClient(), m.clientset, recorder)
 	}
 	return m.lspController
@@ -78,6 +82,7 @@ func (m *ServerManager) StoragePoolController() *hwameistorctr.LocalStoragePoolC
 func (m *ServerManager) SettingController() *hwameistorctr.SettingController {
 	var recorder record.EventRecorder
 	if m.settingController == nil {
+		recorder = m.mgr.GetEventRecorderFor("apiserver-setting-controller")
 		m.settingController = hwameistorctr.NewSettingController(m.mgr.GetClient(), m.clientset, recorder)
 	}
 	return m.settingController
@@ -86,6 +91,7 @@ func (m *ServerManager) SettingController() *hwameistorctr.SettingController {
 func (m *ServerManager) VolumeGroupController() *hwameistorctr.VolumeGroupController {
 	var recorder record.EventRecorder
 	if m.vgController == nil {
+		recorder = m.mgr.GetEventRecorderFor("apiserver-volumegroup-controller")
 		m.vgController = hwameistorctr.NewVolumeGroupController(m.mgr.GetClient(), m.clientset, recorder)
 	}
 	return m.vgController
@@ -94,6 +100,7 @@ func (m *ServerManager) VolumeGroupController() *hwameistorctr.VolumeGroupContro
 func (m *ServerManager) LocalDiskController() *hwameistorctr.LocalDiskController {
 	var recorder record.EventRecorder
 	if m.ldController == nil {
+		recorder = m.mgr.GetEventRecorderFor("apiserver-localdisk-controller")
 		m.ldController = hwameistorctr.NewLocalDiskController(m.mgr.GetClient(), recorder)
 	}
 	return m.ldController
@@ -102,6 +109,7 @@ func (m *ServerManager) LocalDiskController() *hwameistorctr.LocalDiskController
 func (m *ServerManager) LocalDiskNodeController() *hwameistorctr.LocalDiskNodeController {
 	var recorder record.EventRecorder
 	if m.ldnController == nil {
+		recorder = m.mgr.GetEventRecorderFor("apiserver-localdisknode-controller")
 		m.ldnController = hwameistorctr.NewLocalDiskNodeController(m.mgr.GetClient(), recorder)
 	}
 	return m.ldnController
@@ -110,6 +118,7 @@ func (m *ServerManager) LocalDiskNodeController() *hwameistorctr.LocalDiskNodeCo
 func (m *ServerManager) AuthController() *hwameistorctr.AuthController {
 	var recorder record.EventRecorder
 	if m.authController == nil {
+		recorder = m.mgr.GetEventRecorderFor("apiserver-auth-controller")
 		m.authController = hwameistorctr.NewAuthController(m.mgr.GetClient(), recorder)
 	}
 	return m.authController
@@ -118,6 +127,7 @@ func (m *ServerManager) AuthController() *hwameistorctr.AuthController {
 func (m *ServerManager) SnapshotController() *hwameistorctr.LocalSnapshotController {
 	var recorder record.EventRecorder
 	if m.lvsController == nil {
+		recorder = m.mgr.GetEventRecorderFor("apiserver-snapshot-controller")
 		m.lvsController = hwameistorctr.NewLocalSnapshotController(m.mgr.GetClient(), recorder)
 	}
 	return m.lvsController
