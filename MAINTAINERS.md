@@ -16,3 +16,4 @@ Please keep the below list sorted in ascending order.
 | EchoS         | @zhaosimon     | Community | DaoCloud    | <simon.zhao@daocloud.io>    |
 | Michael Yao   | @windsonsea    | Docs      | DaoCloud    | <haifeng.yao@daocloud.io>   |
 | Baofa Fan     | @carlory       | Dev       | DaoCloud    | <baofa.fan@daocloud.io>     |
+| Peng Lai      | @peng9808      | Dev       | DaoCloud    | <peng.lai@daocloud.io>      |
