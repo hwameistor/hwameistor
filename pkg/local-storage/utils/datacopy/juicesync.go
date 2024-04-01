@@ -66,8 +66,8 @@ func (js *JuiceSync) getStorageNodeIP(nodeName string) (string, error) {
 	return storageNode.Spec.StorageIP, nil
 }
 
-func (js *JuiceSync) StartSync(jobName, volName, excludedRunningNodeName, runningNodeName string) error {
-	job := js.buildJob(jobName, volName, excludedRunningNodeName, runningNodeName)
+func (js *JuiceSync) StartSync(jobName, volName, excludedRunningNodeName, runningNodeName string, dataCheckNeed bool) error {
+	job := js.buildJob(jobName, volName, excludedRunningNodeName, runningNodeName, dataCheckNeed)
 
 	if err := js.apiClient.Create(context.TODO(), job); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
@@ -79,12 +79,15 @@ func (js *JuiceSync) StartSync(jobName, volName, excludedRunningNodeName, runnin
 	return nil
 }
 
-func (js *JuiceSync) buildJob(jobName string, volName string, excludedRunningNodeName string, runningNodeName string) *batchv1.Job {
+func (js *JuiceSync) buildJob(jobName string, volName string, excludedRunningNodeName string, runningNodeName string, dataCheckNeed bool) *batchv1.Job {
 	if value := os.Getenv("MIGRAGE_JUICESYNC_IMAGE"); len(value) > 0 {
 		juiceSyncImageName = value
 	}
 
 	runCommand := "sync_hwameistor_volumes.sh"
+	if dataCheckNeed {
+		runCommand = "sync_hwameistor_volumes_check.sh"
+	}
 
 	nodeSelectExpression := []corev1.NodeSelectorRequirement{}
 	if len(strings.TrimSpace(runningNodeName)) > 0 {

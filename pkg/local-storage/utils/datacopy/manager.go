@@ -46,6 +46,7 @@ type DataCopyManager struct {
 	workingNamespace string
 	syncer           DataSyncer
 	cmdExec          exechelper.Executor
+	dataCheckNeed    bool
 }
 
 // NewDataCopyManager return DataCopyManager instance
@@ -53,7 +54,7 @@ type DataCopyManager struct {
 // It will feedback copy process status continuously through statusCh,
 // so it dose not need ResourceReady to poll resource status
 func NewDataCopyManager(ctx context.Context, syncToolName string, dataCopyJobStatusAnnotationName string,
-	client k8sclient.Client, statusCh chan *DataCopyStatus, namespace string) (*DataCopyManager, error) {
+	client k8sclient.Client, statusCh chan *DataCopyStatus, namespace string, dataCheckNeed bool) (*DataCopyManager, error) {
 	dcm := &DataCopyManager{
 		dataCopyJobStatusAnnotationName: dataCopyJobStatusAnnotationName,
 		k8sControllerClient:             client,
@@ -61,6 +62,7 @@ func NewDataCopyManager(ctx context.Context, syncToolName string, dataCopyJobSta
 		cmdExec:                         nsexecutor.New(),
 		syncer:                          NewSyncer(syncToolName, namespace, client),
 		workingNamespace:                namespace,
+		dataCheckNeed:                   dataCheckNeed,
 	}
 
 	statusGenerator, err := newStatusGenerator(dcm, dataCopyJobStatusAnnotationName, statusCh, namespace)
@@ -108,7 +110,7 @@ func (dcm *DataCopyManager) Sync(jobName, srcNodeName, dstNodeName, volName stri
 	if err := dcm.k8sControllerClient.Get(ctx, types.NamespacedName{Namespace: dcm.workingNamespace, Name: jobName}, syncJob); err != nil {
 		if errors.IsNotFound(err) {
 			logCtx.WithField("Job", jobName).Info("No job is created to sync replicas, create one ...")
-			if err := dcm.syncer.StartSync(jobName, volName, srcNodeName, ""); err != nil {
+			if err := dcm.syncer.StartSync(jobName, volName, srcNodeName, "", dcm.dataCheckNeed); err != nil {
 				logCtx.WithField("LocalVolume", volName).WithError(err).Error("Failed to start a job to sync replicas")
 				return fmt.Errorf("failed to start a job to sync replicas for volume %s", volName)
 			}
