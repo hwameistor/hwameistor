@@ -1,3 +1,28 @@
+v0.14.2/ 2024-4-1
+========================
+
+
+
+## LVM volume management enhancements
+- delete target_path when volume unpublish #1399(@SSmallMonster )
+- add PoolHDD FreeCap print column #1400(@SSmallMonster )
+## Volume Migration
+- delete target_path when volume unpublish #1399(@SSmallMonster )
+- add PoolHDD FreeCap print column #1400(@SSmallMonster )
+## Tests
+- 【e2e】update api test #1407(@FloatXD )
+- 【e2e】add api test #1405(@FloatXD )
+- 【e2e】update scheduler #1412(@FloatXD )
+- 【e2e】update e2e test #1416(@FloatXD )
+- Optimize api test #1419(@FloatXD )
+## Documentation
+- [Docs] Update docs in install folder #1393(@windsonsea )
+- add Linux foundation trademark disclaimer link to website #1395(@SSmallMonster )
+- Add code comments #1423 (@sundegan )
+- add Peng Lai to MAINTAINERS.md #1430(@peng9808 )
+## Others
+- add ctl event cmd #1383(@peng9808 )
+
 v0.14.1/ 2024-1-26
 ========================
 
