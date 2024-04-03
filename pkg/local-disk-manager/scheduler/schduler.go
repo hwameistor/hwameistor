@@ -47,14 +47,14 @@ func (s *diskVolumeSchedulerPlugin) Filter(boundVolumes []string, pendingVolumes
 		"boundVolumes":   strings.Join(boundVolumes, ","),
 		"pendingVolumes": stringVolumes(pendingVolumes),
 	}
-	log.WithFields(logCtx).Debug("Start filter node")
+	log.WithFields(logCtx).Debug("Filter an node against disk volumes")
 
 	if ready, err := s.diskNodeHandler.NodeIsReady(node.GetName()); err != nil {
 		log.WithError(err).WithFields(logCtx).Error("failed to get LocalDiskNode info")
 		return false, err
 	} else if !ready {
-		log.WithFields(logCtx).Info("node is not ready")
-		return false, nil
+		log.WithFields(logCtx).Debugf("node %s is not ready", node.Name)
+		return false, fmt.Errorf("node is NotReady")
 	}
 
 	// step1: filter bounded volumes
@@ -65,7 +65,7 @@ func (s *diskVolumeSchedulerPlugin) Filter(boundVolumes []string, pendingVolumes
 	}
 	if !ok {
 		log.WithFields(logCtx).Infof("node %s is not suitable because of bounded volumes %v is already located on the other node", node.GetName(), boundVolumes)
-		return false, nil
+		return false, fmt.Errorf("not the published node")
 	}
 
 	// step2: filter pending volumes
@@ -76,10 +76,10 @@ func (s *diskVolumeSchedulerPlugin) Filter(boundVolumes []string, pendingVolumes
 	}
 	if !ok {
 		log.WithFields(logCtx).Infof("node %s is not suitable", node.GetName())
-		return false, nil
+		return false, fmt.Errorf("capacity requirements is not satisfied")
 	}
 
-	log.WithFields(logCtx).Debug("Filter node success")
+	log.WithFields(logCtx).Debug("Filtered in an node for disk volume")
 	return true, nil
 }
 
