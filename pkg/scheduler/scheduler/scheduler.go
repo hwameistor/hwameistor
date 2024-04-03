@@ -105,7 +105,7 @@ func (s *Scheduler) Filter(pod *corev1.Pod, node *corev1.Node) (bool, error) {
 		return false, err
 	}
 	// figure out the existing local volume associated to the PVC, and send it to the scheduler's filter
-	existingLocalVolumes := []string{}
+	var existingLocalVolumes []string
 	for _, pvc := range lvmProvisionedPVCs {
 		pv, err := s.pvLister.Get(pvc.Spec.VolumeName)
 		if err != nil {
@@ -119,11 +119,9 @@ func (s *Scheduler) Filter(pod *corev1.Pod, node *corev1.Node) (bool, error) {
 		existingLocalVolumes = append(existingLocalVolumes, pv.Spec.CSI.VolumeHandle)
 	}
 	canSchedule, err := s.lvmScheduler.Filter(existingLocalVolumes, lvmNewPVCs, node)
-	if err != nil {
-		return false, err
-	}
 	if !canSchedule {
-		return false, fmt.Errorf("can't schedule the LVM volume to node %s", node.Name)
+		log.WithFields(log.Fields{"node": node.Name, "pod": pod.Name}).WithError(err).Error("Filter out an node for LVM volumes")
+		return false, err
 	}
 
 	// figure out the existing local volume associated to the PVC, and send it to the scheduler's filter
@@ -141,7 +139,14 @@ func (s *Scheduler) Filter(pod *corev1.Pod, node *corev1.Node) (bool, error) {
 		existingLocalVolumes = append(existingLocalVolumes, pv.Spec.CSI.VolumeHandle)
 	}
 
-	return s.diskScheduler.Filter(existingLocalVolumes, diskNewPVCs, node)
+	canSchedule, err = s.diskScheduler.Filter(existingLocalVolumes, diskNewPVCs, node)
+	if !canSchedule {
+		log.WithFields(log.Fields{"node": node.Name, "pod": pod.Name}).WithError(err).Error("Filter out an node for Disk volumes")
+		return false, err
+	}
+
+	log.WithFields(log.Fields{"node": node.Name, "pod": pod.Name}).Debug("Filtered in an node")
+	return true, nil
 }
 
 func (s *Scheduler) Score(pod *corev1.Pod, node string) (int64, error) {

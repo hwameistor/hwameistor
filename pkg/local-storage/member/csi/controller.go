@@ -1198,6 +1198,7 @@ func (p *plugin) ControllerExpandVolume(ctx context.Context, req *csi.Controller
 			logCtx.WithError(err).Error("Failed to query volume expansion action")
 			return resp, err
 		}
+
 		// no expansion in progress, create a new one
 		expand.Name = req.VolumeId
 		expand.Spec.VolumeName = req.VolumeId

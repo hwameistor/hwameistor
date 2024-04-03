@@ -58,13 +58,21 @@ func (s *LVMVolumeScheduler) CSIDriverName() string {
 func (s *LVMVolumeScheduler) Filter(lvs []string, pendingPVCs []*corev1.PersistentVolumeClaim, node *corev1.Node) (bool, error) {
 	canSchedule, err := s.filterForExistingLocalVolumes(lvs, node)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to filter existing volume: %s", err)
 	}
 	if !canSchedule {
-		return false, fmt.Errorf("filtered out the node %s", node.Name)
+		return false, fmt.Errorf("not the published node")
 	}
 
-	return s.filterForNewPVCs(pendingPVCs, node)
+	canSchedule, err = s.filterForNewPVCs(pendingPVCs, node)
+	if err != nil {
+		return false, fmt.Errorf("failed to filter new volume: %s", err)
+	}
+	if !canSchedule {
+		return false, fmt.Errorf("capacity and replica requirements are not satisfied")
+	}
+
+	return true, nil
 }
 
 // Score node according to volume nums and storage pool capacity.
@@ -122,7 +130,6 @@ func (s *LVMVolumeScheduler) scoreOneVolume(pvc *corev1.PersistentVolumeClaim, n
 }
 
 func (s *LVMVolumeScheduler) filterForExistingLocalVolumes(lvs []string, node *corev1.Node) (bool, error) {
-
 	if len(lvs) == 0 {
 		return true, nil
 	}
@@ -135,18 +142,18 @@ func (s *LVMVolumeScheduler) filterForExistingLocalVolumes(lvs []string, node *c
 			return false, err
 		}
 
-		//Determine whether lvm is being migrated
+		// Stop scheduler when volume is in migrating
 		if lv.GetAnnotations() != nil {
 			if migrate, ok := lv.GetAnnotations()[v1alpha1.VolumeMigrateCompletedAnnoKey]; ok {
 				if migrate == v1alpha1.MigrateStarted {
-					return false, fmt.Errorf("lvm is being migrated")
+					return false, fmt.Errorf("volume is in migrating")
 				}
 			}
 		}
 
 		if lv.Spec.Config == nil {
 			log.WithFields(log.Fields{"localvolume": lvName}).Error("Not found replicas info in the LocalVolume")
-			return false, fmt.Errorf("pending localvolume")
+			return false, nil
 		}
 		isLocalNode := false
 		for _, rep := range lv.Spec.Config.Replicas {
@@ -157,15 +164,14 @@ func (s *LVMVolumeScheduler) filterForExistingLocalVolumes(lvs []string, node *c
 		}
 		if !isLocalNode {
 			log.WithFields(log.Fields{"localvolume": lvName, "node": node.Name}).Debug("LocalVolume doesn't locate at this node")
-			return false, fmt.Errorf("not right node")
+			return false, nil
 		}
 
-		// if volume is already Published, also check if this node is the published node, see #1155 for more details.
+		// if the volume is already Published, also check if this node is the published node, see #1155 for more details.
 		if lv.Status.PublishedNodeName != "" && lv.Status.PublishedNodeName != node.Name {
 			log.WithFields(log.Fields{"localvolume": lvName, "node": node.Name}).Debug("LocalVolume doesn't publish at this node")
-			return false, fmt.Errorf("not published node")
+			return false, nil
 		}
-
 	}
 
 	log.WithFields(log.Fields{"localvolumes": lvs, "node": node.Name}).Debug("Filtered in this node for all existing LVM volumes")
@@ -179,17 +185,19 @@ func (s *LVMVolumeScheduler) filterForNewPVCs(pvcs []*corev1.PersistentVolumeCla
 
 	// the scheduled node must keep consistent with the existing snapshot node
 	if ok, err := s.validateNodeForPVCsFromSnapshot(pvcs, node); !ok {
-		return false, fmt.Errorf("node %v is not the expected snapshot node, error: %v", node.Name, err)
+		log.Debugf("node %v is not the expected snapshot node, error: %v", node.Name, err)
+		return false, fmt.Errorf("not the expected snapshot node")
 	}
 
 	// the scheduled node must keep consistent with the existing clone volume node
 	// NOTES: we only support clone volume in place, if remote clone supported, this should be removed
 	if ok, err := s.validateNodeForPVCsFromClone(pvcs, node); !ok {
-		return false, fmt.Errorf("node %v is not the expected clone node, error: %v", node.Name, err)
+		log.Debugf("node %v is not the expected clone node, error: %v", node.Name, err)
+		return false, fmt.Errorf("not the expected clone node")
 	}
 
 	for _, pvc := range pvcs {
-		log.WithField("pvc", pvc.Name).WithField("node", node.Name).Debug("New PVC")
+		log.WithField("pvc", pvc.Name).WithField("node", node.Name).Debug("Filter for new PVC")
 	}
 	var lvs []*v1alpha1.LocalVolume
 	for i := range pvcs {
@@ -201,10 +209,14 @@ func (s *LVMVolumeScheduler) filterForNewPVCs(pvcs []*corev1.PersistentVolumeCla
 	}
 
 	qualifiedNodes := s.replicaScheduler.GetNodeCandidates(lvs)
+	// check if there are enough qualified nodes available to place the volume
 	if len(qualifiedNodes) < int(lvs[0].Spec.ReplicaNumber) {
-		return false, fmt.Errorf("need %d node(s) to place volume, but only find %d node(s) meet the volume capacity requirements",
+		log.Debugf("need %d node(s) to place volume, but only find %d node(s) meet the volume capacity requirements",
 			int(lvs[0].Spec.ReplicaNumber), len(qualifiedNodes))
+		return false, nil
 	}
+
+	// check if this node is within the qualified nodes
 	for _, qn := range qualifiedNodes {
 		if qn.Name == node.Name {
 			return true, nil
@@ -307,7 +319,7 @@ func (s *LVMVolumeScheduler) constructLocalVolumeForPVC(pvc *corev1.PersistentVo
 	localVolume := v1alpha1.LocalVolume{}
 	poolName, err := buildStoragePoolName(
 		sc.Parameters[v1alpha1.VolumeParameterPoolClassKey],
-		)
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	framework "k8s.io/kubernetes/pkg/scheduler/framework"
+	"k8s.io/kubernetes/pkg/scheduler/framework"
 )
 
 type Plugin struct {
@@ -39,7 +39,7 @@ func New(_ runtime.Object, f framework.Handle) (framework.Plugin, error) {
 }
 
 // Name returns name of the plugin. It is used in logs, etc.
-func (p Plugin) Name() string {
+func (p *Plugin) Name() string {
 	return Name
 }
 
