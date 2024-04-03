@@ -48,8 +48,8 @@ var (
 	haVolumeTotalCount      = flag.Int("max-ha-volume-count", defaultHAVolumeTotalCount, "max HA volume count")
 	httpPort                = flag.Int("http-port", restServerDefaultPort, "HTTP port for REST server")
 	logLevel                = flag.Int("v", 4 /*Log Info*/, "number for the log level verbosity")
-	MigrateConcurrentNumber = flag.Int("max-migrate-count", 1, "Limit the number of concurrent migrations")
-	MigrateDataNeedCheck    = flag.Bool("migrate-check", false, "Enable data verification during data migration")
+	migrateConcurrentNumber = flag.Int("max-migrate-count", 1, "Limit the number of concurrent migrations")
+	migrateDataNeedCheck    = flag.Bool("migrate-check", false, "Enable data verification during data migration")
 )
 
 var BUILDVERSION, BUILDTIME, GOVERSION string
@@ -110,8 +110,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	localctrl.MigrateConcurrentNumber = *MigrateConcurrentNumber
-	localctrl.MigrateDataNeedCheck = *MigrateDataNeedCheck
+	localctrl.MigrateConcurrentNumber = *migrateConcurrentNumber
+	localctrl.MigrateDataNeedCheck = *migrateDataNeedCheck
 
 	systemConfig, err := getSystemConfig()
 	if err != nil {

@@ -60,6 +60,7 @@ spec:
         - --csi-address=$(CSI_ENDPOINT)
         - --http-port=80
         - --v=5
+        - --migrate-check=false
         {{- if .Values.localStorage.migrate.tool }}
         - --data-sync-tool={{ .Values.localStorage.migrate.tool }}
         {{- end }}
@@ -69,6 +70,9 @@ spec:
         {{- if .Values.localStorage.member.config.maxHAVolumeCount }}
         - --max-ha-volume-count={{ .Values.localStorage.member.config.maxHAVolumeCount }}
         {{- end }}
+        {{- if .Values.localStorage.member.config.maxMigrateCount}}
+        - --max-migrate-count={{ .Values.localStorage.member.config.maxMigrateCount }}
+        {{- end}}
         env:
         - name: POD_NAME
           valueFrom:
