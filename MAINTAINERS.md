@@ -17,3 +17,4 @@ Please keep the below list sorted in ascending order.
 | Michael Yao   | @windsonsea    | Docs      | DaoCloud    | <haifeng.yao@daocloud.io>   |
 | Baofa Fan     | @carlory       | Dev       | DaoCloud    | <baofa.fan@daocloud.io>     |
 | Peng Lai      | @peng9808      | Dev       | DaoCloud    | <peng.lai@daocloud.io>      |
+| Peter Pan     | @panpan0000    | Community | DaoCloud    | <peter.pan@daocloud.io>      |
