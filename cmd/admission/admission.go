@@ -23,6 +23,7 @@ func main() {
 	options := webhook.NewServerOption()
 	pflag.CommandLine.AddFlagSet(options.AddFlags(&pflag.FlagSet{}))
 	pflag.Parse()
+	setupLogging()
 
 	certPath := filepath.Join(options.CertDir, options.TLSCert)
 	keyPath := filepath.Join(options.CertDir, options.TLSKey)
@@ -62,8 +63,4 @@ func setupLogging() {
 			return funcName, fmt.Sprintf("%s:%d", fileName, f.Line)
 		}})
 	log.SetReportCaller(true)
-}
-
-func init() {
-	setupLogging()
 }
