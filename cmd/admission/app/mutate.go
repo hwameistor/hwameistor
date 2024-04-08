@@ -137,9 +137,20 @@ func serverHwameiStorMutateFunc(w http.ResponseWriter, r *http.Request, o webhoo
 	}
 }
 
+func healthz(w http.ResponseWriter, r *http.Request, o webhook.ServerOption) {
+	log.WithField("request.path", r.URL.Path).Info("health check ok")
+	_, _ = w.Write([]byte("ok"))
+}
+
 func RegisterHwameiStorMutateWebhooks(o webhook.ServerOption) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		serverHwameiStorMutateFunc(w, r, o)
+	})
+}
+
+func RegisterHwameiStorHealthz(o webhook.ServerOption) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		healthz(w, r, o)
 	})
 }
 

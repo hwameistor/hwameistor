@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
+	hookcfg "github.com/hwameistor/hwameistor/pkg/webhook/config"
 	"net/http"
+	"os"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -32,15 +36,29 @@ func main() {
 		log.Fatal("--cert-dir, --tls-cert-file, --tls-private-key-file is required")
 	}
 
-	mux := http.NewServeMux()
-	mux.Handle("/mutate", app.RegisterHwameiStorMutateWebhooks(*options))
-	server := &http.Server{
-		Addr:    ":18443",
-		Handler: mux,
+	runServer := func(_ context.Context) {
+		// initialize webhook config first
+		if err := hookcfg.CreateOrUpdateWebHookConfig(); err != nil {
+			log.WithError(err).Fatal("failed to init webhook config")
+		}
+
+		mux := http.NewServeMux()
+		mux.Handle("/mutate", app.RegisterHwameiStorMutateWebhooks(*options))
+		mux.Handle("/healthz", app.RegisterHwameiStorHealthz(*options))
+		server := &http.Server{
+			Addr:    ":18443",
+			Handler: mux,
+		}
+
+		log.Infof("admission server at %v, using tls-cert-file %s, tls-private-key-file %s", server.Addr, certPath, keyPath)
+		log.Fatal(server.ListenAndServeTLS(certPath, keyPath))
 	}
 
-	log.Infof("admission server at %v, using tls-cert-file %s, tls-private-key-file %s", server.Addr, certPath, keyPath)
-	log.Fatal(server.ListenAndServeTLS(certPath, keyPath))
+	// Acquired leader lease before proceeding
+	if err := utils.RunWithLease("" /*namespace*/, "" /*podName*/, fmt.Sprintf("hwameistor-admission-controller-master"), runServer); err != nil {
+		log.Error(err, "Failed to init cluster lease election")
+		os.Exit(1)
+	}
 }
 
 func setupLogging() {
@@ -55,6 +73,7 @@ func setupLogging() {
 	}
 
 	log.SetLevel(level)
+	log.Infof("log level set to %s", level.String())
 	log.SetFormatter(&log.JSONFormatter{
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
 			s := strings.Split(f.Function, ".")
