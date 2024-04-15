@@ -42,12 +42,6 @@ spec:
           ports:
             - containerPort: 18443
               name: admission-api
-          readinessProbe:
-            failureThreshold: 3
-            httpGet:
-              path: /healthz
-              port: 18443
-              scheme: HTTPS
           volumeMounts:
             - name: admission-controller-tls-certs
               mountPath: /etc/webhook/certs
