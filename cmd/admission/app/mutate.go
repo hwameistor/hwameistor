@@ -12,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/hwameistor/hwameistor/pkg/webhook"
-	hookcfg "github.com/hwameistor/hwameistor/pkg/webhook/config"
 	"github.com/hwameistor/hwameistor/pkg/webhook/scheduler"
 )
 
@@ -156,7 +155,4 @@ func RegisterHwameiStorHealthz(o webhook.ServerOption) http.Handler {
 
 func init() {
 	webhook.AddToMutateHooks(scheduler.NewPatchSchedulerWebHook())
-	if err := hookcfg.CreateOrUpdateWebHookConfig(); err != nil {
-		panic(err)
-	}
 }

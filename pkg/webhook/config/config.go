@@ -3,19 +3,18 @@ package config
 import (
 	"bytes"
 	"context"
-	"os"
-	"path/filepath"
-	"time"
-
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8s "k8s.io/client-go/kubernetes"
+	"os"
+	"path/filepath"
 
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/kubernetes"
 	"github.com/hwameistor/hwameistor/pkg/utils"
-	"github.com/hwameistor/hwameistor/pkg/utils/certmanager"
 )
 
 var (
@@ -25,32 +24,23 @@ var (
 	webhookService, _    = os.LookupEnv("WEBHOOK_SERVICE")
 	mutationPath, _      = os.LookupEnv("MUTATE_PATH")
 	failurePolicy, _     = os.LookupEnv("FAILURE_POLICY")
-	dnsNames             = []string{webhookService, webhookService + "." + webhookNamespace, webhookService + "." + webhookNamespace + "." + "svc"}
-	commonName           = webhookService + "." + webhookNamespace + "." + "svc"
 	ignoreNameSpaceKey   = "hwameistor.io/webhook"
 	ignoreNameSpaceValue = "ignore"
 
 	// certs
-	certsDir          = "/etc/webhook/certs"
-	certKey           = "tls.key"
-	certFile          = "tls.crt"
-	Organization      = "hwameistor.io"
-	DefaultEffecttime = 10
+	certsDir     = "/etc/webhook/certs"
+	certKey      = "tls.key"
+	certFile     = "tls.crt"
+	Organization = "hwameistor.io"
 
 	kubeSystemNameSpace = "kube-system"
 )
 
 // CreateOrUpdateWebHookConfig create or update webhook config
 func CreateOrUpdateWebHookConfig() error {
-	// generate self-signed certs
-	serverCertPEM, serverPrivateKeyPEM, err := certmanager.NewCertManager(
-		[]string{Organization},
-		time.Until(time.Date(time.Now().Year()+DefaultEffecttime, time.Now().Month(), time.Now().Day(), time.Now().Hour(), time.Now().Minute(), 0, 0, time.Now().Location())),
-		dnsNames,
-		commonName,
-	).GenerateSelfSignedCerts()
+	serverCertPEM, serverPrivateKeyPEM, err := GetCAFromSecrets()
 	if err != nil {
-		log.WithError(err).Error("failed to generate certs")
+		log.WithError(err).Error("failed to get ca")
 		return err
 	}
 
@@ -78,6 +68,26 @@ func CreateOrUpdateWebHookConfig() error {
 	}
 
 	return nil
+}
+
+func GetCAFromSecrets() (serverCertPEM *bytes.Buffer, serverPrivateKeyPEM *bytes.Buffer, err error) {
+	clientset, err := kubernetes.NewClientSet()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	secret, err := clientset.CoreV1().Secrets(webhookNamespace).Get(context.Background(), "hwameistor-admission-ca", metav1.GetOptions{})
+	if err != nil {
+		log.WithError(err).Error("failed to get ca from secrets")
+		return nil, nil, err
+	} else {
+		if secret.Data == nil || secret.Data[corev1.TLSPrivateKeyKey] == nil || secret.Data[corev1.TLSCertKey] == nil {
+			log.Error("admission ca secret found, but tls.crt or tls.key is empty")
+			return nil, nil, fmt.Errorf("admission ca secret found, but tls.crt or tls.key is empty")
+		}
+	}
+
+	return bytes.NewBuffer(secret.Data[corev1.TLSCertKey]), bytes.NewBuffer(secret.Data[corev1.TLSPrivateKeyKey]), nil
 }
 
 func CreateAdmissionConfig(caCert *bytes.Buffer) error {
