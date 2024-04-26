@@ -1,9 +1,12 @@
 package scheduler
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
 
@@ -24,6 +27,7 @@ import (
 
 // VolumeScheduler is to scheduler hwameistor volume
 type Scheduler struct {
+	apiClient     client.Client
 	lvmScheduler  VolumeScheduler
 	diskScheduler VolumeScheduler
 
@@ -81,6 +85,7 @@ func NewScheduler(f framework.Handle) *Scheduler {
 	}
 	replicaScheduler.Init()
 
+	sche.apiClient = apiClient
 	sche.lvmScheduler = NewLVMVolumeScheduler(f, replicaScheduler, hwameiStorCache, apiClient)
 	sche.diskScheduler = NewDiskVolumeScheduler(f)
 
@@ -118,6 +123,14 @@ func (s *Scheduler) Filter(pod *corev1.Pod, node *corev1.Node) (bool, error) {
 		}
 		existingLocalVolumes = append(existingLocalVolumes, pv.Spec.CSI.VolumeHandle)
 	}
+	//write pod affinity into pvc annotation
+	if pod.Spec.Affinity != nil {
+		err = s.pvcRecordPodAffinity(pod.Spec.Affinity, lvmNewPVCs)
+		if err != nil {
+			return false, err
+		}
+	}
+
 	canSchedule, err := s.lvmScheduler.Filter(existingLocalVolumes, lvmNewPVCs, node)
 	if !canSchedule {
 		log.WithFields(log.Fields{"node": node.Name, "pod": pod.Name}).WithError(err).Error("Filter out an node for LVM volumes")
@@ -147,6 +160,32 @@ func (s *Scheduler) Filter(pod *corev1.Pod, node *corev1.Node) (bool, error) {
 
 	log.WithFields(log.Fields{"node": node.Name, "pod": pod.Name}).Debug("Filtered in an node")
 	return true, nil
+}
+
+func (s *Scheduler) pvcRecordPodAffinity(affinity *corev1.Affinity, lvmNewPVCs []*corev1.PersistentVolumeClaim) error {
+	if affinity == nil {
+		return nil
+	}
+	affinity_bytes, err := json.Marshal(affinity)
+	if err != nil {
+		log.Error("affinty Marshal fail")
+		return err
+	}
+	affinity_str := string(affinity_bytes)
+	for _, pvc := range lvmNewPVCs {
+		p := pvc.DeepCopy()
+		if p.Annotations == nil {
+			p.Annotations = make(map[string]string)
+		}
+		p.Annotations["hwameistor.io/affinity-annotations"] = affinity_str
+		err := s.apiClient.Patch(context.TODO(), p, client.MergeFrom(pvc))
+		if err != nil {
+			log.WithFields(log.Fields{"pvc": pvc.Name, "namespace": pvc.Namespace, "pv": pvc.Spec.VolumeName}).Error("set annotations-podAffinity fail!")
+			return err
+		}
+		log.WithFields(log.Fields{"pvc": pvc.Name, "namespace": pvc.Namespace, "pv": pvc.Spec.VolumeName}).Debugf("set annotations-podAffinity success!")
+	}
+	return nil
 }
 
 func (s *Scheduler) Score(pod *corev1.Pod, node string) (int64, error) {
