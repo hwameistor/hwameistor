@@ -1,3 +1,32 @@
+v0.14.3/ 2024-4-29
+========================
+
+
+
+
+## LVM volume management enhancements
+- Configure ls default parameters #1434(@peng9808 )
+- Solve the problem of lvr not sensing pod affinity #1426(@peng9808 )
+## Volume Migration
+- Added option to enable data verification during migration #1415(@peng9808 )
+## Apiserver
+- Fix uninitialized EventRecorder #1427(@sun7927 )
+## Scheduler
+- make scheduler filter message readable #1435(@SSmallMonster )
+## Admission
+- acquire leader lease before serving #1439(@SSmallMonster )
+- refactor(admission): use tls cert from secrets #1443(@SSmallMonster )
+## Tests
+- 【e2e-test】update e2e for auto create secret #1444(@FloatXD )
+- 【e2e-test】update e2e-test to fix admission ca #1445(@FloatXD )
+- update e2e ha volume test #1454(@FloatXD )
+## Documentation
+- make scheduler filter message readable #1435(@SSmallMonster )
+- chore(logger): setup logger after flag parse #1440(@SSmallMonster )
+## Others
+- add panpan0000 as maintainer #1438(@panpan0000 )
+
+
 v0.14.2/ 2024-4-1
 ========================
 
