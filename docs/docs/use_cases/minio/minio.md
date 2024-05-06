@@ -1,11 +1,11 @@
 ﻿---
 sidebar_position: 3
-sidebar_label: "Minio"
+sidebar_label: "MinIO"
 ---
 
-# Minio
+# MinIO
 
-## Introduction to Minio
+## Introduction to MinIO
 
 MinIO is a high performance object storage solution with native support for Kubernetes deployments.
 It can provide distributed, S3-compatible, and multi-cloud storage service in public cloud, private cloud,
@@ -91,114 +91,113 @@ and how to configure HwameiStor local volumes.
 
 1. Copy minio-operator repo to your local environment
 
-  ```
-  git clone <https://github.com/minio/operator.git>
-  ```
+   ```git
+   git clone <https://github.com/minio/operator.git>
+   ```
 
-  ![helm-repo-list](helm-repo-list.png)
+   ![helm-repo-list](helm-repo-list.png)
 
-  ![ls-operator](ls-opeartor.png)
+   ![ls-operator](ls-opeartor.png)
 
 2. Enter helm operator directory `/root/operator/helm/operator`
 
-  ![ls-pwd](ls-pwd.png)
+   ![ls-pwd](ls-pwd.png)
 
 3. Deploy the minio-operator instance
 
-  ```
-  helm install minio-operator \
-  --namespace minio-operator \
-  --create-namespace \
-  --generate-name .
-  --set persistence.storageClass=local-storage-hdd-lvm .
-  ```
+   ```shell
+   helm install minio-operator \
+   --namespace minio-operator \
+   --create-namespace \
+   --generate-name .
+   --set persistence.storageClass=local-storage-hdd-lvm .
+   ```
 
 4. Check minio-operator running status
 
-  ![get-all](kubectl-get-all.png)
+   ![get-all](kubectl-get-all.png)
 
 ### Create tenants
 
-
 1. Enter the `/root/operator/examples/kustomization/base` directory and change `tenant.yaml`
 
-  ![git-diff-yaml](git-diff-tenant-yaml.png)
+   ![git-diff-yaml](git-diff-tenant-yaml.png)
 
 2. Enter the `/root/operator/helm/tenant/` directory and change `values.yaml`
 
-  ![git-diff-values.yaml](git-diff-values-yaml.png)
+   ![git-diff-values.yaml](git-diff-values-yaml.png)
 
 3. Enter `/root/operator/examples/kustomization/tenant-lite` directory and change `kustomization.yaml`
 
-  ![git-diff-kustomization-yaml](git-diff-kustomization-yaml.png)
+   ![git-diff-kustomization-yaml](git-diff-kustomization-yaml.png)
 
 4. Change `tenant.yaml`
 
-  ![git-diff-tenant-yaml02](git-diff-tenant-yaml02.png)
+   ![git-diff-tenant-yaml02](git-diff-tenant-yaml02.png)
 
 5. Change `tenantNamePatch.yaml`
 
-  ![git-diff-tenant-name-patch-yaml](git-diff-tenant-name-patch-yaml.png)
+   ![git-diff-tenant-name-patch-yaml](git-diff-tenant-name-patch-yaml.png)
 
 6. Create a tenant
 
-  ```
-  kubectl apply –k . 
-  ```
+   ```shell
+   kubectl apply –k . 
+   ```
 
 7. Check resource status of the tenant minio-t1
 
-  ![kubectl-get-all-nminio-tenant](kubectl-get-all-nminio-tenant.png)
+   ![kubectl-get-all-nminio-tenant](kubectl-get-all-nminio-tenant.png)
 
 8. To create another new tenant, you can first create a new directory `tenant` (in this example `tenant-lite-2`) under `/root/operator/examples/kustomization` and change the files listed above
 
-  ![pwd-ls-ls](pwd-ls-ls.png)
+   ![pwd-ls-ls](pwd-ls-ls.png)
 
 9. Run `kubectl apply –k .` to create the new tenant `minio-t2`
 
-  ![kubectl-get-all-nminio](kubectl-get-all-minio.png)
+   ![kubectl-get-all-nminio](kubectl-get-all-minio.png)
 
 ### Configure HwameiStor local volumes
 
 Run the following commands in sequence to finish this configuration:
 
-```
+```shell
 kubectl get statefulset.apps/minio-t1-pool-0 -nminio-tenant -oyaml
 ```
 
 ![local-storage-hdd-lvm](local-storage-hdd-lvm.png)
 
-```
+```shell
 kubectl get pvc –A
 ```
 
 ![kubectl-get-pvc](kubectl-get-pvc.png)
 
-```
+```shell
 kubectl get pvc export-minio6-0 -nminio-6 -oyaml
 ```
 
 ![kubectl-get-pvc-export-oyaml](kubectl-get-pvc-export-oyaml.png)
 
-```
+```shell
 kubectl get pv
 ```
 
 ![kubectl-get-pv](kubectl-get-pv.png)
 
-```
+```shell
 kubectl get pvc data0-minio-t1-pool-0-0 -nminio-tenant -oyaml
 ```
 
 ![kubectl-get-pvc-oyaml](kubectl-get-pvc-oyaml.png)
 
-```
+```shell
 kubectl get lv
 ```
 
 ![kubectl-get-lv](kubectl-get-lv.png)
 
-```
+```shell
 kubect get lvr
 ```
 
@@ -210,142 +209,141 @@ With the above settings in place, now let's test basic features and tenant isola
 
 ### Test basic features
 
-
 1. Log in to `minio console：10.6.163.52:30401/login`
 
-  ![minio-opeartor-console-login](minio-opeartor-console-login.png)
+   ![minio-opeartor-console-login](minio-opeartor-console-login.png)
 
 2. Get JWT by `kubectl minio proxy -n minio-operator`
 
-  ![minio-opeartor-console-login](kubectl-minio-proxy-jwt.png)
+   ![minio-opeartor-console-login](kubectl-minio-proxy-jwt.png)
 
 3. Browse and manage information about newly-created tenants
 
-  ![tenant01](tenant01.png)
+   ![tenant01](tenant01.png)
 
-  ![tenant02](tenant02.png)
+   ![tenant02](tenant02.png)
 
-  ![tenant03](tenant03.png)
+   ![tenant03](tenant03.png)
 
-  ![tenant04](tenant04.png)
+   ![tenant04](tenant04.png)
 
-  ![tenant05](tenant05.png)
+   ![tenant05](tenant05.png)
 
-  ![tenant06](tenant06.png)
+   ![tenant06](tenant06.png)
 
-4. Log in as tenant minio-t1 (Account: minio)
+4. Log in as tenant `minio-t1` (Account: minio)
 
-  ![login-minio](login-minio-t1-01.png)
+   ![login-minio](login-minio-t1-01.png)
 
-  ![login-minio](login-minio-t1-02.png)
+   ![login-minio](login-minio-t1-02.png)
 
-5. Browse bucket bk-1
+5. Browse bucket `bk-1`
 
-  ![view-bucket-1](view-bucket-01.png)
+   ![view-bucket-1](view-bucket-01.png)
 
-  ![view-bucket-1](view-bucket-02.png)
+   ![view-bucket-1](view-bucket-02.png)
 
-  ![view-bucket-1](view-bucket-03.png)
+   ![view-bucket-1](view-bucket-03.png)
 
-6. Create a new bucket bk-1-1
+6. Create a new bucket `bk-1-1`
 
-  ![create-bucket-1-1](create-bucket-1-1.png)
+   ![create-bucket-1-1](create-bucket-1-1.png)
 
-  ![create-bucket-1-1](create-bucket-1-2.png)
+   ![create-bucket-1-1](create-bucket-1-2.png)
 
-  ![create-bucket-1-1](create-bucket-1-3.png)
+   ![create-bucket-1-1](create-bucket-1-3.png)
 
-7. Create path path-1-2
+7. Create path `path-1-2`
 
-  ![create-path-1-2](create-path-1-2-01.png)
+   ![create-path-1-2](create-path-1-2-01.png)
 
-  ![create-path-1-2](create-path-1-2-02.png)
+   ![create-path-1-2](create-path-1-2-02.png)
 
 8. Upload the file
 
-  ![upload-file](upload-file-success.png)
+   ![upload-file](upload-file-success.png)
 
-  ![upload-file](upload-file-success-02.png)
+   ![upload-file](upload-file-success-02.png)
 
-  ![upload-file](upload-file-success-03.png)
+   ![upload-file](upload-file-success-03.png)
 
 9. Upload the folder
 
-  ![upload-folder](upload-folder-success-01.png)
+   ![upload-folder](upload-folder-success-01.png)
 
-  ![upload-folder](upload-folder-success-02.png)
+   ![upload-folder](upload-folder-success-02.png)
 
-  ![upload-folder](upload-folder-success-03.png)
+   ![upload-folder](upload-folder-success-03.png)
 
-  ![upload-folder](upload-folder-success-04.png)
+   ![upload-folder](upload-folder-success-04.png)
 
 10. Create a user with read-only permission
 
-  ![create-user](create-readonly-user-01.png)
+   ![create-user](create-readonly-user-01.png)
 
-  ![create-user](create-readonly-user-02.png)
+   ![create-user](create-readonly-user-02.png)
 
 ### Test tenant isolation
 
-1. Log in as tenant minio-t2
+1. Log in as tenant `minio-t2`
 
-  ![login-t2](login-minio-t2-01.png)
+   ![login-t2](login-minio-t2-01.png)
 
-  ![login-t2](login-minio-t2-02.png)
+   ![login-t2](login-minio-t2-02.png)
 
-2. Only minio-t2 information is visible. You cannot see information about tenant minio-t1.
+2. Only `minio-t2` information is visible. You cannot see information about tenant `minio-t1`.
 
-  ![only-t2](only-t2.png)
+   ![only-t2](only-t2.png)
 
 3. Create bucket
 
-  ![create-bucket](create-bucket01.png)
+   ![create-bucket](create-bucket01.png)
 
-  ![create-bucket](createbucket02.png)
+   ![create-bucket](createbucket02.png)
 
 4. Create path
 
-  ![create-path](create-path01.png)
+   ![create-path](create-path01.png)
 
-  ![create-path](create-path02.png)
+   ![create-path](create-path02.png)
 
 5. Upload the file
 
-  ![upload-file](upload-file01.png)
+   ![upload-file](upload-file01.png)
 
-  ![upload-file](upload-file02.png)
+   ![upload-file](upload-file02.png)
 
 6. Create a user
 
-  ![create-user](create-user01.png)
+   ![create-user](create-user01.png)
 
-  ![create-user](create-user02.png)
+   ![create-user](create-user02.png)
 
-  ![create-user](create-user03.png)
+   ![create-user](create-user03.png)
 
-  ![create-user](create-user04.png)
+   ![create-user](create-user04.png)
 
-  ![create-user](create-user05.png)
+   ![create-user](create-user05.png)
 
 7. Configure user policies
 
-  ![user-policy](user-policy01.png)
+   ![user-policy](user-policy01.png)
 
-  ![user-policy](user-policy02.png)
+   ![user-policy](user-policy02.png)
 
 8. Delete a bucket
 
-  ![delete-bucket](delete-bk01.png)
+   ![delete-bucket](delete-bk01.png)
 
-  ![delete-bucket](delete-bk02.png)
+   ![delete-bucket](delete-bk02.png)
 
-  ![delete-bucket](delete-bk03.png)
+   ![delete-bucket](delete-bk03.png)
 
-  ![delete-bucket](delete-bk04.png)
+   ![delete-bucket](delete-bk04.png)
 
-  ![delete-bucket](delete-bk05.png)
+   ![delete-bucket](delete-bk05.png)
 
-  ![delete-bucket](delete-bk06.png)
+   ![delete-bucket](delete-bk06.png)
 
 ## Conclusion
 

@@ -68,7 +68,7 @@ Optional installation parameters:
 
   Method 2:
 
-  ```console
+  ```yaml
   diskReserve:
   - nodeName: node1
     devices:
