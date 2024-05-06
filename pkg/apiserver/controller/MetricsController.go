@@ -115,6 +115,7 @@ func (v *MetricsController) OperationGet(ctx *gin.Context) {
 // @Param       resourceName query string false "resourceName"
 // @Param       resourceType query string false "resourceType"
 // @Param       sort query string false "sort"
+// @Param       sortDir query string false "sortDir"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.EventActionList
@@ -127,6 +128,7 @@ func (v *MetricsController) EventList(ctx *gin.Context) {
 	resourceName := ctx.Query("resourceName")
 	resourceType := ctx.Query("resourceType")
 	sort := ctx.Query("sort")
+	sortDir := ctx.Query("sortDir")
 	p, _ := strconv.ParseInt(page, 10, 32)
 	ps, _ := strconv.ParseInt(pageSize, 10, 32)
 	var queryPage hwameistorapi.QueryPage
@@ -135,6 +137,7 @@ func (v *MetricsController) EventList(ctx *gin.Context) {
 	queryPage.ResourceName = resourceName
 	queryPage.ResourceType = resourceType
 	queryPage.Sort = sort
+	queryPage.SortDir = sortDir
 
 	events, err := v.m.MetricController().EventList(queryPage)
 	if err != nil {

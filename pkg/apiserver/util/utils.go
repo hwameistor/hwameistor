@@ -80,13 +80,13 @@ func ConvertNodeName(node string) string {
 	return strings.Replace(node, ".", "-", -1)
 }
 
-type ByEventName []*api.EventAction
+type ByEventNameAsc []*api.EventAction
 
-func (a ByEventName) Len() int {
+func (a ByEventNameAsc) Len() int {
 	return len(a)
 }
 
-func (a ByEventName) Less(i, j int) bool {
+func (a ByEventNameAsc) Less(i, j int) bool {
 	flag := false
 	compare := strings.Compare(a[i].ResourceName, a[j].ResourceName)
 	if compare < 0 {
@@ -95,17 +95,17 @@ func (a ByEventName) Less(i, j int) bool {
 	return flag
 }
 
-func (a ByEventName) Swap(i, j int) {
+func (a ByEventNameAsc) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
 }
 
-type ByEventType []*api.EventAction
+type ByEventTypeAsc []*api.EventAction
 
-func (a ByEventType) Len() int {
+func (a ByEventTypeAsc) Len() int {
 	return len(a)
 }
 
-func (a ByEventType) Less(i, j int) bool {
+func (a ByEventTypeAsc) Less(i, j int) bool {
 	flag := false
 	compare := strings.Compare(a[i].ResourceType, a[j].ResourceType)
 	if compare < 0 {
@@ -114,21 +114,73 @@ func (a ByEventType) Less(i, j int) bool {
 	return flag
 }
 
-func (a ByEventType) Swap(i, j int) {
+func (a ByEventTypeAsc) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
 }
 
-type ByEventTime []*api.EventAction
+type ByEventTimeAsc []*api.EventAction
 
-func (a ByEventTime) Len() int {
+func (a ByEventTimeAsc) Len() int {
 	return len(a)
 }
 
-func (a ByEventTime) Less(i, j int) bool {
+func (a ByEventTimeAsc) Less(i, j int) bool {
+	return a[i].EventRecord.Time.Time.Before(a[j].EventRecord.Time.Time)
+}
+
+func (a ByEventTimeAsc) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+type ByEventNameDesc []*api.EventAction
+
+func (a ByEventNameDesc) Len() int {
+	return len(a)
+}
+
+func (a ByEventNameDesc) Less(i, j int) bool {
+	flag := false
+	compare := strings.Compare(a[i].ResourceName, a[j].ResourceName)
+	if compare > 0 {
+		flag = true
+	}
+	return flag
+}
+
+func (a ByEventNameDesc) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+type ByEventTypeDesc []*api.EventAction
+
+func (a ByEventTypeDesc) Len() int {
+	return len(a)
+}
+
+func (a ByEventTypeDesc) Less(i, j int) bool {
+	flag := false
+	compare := strings.Compare(a[i].ResourceType, a[j].ResourceType)
+	if compare > 0 {
+		flag = true
+	}
+	return flag
+}
+
+func (a ByEventTypeDesc) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+type ByEventTimeDesc []*api.EventAction
+
+func (a ByEventTimeDesc) Len() int {
+	return len(a)
+}
+
+func (a ByEventTimeDesc) Less(i, j int) bool {
 	return a[i].EventRecord.Time.Time.After(a[j].EventRecord.Time.Time)
 }
 
-func (a ByEventTime) Swap(i, j int) {
+func (a ByEventTimeDesc) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
 }
 

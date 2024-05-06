@@ -208,6 +208,12 @@ const docTemplate = `{
                         "description": "sort",
                         "name": "sort",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sortDir",
+                        "name": "sortDir",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1445,7 +1451,7 @@ const docTemplate = `{
         },
         "/cluster/volumes": {
             "get": {
-                "description": "list Volume 排序sortBy:\"time\",\"name\",\"namespace\"  sortDir:升序\"ASC\" 降序\"DESC\"",
+                "description": "list Volume sortBy排序:\"time\",\"name\",\"namespace\"  sortDir:升序\"ASC\" 降序\"DESC\" 默认按时间降序",
                 "consumes": [
                     "application/json"
                 ],
@@ -1678,6 +1684,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "sort",
                         "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sortDir",
+                        "name": "sortDir",
                         "in": "query"
                     }
                 ],
@@ -2973,6 +2985,9 @@ const docTemplate = `{
         "api.VolumeMigrateInfo": {
             "type": "object",
             "properties": {
+                "replicaAffinity": {
+                    "type": "string"
+                },
                 "selectedNode": {
                     "type": "string"
                 },
@@ -3011,6 +3026,9 @@ const docTemplate = `{
             "properties": {
                 "abort": {
                     "type": "boolean"
+                },
+                "replicaAffinity": {
+                    "type": "string"
                 },
                 "selectedNode": {
                     "type": "string"
@@ -5081,11 +5099,6 @@ const docTemplate = `{
         "v1alpha1.State": {
             "type": "string",
             "enum": [
-                "",
-                "ToBeMounted",
-                "ToBeUnMount",
-                "Mounted",
-                "NotReady",
                 "Ready",
                 "Maintain",
                 "Offline",
@@ -5119,14 +5132,14 @@ const docTemplate = `{
                 "Failed",
                 "Available",
                 "InUse",
-                "Offline"
+                "Offline",
+                "",
+                "ToBeMounted",
+                "ToBeUnMount",
+                "Mounted",
+                "NotReady"
             ],
             "x-enum-varnames": [
-                "MountPointStateEmpty",
-                "MountPointToBeMounted",
-                "MountPointToBeUnMount",
-                "MountPointMounted",
-                "MountPointNotReady",
                 "NodeStateReady",
                 "NodeStateMaintain",
                 "NodeStateOffline",
@@ -5160,7 +5173,12 @@ const docTemplate = `{
                 "OperationStateFailed",
                 "DiskStateAvailable",
                 "DiskStateInUse",
-                "DiskStateOffline"
+                "DiskStateOffline",
+                "MountPointStateEmpty",
+                "MountPointToBeMounted",
+                "MountPointToBeUnMount",
+                "MountPointMounted",
+                "MountPointNotReady"
             ]
         },
         "v1alpha1.StorageNodeCondition": {

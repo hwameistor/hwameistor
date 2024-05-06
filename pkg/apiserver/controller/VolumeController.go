@@ -223,9 +223,10 @@ func (v *VolumeController) VolumeMigrateOperation(ctx *gin.Context) {
 
 	sourceNodeName := vmrb.SrcNode
 	targetNodeName := vmrb.SelectedNode
+	replicaAffinity := vmrb.ReplicaAffinity
 	abort := vmrb.Abort
 
-	volumeMigrate, err := v.m.VolumeController().CreateVolumeMigrate(name, sourceNodeName, targetNodeName, abort)
+	volumeMigrate, err := v.m.VolumeController().CreateVolumeMigrate(name, sourceNodeName, targetNodeName, replicaAffinity, abort)
 	if err != nil {
 		failRsp.ErrCode = 500
 		failRsp.Desc = "VolumeMigrateOperation Failed: " + err.Error()
@@ -405,6 +406,7 @@ func (v *VolumeController) VolumeOperationGet(ctx *gin.Context) {
 // @Param       pageSize query int32 true "pageSize"
 // @Param       action query string false "action"
 // @Param       sort query string false "sort"
+// @Param       sortDir query string false "sortDir"
 // @Accept      json
 // @Produce     json
 // @Success     200 {object}  api.EventActionList
@@ -416,6 +418,7 @@ func (v *VolumeController) VolumeEventList(ctx *gin.Context) {
 	volumeName := ctx.Param("volumeName")
 	action := ctx.Query("action")
 	sort := ctx.Query("sort")
+	sortDir := ctx.Query("sortDir")
 	page := ctx.Query("page")
 	pageSize := ctx.Query("pageSize")
 	p, _ := strconv.ParseInt(page, 10, 32)
@@ -434,6 +437,7 @@ func (v *VolumeController) VolumeEventList(ctx *gin.Context) {
 	queryPage.Sort = sort
 	queryPage.Page = int32(p)
 	queryPage.PageSize = int32(ps)
+	queryPage.SortDir = sortDir
 
 	events, err := v.m.MetricController().EventList(queryPage)
 	if err != nil {
@@ -444,6 +448,7 @@ func (v *VolumeController) VolumeEventList(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, events)
+	//todo sortBy
 }
 
 // VolumeExpandOperation godoc

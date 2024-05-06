@@ -200,9 +200,10 @@ type VolumeGroupList struct {
 }
 
 type VolumeMigrateInfo struct {
-	VolumeName   string `json:"volumeName,omitempty"`
-	SrcNode      string `json:"srcNode,omitempty"`
-	SelectedNode string `json:"selectedNode,omitempty"`
+	VolumeName      string `json:"volumeName,omitempty"`
+	SrcNode         string `json:"srcNode,omitempty"`
+	SelectedNode    string `json:"selectedNode,omitempty"`
+	ReplicaAffinity string `json:"replicaAffinity,omitempty"`
 }
 
 type VolumeMigrateRspBody struct {
@@ -210,9 +211,10 @@ type VolumeMigrateRspBody struct {
 }
 
 type VolumeMigrateReqBody struct {
-	SrcNode      string `json:"srcNode,omitempty"`
-	SelectedNode string `json:"selectedNode,omitempty"`
-	Abort        bool   `json:"abort,omitempty default:false"`
+	SrcNode         string `json:"srcNode,omitempty"`
+	SelectedNode    string `json:"selectedNode,omitempty"`
+	ReplicaAffinity string `json:"replicaAffinity,omitempty default:need"`
+	Abort           bool   `json:"abort,omitempty default:false"`
 }
 
 type VolumeConvertReqBody struct {
