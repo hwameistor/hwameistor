@@ -181,3 +181,48 @@ HwameiStor 可以立即将 Pod 调度到其他数据卷所在的可用节点，�
    kubectl get pod -n hwameistor  # 确认pod是否运行正常
    kubectl get hmcluster -o yaml # 查看health字段
    ```
+
+## Q6: 如何手动扩容存储池容量？
+
+什么时候需要手动扩容:
+
+  - 需要使用磁盘分区([#1387](https://github.com/hwameistor/hwameistor/issues/1387))
+  - 不同的磁盘使用了相同的序列号([#1450](https://github.com/hwameistor/hwameistor/issues/1450),[#1449](https://github.com/hwameistor/hwameistor/issues/1449))
+
+手动扩容步骤:
+
+  1. 创建并扩容存储池
+
+  ```bash
+    $ vgcreate LocalStorage_PoolHDD /dev/sdb
+  ```
+
+  > `LocalStorage_PoolHDD` 是 `HDD` 磁盘类型的存储池名称，其他可选名称有 `LocalStorage_PoolSSD` 用于 `SSD` 类型，`LocalStorage_PoolNVMe` 用于 `NVMe` 类型。
+
+  如果需要使用一个磁盘分区来扩容存储池，可以使用下面的命令:
+
+  ```bash
+    $ vgcreate LocalStorage_PoolHDD /dev/sdb1
+  ```
+
+  如果存储池已经存在，可以使用下面的命令来扩容存储池:
+
+  ```bash
+    $ vgextend LocalStorage_PoolHDD /dev/sdb1
+  ```
+
+2. 检查节点的存储池状态并确认磁盘已经添加到存储池中:
+
+  ```bash
+    $ kubectl get lsn node1 -oyaml
+    apiVersion: hwameistor.io/v1alpha1
+    kind: LocalStorageNode
+    ...
+    pools:
+    LocalStorage_PoolHDD:
+    class: HDD
+    disks:
+    - capacityBytes: 17175674880
+    devPath: /dev/sdb
+    ...
+  ```
