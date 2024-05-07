@@ -124,8 +124,8 @@ func (s *Scheduler) Filter(pod *corev1.Pod, node *corev1.Node) (bool, error) {
 		existingLocalVolumes = append(existingLocalVolumes, pv.Spec.CSI.VolumeHandle)
 	}
 	//write pod affinity into pvc annotation
-	if pod.Spec.Affinity != nil {
-		err = s.pvcRecordPodAffinity(pod.Spec.Affinity, lvmNewPVCs)
+	if pod.Spec.Affinity != nil || len(pod.Spec.Tolerations) > 0 {
+		err = s.pvcRecordPodAffinity(pod.Spec.Affinity, pod.Spec.Tolerations, lvmNewPVCs)
 		if err != nil {
 			return false, err
 		}
@@ -162,22 +162,36 @@ func (s *Scheduler) Filter(pod *corev1.Pod, node *corev1.Node) (bool, error) {
 	return true, nil
 }
 
-func (s *Scheduler) pvcRecordPodAffinity(affinity *corev1.Affinity, lvmNewPVCs []*corev1.PersistentVolumeClaim) error {
-	if affinity == nil {
+func (s *Scheduler) pvcRecordPodAffinity(affinity *corev1.Affinity, tolerations []corev1.Toleration, lvmNewPVCs []*corev1.PersistentVolumeClaim) error {
+	if affinity == nil && len(tolerations) == 0 {
 		return nil
 	}
-	affinity_bytes, err := json.Marshal(affinity)
-	if err != nil {
-		log.Error("affinty Marshal fail")
-		return err
-	}
-	affinity_str := string(affinity_bytes)
 	for _, pvc := range lvmNewPVCs {
 		p := pvc.DeepCopy()
 		if p.Annotations == nil {
 			p.Annotations = make(map[string]string)
 		}
-		p.Annotations["hwameistor.io/affinity-annotations"] = affinity_str
+		if affinity != nil {
+			affinity_bytes, err := json.Marshal(affinity)
+			if err != nil {
+				log.Error("affinty Marshal fail")
+				return err
+			}
+			affinity_str := string(affinity_bytes)
+			p.Annotations["hwameistor.io/affinity-annotations"] = affinity_str
+		}
+
+		if len(tolerations) > 0 {
+			tolerations_btyes, err := json.Marshal(tolerations)
+			if err != nil {
+				log.Error("tolerations Marshal fail")
+				return err
+			}
+			tolerations_str := string(tolerations_btyes)
+
+			p.Annotations["hwameistor.io/tolerations-annotations"] = tolerations_str
+		}
+
 		err := s.apiClient.Patch(context.TODO(), p, client.MergeFrom(pvc))
 		if err != nil {
 			log.WithFields(log.Fields{"pvc": pvc.Name, "namespace": pvc.Namespace, "pv": pvc.Spec.VolumeName}).Error("set annotations-podAffinity fail!")
