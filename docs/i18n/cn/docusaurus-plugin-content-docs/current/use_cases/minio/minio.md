@@ -121,31 +121,31 @@ MinIO 专为大规模、多数据中心云存储服务而设计。
 
 1. 复制 minio operator 仓库到本地。
 
-  ```
-  git clone <https://github.com/minio/operator.git>
-  ```
+   ```git
+   git clone <https://github.com/minio/operator.git>
+   ```
 
-  ![helm-repo-list](helm-repo-list.png)
+   ![helm-repo-list](helm-repo-list.png)
 
-  ![ls-operator](ls-opeartor.png)
+   ![ls-operator](ls-opeartor.png)
 
 2. 进入 helm operator 目录：`/root/operator/helm/operator`。
 
-  ![ls-pwd](ls-pwd.png)
+   ![ls-pwd](ls-pwd.png)
 
 3. 部署 minio-operator 实例。
 
-  ```
-  helm install minio-operator \
-  --namespace minio-operator \
-  --create-namespace \
-  --generate-name .
-  --set persistence.storageClass=local-storage-hdd-lvm .
-  ```
+   ```shell
+   helm install minio-operator \
+   --namespace minio-operator \
+   --create-namespace \
+   --generate-name .
+   --set persistence.storageClass=local-storage-hdd-lvm .
+   ```
 
 4. 检查 minio-operator 资源运行情况。
 
-  ![get-all](kubectl-get-all.png)
+   ![get-all](kubectl-get-all.png)
 
 ### 创建租户
 
@@ -153,83 +153,83 @@ MinIO 专为大规模、多数据中心云存储服务而设计。
 
 1. 进入 `/root/operator/examples/kustomization/base` 目录。如下修改 tenant.yaml。
 
-  ![git-diff-yaml](git-diff-tenant-yaml.png)
+   ![git-diff-yaml](git-diff-tenant-yaml.png)
 
 2. 进入 `/root/operator/helm/tenant/` 目录。如下修改 `values.yaml` 文件。
 
-  ![git-diff-values.yaml](git-diff-values-yaml.png)
+   ![git-diff-values.yaml](git-diff-values-yaml.png)
 
 3. 进入 `/root/operator/examples/kustomization/tenant-lite` 目录。如下修改 `kustomization.yaml` 文件。
 
-  ![git-diff-kustomization-yaml](git-diff-kustomization-yaml.png)
+   ![git-diff-kustomization-yaml](git-diff-kustomization-yaml.png)
 
 4. 如下修改 `tenant.yaml` 文件。
 
-  ![git-diff-tenant-yaml02](git-diff-tenant-yaml02.png)
+   ![git-diff-tenant-yaml02](git-diff-tenant-yaml02.png)
 
 5. 如下修改 `tenantNamePatch.yaml` 文件。
 
-  ![git-diff-tenant-name-patch-yaml](git-diff-tenant-name-patch-yaml.png)
+   ![git-diff-tenant-name-patch-yaml](git-diff-tenant-name-patch-yaml.png)
 
 6. 创建租户：
 
-  ```
-  kubectl apply –k . 
-  ```
+   ```shell
+   kubectl apply –k . 
+   ```
 
 7. 检查租户 minio-t1 资源状态：
 
-  ![kubectl-get-all-nminio-tenant](kubectl-get-all-nminio-tenant.png)
+   ![kubectl-get-all-nminio-tenant](kubectl-get-all-nminio-tenant.png)
 
 8. 如要创建一个新的租户可以在 `/root/operator/examples/kustomization` 目录下建一个新的 `tenant` 目录（本案例为 `tenant-lite-2`）并对相应文件做对应修改。
 
-  ![pwd-ls-ls](pwd-ls-ls.png)
+   ![pwd-ls-ls](pwd-ls-ls.png)
 
 9. 执行 `kubectl apply –k .` 创建新的租户 `minio-t2`。
 
-  ![kubectl-get-all-nminio](kubectl-get-all-minio.png)
+   ![kubectl-get-all-nminio](kubectl-get-all-minio.png)
 
 ### 配置 HwameiStor 本地卷
 
 依次运行以下命令来配置本地卷。
 
-```
+```shell
 kubectl get statefulset.apps/minio-t1-pool-0 -nminio-tenant -oyaml
 ```
 
 ![local-storage-hdd-lvm](local-storage-hdd-lvm.png)
 
-```
+```shell
 kubectl get pvc –A
 ```
 
 ![kubectl-get-pvc](kubectl-get-pvc.png)
 
-```
+```shell
 kubectl get pvc export-minio6-0 -nminio-6 -oyaml
 ```
 
 ![kubectl-get-pvc-export-oyaml](kubectl-get-pvc-export-oyaml.png)
 
-```
+```shell
 kubectl get pv
 ```
 
 ![kubectl-get-pv](kubectl-get-pv.png)
 
-```
+```shell
 kubectl get pvc data0-minio-t1-pool-0-0 -nminio-tenant -oyaml
 ```
 
 ![kubectl-get-pvc-oyaml](kubectl-get-pvc-oyaml.png)
 
-```
+```shell
 kubectl get lv
 ```
 
 ![kubectl-get-lv](kubectl-get-lv.png)
 
-```
+```shell
 kubect get lvr
 ```
 
@@ -245,141 +245,141 @@ kubect get lvr
 
 1. 从浏览器登录 `minio console：10.6.163.52:30401/login`。
 
-  ![minio-opeartor-console-login](minio-opeartor-console-login.png)
+   ![minio-opeartor-console-login](minio-opeartor-console-login.png)
 
 2. 通过 `kubectl minio proxy -n minio-operator `获取 JWT。
 
-  ![minio-opeartor-console-login](kubectl-minio-proxy-jwt.png)
+   ![minio-opeartor-console-login](kubectl-minio-proxy-jwt.png)
 
 3. 浏览及管理创建的租户信息。
 
-  ![tenant01](tenant01.png)
+   ![tenant01](tenant01.png)
 
-  ![tenant02](tenant02.png)
+   ![tenant02](tenant02.png)
 
-  ![tenant03](tenant03.png)
+   ![tenant03](tenant03.png)
 
-  ![tenant04](tenant04.png)
+   ![tenant04](tenant04.png)
 
-  ![tenant05](tenant05.png)
+   ![tenant05](tenant05.png)
 
-  ![tenant06](tenant06.png)
+   ![tenant06](tenant06.png)
 
-4. 登录 minio-t1 租户（用户名 minio，密码 minio123）。
+4. 登录 `minio-t1` 租户（用户名 minio，密码 minio123）。
 
-  ![login-minio](login-minio-t1-01.png)
+   ![login-minio](login-minio-t1-01.png)
 
-  ![login-minio](login-minio-t1-02.png)
+   ![login-minio](login-minio-t1-02.png)
 
-5. 浏览 bucket bk-1。
+5. 浏览 bucket `bk-1`。
 
-  ![view-bucket-1](view-bucket-01.png)
+   ![view-bucket-1](view-bucket-01.png)
 
-  ![view-bucket-1](view-bucket-02.png)
+   ![view-bucket-1](view-bucket-02.png)
 
-  ![view-bucket-1](view-bucket-03.png)
+   ![view-bucket-1](view-bucket-03.png)
 
-6. 创建新的 bucket bk-1-1。
+6. 创建新的 bucket `bk-1-1`。
 
-  ![create-bucket-1-1](create-bucket-1-1.png)
+   ![create-bucket-1-1](create-bucket-1-1.png)
 
-  ![create-bucket-1-1](create-bucket-1-2.png)
+   ![create-bucket-1-1](create-bucket-1-2.png)
 
-  ![create-bucket-1-1](create-bucket-1-3.png)
+   ![create-bucket-1-1](create-bucket-1-3.png)
 
-7. 创建 path path-1-2。
+7. 创建 path `path-1-2`。
 
-  ![create-path-1-2](create-path-1-2-01.png)
+   ![create-path-1-2](create-path-1-2-01.png)
 
-  ![create-path-1-2](create-path-1-2-02.png)
+   ![create-path-1-2](create-path-1-2-02.png)
 
 8. 上传文件成功：
 
-  ![upload-file](upload-file-success.png)
+   ![upload-file](upload-file-success.png)
 
-  ![upload-file](upload-file-success-02.png)
+   ![upload-file](upload-file-success-02.png)
 
-  ![upload-file](upload-file-success-03.png)
+   ![upload-file](upload-file-success-03.png)
 
 9. 上传文件夹成功：
 
-  ![upload-folder](upload-folder-success-01.png)
+   ![upload-folder](upload-folder-success-01.png)
 
-  ![upload-folder](upload-folder-success-02.png)
+   ![upload-folder](upload-folder-success-02.png)
 
-  ![upload-folder](upload-folder-success-03.png)
+   ![upload-folder](upload-folder-success-03.png)
 
-  ![upload-folder](upload-folder-success-04.png)
+   ![upload-folder](upload-folder-success-04.png)
 
 10. 创建只读用户：
 
-  ![create-user](create-readonly-user-01.png)
+   ![create-user](create-readonly-user-01.png)
 
-  ![create-user](create-readonly-user-02.png)
+   ![create-user](create-readonly-user-02.png)
 
 ### 多租户隔离测试
 
 执行以下步骤进行多租户隔离测试。
 
-1. 登录 minio-t2 租户。
+1. 登录 `minio-t2` 租户。
 
-  ![login-t2](login-minio-t2-01.png)
+   ![login-t2](login-minio-t2-01.png)
 
-  ![login-t2](login-minio-t2-02.png)
+   ![login-t2](login-minio-t2-02.png)
 
-2. 此时只能看到 minio-t2 内容，minio-t1 的内容被屏蔽。
+2. 此时只能看到 `minio-t2` 内容，`minio-t1` 的内容被屏蔽。
 
-  ![only-t2](only-t2.png)
+   ![only-t2](only-t2.png)
 
 3. 创建 bucket。
 
-  ![create-bucket](create-bucket01.png)
+   ![create-bucket](create-bucket01.png)
 
-  ![create-bucket](createbucket02.png)
+   ![create-bucket](createbucket02.png)
 
 4. 创建 path。
 
-  ![create-path](create-path01.png)
+   ![create-path](create-path01.png)
 
-  ![create-path](create-path02.png)
+   ![create-path](create-path02.png)
 
 5. 上传文件。
 
-  ![upload-file](upload-file01.png)
+   ![upload-file](upload-file01.png)
 
-  ![upload-file](upload-file02.png)
+   ![upload-file](upload-file02.png)
 
 6. 创建用户。
 
-  ![create-user](create-user01.png)
+   ![create-user](create-user01.png)
 
-  ![create-user](create-user02.png)
+   ![create-user](create-user02.png)
 
-  ![create-user](create-user03.png)
+   ![create-user](create-user03.png)
 
-  ![create-user](create-user04.png)
+   ![create-user](create-user04.png)
 
-  ![create-user](create-user05.png)
+   ![create-user](create-user05.png)
 
 7. 配置用户 policy。
 
-  ![user-policy](user-policy01.png)
+   ![user-policy](user-policy01.png)
 
-  ![user-policy](user-policy02.png)
+   ![user-policy](user-policy02.png)
 
 8. 删除 bucket。
 
-  ![delete-bucket](delete-bk01.png)
+   ![delete-bucket](delete-bk01.png)
 
-  ![delete-bucket](delete-bk02.png)
+   ![delete-bucket](delete-bk02.png)
 
-  ![delete-bucket](delete-bk03.png)
+   ![delete-bucket](delete-bk03.png)
 
-  ![delete-bucket](delete-bk04.png)
+   ![delete-bucket](delete-bk04.png)
 
-  ![delete-bucket](delete-bk05.png)
+   ![delete-bucket](delete-bk05.png)
 
-  ![delete-bucket](delete-bk06.png)
+   ![delete-bucket](delete-bk06.png)
 
 ## 结论
 

@@ -64,7 +64,7 @@ Hwameistor-Operator 负责自动化安装并管理 HwameiStor 系统。
 
   方式 2：
 
-  ```console
+  ```yaml
   diskReserve:
   - nodeName: node1
     devices:
