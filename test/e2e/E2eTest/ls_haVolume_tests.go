@@ -24,7 +24,7 @@ import (
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck"), func() {
+var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("test2"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
@@ -92,7 +92,6 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 
 	})
 	ginkgo.Context("create a deployment", func() {
-
 		ginkgo.It("create a deployment", func() {
 			//create deployment
 			exampleDeployment := &appsv1.Deployment{
@@ -274,6 +273,118 @@ var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("periodCheck
 						logrus.Printf("%+v ", err)
 						f.ExpectNoError(err)
 					}
+					output, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
+					if err != nil {
+						logrus.Printf("%+v ", err)
+						f.ExpectNoError(err)
+					}
+					gomega.Expect(output).To(gomega.Equal("it-is-a-test"))
+				}
+			}
+		})
+		ginkgo.It("taint the node", func() {
+			//create a request
+
+			deployment := &appsv1.Deployment{}
+			deployKey := ctrlclient.ObjectKey{
+				Name:      utils.HaDeploymentName,
+				Namespace: "default",
+			}
+			err := client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
+			selector := labels.NewSelector()
+			selector = selector.Add(*apps)
+			listOption := ctrlclient.ListOptions{
+				LabelSelector: selector,
+			}
+			podlist := &corev1.PodList{}
+			err = client.List(ctx, podlist, &listOption)
+
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+			logrus.Infof("The node where the application is located is: " + podlist.Items[0].Spec.NodeName)
+			logrus.Infof("The node name is: " + podlist.Items[0].Name)
+			output, err := utils.RunInLinux("kubectl taint node " + podlist.Items[0].Spec.NodeName + " test=test:NoSchedule")
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			} else {
+				logrus.Printf(output)
+			}
+			output, err = utils.RunInLinux("kubectl delete pod " + podlist.Items[0].Name)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			} else {
+				logrus.Printf(output)
+			}
+
+		})
+		ginkgo.It("waiting for pod ready", func() {
+			deployment := &appsv1.Deployment{}
+			deployKey := ctrlclient.ObjectKey{
+				Name:      utils.HaDeploymentName,
+				Namespace: "default",
+			}
+			err := client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+			logrus.Infof("waiting for the deployment to be ready ")
+			err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
+				if err = client.Get(ctx, deployKey, deployment); deployment.Status.AvailableReplicas != int32(1) {
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				logrus.Infof("deployment ready timeout")
+				logrus.Error(err)
+			}
+			gomega.Expect(err).To(gomega.BeNil())
+		})
+		ginkgo.It("check test file", func() {
+			config, err := config.GetConfig()
+			if err != nil {
+				return
+			}
+
+			deployment := &appsv1.Deployment{}
+			deployKey := ctrlclient.ObjectKey{
+				Name:      utils.HaDeploymentName,
+				Namespace: "default",
+			}
+			err = client.Get(ctx, deployKey, deployment)
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			apps, err := labels.NewRequirement("app", selection.In, []string{"demo"})
+			selector := labels.NewSelector()
+			selector = selector.Add(*apps)
+			listOption := ctrlclient.ListOptions{
+				LabelSelector: selector,
+			}
+			podlist := &corev1.PodList{}
+			err = client.List(ctx, podlist, &listOption)
+
+			if err != nil {
+				logrus.Printf("%+v ", err)
+				f.ExpectNoError(err)
+			}
+
+			containers := deployment.Spec.Template.Spec.Containers
+			for _, pod := range podlist.Items {
+				for _, container := range containers {
 					output, _, err := utils.ExecInPod(config, deployment.Namespace, pod.Name, "cd /data && cat test", container.Name)
 					if err != nil {
 						logrus.Printf("%+v ", err)
