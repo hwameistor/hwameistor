@@ -118,17 +118,18 @@ VolumeSnapshot can be rolled back by creating the resource LocalVolumeSnapshotRe
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalVolumeSnapshotRestore
 metadata:
-  name: restore-test
+  name: rollback-test
 spec:
   sourceVolumeSnapshot: snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110
   restoreType: "rollback"
 ```
 
-- sourceVolumeSnapshot：It specifies the VolumeSnapshot to be rollback.
+- sourceVolumeSnapshot：It specifies the LocalVolumeSnapshot to be rollback.
 
 Observing the created LocalVolumeSnapshotRestore, you can understand the entire rollback process through the state. After the rollback is complete, the corresponding LocalVolumeSnapshotRestore will be deleted.
 
 ```console
+$ kubectl get LocalVolumeSnapshotRestore -w
 NAME            TARGETVOLUME                               SOURCESNAPSHOT                                     STATE        AGE
 restore-test2   pvc-967baffd-ce10-4739-b996-87c9ed24e635   snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110   Submitted    0s
 restore-test2   pvc-967baffd-ce10-4739-b996-87c9ed24e635   snapcontent-81a1f605-c28a-4e60-8c78-a3d504cbf6d9   InProgress   0s
