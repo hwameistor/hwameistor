@@ -118,17 +118,18 @@ spec:
 apiVersion: hwameistor.io/v1alpha1
 kind: LocalVolumeSnapshotRestore
 metadata:
-  name: restore-test
+  name: rollback-test
 spec:
   sourceVolumeSnapshot: snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110
   restoreType: "rollback"
 ```
 
-- sourceVolumeSnapshot：指定要进行回滚操作的卷快照。
+- sourceVolumeSnapshot：指定要进行回滚操作的本地卷快照。
 
 对创建的 LocalVolumeSnapshotRestore 进行观察，可以通过状态了解整个回滚的过程。回滚结束后，对应的 LocalVolumeSnapshotRestore 会被删除。
 
 ```console
+$ kubectl get LocalVolumeSnapshotRestore -w
 NAME            TARGETVOLUME                               SOURCESNAPSHOT                                     STATE        AGE
 restore-test2   pvc-967baffd-ce10-4739-b996-87c9ed24e635   snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110   Submitted    0s
 restore-test2   pvc-967baffd-ce10-4739-b996-87c9ed24e635   snapcontent-81a1f605-c28a-4e60-8c78-a3d504cbf6d9   InProgress   0s
