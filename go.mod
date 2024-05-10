@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/operator-framework/operator-sdk v0.18.2
 	github.com/pilebones/go-udev v0.9.0
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.26.0
 	k8s.io/apiextensions-apiserver v0.23.0
@@ -16,18 +16,20 @@ require (
 	sigs.k8s.io/controller-runtime v0.9.2
 )
 
+replace github.com/hwameistor/datastore => ../datastore
+
 require (
 	github.com/container-storage-interface/spec v1.5.0
 	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/golang/mock v1.6.0
-	github.com/google/uuid v1.1.2
+	github.com/google/uuid v1.5.0
 	github.com/gorilla/mux v1.8.0
 	github.com/kubernetes-csi/csi-lib-utils v0.11.0
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/soheilhy/cmux v0.1.5
 	github.com/stretchr/testify v1.8.1
 	github.com/wxnacy/wgo v1.0.4
-	golang.org/x/net v0.7.0
+	golang.org/x/net v0.19.0
 	google.golang.org/grpc v1.40.0
 	k8s.io/code-generator v0.25.2
 	k8s.io/klog v1.0.0
@@ -44,6 +46,7 @@ require (
 	github.com/containerd/cgroups/v3 v3.0.2
 	github.com/gin-gonic/gin v1.8.1
 	github.com/gobwas/glob v0.2.3
+	github.com/hwameistor/datastore v0.0.0-00010101000000-000000000000
 	github.com/hwameistor/hwameistor-operator v0.10.7
 	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/jinzhu/gorm v1.9.16
@@ -126,7 +129,7 @@ require (
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/prometheus-operator v0.38.1-0.20200424145508-7e176fda06cc // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
+	github.com/emicklei/go-restful v2.16.1-0.20220930181236-19cadd947697+incompatible // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/go-logr/logr v1.2.3 // indirect
@@ -157,14 +160,14 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
-	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/mod v0.7.0 // indirect
+	golang.org/x/crypto v0.16.0 // indirect
+	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/oauth2 v0.1.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
-	golang.org/x/term v0.5.0 // indirect
-	golang.org/x/text v0.7.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
-	golang.org/x/tools v0.4.0 // indirect
+	golang.org/x/tools v0.6.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220107163113-42d7afdf6368 // indirect
@@ -174,7 +177,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/component-helpers v0.24.0 // indirect
 	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
-	k8s.io/klog/v2 v2.80.1 // indirect
+	k8s.io/klog/v2 v2.80.1
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect
 	k8s.io/mount-utils v0.24.0
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
