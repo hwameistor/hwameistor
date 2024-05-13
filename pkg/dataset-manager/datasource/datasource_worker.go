@@ -97,8 +97,10 @@ func (ctr *dsController) syncDataSource() {
 	if err != nil {
 		if errors.IsNotFound(err) {
 			klog.V(4).Infof("Datasource %q has been deleted, ignoring", key)
+			return
 		}
 		klog.Errorf("Error getting Datasource %q: %v", key, err)
+		ctr.dsQueue.AddRateLimited(key)
 		return
 	}
 	ctr.SyncNewOrUpdatedDatasource(ds)
@@ -134,6 +136,9 @@ func (ctr *dsController) createRelatedPersistentVolume(pvName string) (err error
 	pv := &v1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: pvName,
+			Annotations: map[string]string{
+				"hwameistor.io/acceleration-dataset": "true", // to identify the dataset volume
+			},
 		},
 		Spec: v1.PersistentVolumeSpec{
 			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadOnlyMany},
@@ -156,8 +161,7 @@ func (ctr *dsController) createRelatedPersistentVolume(pvName string) (err error
 	volumeAttr["convertible"] = "false"
 	volumeAttr["csi.storage.k8s.io/pv/name"] = pvName
 	volumeAttr["volumeKind"] = "LVM"
-	volumeAttr["hwameistor.io/dataset-acceleration"] = "true" // to identify the dataset volume
-	volumeAttr["poolClass"] = "HDD"                           // FIXME: get poolClass from datasource
+	volumeAttr["poolClass"] = "HDD" // FIXME: get poolClass from datasource
 
 	pv.Spec.VolumeMode = &volumeMode
 	pv.Spec.CSI.VolumeAttributes = volumeAttr

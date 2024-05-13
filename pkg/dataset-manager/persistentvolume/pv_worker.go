@@ -2,6 +2,7 @@ package persistentvolume
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/types"
 
 	dsclientset "github.com/hwameistor/datastore/pkg/apis/client/clientset/versioned"
 	hmclientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned"
@@ -61,10 +62,10 @@ func (ctr *pvController) pvAdded(obj interface{}) {
 }
 
 func isPVForDataset(pv *v1.PersistentVolume) bool {
-	if pv.Spec.CSI == nil || pv.Spec.CSI.VolumeAttributes == nil {
+	if pv.Annotations == nil {
 		return false
 	}
-	return pv.Spec.CSI.VolumeAttributes["hwameistor.io/dataset-acceleration"] == "true"
+	return pv.Annotations["hwameistor.io/acceleration-dataset"] == "true"
 }
 
 func (ctr *pvController) pvUpdated(oldObj, newObj interface{}) {
@@ -103,8 +104,10 @@ func (ctr *pvController) syncPersistentVolume() {
 	if err != nil {
 		if errors.IsNotFound(err) {
 			klog.V(4).Infof("PersistentVolume %q has been deleted, ignoring", pvName)
+			return
 		}
 		klog.Errorf("Error getting PersistentVolume %q: %v", pvName, err)
+		ctr.pvQueue.AddRateLimited(pvName)
 		return
 	}
 	ctr.SyncNewOrUpdatedPersistentVolume(ds)
@@ -125,7 +128,11 @@ func (ctr *pvController) SyncNewOrUpdatedPersistentVolume(pv *v1.PersistentVolum
 		if err = ctr.createRelatedLocalVolume(pv.Name); err == nil {
 			klog.V(4).Infof("Created LocalVolume %s", pv.Name)
 		}
+	} else {
+		// LV exists, sync lv or pv status
+		err = ctr.syncPVStatus(pv)
 	}
+
 	if err != nil {
 		klog.V(4).Infof("Error processing PersistentVolume %s: %v", pv.Name, err)
 		ctr.pvQueue.AddRateLimited(pv.Name)
@@ -141,7 +148,7 @@ func (ctr *pvController) createRelatedLocalVolume(pvName string) (err error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: pvName,
 			Annotations: map[string]string{
-				"hwameistor.io/dataset-acceleration": "true",
+				"hwameistor.io/acceleration-dataset": "true",
 			},
 		},
 		Spec: hwameistor.LocalVolumeSpec{
@@ -151,4 +158,26 @@ func (ctr *pvController) createRelatedLocalVolume(pvName string) (err error) {
 	}
 	_, err = ctr.hmClientset.HwameistorV1alpha1().LocalVolumes().Create(context.Background(), lv, metav1.CreateOptions{})
 	return
+}
+
+func (ctr *pvController) syncPVStatus(pv *v1.PersistentVolume) (err error) {
+	switch pv.Status.Phase {
+	case v1.VolumeReleased:
+		// clean reclaim reference to make pv Available
+		_, err = ctr.kubeClient.CoreV1().PersistentVolumes().Patch(context.Background(), pv.Name, types.MergePatchType, []byte(`{"spec":{"claimRef":null}}`), metav1.PatchOptions{})
+		if err == nil {
+			klog.V(4).Infof("Cleaned reclaim reference for PersistentVolume %s", pv.Name)
+		}
+	case v1.VolumeAvailable, v1.VolumePending, v1.VolumeBound:
+		klog.V(4).Infof("PersistentVolume %s is %s, no need to sync", pv.Name, pv.Status.Phase)
+		return nil
+	case v1.VolumeFailed:
+		klog.V(4).Infof("PersistentVolume %s is %s, can not be recycled", pv.Name, pv.Status.Phase)
+		return nil
+	default:
+		klog.V(4).Infof("unsupported PersistentVolume %s status %s", pv.Name, pv.Status.Phase)
+		return nil
+	}
+
+	return err
 }
