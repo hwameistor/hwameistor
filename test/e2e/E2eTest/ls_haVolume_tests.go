@@ -24,7 +24,7 @@ import (
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("test2"), func() {
+var _ = ginkgo.Describe("test localstorage Ha volume", ginkgo.Label("test23"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
