@@ -156,8 +156,8 @@ func (ctr *dsController) createRelatedPersistentVolume(pvName string) (err error
 	volumeAttr["convertible"] = "false"
 	volumeAttr["csi.storage.k8s.io/pv/name"] = pvName
 	volumeAttr["volumeKind"] = "LVM"
-	volumeAttr["volumeUsage"] = "AccelDataset" // to identify the dataset volume
-	volumeAttr["poolClass"] = "HDD"            // FIXME: get poolClass from datasource
+	volumeAttr["hwameistor.io/dataset-acceleration"] = "true" // to identify the dataset volume
+	volumeAttr["poolClass"] = "HDD"                           // FIXME: get poolClass from datasource
 
 	pv.Spec.VolumeMode = &volumeMode
 	pv.Spec.CSI.VolumeAttributes = volumeAttr

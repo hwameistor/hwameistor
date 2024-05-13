@@ -64,7 +64,7 @@ func isPVForDataset(pv *v1.PersistentVolume) bool {
 	if pv.Spec.CSI == nil || pv.Spec.CSI.VolumeAttributes == nil {
 		return false
 	}
-	return pv.Spec.CSI.VolumeAttributes["volumeUsage"] == "AccelDataset"
+	return pv.Spec.CSI.VolumeAttributes["hwameistor.io/dataset-acceleration"] == "true"
 }
 
 func (ctr *pvController) pvUpdated(oldObj, newObj interface{}) {
@@ -141,8 +141,12 @@ func (ctr *pvController) createRelatedLocalVolume(pvName string) (err error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: pvName,
 			Annotations: map[string]string{
-				"volumeUsage": "AccelDataset",
+				"hwameistor.io/dataset-acceleration": "true",
 			},
+		},
+		Spec: hwameistor.LocalVolumeSpec{
+			RequiredCapacityBytes: 1 * (1024 * 1024 * 1024),
+			PoolName:              "LocalStorage_Pool" + "HDD", // TODO: get from config
 		},
 	}
 	_, err = ctr.hmClientset.HwameistorV1alpha1().LocalVolumes().Create(context.Background(), lv, metav1.CreateOptions{})
