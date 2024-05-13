@@ -90,6 +90,15 @@ func (at *AccessibilityTopology) Equal(peer *AccessibilityTopology) bool {
 	return true
 }
 
+func (at *AccessibilityTopology) NodeExist(node string) bool {
+	for _, n := range at.Nodes {
+		if n == node {
+			return true
+		}
+	}
+	return false
+}
+
 func IsStringArraysEqual(arr1, arr2 []string) bool {
 	if len(arr1) != len(arr2) {
 		return false

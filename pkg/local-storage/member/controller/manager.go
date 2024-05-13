@@ -358,6 +358,11 @@ func (m *manager) handleVolumeCRDUpdateEvent(oldObj, newObj interface{}) {
 	oldVol := oldObj.(*apisv1alpha1.LocalVolume)
 	newVol := newObj.(*apisv1alpha1.LocalVolume)
 
+	// no volumeGroup found, ignore it - this can happen in dataset acceleration scenarios
+	if newVol.Spec.VolumeGroup == "" {
+		return
+	}
+
 	// if volume's replica update, we should notify its group
 	if !reflect.DeepEqual(oldVol.Spec.Accessibility.Nodes, newVol.Spec.Accessibility.Nodes) {
 		lvg, err := m.queryLocalVolumeGroup(context.TODO(), newVol.Spec.VolumeGroup)
