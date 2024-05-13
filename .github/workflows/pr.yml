@@ -46,5 +46,6 @@ jobs:
           fetch-depth: 0
       - name: e2e test
         env:
-          E2E_TESTING_LEVEL: "test23"
+          E2E_TESTING_LEVEL: "test"
         run: make e2e-test
+
