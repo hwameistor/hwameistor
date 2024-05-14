@@ -2,8 +2,6 @@ package persistentvolume
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/types"
-
 	dsclientset "github.com/hwameistor/datastore/pkg/apis/client/clientset/versioned"
 	hmclientset "github.com/hwameistor/hwameistor/pkg/apis/client/clientset/versioned"
 	hwameistor "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
@@ -11,6 +9,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	v12 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -116,19 +115,24 @@ func (ctr *pvController) syncPersistentVolume() {
 func (ctr *pvController) SyncNewOrUpdatedPersistentVolume(pv *v1.PersistentVolume) {
 	klog.V(4).Infof("Processing PersistentVolume %s", pv.Name)
 
-	// check if LV created for this PersistentVolume
-	_, err := ctr.hmClientset.HwameistorV1alpha1().LocalVolumes().Get(context.Background(), pv.Name, metav1.GetOptions{})
-	if err != nil {
-		if !errors.IsNotFound(err) {
-			klog.Errorf("Error getting PV for PersistentVolume %s: %v", pv.Name, err)
-			ctr.pvQueue.AddRateLimited(pv.Name)
-			return
-		}
-		// LV isn't found, create it
-		if err = ctr.createRelatedLocalVolume(pv.Name); err == nil {
-			klog.V(4).Infof("Created LocalVolume %s", pv.Name)
+	var err error
+	if pv.DeletionTimestamp != nil {
+		if err = ctr.deleteRelatedLocalVolume(pv.Name); err == nil {
+			klog.V(4).Infof("Async Delete LocalVolume %s", pv.Name)
 		}
 	} else {
+		// check if LV created for this PersistentVolume
+		if _, err = ctr.hmClientset.HwameistorV1alpha1().LocalVolumes().Get(context.Background(), pv.Name, metav1.GetOptions{}); err != nil {
+			if !errors.IsNotFound(err) {
+				klog.Errorf("Error getting PV for PersistentVolume %s: %v", pv.Name, err)
+				ctr.pvQueue.AddRateLimited(pv.Name)
+				return
+			}
+			// LV isn't found, create it
+			if err = ctr.createRelatedLocalVolume(pv.Name); err == nil {
+				klog.V(4).Infof("Created LocalVolume %s", pv.Name)
+			}
+		}
 		// LV exists, sync lv or pv status
 		err = ctr.syncPVStatus(pv)
 	}
@@ -141,6 +145,18 @@ func (ctr *pvController) SyncNewOrUpdatedPersistentVolume(pv *v1.PersistentVolum
 
 	ctr.pvQueue.Forget(pv.Name)
 	klog.V(4).Infof("Finished processing PersistentVolume %s", pv.Name)
+}
+
+func (ctr *pvController) deleteRelatedLocalVolume(lvName string) (err error) {
+	if _, err = ctr.hmClientset.HwameistorV1alpha1().LocalVolumes().Get(context.Background(), lvName, metav1.GetOptions{}); err != nil {
+		if !errors.IsNotFound(err) {
+			return err
+		}
+		// LV isn't found, may be deleted already
+		return nil
+	}
+	_, err = ctr.hmClientset.HwameistorV1alpha1().LocalVolumes().Patch(context.Background(), lvName, types.MergePatchType, []byte(`{"spec":{"delete":true}}`), metav1.PatchOptions{})
+	return
 }
 
 func (ctr *pvController) createRelatedLocalVolume(pvName string) (err error) {

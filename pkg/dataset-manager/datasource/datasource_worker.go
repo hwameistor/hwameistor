@@ -109,19 +109,28 @@ func (ctr *dsController) syncDataSource() {
 func (ctr *dsController) SyncNewOrUpdatedDatasource(ds *datastore.DataSource) {
 	klog.V(4).Infof("Processing Datasource %s/%s", ds.Namespace, ds.Name)
 
-	// check if PV created for this datasource
-	_, err := ctr.kubeClient.CoreV1().PersistentVolumes().Get(context.Background(), ds.Name, metav1.GetOptions{})
-	if err != nil {
-		if !errors.IsNotFound(err) {
-			klog.Errorf("Error getting PV for datasource %s/%s: %v", ds.Namespace, ds.Name, err)
-			ctr.dsQueue.AddRateLimited(ds.Namespace + "/" + ds.Name)
-			return
+	var err error
+	// DS is deleting, release relevant pv
+	if ds.DeletionTimestamp != nil {
+		if err = ctr.deleteRelatedPersistentVolume(ds.Name); err == nil {
+			klog.V(4).Infof("Async Delete PersistentVolume %s", ds.Name)
 		}
-		// PV not found, create it
-		if err = ctr.createRelatedPersistentVolume(ds.Name); err == nil {
-			klog.V(4).Infof("Created PersistentVolume %s", ds.Name)
+	} else {
+		// check if PV created for this datasource
+		_, err = ctr.kubeClient.CoreV1().PersistentVolumes().Get(context.Background(), ds.Name, metav1.GetOptions{})
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				klog.Errorf("Error getting PV for datasource %s/%s: %v", ds.Namespace, ds.Name, err)
+				ctr.dsQueue.AddRateLimited(ds.Namespace + "/" + ds.Name)
+				return
+			}
+			// PV not found, create it
+			if err = ctr.createRelatedPersistentVolume(ds.Name); err == nil {
+				klog.V(4).Infof("Created PersistentVolume %s", ds.Name)
+			}
 		}
 	}
+
 	if err != nil {
 		klog.V(4).Infof("Error processing Datasource %s/%s: %v", ds.Namespace, ds.Name, err)
 		ctr.dsQueue.AddRateLimited(ds.Namespace + "/" + ds.Name)
@@ -130,6 +139,11 @@ func (ctr *dsController) SyncNewOrUpdatedDatasource(ds *datastore.DataSource) {
 
 	ctr.dsQueue.Forget(ds.Namespace + "/" + ds.Name)
 	klog.V(4).Infof("Finished processing Datasource %s/%s", ds.Namespace, ds.Name)
+}
+
+func (ctr *dsController) deleteRelatedPersistentVolume(pvName string) error {
+	deletePolicy := metav1.DeletePropagationBackground
+	return ctr.kubeClient.CoreV1().PersistentVolumes().Delete(context.Background(), pvName, metav1.DeleteOptions{PropagationPolicy: &deletePolicy})
 }
 
 func (ctr *dsController) createRelatedPersistentVolume(pvName string) (err error) {
@@ -153,7 +167,6 @@ func (ctr *dsController) createRelatedPersistentVolume(pvName string) (err error
 					VolumeHandle: pvName,
 				},
 			},
-			StorageClassName: "hwameistor-storage-lvm-hdd-static", // FIXME: get storageclass from datasource
 		},
 	}
 	volumeMode := v1.PersistentVolumeFilesystem
