@@ -187,6 +187,15 @@ func (vc *VolumeConfig) DeepEqual(peer *VolumeConfig) bool {
 	return true
 }
 
+func (vc *VolumeConfig) ExistReplicaOnNode(nodeName string) bool {
+	for _, replica := range vc.Replicas {
+		if replica.Hostname == nodeName {
+			return true
+		}
+	}
+	return false
+}
+
 // VolumeReplica contains informations of replica peer
 type VolumeReplica struct {
 	ID       int    `json:"id"`

@@ -858,12 +858,13 @@ func (p *plugin) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 
 func (p *plugin) createReplicaOnNode(ctx context.Context, localVolume *apisv1alpha1.LocalVolume, nodeName string) (*csi.ControllerPublishVolumeResponse, error) {
 	p.logger.WithFields(log.Fields{"localVolume": localVolume.Name, "node": nodeName}).Info("createReplicaOnNode started")
-	if localVolume.Spec.Accessibility.NodeExist(nodeName) {
+	if localVolume.Spec.Config.ExistReplicaOnNode(nodeName) {
 		return &csi.ControllerPublishVolumeResponse{}, status.Errorf(codes.Aborted, "replica is creating")
 	}
 
 	resp := &csi.ControllerPublishVolumeResponse{PublishContext: map[string]string{}}
 	newVolume := localVolume.DeepCopy()
+	newVolume.Spec.ReplicaNumber++
 	newVolume.Spec.Config.Replicas = append(newVolume.Spec.Config.Replicas, apisv1alpha1.VolumeReplica{Hostname: nodeName, ID: -1})
 	err := p.apiClient.Patch(ctx, newVolume, client.MergeFrom(localVolume))
 	if err != nil {
