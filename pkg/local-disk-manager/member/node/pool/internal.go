@@ -2,12 +2,13 @@ package pool
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/kubernetes/pkg/volume/util/hostutil"
-	"os"
-	"strings"
 )
 
 // diskPool implement interface pool.Manager
@@ -90,7 +91,12 @@ func convertToDevLinkMap(devLinks []string) map[v1alpha1.DevLinkType][]string {
 
 func findSuitableDevLink(devLinks []string, serial string) (string, error) {
 	devLinkMap := convertToDevLinkMap(devLinks)
-
+	if serial != "" {
+		res := strings.Split(serial, " ")
+		if len(res) != 1 {
+			serial = strings.Replace(serial, " ", "_", 1)
+		}
+	}
 	deviceLink := ""
 	// use dev link order: by-id(serial) -> by-path
 	if serial != "" && devLinkMap[v1alpha1.LinkByID] != nil {
