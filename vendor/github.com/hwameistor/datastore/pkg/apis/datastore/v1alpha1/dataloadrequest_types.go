@@ -19,9 +19,9 @@ type DataLoadRequestSpec struct {
 	// name of the node who will loads the data, and it works only when isglobal is false
 	Node string `json:"node,omitempty"`
 
-	// name of the data source
-	DataSource string `json:"dataSource"`
-	SubDir     string `json:"subDir,omitempty"`
+	// name of the dataSet source
+	DataSet string `json:"dataSet"`
+	SubDir  string `json:"subDir,omitempty"`
 }
 
 // DataLoadRequestStatus defines the observed state of DataLoadRequest
@@ -40,7 +40,7 @@ type DataLoadRequestStatus struct {
 // DataLoadRequest is the Schema for the dataloadrequests API
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=dataloadrequests,scope=Namespaced,shortName=dlr
-// +kubebuilder:printcolumn:JSONPath=".spec.dataSource",name=DataSource,type=string
+// +kubebuilder:printcolumn:JSONPath=".spec.dataSet",name=DataSet,type=string
 // +kubebuilder:printcolumn:JSONPath=".spec.subDir",name=SubDir,type=string
 // +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name=Age,type=date
 type DataLoadRequest struct {

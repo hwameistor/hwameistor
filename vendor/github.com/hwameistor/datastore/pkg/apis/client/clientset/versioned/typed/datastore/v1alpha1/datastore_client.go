@@ -13,7 +13,7 @@ type DatastoreV1alpha1Interface interface {
 	BaseModelsGetter
 	CheckpointsGetter
 	DataLoadRequestsGetter
-	DataSourcesGetter
+	DataSetsGetter
 }
 
 // DatastoreV1alpha1Client is used to interact with features provided by the datastore.io group.
@@ -33,8 +33,8 @@ func (c *DatastoreV1alpha1Client) DataLoadRequests(namespace string) DataLoadReq
 	return newDataLoadRequests(c, namespace)
 }
 
-func (c *DatastoreV1alpha1Client) DataSources(namespace string) DataSourceInterface {
-	return newDataSources(c, namespace)
+func (c *DatastoreV1alpha1Client) DataSets(namespace string) DataSetInterface {
+	return newDataSets(c, namespace)
 }
 
 // NewForConfig creates a new DatastoreV1alpha1Client for the given config.

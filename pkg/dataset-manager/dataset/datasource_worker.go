@@ -1,4 +1,4 @@
-package datasource
+package dataset
 
 import (
 	"context"
@@ -24,18 +24,18 @@ type DSController interface {
 	Run(stopCh <-chan struct{})
 }
 
-// dsController is a controller to manage datasource
+// dsController is a controller to manage DataSet
 type dsController struct {
 	dsClientset *dsclientset.Clientset
 	hmClientset *hmclientset.Clientset
 	kubeClient  *kubernetes.Clientset
 
-	dsLister       dslisters.DataSourceLister
+	dsLister       dslisters.DataSetLister
 	dsListerSynced cache.InformerSynced
 	dsQueue        *common.TaskQueue
 }
 
-func New(kubeClientset *kubernetes.Clientset, dsClientset *dsclientset.Clientset, hmClientset *hmclientset.Clientset, dsInformer dsinformers.DataSourceInformer) DSController {
+func New(kubeClientset *kubernetes.Clientset, dsClientset *dsclientset.Clientset, hmClientset *hmclientset.Clientset, dsInformer dsinformers.DataSetInformer) DSController {
 	ctr := &dsController{
 		dsClientset: dsClientset,
 		kubeClient:  kubeClientset,
@@ -55,7 +55,7 @@ func New(kubeClientset *kubernetes.Clientset, dsClientset *dsclientset.Clientset
 }
 
 func (ctr *dsController) dsAdded(obj interface{}) {
-	ds := obj.(*datastore.DataSource)
+	ds := obj.(*datastore.DataSet)
 	ctr.dsQueue.Add(ds.Namespace + "/" + ds.Name)
 }
 
@@ -70,8 +70,8 @@ func (ctr *dsController) dsDeleted(obj interface{}) {
 func (ctr *dsController) Run(stopCh <-chan struct{}) {
 	defer ctr.dsQueue.Shutdown()
 
-	klog.V(5).Infof("Starting Datasource controller")
-	defer klog.Infof("Shutting Datasource controller")
+	klog.V(5).Infof("Starting DataSet controller")
+	defer klog.Infof("Shutting DataSet controller")
 
 	if !cache.WaitForCacheSync(stopCh, ctr.dsListerSynced) {
 		klog.Fatalf("Cannot sync caches")
@@ -88,26 +88,26 @@ func (ctr *dsController) syncDataSource() {
 	}
 	defer ctr.dsQueue.Done(key)
 
-	klog.V(4).Infof("Started Datasource porcessing %q", key)
+	klog.V(4).Infof("Started DataSet porcessing %q", key)
 	dsNamespace := strings.Split(key, "/")[0]
 	dsName := strings.Split(key, "/")[1]
 
-	// get Datasource to process
-	ds, err := ctr.dsLister.DataSources(dsNamespace).Get(dsName)
+	// get DataSet to process
+	ds, err := ctr.dsLister.DataSets(dsNamespace).Get(dsName)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			klog.V(4).Infof("Datasource %q has been deleted, ignoring", key)
+			klog.V(4).Infof("DataSet %q has been deleted, ignoring", key)
 			return
 		}
-		klog.Errorf("Error getting Datasource %q: %v", key, err)
+		klog.Errorf("Error getting DataSet %q: %v", key, err)
 		ctr.dsQueue.AddRateLimited(key)
 		return
 	}
 	ctr.SyncNewOrUpdatedDatasource(ds)
 }
 
-func (ctr *dsController) SyncNewOrUpdatedDatasource(ds *datastore.DataSource) {
-	klog.V(4).Infof("Processing Datasource %s/%s", ds.Namespace, ds.Name)
+func (ctr *dsController) SyncNewOrUpdatedDatasource(ds *datastore.DataSet) {
+	klog.V(4).Infof("Processing DataSet %s/%s", ds.Namespace, ds.Name)
 
 	var err error
 	// DS is deleting, release relevant pv
@@ -116,11 +116,11 @@ func (ctr *dsController) SyncNewOrUpdatedDatasource(ds *datastore.DataSource) {
 			klog.V(4).Infof("Async Delete PersistentVolume %s", ds.Name)
 		}
 	} else {
-		// check if PV created for this datasource
+		// check if PV created for this DataSet
 		_, err = ctr.kubeClient.CoreV1().PersistentVolumes().Get(context.Background(), ds.Name, metav1.GetOptions{})
 		if err != nil {
 			if !errors.IsNotFound(err) {
-				klog.Errorf("Error getting PV for datasource %s/%s: %v", ds.Namespace, ds.Name, err)
+				klog.Errorf("Error getting PV for DataSet %s/%s: %v", ds.Namespace, ds.Name, err)
 				ctr.dsQueue.AddRateLimited(ds.Namespace + "/" + ds.Name)
 				return
 			}
@@ -132,13 +132,13 @@ func (ctr *dsController) SyncNewOrUpdatedDatasource(ds *datastore.DataSource) {
 	}
 
 	if err != nil {
-		klog.V(4).Infof("Error processing Datasource %s/%s: %v", ds.Namespace, ds.Name, err)
+		klog.V(4).Infof("Error processing DataSet %s/%s: %v", ds.Namespace, ds.Name, err)
 		ctr.dsQueue.AddRateLimited(ds.Namespace + "/" + ds.Name)
 		return
 	}
 
 	ctr.dsQueue.Forget(ds.Namespace + "/" + ds.Name)
-	klog.V(4).Infof("Finished processing Datasource %s/%s", ds.Namespace, ds.Name)
+	klog.V(4).Infof("Finished processing DataSet %s/%s", ds.Namespace, ds.Name)
 }
 
 func (ctr *dsController) deleteRelatedPersistentVolume(pvName string) error {
@@ -157,7 +157,7 @@ func (ctr *dsController) createRelatedPersistentVolume(pvName string) (err error
 		Spec: v1.PersistentVolumeSpec{
 			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadOnlyMany},
 			Capacity: v1.ResourceList{
-				v1.ResourceStorage: resource.MustParse("1Gi"), // FIXME: get capacity from datasource
+				v1.ResourceStorage: resource.MustParse("1Gi"), // FIXME: get capacity from DataSet
 			},
 			PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimRetain,
 			PersistentVolumeSource: v1.PersistentVolumeSource{
@@ -174,7 +174,7 @@ func (ctr *dsController) createRelatedPersistentVolume(pvName string) (err error
 	volumeAttr["convertible"] = "false"
 	volumeAttr["csi.storage.k8s.io/pv/name"] = pvName
 	volumeAttr["volumeKind"] = "LVM"
-	volumeAttr["poolClass"] = "HDD" // FIXME: get poolClass from datasource
+	volumeAttr["poolClass"] = "HDD" // FIXME: get poolClass from DataSet
 
 	pv.Spec.VolumeMode = &volumeMode
 	pv.Spec.CSI.VolumeAttributes = volumeAttr

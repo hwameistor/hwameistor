@@ -14,8 +14,8 @@ type Interface interface {
 	Checkpoints() CheckpointInformer
 	// DataLoadRequests returns a DataLoadRequestInformer.
 	DataLoadRequests() DataLoadRequestInformer
-	// DataSources returns a DataSourceInformer.
-	DataSources() DataSourceInformer
+	// DataSets returns a DataSetInformer.
+	DataSets() DataSetInformer
 }
 
 type version struct {
@@ -44,7 +44,7 @@ func (v *version) DataLoadRequests() DataLoadRequestInformer {
 	return &dataLoadRequestInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// DataSources returns a DataSourceInformer.
-func (v *version) DataSources() DataSourceInformer {
-	return &dataSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// DataSets returns a DataSetInformer.
+func (v *version) DataSets() DataSetInformer {
+	return &dataSetInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

@@ -8,4 +8,4 @@ type CheckpointExpansion interface{}
 
 type DataLoadRequestExpansion interface{}
 
-type DataSourceExpansion interface{}
+type DataSetExpansion interface{}

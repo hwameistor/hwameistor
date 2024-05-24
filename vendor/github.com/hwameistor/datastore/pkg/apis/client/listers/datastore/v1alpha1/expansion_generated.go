@@ -26,10 +26,10 @@ type DataLoadRequestListerExpansion interface{}
 // DataLoadRequestNamespaceLister.
 type DataLoadRequestNamespaceListerExpansion interface{}
 
-// DataSourceListerExpansion allows custom methods to be added to
-// DataSourceLister.
-type DataSourceListerExpansion interface{}
+// DataSetListerExpansion allows custom methods to be added to
+// DataSetLister.
+type DataSetListerExpansion interface{}
 
-// DataSourceNamespaceListerExpansion allows custom methods to be added to
-// DataSourceNamespaceLister.
-type DataSourceNamespaceListerExpansion interface{}
+// DataSetNamespaceListerExpansion allows custom methods to be added to
+// DataSetNamespaceLister.
+type DataSetNamespaceListerExpansion interface{}

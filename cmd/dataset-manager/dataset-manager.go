@@ -73,9 +73,9 @@ func main() {
 	coreFactory := informers.NewSharedInformerFactory(kubeClientset, *rsync)
 	pvInformer := coreFactory.Core().V1().PersistentVolumes()
 	dsFactory := dsinformers.NewSharedInformerFactory(dsClient, *rsync)
-	datasourceInformer := dsFactory.Datastore().V1alpha1().DataSources()
+	datasetInformer := dsFactory.Datastore().V1alpha1().DataSets()
 
-	ctr := datasetManager.New(kubeClientset, dsClient, hmClient, datasourceInformer, pvInformer)
+	ctr := datasetManager.New(kubeClientset, dsClient, hmClient, datasetInformer, pvInformer)
 	run := func(ctx context.Context) {
 		stopCh := ctx.Done()
 		dsFactory.Start(stopCh)
