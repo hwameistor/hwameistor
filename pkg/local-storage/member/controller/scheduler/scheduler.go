@@ -16,6 +16,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+const (
+	AFFINITY         = "hwameistor.io/affinity-annotations"
+	TOLERATION       = "hwameistor.io/tolerations-annotations"
+	REPLICA_AFFINITY = "hwameistor.io/replica-affinity"
+)
+
 // todo: design a better plugin register/enable
 type scheduler struct {
 	apiClient client.Client
@@ -77,83 +83,162 @@ func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) (qualifi
 	if vols[0].Annotations == nil {
 		vols[0].Annotations = make(map[string]string)
 	}
-	if (vols[0].Spec.ReplicaNumber > 1 && vols[0].Annotations["hwameistor.io/replica-affinity"] != "forbid") || vols[0].Annotations["hwameistor.io/replica-affinity"] == "need" {
-		nodes, err := s.filterNodeByAffinity(vols[0], qualifiedNodes)
+	//Affinity and taint verification are enabled by default
+	//The first creation of a single copy is still the default logic
+	if (vols[0].Spec.ReplicaNumber > 1 && vols[0].Annotations[REPLICA_AFFINITY] != "forbid") || vols[0].Annotations[REPLICA_AFFINITY] == "need" {
+		taint_nodes, err := s.filterNodeByTaint(vols[0], qualifiedNodes)
+		if err != nil {
+			logCtx.WithError(err).WithField("volumes", vols[0]).Debugf("fail to filterNodeByTaint")
+		}
+		nodes, err := s.filterNodeByAffinity(vols[0], taint_nodes)
 		if err != nil {
 			logCtx.WithError(err).WithField("volumes", vols[0]).Debugf("fail to filterNodeByAffinity")
 		}
 		qualifiedNodes = nodes
+	} else {
+		log.Debugf("Ignore affinity and taint")
 	}
 
 	log.Debugf("qualifiedNodes len is %d", len(qualifiedNodes))
 	return qualifiedNodes
 }
 
-func (s *scheduler) filterNodeByAffinity(vol *apisv1alpha1.LocalVolume, qualifiedNodes []*apisv1alpha1.LocalStorageNode) ([]*apisv1alpha1.LocalStorageNode, error) {
+func (s *scheduler) filterNodeByTaint(vol *apisv1alpha1.LocalVolume, qualifiedNodes []*apisv1alpha1.LocalStorageNode) ([]*apisv1alpha1.LocalStorageNode, error) {
+	log.Debugf("filterNodeByTain start")
 	pvc := corev1.PersistentVolumeClaim{}
 	if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: vol.Spec.PersistentVolumeClaimName, Namespace: vol.Spec.PersistentVolumeClaimNamespace}, &pvc); err != nil {
 		return qualifiedNodes, err
 	}
-	if pvc.Annotations != nil {
-		if anntifyStr, ok := pvc.Annotations["hwameistor.io/affinity-annotations"]; ok && anntifyStr != "" {
-			var podAnntify corev1.Affinity
-			if err := json.Unmarshal([]byte(anntifyStr), &podAnntify); err != nil {
+	filteredNodes := make([]*apisv1alpha1.LocalStorageNode, 0, len(qualifiedNodes))
+	if pvc.Annotations == nil {
+		pvc.Annotations = make(map[string]string)
+	}
+	if _, ok := pvc.Annotations[TOLERATION]; ok {
+		for _, lsn := range qualifiedNodes {
+			node := corev1.Node{}
+			if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: lsn.Name}, &node); err != nil {
 				return qualifiedNodes, err
 			}
-
-			filteredNodes := make([]*apisv1alpha1.LocalStorageNode, 0, len(qualifiedNodes))
-			for _, lsn := range qualifiedNodes {
-				node := corev1.Node{}
-				if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: lsn.Name}, &node); err != nil {
-					return qualifiedNodes, err
-				}
-				if match := isAffinityMatch(&node, &podAnntify, s.apiClient); match {
+			if len(node.Spec.Taints) > 0 {
+				if !hasNoScheduleTaint(node) {
 					filteredNodes = append(filteredNodes, lsn)
 				}
+			} else {
+				filteredNodes = append(filteredNodes, lsn)
 			}
-
-			return filteredNodes, nil
 		}
+		return filteredNodes, nil
+	}
+	if tolerationsStr, ok := pvc.Annotations[TOLERATION]; ok {
+		var tolerations []corev1.Toleration
+		if err := json.Unmarshal([]byte(tolerationsStr), &tolerations); err != nil {
+			return qualifiedNodes, err
+		}
+		for _, lsn := range qualifiedNodes {
+			node := corev1.Node{}
+			if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: lsn.Name}, &node); err != nil {
+				return qualifiedNodes, err
+			}
+			if match := isTaintMatch(&node, tolerations); match {
+				filteredNodes = append(filteredNodes, lsn)
+			}
+		}
+		return filteredNodes, nil
+	}
+
+	return qualifiedNodes, nil
+}
+
+func (s *scheduler) filterNodeByAffinity(vol *apisv1alpha1.LocalVolume, qualifiedNodes []*apisv1alpha1.LocalStorageNode) ([]*apisv1alpha1.LocalStorageNode, error) {
+	log.Debugf("filterNodeByAffinityAndTain start")
+	pvc := corev1.PersistentVolumeClaim{}
+	if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: vol.Spec.PersistentVolumeClaimName, Namespace: vol.Spec.PersistentVolumeClaimNamespace}, &pvc); err != nil {
+		return qualifiedNodes, err
+	}
+
+	filteredNodes := make([]*apisv1alpha1.LocalStorageNode, 0, len(qualifiedNodes))
+	if pvc.Annotations != nil && pvc.Annotations[AFFINITY] != "" {
+		var podAnntify corev1.Affinity
+		anntifyStr := pvc.Annotations[AFFINITY]
+		if err := json.Unmarshal([]byte(anntifyStr), &podAnntify); err != nil {
+			return qualifiedNodes, err
+		}
+		for _, lsn := range qualifiedNodes {
+			node := corev1.Node{}
+			if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: lsn.Name}, &node); err != nil {
+				return qualifiedNodes, err
+			}
+			if match := isAffinityMatch(&node, &podAnntify, s.apiClient); match {
+				filteredNodes = append(filteredNodes, lsn)
+			}
+		}
+		return filteredNodes, nil
 	}
 	return qualifiedNodes, nil
 }
 
+func hasNoScheduleTaint(node corev1.Node) bool {
+	for _, taint := range node.Spec.Taints {
+		if taint.Effect == corev1.TaintEffectNoSchedule || taint.Effect == corev1.TaintEffectNoExecute {
+			log.Debugf("Node taint does not match schedule :%s ", node.Name)
+			return true
+		}
+	}
+	return false
+}
+
+func isTaintMatch(node *corev1.Node, tolerations []corev1.Toleration) bool {
+	if len(tolerations) > 0 {
+		if len(node.Spec.Taints) > 0 {
+			for _, taint := range node.Spec.Taints {
+				if isIntolerable(&taint, tolerations) {
+					log.Debugf("Taint %s found on node %s but no toleration specified", taint ,node.Name)
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
 func isAffinityMatch(node *corev1.Node, affinity *corev1.Affinity, apiClient client.Client) bool {
-	if affinity == nil {
-		return true
-	}
 
-	nodeLabels := node.GetLabels()
-	if affinity.NodeAffinity != nil && affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
-		requiredNodeSelector := affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution
-		if requiredNodeSelector.NodeSelectorTerms != nil {
-			for _, term := range requiredNodeSelector.NodeSelectorTerms {
-				match := matchNodeSelectorTerm(term, nodeLabels)
-				if !match {
-					return false
+	if affinity != nil {
+		nodeLabels := node.GetLabels()
+		if affinity.NodeAffinity != nil && affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
+			requiredNodeSelector := affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution
+			if requiredNodeSelector.NodeSelectorTerms != nil {
+				for _, term := range requiredNodeSelector.NodeSelectorTerms {
+					match := matchNodeSelectorTerm(term, nodeLabels)
+					if !match {
+						log.Debugf("Node affinity does not match schedule :%s ", node.Name)
+						return false
+					}
 				}
 			}
 		}
-	}
 
-	if affinity.PodAffinity != nil && affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
-		podAffinityTerms := affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution
-		if podAffinityTerms != nil {
-			for _, term := range podAffinityTerms {
-				match := matchPodAffinityTerm(term, node.Name, apiClient)
-				if !match {
-					return false
+		if affinity.PodAffinity != nil && affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
+			podAffinityTerms := affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution
+			if podAffinityTerms != nil {
+				for _, term := range podAffinityTerms {
+					match := matchPodAffinityTerm(term, node.Name, apiClient)
+					if !match {
+						log.Debugf("Node affinity does not match schedule :%s ", node.Name)
+						return false
+					}
 				}
 			}
 		}
-	}
 
-	if affinity.PodAntiAffinity != nil && affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
-		podAntiAffinityTerms := affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution
-		for _, term := range podAntiAffinityTerms {
-			match := matchPodAntiAffinityTerm(term, node.Name, apiClient)
-			if !match {
-				return false
+		if affinity.PodAntiAffinity != nil && affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
+			podAntiAffinityTerms := affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution
+			for _, term := range podAntiAffinityTerms {
+				match := matchPodAntiAffinityTerm(term, node.Name, apiClient)
+				if !match {
+					log.Debugf("Node affinity does not match schedule :%s ", node.Name)
+					return false
+				}
 			}
 		}
 	}
@@ -272,6 +357,34 @@ func matchPodAntiAffinityTerm(term corev1.PodAffinityTerm, nodeName string, apiC
 	return true
 }
 
+func isIntolerable(taint *corev1.Taint, tolerations []corev1.Toleration) bool {
+	if taint == nil {
+		return false
+	}
+
+	for _, toleration := range tolerations {
+		if isTolerationMatchs(taint, &toleration) {
+			return false
+		}
+	}
+	return true
+}
+
+func isTolerationMatchs(taint *corev1.Taint, toleration *corev1.Toleration) bool {
+	if taint.Key == toleration.Key && taint.Effect == toleration.Effect {
+		switch toleration.Operator {
+		case corev1.TolerationOpEqual:
+			return taint.Value == toleration.Value
+		case corev1.TolerationOpExists:
+			return true
+		default:
+			// Unexpected operator, default to not matching.
+			return false
+		}
+	}
+	return false
+}
+
 // Allocate schedule right nodes and generate volume config
 func (s *scheduler) Allocate(vol *apisv1alpha1.LocalVolume) (*apisv1alpha1.VolumeConfig, error) {
 	logCtx := s.logger.WithFields(log.Fields{"volume": vol.Name, "spec": vol.Spec})
@@ -291,6 +404,18 @@ func (s *scheduler) Allocate(vol *apisv1alpha1.LocalVolume) (*apisv1alpha1.Volum
 		nodes, err := s.resourceCollections.getNodeCandidates(vol)
 		if err != nil {
 			logCtx.WithError(err).Error("Failed to get list of available sorted LocalStorageNodes")
+			return nil, err
+		}
+
+		nodes, err = s.filterNodeByTaint(vol, nodes)
+		if err != nil {
+			logCtx.WithError(err).Error("Failed to filterNodeByTaint")
+			return nil, err
+		}
+
+		nodes, err = s.filterNodeByAffinity(vol, nodes)
+		if err != nil {
+			logCtx.WithError(err).Error("Failed to filterNodeByAffinity")
 			return nil, err
 		}
 

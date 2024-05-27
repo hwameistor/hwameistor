@@ -15,6 +15,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	REPLICA_AFFINITY = "hwameistor.io/replica-affinity"
+)
+
 func (m *manager) startVolumeMigrateTaskWorker(stopCh <-chan struct{}) {
 
 	m.logger.Debug("VolumeMigrate Worker is working now")
@@ -178,13 +182,13 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 			lvg.Annotations = make(map[string]string)
 		}
 		if migrate.Annotations != nil {
-			_, ok := migrate.Annotations["hwameistor.io/replica-affinity"]
+			_, ok := migrate.Annotations[REPLICA_AFFINITY]
 			if !ok {
-				migrate.Annotations["hwameistor.io/replica-affinity"] = "need"
+				migrate.Annotations[REPLICA_AFFINITY] = "need"
 			}
-			lvg.Annotations["hwameistor.io/replica-affinity"] = migrate.Annotations["hwameistor.io/replica-affinity"]
+			lvg.Annotations[REPLICA_AFFINITY] = migrate.Annotations[REPLICA_AFFINITY]
 		} else {
-			lvg.Annotations["hwameistor.io/replica-affinity"] = "need"
+			lvg.Annotations[REPLICA_AFFINITY] = "need"
 		}
 
 		tgtNodeName, err := m.selectMigrateTargetNode(migrate, lvg)
@@ -469,11 +473,11 @@ func (m *manager) selectMigrateTargetNode(migrate *apisv1alpha1.LocalVolumeMigra
 		return "", fmt.Errorf("failed to get all the volumes in the group")
 	}
 	if lvg.Annotations != nil {
-		if lvg.Annotations["hwameistor.io/replica-affinity"] != "" {
+		if lvg.Annotations[REPLICA_AFFINITY] != "" {
 			if vols[0].Annotations == nil {
 				vols[0].Annotations = make(map[string]string)
 			}
-			vols[0].Annotations["hwameistor.io/replica-affinity"] = lvg.Annotations["hwameistor.io/replica-affinity"]
+			vols[0].Annotations[REPLICA_AFFINITY] = lvg.Annotations[REPLICA_AFFINITY]
 		}
 	}
 
