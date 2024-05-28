@@ -8,15 +8,16 @@ import (
 
 var volumeMigrate = &cobra.Command{
 	Use:   "migrate {volumeName} {sourceNode} {?targetNode}",
-	Args:  cobra.RangeArgs(2, 3),
+	Args:  cobra.RangeArgs(2, 4),
 	Short: "Migrate a volume from sourceNode to targetNode.",
 	Long: "Migrate a volume from sourceNode to targetNode. If targetNode is empty,\n" +
 		"Hwameistor will automatically select a valid targetNode if one exists.\n" +
 		"Volume Migration is an important operation and maintenance management function of Hwameistor.\n" +
 		"Application-mounted data volumes can be unmounted and migrated from a node with errors or an alert\n" +
 		"indicating an impending errors to a healthy node. ",
-	Example: "hwameictl volume migrate pvc-1187f716-db92-47ac-a5fc-44fd19047a82 worker-1 worker-2",
-	RunE:    volumeMigrateRunE,
+	Example: "hwameictl volume migrate pvc-1187f716-db92-47ac-a5fc-44fd19047a82 worker-1 worker-2 need \n" +
+		"hwameictl volume migrate pvc-1187f716-db92-47ac-a5fc-44fd19047a82 worker-1 worker-2 forbid \n",
+	RunE: volumeMigrateRunE,
 }
 
 func init() {
@@ -26,12 +27,15 @@ func init() {
 
 func volumeMigrateRunE(_ *cobra.Command, args []string) error {
 	var targetNode string
+	replicaAffinity := "need"
 	switch len(args) {
 	case 2:
 		// Auto select target node
 	case 3:
 		// With target node
 		targetNode = args[2]
+	case 4:
+		replicaAffinity = args[3]
 	}
 	volumeName, sourceNode := args[0], args[1]
 
@@ -40,6 +44,6 @@ func volumeMigrateRunE(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	_, err = c.CreateVolumeMigrate(volumeName, sourceNode, targetNode, false)
+	_, err = c.CreateVolumeMigrate(volumeName, sourceNode, targetNode, replicaAffinity, false)
 	return err
 }

@@ -356,12 +356,13 @@ func (lvController *LocalVolumeController) GetVolumeOperation(queryPage hwameist
 }
 
 // CreateVolumeMigrate it creates a migrate crd or set a migrate task abort, if abort, we need volName only
-func (lvController *LocalVolumeController) CreateVolumeMigrate(volName, srcNode, selectedNode string, abort bool) (*hwameistorapi.VolumeMigrateRspBody, error) {
+func (lvController *LocalVolumeController) CreateVolumeMigrate(volName, srcNode, selectedNode string, replicaAffinity string, abort bool) (*hwameistorapi.VolumeMigrateRspBody, error) {
 	rsp := &hwameistorapi.VolumeMigrateRspBody{
 		VolumeMigrateInfo: &hwameistorapi.VolumeMigrateInfo{
-			VolumeName:   volName,
-			SrcNode:      srcNode,
-			SelectedNode: selectedNode,
+			VolumeName:      volName,
+			SrcNode:         srcNode,
+			SelectedNode:    selectedNode,
+			ReplicaAffinity: replicaAffinity,
 		},
 	}
 
@@ -387,9 +388,13 @@ func (lvController *LocalVolumeController) CreateVolumeMigrate(volName, srcNode,
 		return nil, fmt.Errorf("LocalVolume is still in use by source node, try it later")
 	}
 
+	lvmAnnotations := make(map[string]string)
+	lvmAnnotations["hwameistor.io/replica-affinity"] = rsp.VolumeMigrateInfo.ReplicaAffinity
+
 	lvm := &apisv1alpha1.LocalVolumeMigrate{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("migrate-%s", volName),
+			Name:        fmt.Sprintf("migrate-%s", volName),
+			Annotations: lvmAnnotations,
 		},
 		Spec: apisv1alpha1.LocalVolumeMigrateSpec{
 			VolumeName:           volName,

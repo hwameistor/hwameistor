@@ -21,6 +21,6 @@ func volumeMigrateAbortRunE(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	_, err = c.CreateVolumeMigrate(args[0], "", "", true)
+	_, err = c.CreateVolumeMigrate(args[0], "", "", "", true)
 	return err
 }

@@ -751,6 +751,8 @@ definitions:
     type: object
   api.VolumeMigrateInfo:
     properties:
+      replicaAffinity:
+        type: string
       selectedNode:
         type: string
       srcNode:
@@ -788,6 +790,8 @@ definitions:
     properties:
       abort:
         type: boolean
+      replicaAffinity:
+        type: string
       selectedNode:
         type: string
       srcNode:
@@ -2716,11 +2720,6 @@ definitions:
     type: object
   v1alpha1.State:
     enum:
-    - ""
-    - ToBeMounted
-    - ToBeUnMount
-    - Mounted
-    - NotReady
     - Ready
     - Maintain
     - Offline
@@ -2755,13 +2754,13 @@ definitions:
     - Available
     - InUse
     - Offline
+    - ""
+    - ToBeMounted
+    - ToBeUnMount
+    - Mounted
+    - NotReady
     type: string
     x-enum-varnames:
-    - MountPointStateEmpty
-    - MountPointToBeMounted
-    - MountPointToBeUnMount
-    - MountPointMounted
-    - MountPointNotReady
     - NodeStateReady
     - NodeStateMaintain
     - NodeStateOffline
@@ -2796,6 +2795,11 @@ definitions:
     - DiskStateAvailable
     - DiskStateInUse
     - DiskStateOffline
+    - MountPointStateEmpty
+    - MountPointToBeMounted
+    - MountPointToBeUnMount
+    - MountPointMounted
+    - MountPointNotReady
   v1alpha1.StorageNodeCondition:
     properties:
       lastTransitionTime:
@@ -3037,6 +3041,10 @@ paths:
       - description: sort
         in: query
         name: sort
+        type: string
+      - description: sortDir
+        in: query
+        name: sortDir
         type: string
       produces:
       - application/json
@@ -3866,8 +3874,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: list Volume 排序sortBy:"time","name","namespace"  sortDir:升序"ASC"
-        降序"DESC"
+      description: list Volume sortBy排序:"time","name","namespace"  sortDir:升序"ASC"
+        降序"DESC" 默认按时间降序
       parameters:
       - description: page
         in: query
@@ -4017,6 +4025,10 @@ paths:
       - description: sort
         in: query
         name: sort
+        type: string
+      - description: sortDir
+        in: query
+        name: sortDir
         type: string
       produces:
       - application/json

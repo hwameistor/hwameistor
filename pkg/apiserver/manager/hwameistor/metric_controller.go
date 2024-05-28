@@ -589,21 +589,33 @@ func (mController *MetricController) convertNodeStorageUseMetric(storagepoolclas
 func (mController *MetricController) EventList(queryPage hwameistorapi.QueryPage) (*hwameistorapi.EventActionList, error) {
 	var eventList = &hwameistorapi.EventActionList{}
 	evls, err := mController.listEvent(queryPage)
-	log.Infof("listEvent vols = %v", evls)
 	if err != nil {
 		log.WithError(err).Error("Failed to listEvent")
 		return nil, err
 	}
 
-	if queryPage.Sort == TimeSort {
-		a := utils.ByEventTime(evls)
-		sort.Sort(a)
-	} else if queryPage.Sort == TypeSort {
-		a := utils.ByEventType(evls)
-		sort.Sort(a)
-	} else if queryPage.Sort == NameSort {
-		a := utils.ByEventName(evls)
-		sort.Sort(a)
+	if queryPage.SortDir == DESC || queryPage.SortDir == "" {
+		if queryPage.Sort == TimeSort {
+			a := utils.ByEventTimeDesc(evls)
+			sort.Sort(a)
+		} else if queryPage.Sort == TypeSort {
+			a := utils.ByEventTypeDesc(evls)
+			sort.Sort(a)
+		} else if queryPage.Sort == NameSort {
+			a := utils.ByEventNameDesc(evls)
+			sort.Sort(a)
+		}
+	} else if queryPage.SortDir == ASC {
+		if queryPage.Sort == TimeSort {
+			a := utils.ByEventTimeAsc(evls)
+			sort.Sort(a)
+		} else if queryPage.Sort == TypeSort {
+			a := utils.ByEventTypeAsc(evls)
+			sort.Sort(a)
+		} else if queryPage.Sort == NameSort {
+			a := utils.ByEventNameAsc(evls)
+			sort.Sort(a)
+		}
 	}
 
 	eventList.EventActions = utils.DataPatination(evls, queryPage.Page, queryPage.PageSize)
