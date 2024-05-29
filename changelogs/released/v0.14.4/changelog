@@ -1,0 +1,17 @@
+v0.14.4/ 2024-5-29
+========================
+
+## LVM volume management enhancements
+- fix concurrent map read and map write #1469(@liuxu623 )
+## Apiserver
+- ApiServer: Modify migration fields and add event sorting #1482(@peng9808 )
+## Scheduler
+- lvr can detect taint #1463(@peng9808 )
+## Tests
+- Update high availability tests #1467 (@FloatXD )
+- [e2e] add 1.29 & 1.30 ad-test #1471(@FloatXD )
+## Documentation
+- [Docs] Fix indentations and add code symbols after backticks #1461 (@windsonsea )
+- Docs(FAQ): add docs for expanding storage pool manually #1462 (@SSmallMonster )
+- docs(snapshot): update snapshot operation #1465 (@SSmallMonster )
+
