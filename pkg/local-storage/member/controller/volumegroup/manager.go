@@ -525,13 +525,6 @@ func (m *manager) cleanCacheForLocalVolumeGroup(name string) {
 	m.podToVolumeGroups = newPodToLvgMap
 }
 
-func (m *manager) cleanCacheForLocalVolume(name string) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
-	delete(m.localVolumeToVolumeGroups, name)
-}
-
 func (m *manager) cleanCacheForPVC(namespace string, name string) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -636,7 +629,7 @@ func (m *manager) deleteLocalVolume(lvName string) error {
 		}
 	}
 
-	m.cleanCacheForLocalVolume(lvName)
+	delete(m.localVolumeToVolumeGroups, lvName)
 
 	return nil
 }
