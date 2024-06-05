@@ -16,8 +16,6 @@ require (
 	sigs.k8s.io/controller-runtime v0.9.2
 )
 
-replace github.com/hwameistor/datastore => ../datastore
-
 require (
 	github.com/container-storage-interface/spec v1.5.0
 	github.com/gofrs/uuid v4.2.0+incompatible
@@ -46,7 +44,7 @@ require (
 	github.com/containerd/cgroups/v3 v3.0.2
 	github.com/gin-gonic/gin v1.8.1
 	github.com/gobwas/glob v0.2.3
-	github.com/hwameistor/datastore v0.0.0-00010101000000-000000000000
+	github.com/hwameistor/datastore v0.0.0-20240530054548-7a2ae352facd
 	github.com/hwameistor/hwameistor-operator v0.10.7
 	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/jinzhu/gorm v1.9.16

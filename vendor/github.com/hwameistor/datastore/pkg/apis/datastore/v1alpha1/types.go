@@ -14,6 +14,17 @@ const (
 	DataSourceConnectionCheckInterval = 1 * time.Minute
 )
 
+type State string
+
+const (
+	OperationStateStart       State = "Submitted"
+	OperationStateCompleted   State = "Completed"
+	OperationStateToBeAborted State = "ToBeAborted"
+	OperationStateAborting    State = "Cancelled"
+	OperationStateAborted     State = "Aborted"
+	OperationStateFailed      State = "Failed"
+)
+
 type MinIOSpec struct {
 	Endpoint  string `json:"endpoint,omitempty"`
 	Region    string `json:"region,omitempty"`

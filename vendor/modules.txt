@@ -204,7 +204,7 @@ github.com/grpc-ecosystem/go-grpc-prometheus
 github.com/grpc-ecosystem/grpc-gateway/internal
 github.com/grpc-ecosystem/grpc-gateway/runtime
 github.com/grpc-ecosystem/grpc-gateway/utilities
-# github.com/hwameistor/datastore v0.0.0-00010101000000-000000000000 => ../datastore
+# github.com/hwameistor/datastore v0.0.0-20240530054548-7a2ae352facd
 ## explicit; go 1.18
 github.com/hwameistor/datastore/pkg/apis/client/clientset/versioned
 github.com/hwameistor/datastore/pkg/apis/client/clientset/versioned/scheme
@@ -1533,7 +1533,6 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.3.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
-# github.com/hwameistor/datastore => ../datastore
 # github.com/emicklei/go-restful => github.com/emicklei/go-restful v2.16.1-0.20220930181236-19cadd947697+incompatible
 # github.com/go-logr/logr => github.com/go-logr/logr v1.2.0
 # github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1

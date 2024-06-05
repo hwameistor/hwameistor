@@ -32,6 +32,8 @@ type DataLoadRequestStatus struct {
 
 	// when a node finishes the data loading, record it here
 	ReadyNodes []string `json:"readyNodes"`
+	// State of the operation, e.g. submitted, started, completed, abort, ...
+	State State `json:"state,omitempty"`
 }
 
 // +genclient
