@@ -63,6 +63,11 @@
   {{- default .Chart.Version .Values.localDiskActionController.tag -}}
 {{- end -}}
 
+{{/* Allow Dataset Manager image tag to be overridden. */}}
+{{- define "hwameistor.datasetManagerImageTag" -}}
+  {{- default .Chart.Version .Values.datasetManager.tag -}}
+{{- end -}}
+
 {{/* Allow KubeletRootDir to be overridden. */}}
 {{- define "hwameistor.kubeletRootDir" -}}
   {{- default "/var/lib/kubelet" .Values.kubeletRootDir -}}

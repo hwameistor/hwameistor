@@ -846,8 +846,33 @@ func (p *plugin) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 		return resp, nil
 	}
 
+	// create volume replica on this node for acceleration dataset
+	if vol.GetAnnotations() != nil && vol.GetAnnotations()["hwameistor.io/acceleration-dataset"] == "true" {
+		p.logger.Info("found volume for acceleration dataset, create replica on this node")
+		return p.createReplicaOnNode(ctx, vol, req.NodeId)
+	}
+
 	p.logger.WithFields(log.Fields{"volume": req.VolumeId, "node": req.NodeId}).Error("not found valid volume replica")
 	return resp, fmt.Errorf("not found valid volume replica")
+}
+
+func (p *plugin) createReplicaOnNode(ctx context.Context, localVolume *apisv1alpha1.LocalVolume, nodeName string) (*csi.ControllerPublishVolumeResponse, error) {
+	p.logger.WithFields(log.Fields{"localVolume": localVolume.Name, "node": nodeName}).Info("createReplicaOnNode started")
+	if localVolume.Spec.Config.ExistReplicaOnNode(nodeName) {
+		return &csi.ControllerPublishVolumeResponse{}, status.Errorf(codes.Aborted, "replica is creating")
+	}
+
+	resp := &csi.ControllerPublishVolumeResponse{PublishContext: map[string]string{}}
+	newVolume := localVolume.DeepCopy()
+	newVolume.Spec.ReplicaNumber++
+	newVolume.Spec.Config.Replicas = append(newVolume.Spec.Config.Replicas, apisv1alpha1.VolumeReplica{Hostname: nodeName, ID: -1})
+	err := p.apiClient.Patch(ctx, newVolume, client.MergeFrom(localVolume))
+	if err != nil {
+		p.logger.WithError(err).WithFields(log.Fields{"volume": localVolume.Name, "node": nodeName}).Error("Failed to update volume accessibility")
+		return resp, status.Errorf(codes.Internal, "Failed to update volume accessibility, error: %v", err)
+	}
+
+	return resp, status.Errorf(codes.Aborted, "replica is creating")
 }
 
 // ControllerUnpublishVolume implementation, idempotent

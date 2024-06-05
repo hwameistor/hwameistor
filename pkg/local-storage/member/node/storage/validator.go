@@ -49,9 +49,6 @@ func (cr *validator) canCreateVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica,
 }
 
 func (cr *validator) canDeleteVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
-	if err := cr.checkVolumeReplicaStruct(vr); err != nil {
-		return err
-	}
 	if !cr.checkReplicaExists(vr, reg) {
 		return ErrorReplicaNotFound
 	}

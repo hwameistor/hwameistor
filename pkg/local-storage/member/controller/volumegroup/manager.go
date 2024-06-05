@@ -240,6 +240,10 @@ func (m *manager) isHwameiStorPVC(pvc *corev1.PersistentVolumeClaim) bool {
 	sc := &storagev1.StorageClass{}
 	err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: *pvc.Spec.StorageClassName}, sc)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			m.logger.WithFields(log.Fields{"namespace": pvc.Namespace, "pvc": pvc.Name, "storageclass": *pvc.Spec.StorageClassName}).Info("storageclass not found")
+			return false
+		}
 		m.logger.WithFields(log.Fields{"namespace": pvc.Namespace, "pvc": pvc.Name, "storageclass": *pvc.Spec.StorageClassName}).WithError(err).Error("Failed to fetch storageclass")
 		return false
 	}
@@ -569,6 +573,9 @@ func (m *manager) addLocalVolume(lv *apisv1alpha1.LocalVolume) error {
 
 	lvg, err := m.GetLocalVolumeGroupByName(lv.Spec.VolumeGroup)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
 		m.logger.WithFields(log.Fields{"namespace": lv.Spec.PersistentVolumeClaimNamespace}).WithError(err).Error("addLocalVolume GetLocalVolumeGroupByName err")
 		return err
 	}
@@ -611,6 +618,9 @@ func (m *manager) deleteLocalVolume(lvName string) error {
 
 	lvg, err := m.GetLocalVolumeGroupByName(lvgName)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 
