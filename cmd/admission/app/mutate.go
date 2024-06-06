@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/webhook/dataloader"
 	"io/ioutil"
 	"net/http"
 
@@ -155,4 +156,5 @@ func RegisterHwameiStorHealthz(o webhook.ServerOption) http.Handler {
 
 func init() {
 	webhook.AddToMutateHooks(scheduler.NewPatchSchedulerWebHook())
+	webhook.AddToMutateHooks(dataloader.NewDataLoaderContainerWebHook())
 }
