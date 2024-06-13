@@ -90,7 +90,7 @@ func addLabels() {
 
 func installHwameiStorByHelm() error {
 	logrus.Infof("helm install hwameistor")
-	_, err := RunInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace --set global.k8sImageRegistry=m.daocloud.io/registry.k8s.io")
+	_, err := RunInLinux("helm install hwameistor -n hwameistor ../../helm/hwameistor --create-namespace ")
 	return err
 
 }
