@@ -2,6 +2,8 @@ package scheduler
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 	"os"
 	"reflect"
 	"testing"
@@ -271,5 +273,364 @@ func Test_unionSet(t *testing.T) {
 				t.Errorf("unionSet() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestIsTaintMatch(t *testing.T) {
+	tests := []struct {
+		name          string
+		nodeTaints    []corev1.Taint
+		tolerations   []corev1.Toleration
+		expectedMatch bool
+	}{
+		{
+			name:          "empty taints and tolerations",
+			nodeTaints:    []corev1.Taint{},
+			tolerations:   []corev1.Toleration{},
+			expectedMatch: true,
+		},
+		{
+			name: "taints present, tolerations empty",
+			nodeTaints: []corev1.Taint{
+				{
+					Key:    "key1",
+					Value:  "value1",
+					Effect: corev1.TaintEffectNoSchedule,
+				},
+			},
+			tolerations:   []corev1.Toleration{},
+			expectedMatch: true,
+		},
+		{
+			name:       "taints empty, tolerations present",
+			nodeTaints: []corev1.Taint{},
+			tolerations: []corev1.Toleration{
+				{
+					Key:      "key1",
+					Operator: corev1.TolerationOpEqual,
+					Value:    "value1",
+					Effect:   corev1.TaintEffectNoSchedule,
+				},
+			},
+			expectedMatch: true,
+		},
+		{
+			name: "taints and tolerations present, matching",
+			nodeTaints: []corev1.Taint{
+				{
+					Key:    "key1",
+					Value:  "value1",
+					Effect: corev1.TaintEffectNoSchedule,
+				},
+			},
+			tolerations: []corev1.Toleration{
+				{
+					Key:      "key1",
+					Operator: corev1.TolerationOpEqual,
+					Value:    "value1",
+					Effect:   corev1.TaintEffectNoSchedule,
+				},
+			},
+			expectedMatch: true,
+		},
+		{
+			name: "taints and tolerations present, not matching",
+			nodeTaints: []corev1.Taint{
+				{
+					Key:    "key1",
+					Value:  "value1",
+					Effect: corev1.TaintEffectNoSchedule,
+				},
+			},
+			tolerations: []corev1.Toleration{
+				{
+					Key:      "key2",
+					Operator: corev1.TolerationOpEqual,
+					Value:    "value2",
+					Effect:   corev1.TaintEffectNoSchedule,
+				},
+			},
+			expectedMatch: false,
+		},
+		{
+			name: "taints present, toleration with Exists operator",
+			nodeTaints: []corev1.Taint{
+				{
+					Key:    "key1",
+					Value:  "value1",
+					Effect: corev1.TaintEffectNoSchedule,
+				},
+			},
+			tolerations: []corev1.Toleration{
+				{
+					Key:      "key1",
+					Operator: corev1.TolerationOpExists,
+					Effect:   corev1.TaintEffectNoSchedule,
+				},
+			},
+			expectedMatch: true,
+		},
+		{
+			name: "taints present, toleration with Exists operator does not match value",
+			nodeTaints: []corev1.Taint{
+				{
+					Key:    "key1",
+					Value:  "value1",
+					Effect: corev1.TaintEffectNoSchedule,
+				},
+			},
+			tolerations: []corev1.Toleration{
+				{
+					Key:      "key2",
+					Operator: corev1.TolerationOpExists,
+					Effect:   corev1.TaintEffectNoSchedule,
+				},
+			},
+			expectedMatch: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			node := &corev1.Node{
+				Spec: corev1.NodeSpec{
+					Taints: tt.nodeTaints,
+				},
+			}
+
+			match := isTaintMatch(node, tt.tolerations)
+			if match != tt.expectedMatch {
+				t.Errorf("isTaintMatch() = %v, want %v", match, tt.expectedMatch)
+			}
+		})
+	}
+}
+
+func TestMatchNodeSelectorTerm(t *testing.T) {
+	tests := []struct {
+		name           string
+		term           corev1.NodeSelectorTerm
+		nodeLabels     map[string]string
+		expectedResult bool
+	}{
+		{
+			name:           "Test with empty nodeLabels and empty term",
+			term:           corev1.NodeSelectorTerm{},
+			nodeLabels:     nil,
+			expectedResult: true,
+		},
+		{
+			name: "Test with matching nodeLabels",
+			term: corev1.NodeSelectorTerm{
+				MatchExpressions: []corev1.NodeSelectorRequirement{
+					{
+						Key:      "disktype",
+						Operator: corev1.NodeSelectorOpIn,
+						Values:   []string{"ssd", "hdd"},
+					},
+				},
+			},
+			nodeLabels: map[string]string{
+				"disktype": "ssd",
+			},
+			expectedResult: true,
+		},
+		{
+			name: "Test with non-matching nodeLabels",
+			term: corev1.NodeSelectorTerm{
+				MatchExpressions: []corev1.NodeSelectorRequirement{
+					{
+						Key:      "disktype",
+						Operator: corev1.NodeSelectorOpIn,
+						Values:   []string{"ssd", "hdd"},
+					},
+				},
+			},
+			nodeLabels: map[string]string{
+				"disktype": "sd",
+			},
+			expectedResult: false,
+		},
+		{
+			name: "Test with matching MatchFields",
+			term: corev1.NodeSelectorTerm{
+				MatchFields: []corev1.NodeSelectorRequirement{
+					{
+						Key:      "metadata.annotations.kubernetes.io/role",
+						Operator: corev1.NodeSelectorOpIn,
+						Values:   []string{"master"},
+					},
+				},
+			},
+			nodeLabels: map[string]string{
+				"metadata.annotations.kubernetes.io/role": "master",
+			},
+			expectedResult: true,
+		},
+		{
+			name: "Test with NodeSelectorOpDoesNotExist on MatchExpressions",
+			term: corev1.NodeSelectorTerm{
+				MatchExpressions: []corev1.NodeSelectorRequirement{
+					{
+						Key:      "disktype",
+						Operator: corev1.NodeSelectorOpDoesNotExist,
+					},
+				},
+			},
+			nodeLabels: map[string]string{
+				"otherKey": "someValue",
+			},
+			expectedResult: true,
+		},
+		{
+			name: "Test with NodeSelectorOpDoesNotExist failing on MatchFields",
+			term: corev1.NodeSelectorTerm{
+				MatchFields: []corev1.NodeSelectorRequirement{
+					{
+						Key:      "metadata.annotations.kubernetes.io/role",
+						Operator: corev1.NodeSelectorOpDoesNotExist,
+					},
+				},
+			},
+			nodeLabels: map[string]string{
+				"metadata.annotations.kubernetes.io/role": "worker",
+			},
+			expectedResult: false,
+		},
+		{
+			name: "Test with multiple MatchExpressions, some matching, some not",
+			term: corev1.NodeSelectorTerm{
+				MatchExpressions: []corev1.NodeSelectorRequirement{
+					{
+						Key:      "disktype",
+						Operator: corev1.NodeSelectorOpIn,
+						Values:   []string{"ssd"},
+					},
+					{
+						Key:      "region",
+						Operator: corev1.NodeSelectorOpNotIn,
+						Values:   []string{"us-east-1"},
+					},
+				},
+			},
+			nodeLabels: map[string]string{
+				"disktype": "ssd",
+				"region":   "us-west-2",
+			},
+			expectedResult: true,
+		},
+		{
+			name: "Test with multiple MatchExpressions, all not matching",
+			term: corev1.NodeSelectorTerm{
+				MatchExpressions: []corev1.NodeSelectorRequirement{
+					{
+						Key:      "disktype",
+						Operator: corev1.NodeSelectorOpIn,
+						Values:   []string{"ssd"},
+					},
+					{
+						Key:      "region",
+						Operator: corev1.NodeSelectorOpNotIn,
+						Values:   []string{"us-west-2"},
+					},
+				},
+			},
+			nodeLabels: map[string]string{
+				"disktype": "hdd",
+				"region":   "us-west-2",
+			},
+			expectedResult: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := matchNodeSelectorTerm(tt.term, tt.nodeLabels)
+			if result != tt.expectedResult {
+				t.Errorf("matchNodeSelectorTerm(%v, %v) = %v, expected %v", tt.term, tt.nodeLabels, result, tt.expectedResult)
+			}
+		})
+	}
+}
+
+func TestMatchAffinityByPods(t *testing.T) {
+	// Test cases
+	tests := []struct {
+		name           string
+		nodeName       string
+		pods           *corev1.PodList
+		expectedResult bool
+	}{
+		{
+			name:           "Matching nodeName",
+			nodeName:       "node1",
+			pods:           &corev1.PodList{Items: []corev1.Pod{{Spec: corev1.PodSpec{NodeName: "node1"}}}},
+			expectedResult: true,
+		},
+		{
+			name:           "Non-matching nodeName",
+			nodeName:       "node2",
+			pods:           &corev1.PodList{Items: []corev1.Pod{{Spec: corev1.PodSpec{NodeName: "node1"}}}},
+			expectedResult: false,
+		},
+		{
+			name:           "Empty PodList",
+			nodeName:       "node1",
+			pods:           &corev1.PodList{},
+			expectedResult: false,
+		},
+	}
+
+	// Run test cases
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Call matchAffinityByPods function
+			result := MatchAffinityByPods(tt.nodeName, tt.pods)
+
+			// Assert the result
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func TestMatchAntiAffinityByPods(t *testing.T) {
+	// Test case 1: nodeName does not match any pod's nodeName
+	pods := &corev1.PodList{
+		Items: []corev1.Pod{
+			{
+				Spec: corev1.PodSpec{
+					NodeName: "node1",
+				},
+			},
+			{
+				Spec: corev1.PodSpec{
+					NodeName: "node2",
+				},
+			},
+		},
+	}
+	result := MatchAntiAffinityByPods("node3", pods)
+	if !result {
+		t.Errorf("TestMatchAntiAffinityByPods failed for case 1")
+	}
+
+	// Test case 2: nodeName matches one of the pod's nodeName
+	pods = &corev1.PodList{
+		Items: []corev1.Pod{
+			{
+				Spec: corev1.PodSpec{
+					NodeName: "node1",
+				},
+			},
+			{
+				Spec: corev1.PodSpec{
+					NodeName: "node2",
+				},
+			},
+		},
+	}
+	result = MatchAntiAffinityByPods("node1", pods)
+	if result {
+		t.Errorf("TestMatchAntiAffinityByPods failed for case 2")
 	}
 }
