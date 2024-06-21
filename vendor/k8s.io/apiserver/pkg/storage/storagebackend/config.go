@@ -19,7 +19,8 @@ package storagebackend
 import (
 	"time"
 
-	"go.opentelemetry.io/otel/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apiserver/pkg/server/egressselector"
@@ -36,6 +37,7 @@ const (
 	DefaultCompactInterval      = 5 * time.Minute
 	DefaultDBMetricPollInterval = 30 * time.Second
 	DefaultHealthcheckTimeout   = 2 * time.Second
+	DefaultReadinessTimeout     = 2 * time.Second
 )
 
 // TransportConfig holds all connection related info,  i.e. equal TransportConfig means equal servers we talk to.
@@ -49,7 +51,7 @@ type TransportConfig struct {
 	// function to determine the egress dialer. (i.e. konnectivity server dialer)
 	EgressLookup egressselector.Lookup
 	// The TracerProvider can add tracing the connection
-	TracerProvider *trace.TracerProvider
+	TracerProvider oteltrace.TracerProvider
 }
 
 // Config is configuration for creating a storage backend.
@@ -60,11 +62,6 @@ type Config struct {
 	Prefix string
 	// Transport holds all connection related info, i.e. equal TransportConfig means equal servers we talk to.
 	Transport TransportConfig
-	// Paging indicates whether the server implementation should allow paging (if it is
-	// supported). This is generally configured by feature gating, or by a specific
-	// resource type not wishing to allow paging, and is not intended for end users to
-	// set.
-	Paging bool
 
 	Codec runtime.Codec
 	// EncodeVersioner is the same groupVersioner used to build the
@@ -84,6 +81,8 @@ type Config struct {
 	DBMetricPollInterval time.Duration
 	// HealthcheckTimeout specifies the timeout used when checking health
 	HealthcheckTimeout time.Duration
+	// ReadycheckTimeout specifies the timeout used when checking readiness
+	ReadycheckTimeout time.Duration
 
 	LeaseManagerConfig etcd3.LeaseManagerConfig
 
@@ -111,12 +110,13 @@ func (config *Config) ForResource(resource schema.GroupResource) *ConfigForResou
 
 func NewDefaultConfig(prefix string, codec runtime.Codec) *Config {
 	return &Config{
-		Paging:               true,
 		Prefix:               prefix,
 		Codec:                codec,
 		CompactionInterval:   DefaultCompactInterval,
 		DBMetricPollInterval: DefaultDBMetricPollInterval,
 		HealthcheckTimeout:   DefaultHealthcheckTimeout,
+		ReadycheckTimeout:    DefaultReadinessTimeout,
 		LeaseManagerConfig:   etcd3.NewDefaultLeaseManagerConfig(),
+		Transport:            TransportConfig{TracerProvider: oteltrace.NewNoopTracerProvider()},
 	}
 }
