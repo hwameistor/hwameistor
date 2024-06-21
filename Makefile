@@ -432,41 +432,6 @@ release_lda:
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${LDA_CONTROLLER_IMAGE_NAME}:${RELEASE_TAG}
 
-#### for Dataset Manager controller ##########
-DS_ACCL_CONTROLLER_MODULE_NAME = dataset-manager
-DS_ACCL_CONTROLLER_BUILD_INPUT = ${CMDS_DIR}/${DS_ACCL_CONTROLLER_MODULE_NAME}/dataset-manager.go
-
-.PHONY: compile_ds_accl
-compile_ds_accl:
-	GOARCH=amd64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${DS_ACCL_CONTROLLER_BUILD_OUTPUT} ${DS_ACCL_CONTROLLER_BUILD_INPUT}
-
-.PHONY: compile_ds_accl_arm64
-compile_ds_accl_arm64:
-	GOARCH=arm64 ${BUILD_ENVS} ${BUILD_CMD} ${BUILD_OPTIONS} -o ${DS_ACCL_CONTROLLER_BUILD_OUTPUT} ${DS_ACCL_CONTROLLER_BUILD_INPUT}
-
-.PHONY: build_ds_accl_image
-build_ds_accl_image:
-	@echo "Build dataset-manager-controller image ${DS_ACCL_CONTROLLER_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_ds_accl
-	docker build -t ${DS_ACCL_CONTROLLER_IMAGE_NAME}:${IMAGE_TAG} -f ${DS_ACCL_CONTROLLER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-.PHONY: build_ds_accl_image_arm64
-build_ds_accl_image_arm64:
-	@echo "Build dataset-manager-controller image ${DS_ACCL_CONTROLLER_IMAGE_NAME}:${IMAGE_TAG}"
-	${DOCKER_MAKE_CMD} make compile_ds_accl_arm64
-	${DOCKER_BUILDX_CMD_ARM64} -t ${DS_ACCL_CONTROLLER_IMAGE_NAME}:${IMAGE_TAG} -f ${DS_ACCL_CONTROLLER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-
-.PHONY: release_ds_accl
-release_ds_accl:
-	# build for amd64 version
-	${DOCKER_MAKE_CMD} make compile_ds_accl
-	${DOCKER_BUILDX_CMD_AMD64} -t ${DS_ACCL_CONTROLLER_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${DS_ACCL_CONTROLLER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-	# build for arm64 version
-	${DOCKER_MAKE_CMD} make compile_ds_accl_arm64
-	${DOCKER_BUILDX_CMD_ARM64} -t ${DS_ACCL_CONTROLLER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${DS_ACCL_CONTROLLER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
-	# push to a public registry
-	${MUILT_ARCH_PUSH_CMD} -i ${DS_ACCL_CONTROLLER_IMAGE_NAME}:${RELEASE_TAG}
-
 ### for hwameictl ###
 HWAMEICTL_BUILD_INPUT = ${CMDS_DIR}/hwameictl/hwameictl.go
 # Example:
