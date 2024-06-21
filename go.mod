@@ -35,6 +35,7 @@ require (
 )
 
 require (
+	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-logr/zapr v1.2.0 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
 	go.opentelemetry.io/proto/otlp v0.7.0 // indirect
@@ -44,7 +45,6 @@ require (
 	github.com/containerd/cgroups/v3 v3.0.2
 	github.com/gin-gonic/gin v1.8.1
 	github.com/gobwas/glob v0.2.3
-	github.com/hwameistor/datastore v0.0.0-20240530054548-7a2ae352facd
 	github.com/hwameistor/hwameistor-operator v0.10.7
 	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/jinzhu/gorm v1.9.16
@@ -175,7 +175,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/component-helpers v0.24.0 // indirect
 	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
-	k8s.io/klog/v2 v2.80.1
+	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect
 	k8s.io/mount-utils v0.24.0
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
