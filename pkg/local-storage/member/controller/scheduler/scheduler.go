@@ -20,6 +20,7 @@ const (
 	AFFINITY         = "hwameistor.io/affinity-annotations"
 	TOLERATION       = "hwameistor.io/tolerations-annotations"
 	REPLICA_AFFINITY = "hwameistor.io/replica-affinity"
+	SkipAffinity     = "hwameistor.io/skip-affinity-annotations"
 )
 
 // todo: design a better plugin register/enable
@@ -80,11 +81,25 @@ func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) (qualifi
 			}
 		}
 	}
+
+	//Affinity and taint verification are enabled by default
+	//The first creation of a single copy is still the default logic
+	pvc := corev1.PersistentVolumeClaim{}
+	if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: vols[0].Spec.PersistentVolumeClaimName, Namespace: vols[0].Spec.PersistentVolumeClaimNamespace}, &pvc); err != nil {
+		log.Debugf("qualifiedNodes len is %d", len(qualifiedNodes))
+		return qualifiedNodes
+	}
+	if pvc.Annotations == nil {
+		pvc.Annotations = make(map[string]string)
+	}
+	if pvc.Annotations[SkipAffinity] == "true" {
+		log.Debugf("Skip Affinity ,qualifiedNodes len is %d", len(qualifiedNodes))
+		return qualifiedNodes
+	}
 	if vols[0].Annotations == nil {
 		vols[0].Annotations = make(map[string]string)
 	}
-	//Affinity and taint verification are enabled by default
-	//The first creation of a single copy is still the default logic
+
 	if (vols[0].Spec.ReplicaNumber > 1 && vols[0].Annotations[REPLICA_AFFINITY] != "forbid") || vols[0].Annotations[REPLICA_AFFINITY] == "need" {
 		taint_nodes, err := s.filterNodeByTaint(vols[0], qualifiedNodes)
 		if err != nil {
@@ -113,7 +128,7 @@ func (s *scheduler) filterNodeByTaint(vol *apisv1alpha1.LocalVolume, qualifiedNo
 	if pvc.Annotations == nil {
 		pvc.Annotations = make(map[string]string)
 	}
-	if _, ok := pvc.Annotations[TOLERATION]; ok {
+	if _, ok := pvc.Annotations[TOLERATION]; !ok {
 		for _, lsn := range qualifiedNodes {
 			node := corev1.Node{}
 			if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: lsn.Name}, &node); err != nil {
@@ -149,6 +164,54 @@ func (s *scheduler) filterNodeByTaint(vol *apisv1alpha1.LocalVolume, qualifiedNo
 	return qualifiedNodes, nil
 }
 
+func hasNoScheduleTaint(node corev1.Node) bool {
+	for _, taint := range node.Spec.Taints {
+		if taint.Effect == corev1.TaintEffectNoSchedule || taint.Effect == corev1.TaintEffectNoExecute {
+			log.Debugf("Node taint does not match schedule :%s ", node.Name)
+			return true
+		}
+	}
+	return false
+}
+
+func isTaintMatch(node *corev1.Node, tolerations []corev1.Toleration) bool {
+	if len(node.Spec.Taints) == 0 || len(tolerations) == 0 {
+		return true
+	}
+
+	for _, nodeTaint := range node.Spec.Taints {
+		taintUntolerated := true
+
+		for _, toleration := range tolerations {
+			if doesTolerationAllowTaint(&nodeTaint, &toleration) {
+				taintUntolerated = false
+				break
+			}
+		}
+		if taintUntolerated {
+			log.Debugf("Node %s has untolerated taint: %s", node.Name, nodeTaint.Key)
+			return false
+		}
+	}
+
+	return true
+}
+
+func doesTolerationAllowTaint(taint *corev1.Taint, toleration *corev1.Toleration) bool {
+	if taint.Key == toleration.Key && taint.Effect == toleration.Effect {
+		switch toleration.Operator {
+		case corev1.TolerationOpEqual:
+			return taint.Value == toleration.Value
+		case corev1.TolerationOpExists:
+			return true
+		default:
+			return false
+		}
+	}
+
+	return false
+}
+
 func (s *scheduler) filterNodeByAffinity(vol *apisv1alpha1.LocalVolume, qualifiedNodes []*apisv1alpha1.LocalStorageNode) ([]*apisv1alpha1.LocalStorageNode, error) {
 	log.Debugf("filterNodeByAffinityAndTain start")
 	pvc := corev1.PersistentVolumeClaim{}
@@ -175,30 +238,6 @@ func (s *scheduler) filterNodeByAffinity(vol *apisv1alpha1.LocalVolume, qualifie
 		return filteredNodes, nil
 	}
 	return qualifiedNodes, nil
-}
-
-func hasNoScheduleTaint(node corev1.Node) bool {
-	for _, taint := range node.Spec.Taints {
-		if taint.Effect == corev1.TaintEffectNoSchedule || taint.Effect == corev1.TaintEffectNoExecute {
-			log.Debugf("Node taint does not match schedule :%s ", node.Name)
-			return true
-		}
-	}
-	return false
-}
-
-func isTaintMatch(node *corev1.Node, tolerations []corev1.Toleration) bool {
-	if len(tolerations) > 0 {
-		if len(node.Spec.Taints) > 0 {
-			for _, taint := range node.Spec.Taints {
-				if isIntolerable(&taint, tolerations) {
-					log.Debugf("Taint %s found on node %s but no toleration specified", taint ,node.Name)
-					return false
-				}
-			}
-		}
-	}
-	return true
 }
 
 func isAffinityMatch(node *corev1.Node, affinity *corev1.Affinity, apiClient client.Client) bool {
@@ -247,50 +286,70 @@ func isAffinityMatch(node *corev1.Node, affinity *corev1.Affinity, apiClient cli
 }
 
 func matchNodeSelectorTerm(term corev1.NodeSelectorTerm, nodeLabels map[string]string) bool {
-	if nodeLabels == nil && (term.MatchExpressions != nil || term.MatchFields != nil) {
+	if nodeLabels == nil {
+		return len(term.MatchExpressions) == 0 && len(term.MatchFields) == 0
+	}
+
+	for _, expr := range term.MatchExpressions {
+		nodeValue, ok := nodeLabels[expr.Key]
+		if !ok {
+			if expr.Operator == corev1.NodeSelectorOpDoesNotExist {
+				continue
+			} else {
+				return false
+			}
+		}
+
+		if !matchValue(expr.Operator, nodeValue, expr.Values) {
+			return false
+		}
+	}
+
+	for _, field := range term.MatchFields {
+		nodeValue, ok := getField(nodeLabels, field.Key)
+		if !ok {
+			if field.Operator == corev1.NodeSelectorOpDoesNotExist {
+				continue
+			} else {
+				return false
+			}
+		}
+
+		if !matchValue(field.Operator, nodeValue, field.Values) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func getField(labels map[string]string, key string) (string, bool) {
+	return labels[key], len(labels[key]) > 0
+}
+
+func matchValue(operator corev1.NodeSelectorOperator, value string, values []string) bool {
+	flag := false
+	switch operator {
+	case corev1.NodeSelectorOpIn:
+		for _, val := range values {
+			if value == val {
+				return true
+			}
+		}
+	case corev1.NodeSelectorOpNotIn:
+		flag = true
+		for _, val := range values {
+			if value == val {
+				return false
+			}
+		}
+	case corev1.NodeSelectorOpExists:
+		return true
+	default:
 		return false
 	}
-	if nodeLabels == nil && term.MatchExpressions == nil && term.MatchFields == nil {
-		return true
-	}
-	if term.MatchExpressions == nil && term.MatchFields == nil {
-		return true
-	}
-	if term.MatchExpressions != nil {
-		for _, expression := range term.MatchExpressions {
-			nodeValue, ok := nodeLabels[expression.Key]
-			if !ok {
-				return false
-			}
-			matches := false
-			for _, value := range expression.Values {
-				if nodeValue == value {
-					matches = true
-					break
-				}
-			}
-			if !matches {
-				return false
-			}
-		}
-	}
-	for _, field := range term.MatchFields {
-		nodeValue, ok := nodeLabels[field.Key]
-		if !ok {
-			return false
-		}
-		matches := false
-		for _, value := range field.Values {
-			if nodeValue == value {
-				matches = true
-				break
-			}
-		}
-		if !matches {
-			return false
-		}
-	}
-	return true
+
+	return flag
 }
 
 func matchPodAffinityTerm(term corev1.PodAffinityTerm, nodeName string, apiClient client.Client) bool {
@@ -313,15 +372,18 @@ func matchPodAffinityTerm(term corev1.PodAffinityTerm, nodeName string, apiClien
 			log.Errorf("list pods error: %v", err)
 			return true
 		}
-
-		for _, p := range pods.Items {
-			if p.Spec.NodeName == nodeName {
-				return true
-			}
-		}
-		return false
+		return MatchAffinityByPods(nodeName, pods)
 	}
 	return true
+}
+
+func MatchAffinityByPods(nodeName string, pods *corev1.PodList) bool {
+	for _, p := range pods.Items {
+		if p.Spec.NodeName == nodeName {
+			return true
+		}
+	}
+	return false
 }
 
 func matchPodAntiAffinityTerm(term corev1.PodAffinityTerm, nodeName string, apiClient client.Client) bool {
@@ -347,42 +409,19 @@ func matchPodAntiAffinityTerm(term corev1.PodAffinityTerm, nodeName string, apiC
 			return true
 		}
 
-		for _, pod := range pods.Items {
-			if pod.Spec.NodeName == nodeName {
-				return false
-			}
-		}
+		return MatchAntiAffinityByPods(nodeName, pods)
 	}
 
 	return true
 }
 
-func isIntolerable(taint *corev1.Taint, tolerations []corev1.Toleration) bool {
-	if taint == nil {
-		return false
-	}
-
-	for _, toleration := range tolerations {
-		if isTolerationMatchs(taint, &toleration) {
+func MatchAntiAffinityByPods(nodeName string, pods *corev1.PodList) bool {
+	for _, p := range pods.Items {
+		if p.Spec.NodeName == nodeName {
 			return false
 		}
 	}
 	return true
-}
-
-func isTolerationMatchs(taint *corev1.Taint, toleration *corev1.Toleration) bool {
-	if taint.Key == toleration.Key && taint.Effect == toleration.Effect {
-		switch toleration.Operator {
-		case corev1.TolerationOpEqual:
-			return taint.Value == toleration.Value
-		case corev1.TolerationOpExists:
-			return true
-		default:
-			// Unexpected operator, default to not matching.
-			return false
-		}
-	}
-	return false
 }
 
 // Allocate schedule right nodes and generate volume config
