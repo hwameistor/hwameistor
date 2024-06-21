@@ -601,9 +601,6 @@ func (m *manager) addLocalVolume(lv *apisv1alpha1.LocalVolume) error {
 }
 
 func (m *manager) deleteLocalVolume(lvName string) error {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
 	vol := &apisv1alpha1.LocalVolume{}
 	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: lvName}, vol); err != nil {
 		if !errors.IsNotFound(err) {

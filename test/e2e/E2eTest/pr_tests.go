@@ -30,7 +30,7 @@ var _ = ginkgo.Describe("pr test ", ginkgo.Ordered, ginkgo.Label("pr-e2e"), func
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
 		result := utils.ConfigureEnvironmentForPrTest(ctx)
-		gomega.Expect(result).To(gomega.Equal(true))
+		gomega.Expect(result).To(gomega.BeNil())
 		f = framework.NewDefaultFramework(clientset.AddToScheme)
 		client = f.GetClient()
 		utils.CreateLdc(ctx)

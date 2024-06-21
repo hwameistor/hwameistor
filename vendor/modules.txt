@@ -232,17 +232,6 @@ github.com/grpc-ecosystem/go-grpc-prometheus
 github.com/grpc-ecosystem/grpc-gateway/v2/internal/httprule
 github.com/grpc-ecosystem/grpc-gateway/v2/runtime
 github.com/grpc-ecosystem/grpc-gateway/v2/utilities
-# github.com/hwameistor/datastore v0.0.0-20240530054548-7a2ae352facd
-## explicit; go 1.18
-github.com/hwameistor/datastore/pkg/apis/client/clientset/versioned
-github.com/hwameistor/datastore/pkg/apis/client/clientset/versioned/scheme
-github.com/hwameistor/datastore/pkg/apis/client/clientset/versioned/typed/datastore/v1alpha1
-github.com/hwameistor/datastore/pkg/apis/client/informers/externalversions
-github.com/hwameistor/datastore/pkg/apis/client/informers/externalversions/datastore
-github.com/hwameistor/datastore/pkg/apis/client/informers/externalversions/datastore/v1alpha1
-github.com/hwameistor/datastore/pkg/apis/client/informers/externalversions/internalinterfaces
-github.com/hwameistor/datastore/pkg/apis/client/listers/datastore/v1alpha1
-github.com/hwameistor/datastore/pkg/apis/datastore/v1alpha1
 # github.com/hwameistor/hwameistor-operator v0.10.7
 ## explicit; go 1.17
 github.com/hwameistor/hwameistor-operator/api/v1alpha1
@@ -1530,7 +1519,7 @@ k8s.io/kube-scheduler/extender/v1
 # k8s.io/kubelet v0.0.0 => k8s.io/kubelet v0.0.0-20240404171656-495660dc99cc
 ## explicit; go 1.21
 k8s.io/kubelet/pkg/apis
-# k8s.io/kubernetes v1.13.0 => k8s.io/kubernetes v1.29.6
+# k8s.io/kubernetes v1.29.6 => k8s.io/kubernetes v1.29.6
 ## explicit; go 1.21
 k8s.io/kubernetes/cmd/kube-scheduler/app
 k8s.io/kubernetes/cmd/kube-scheduler/app/config

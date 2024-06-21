@@ -9,7 +9,7 @@ require (
 	k8s.io/apimachinery v0.26.0
 	k8s.io/apiserver v0.0.0 // indirect
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/kubernetes v1.13.0
+	k8s.io/kubernetes v1.29.6
 	sigs.k8s.io/controller-runtime v0.9.2
 )
 
@@ -69,7 +69,6 @@ require (
 	github.com/containerd/cgroups/v3 v3.0.2
 	github.com/gin-gonic/gin v1.8.1
 	github.com/gobwas/glob v0.2.3
-	github.com/hwameistor/datastore v0.0.0-20240530054548-7a2ae352facd
 	github.com/hwameistor/hwameistor-operator v0.10.7
 	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/jinzhu/gorm v1.9.16
@@ -185,7 +184,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/component-helpers v0.24.0 // indirect
 	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
-	k8s.io/klog/v2 v2.110.1
+	k8s.io/klog/v2 v2.110.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
 	k8s.io/mount-utils v0.24.0
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
