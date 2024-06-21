@@ -175,11 +175,6 @@ func CheckingComponentStatus(ctx context.Context) error {
 		Namespace: "hwameistor",
 	}
 
-	datasetManager := &appsv1.Deployment{}
-	datasetManagerKey := k8sclient.ObjectKey{
-		Name:      "hwameistor-dataset-manager",
-		Namespace: "hwameistor",
-	}
 	logrus.Infof("waiting for drbd ready")
 
 	err = wait.PollImmediate(3*time.Second, 15*time.Minute, func() (done bool, err error) {
@@ -223,13 +218,8 @@ func CheckingComponentStatus(ctx context.Context) error {
 			logrus.Error("admission-controller error ", err)
 			f.ExpectNoError(err)
 		}
-		err = client.Get(ctx, datasetManagerKey, datasetManager)
-		if err != nil {
-			logrus.Error("admission-controller error ", err)
-			f.ExpectNoError(err)
-		}
 
-		if localStorage.Status.DesiredNumberScheduled == localStorage.Status.NumberAvailable && controller.Status.AvailableReplicas == int32(1) && scheduler.Status.AvailableReplicas == int32(1) && localDiskManager.Status.DesiredNumberScheduled == localDiskManager.Status.NumberAvailable && webhook.Status.AvailableReplicas == int32(1) && datasetManager.Status.AvailableReplicas == int32(1) {
+		if localStorage.Status.DesiredNumberScheduled == localStorage.Status.NumberAvailable && controller.Status.AvailableReplicas == int32(1) && scheduler.Status.AvailableReplicas == int32(1) && localDiskManager.Status.DesiredNumberScheduled == localDiskManager.Status.NumberAvailable && webhook.Status.AvailableReplicas == int32(1) {
 			return true, nil
 		}
 		return false, nil
