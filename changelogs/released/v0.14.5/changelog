@@ -1,0 +1,12 @@
+v0.14.5/ 2024-6-21
+========================
+
+## Scheduler
+- Optimize affinity issues and add the option to skip affinity #1491(@peng9808 )
+## Tests
+- 【e2e】Optimize e2e test #1495 (@FloatXD )
+- Cancel image acceleration in e2e test #1489 (@FloatXD )
+## Others
+- cleanup dataset manager code #1494 (@SSmallMonster )
+- Revert "fix concurrent map read and map write" #1493(@SSmallMonster )
+- fix(CI): bump go version to 1.20.5 in module and builder #1486(@SSmallMonster )
