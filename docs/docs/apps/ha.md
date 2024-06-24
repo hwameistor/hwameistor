@@ -83,6 +83,20 @@ NAME                     STATUS   VOLUME                                     CAP
 data-sts-mysql-ha-0   Bound    pvc-5236ee6f-8212-4628-9876-1b620a4c4c36   1Gi        RWO            hwameistor-storage-lvm-hdd    3m   Filesystem
 ```
 
+Attentions:
+
+1) By default, dual replicas require both nodes to meet pod affinity and taint tolerance.
+   If you only want to back up data, you can configure the pvc annotation to ignore affinity and taint. I
+   In this case, only one node needs to be able to be scheduled
+
+```console
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    hwameistor.io/skip-affinity-annotations: true
+```
+
 ## Verify `LocalVolume` and `LocalVolumeReplica` objects
 
 By listing `LocalVolume(LV)` objects with the same name as that of the `PV`,

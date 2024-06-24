@@ -80,6 +80,21 @@ NAME                     STATUS   VOLUME                                     CAP
 data-sts-mysql-ha-0   Bound    pvc-5236ee6f-8212-4628-9876-1b620a4c4c36   1Gi        RWO            hwameistor-storage-lvm-hdd    3m   Filesystem
 ```
 
+
+Attentions:
+
+1) 默认情况下双副本需要两个节点同时满足pod亲和性与污点容忍度。
+   如果您只是想进行数据备份，可以配置pvc 注解已忽略亲和性与污点。
+   这种情况下只需要满足一个节点更够调度即可
+
+```console
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    hwameistor.io/skip-affinity-annotations: true
+```
+
 ## 查看 `LocalVolume` 和 `LocalVolumeReplica` 对象
 
 通过查看和 `PV` 同名的 `LocalVolume(LV)`, 可以看到本地卷创建在了节点 `k8s-worker-1` 和节点 `k8s-worker-2`。
