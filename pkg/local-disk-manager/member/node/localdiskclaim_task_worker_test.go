@@ -116,7 +116,7 @@ func GenFakeClient() client.Client {
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, ldc)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, ldcList)
 
-	return fake2.NewFakeClientWithScheme(s)
+	return fake2.NewClientBuilder().WithScheme(s).WithStatusSubresource(ld, ldn, ldc).Build()
 
 }
 
@@ -178,7 +178,7 @@ func GenFakeLocalDiskClaimSpecObject() v1alpha1.LocalDiskClaimSpec {
 		NodeName:    fakeLocalDiskNodeName,
 		Description: v1alpha1.DiskClaimDescription{},
 		DiskRefs: []*corev1.ObjectReference{
-			&corev1.ObjectReference{
+			{
 				APIVersion: apiversion,
 				Kind:       LocalDiskKind,
 				Namespace:  fakeNamespace,
@@ -217,7 +217,7 @@ func GenFakeLocalDiskNodeObject() *v1alpha1.LocalDiskNode {
 		Pools:         map[string]v1alpha1.LocalPool{v1alpha1.PoolNameForHDD: fakeLocalPool},
 		State:         "",
 		PoolExtendRecords: map[string]v1alpha1.LocalDiskClaimSpecArray{
-			v1alpha1.PoolNameForHDD: v1alpha1.LocalDiskClaimSpecArray{fakeLocalDiskClaim.Spec},
+			v1alpha1.PoolNameForHDD: {fakeLocalDiskClaim.Spec},
 		},
 	}
 
@@ -256,7 +256,7 @@ func Test_UpdatePoolExtendRecord(t *testing.T) {
 				Pools:         map[string]v1alpha1.LocalPool{v1alpha1.PoolNameForHDD: fakeLocalPool},
 				State:         "",
 				PoolExtendRecords: map[string]v1alpha1.LocalDiskClaimSpecArray{
-					v1alpha1.PoolNameForHDD: v1alpha1.LocalDiskClaimSpecArray{fakeLocalDiskClaim.Spec, fakeLocalDiskClaimSpec},
+					v1alpha1.PoolNameForHDD: {fakeLocalDiskClaim.Spec, fakeLocalDiskClaimSpec},
 				},
 			},
 		},

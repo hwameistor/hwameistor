@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskclaim"
 )
 
@@ -199,9 +199,13 @@ func TestReconcileDiskClaim_Reconcile_WhenDiskBoundAlready(t *testing.T) {
 	r.CheckLocalDiskClaimIsBound(t, claim, true)
 
 	// KEY_TEST: Set claim diskRef empty and status pending
-	claim.Status.Status = v1alpha1.LocalDiskClaimStatusPending
 	claim.Spec.DiskRefs = nil
 	err = r.Update(context.Background(), claim)
+	if err != nil {
+		t.Errorf("Update disk claim fail %v", err)
+	}
+	claim.Status.Status = v1alpha1.LocalDiskClaimStatusPending
+	err = r.Status().Update(context.Background(), claim)
 	if err != nil {
 		t.Errorf("Update disk claim fail %v", err)
 	}
@@ -498,5 +502,9 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, diskList)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, claim)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, claimList)
-	return fake.NewClientBuilder().WithScheme(s).Build(), s
+	return fake.NewClientBuilder().WithScheme(s).WithStatusSubresource(&v1alpha1.LocalDisk{}, &v1alpha1.LocalDiskClaim{}).WithIndex(&v1alpha1.LocalDisk{}, "spec.nodeName", func(obj client.Object) []string {
+		return []string{obj.(*v1alpha1.LocalDisk).Spec.NodeName}
+	}).WithIndex(&v1alpha1.LocalDiskClaim{}, "status.status", func(obj client.Object) []string {
+		return []string{string(obj.(*v1alpha1.LocalDiskClaim).Status.Status)}
+	}).Build(), s
 }

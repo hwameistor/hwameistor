@@ -109,7 +109,7 @@ func TestLocalDiskVolumeHandler_GetLocalDiskVolume(t *testing.T) {
 	ldv := &v1alpha1.LocalDiskVolume{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: "testns",
-			Name: "testldv",
+			Name:      "testldv",
 		},
 	}
 	v.Ldv = ldv
@@ -120,7 +120,7 @@ func TestLocalDiskVolumeHandler_GetLocalDiskVolume(t *testing.T) {
 
 	key := types.NamespacedName{
 		Namespace: "testns",
-		Name: "testldv",
+		Name:      "testldv",
 	}
 	gotten, err := v.GetLocalDiskVolume(key)
 	if err != nil {
@@ -135,7 +135,11 @@ func TestLocalDiskVolumeHandler_GetLocalDiskVolume(t *testing.T) {
 func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s := scheme.Scheme
 	s.AddKnownTypes(v1.SchemeGroupVersion, &v1alpha1.LocalVolumeGroup{})
-	return fake.NewClientBuilder().WithScheme(s).WithObjects(&v1alpha1.LocalDisk{}, &v1alpha1.LocalDiskNode{}).Build(), s
+	return fake.NewClientBuilder().WithScheme(s).WithIndex(&v1alpha1.LocalDisk{}, "spec.nodeName", func(obj client.Object) []string {
+		return []string{obj.(*v1alpha1.LocalDisk).Spec.NodeName}
+	}).WithIndex(&v1alpha1.LocalDiskClaim{}, "status.status", func(obj client.Object) []string {
+		return []string{string(obj.(*v1alpha1.LocalDiskClaim).Status.Status)}
+	}).WithStatusSubresource(&v1alpha1.LocalDisk{}, &v1alpha1.LocalDiskClaim{}, &v1alpha1.LocalDiskNode{}).WithObjects(&v1alpha1.LocalDisk{}, &v1alpha1.LocalDiskNode{}).Build(), s
 }
 
 func newEmptyVolumeHandler() *DiskVolumeHandler {
