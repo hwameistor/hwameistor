@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	apimachineryruntime "k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	scheme   = apimachineryruntime.NewScheme()
+	scheme = apimachineryruntime.NewScheme()
 )
 
 func init() {
@@ -48,16 +48,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	options := manager.Options{
-		Namespace: "", // watch all namespaces
-	}
+	options := manager.Options{}
 
 	mgr, err := manager.New(kubeconfig, options)
 	if err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
-
 
 	stopChan := signals.SetupSignalHandler()
 
@@ -75,7 +72,7 @@ func main() {
 	}()
 
 	pvcWorkQueue := workqueue.NewNamedRateLimitingQueue(
-		workqueue.NewItemExponentialFailureRateLimiter(time.Second, 16*time.Second), 
+		workqueue.NewItemExponentialFailureRateLimiter(time.Second, 16*time.Second),
 		"pvc-attacher",
 	)
 	pvcAttacher := autoresizer.NewPVCAttacher(cli, pvcWorkQueue)

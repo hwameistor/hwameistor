@@ -42,7 +42,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	replicaToVolumeRequestFunc := handler.EnqueueRequestsFromMapFunc(
-		func(a client.Object) []reconcile.Request {
+		func(_ context.Context, a client.Object) []reconcile.Request {
 			replica, ok := a.(*apisv1alpha1.LocalVolumeReplica)
 			if !ok {
 				return []reconcile.Request{}
@@ -62,12 +62,12 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource LocalVolume
-	err = c.Watch(&source.Kind{Type: &apisv1alpha1.LocalVolume{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(source.Kind(mgr.GetCache(), &apisv1alpha1.LocalVolume{}), &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &apisv1alpha1.LocalVolumeReplica{}}, replicaToVolumeRequestFunc)
+	err = c.Watch(source.Kind(mgr.GetCache(), &apisv1alpha1.LocalVolumeReplica{}), replicaToVolumeRequestFunc)
 	if err != nil {
 		return err
 	}

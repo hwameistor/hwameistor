@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
@@ -72,7 +73,9 @@ func initManager() {
 	}
 
 	mgr, err = manager.New(cfg, manager.Options{
-		MetricsBindAddress: "0",
+		Metrics: metricsserver.Options{
+			BindAddress: "0",
+		},
 	})
 
 	if err != nil {
