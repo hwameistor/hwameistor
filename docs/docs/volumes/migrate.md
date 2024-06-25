@@ -64,6 +64,8 @@ kind: LocalVolumeMigrate
 metadata:
   namespace: hwameistor
   name: <localVolumeMigrateName>
+  annotations:
+    hwameistor.io/replica-affinity: <need/forbid> 
 spec:
   sourceNode: <sourceNodeName>
   targetNodesSuggested: 
@@ -79,6 +81,9 @@ Attentions:
 1) HwameiStor will select a target node from targetNodesSuggested to migrate. If all the candidates don't have enough storage space, the migrate will fail.
 
 2) If targetNodesSuggested is emtpy or not set, HwameiStore will automatically select a propriate node for the migrate. If there is no valid candidate, the migrate will fail.
+
+3) If you do not plan to consider the affinity of the pod during the migration process, just back up the data once. hwameistor.io/replica-affinity: forbid
+
 
 ```console
 $ cat << EOF | kubectl apply -f -
