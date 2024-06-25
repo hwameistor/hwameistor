@@ -73,7 +73,7 @@ var _ = ginkgo.Describe("block volume test", ginkgo.Label("periodCheck"), func()
 					VolumeMode:       &VolumeMode,
 					AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 					StorageClassName: &storageClassName,
-					Resources: corev1.ResourceRequirements{
+					Resources: corev1.VolumeResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceStorage: resource.MustParse("1Gi"),
 						},

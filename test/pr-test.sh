@@ -2,6 +2,7 @@
 #! /usr/bin/env bash
 # simple scripts mng machine
 # link hosts
+source /etc/profile
 export GOVC_INSECURE=1
 export GOVC_RESOURCE_POOL="fupan-k8s"
 export hosts="fupan-k8s-master-1 fupan-k8s-work-1 fupan-k8s-work-2"

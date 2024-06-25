@@ -80,7 +80,7 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 				Spec: corev1.PersistentVolumeClaimSpec{
 					AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 					StorageClassName: &storageClassName,
-					Resources: corev1.ResourceRequirements{
+					Resources: corev1.VolumeResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceStorage: resource.MustParse("2Gi"),
 						},
@@ -131,7 +131,7 @@ var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test")
 											ContainerPort: 80,
 										},
 									},
-									Resources: corev1.ResourceRequirements{
+									Resources: corev1.VolumeResourceRequirements{
 										Limits: corev1.ResourceList{
 											"cpu":    resource.MustParse("1000m"),
 											"memory": resource.MustParse("4Gi"),

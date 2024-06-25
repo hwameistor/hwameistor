@@ -1,15 +1,10 @@
 package framework
 
 import (
-	"time"
-
 	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
@@ -82,40 +77,16 @@ func NewFramework(options Options, client ctrlclient.Client, addToSchemeFuncs ..
 // DefaultBeforeEach gets clientsets
 func (f *Framework) defaultConfig() {
 	if f.client == nil {
-
 		cfg, err := config.GetConfig()
-		f.ExpectNoError(err)
-
-		cfg.QPS = f.options.ClientQPS
-		cfg.Burst = f.options.ClientBurst
-
-		// Create the mapper provider
-		mapper, err := apiutil.NewDynamicRESTMapper(cfg)
-		err = wait.PollImmediate(5*time.Second, PodStartTimeout, func() (done bool, err error) {
-			_, err = apiutil.NewDynamicRESTMapper(cfg)
-			if err != nil {
-				return false, nil
-			}
-			return true, nil
-		})
-		mapper, err = apiutil.NewDynamicRESTMapper(cfg)
 		if err != nil {
-			f.ExpectNoError(err)
-		}
-		sche := scheme.Scheme
-		if len(f.addToSchemeFuncs) > 0 {
-			for _, fn := range f.addToSchemeFuncs {
-				if err := fn(sche); err != nil {
-					f.ExpectNoError(err)
-				}
-			}
-		}
-		client, err := ctrlclient.New(cfg, ctrlclient.Options{Scheme: sche, Mapper: mapper})
-		if err != nil {
-			f.ExpectNoError(err)
+			panic(err)
 		}
 
-		f.client = client
+		cli, err := ctrlclient.New(cfg, ctrlclient.Options{})
+		if err != nil {
+			panic(err)
+		}
+		f.client = cli
 	}
 }
 

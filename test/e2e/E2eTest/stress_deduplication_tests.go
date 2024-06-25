@@ -73,7 +73,7 @@ var _ = ginkgo.Describe("Deduplication test", ginkgo.Label("stress-test"), func(
 					Spec: apiv1.PersistentVolumeClaimSpec{
 						AccessModes:      []apiv1.PersistentVolumeAccessMode{apiv1.ReadWriteOnce},
 						StorageClassName: &storageClassName,
-						Resources: apiv1.ResourceRequirements{
+						Resources: apiv1.VolumeResourceRequirements{
 							Requests: apiv1.ResourceList{
 								apiv1.ResourceStorage: resource.MustParse("100Mi"),
 							},
