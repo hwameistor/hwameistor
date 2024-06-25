@@ -130,7 +130,7 @@ var _ = ginkgo.Describe("localstorage volume throughput  test ", ginkgo.Label("p
 											ContainerPort: 80,
 										},
 									},
-									Resources: corev1.VolumeResourceRequirements{
+									Resources: corev1.ResourceRequirements{
 										Limits: corev1.ResourceList{
 											"cpu":    resource.MustParse("1000m"),
 											"memory": resource.MustParse("4Gi"),
