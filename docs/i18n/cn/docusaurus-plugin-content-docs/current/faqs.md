@@ -188,6 +188,7 @@ HwameiStor 可以立即将 Pod 调度到其他数据卷所在的可用节点，�
 
   - 需要使用磁盘分区([#1387](https://github.com/hwameistor/hwameistor/issues/1387))
   - 不同的磁盘使用了相同的序列号([#1450](https://github.com/hwameistor/hwameistor/issues/1450),[#1449](https://github.com/hwameistor/hwameistor/issues/1449))
+  > 使用 `lsblk -o +SERIAL` 查看磁盘序列号
 
 手动扩容步骤:
 
