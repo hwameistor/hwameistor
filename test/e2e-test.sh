@@ -3,7 +3,7 @@
 set -x
 set -e
 # git clone https://github.com/hwameistor/hwameistor.git test/hwameistor
-source /etc/profile
+source /etc/profile || true
 # common defines
 date=$(date +%Y%m%d%H%M)
 IMAGE_TAG=v${date}
