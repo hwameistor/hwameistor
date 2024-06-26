@@ -207,6 +207,7 @@ When is manually expanding storage needed:
 
   - To use the disk partition([#1387](https://github.com/hwameistor/hwameistor/issues/1387))
   - Same serial number is shared between different disks([#1450](https://github.com/hwameistor/hwameistor/issues/1450),[#1449](https://github.com/hwameistor/hwameistor/issues/1449))
+  > use `lsblk -o +SERIAL` to check serial number
 
 Manual expansion steps:
 
