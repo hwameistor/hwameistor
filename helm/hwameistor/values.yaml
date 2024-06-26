@@ -181,8 +181,4 @@ localDiskActionController:
   tag: ""
   resources: {}
 
-datasetManager:
-  replicas: 1
-  imageRepository: hwameistor/dataset-manager
-  tag: ""
-  resources: { }
+
