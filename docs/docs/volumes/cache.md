@@ -14,10 +14,16 @@ Before use, please ensure that Dragonfly has been installed in the cluster and r
 ## Install Dragonfly
 1. Configure /etc/hosts according to the cluster
 2. Configure the default sc according to the selection
-   kubectl patch storageclass hwameistor-storage-lvm-hdd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+```console
+ $ kubectl patch storageclass hwameistor-storage-lvm-hdd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+```
+
 3. Install dragonfly using helm
-   helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
-   helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly --version 1.1.63
+```console
+$ helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
+$ helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly --version 1.1.63
+```
+
 4. dragonfly-dfdaemon configuration
 ```console
 $ kubectl -n dragonfly-system get ds
@@ -56,10 +62,14 @@ spec:
       ... 
 
 ```
+
 5. Install the dfget client command line tool
    Each node executes:
-   wget https://github.com/dragonflyoss/Dragonfly2/releases/download/v2.1.44/dfget-2.1.44-linux-amd64.rpm
-   rpm -ivh dfget-2.1.44-linux-amd64.rpm
+```console
+$ wget https://github.com/dragonflyoss/Dragonfly2/releases/download/v2.1.44/dfget-2.1.44-linux-amd64.rpm
+$ rpm -ivh dfget-2.1.44-linux-amd64.rpm
+```
+
 6. Cancel the cluster default configuration sc
 
    
