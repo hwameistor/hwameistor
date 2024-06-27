@@ -17,11 +17,16 @@ sidebar_label:  "本地缓存卷 "
 
 1. 根据集群配置/etc/hosts
 2. 根据选择进行配置默认sc
-   kubectl patch storageclass hwameistor-storage-lvm-hdd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+```console
+ $ kubectl patch storageclass hwameistor-storage-lvm-hdd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+```
 
 3. 使用helm安装dragonfly
-   helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
-   helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly --version 1.1.63
+```console
+$ helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
+$ helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly --version 1.1.63
+```
+
 4. dragonfly-dfdaemon 配置
 ```console
 $ kubectl -n dragonfly-system get ds
@@ -63,8 +68,11 @@ spec:
 
 5. 安装dfget 客户端命令行工具
    每个节点执行：
-   wget https://github.com/dragonflyoss/Dragonfly2/releases/download/v2.1.44/dfget-2.1.44-linux-amd64.rpm
-   rpm -ivh dfget-2.1.44-linux-amd64.rpm
+```console
+$ wget https://github.com/dragonflyoss/Dragonfly2/releases/download/v2.1.44/dfget-2.1.44-linux-amd64.rpm
+$ rpm -ivh dfget-2.1.44-linux-amd64.rpm
+```
+
 6. 取消集群默认配置sc
 
 
