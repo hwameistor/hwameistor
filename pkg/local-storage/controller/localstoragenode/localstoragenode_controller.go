@@ -47,7 +47,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource LocalStorageNode
-	err = c.Watch(&source.Kind{Type: &apisv1alpha1.LocalStorageNode{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(source.Kind(mgr.GetCache(), &apisv1alpha1.LocalStorageNode{}), &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}

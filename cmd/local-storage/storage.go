@@ -125,9 +125,7 @@ func main() {
 	}
 
 	// Set default manager options
-	options := manager.Options{
-		Namespace: "", // watch all namespaces
-	}
+	options := manager.Options{}
 
 	// Create a new manager to provide shared dependencies and start components
 	mgr, err := manager.New(cfg, options)

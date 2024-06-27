@@ -28,7 +28,7 @@ var _ framework.ReservePlugin = &Plugin{}
 var _ framework.ScorePlugin = &Plugin{}
 
 // New initializes a new plugin and returns it.
-func New(_ runtime.Object, f framework.Handle) (framework.Plugin, error) {
+func New(_ context.Context, _ runtime.Object, f framework.Handle) (framework.Plugin, error) {
 	time.Sleep(time.Second) // wait for scheduleLabelMgr to be created
 	log.SetLevel(log.DebugLevel)
 

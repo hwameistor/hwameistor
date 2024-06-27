@@ -28,6 +28,7 @@ type runnableCheck func(ctx context.Context) bool
 // runnables handles all the runnables for a manager by grouping them accordingly to their
 // type (webhooks, caches etc.).
 type runnables struct {
+	HTTPServers    *runnableGroup
 	Webhooks       *runnableGroup
 	Caches         *runnableGroup
 	LeaderElection *runnableGroup
@@ -35,12 +36,13 @@ type runnables struct {
 }
 
 // newRunnables creates a new runnables object.
-func newRunnables(errChan chan error) *runnables {
+func newRunnables(baseContext BaseContextFunc, errChan chan error) *runnables {
 	return &runnables{
-		Webhooks:       newRunnableGroup(errChan),
-		Caches:         newRunnableGroup(errChan),
-		LeaderElection: newRunnableGroup(errChan),
-		Others:         newRunnableGroup(errChan),
+		HTTPServers:    newRunnableGroup(baseContext, errChan),
+		Webhooks:       newRunnableGroup(baseContext, errChan),
+		Caches:         newRunnableGroup(baseContext, errChan),
+		LeaderElection: newRunnableGroup(baseContext, errChan),
+		Others:         newRunnableGroup(baseContext, errChan),
 	}
 }
 
@@ -52,11 +54,13 @@ func newRunnables(errChan chan error) *runnables {
 // The runnables added after Start are started directly.
 func (r *runnables) Add(fn Runnable) error {
 	switch runnable := fn.(type) {
+	case *server:
+		return r.HTTPServers.Add(fn, nil)
 	case hasCache:
 		return r.Caches.Add(fn, func(ctx context.Context) bool {
 			return runnable.GetCache().WaitForCacheSync(ctx)
 		})
-	case *webhook.Server:
+	case webhook.Server:
 		return r.Webhooks.Add(fn, nil)
 	case LeaderElectionRunnable:
 		if !runnable.NeedLeaderElection() {
@@ -100,14 +104,15 @@ type runnableGroup struct {
 	wg *sync.WaitGroup
 }
 
-func newRunnableGroup(errChan chan error) *runnableGroup {
+func newRunnableGroup(baseContext BaseContextFunc, errChan chan error) *runnableGroup {
 	r := &runnableGroup{
 		startReadyCh: make(chan *readyRunnable),
 		errChan:      errChan,
 		ch:           make(chan *readyRunnable),
 		wg:           new(sync.WaitGroup),
 	}
-	r.ctx, r.cancel = context.WithCancel(context.Background())
+
+	r.ctx, r.cancel = context.WithCancel(baseContext())
 	return r
 }
 
@@ -258,6 +263,15 @@ func (r *runnableGroup) Add(rn Runnable, ready runnableCheck) error {
 		r.start.Unlock()
 	}
 
+	// Recheck if we're stopped and hold the readlock, given that the stop and start can be called
+	// at the same time, we can end up in a situation where the runnable is added
+	// after the group is stopped and the channel is closed.
+	r.stop.RLock()
+	defer r.stop.RUnlock()
+	if r.stopped {
+		return errRunnableGroupStopped
+	}
+
 	// Enqueue the runnable.
 	r.ch <- readyRunnable
 	return nil
@@ -267,7 +281,11 @@ func (r *runnableGroup) Add(rn Runnable, ready runnableCheck) error {
 func (r *runnableGroup) StopAndWait(ctx context.Context) {
 	r.stopOnce.Do(func() {
 		// Close the reconciler channel once we're done.
-		defer close(r.ch)
+		defer func() {
+			r.stop.Lock()
+			close(r.ch)
+			r.stop.Unlock()
+		}()
 
 		_ = r.Start(ctx)
 		r.stop.Lock()

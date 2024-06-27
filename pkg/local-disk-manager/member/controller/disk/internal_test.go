@@ -114,7 +114,7 @@ func GenFakeClient() client.Client {
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, ldc)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, ldcList)
 
-	return fake2.NewFakeClientWithScheme(s)
+	return fake2.NewClientBuilder().WithScheme(s).Build()
 
 }
 
@@ -199,7 +199,7 @@ func GenFakeLocalDiskNodeObject() *v1alpha1.LocalDiskNode {
 		Pools:         map[string]v1alpha1.LocalPool{v1alpha1.PoolNameForHDD: fakeLocalPool},
 		State:         "",
 		PoolExtendRecords: map[string]v1alpha1.LocalDiskClaimSpecArray{
-			v1alpha1.PoolNameForHDD: v1alpha1.LocalDiskClaimSpecArray{fakeLocalDiskClaim.Spec},
+			v1alpha1.PoolNameForHDD: {fakeLocalDiskClaim.Spec},
 		},
 	}
 

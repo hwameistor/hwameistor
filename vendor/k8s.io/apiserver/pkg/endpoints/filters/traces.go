@@ -20,21 +20,28 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/trace"
 
-	"k8s.io/component-base/traces"
+	tracing "k8s.io/component-base/tracing"
 )
 
 // WithTracing adds tracing to requests if the incoming request is sampled
-func WithTracing(handler http.Handler, tp *trace.TracerProvider) http.Handler {
+func WithTracing(handler http.Handler, tp trace.TracerProvider) http.Handler {
 	opts := []otelhttp.Option{
-		otelhttp.WithPropagators(traces.Propagators()),
+		otelhttp.WithPropagators(tracing.Propagators()),
 		otelhttp.WithPublicEndpoint(),
+		otelhttp.WithTracerProvider(tp),
 	}
-	if tp != nil {
-		opts = append(opts, otelhttp.WithTracerProvider(*tp))
-	}
-	// Even if there is no TracerProvider, the otelhttp still handles context propagation.
+	wrappedHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Add the http.target attribute to the otelhttp span
+		// Workaround for https://github.com/open-telemetry/opentelemetry-go-contrib/issues/3743
+		if r.URL != nil {
+			trace.SpanFromContext(r.Context()).SetAttributes(semconv.HTTPTarget(r.URL.RequestURI()))
+		}
+		handler.ServeHTTP(w, r)
+	})
+	// With Noop TracerProvider, the otelhttp still handles context propagation.
 	// See https://github.com/open-telemetry/opentelemetry-go/tree/main/example/passthrough
-	return otelhttp.NewHandler(handler, "KubernetesAPI", opts...)
+	return otelhttp.NewHandler(wrappedHandler, "KubernetesAPI", opts...)
 }

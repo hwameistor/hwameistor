@@ -47,7 +47,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource LocalVolumeExpand
-	err = c.Watch(&source.Kind{Type: &apisv1alpha1.LocalVolumeExpand{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(source.Kind(mgr.GetCache(), &apisv1alpha1.LocalVolumeExpand{}), &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}

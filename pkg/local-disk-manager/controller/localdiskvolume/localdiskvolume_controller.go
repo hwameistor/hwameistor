@@ -4,7 +4,6 @@ import (
 	"context"
 
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -17,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskvolume"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 )
@@ -49,17 +48,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource LocalDiskVolume
-	err = c.Watch(&source.Kind{Type: &v1alpha1.LocalDiskVolume{}}, &handler.EnqueueRequestForObject{}, withCurrentNode())
-	if err != nil {
-		return err
-	}
-
-	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner LocalDiskVolume
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &v1alpha1.LocalDiskVolume{},
-	})
+	err = c.Watch(source.Kind(mgr.GetCache(), &v1alpha1.LocalDiskVolume{}), &handler.EnqueueRequestForObject{}, withCurrentNode())
 	if err != nil {
 		return err
 	}

@@ -198,15 +198,16 @@ type Interface interface {
 	// match 'opts.ResourceVersion' according 'opts.ResourceVersionMatch'.
 	GetList(ctx context.Context, key string, opts ListOptions, listObj runtime.Object) error
 
-	// GuaranteedUpdate keeps calling 'tryUpdate()' to update key 'key' (of type 'ptrToType')
+	// GuaranteedUpdate keeps calling 'tryUpdate()' to update key 'key' (of type 'destination')
 	// retrying the update until success if there is index conflict.
 	// Note that object passed to tryUpdate may change across invocations of tryUpdate() if
 	// other writers are simultaneously updating it, so tryUpdate() needs to take into account
 	// the current contents of the object when deciding how the update object should look.
 	// If the key doesn't exist, it will return NotFound storage error if ignoreNotFound=false
-	// or zero value in 'ptrToType' parameter otherwise.
-	// If the object to update has the same value as previous, it won't do any update
-	// but will return the object in 'ptrToType' parameter.
+	// else `destination` will be set to the zero value of it's type.
+	// If the eventual successful invocation of `tryUpdate` returns an output with the same serialized
+	// contents as the input, it won't perform any update, but instead set `destination` to an object with those
+	// contents.
 	// If 'cachedExistingObject' is non-nil, it can be used as a suggestion about the
 	// current version of the object to avoid read operation from storage to get it.
 	// However, the implementations have to retry in case suggestion is stale.
@@ -215,7 +216,7 @@ type Interface interface {
 	//
 	// s := /* implementation of Interface */
 	// err := s.GuaranteedUpdate(
-	//     "myKey", &MyType{}, true,
+	//     "myKey", &MyType{}, true, preconditions,
 	//     func(input runtime.Object, res ResponseMeta) (runtime.Object, *uint64, error) {
 	//       // Before each invocation of the user defined function, "input" is reset to
 	//       // current contents for "myKey" in database.
@@ -227,14 +228,29 @@ type Interface interface {
 	//       // Return the modified object - return an error to stop iterating. Return
 	//       // a uint64 to alter the TTL on the object, or nil to keep it the same value.
 	//       return cur, nil, nil
-	//    },
+	//    }, cachedExistingObject
 	// )
 	GuaranteedUpdate(
-		ctx context.Context, key string, ptrToType runtime.Object, ignoreNotFound bool,
+		ctx context.Context, key string, destination runtime.Object, ignoreNotFound bool,
 		preconditions *Preconditions, tryUpdate UpdateFunc, cachedExistingObject runtime.Object) error
 
 	// Count returns number of different entries under the key (generally being path prefix).
 	Count(key string) (int64, error)
+
+	// RequestWatchProgress requests the a watch stream progress status be sent in the
+	// watch response stream as soon as possible.
+	// Used for monitor watch progress even if watching resources with no changes.
+	//
+	// If watch is lagging, progress status might:
+	// * be pointing to stale resource version. Use etcd KV request to get linearizable resource version.
+	// * not be delivered at all. It's recommended to poll request progress periodically.
+	//
+	// Note: Only watches with matching context grpc metadata will be notified.
+	// https://github.com/kubernetes/kubernetes/blob/9325a57125e8502941d1b0c7379c4bb80a678d5c/vendor/go.etcd.io/etcd/client/v3/watch.go#L1037-L1042
+	//
+	// TODO: Remove when storage.Interface will be separate from etc3.store.
+	// Deprecated: Added temporarily to simplify exposing RequestProgress for watch cache.
+	RequestWatchProgress(ctx context.Context) error
 }
 
 // GetOptions provides the options that may be provided for storage get operations.
@@ -266,5 +282,24 @@ type ListOptions struct {
 	Recursive bool
 	// ProgressNotify determines whether storage-originated bookmark (progress notify) events should
 	// be delivered to the users. The option is ignored for non-watch requests.
+	//
+	// Firstly, note that this field is different from the Predicate.AllowWatchBookmarks field.
+	// Secondly, this field is intended for internal clients only such as the watch cache.
+	//
+	// This means that external clients do not have the ability to set this field directly.
+	// For example by setting the allowWatchBookmarks query parameter.
+	//
+	// The motivation for this approach is the fact that the frequency
+	// of bookmark events from a storage like etcd might be very high.
+	// As the number of watch requests increases, the server load would also increase.
+	//
+	// Furthermore, the server is not obligated to provide bookmark events at all,
+	// as described in https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/956-watch-bookmark#proposal
 	ProgressNotify bool
+	// SendInitialEvents, when set together with Watch option,
+	// begin the watch stream with synthetic init events to build the
+	// whole state of all resources followed by a synthetic "Bookmark"
+	// event containing a ResourceVersion after which the server
+	// continues streaming events.
+	SendInitialEvents *bool
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package podtopologyspread
 
 import (
+	"context"
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
@@ -54,15 +55,17 @@ var systemDefaultConstraints = []v1.TopologySpreadConstraint{
 
 // PodTopologySpread is a plugin that ensures pod's topologySpreadConstraints is satisfied.
 type PodTopologySpread struct {
-	systemDefaulted                     bool
-	parallelizer                        parallelize.Parallelizer
-	defaultConstraints                  []v1.TopologySpreadConstraint
-	sharedLister                        framework.SharedLister
-	services                            corelisters.ServiceLister
-	replicationCtrls                    corelisters.ReplicationControllerLister
-	replicaSets                         appslisters.ReplicaSetLister
-	statefulSets                        appslisters.StatefulSetLister
-	enableMinDomainsInPodTopologySpread bool
+	systemDefaulted                              bool
+	parallelizer                                 parallelize.Parallelizer
+	defaultConstraints                           []v1.TopologySpreadConstraint
+	sharedLister                                 framework.SharedLister
+	services                                     corelisters.ServiceLister
+	replicationCtrls                             corelisters.ReplicationControllerLister
+	replicaSets                                  appslisters.ReplicaSetLister
+	statefulSets                                 appslisters.StatefulSetLister
+	enableMinDomainsInPodTopologySpread          bool
+	enableNodeInclusionPolicyInPodTopologySpread bool
+	enableMatchLabelKeysInPodTopologySpread      bool
 }
 
 var _ framework.PreFilterPlugin = &PodTopologySpread{}
@@ -71,10 +74,8 @@ var _ framework.PreScorePlugin = &PodTopologySpread{}
 var _ framework.ScorePlugin = &PodTopologySpread{}
 var _ framework.EnqueueExtensions = &PodTopologySpread{}
 
-const (
-	// Name is the name of the plugin used in the plugin registry and configurations.
-	Name = names.PodTopologySpread
-)
+// Name is the name of the plugin used in the plugin registry and configurations.
+const Name = names.PodTopologySpread
 
 // Name returns name of the plugin. It is used in logs, etc.
 func (pl *PodTopologySpread) Name() string {
@@ -82,7 +83,7 @@ func (pl *PodTopologySpread) Name() string {
 }
 
 // New initializes a new plugin and returns it.
-func New(plArgs runtime.Object, h framework.Handle, fts feature.Features) (framework.Plugin, error) {
+func New(_ context.Context, plArgs runtime.Object, h framework.Handle, fts feature.Features) (framework.Plugin, error) {
 	if h.SnapshotSharedLister() == nil {
 		return nil, fmt.Errorf("SnapshotSharedlister is nil")
 	}
@@ -98,6 +99,8 @@ func New(plArgs runtime.Object, h framework.Handle, fts feature.Features) (frame
 		sharedLister:                        h.SnapshotSharedLister(),
 		defaultConstraints:                  args.DefaultConstraints,
 		enableMinDomainsInPodTopologySpread: fts.EnableMinDomainsInPodTopologySpread,
+		enableNodeInclusionPolicyInPodTopologySpread: fts.EnableNodeInclusionPolicyInPodTopologySpread,
+		enableMatchLabelKeysInPodTopologySpread:      fts.EnableMatchLabelKeysInPodTopologySpread,
 	}
 	if args.DefaultingType == config.SystemDefaulting {
 		pl.defaultConstraints = systemDefaultConstraints
@@ -129,8 +132,8 @@ func (pl *PodTopologySpread) setListers(factory informers.SharedInformerFactory)
 
 // EventsToRegister returns the possible events that may make a Pod
 // failed by this plugin schedulable.
-func (pl *PodTopologySpread) EventsToRegister() []framework.ClusterEvent {
-	return []framework.ClusterEvent{
+func (pl *PodTopologySpread) EventsToRegister() []framework.ClusterEventWithHint {
+	return []framework.ClusterEventWithHint{
 		// All ActionType includes the following events:
 		// - Add. An unschedulable Pod may fail due to violating topology spread constraints,
 		// adding an assigned Pod may make it schedulable.
@@ -138,9 +141,9 @@ func (pl *PodTopologySpread) EventsToRegister() []framework.ClusterEvent {
 		// an unschedulable Pod schedulable.
 		// - Delete. An unschedulable Pod may fail due to violating an existing Pod's topology spread constraints,
 		// deleting an existing Pod may make it schedulable.
-		{Resource: framework.Pod, ActionType: framework.All},
+		{Event: framework.ClusterEvent{Resource: framework.Pod, ActionType: framework.All}},
 		// Node add|delete|updateLabel maybe lead an topology key changed,
 		// and make these pod in scheduling schedulable or unschedulable.
-		{Resource: framework.Node, ActionType: framework.Add | framework.Delete | framework.UpdateNodeLabel},
+		{Event: framework.ClusterEvent{Resource: framework.Node, ActionType: framework.Add | framework.Delete | framework.UpdateNodeLabel}},
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"strings"
 	"time"
 
@@ -328,7 +329,9 @@ func newClusterManager(cfg *rest.Config) (manager.Manager, error) {
 	options := manager.Options{
 		// NOTES： currently all metrics are exposed through the exporter
 		// disable metrics serving
-		MetricsBindAddress: "0",
+		Metrics: metricsserver.Options{
+			BindAddress: "0",
+		},
 	}
 
 	// Create a new manager to provide shared dependencies and start components
@@ -359,7 +362,9 @@ func newNodeManager(cfg *rest.Config) (manager.Manager, error) {
 	options := manager.Options{
 		// NOTES： currently all metrics are exposed through the exporter
 		// disable metrics serving
-		MetricsBindAddress: "0",
+		Metrics: metricsserver.Options{
+			BindAddress: "0",
+		},
 	}
 
 	// Create a new manager to provide shared dependencies and start components

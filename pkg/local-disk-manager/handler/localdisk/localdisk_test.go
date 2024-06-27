@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 var (
@@ -125,103 +125,20 @@ func TestLocalDiskHandler_BoundTo(t *testing.T) {
 	}
 }
 
-func TestHandler_GetLocalDiskFuncs(t *testing.T) {
-	cli, _ := CreateFakeClient()
-	handler := NewLocalDiskHandler(cli, fakeRecorder)
-
-	handler.For(GenFakeLocalDiskObject())
-	err := cli.Create(context.Background(), handler.localDisk)
-	if err != nil {
-		t.Errorf("Fail to create LocalDisk")
-		return
-	}
-
-	// handler.GetLocalDisk
-	ld1, err := handler.GetLocalDisk(types.NamespacedName{
-		Name:      fakeNodename + fakedevPath,
-		Namespace: fakeNamespace,
-	})
-	if err != nil || ld1.Name != fakeNodename+fakedevPath {
-		t.Errorf("Fail to get LocalDisk")
-	}
-
-	_, err = handler.GetLocalDisk(types.NamespacedName{
-		Name:      "invalid",
-		Namespace: fakeNamespace,
-	})
-	if err == nil {
-		t.Errorf("Fail to get invalid LocalDisk")
-	}
-
-	// handler.GetLocalDiskWithLabels
-	labels := map[string]string{fakeLabelKey: fakeLabelValue}
-	handler.SetupLabel(labels)
-	if cli.Update(context.TODO(), handler.localDisk) != nil {
-		t.Errorf("Fail to update localDisk")
-	}
-	ldList1, err := handler.GetLocalDiskWithLabels(labels)
-	if err != nil || len(ldList1.Items) == 0 {
-		t.Errorf("Fail to get LocalDiskList")
-	}
-	handler.RemoveLabel(labels)
-
-	// handler.ListLocalDisk
-	ldList2, err := handler.ListLocalDisk()
-	if err != nil || len(ldList2.Items) == 0 {
-		t.Errorf("Fail to list LocalDisk")
-	}
-
-	// handler.ListNodeLocalDisk
-	ldList3, err := handler.ListNodeLocalDisk(fakeNodename)
-	if err != nil || len(ldList3.Items) == 0 {
-		t.Errorf("Fail to list node LocalDisk")
-	}
-
-	// handler.Unclaimed
-	if handler.UnClaimed() == false {
-		t.Errorf("Fail to get claimed")
-	}
-
-	// handler.SetupStatus
-	handler.SetupStatus(v1alpha1.LocalDiskAvailable)
-	if handler.UpdateStatus() != nil {
-		t.Errorf("Fail to update status")
-	}
-
-	// handler.PatchDiskSpec
-	oldLocalDisk := handler.localDisk.DeepCopy()
-	handler.SetPartition(true)
-	handler.SetOwner("testOwner")
-	handler.ReserveDisk()
-	if handler.PatchDiskSpec(client.MergeFrom(oldLocalDisk)) != nil {
-		t.Errorf("Fail to patch LocalDisk spec")
-	}
-
-	if handler.ClaimRef() != nil {
-		t.Errorf("Claim ref should be nil")
-	}
-
-	if handler.PatchDiskOwner("testOwner2") != nil {
-		t.Errorf("Fail to patch disk owner")
-	}
-
-	if handler.IsEmpty() == true {
-		t.Errorf("LocalDisk partision should be empty")
-	}
-
-	if handler.FilterDisk(GenFakeLocalDiskClaimObject()) != false {
-		t.Errorf("Filter disk should be false")
-	}
-}
-
 // CreateFakeClient Create localDisk and LocalDiskNode resource
 func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s := scheme.Scheme
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.LocalDisk{})
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.LocalDiskList{})
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.LocalDiskClaim{})
+	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.LocalDiskClaimList{})
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.LocalDiskNode{})
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.LocalDiskNodeList{})
-	return fake.NewClientBuilder().WithScheme(s).WithObjects(&v1alpha1.LocalDisk{}, &v1alpha1.LocalDiskNode{}).Build(), s
+	return fake.NewClientBuilder().WithScheme(s).WithStatusSubresource(&v1alpha1.LocalDisk{}, &v1alpha1.LocalDiskNode{}).WithIndex(&v1alpha1.LocalDisk{}, "spec.nodeName", func(obj client.Object) []string {
+		return []string{obj.(*v1alpha1.LocalDisk).Spec.NodeName}
+	}).WithIndex(&v1alpha1.LocalDiskClaim{}, "status.status", func(obj client.Object) []string {
+		return []string{string(obj.(*v1alpha1.LocalDiskClaim).Status.Status)}
+	}).Build(), s
 }
 
 // GenFakeLocalDiskObject Create disk

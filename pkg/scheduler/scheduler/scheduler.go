@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"strings"
 	"time"
 
@@ -44,7 +45,9 @@ func NewScheduler(f framework.Handle) *Scheduler {
 	}
 
 	options := manager.Options{
-		MetricsBindAddress: "0", // disable metrics
+		Metrics: metricsserver.Options{
+			BindAddress: "0",
+		}, // disable metrics
 	}
 
 	mgr, err := manager.New(cfg, options)

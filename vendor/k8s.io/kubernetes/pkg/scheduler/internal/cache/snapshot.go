@@ -36,7 +36,10 @@ type Snapshot struct {
 	// havePodsWithRequiredAntiAffinityNodeInfoList is the list of nodes with at least one pod declaring
 	// required anti-affinity terms.
 	havePodsWithRequiredAntiAffinityNodeInfoList []*framework.NodeInfo
-	generation                                   int64
+	// usedPVCSet contains a set of PVC names that have one or more scheduled pods using them,
+	// keyed in the format "namespace/name".
+	usedPVCSet sets.Set[string]
+	generation int64
 }
 
 var _ framework.SharedLister = &Snapshot{}
@@ -45,6 +48,7 @@ var _ framework.SharedLister = &Snapshot{}
 func NewEmptySnapshot() *Snapshot {
 	return &Snapshot{
 		nodeInfoMap: make(map[string]*framework.NodeInfo),
+		usedPVCSet:  sets.New[string](),
 	}
 }
 
@@ -69,6 +73,7 @@ func NewSnapshot(pods []*v1.Pod, nodes []*v1.Node) *Snapshot {
 	s.nodeInfoList = nodeInfoList
 	s.havePodsWithAffinityNodeInfoList = havePodsWithAffinityNodeInfoList
 	s.havePodsWithRequiredAntiAffinityNodeInfoList = havePodsWithRequiredAntiAffinityNodeInfoList
+	s.usedPVCSet = createUsedPVCSet(pods)
 
 	return s
 }
@@ -98,15 +103,34 @@ func createNodeInfoMap(pods []*v1.Pod, nodes []*v1.Node) map[string]*framework.N
 	return nodeNameToInfo
 }
 
+func createUsedPVCSet(pods []*v1.Pod) sets.Set[string] {
+	usedPVCSet := sets.New[string]()
+	for _, pod := range pods {
+		if pod.Spec.NodeName == "" {
+			continue
+		}
+
+		for _, v := range pod.Spec.Volumes {
+			if v.PersistentVolumeClaim == nil {
+				continue
+			}
+
+			key := framework.GetNamespacedName(pod.Namespace, v.PersistentVolumeClaim.ClaimName)
+			usedPVCSet.Insert(key)
+		}
+	}
+	return usedPVCSet
+}
+
 // getNodeImageStates returns the given node's image states based on the given imageExistence map.
-func getNodeImageStates(node *v1.Node, imageExistenceMap map[string]sets.String) map[string]*framework.ImageStateSummary {
+func getNodeImageStates(node *v1.Node, imageExistenceMap map[string]sets.Set[string]) map[string]*framework.ImageStateSummary {
 	imageStates := make(map[string]*framework.ImageStateSummary)
 
 	for _, image := range node.Status.Images {
 		for _, name := range image.Names {
 			imageStates[name] = &framework.ImageStateSummary{
 				Size:     image.SizeBytes,
-				NumNodes: len(imageExistenceMap[name]),
+				NumNodes: imageExistenceMap[name].Len(),
 			}
 		}
 	}
@@ -114,13 +138,13 @@ func getNodeImageStates(node *v1.Node, imageExistenceMap map[string]sets.String)
 }
 
 // createImageExistenceMap returns a map recording on which nodes the images exist, keyed by the images' names.
-func createImageExistenceMap(nodes []*v1.Node) map[string]sets.String {
-	imageExistenceMap := make(map[string]sets.String)
+func createImageExistenceMap(nodes []*v1.Node) map[string]sets.Set[string] {
+	imageExistenceMap := make(map[string]sets.Set[string])
 	for _, node := range nodes {
 		for _, image := range node.Status.Images {
 			for _, name := range image.Names {
 				if _, ok := imageExistenceMap[name]; !ok {
-					imageExistenceMap[name] = sets.NewString(node.Name)
+					imageExistenceMap[name] = sets.New(node.Name)
 				} else {
 					imageExistenceMap[name].Insert(node.Name)
 				}
@@ -132,6 +156,11 @@ func createImageExistenceMap(nodes []*v1.Node) map[string]sets.String {
 
 // NodeInfos returns a NodeInfoLister.
 func (s *Snapshot) NodeInfos() framework.NodeInfoLister {
+	return s
+}
+
+// StorageInfos returns a StorageInfoLister.
+func (s *Snapshot) StorageInfos() framework.StorageInfoLister {
 	return s
 }
 
@@ -162,4 +191,8 @@ func (s *Snapshot) Get(nodeName string) (*framework.NodeInfo, error) {
 		return v, nil
 	}
 	return nil, fmt.Errorf("nodeinfo not found for node name %q", nodeName)
+}
+
+func (s *Snapshot) IsPVCUsedByPods(key string) bool {
+	return s.usedPVCSet.Has(key)
 }

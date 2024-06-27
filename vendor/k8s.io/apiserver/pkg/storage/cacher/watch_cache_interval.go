@@ -18,6 +18,7 @@ package cacher
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 
 	"k8s.io/apimachinery/pkg/fields"
@@ -53,7 +54,9 @@ import (
 // an interval as invalid iff we need to copy events from the
 // watchCache and we end up needing events that have already
 // been popped off. This translates to the following condition:
-//  watchCacheInterval::startIndex >= watchCache::startIndex.
+//
+//	watchCacheInterval::startIndex >= watchCache::startIndex.
+//
 // When this condition becomes false, the interval is no longer
 // valid and should not be used to retrieve and serve elements
 // from the underlying source.
@@ -112,9 +115,24 @@ func newCacheInterval(startIndex, endIndex int, indexer indexerFunc, indexValida
 	}
 }
 
+type sortableWatchCacheEvents []*watchCacheEvent
+
+func (s sortableWatchCacheEvents) Len() int {
+	return len(s)
+}
+
+func (s sortableWatchCacheEvents) Less(i, j int) bool {
+	return s[i].Key < s[j].Key
+}
+
+func (s sortableWatchCacheEvents) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 // newCacheIntervalFromStore is meant to handle the case of rv=0, such that the events
 // returned by Next() need to be events from a List() done on the underlying store of
 // the watch cache.
+// The items returned in the interval will be sorted by Key.
 func newCacheIntervalFromStore(resourceVersion uint64, store cache.Indexer, getAttrsFunc attrFunc) (*watchCacheInterval, error) {
 	buffer := &watchCacheIntervalBuffer{}
 	allItems := store.List()
@@ -138,6 +156,7 @@ func newCacheIntervalFromStore(resourceVersion uint64, store cache.Indexer, getA
 		}
 		buffer.endIndex++
 	}
+	sort.Sort(sortableWatchCacheEvents(buffer.buffer))
 	ci := &watchCacheInterval{
 		startIndex: 0,
 		// Simulate that we already have all the events we're looking for.
