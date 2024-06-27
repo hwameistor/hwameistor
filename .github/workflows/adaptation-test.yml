@@ -16,6 +16,7 @@ on:
           - k8s1.26.0 & centos7.6
           - k8s1.27.0 & centos7.6
           - k8s1.28.0 & centos7.6
+          - k8s1.29.0 & centos7.6
 #         - k8s1.23.3 & centos7.9
           - k8s1.28.0 & centos8.1
           - k8s1.28.0 & ubuntu2204
