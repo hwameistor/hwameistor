@@ -25,7 +25,7 @@ import (
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("pre-k8s1.29"), func() {
+var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("k8s1.29"), func() {
 	var f *framework.Framework
 	var client ctrlclient.Client
 	ctx := context.TODO()
