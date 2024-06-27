@@ -199,6 +199,7 @@ npm run start -- --locale cn # i18n/cn
 | 卷备份                | 计划中   |         | 将卷数据备份到远程服务器并恢复           |
 | HwameiStor 命令行界面 | 完成     | v0.12.4 | 提供命令行方式管理 HwameiStor 集群      |
 | HwameiStor 用户界面   | 完成     | v0.11.0 | 提供可视化界面管理 HwameiStor 集群      |
+| 缓存数据卷            | 完成     | v0.14.5  | 加速节点上的数据集加载                 |
 
 ## 社区
 

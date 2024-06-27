@@ -212,6 +212,7 @@ For i18n/cn, you can change the nav in `current.json`:
 | Volume backup             | Planned   |         | Backup the volume data to remote server and restore                             |
 | HwameiStor CLI command    | Completed | v0.12.4 | CLI command is to manage the HwameiStor cluster                                 |
 | HwameiStor GUI            | Completed | v0.11.0 | Manage the HwameiStor cluster                                                   |
+| Cache Volume              | Completed | v0.14.5 | Accelerate dataset loading on node                                             |
 
 ## Community
 
