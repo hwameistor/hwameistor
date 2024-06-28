@@ -192,6 +192,10 @@ func (p *patchDataLoaderContainer) getDatasetVolumesFromPod(pod corev1.Pod) ([]s
 			return nil, err
 		}
 
+		if pvName == "" {
+			continue
+		}
+
 		pv, err := p.getPersistentVolumeByName(pvName)
 		if err != nil {
 			return nil, err
