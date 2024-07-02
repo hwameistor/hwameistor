@@ -1,4 +1,4 @@
-FROM centos:7.9.2009
+FROM rockylinux:8
 
 RUN yum install -y xfsprogs smartmontools lsscsi e4fsprogs && \
     yum upgrade nss -y
