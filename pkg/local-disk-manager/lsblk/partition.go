@@ -14,6 +14,7 @@ import (
 
 const (
 	PartType = "part"
+	DiskType = "disk"
 )
 
 type LSBlk struct {
@@ -54,36 +55,31 @@ func (lsb LSBlk) partitionInfo() ([]manager.PartitionInfo, error) {
 	var partitions []manager.PartitionInfo
 	for _, item := range utils.ConvertShellOutputs(output) {
 		props := utils.ParseKeyValuePairString(item)
-		switch props["NAME"] {
-		case lsb.Name:
-			if props["FSTYPE"] != "" {
-				partitions = append(partitions, manager.PartitionInfo{
-					Name:       lsb.Name,
-					Filesystem: props["FSTYPE"],
-				})
-			}
-
-		default:
-			if !(props["PKNAME"] == lsb.Name && props["TYPE"] == PartType) {
-				continue
-			}
-
-			p := manager.PartitionInfo{Name: props["NAME"]}
-			p.Size, err = strconv.ParseUint(props["SIZE"], 10, 64)
-			if err != nil {
-				return nil, err
-			}
-
-			device := udev.NewDeviceWithName("", fmt.Sprintf("/dev/%s", props["NAME"]))
-			if err = device.ParseDeviceInfo(); err != nil {
-				return nil, err
-			}
-			p.Path = device.DevName
-			p.Label = device.PartName
-			p.Filesystem = device.FSType
-
-			partitions = append(partitions, p)
+		// device type e.g. lvm will be ignored
+		if props["TYPE"] != PartType && props["TYPE"] != DiskType {
+			continue
 		}
+
+		p := manager.PartitionInfo{Name: props["NAME"]}
+		p.Size, err = strconv.ParseUint(props["SIZE"], 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		device := udev.NewDeviceWithName("", fmt.Sprintf("/dev/%s", props["NAME"]))
+		if err = device.ParseDeviceInfo(); err != nil {
+			return nil, err
+		}
+
+		// do not create partition info for "disk but with no partition table"
+		if device.DevType == DiskType && device.PartTableType == "" && device.FSType == "" {
+			continue
+		}
+		p.Path = device.DevName
+		p.Label = device.PartName
+		p.Filesystem = device.FSType
+
+		partitions = append(partitions, p)
 	}
 
 	return partitions, nil
