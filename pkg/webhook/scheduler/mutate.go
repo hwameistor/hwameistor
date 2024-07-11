@@ -135,27 +135,39 @@ func (p *patchSchedulerName) ResourceNeedHandle(req admission.AdmissionReview) (
 	return false, nil
 }
 
-func (p *patchSchedulerName) IsHwameiStorVolume(ns, pvc string) (bool, error) {
-	logCtx := logrus.Fields{"NameSpace": ns, "PVC": pvc}
+func (p *patchSchedulerName) IsHwameiStorVolume(ns, pvcName string) (bool, error) {
+	logCtx := logrus.Fields{"NameSpace": ns, "PVC": pvcName}
 
-	// Step 1: get storageclass by pvc
-	sc, err := p.getStorageClassByPVC(ns, pvc)
+	pvc, err := p.client.CoreV1().PersistentVolumeClaims(ns).Get(context.Background(), pvcName, metav1.GetOptions{})
 	if err != nil {
-		logrus.WithFields(logCtx).WithError(err).Error("failed to get storageclass")
+		logrus.WithFields(logCtx).WithError(err).Error("failed to get pvc")
 		return false, err
 	}
 
-	// skip static volume
-	if sc == "" {
-		return false, nil
+	var provisioner string
+	// static volume in this phase should be included, see #1521 for more details
+	if pvc.Status.Phase == corev1.ClaimBound {
+		provisioner, err = p.getProvisionerByPV(pvc.Spec.VolumeName)
+		if err != nil {
+			logrus.WithFields(logCtx).WithError(err).Error("failed to get provisioner by PV")
+			return false, err
+		}
+	} else {
+		// Step 1: get storageclass by pvc
+		// skip static volume
+		if pvc.Spec.StorageClassName == nil {
+			return false, nil
+		}
+
+		sc := *pvc.Spec.StorageClassName
+		// Step 2: compare provisioner name with hwameistor.io
+		provisioner, err = p.getProvisionerByStorageClass(sc)
+		if err != nil {
+			logrus.WithFields(logCtx).WithError(err).Error("failed to get provisioner")
+			return false, err
+		}
 	}
 
-	// Step 2: compare provisioner name with hwameistor.io
-	provisioner, err := p.getProvisionerByStorageClass(sc)
-	if err != nil {
-		logrus.WithFields(logCtx).WithError(err).Error("failed to get provisioner")
-		return false, err
-	}
 	return strings.HasSuffix(provisioner, hwameiStorSuffix), nil
 }
 
@@ -179,4 +191,19 @@ func (p *patchSchedulerName) getProvisionerByStorageClass(scName string) (string
 	}
 
 	return sc.Provisioner, nil
+}
+
+func (p *patchSchedulerName) getProvisionerByPV(pvName string) (string, error) {
+	pv, err := p.client.CoreV1().PersistentVolumes().Get(context.Background(), pvName, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	// static volume
+	if pv.Spec.CSI == nil {
+		logrus.WithField("pvName", pvName).Debug("Found static volume")
+		return "", nil
+	}
+
+	return pv.Spec.CSI.Driver, nil
 }
