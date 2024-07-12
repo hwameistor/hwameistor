@@ -493,7 +493,47 @@ func DeleteAllPVC(ctx context.Context) error {
 	}
 
 }
+func DeleteAllPV(ctx context.Context) error {
+	logrus.Printf("delete All PV")
+	f := framework.NewDefaultFramework(clientset.AddToScheme)
+	client := f.GetClient()
+	pvList := &corev1.PersistentVolumeList{}
+	err := client.List(ctx, pvList)
+	if err != nil {
+		logrus.Error("get pvc list error ", err)
+		f.ExpectNoError(err)
+	}
 
+	for _, pvc := range pvList.Items {
+		logrus.Printf("delete pv:%+v ", pvc.Name)
+		ctx, _ := context.WithTimeout(ctx, time.Minute)
+		err := client.Delete(ctx, &pvc)
+		if err != nil {
+			logrus.Error("delete pv error: ", err)
+			f.ExpectNoError(err)
+		}
+	}
+
+	err = wait.PollImmediate(3*time.Second, framework.PodStartTimeout, func() (done bool, err error) {
+		err = client.List(ctx, pvList)
+		if err != nil {
+			logrus.Error("get pv list error: ", err)
+			f.ExpectNoError(err)
+		}
+		if len(pvList.Items) != 0 {
+			return false, nil
+		} else {
+			return true, nil
+		}
+	})
+	if err != nil {
+		logrus.Error(err)
+		return err
+	} else {
+		return nil
+	}
+
+}
 func DeleteAllSC(ctx context.Context) error {
 	logrus.Printf("delete All SC")
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
