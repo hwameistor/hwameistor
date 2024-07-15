@@ -377,14 +377,24 @@ var _ = ginkgo.Describe("localstorage volume test ", ginkgo.Label("api"), func()
 
 		})
 
-		ginkgo.It("print test results", func() {
+		ginkgo.It("check results", func() {
 
-			result1, err := utils.RunInLinux(" grep -c '\"Failure Count\"' hwamei_stats.json ")
-			result2, err := utils.RunInLinux(" grep -c '\"Failure Count\": \"0\"'  hwamei_stats.json")
+			result1, err := utils.RunInLinux(" grep -c '\"Failure Count\"' hwamei_test_report* ")
+			result2, err := utils.RunInLinux(" grep -c '\"Failure Count\": \"0\"'  hwamei_test_report*")
+			logrus.Info(result1)
+			logrus.Info(result2)
 			if err != nil {
 				logrus.Error(err)
 			}
 			gomega.Expect(result1).To(gomega.Equal(result2))
+
+		})
+		ginkgo.It("Upload Report", func() {
+
+			_, err := utils.RunInLinux("bash API_Performance_Test/upload_report.sh")
+			if err != nil {
+				logrus.Error(err)
+			}
 
 		})
 	})

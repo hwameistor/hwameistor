@@ -1,6 +1,8 @@
+
+
 import csv
 import json
-
+from datetime import datetime
 def csv_to_json(csv_file_path, json_file_path):
     #create a dictionary
     data_dict = {}
@@ -32,7 +34,8 @@ def csv_to_json(csv_file_path, json_file_path):
 #provide the file path relative to your machine
 
 #Step 1
+now = datetime.now()
 csv_file_path = 'hwamei_stats.csv'
-json_file_path = 'hwamei_stats.json'
+json_file_path = 'hwamei_test_report_'+str(now.strftime('%Y-%m-%d'))+'.json'
 
 csv_to_json(csv_file_path, json_file_path)
