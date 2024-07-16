@@ -44,6 +44,10 @@ they will be supported in the future.
   <summary>Click to view all compatible kernel versions</summary>
 
   ```text
+  5.4.247-1.el7.elrepo
+  5.14.0-284.11.1.el9_2
+  5.15.0-204.147.6.2.el8uek
+  ---------------------------------------------------
   5.8.0-1043-azure
   5.8.0-1042-azure
   5.8.0-1041-azure
@@ -67,7 +71,6 @@ they will be supported in the future.
   5.4.0-1057-aws
   5.4.0-1056-aws
   5.4.0-1055-aws
-  5.4.247-1.el7
   5.3.18-57.3
   5.3.18-22.2
   5.14.0-1.7.1.el9
