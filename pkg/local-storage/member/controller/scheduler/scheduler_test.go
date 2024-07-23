@@ -10,7 +10,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	vgmock "github.com/hwameistor/hwameistor/pkg/local-storage/member/controller/volumegroup"
 )
 
@@ -398,9 +398,9 @@ func TestIsTaintMatch(t *testing.T) {
 				},
 			}
 
-			match := isTaintMatch(node, tt.tolerations)
+			match := canTaintBeTolerated(node, tt.tolerations)
 			if match != tt.expectedMatch {
-				t.Errorf("isTaintMatch() = %v, want %v", match, tt.expectedMatch)
+				t.Errorf("canTaintBeTolerated() = %v, want %v", match, tt.expectedMatch)
 			}
 		})
 	}
