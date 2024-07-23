@@ -124,6 +124,15 @@ const config = {
         },
       },
     },
+
+  plugins: [
+    [require.resolve('docusaurus-lunr-search'), 
+      {
+        languages: ['en', 'zh']
+      }
+    ]
+
+  ],
 };
 
 module.exports = config;
