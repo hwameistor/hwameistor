@@ -299,7 +299,7 @@ func TestIsTaintMatch(t *testing.T) {
 				},
 			},
 			tolerations:   []corev1.Toleration{},
-			expectedMatch: true,
+			expectedMatch: false,
 		},
 		{
 			name:       "taints empty, tolerations present",
@@ -387,6 +387,39 @@ func TestIsTaintMatch(t *testing.T) {
 				},
 			},
 			expectedMatch: false,
+		},
+		{
+			name: "single node with PreferNoSchedule taint, pod without tolerations",
+			nodeTaints: []corev1.Taint{
+				{
+					Key:    "key1",
+					Value:  "value1",
+					Effect: corev1.TaintEffectPreferNoSchedule,
+				},
+			},
+			tolerations: []corev1.Toleration{},
+			// If there is only one node, the Pod should be scheduled to this node even if it has no toleration.
+			expectedMatch: true,
+		},
+
+		{
+			name: "single node with PreferNoSchedule taint, pod with mismatched tolerations",
+			nodeTaints: []corev1.Taint{
+				{
+					Key:    "key1",
+					Value:  "value1",
+					Effect: corev1.TaintEffectPreferNoSchedule,
+				},
+			},
+			tolerations: []corev1.Toleration{
+				{
+					Key:      "key2", // Key Mismatch
+					Operator: corev1.TolerationOpEqual,
+					Value:    "value2",
+					Effect:   corev1.TaintEffectPreferNoSchedule,
+				},
+			},
+			expectedMatch: true,
 		},
 	}
 
