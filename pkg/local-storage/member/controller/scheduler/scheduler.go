@@ -101,11 +101,11 @@ func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) (qualifi
 	}
 
 	if (vols[0].Spec.ReplicaNumber > 1 && vols[0].Annotations[REPLICA_AFFINITY] != "forbid") || vols[0].Annotations[REPLICA_AFFINITY] == "need" {
-		taint_nodes, err := s.filterNodeByTaint(vols[0], qualifiedNodes)
+		nodes, err := s.filterNodeByTaint(vols[0], qualifiedNodes)
 		if err != nil {
 			logCtx.WithError(err).WithField("volumes", vols[0]).Debugf("fail to filterNodeByTaint")
 		}
-		nodes, err := s.filterNodeByAffinity(vols[0], taint_nodes)
+		nodes, err = s.filterNodeByAffinity(vols[0], nodes)
 		if err != nil {
 			logCtx.WithError(err).WithField("volumes", vols[0]).Debugf("fail to filterNodeByAffinity")
 		}
@@ -124,77 +124,84 @@ func (s *scheduler) filterNodeByTaint(vol *apisv1alpha1.LocalVolume, qualifiedNo
 	if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: vol.Spec.PersistentVolumeClaimName, Namespace: vol.Spec.PersistentVolumeClaimNamespace}, &pvc); err != nil {
 		return qualifiedNodes, err
 	}
-	filteredNodes := make([]*apisv1alpha1.LocalStorageNode, 0, len(qualifiedNodes))
-	if pvc.Annotations == nil {
-		pvc.Annotations = make(map[string]string)
+
+	if pvc.Annotations == nil || pvc.Annotations[SkipAffinity] == "true" {
+		log.Debugf("skip filterNodeByTaint, qualifiedNodes len is %d", len(qualifiedNodes))
+		return qualifiedNodes, nil
 	}
-	if _, ok := pvc.Annotations[TOLERATION]; !ok {
-		for _, lsn := range qualifiedNodes {
-			node := corev1.Node{}
-			if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: lsn.Name}, &node); err != nil {
-				return qualifiedNodes, err
-			}
-			if len(node.Spec.Taints) > 0 {
-				if !hasNoScheduleTaint(node) {
-					filteredNodes = append(filteredNodes, lsn)
-				}
-			} else {
-				filteredNodes = append(filteredNodes, lsn)
-			}
-		}
-		return filteredNodes, nil
-	}
-	if tolerationsStr, ok := pvc.Annotations[TOLERATION]; ok {
-		var tolerations []corev1.Toleration
+
+	var tolerations []corev1.Toleration
+	if tolerationsStr, ok := pvc.Annotations[TOLERATION]; !ok {
+		log.Debugf("no tolerations found in pvc annotations")
+	} else {
 		if err := json.Unmarshal([]byte(tolerationsStr), &tolerations); err != nil {
+			log.WithError(err).Errorf("failed to parse tolerations")
 			return qualifiedNodes, err
 		}
-		for _, lsn := range qualifiedNodes {
-			node := corev1.Node{}
-			if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: lsn.Name}, &node); err != nil {
-				return qualifiedNodes, err
-			}
-			if match := isTaintMatch(&node, tolerations); match {
-				filteredNodes = append(filteredNodes, lsn)
-			}
-		}
-		return filteredNodes, nil
 	}
 
-	return qualifiedNodes, nil
-}
-
-func hasNoScheduleTaint(node corev1.Node) bool {
-	for _, taint := range node.Spec.Taints {
-		if taint.Effect == corev1.TaintEffectNoSchedule || taint.Effect == corev1.TaintEffectNoExecute {
-			log.Debugf("Node taint does not match schedule :%s ", node.Name)
-			return true
+	// filter each qualified node and judge if taints exist on node but not tolerated by pvc
+	filteredNodes := make([]*apisv1alpha1.LocalStorageNode, 0, len(qualifiedNodes))
+	for _, qNode := range qualifiedNodes {
+		node := corev1.Node{}
+		if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: qNode.Name}, &node); err != nil {
+			return qualifiedNodes, err
+		}
+		if match := canTaintBeTolerated(&node, tolerations); match {
+			filteredNodes = append(filteredNodes, qNode)
 		}
 	}
-	return false
+
+	log.Debugf("filterNodeByTaint end, filteredNodes len is %d", len(filteredNodes))
+	return filteredNodes, nil
 }
 
-func isTaintMatch(node *corev1.Node, tolerations []corev1.Toleration) bool {
-	if len(node.Spec.Taints) == 0 || len(tolerations) == 0 {
+func canTaintBeTolerated(node *corev1.Node, tolerations []corev1.Toleration) bool {
+	// only consider "NoSchedule or NoExecute" taints
+	nodeTaints := filterNodeTaints(node, corev1.TaintEffectNoSchedule, corev1.TaintEffectNoExecute)
+	if len(nodeTaints) == 0 {
 		return true
 	}
 
-	for _, nodeTaint := range node.Spec.Taints {
-		taintUntolerated := true
-
+	// compare each taint(node) and tolerations(pvc)
+	for _, nodeTaint := range nodeTaints {
+		taintTolerated := false
 		for _, toleration := range tolerations {
 			if doesTolerationAllowTaint(&nodeTaint, &toleration) {
-				taintUntolerated = false
+				taintTolerated = true
 				break
 			}
 		}
-		if taintUntolerated {
+
+		if !taintTolerated {
 			log.Debugf("Node %s has untolerated taint: %s", node.Name, nodeTaint.Key)
 			return false
 		}
 	}
 
 	return true
+}
+
+func filterNodeTaints(node *corev1.Node, effects ...corev1.TaintEffect) []corev1.Taint {
+	var taints []corev1.Taint
+	for _, taint := range node.Spec.Taints {
+		for _, effect := range effects {
+			if taint.Effect == effect {
+				taints = append(taints, taint)
+			}
+		}
+	}
+
+	return taints
+}
+
+func hasNoScheduleTaint(node corev1.Node) bool {
+	for _, taint := range node.Spec.Taints {
+		if taint.Effect == corev1.TaintEffectNoSchedule || taint.Effect == corev1.TaintEffectNoExecute {
+			return true
+		}
+	}
+	return false
 }
 
 func doesTolerationAllowTaint(taint *corev1.Taint, toleration *corev1.Toleration) bool {
@@ -219,25 +226,34 @@ func (s *scheduler) filterNodeByAffinity(vol *apisv1alpha1.LocalVolume, qualifie
 		return qualifiedNodes, err
 	}
 
-	filteredNodes := make([]*apisv1alpha1.LocalStorageNode, 0, len(qualifiedNodes))
-	if pvc.Annotations != nil && pvc.Annotations[AFFINITY] != "" {
-		var podAnntify corev1.Affinity
-		anntifyStr := pvc.Annotations[AFFINITY]
-		if err := json.Unmarshal([]byte(anntifyStr), &podAnntify); err != nil {
+	if pvc.Annotations == nil || pvc.Annotations[SkipAffinity] == "true" {
+		log.Debugf("skip filterNodeByAffinity, qualifiedNodes len is %d", len(qualifiedNodes))
+		return qualifiedNodes, nil
+	}
+
+	var podAffinity corev1.Affinity
+	if affinityStr, ok := pvc.Annotations[AFFINITY]; !ok {
+		log.Debugf("no affinity found in pvc annotations")
+	} else {
+		if err := json.Unmarshal([]byte(affinityStr), &podAffinity); err != nil {
+			log.WithError(err).Errorf("failed to parse affinity")
 			return qualifiedNodes, err
 		}
-		for _, lsn := range qualifiedNodes {
-			node := corev1.Node{}
-			if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: lsn.Name}, &node); err != nil {
-				return qualifiedNodes, err
-			}
-			if match := isAffinityMatch(&node, &podAnntify, s.apiClient); match {
-				filteredNodes = append(filteredNodes, lsn)
-			}
-		}
-		return filteredNodes, nil
 	}
-	return qualifiedNodes, nil
+
+	filteredNodes := make([]*apisv1alpha1.LocalStorageNode, 0, len(qualifiedNodes))
+	for _, qNode := range qualifiedNodes {
+		node := corev1.Node{}
+		if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: qNode.Name}, &node); err != nil {
+			return qualifiedNodes, err
+		}
+		if match := isAffinityMatch(&node, &podAffinity, s.apiClient); match {
+			filteredNodes = append(filteredNodes, qNode)
+		}
+	}
+
+	log.Debugf("filterNodeByAffinity end, filteredNodes len is %d", len(filteredNodes))
+	return filteredNodes, nil
 }
 
 func isAffinityMatch(node *corev1.Node, affinity *corev1.Affinity, apiClient client.Client) bool {
@@ -446,16 +462,19 @@ func (s *scheduler) Allocate(vol *apisv1alpha1.LocalVolume) (*apisv1alpha1.Volum
 			return nil, err
 		}
 
-		nodes, err = s.filterNodeByTaint(vol, nodes)
-		if err != nil {
-			logCtx.WithError(err).Error("Failed to filterNodeByTaint")
-			return nil, err
-		}
+		// when the volume is HA or migration happens, we need to filter nodes by taint and affinity
+		if vol.Spec.ReplicaNumber > 1 {
+			nodes, err = s.filterNodeByTaint(vol, nodes)
+			if err != nil {
+				logCtx.WithError(err).Error("Failed to filterNodeByTaint")
+				return nil, err
+			}
 
-		nodes, err = s.filterNodeByAffinity(vol, nodes)
-		if err != nil {
-			logCtx.WithError(err).Error("Failed to filterNodeByAffinity")
-			return nil, err
+			nodes, err = s.filterNodeByAffinity(vol, nodes)
+			if err != nil {
+				logCtx.WithError(err).Error("Failed to filterNodeByAffinity")
+				return nil, err
+			}
 		}
 
 		logCtx.WithFields(log.Fields{"needs": neededNodeNumber, "candidates": len(nodes)}).Debug("try to allocate more replica")
