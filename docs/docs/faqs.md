@@ -205,45 +205,49 @@ Probable reasons:
 
 When is manually expanding storage needed:
 
-  - To use the disk partition([#1387](https://github.com/hwameistor/hwameistor/issues/1387))
-  - Same serial number is shared between different disks([#1450](https://github.com/hwameistor/hwameistor/issues/1450),[#1449](https://github.com/hwameistor/hwameistor/issues/1449))
-  > use `lsblk -o +SERIAL` to check serial number
+- To use the disk partition ([Issue #1387](https://github.com/hwameistor/hwameistor/issues/1387))
+- Same serial number is shared between different disks
+  ([Issue #1450](https://github.com/hwameistor/hwameistor/issues/1450),
+  [Issue #1449](https://github.com/hwameistor/hwameistor/issues/1449))
+
+> Run `lsblk -o +SERIAL` to check serial number.
 
 Manual expansion steps:
 
-  1. Create and expand storage pool
+1. Create and expand storage pool
 
-  ```bash
-    $ vgcreate LocalStorage_PoolHDD /dev/sdb
-  ```
+   ```bash
+   vgcreate LocalStorage_PoolHDD /dev/sdb
+   ```
 
-  > `LocalStorage_PoolHDD` is the StoragePool name for `HDD` type disk.
-  Other optional names are `LocalStorage_PoolSSD` for `SSD` type and `LocalStorage_PoolNVMe` for `NVMe` type.
+   > `LocalStorage_PoolHDD` is the StoragePool name for `HDD` type disk.
+   > Other optional names are `LocalStorage_PoolSSD` for `SSD` type and `LocalStorage_PoolNVMe` for `NVMe` type.
 
-  If you want to **expand the storage pool with disk partition**, you can use the following command:
+   If you want to **expand the storage pool with disk partition**, you can use the following command:
 
-  ```bash
-    $ vgcreate LocalStorage_PoolHDD /dev/sdb1
-  ```
+   ```bash
+   vgcreate LocalStorage_PoolHDD /dev/sdb1
+   ```
 
-  If **storage pool is already exist**, you can use the following command:
+   If **storage pool is already exist**, you can use the following command:
 
-  ```bash
-    $ vgextend LocalStorage_PoolHDD /dev/sdb1
-  ```
+   ```bash
+   vgextend LocalStorage_PoolHDD /dev/sdb1
+   ```
 
-  2. Check the status of the node storage pool and confirm that the disk is added to the storage pool like this:
+2. Check the status of the node storage pool and confirm that the disk is added to the storage pool like this:
 
-  ```bash
-    $ kubectl get lsn node1 -oyaml
-    apiVersion: hwameistor.io/v1alpha1
-    kind: LocalStorageNode
-    ...
-    pools:
-      LocalStorage_PoolHDD:
-      class: HDD
-      disks:
-      - capacityBytes: 17175674880
-      devPath: /dev/sdb
-    ...
-  ```
+   ```bash
+   $ kubectl get lsn node1 -o yaml
+
+   apiVersion: hwameistor.io/v1alpha1
+   kind: LocalStorageNode
+   ...
+   pools:
+     LocalStorage_PoolHDD:
+     class: HDD
+     disks:
+     - capacityBytes: 17175674880
+     devPath: /dev/sdb
+   ...
+   ```
