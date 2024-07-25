@@ -5,7 +5,7 @@ sidebar_label: "常见问题"
 
 # 常见问题
 
-## Q1：HwameiStor 本地存储调度器 scheduler 在 kubernetes 平台中是如何工作的？
+## Q1：HwameiStor 本地存储调度器 scheduler 在 Kubernetes 平台中是如何工作的？
 
 HwameiStor 的调度器是以 Pod 的形式部署在 HwameiStor 的命名空间。
 
@@ -22,7 +22,7 @@ HwameiStor 建议使用有状态的 StatefulSet 用于多副本的工作负载�
 
 ![img](img/clip_image004.png)
 
-由于无状态应用 deployment 不能共享 block 数据卷，所以建议使用单副本。
+由于无状态应用 Deployment 不能共享 block 数据卷，所以建议使用单副本。
 
 ## Q3: 如何运维一个 Kubernetes 节点?
 
@@ -151,8 +151,8 @@ HwameiStor 可以立即将 Pod 调度到其他数据卷所在的可用节点，�
 1. 节点没有安装 LVM2，可通过如下命令进行安装：
 
    ```bash
-   rpm -qa | grep lvm2  #确认 LVM2 是否安装
-   yum install lvm2 #在每个节点上确认 LVM 已安装
+   rpm -qa | grep lvm2  # 确认 LVM2 是否安装
+   yum install lvm2 # 在每个节点上确认 LVM 已安装
    ```
 
 2. 确认节点上对应磁盘的 GPT 分区：
@@ -178,52 +178,57 @@ HwameiStor 可以立即将 Pod 调度到其他数据卷所在的可用节点，�
    > drbd-adapter 组件只有在 HA 启用时候才生效，如果没有启用，可以忽略相关错误
 
    ```bash
-   kubectl get pod -n hwameistor  # 确认pod是否运行正常
-   kubectl get hmcluster -o yaml # 查看health字段
+   kubectl get pod -n hwameistor  # 确认 pod 是否运行正常
+   kubectl get hmcluster -o yaml # 查看 health 字段
    ```
 
 ## Q6: 如何手动扩容存储池容量？
 
 什么时候需要手动扩容:
 
-  - 需要使用磁盘分区([#1387](https://github.com/hwameistor/hwameistor/issues/1387))
-  - 不同的磁盘使用了相同的序列号([#1450](https://github.com/hwameistor/hwameistor/issues/1450),[#1449](https://github.com/hwameistor/hwameistor/issues/1449))
-  > 使用 `lsblk -o +SERIAL` 查看磁盘序列号
+- 需要使用磁盘分区 ([Issue #1387](https://github.com/hwameistor/hwameistor/issues/1387))
+- 不同的磁盘使用了相同的序列号
+  ([Issue #1450](https://github.com/hwameistor/hwameistor/issues/1450),
+  [Issue #1449](https://github.com/hwameistor/hwameistor/issues/1449))
+  
+> 执行 `lsblk -o +SERIAL` 命令查看磁盘序列号。
 
 手动扩容步骤:
 
-  1. 创建并扩容存储池
+1. 创建并扩容存储池
 
-  ```bash
-    $ vgcreate LocalStorage_PoolHDD /dev/sdb
-  ```
+   ```bash
+   vgcreate LocalStorage_PoolHDD /dev/sdb
+   ```
 
-  > `LocalStorage_PoolHDD` 是 `HDD` 磁盘类型的存储池名称，其他可选名称有 `LocalStorage_PoolSSD` 用于 `SSD` 类型，`LocalStorage_PoolNVMe` 用于 `NVMe` 类型。
+   > `LocalStorage_PoolHDD` 是 `HDD` 磁盘类型的存储池名称，其他可选名称有
+   > `LocalStorage_PoolSSD` 用于 `SSD` 类型，`LocalStorage_PoolNVMe` 用于 `NVMe` 类型。
 
-  如果需要使用一个磁盘分区来扩容存储池，可以使用下面的命令:
+   如果需要使用一个磁盘分区来扩容存储池，可以使用下面的命令:
 
-  ```bash
-    $ vgcreate LocalStorage_PoolHDD /dev/sdb1
-  ```
+   ```bash
+   vgcreate LocalStorage_PoolHDD /dev/sdb1
+   ```
 
-  如果存储池已经存在，可以使用下面的命令来扩容存储池:
+   如果存储池已经存在，可以使用下面的命令来扩容存储池:
 
-  ```bash
-    $ vgextend LocalStorage_PoolHDD /dev/sdb1
-  ```
+   ```bash
+   vgextend LocalStorage_PoolHDD /dev/sdb1
+   ```
 
 2. 检查节点的存储池状态并确认磁盘已经添加到存储池中:
 
-  ```bash
-    $ kubectl get lsn node1 -oyaml
-    apiVersion: hwameistor.io/v1alpha1
-    kind: LocalStorageNode
-    ...
-    pools:
-    LocalStorage_PoolHDD:
-    class: HDD
-    disks:
-    - capacityBytes: 17175674880
-    devPath: /dev/sdb
-    ...
-  ```
+   ```bash
+   $ kubectl get lsn node1 -o yaml
+
+   apiVersion: hwameistor.io/v1alpha1
+   kind: LocalStorageNode
+   ...
+   pools:
+   LocalStorage_PoolHDD:
+   class: HDD
+   disks:
+   - capacityBytes: 17175674880
+   devPath: /dev/sdb
+   ...
+   ```

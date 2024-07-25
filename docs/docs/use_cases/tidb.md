@@ -65,7 +65,7 @@ The TiDB distributed database splits the overall architecture into multiple modu
 
 ### Kubernetes cluster
 
-In this test, we use three VM nodes to deploy the Kubernetes cluster, including one master node and two worker nodes. Kubelete version is 1.22.0.
+In this test, we use three VM nodes to deploy the Kubernetes cluster, including one master node and two worker nodes. kubelet version is 1.22.0.
 
 ![k8s cluster](img/k8scluster.png)
 
