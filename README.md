@@ -40,6 +40,8 @@ See [current releases](https://github.com/hwameistor/hwameistor/releases).
 | 1.26           | No     | Yes      | Yes       |
 | 1.27           | No     | No       | Yes       |
 | 1.28           | No     | No       | Yes       |
+| 1.29           | No     | No       | Yes       |
+| 1.30           | No     | No       | Yes       |
 
 ## Modules and Code
 
