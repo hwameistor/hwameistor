@@ -94,6 +94,12 @@ BUILDER_TAG = latest
 BUILDER_DOCKERFILE = ${PROJECT_SOURCE_CODE_DIR}/build/builder/Dockerfile
 BUILDER_MOUNT_DST_DIR = /go/src/github.com/hwameistor/hwameistor
 
+# [ BASE_IMAGE ]
+#----------------
+BASE_IMAGE_NAME = ${IMAGE_REGISTRY}/${MODULE_NAME}-base-image
+BASE_IMAGE_TAG = latest
+BASE_IMAGE_DOCKERFILE = ${PROJECT_SOURCE_CODE_DIR}/build/base-image/Dockerfile
+
 # [ JUICESYNC ]
 #----------------
 JUICESYNC_NAME = ${IMAGE_REGISTRY}/${MODULE_NAME}-juicesync

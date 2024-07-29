@@ -454,6 +454,17 @@ builder:
 	docker build -t ${BUILDER_NAME}:${BUILDER_TAG} -f ${BUILDER_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	docker push ${BUILDER_NAME}:${BUILDER_TAG}
 
+.PHONY: release_base_image
+release_base_image:
+	# build for amd64 version
+	@echo "Build base image ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}-amd64"
+	${DOCKER_BUILDX_CMD_AMD64} -t ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}-amd64 -f ${BASE_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# build for arm64 version
+	@echo "Build base image ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}-arm64"
+	${DOCKER_BUILDX_CMD_ARM64} -t ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}-arm64 -f ${BASE_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+	# push to a public registry
+	${MUILT_ARCH_PUSH_CMD} -i ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}
+
 .PHONY: tools
 tools: juicesync
 
