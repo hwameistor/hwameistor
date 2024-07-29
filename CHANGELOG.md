@@ -1,3 +1,37 @@
+v0.14.6/ 2024-7-29
+========================
+
+## LVM volume management enhancements
+- Change Default ReclaimPolicy from Delete to Retain #1519 (@panpan0000 )
+## Disk Management Enhancements
+- fix(disk-manager): filter out disk with partition table #1524 (@SSmallMonster )
+## Admission
+- Fixed the issue of not handling empty pvName #1516 (@peng9808 )
+- enhance(admission): improve processing static volume #1522 (@SSmallMonster )
+## Scheduler
+- fix(scheduler): correct skip policy for affinity and taints #1540 (@SSmallMonster )
+## Tests
+- [e2e] upgrade $path in e2e test #1502 (@FloatXD )
+- [e2e] upgrade e2e test  #1504 (@FloatXD )
+- [e2e]open k8s.129 ad test #1509 (@FloatXD )
+- [test]add static volume e2e test #1525 (@FloatXD )
+- [test]upgrade api test #1528 (@FloatXD )
+- [e2e]add full test in pr test #1538 (@FloatXD )
+## Documentation
+- docs: update serial check command #1506 (@SSmallMonster )
+- update docs Cached Volumes #1510 #1511  (@peng9808 )
+- docs: update readme #1512 (@SSmallMonster )
+- Complete cache volume docs #1513 (@peng9808 )
+- [Docs] update volumes/cache.md #1514 (@peng9808 )
+- [doc]update the drbd support list #1531 (@FloatXD )
+- [Docs] fix typos and bullet indentations #1542 (@windsonsea )
+- feat(docs): add search for docs #1539 (@youhonglian )
+## Others
+- remove dataset in helm #1505 (@FloatXD )
+- [image-build]update yum repo #1518 (@FloatXD )
+- limit RBAC hwameistor-role permissions #1537 (@SSmallMonster )
+
+
 v0.14.5/ 2024-6-21
 ========================
 
