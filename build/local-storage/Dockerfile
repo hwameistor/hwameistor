@@ -1,7 +1,6 @@
-FROM centos:7
+FROM centos:8
 
-RUN rm -rf /etc/yum.repos.d/*
-COPY ./build/CentOS-Base.repo /etc/yum.repos.d/
+
 RUN yum install -y xfsprogs e2fsprogs udev smartmontools lsscsi && \
     yum upgrade nss -y
 
