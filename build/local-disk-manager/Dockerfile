@@ -1,5 +1,6 @@
-FROM ghcr.io/hwameistor/local-disk-manager:v0.14.5
+FROM rockylinux:8
 
+RUN yum install -y xfsprogs smartmontools lsscsi e4fsprogs nss
 COPY ./_build/local-disk-manager /local-disk-manager
 
 ENTRYPOINT [ "/local-disk-manager" ]

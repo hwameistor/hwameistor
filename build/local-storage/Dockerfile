@@ -1,4 +1,7 @@
-FROM ghcr.io/hwameistor/local-storage:v0.14.5
+FROM rockylinux:8
+
+
+RUN yum install -y xfsprogs e2fsprogs udev smartmontools lsscsi nss
 
 COPY ./_build/local-storage /
 
