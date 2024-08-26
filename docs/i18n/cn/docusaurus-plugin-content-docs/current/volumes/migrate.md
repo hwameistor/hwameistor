@@ -1,9 +1,9 @@
 ---
 sidebar_position: 6
-sidebar_label:  "卷的迁移"
+sidebar_label:  "数据卷迁移"
 ---
 
-# 卷的迁移
+# 数据卷迁移
 
 数据卷迁移 (Volume Migration) 是 HwameiStor 的重要运维管理功能。
 应用挂载的数据卷可以从一个有状况或通过告警提示即将出现状况的节点卸载迁移到一个正常的节点。
