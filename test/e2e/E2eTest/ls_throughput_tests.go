@@ -122,7 +122,7 @@ var _ = ginkgo.Describe("localstorage volume throughput  test ", ginkgo.Label("p
 							Containers: []corev1.Container{
 								{
 									Name:  "web",
-									Image: "daocloud.io/daocloud/testtools:latest",
+									Image: "10.6.112.210/daocloud/testtools:latest",
 									Ports: []corev1.ContainerPort{
 										{
 											Name:          "http",
