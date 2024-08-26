@@ -1,11 +1,11 @@
 ---
 sidebar_position: 3
-sidebar_label: "PVC 自动扩容"
+sidebar_label: "数据卷的自动扩容"
 ---
 
-# PVC 自动扩容
+# 数据卷的自动扩容
 
-组件 hwameistor-pvc-autoresizer 提供了 PVC 自动扩容的能力。扩容行为是通过 `ResizePolicy` 这个 CRD 来控制的。
+组件 hwameistor-pvc-autoresizer 提供了数据卷的自动扩容的能力。扩容行为是通过 `ResizePolicy` 这个 CRD 来控制的。
 
 ## ResizePolicy
 
