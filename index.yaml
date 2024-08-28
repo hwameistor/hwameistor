@@ -113,6 +113,17 @@ entries:
     version: 0.1.0
   hwameistor:
   - apiVersion: v2
+    appVersion: v0.14.7
+    created: "2024-08-28T06:24:31.663632503Z"
+    description: the HwameiStor local storage
+    digest: d3e56719b35e14432534b369286482ac887bcf90c0a146de0a2f99f8e4f75ed4
+    icon: https://hwameistor.io/img/logo.svg
+    name: hwameistor
+    type: application
+    urls:
+    - https://github.com/hwameistor/hwameistor/releases/download/v0.14.7/hwameistor-v0.14.7.tgz
+    version: v0.14.7
+  - apiVersion: v2
     appVersion: v0.14.6
     created: "2024-07-29T03:23:57.995337288Z"
     description: the HwameiStor local storage
@@ -849,4 +860,4 @@ entries:
     urls:
     - https://github.com/hwameistor/helm-charts/releases/download/hwameistor-0.2.3/hwameistor-0.2.3.tgz
     version: 0.2.3
-generated: "2024-07-29T03:23:57.996684243Z"
+generated: "2024-08-28T06:24:31.664247624Z"
