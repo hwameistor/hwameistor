@@ -239,6 +239,14 @@ func (r *resources) getAssociatedVolumes(vol *apisv1alpha1.LocalVolume) map[stri
 			r.cachePVC(pvcInCluster)
 			pvc = pvcInCluster
 		}
+
+		//Filter the bound pvc if are creating a filter for the first time
+		if vol.Spec.Config == nil {
+			if pvc.Status.Phase == "Bound" {
+				continue
+			}
+		}
+
 		sc, exists := r.scsMap[*pvc.Spec.StorageClassName]
 		if !exists || sc == nil {
 			r.logger.WithField("sc", sc.Name).Debugf("not found in the map")
@@ -247,7 +255,7 @@ func (r *resources) getAssociatedVolumes(vol *apisv1alpha1.LocalVolume) map[stri
 
 		poolName, err := utils.BuildStoragePoolName(
 			sc.Parameters[apisv1alpha1.VolumeParameterPoolClassKey],
-			)
+		)
 		if err != nil {
 			r.logger.WithError(err).Errorf("build storagepoolname err")
 			return lvs
