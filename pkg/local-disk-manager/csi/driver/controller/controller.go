@@ -3,6 +3,8 @@ package controller
 import (
 	"context"
 	"fmt"
+	"time"
+
 	volume "github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/controller/volume"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
@@ -11,6 +13,11 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
+	"k8s.io/apimachinery/pkg/util/wait"
+)
+
+const (
+	RetryInterval = 100 * time.Millisecond
 )
 
 type Server struct {
@@ -63,13 +70,35 @@ func (s *Server) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		log.Infof("Volume %s created success", req.GetName())
 	}
 
+	var lastSavedError error
+	if err := wait.PollUntil(RetryInterval, func() (done bool, err error) {
+		created, err := s.vm.VolumeIsCreated(req.GetName())
+		if err != nil {
+			lastSavedError = status.Errorf(codes.Unavailable, "volume %s not found %v", req.Name, err)
+			return false, nil
+		}
+		if created {
+			return true, nil
+		} else {
+			lastSavedError = status.Errorf(codes.Unavailable, "volume %s is not created", req.Name)
+			return false, nil
+		}
+
+	}, ctx.Done()); err != nil {
+		lastSavedError = status.Errorf(codes.Unavailable, "Volume %s is not created(deadline exceeded)", req.Name)
+	}
+
+	if lastSavedError != nil {
+		log.WithError(lastSavedError).Error("Failed to CreateVolume")
+	}
+
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
 			CapacityBytes: volume.Capacity,
 			VolumeId:      volume.Name,
 			VolumeContext: volume.VolumeContext,
 		},
-	}, nil
+	}, lastSavedError
 }
 
 func (s *Server) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {

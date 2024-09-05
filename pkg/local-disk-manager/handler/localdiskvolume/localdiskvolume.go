@@ -3,14 +3,15 @@ package localdiskvolume
 import (
 	"context"
 	"fmt"
+	"path"
+	"strings"
+	"time"
+
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/registry"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/node/volume"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/udev"
-	"path"
-	"strings"
-	"time"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
@@ -64,7 +65,12 @@ func (v *DiskVolumeHandler) ReconcileCreated() (reconcile.Result, error) {
 			}
 		}
 	}
-	return reconcile.Result{}, v.hostVM.CreateVolume(volumeName, types.GetLocalDiskPoolName(volumeType), selectedDisk)
+	err := v.hostVM.CreateVolume(volumeName, types.GetLocalDiskPoolName(volumeType), selectedDisk)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	v.SetupVolumeStatus(v1alpha1.VolumeStateCreated)
+	return reconcile.Result{}, v.UpdateLocalDiskVolume()
 }
 
 func (v *DiskVolumeHandler) ReconcileMount() (reconcile.Result, error) {

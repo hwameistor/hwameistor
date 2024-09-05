@@ -2,6 +2,7 @@ package volume
 
 import (
 	"context"
+
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
 )
 
@@ -36,4 +37,7 @@ type Manager interface {
 
 	// VolumeIsExist
 	VolumeIsExist(name string) (bool, error)
+
+	// VolumeIsCreated
+	VolumeIsCreated(name string) (bool, error)
 }
