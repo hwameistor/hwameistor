@@ -186,7 +186,11 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, diskList)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, claim)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, claimList)
-	return fake.NewClientBuilder().WithScheme(s).Build(), s
+	return fake.NewClientBuilder().WithScheme(s).WithStatusSubresource(&v1alpha1.LocalDisk{}, &v1alpha1.LocalDiskClaim{}).WithIndex(&v1alpha1.LocalDisk{}, "spec.nodeName", func(obj client.Object) []string {
+		return []string{obj.(*v1alpha1.LocalDisk).Spec.NodeName}
+	}).WithIndex(&v1alpha1.LocalDiskClaim{}, "status.status", func(obj client.Object) []string {
+		return []string{string(obj.(*v1alpha1.LocalDiskClaim).Status.Status)}
+	}).Build(), s
 }
 
 // GenFakeLocalDiskObject Create disk

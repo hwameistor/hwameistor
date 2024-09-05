@@ -53,7 +53,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource LocalVolumeMigrate
-	err = c.Watch(&source.Kind{Type: &apisv1alpha1.LocalVolumeMigrate{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(source.Kind(mgr.GetCache(), &apisv1alpha1.LocalVolumeMigrate{}), &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}

@@ -48,27 +48,27 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource LocalDiskNode
-	err = c.Watch(&source.Kind{Type: &v1alpha1.LocalDiskNode{}}, &handler.EnqueueRequestForObject{}, withCurrentNode())
+	err = c.Watch(source.Kind(mgr.GetCache(), &v1alpha1.LocalDiskNode{}), &handler.EnqueueRequestForObject{}, withCurrentNode())
 	if err != nil {
 		return err
 	}
 
 	localDiskToLocalDiskNodeRequestFunc := handler.EnqueueRequestsFromMapFunc(
-		func(a client.Object) []reconcile.Request {
+		func(_ context.Context, a client.Object) []reconcile.Request {
 			ld, ok := a.(*v1alpha1.LocalDisk)
 			if !ok || ld.Spec.NodeName != utils.GetNodeName() {
 				return []reconcile.Request{}
 			}
 
 			return []reconcile.Request{
-				reconcile.Request{
+				{
 					NamespacedName: types.NamespacedName{Name: ld.Spec.NodeName},
 				},
 			}
 		})
 
 	// Watch for changes for resource LocalDisk on this node
-	err = c.Watch(&source.Kind{Type: &v1alpha1.LocalDisk{}}, localDiskToLocalDiskNodeRequestFunc)
+	err = c.Watch(source.Kind(mgr.GetCache(), &v1alpha1.LocalDisk{}), localDiskToLocalDiskNodeRequestFunc)
 	if err != nil {
 		return err
 	}

@@ -497,7 +497,7 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lsnList)
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lease)
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, leaseList)
-	return fake.NewFakeClientWithScheme(s), s
+	return fake.NewClientBuilder().WithScheme(s).Build(), s
 }
 
 //func Test_manager_GetLocalVolumeGroupByLocalVolume(t *testing.T) {

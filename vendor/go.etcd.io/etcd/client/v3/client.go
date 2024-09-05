@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
+	"go.etcd.io/etcd/client/pkg/v3/logutil"
 	"go.etcd.io/etcd/client/v3/credentials"
 	"go.etcd.io/etcd/client/v3/internal/endpoint"
 	"go.etcd.io/etcd/client/v3/internal/resolver"
@@ -184,7 +185,9 @@ func (c *Client) Sync(ctx context.Context) error {
 	}
 	var eps []string
 	for _, m := range mresp.Members {
-		eps = append(eps, m.ClientURLs...)
+		if len(m.Name) != 0 && !m.IsLearner {
+			eps = append(eps, m.ClientURLs...)
+		}
 	}
 	c.SetEndpoints(eps...)
 	return nil
@@ -261,6 +264,7 @@ func (c *Client) getToken(ctx context.Context) error {
 	resp, err := c.Auth.Authenticate(ctx, c.Username, c.Password)
 	if err != nil {
 		if err == rpctypes.ErrAuthNotEnabled {
+			c.authTokenBundle.UpdateAuthToken("")
 			return nil
 		}
 		return err
@@ -283,8 +287,7 @@ func (c *Client) dial(creds grpccredentials.TransportCredentials, dopts ...grpc.
 	if err != nil {
 		return nil, fmt.Errorf("failed to configure dialer: %v", err)
 	}
-	if c.Username != "" && c.Password != "" {
-		c.authTokenBundle = credentials.NewBundle(credentials.Config{})
+	if c.authTokenBundle != nil {
 		opts = append(opts, grpc.WithPerRPCCredentials(c.authTokenBundle.PerRPCCredentials()))
 	}
 
@@ -368,7 +371,10 @@ func newClient(cfg *Config) (*Client, error) {
 	} else if cfg.LogConfig != nil {
 		client.lg, err = cfg.LogConfig.Build()
 	} else {
-		client.lg, err = CreateDefaultZapLogger()
+		client.lg, err = logutil.CreateDefaultZapLogger(etcdClientDebugLevel())
+		if client.lg != nil {
+			client.lg = client.lg.Named("etcd-client")
+		}
 	}
 	if err != nil {
 		return nil, err
@@ -377,6 +383,7 @@ func newClient(cfg *Config) (*Client, error) {
 	if cfg.Username != "" && cfg.Password != "" {
 		client.Username = cfg.Username
 		client.Password = cfg.Password
+		client.authTokenBundle = credentials.NewBundle(credentials.Config{})
 	}
 	if cfg.MaxCallSendMsgSize > 0 || cfg.MaxCallRecvMsgSize > 0 {
 		if cfg.MaxCallRecvMsgSize > 0 && cfg.MaxCallSendMsgSize > cfg.MaxCallRecvMsgSize {
@@ -495,7 +502,7 @@ func (c *Client) checkVersion() (err error) {
 					return
 				}
 			}
-			if maj < 3 || (maj == 3 && min < 2) {
+			if maj < 3 || (maj == 3 && min < 4) {
 				rerr = ErrOldCluster
 			}
 			errc <- rerr
@@ -503,7 +510,7 @@ func (c *Client) checkVersion() (err error) {
 	}
 	// wait for success
 	for range eps {
-		if err = <-errc; err == nil {
+		if err = <-errc; err != nil {
 			break
 		}
 	}

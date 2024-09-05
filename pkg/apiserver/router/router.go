@@ -6,6 +6,7 @@ import (
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -129,7 +130,10 @@ func BuildServerMgr() (*manager.ServerManager, mgrpkg.Manager) {
 	}
 
 	// Set default manager options
-	options := mgrpkg.Options{MetricsBindAddress: fmt.Sprintf("%s:%d", MetricsHost, MetricsPort)}
+	options := mgrpkg.Options{
+		Metrics: metricsserver.Options{
+			BindAddress: fmt.Sprintf("%s:%d", MetricsHost, MetricsPort),
+		}}
 
 	// Create a new manager to provide shared dependencies and start components
 	mgr, err := mgrpkg.New(cfg, options)
