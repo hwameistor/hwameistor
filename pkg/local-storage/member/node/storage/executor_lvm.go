@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"path"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/exechelper"
@@ -279,9 +280,7 @@ func (lvm *lvmExecutor) CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeRep
 		"--stripes", fmt.Sprintf("%d", 1),
 	}
 	if err := lvm.lvcreate(replica.Spec.VolumeName, replica.Spec.PoolName, options); err != nil {
-		if !strings.Contains(err.Error(), ErrorLocalVolumeExistsInVolumeGroup.Error()) {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	// query current status of the replica
@@ -756,7 +755,7 @@ func (lvm *lvmExecutor) lvcreate(lvName string, vgName string, options []string)
 		CmdArgs: append(options, vgName, "-n", lvName, "-y"),
 	}
 	res := lvm.cmdExec.RunCommand(params)
-	if res.ExitCode == 0 {
+	if res.ExitCode == 0 || strings.Contains(res.ErrBuf.String(), ErrorLocalVolumeExistsInVolumeGroup.Error()) {
 		return nil
 	}
 	return res.Error
@@ -901,7 +900,8 @@ func (lvm *lvmExecutor) lvremove(lvPath string, options []string) error {
 	}
 	params.CmdArgs = append(params.CmdArgs, options...)
 	res := lvm.cmdExec.RunCommand(params)
-	if res.ExitCode == 0 {
+	errcontent := res.ErrBuf.String()
+	if res.ExitCode == 0 || strings.Contains(strings.ToLower(errcontent), ErrorLocalVolumeNotFoundInVolumeGroup.Error()) {
 		return nil
 	}
 	return res.Error
