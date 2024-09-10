@@ -2,23 +2,26 @@ package storage
 
 import (
 	"errors"
+
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 )
 
 // variables
 var (
-	ErrorPoolNotFound                   = errors.New("not found pool")
-	ErrorReplicaNotFound                = errors.New("not found replica")
-	ErrorSnapshotNotFound               = errors.New("not found snapshot")
-	ErrorReplicaExists                  = errors.New("already exists replica")
-	ErrorLocalVolumeExistsInVolumeGroup = errors.New("already exists in volume group")
-	ErrorInsufficientRequestResources   = errors.New("insufficient request resources")
-	ErrorOverLimitedRequestResource     = errors.New("over limited request resources")
+	ErrorPoolNotFound                     = errors.New("not found pool")
+	ErrorReplicaNotFound                  = errors.New("not found replica")
+	ErrorSnapshotNotFound                 = errors.New("not found snapshot")
+	ErrorReplicaExists                    = errors.New("already exists replica")
+	ErrorLocalVolumeExistsInVolumeGroup   = errors.New("already exists in volume group")
+	ErrorLocalVolumeNotFoundInVolumeGroup = errors.New("failed to find logical volume")
+	ErrorInsufficientRequestResources     = errors.New("insufficient request resources")
+	ErrorOverLimitedRequestResource       = errors.New("over limited request resources")
 )
 
 /* A set of interface for Hwameistor Local Object */
 
 // LocalPoolManager is an interface to manage local storage pools
+//
 //go:generate mockgen -source=types.go -destination=../../../member/node/storage/pools_mock.go  -package=storage
 type LocalPoolManager interface {
 	ExtendPools(localDisks []*apisv1alpha1.LocalDevice) (bool, error)
@@ -31,6 +34,7 @@ type LocalPoolManager interface {
 }
 
 // LocalVolumeReplicaManager interface
+//
 //go:generate mockgen -source=types.go -destination=../../../member/node/storage/replica_mock.go  -package=storage
 type LocalVolumeReplicaManager interface {
 	CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error)
@@ -45,6 +49,7 @@ type LocalVolumeReplicaManager interface {
 }
 
 // LocalVolumeReplicaSnapshotManager interface
+//
 //go:generate mockgen -source=types.go -destination=../../../member/node/storage/replica_mock.go  -package=storage
 type LocalVolumeReplicaSnapshotManager interface {
 	CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error
@@ -62,6 +67,7 @@ type LocalVolumeReplicaSnapshotRestoreManager interface {
 }
 
 // LocalRegistry interface
+//
 //go:generate mockgen -source=types.go -destination=../../../member/node/storage/registry_mock.go  -package=storage
 type LocalRegistry interface {
 	Init()
@@ -79,6 +85,7 @@ type LocalRegistry interface {
 /* A set of interface for executor to implement the above Hwameistor Local Object interface */
 
 // LocalVolumeExecutor interface
+//
 //go:generate mockgen -source=types.go -destination=../../../member/node/storage/replica_executor_mock.go  -package=storage
 type LocalVolumeExecutor interface {
 	CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) (*apisv1alpha1.LocalVolumeReplica, error)
@@ -103,6 +110,7 @@ type LocalVolumeReplicaSnapshotExecutor interface {
 }
 
 // LocalPoolExecutor interface
+//
 //go:generate mockgen -source=types.go -destination=../../../member/node/storage/pools_executor_mock.go  -package=storage
 type LocalPoolExecutor interface {
 	ExtendPools(localDisks []*apisv1alpha1.LocalDevice) (bool, error)

@@ -1,9 +1,9 @@
 ---
 sidebar_position: 2
-sidebar_label:  "卷的扩容"
+sidebar_label:  "数据卷扩容"
 ---
 
-# 卷的扩容
+# 数据卷扩容
 
 HwameiStor 支持 `CSI 卷扩容` 。这个功能实现了通过修改 `PVC` 的大小在线扩容卷。
 

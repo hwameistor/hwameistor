@@ -1,0 +1,15 @@
+v0.14.7/ 2024-8-28
+========================
+
+## Scheduler
+- Fixed the issue that bound PVC was not filtered #1556 (@peng9808 )
+## Tests
+- [Test]Modify the image address #1561 (@FloatXD )
+## Documentation
+- docs: update compatibility for 1.29,1.30 #1548 (@SSmallMonster )
+- update docs arch #1562 (@jzhupup )
+## Others
+- build: update yum repo #1544 (@FloatXD )
+- ci: add base image #1546 (@SSmallMonster )
+- update base image #1547 (@SSmallMonster )
+- add verbs/patch access for clusterrole #1552 (@SSmallMonster )
