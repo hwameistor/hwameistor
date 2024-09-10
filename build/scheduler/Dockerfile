@@ -1,4 +1,6 @@
-FROM ghcr.io/hwameistor/hwameistor-base-image:latest
+FROM rockylinux:8
+
+RUN yum upgrade nss -y
 
 COPY ./_build/scheduler /
 
