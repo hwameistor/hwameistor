@@ -1,6 +1,6 @@
 module github.com/hwameistor/hwameistor
 
-go 1.20
+go 1.21
 
 require (
 	github.com/operator-framework/operator-sdk v0.18.2
@@ -25,19 +25,20 @@ require (
 	github.com/kubernetes-csi/csi-lib-utils v0.11.0
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/soheilhy/cmux v0.1.5
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.4
 	github.com/wxnacy/wgo v1.0.4
 	golang.org/x/net v0.19.0
 	google.golang.org/grpc v1.40.0
 	k8s.io/code-generator v0.25.2
 	k8s.io/klog v1.0.0
-	k8s.io/utils v0.0.0-20221107191617-1a15be271d1d
+	k8s.io/mount-utils v0.29.8
 )
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-logr/zapr v1.2.0 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
+	github.com/moby/sys/mountinfo v0.6.2 // indirect
 	go.opentelemetry.io/proto/otlp v0.7.0 // indirect
 )
 
@@ -56,6 +57,7 @@ require (
 	github.com/swaggo/swag v1.8.7
 	github.com/tidwall/gjson v1.14.4
 	golang.org/x/sync v0.1.0
+	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 )
 
 require (
@@ -130,7 +132,7 @@ require (
 	github.com/emicklei/go-restful v2.16.1-0.20220930181236-19cadd947697+incompatible // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible
 	github.com/fsnotify/fsnotify v1.5.1
-	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/logr v1.3.0 // indirect
 	// github.com/go-logr/zapr v1.2.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.1 // indirect
@@ -161,7 +163,7 @@ require (
 	golang.org/x/crypto v0.16.0 // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/oauth2 v0.1.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
@@ -175,9 +177,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/component-helpers v0.24.0 // indirect
 	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
-	k8s.io/klog/v2 v2.80.1 // indirect
+	k8s.io/klog/v2 v2.110.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect
-	k8s.io/mount-utils v0.24.0
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
@@ -214,7 +215,7 @@ replace (
 	k8s.io/kubernetes => k8s.io/kubernetes v1.24.0
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.24.0
 	k8s.io/metrics => k8s.io/metrics v0.24.0
-	k8s.io/mount-utils => k8s.io/mount-utils v0.24.0
+	k8s.io/mount-utils => k8s.io/mount-utils v0.29.8
 	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.24.0
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.24.0
 	k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.24.0

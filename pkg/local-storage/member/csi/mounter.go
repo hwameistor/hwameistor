@@ -2,15 +2,22 @@ package csi
 
 import (
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/exechelper/basicexecutor"
 	"os"
 	"strings"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/mount-utils"
 	utilexec "k8s.io/utils/exec"
-	"k8s.io/utils/mount"
 
 	"github.com/hwameistor/hwameistor/pkg/exechelper"
 	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
+)
+
+var (
+	supportReflink = false
+	once           sync.Once
 )
 
 // Mounter interface
@@ -47,7 +54,14 @@ func (m *linuxMounter) FormatAndMount(devPath string, mountPoint string, fsType 
 		return err
 	}
 
-	return m.mounter.FormatAndMount(devPath, mountPoint, fsType, options)
+	var formatOptions []string
+	if fsType == "xfs" && reflinkSupport() {
+		// to enable xfs filesystem to be mounted on kernel <= 3.16.x, must disable reflink feature
+		// more detail: https://bugzilla.redhat.com/show_bug.cgi?id=1309498
+		formatOptions = []string{"-m", "reflink=0"}
+	}
+
+	return m.mounter.FormatAndMountSensitiveWithFormatOptions(devPath, mountPoint, fsType, options, nil /* sensitiveOptions */, formatOptions)
 }
 
 func (m *linuxMounter) MountRawBlock(devPath string, mountPoint string) error {
@@ -202,4 +216,22 @@ func makeFile(pathname string) error {
 
 func removeFile(pathname string) error {
 	return os.Remove(pathname)
+}
+
+func reflinkSupport() bool {
+	once.Do(func() {
+		log.Debug("Checking if reflink support")
+		params := exechelper.ExecParams{
+			CmdName: "mkfs.xfs",
+			CmdArgs: nil,
+		}
+		result := basicexecutor.New().RunCommand(params)
+		if strings.Contains(result.ErrBuf.String(), "reflink") {
+			supportReflink = true
+		}
+
+		log.Debugf("reflink support: %v", supportReflink)
+	})
+
+	return supportReflink
 }
