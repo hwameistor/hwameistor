@@ -251,3 +251,33 @@ Manual expansion steps:
      devPath: /dev/sdb
    ...
    ```
+
+## Q7: How to manually recycle a data volume？
+
+When do you need to manually recycle a data volume?:
+
+- The reclaim policy of StorageClass is set to Retain. After deleting the PVC, the volume fails to be automatically reclaimed.
+- The data volume is not automatically recycled after the PVC is deleted under abnormal circumstances
+
+Manually reclaim data volumes:
+
+1. Check the mapping table between LV (data volume) and PVC, and find the PVC that is no longer in use. The corresponding LV should be recycled.:
+
+   ```bash
+   $ kubectl get lv | awk '{print $1}' | grep -v NAME | xargs -I {} kubectl get lv {} -o jsonpath='{.metadata.name} -> {.spec.pvcNamespace}/{.spec.pvcName}{"\n"}'
+
+   pvc-be53be2a-1c4b-430e-a45b-05777c791957 -> default/data-nginx-sts-0
+   ```
+
+2. Check whether the PVC exists and delete it if it does.
+3. Check if a PV with the same name as the LV exists, and if so, delete it.
+4. Edit LV, modify spec.delete=true
+
+   ```bash
+   $ kubectl edit lv pvc-be53be2a-1c4b-430e-a45b-05777c791957
+  
+   ...
+      spec:
+        delete: true
+   ```
+
