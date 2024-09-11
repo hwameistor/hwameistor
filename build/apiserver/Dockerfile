@@ -1,6 +1,6 @@
 FROM rockylinux:8
 
-RUN yum upgrade nss -y
+RUN yum install nss -y
 
 COPY ./_build/apiserver /
 
