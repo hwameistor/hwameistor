@@ -3,10 +3,11 @@ package volume
 import (
 	"context"
 	"fmt"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/controller/disk"
-	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
 	"sort"
 	"strconv"
+
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/controller/disk"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/types"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
@@ -167,7 +168,7 @@ func (vm *localDiskVolumeManager) CreateVolume(name string, parameters interface
 		SetupPVCNameSpaceName(volumeRequest.PVCNameSpace + "/" + volumeRequest.PVCName).
 		SetupAccessibility(v1alpha1.AccessibilityTopology{Nodes: []string{volumeRequest.OwnerNodeName}}).
 		SetupVolumePath(types.ComposePoolVolumePath(types.GetLocalDiskPoolName(volumeRequest.DiskType), name)).
-		SetupStatus(v1alpha1.VolumeStateCreated).Build()
+		SetupStatus(v1alpha1.VolumeStateCreating).Build()
 	if err != nil {
 		log.WithError(err).Error("Failed to build volume object")
 		return nil, err
@@ -384,6 +385,15 @@ func (vm *localDiskVolumeManager) VolumeIsExist(name string) (bool, error) {
 		return false, err
 	}
 	return vol.Name == name, nil
+}
+
+func (vm *localDiskVolumeManager) VolumeIsCreated(name string) (bool, error) {
+	vol, err := vm.getVolume(name)
+	if err != nil {
+		return false, err
+	}
+
+	return vol.Status.State == v1alpha1.VolumeStateCreated, nil
 }
 
 func (vm *localDiskVolumeManager) GetVolumeCapacities() interface{} {
