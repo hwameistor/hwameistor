@@ -48,6 +48,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - name: Run gosec security scan
+        run: |
+          curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s latest
+          gosec -severity high -confidence high ./... || exit 1
       - name: api test
         env:
           E2E_TESTING_LEVEL: "api"
