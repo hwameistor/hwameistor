@@ -1,0 +1,14 @@
+v0.15.0/ 2024-9-23
+========================
+
+## LVM volume management enhancements
+- fix lvm exec error #1565 (@little-guy-lxr )
+- format filesystem(xfs) with reflink #1568(@SSmallMonster )
+## Disk Management Enhancements
+- fix node disk reference not created but mount #1567(@little-guy-lxr )
+## Documentation
+- sync en arch #1566(@jzhupup )
+- Added documentation for manually recycling data volumes #1569(@peng9808 )
+## Others
+- add gosec scan #1571(@peng9808 )
+- update docker build image to rockylinux:8 #1549(@FloatXD )
