@@ -68,7 +68,7 @@ spec:
 
 ## 查看 MySQL Pod 和 `PVC/PV`
 
-在这个例子里，MySQL 容器被调度到了节点 `k8s-worker-3`。
+在这个例子里，MySQL 容器被调度到了节点 `k8s-worker-1`。
 
 ```console
 $ kubectl get po -l  app=sts-mysql-ha -o wide
@@ -103,7 +103,7 @@ metadata:
 $ kubectl get lv pvc-5236ee6f-8212-4628-9876-1b620a4c4c36
 
 NAME                                       POOL                   REPLICAS   CAPACITY     ACCESSIBILITY   STATE   RESOURCE   PUBLISHED                    AGE
-pvc-5236ee6f-8212-4628-9876-1b620a4c4c36   LocalStorage_PoolHDD   1          1073741824                   Ready   -1         k8s-worker-1,k8s-worker-2    3m
+pvc-5236ee6f-8212-4628-9876-1b620a4c4c36   LocalStorage_PoolHDD   1          1073741824                   Ready   -1         k8s-worker-1                 3m
 ```
 
 `LocalVolumeReplica (LVR)` 进一步显示每个节点上的后端逻辑卷设备：
@@ -112,5 +112,5 @@ pvc-5236ee6f-8212-4628-9876-1b620a4c4c36   LocalStorage_PoolHDD   1          107
 $ kubectl get lvr
 NAME                                          CAPACITY     NODE           STATE   SYNCED   DEVICE                                                              AGE
 5236ee6f-8212-4628-9876-1b620a4c4c36-d2kn55   1073741824   k8s-worker-1   Ready   true     /dev/LocalStorage_PoolHDD-HA/5236ee6f-8212-4628-9876-1b620a4c4c36   4m
-5236ee6f-8212-4628-9876-1b620a4c4c36-glm7rf   1073741824   k8s-worker-3   Ready   true     /dev/LocalStorage_PoolHDD-HA/5236ee6f-8212-4628-9876-1b620a4c4c36   4m
+5236ee6f-8212-4628-9876-1b620a4c4c36-glm7rf   1073741824   k8s-worker-2   Ready   true     /dev/LocalStorage_PoolHDD-HA/5236ee6f-8212-4628-9876-1b620a4c4c36   4m
 ```
