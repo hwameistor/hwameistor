@@ -71,7 +71,7 @@ spec:
 
 ## Verify MySQL Pod and `PVC/PV`
 
-In this example, the pod is scheduled on node `k8s-worker-3`.
+In this example, the pod is scheduled on node `k8s-worker-1`.
 
 ```console
 $ kubectl get po -l  app=sts-mysql-ha -o wide
@@ -106,7 +106,7 @@ we can see that the `LV` object is created on two nodes: `k8s-worker-1` and `k8s
 $ kubectl get lv pvc-5236ee6f-8212-4628-9876-1b620a4c4c36
 
 NAME                                       POOL                   REPLICAS   CAPACITY     ACCESSIBILITY   STATE   RESOURCE   PUBLISHED                    AGE
-pvc-5236ee6f-8212-4628-9876-1b620a4c4c36   LocalStorage_PoolHDD   1          1073741824                   Ready   -1         k8s-worker-1,k8s-worker-2    3m
+pvc-5236ee6f-8212-4628-9876-1b620a4c4c36   LocalStorage_PoolHDD   1          1073741824                   Ready   -1         k8s-worker-1                 3m
 ```
 
 `LocalVolumeReplica (LVR)` further shows the backend logical volume devices on each node.
@@ -115,5 +115,5 @@ pvc-5236ee6f-8212-4628-9876-1b620a4c4c36   LocalStorage_PoolHDD   1          107
 $ kubectl get lvr
 NAME                                          CAPACITY     NODE           STATE   SYNCED   DEVICE                                                              AGE
 5236ee6f-8212-4628-9876-1b620a4c4c36-d2kn55   1073741824   k8s-worker-1   Ready   true     /dev/LocalStorage_PoolHDD-HA/5236ee6f-8212-4628-9876-1b620a4c4c36   4m
-5236ee6f-8212-4628-9876-1b620a4c4c36-glm7rf   1073741824   k8s-worker-3   Ready   true     /dev/LocalStorage_PoolHDD-HA/5236ee6f-8212-4628-9876-1b620a4c4c36   4m
+5236ee6f-8212-4628-9876-1b620a4c4c36-glm7rf   1073741824   k8s-worker-2   Ready   true     /dev/LocalStorage_PoolHDD-HA/5236ee6f-8212-4628-9876-1b620a4c4c36   4m
 ```
