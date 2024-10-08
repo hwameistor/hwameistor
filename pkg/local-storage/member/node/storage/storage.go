@@ -3,10 +3,12 @@ package storage
 import (
 	"context"
 	"fmt"
-
-	log "github.com/sirupsen/logrus"
-
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/encrypt"
+	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 )
 
 type localVolumeReplicaManager struct {
@@ -50,7 +52,33 @@ func (mgr *localVolumeReplicaManager) CreateVolumeReplica(replica *apisv1alpha1.
 		return nil, err
 	}
 
+	// encrypt volume if needed
+	if replica.Spec.VolumeEncrypt.Enable {
+		if err = mgr.EncryptVolumeReplica(newReplica); err != nil {
+			mgr.logger.WithError(err).Error("Failed to encrypt volume")
+			return nil, err
+		}
+		mgr.logger.Debugf("Volume %s encrypted successfully", newReplica.Spec.VolumeName)
+	}
+
 	return newReplica, nil
+}
+
+func (mgr *localVolumeReplicaManager) EncryptVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) error {
+	key, err := getEncryptSecretKey(mgr.lm.apiClient, replica.Spec.VolumeEncrypt.SecretNamespacedName)
+	if err != nil {
+		mgr.logger.WithError(err).Errorf("Failed to get key from secret %s", replica.Spec.VolumeEncrypt.SecretNamespacedName)
+		return err
+	}
+
+	switch replica.Spec.VolumeEncrypt.Type {
+	case "LUKS":
+		lk := encrypt.NewLUKS()
+		return lk.EncryptVolume(replica.Spec.PoolName+"/"+replica.Spec.VolumeName, key)
+
+	default:
+		return fmt.Errorf("unsupported encrypt type %s", replica.Spec.VolumeEncrypt.Type)
+	}
 }
 
 func (mgr *localVolumeReplicaManager) DeleteVolumeReplica(replica *apisv1alpha1.LocalVolumeReplica) error {
@@ -123,4 +151,24 @@ func (mgr *localVolumeReplicaManager) ConsistencyCheck() {
 	mgr.cmdExec.ConsistencyCheck(crdReplicas)
 
 	mgr.logger.Debug("Consistency check completed")
+}
+
+func getEncryptSecretKey(cli client.Client, namespacedName string) (string, error) {
+	secret := &v1.Secret{}
+	ss := strings.Split(namespacedName, "/")
+	if len(ss) != 2 {
+		return "", fmt.Errorf("invalid secret namespaced name %s", namespacedName)
+	}
+
+	key := client.ObjectKey{Name: ss[0], Namespace: ss[1]}
+	err := cli.Get(context.Background(), key, secret)
+	if err != nil {
+		return "", err
+	}
+
+	if secret.Data == nil || secret.Data["key"] == nil {
+		return "", fmt.Errorf("key is not exist in %s", namespacedName)
+	}
+
+	return string(secret.Data["key"]), nil
 }

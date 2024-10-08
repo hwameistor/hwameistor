@@ -165,6 +165,15 @@ func (p *plugin) createEmptyVolumeFromRequest(ctx context.Context, req *csi.Crea
 		IOPS:       params.iops,
 	}
 
+	// only enable the encryption when the encryptType and encryptSecretNName are both set
+	if params.encryptType != "" && params.encryptSecretNName != "" {
+		vol.Spec.VolumeEncrypt = apisv1alpha1.VolumeEncrypt{
+			Enable:               true,
+			SecretNamespacedName: params.encryptSecretNName,
+			Type:                 params.encryptType,
+		}
+	}
+
 	// override blow parameters when creating volume from snapshot
 	if len(params.snapshot) > 0 {
 		sourceVolume, err := getSourceVolumeFromSnapshot(params.snapshot, p.apiClient)

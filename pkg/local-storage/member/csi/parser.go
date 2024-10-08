@@ -11,21 +11,25 @@ import (
 )
 
 const (
-	pvcNameKey      = "csi.storage.k8s.io/pvc/name"
-	pvcNamespaceKey = "csi.storage.k8s.io/pvc/namespace"
+	pvcNameKey            = "csi.storage.k8s.io/pvc/name"
+	pvcNamespaceKey       = "csi.storage.k8s.io/pvc/namespace"
+	encryptSecretNNameKey = "secretName"
+	encryptTypeKey        = "encryptType"
 )
 
 type volumeParameters struct {
-	poolClass     string
-	poolType      string
-	poolName      string
-	replicaNumber int64
-	convertible   bool
-	pvcName       string
-	pvcNamespace  string
-	throughput    string
-	iops          string
-	snapshot      string
+	poolClass          string
+	poolType           string
+	poolName           string
+	replicaNumber      int64
+	convertible        bool
+	pvcName            string
+	pvcNamespace       string
+	throughput         string
+	iops               string
+	snapshot           string
+	encryptSecretNName string
+	encryptType        string
 }
 
 func parseParameters(req *csi.CreateVolumeRequest) (*volumeParameters, error) {
@@ -76,15 +80,17 @@ func parseParameters(req *csi.CreateVolumeRequest) (*volumeParameters, error) {
 	}
 
 	return &volumeParameters{
-		poolClass:     poolClass,
+		poolClass: poolClass,
 		// poolType:      poolType,
-		poolName:      poolName,
-		replicaNumber: int64(replicaNumber),
-		convertible:   convertible,
-		pvcNamespace:  pvcNamespace,
-		pvcName:       pvcName,
-		throughput:    params[apisv1alpha1.VolumeParameterThroughput],
-		iops:          params[apisv1alpha1.VolumeParameterIOPS],
-		snapshot:      snapshot,
+		poolName:           poolName,
+		replicaNumber:      int64(replicaNumber),
+		convertible:        convertible,
+		pvcNamespace:       pvcNamespace,
+		pvcName:            pvcName,
+		throughput:         params[apisv1alpha1.VolumeParameterThroughput],
+		iops:               params[apisv1alpha1.VolumeParameterIOPS],
+		snapshot:           snapshot,
+		encryptSecretNName: params[encryptSecretNNameKey], /* optional */
+		encryptType:        params[encryptTypeKey],        /* optional */
 	}, nil
 }
