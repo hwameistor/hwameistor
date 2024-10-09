@@ -5,6 +5,7 @@ import (
 	"github.com/hwameistor/hwameistor/pkg/exechelper/basicexecutor"
 	log "github.com/sirupsen/logrus"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -21,13 +22,13 @@ func NewLUKS() *LUKS {
 		logger:  log.New().WithField("Module", "encrypt/LUKS"),
 	}
 }
-func (lk *LUKS) EncryptVolume(volumeGroupName string /* volumeGroup/volumeName */, secret string) error {
-	lk.logger.WithField("volumeName", volumeGroupName).Debug("Encrypting volume with LUKS")
+func (lk *LUKS) EncryptVolume(volumePath string, secret string) error {
+	lk.logger.WithField("volumePath", volumePath).Debug("Encrypting volume with LUKS")
 
 	// check if volume exists
 	checkVolume := exechelper.ExecParams{
 		CmdName: "lvs",
-		CmdArgs: []string{"--noheadings", "--readonly", "-o", "lv_name", volumeGroupName},
+		CmdArgs: []string{"--noheadings", "--readonly", "-o", "lv_name", volumePath},
 		Timeout: 0,
 	}
 	res := lk.cmdExec.RunCommand(checkVolume)
@@ -37,18 +38,6 @@ func (lk *LUKS) EncryptVolume(volumeGroupName string /* volumeGroup/volumeName *
 	}
 
 	// setup encrypt volume
-	volumePathQuery := exechelper.ExecParams{
-		CmdName: "lvs",
-		CmdArgs: []string{"--noheadings", "--readonly", "-o", "lv_path", volumeGroupName},
-		Timeout: 0,
-	}
-	res = lk.cmdExec.RunCommand(volumePathQuery)
-	if res.Error != nil {
-		lk.logger.WithError(res.Error).Error("Failed to get volume path")
-		return res.Error
-	}
-	volumePath := strings.TrimSpace(res.OutBuf.String())
-
 	fh := FileHandler{}
 	if err := fh.WriteToFile(secret); err != nil {
 		_ = fh.DeleteFile()
@@ -67,29 +56,33 @@ func (lk *LUKS) EncryptVolume(volumeGroupName string /* volumeGroup/volumeName *
 		return res.Error
 	}
 
-	lk.logger.WithField("volumeName", volumeGroupName).Debug("Encrypted volume successfully")
+	lk.logger.WithField("volumePath", volumePath).Debug("Encrypted volume successfully")
 	return nil
 }
 
-func (lk *LUKS) DecryptVolume(volumeName string, secret string) error {
+func (lk *LUKS) IsVolumeEncrypted(volumePath string) (bool, error) {
+	checkVolumeEncrypted := exechelper.ExecParams{
+		CmdName: "cryptsetup",
+		CmdArgs: []string{"isLuks", volumePath},
+		Timeout: 0,
+	}
+	res := lk.cmdExec.RunCommand(checkVolumeEncrypted)
+	if res.Error != nil && res.ExitCode != 1 {
+		lk.logger.WithError(res.Error).Error("Failed to check if volume encrypted")
+		return false, res.Error
+	}
+
+	return res.ExitCode == 0, nil
+}
+
+func (lk *LUKS) DecryptVolume(volumePath string, secret string) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (lk *LUKS) OpenVolume(volumeGroupName string, secret string) (string, error) {
-	volumePathQuery := exechelper.ExecParams{
-		CmdName: "lvs",
-		CmdArgs: []string{"--noheadings", "--readonly", "-o", "lv_path", volumeGroupName},
-		Timeout: 0,
-	}
-
-	res := lk.cmdExec.RunCommand(volumePathQuery)
-	if res.Error != nil {
-		lk.logger.WithError(res.Error).Error("Failed to get volume path")
-		return "", res.Error
-	}
-	volumePath := res.OutBuf.String()
-	volumeName := strings.Split(volumeGroupName, "/")[1]
+func (lk *LUKS) OpenVolume(volumePath string, secret string) (string, error) {
+	ss := strings.Split(volumePath, "/")
+	volumeName := ss[len(ss)-1]
 	volumeEncryptPath := volumeName + "-encrypt"
 
 	fh := FileHandler{}
@@ -104,16 +97,16 @@ func (lk *LUKS) OpenVolume(volumeGroupName string, secret string) (string, error
 		CmdName: "cryptsetup",
 		CmdArgs: []string{"--allow-discards", "luksOpen", "-d", fh.FilePath, volumePath, volumeEncryptPath},
 	}
-	res = lk.cmdExec.RunCommand(openVolume)
-	if res.Error != nil {
+	res := lk.cmdExec.RunCommand(openVolume)
+	if res.Error != nil && !strings.Contains(res.ErrBuf.String(), "already exists") {
 		lk.logger.WithError(res.Error).Error("Failed to open encrypted volume")
 		return "", res.Error
 	}
 
-	return volumeEncryptPath, nil
+	return path.Join("/dev/mapper", volumeEncryptPath), nil
 }
 
-func (lk *LUKS) CloseVolume(volumeName string) error {
+func (lk *LUKS) CloseVolume(volumePath string) error {
 	//TODO implement me
 	panic("implement me")
 }

@@ -76,8 +76,7 @@ func (mgr *localVolumeReplicaManager) EncryptVolumeReplica(replica *apisv1alpha1
 
 	switch replica.Spec.VolumeEncrypt.Type {
 	case "LUKS":
-		lk := encrypt.NewLUKS()
-		return lk.EncryptVolume(replica.Spec.PoolName+"/"+replica.Spec.VolumeName, key)
+		return encrypt.NewLUKS().EncryptVolume(replica.Status.DevicePath, key)
 
 	default:
 		return fmt.Errorf("unsupported encrypt type %s", replica.Spec.VolumeEncrypt.Type)

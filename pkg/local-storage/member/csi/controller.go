@@ -852,6 +852,10 @@ func (p *plugin) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 		p.logger.WithFields(log.Fields{"volume": req.VolumeId, "node": req.NodeId, "devicePath": volReplica.Status.DevicePath}).Debug("Found valid volume replica")
 		resp.PublishContext[VolumeReplicaDevicePathKey] = volReplica.Status.DevicePath
 		resp.PublishContext[VolumeReplicaNameKey] = volReplica.Name
+		if volReplica.Spec.VolumeEncrypt.Enable {
+			resp.PublishContext[VolumeEncryptSecretKey] = volReplica.Spec.VolumeEncrypt.SecretNamespacedName
+			resp.PublishContext[VolumeEncryptTypeKey] = volReplica.Spec.VolumeEncrypt.Type
+		}
 		return resp, nil
 	}
 
