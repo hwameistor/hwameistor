@@ -2,8 +2,9 @@ package encrypt
 
 import (
 	"github.com/hwameistor/hwameistor/pkg/exechelper"
-	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
+	"github.com/hwameistor/hwameistor/pkg/exechelper/basicexecutor"
 	log "github.com/sirupsen/logrus"
+	"os"
 	"strings"
 )
 
@@ -16,7 +17,7 @@ type LUKS struct {
 
 func NewLUKS() *LUKS {
 	return &LUKS{
-		cmdExec: nsexecutor.New(),
+		cmdExec: basicexecutor.New(),
 		logger:  log.New().WithField("Module", "encrypt/LUKS"),
 	}
 }
@@ -46,11 +47,19 @@ func (lk *LUKS) EncryptVolume(volumeGroupName string /* volumeGroup/volumeName *
 		lk.logger.WithError(res.Error).Error("Failed to get volume path")
 		return res.Error
 	}
-	volumePath := res.OutBuf.String()
+	volumePath := strings.TrimSpace(res.OutBuf.String())
+
+	fh := FileHandler{}
+	if err := fh.WriteToFile(secret); err != nil {
+		_ = fh.DeleteFile()
+		lk.logger.WithError(err).Error("Failed to write secret to file")
+		return err
+	}
+	defer fh.DeleteFile()
 
 	encryptVolume := exechelper.ExecParams{
 		CmdName: "cryptsetup",
-		CmdArgs: []string{"-q", "-s", "512", "luksFormat", volumePath, secret},
+		CmdArgs: []string{"-q", "-s", "512", "luksFormat", volumePath, fh.FilePath},
 	}
 	res = lk.cmdExec.RunCommand(encryptVolume)
 	if res.Error != nil {
@@ -83,9 +92,17 @@ func (lk *LUKS) OpenVolume(volumeGroupName string, secret string) (string, error
 	volumeName := strings.Split(volumeGroupName, "/")[1]
 	volumeEncryptPath := volumeName + "-encrypt"
 
+	fh := FileHandler{}
+	if err := fh.WriteToFile(secret); err != nil {
+		_ = fh.DeleteFile()
+		lk.logger.WithError(err).Error("Failed to write secret to file")
+		return "", err
+	}
+	defer fh.DeleteFile()
+
 	openVolume := exechelper.ExecParams{
 		CmdName: "cryptsetup",
-		CmdArgs: []string{"--allow-discards", "luksOpen", "-d", secret, volumePath, volumeEncryptPath},
+		CmdArgs: []string{"--allow-discards", "luksOpen", "-d", fh.FilePath, volumePath, volumeEncryptPath},
 	}
 	res = lk.cmdExec.RunCommand(openVolume)
 	if res.Error != nil {
@@ -99,4 +116,27 @@ func (lk *LUKS) OpenVolume(volumeGroupName string, secret string) (string, error
 func (lk *LUKS) CloseVolume(volumeName string) error {
 	//TODO implement me
 	panic("implement me")
+}
+
+type FileHandler struct {
+	FilePath string
+}
+
+func (f *FileHandler) WriteToFile(content string) error {
+	file, err := os.CreateTemp(os.TempDir(), "encrypt-*.txt")
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	_, err = file.WriteString(content)
+	if err != nil {
+		return err
+	}
+
+	f.FilePath = file.Name()
+	return nil
+}
+
+func (f *FileHandler) DeleteFile() error {
+	return os.Remove(f.FilePath)
 }
