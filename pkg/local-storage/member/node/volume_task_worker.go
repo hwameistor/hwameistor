@@ -108,6 +108,7 @@ func (m *manager) createVolumeReplica(vol *apisv1alpha1.LocalVolume) error {
 			PoolName:              vol.Spec.PoolName,
 			RequiredCapacityBytes: vol.Spec.RequiredCapacityBytes,
 			VolumeQoS:             vol.Spec.VolumeQoS,
+			VolumeEncrypt:         vol.Spec.VolumeEncrypt,
 			NodeName:              m.name,
 		},
 	}
