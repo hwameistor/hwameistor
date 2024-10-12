@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/encrypt"
 	v1 "k8s.io/api/core/v1"
+	"path"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 
@@ -174,7 +175,29 @@ func (p *plugin) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublish
 	}
 
 	// umount and delete the target path, more info see: #1322
-	return resp, p.mounter.Unmount(req.TargetPath)
+	err := p.mounter.Unmount(req.TargetPath)
+	if err != nil {
+		p.logger.WithError(err).Error("Failed to unmount targetPath")
+		return resp, err
+	}
+
+	return resp, p.closeEncryptedVolumeIfNeeded(req.VolumeId)
+}
+
+func (p *plugin) closeEncryptedVolumeIfNeeded(volumeName string) error {
+	vol := &apisv1alpha1.LocalVolume{}
+	if err := p.apiClient.Get(context.Background(), types.NamespacedName{Name: volumeName}, vol); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
+	if !vol.Spec.VolumeEncrypt.Enable {
+		return nil
+	}
+
+	return encrypt.NewLUKS().CloseVolume(path.Join("/dev/mapper", volumeName+"-encrypt"))
 }
 
 // NodeGetVolumeStats - it will query volume status

@@ -107,8 +107,17 @@ func (lk *LUKS) OpenVolume(volumePath string, secret string) (string, error) {
 }
 
 func (lk *LUKS) CloseVolume(volumePath string) error {
-	//TODO implement me
-	panic("implement me")
+	closeVolume := exechelper.ExecParams{
+		CmdName: "cryptsetup",
+		CmdArgs: []string{"luksClose", volumePath},
+	}
+	res := lk.cmdExec.RunCommand(closeVolume)
+	if res.Error != nil && !strings.Contains(res.ErrBuf.String(), "is not active") {
+		lk.logger.WithError(res.Error).Error("Failed to close encrypted volume")
+		return res.Error
+	}
+
+	return nil
 }
 
 type FileHandler struct {
