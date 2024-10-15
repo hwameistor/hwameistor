@@ -13,7 +13,7 @@ import (
 const (
 	pvcNameKey            = "csi.storage.k8s.io/pvc/name"
 	pvcNamespaceKey       = "csi.storage.k8s.io/pvc/namespace"
-	encryptSecretNNameKey = "secretName"
+	encryptSecretNNameKey = "encryptSecret"
 	encryptTypeKey        = "encryptType"
 )
 
