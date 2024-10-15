@@ -209,7 +209,7 @@ For i18n/cn, you can change the nav in `current.json`:
 | LVM volume clone          | Completed | v0.13.1 | Clone LVM volume                                                                |
 | LVM volume thin provision | Unplaned  |         | LVM volume thin provision                                                       |
 | LVM volume stripe mode    | Unplaned  |         | LVM volume stripe read/write                                                    |
-| Data encryption           | Unplaned  |         | Data encryption                                                                 |
+| Data encryption           | Planned  |          | Data encryption                                                                 |
 | System Consistency        | Planned   |         | Consistent check and recovery from a disaster                                   |
 | Volume backup             | Planned   |         | Backup the volume data to remote server and restore                             |
 | HwameiStor CLI command    | Completed | v0.12.4 | CLI command is to manage the HwameiStor cluster                                 |

@@ -2,6 +2,11 @@ package csi
 
 import (
 	"fmt"
+	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/encrypt"
+	v1 "k8s.io/api/core/v1"
+	"path"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
@@ -91,6 +96,9 @@ func (p *plugin) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 		return resp, fmt.Errorf("not found device path")
 	}
 
+	encryptType := req.PublishContext[VolumeEncryptTypeKey]
+	encryptSecret := req.PublishContext[VolumeEncryptSecretKey]
+
 	/* ???
 	have to allow multiple mounts per node
 	in order to support Pod rolling upgrade
@@ -122,8 +130,16 @@ func (p *plugin) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 		if mnt.FsType == "xfs" {
 			mnt.MountFlags = append(mnt.MountFlags, "nouuid")
 		}
-		err := p.mounter.FormatAndMount(devicePath, req.TargetPath, mnt.FsType, mnt.MountFlags)
-		if err != nil {
+
+		// decrypt the device and use the returned volume path
+		var err error
+		if encryptType != "" {
+			if devicePath, err = openEncryptedDevice(p.apiClient, encryptType, devicePath, encryptSecret); err != nil {
+				return resp, err
+			}
+		}
+
+		if err = p.mounter.FormatAndMount(devicePath, req.TargetPath, mnt.FsType, mnt.MountFlags); err != nil {
 			return resp, err
 		}
 	default:
@@ -159,7 +175,29 @@ func (p *plugin) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublish
 	}
 
 	// umount and delete the target path, more info see: #1322
-	return resp, p.mounter.Unmount(req.TargetPath)
+	err := p.mounter.Unmount(req.TargetPath)
+	if err != nil {
+		p.logger.WithError(err).Error("Failed to unmount targetPath")
+		return resp, err
+	}
+
+	return resp, p.closeEncryptedVolumeIfNeeded(req.VolumeId)
+}
+
+func (p *plugin) closeEncryptedVolumeIfNeeded(volumeName string) error {
+	vol := &apisv1alpha1.LocalVolume{}
+	if err := p.apiClient.Get(context.Background(), types.NamespacedName{Name: volumeName}, vol); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
+	if !vol.Spec.VolumeEncrypt.Enable {
+		return nil
+	}
+
+	return encrypt.NewLUKS().CloseVolume(path.Join("/dev/mapper", volumeName+"-encrypt"))
 }
 
 // NodeGetVolumeStats - it will query volume status
@@ -248,4 +286,43 @@ func (p *plugin) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolume
 	}
 
 	return resp, nil
+}
+
+func getEncryptSecretKey(cli client.Client, namespacedName string) (string, error) {
+	secret := &v1.Secret{}
+	ss := strings.Split(namespacedName, "/")
+	if len(ss) != 2 {
+		return "", fmt.Errorf("invalid secret namespaced name %s", namespacedName)
+	}
+
+	key := client.ObjectKey{Name: ss[1], Namespace: ss[0]}
+	err := cli.Get(context.Background(), key, secret)
+	if err != nil {
+		return "", err
+	}
+
+	if secret.Data == nil || secret.Data["key"] == nil {
+		return "", fmt.Errorf("key is not exist in %s", namespacedName)
+	}
+
+	return string(secret.Data["key"]), nil
+}
+
+func openEncryptedDevice(cli client.Client, encryptType, devicePath, encryptSecret string) (string, error) {
+	// decrypt the device and use the returned volume path
+	switch encryptType {
+	case "LUKS":
+		if secret, err := getEncryptSecretKey(cli, encryptSecret); err != nil {
+			return "", err
+		} else {
+			// overwrite devicePath with encrypted devicePath
+			if devicePath, err = encrypt.NewLUKS().OpenVolume(devicePath, secret); err != nil {
+				return "", err
+			}
+		}
+	default:
+		// do nothing
+	}
+
+	return devicePath, nil
 }

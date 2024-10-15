@@ -187,11 +187,14 @@ func (m *linuxMounter) GetDeviceMountPoints(devPath string) []string {
 }
 
 func isPathExist(pathname string) (bool, error) {
-	if _, err := os.Stat(pathname); err != nil {
+	if _, err := os.Stat(pathname); err == nil {
+		// return true when this path is file or directory
+		return true, nil
+	} else if os.IsNotExist(err) {
+		return false, nil
+	} else {
 		return false, err
 	}
-	// return true when this path is file or directory
-	return true, nil
 }
 
 func makeDir(pathname string) error {
