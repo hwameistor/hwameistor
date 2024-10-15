@@ -17,6 +17,9 @@ type LocalVolumeSpec struct {
 	// VolumeQoS is the QoS of the volume
 	VolumeQoS VolumeQoS `json:"volumeQoS,omitempty"`
 
+	// VolumeEncrypt is the encryption config of the volume
+	VolumeEncrypt VolumeEncrypt `json:"volumeEncrypt,omitempty"`
+
 	// PoolName is the name of the storage pool, e.g. LocalStorage_PoolHDD, LocalStorage_PoolSSD, etc..
 	PoolName string `json:"poolName,omitempty"`
 
@@ -59,6 +62,21 @@ type VolumeQoS struct {
 	Throughput string `json:"throughput,omitempty"`
 	// IOPS defines the IOPS of the volume
 	IOPS string `json:"iops,omitempty"`
+}
+
+type VolumeEncrypt struct {
+	// Enable is to indicate if the volume should be encrypted or not
+	// +kubebuilder:default:=false
+	Enable bool `json:"enable,omitempty"`
+
+	// Type is the encryption type, e.g., LUKS
+	// +kubebuilder:default=LUKS
+	// +kubebuilder:validation:Enum=LUKS
+	Type string `json:"type,omitempty"`
+
+	// Secret is the key for encryption
+	// Don't set secret directly, fetch it from apiserver by name
+	SecretNamespacedName string `json:"secret,omitempty"`
 }
 
 // AccessibilityTopology of the volume

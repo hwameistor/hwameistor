@@ -75,6 +75,25 @@ spec:
                 format: int64
                 minimum: 4194304
                 type: integer
+              volumeEncrypt:
+                description: VolumeEncrypt is the encryption config of the volume
+                properties:
+                  enable:
+                    default: false
+                    description: Enable is to indicate if the volume should be encrypted
+                      or not
+                    type: boolean
+                  secret:
+                    description: Secret is the key for encryption Don't set secret
+                      directly, fetch it from apiserver by name
+                    type: string
+                  type:
+                    default: LUKS
+                    description: Type is the encryption type, e.g., LUKS
+                    enum:
+                    - LUKS
+                    type: string
+                type: object
               volumeName:
                 description: VolumeName is the name of the volume, e.g. pvc-fbf3ffc3-66db-4dae-9032-bda3c61b8f85
                 type: string

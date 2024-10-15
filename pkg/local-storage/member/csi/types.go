@@ -5,6 +5,8 @@ const (
 	VolumeReplicaDevicePathKey = "volumeReplicaDevicePath"
 	VolumeReplicaNameKey       = "volumeReplicaName"
 	VolumeReplicaKindKey       = "volumeReplicaKind"
+	VolumeEncryptSecretKey     = "volumeEncryptSecret"
+	VolumeEncryptTypeKey       = "volumeEncryptType"
 )
 
 // VolumeMetrics struct

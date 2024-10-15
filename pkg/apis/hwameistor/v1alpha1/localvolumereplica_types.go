@@ -26,6 +26,9 @@ type LocalVolumeReplicaSpec struct {
 	// VolumeQoS is the QoS of the volume
 	VolumeQoS VolumeQoS `json:"volumeQoS,omitempty"`
 
+	// VolumeEncrypt is the encryption config of the volume
+	VolumeEncrypt VolumeEncrypt `json:"volumeEncrypt,omitempty"`
+
 	// Delete is to indicate where the replica should be deleted or not.
 	// It's different from the regular resource delete interface in Kubernetes.
 	// The purpose is to protect it from any mistakes
