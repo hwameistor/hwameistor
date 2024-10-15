@@ -1,7 +1,7 @@
 FROM rockylinux:8
 
 
-RUN yum install -y xfsprogs e2fsprogs udev smartmontools lsscsi nss
+RUN yum install -y xfsprogs e2fsprogs udev smartmontools lsscsi nss cryptsetup
 
 COPY ./_build/local-storage /
 

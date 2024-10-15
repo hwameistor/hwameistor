@@ -3,6 +3,7 @@ package encrypt
 import (
 	"github.com/hwameistor/hwameistor/pkg/exechelper"
 	"github.com/hwameistor/hwameistor/pkg/exechelper/basicexecutor"
+	"github.com/hwameistor/hwameistor/pkg/exechelper/nsexecutor"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"path"
@@ -12,14 +13,16 @@ import (
 var _ Encryptor = &LUKS{}
 
 type LUKS struct {
-	cmdExec exechelper.Executor
-	logger  *log.Entry
+	nsCmdExec    exechelper.Executor
+	basicCmdExec exechelper.Executor
+	logger       *log.Entry
 }
 
 func NewLUKS() *LUKS {
 	return &LUKS{
-		cmdExec: basicexecutor.New(),
-		logger:  log.New().WithField("Module", "encrypt/LUKS"),
+		nsCmdExec:    nsexecutor.New(),
+		basicCmdExec: basicexecutor.New(),
+		logger:       log.New().WithField("Module", "encrypt/LUKS"),
 	}
 }
 func (lk *LUKS) EncryptVolume(volumePath string, secret string) error {
@@ -31,7 +34,7 @@ func (lk *LUKS) EncryptVolume(volumePath string, secret string) error {
 		CmdArgs: []string{"--noheadings", "--readonly", "-o", "lv_name", volumePath},
 		Timeout: 0,
 	}
-	res := lk.cmdExec.RunCommand(checkVolume)
+	res := lk.nsCmdExec.RunCommand(checkVolume)
 	if res.Error != nil {
 		lk.logger.WithError(res.Error).Error("Failed to check if volume exists, volume might not exist")
 		return res.Error
@@ -50,7 +53,7 @@ func (lk *LUKS) EncryptVolume(volumePath string, secret string) error {
 		CmdName: "cryptsetup",
 		CmdArgs: []string{"-q", "-s", "512", "luksFormat", volumePath, fh.FilePath},
 	}
-	res = lk.cmdExec.RunCommand(encryptVolume)
+	res = lk.basicCmdExec.RunCommand(encryptVolume)
 	if res.Error != nil {
 		lk.logger.WithError(res.Error).Error("Failed to encrypt volume")
 		return res.Error
@@ -66,7 +69,7 @@ func (lk *LUKS) IsVolumeEncrypted(volumePath string) (bool, error) {
 		CmdArgs: []string{"isLuks", volumePath},
 		Timeout: 0,
 	}
-	res := lk.cmdExec.RunCommand(checkVolumeEncrypted)
+	res := lk.basicCmdExec.RunCommand(checkVolumeEncrypted)
 	if res.Error != nil && res.ExitCode != 1 {
 		lk.logger.WithError(res.Error).Error("Failed to check if volume encrypted")
 		return false, res.Error
@@ -97,7 +100,7 @@ func (lk *LUKS) OpenVolume(volumePath string, secret string) (string, error) {
 		CmdName: "cryptsetup",
 		CmdArgs: []string{"--allow-discards", "luksOpen", "-d", fh.FilePath, volumePath, volumeEncryptPath},
 	}
-	res := lk.cmdExec.RunCommand(openVolume)
+	res := lk.basicCmdExec.RunCommand(openVolume)
 	if res.Error != nil && !strings.Contains(res.ErrBuf.String(), "already exists") {
 		lk.logger.WithError(res.Error).Error("Failed to open encrypted volume")
 		return "", res.Error
@@ -111,7 +114,7 @@ func (lk *LUKS) CloseVolume(volumePath string) error {
 		CmdName: "cryptsetup",
 		CmdArgs: []string{"luksClose", volumePath},
 	}
-	res := lk.cmdExec.RunCommand(closeVolume)
+	res := lk.basicCmdExec.RunCommand(closeVolume)
 	if res.Error != nil && !strings.Contains(res.ErrBuf.String(), "is not active") {
 		lk.logger.WithError(res.Error).Error("Failed to close encrypted volume")
 		return res.Error
