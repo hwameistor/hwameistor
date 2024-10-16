@@ -1,4 +1,4 @@
-name: HwameiStor PR
+name: HwameiStor PR Full Test
 
 on:
   pull_request:
