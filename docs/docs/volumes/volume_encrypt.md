@@ -1,21 +1,19 @@
 ---
 sidebar_position: 10
-sidebar_label:  "Volumes Encrypt"
+sidebar_label: "Encrypt Volume"
 ---
 
+# Encrypt Volume
 
-#  Volume encryption
-
-In HwameiStor, users can use LUKS to encrypt local data volumes.
+In HwameiStor, you can use LUKS to encrypt local volumes.
 
 :::note
-Currently,  non-HA encrypted volumes do not support lvmigrate.
+Currently, non-HA encrypted volumes do not support lvmigrate.
 :::
-
 
 Please follow the steps below to create and use encrypted volumes.
 
-## 1. Create a Secret for encrypting the data volume
+## 1. Create a Secret for encrypting the volume
 
 The details are as follows:
 
@@ -29,7 +27,7 @@ kind: Secret
 metadata:
   name: hwameistor-encrypt-secret
   namespace: hwameistor
-type: Opaque  
+type: Opaque
 ```
 
 ## 2. Create a StorageClass
@@ -55,7 +53,8 @@ parameters:
   striped: "true"
   csi.storage.k8s.io/fstype: "xfs"
 ```
-## 3. Create a pvc and an Deployment 
+
+## 3. Create a PVC and a Deployment
 
 ```yaml
 apiVersion: v1
@@ -109,42 +108,44 @@ spec:
               mountPath: /usr/share/nginx/html
           resources:
             limits:
-              cpu: '100m'
-              memory: '100Mi'
+              cpu: "100m"
+              memory: "100Mi"
       volumes:
         - name: html-root
           persistentVolumeClaim:
             claimName: local-storage-pvc-encrypt
 ```
 
-## 4.Check pod status
+## 4. Check pod status
 
 ```console
-# kubectl get pod -o wide                                                                                                                                                                                                                             
-NAME                                      READY   STATUS    RESTARTS   AGE   IP               NODE        NOMINATED NODE   READINESS GATES                                                                                                                                  
-nginx-local-storage-lvm-79886d9dd-44fsg   1/1     Running   0          20m   100.111.156.91   k8s-node1                     
+# kubectl get pod -o wide
+NAME                                      READY   STATUS    RESTARTS   AGE   IP               NODE        NOMINATED NODE   READINESS GATES
+nginx-local-storage-lvm-79886d9dd-44fsg   1/1     Running   0          20m   100.111.156.91   k8s-node1
 ```
 
-## 5.Check whether the volume is an encrypted volume
+## 5. Check whether the volume is encrypted
 
 You can use the "lsblk" to check whether the TYPE of the volume is crypt.
+
 ```console
-# lsblk                                                                                                                                                                                                                                                   
-NAME                                                                 MAJ:MIN RM   SIZE RO TYPE  MOUNTPOINT                                                                                                                                                                  
-sda                                                                    8:0    0   160G  0 disk                                                                                                                                                                              
-├─sda1                                                                 8:1    0     1G  0 part  /boot                                                                                                                                                                       
-└─sda2                                                                 8:2    0   159G  0 part                                                                                                                                                                              
-  ├─centos-root                                                      253:0    0    50G  0 lvm   /                                                                                                                                                                           
-  ├─centos-swap                                                      253:1    0   7.9G  0 lvm                                                                                                                                                                               
-  └─centos-home                                                      253:2    0 101.1G  0 lvm   /home                                                                                                                                                                       
-sdb                                                                    8:16   0   200G  0 disk                                                                                                                                                                              
-└─LocalStorage_PoolHDD-pvc--2c097032--690d--4510--99ad--54119b6b650c 253:3    0     1G  0 lvm                                                                                                                                                                               
-  └─pvc-2c097032-690d-4510-99ad-54119b6b650c-encrypt                 253:4    0  1008M  0 crypt /var/lib/kubelet/pods/4c2b76f3-a84f-4e62-88c8-a71abeb68efd/volumes/kubernetes.io~csi/pvc-2c097032-690d-4510-99ad-54119b6b650c/mount                                         
-sr0                                                                   11:0    1  1024M  0 rom                      
+# lsblk
+NAME                                                                 MAJ:MIN RM   SIZE RO TYPE  MOUNTPOINT
+sda                                                                    8:0    0   160G  0 disk
+├─sda1                                                                 8:1    0     1G  0 part  /boot
+└─sda2                                                                 8:2    0   159G  0 part
+  ├─centos-root                                                      253:0    0    50G  0 lvm   /
+  ├─centos-swap                                                      253:1    0   7.9G  0 lvm
+  └─centos-home                                                      253:2    0 101.1G  0 lvm   /home
+sdb                                                                    8:16   0   200G  0 disk
+└─LocalStorage_PoolHDD-pvc--2c097032--690d--4510--99ad--54119b6b650c 253:3    0     1G  0 lvm
+  └─pvc-2c097032-690d-4510-99ad-54119b6b650c-encrypt                 253:4    0  1008M  0 crypt /var/lib/kubelet/pods/4c2b76f3-a84f-4e62-88c8-a71abeb68efd/volumes/kubernetes.io~csi/pvc-2c097032-690d-4510-99ad-54119b6b650c/mount
+sr0                                                                   11:0    1  1024M  0 rom
 ```
 
-You can use  the "blkid" command to check whether the TYPE of the volume is crypto_LUKS
+You can use the "blkid" command to check whether the TYPE of the volume is crypto_LUKS:
+
 ```console
-# blkid /dev/LocalStorage_PoolHDD/pvc-2c097032-690d-4510-99ad-54119b6b650c                                                                                                                                                                                
-/dev/LocalStorage_PoolHDD/pvc-2c097032-690d-4510-99ad-54119b6b650c: UUID="a1910adf-f1dc-45a4-aeb3-6a8cf045bb9d" TYPE="crypto_LUKS"                
+# blkid /dev/LocalStorage_PoolHDD/pvc-2c097032-690d-4510-99ad-54119b6b650c
+/dev/LocalStorage_PoolHDD/pvc-2c097032-690d-4510-99ad-54119b6b650c: UUID="a1910adf-f1dc-45a4-aeb3-6a8cf045bb9d" TYPE="crypto_LUKS"
 ```

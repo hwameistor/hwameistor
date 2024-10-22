@@ -1,14 +1,14 @@
 ---
 sidebar_position: 10
-sidebar_label:  "数据卷加密"
+sidebar_label: "数据卷加密"
 ---
 
 # 数据卷加密
 
-在 HwameiStor 中，用户可以用LUKS为本地数据卷进行加密。
+在 HwameiStor 中，用户可以用 LUKS 为本地数据卷进行加密。
 
 :::note
-目前单副本的加密卷不支持支持lvmigrate。
+目前单副本的加密卷不支持 lvmigrate。
 :::
 
 请按照以下步骤来创建和使用加密卷。
@@ -27,10 +27,10 @@ kind: Secret
 metadata:
   name: hwameistor-encrypt-secret
   namespace: hwameistor
-type: Opaque  
+type: Opaque
 ```
 
-## 2. 创建一个StorageClass
+## 2. 创建一个 StorageClass
 
 使用以下命令创建一个 StorageClass 并指定使用上方创建的 Secret：
 
@@ -53,7 +53,8 @@ parameters:
   striped: "true"
   csi.storage.k8s.io/fstype: "xfs"
 ```
-## 3. 创建一个pvc和deployment
+
+## 3. 创建 PVC 和 Deployment
 
 ```yaml
 apiVersion: v1
@@ -107,42 +108,44 @@ spec:
               mountPath: /usr/share/nginx/html
           resources:
             limits:
-              cpu: '100m'
-              memory: '100Mi'
+              cpu: "100m"
+              memory: "100Mi"
       volumes:
         - name: html-root
           persistentVolumeClaim:
             claimName: local-storage-pvc-encrypt
 ```
 
-## 4.检查应用是否被正常创建
+## 4. 检查应用是否被正常创建
 
 ```console
-# kubectl get pod -o wide                                                                                                                                                                                                                             
-NAME                                      READY   STATUS    RESTARTS   AGE   IP               NODE        NOMINATED NODE   READINESS GATES                                                                                                                                  
-nginx-local-storage-lvm-79886d9dd-44fsg   1/1     Running   0          20m   100.111.156.91   k8s-node1                     
+# kubectl get pod -o wide
+NAME                                      READY   STATUS    RESTARTS   AGE   IP               NODE        NOMINATED NODE   READINESS GATES
+nginx-local-storage-lvm-79886d9dd-44fsg   1/1     Running   0          20m   100.111.156.91   k8s-node1
 ```
 
-## 5.检查数据卷是否为加密卷
+## 5. 检查数据卷是否为加密卷
 
-通过lsblk命令可以查看数据卷的TYPE是否为crypt
+通过 lsblk 命令可以查看数据卷的 TYPE 是否为 crypt：
+
 ```console
-# lsblk                                                                                                                                                                                                                                                   
-NAME                                                                 MAJ:MIN RM   SIZE RO TYPE  MOUNTPOINT                                                                                                                                                                  
-sda                                                                    8:0    0   160G  0 disk                                                                                                                                                                              
-├─sda1                                                                 8:1    0     1G  0 part  /boot                                                                                                                                                                       
-└─sda2                                                                 8:2    0   159G  0 part                                                                                                                                                                              
-  ├─centos-root                                                      253:0    0    50G  0 lvm   /                                                                                                                                                                           
-  ├─centos-swap                                                      253:1    0   7.9G  0 lvm                                                                                                                                                                               
-  └─centos-home                                                      253:2    0 101.1G  0 lvm   /home                                                                                                                                                                       
-sdb                                                                    8:16   0   200G  0 disk                                                                                                                                                                              
-└─LocalStorage_PoolHDD-pvc--2c097032--690d--4510--99ad--54119b6b650c 253:3    0     1G  0 lvm                                                                                                                                                                               
-  └─pvc-2c097032-690d-4510-99ad-54119b6b650c-encrypt                 253:4    0  1008M  0 crypt /var/lib/kubelet/pods/4c2b76f3-a84f-4e62-88c8-a71abeb68efd/volumes/kubernetes.io~csi/pvc-2c097032-690d-4510-99ad-54119b6b650c/mount                                         
-sr0                                                                   11:0    1  1024M  0 rom                      
+# lsblk
+NAME                                                                 MAJ:MIN RM   SIZE RO TYPE  MOUNTPOINT
+sda                                                                    8:0    0   160G  0 disk
+├─sda1                                                                 8:1    0     1G  0 part  /boot
+└─sda2                                                                 8:2    0   159G  0 part
+  ├─centos-root                                                      253:0    0    50G  0 lvm   /
+  ├─centos-swap                                                      253:1    0   7.9G  0 lvm
+  └─centos-home                                                      253:2    0 101.1G  0 lvm   /home
+sdb                                                                    8:16   0   200G  0 disk
+└─LocalStorage_PoolHDD-pvc--2c097032--690d--4510--99ad--54119b6b650c 253:3    0     1G  0 lvm
+  └─pvc-2c097032-690d-4510-99ad-54119b6b650c-encrypt                 253:4    0  1008M  0 crypt /var/lib/kubelet/pods/4c2b76f3-a84f-4e62-88c8-a71abeb68efd/volumes/kubernetes.io~csi/pvc-2c097032-690d-4510-99ad-54119b6b650c/mount
+sr0                                                                   11:0    1  1024M  0 rom
 ```
 
-通过blkid命令可以查看数据卷的TYPE是否为crypto_LUKS
+通过 blkid 命令可以查看数据卷的 TYPE 是否为 crypto_LUKS：
+
 ```console
-# blkid /dev/LocalStorage_PoolHDD/pvc-2c097032-690d-4510-99ad-54119b6b650c                                                                                                                                                                                
-/dev/LocalStorage_PoolHDD/pvc-2c097032-690d-4510-99ad-54119b6b650c: UUID="a1910adf-f1dc-45a4-aeb3-6a8cf045bb9d" TYPE="crypto_LUKS"                
+# blkid /dev/LocalStorage_PoolHDD/pvc-2c097032-690d-4510-99ad-54119b6b650c
+/dev/LocalStorage_PoolHDD/pvc-2c097032-690d-4510-99ad-54119b6b650c: UUID="a1910adf-f1dc-45a4-aeb3-6a8cf045bb9d" TYPE="crypto_LUKS"
 ```
