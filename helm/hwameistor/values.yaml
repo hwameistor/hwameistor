@@ -148,7 +148,7 @@ localStorageCSIController:
   priorityClassName:
   provisioner:
     imageRepository: sig-storage/csi-provisioner
-    tag: v3.5.0
+    tag: v4.0.0
     resources: {}
   attacher:
     imageRepository: sig-storage/csi-attacher
