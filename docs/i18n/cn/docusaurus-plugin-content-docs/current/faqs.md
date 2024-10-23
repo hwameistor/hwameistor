@@ -262,6 +262,69 @@ HwameiStor 可以立即将 Pod 调度到其他数据卷所在的可用节点，�
         delete: true
    ```
 
+## Q8: 为什么会有 LocalVolume 资源残留？
+
+在先删除PV再删除PVC的情况下，LocalVolume资源不会被正常回收，需要在开启HonorPVReclaimPolicy特性后，才能正常回收。
+:::note
+参考文档:
+
+https://kubernetes.io/blog/2021/12/15/kubernetes-1-23-prevent-persistentvolume-leaks-when-deleting-out-of-order/
+:::
+开启HonorPVReclaimPolicy步骤:
+
+1. 修改kube-controller-manager:
+
+   ```bash
+   $ vi /etc/kubernetes/manifests/kube-controller-manager.yaml
+  
+   ...
+   spec:
+     containers:
+     - command:
+     - kube-controller-manager
+     - --allocate-node-cidrs=false
+     - --feature-gates=HonorPVReclaimPolicy=true
+   ```
+
+2. 修改csi-provisioner:
+
+   ```bash
+   $ kubectl edit -n hwameistor deployment.apps/hwameistor-local-storage-csi-controller
+  
+   ...
+      containers:
+      - args:
+        - --v=5
+        - --csi-address=$(CSI_ADDRESS)
+        - --leader-election=true
+        - --feature-gates=Topology=true
+        - --strict-topology
+        - --extra-create-metadata=true
+        - --feature-gates=HonorPVReclaimPolicy=true
+        env:
+        - name: CSI_ADDRESS
+          value: /csi/csi.sock
+        image: k8s.m.daocloud.io/sig-storage/csi-provisioner:v3.5.0
+   ```
+3. 检查配置是否生效:
+
+可以查看现有pv的finalizers是否包含external-provisioner.volume.kubernetes.io/finalizer
+
+   ```bash
+   $ kubectl get pv pvc-a7b7e3ba-f837-45ba-b243-dec7d8aaed53 -o yaml
+  
+   ...
+      apiVersion: v1
+      kind: PersistentVolume
+      metadata:
+        annotations:
+          pv.kubernetes.io/provisioned-by: csi.vsphere.vmware.com
+        creationTimestamp: "2021-11-17T19:28:56Z"
+        finalizers:
+        - kubernetes.io/pv-protection
+        - external-attacher/lvm-hwameistor-io
+        - external-provisioner.volume.kubernetes.io/finalizer
+   ```
 
 
 

@@ -281,3 +281,67 @@ Manually reclaim data volumes:
         delete: true
    ```
 
+
+## Q8: Why are there residual LocalVolume resources?
+
+If you delete PV first and then PVC, LocalVolume resources will not be reclaimed normally. You need to enable the HonorPVReclaimPolicy feature to reclaim them normally.
+:::note
+Reference Documents:
+
+https://kubernetes.io/blog/2021/12/15/kubernetes-1-23-prevent-persistentvolume-leaks-when-deleting-out-of-order/
+:::
+Steps to enable HonorPVReclaimPolicy:
+
+1. Modify kube-controller-manager:
+
+   ```bash
+   $ vi /etc/kubernetes/manifests/kube-controller-manager.yaml
+  
+   ...
+   spec:
+     containers:
+     - command:
+     - kube-controller-manager
+     - --allocate-node-cidrs=false
+     - --feature-gates=HonorPVReclaimPolicy=true
+   ```
+
+2. Modify csi-provisioner:
+
+   ```bash
+   $ kubectl edit -n hwameistor deployment.apps/hwameistor-local-storage-csi-controller
+  
+   ...
+      containers:
+      - args:
+        - --v=5
+        - --csi-address=$(CSI_ADDRESS)
+        - --leader-election=true
+        - --feature-gates=Topology=true
+        - --strict-topology
+        - --extra-create-metadata=true
+        - --feature-gates=HonorPVReclaimPolicy=true
+        env:
+        - name: CSI_ADDRESS
+          value: /csi/csi.sock
+        image: k8s.m.daocloud.io/sig-storage/csi-provisioner:v3.5.0
+   ```
+3. Check whether the configuration is effective:
+
+You can check whether the finalizers of the existing pv contain external-provisioner.volume.kubernetes.io/finalizer
+
+   ```bash
+   $ kubectl get pv pvc-a7b7e3ba-f837-45ba-b243-dec7d8aaed53 -o yaml
+  
+   ...
+      apiVersion: v1
+      kind: PersistentVolume
+      metadata:
+        annotations:
+          pv.kubernetes.io/provisioned-by: csi.vsphere.vmware.com
+        creationTimestamp: "2021-11-17T19:28:56Z"
+        finalizers:
+        - kubernetes.io/pv-protection
+        - external-attacher/lvm-hwameistor-io
+        - external-provisioner.volume.kubernetes.io/finalizer
+   ```
