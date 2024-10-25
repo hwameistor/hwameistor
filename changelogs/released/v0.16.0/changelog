@@ -1,0 +1,18 @@
+v0.16.0/ 2024-10-25
+========================
+
+## LVM volume management enhancements
+- Feat(encrypt/block): Support Encrypt Volume with LUKS #1582(@SSmallMonster )
+- Feat: Close encrypt volume after unmount volume #1583(@SSmallMonster )
+- rename secureSecret in StorageClass for clarity #1584(@SSmallMonster )
+- update csi to v4.0.0 #1585(@FloatXD )
+## Test
+- [Test]add the e2e-test of Volumes Encrypt #1590(@FloatXD )
+## Documentation
+- docs: correct volume replica description #1579(@SSmallMonster )
+- Docs: update roadmap for data encryption #1580(@SSmallMonster )
+- [doc]add the doc of Volumes Encrypt #1589(@FloatXD )
+- [Docs] update volumes/volume_encrypt.md #1591(@windsonsea )
+- [doc]add faq for HonorPVReclaimPolicy #1593(@FloatXD )
+## Others
+- update csi to v4.0.0 #1585(@peng9808 )
