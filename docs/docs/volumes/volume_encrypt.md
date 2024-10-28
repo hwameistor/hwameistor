@@ -44,7 +44,7 @@ volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: true
 reclaimPolicy: Delete
 parameters:
-  secretName: hwameistor/hwameistor-encrypt-secret
+  encryptSecret: hwameistor/hwameistor-encrypt-secret
   encryptType: LUKS
   replicaNumber: "1"
   poolClass: "HDD"
