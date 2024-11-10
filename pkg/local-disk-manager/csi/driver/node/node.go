@@ -43,7 +43,7 @@ func (s *Server) initConfig() {
 func (s *Server) initNodeCapabilities() {
 	caps := []csi.NodeServiceCapability_RPC_Type{
 		csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
-		//NodeServiceCapability_RPC_VOLUME_CONDITION,
+		csi.NodeServiceCapability_RPC_VOLUME_CONDITION,
 	}
 	for _, c := range caps {
 		s.supportNodeCapability = append(s.supportNodeCapability, newNodeServiceCapability(c))
