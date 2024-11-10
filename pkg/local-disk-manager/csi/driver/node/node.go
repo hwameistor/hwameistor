@@ -28,10 +28,6 @@ type Config struct {
 	NodeName string `json:"nodeName"`
 }
 
-const (
-	_DFCmd = "df"
-)
-
 func NewServer() *Server {
 	server := &Server{}
 	server.initConfig()
