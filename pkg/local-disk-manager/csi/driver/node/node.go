@@ -3,6 +3,9 @@ package node
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
+
 	volume "github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/controller/volume"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
@@ -39,8 +42,8 @@ func (s *Server) initConfig() {
 
 func (s *Server) initNodeCapabilities() {
 	caps := []csi.NodeServiceCapability_RPC_Type{
-		//NodeServiceCapability_RPC_GET_VOLUME_STATS,
-		//NodeServiceCapability_RPC_VOLUME_CONDITION,
+		csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
+		csi.NodeServiceCapability_RPC_VOLUME_CONDITION,
 	}
 	for _, c := range caps {
 		s.supportNodeCapability = append(s.supportNodeCapability, newNodeServiceCapability(c))
@@ -82,7 +85,64 @@ func (s *Server) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublish
 }
 
 func (s *Server) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeStatsRequest) (*csi.NodeGetVolumeStatsResponse, error) {
-	return nil, fmt.Errorf("not implemented")
+	vol, err := s.vm.GetVolumeInfo(req.VolumeId)
+	if err != nil {
+		return nil, fmt.Errorf("volume %s not found: %v", req.VolumeId, err)
+	}
+
+	ready, err := s.vm.VolumeIsReady(req.VolumeId)
+	if err != nil || !ready {
+		return &csi.NodeGetVolumeStatsResponse{
+			VolumeCondition: &csi.VolumeCondition{
+				Abnormal: true,
+				Message:  "Volume is not ready",
+			},
+		}, nil
+	}
+
+	args := []string{"--output=size,used,avail,itotal,iused,iavail", "--block-size=1", vol.AttachPath}
+	out, err := utils.BashWithArgs("df", args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute df command: %v", err)
+	}
+
+	lines := strings.Split(string(out), "\n")
+	if len(lines) < 2 {
+		return nil, fmt.Errorf("unexpected df output format")
+	}
+
+	fields := strings.Fields(lines[1])
+	if len(fields) != 6 {
+		return nil, fmt.Errorf("unexpected number of fields in df output")
+	}
+
+	total, _ := strconv.ParseInt(fields[0], 10, 64)
+	used, _ := strconv.ParseInt(fields[1], 10, 64)
+	free, _ := strconv.ParseInt(fields[2], 10, 64)
+	iTotal, _ := strconv.ParseInt(fields[3], 10, 64)
+	iUsed, _ := strconv.ParseInt(fields[4], 10, 64)
+	iFree, _ := strconv.ParseInt(fields[5], 10, 64)
+
+	return &csi.NodeGetVolumeStatsResponse{
+		VolumeCondition: &csi.VolumeCondition{
+			Abnormal: false,
+			Message:  "Volume is ready",
+		},
+		Usage: []*csi.VolumeUsage{
+			{
+				Unit:      csi.VolumeUsage_BYTES,
+				Total:     total,
+				Available: free,
+				Used:      used,
+			},
+			{
+				Unit:      csi.VolumeUsage_INODES,
+				Total:     iTotal,
+				Available: iFree,
+				Used:      iUsed,
+			},
+		},
+	}, nil
 }
 
 func (s *Server) NodeExpandVolume(context.Context, *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse, error) {
