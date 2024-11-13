@@ -84,36 +84,39 @@ func (s *scheduler) GetNodeCandidates(vols []*apisv1alpha1.LocalVolume) (qualifi
 
 	//Affinity and taint verification are enabled by default
 	//The first creation of a single copy is still the default logic
-	pvc := corev1.PersistentVolumeClaim{}
-	if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: vols[0].Spec.PersistentVolumeClaimName, Namespace: vols[0].Spec.PersistentVolumeClaimNamespace}, &pvc); err != nil {
-		log.Debugf("qualifiedNodes len is %d", len(qualifiedNodes))
-		return qualifiedNodes
-	}
-	if pvc.Annotations == nil {
-		pvc.Annotations = make(map[string]string)
-	}
-	if pvc.Annotations[SkipAffinity] == "true" {
-		log.Debugf("Skip Affinity ,qualifiedNodes len is %d", len(qualifiedNodes))
-		return qualifiedNodes
-	}
-	if vols[0].Annotations == nil {
-		vols[0].Annotations = make(map[string]string)
-	}
 
-	if (vols[0].Spec.ReplicaNumber > 1 && vols[0].Annotations[REPLICA_AFFINITY] != "forbid") || vols[0].Annotations[REPLICA_AFFINITY] == "need" {
-		nodes, err := s.filterNodeByTaint(vols[0], qualifiedNodes)
-		if err != nil {
-			logCtx.WithError(err).WithField("volumes", vols[0]).Debugf("fail to filterNodeByTaint")
+	if len(vols) > 0 {
+		pvc := corev1.PersistentVolumeClaim{}
+		if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: vols[0].Spec.PersistentVolumeClaimName, Namespace: vols[0].Spec.PersistentVolumeClaimNamespace}, &pvc); err != nil {
+			log.Debugf("qualifiedNodes len is %d", len(qualifiedNodes))
+			return qualifiedNodes
 		}
-		nodes, err = s.filterNodeByAffinity(vols[0], nodes)
-		if err != nil {
-			logCtx.WithError(err).WithField("volumes", vols[0]).Debugf("fail to filterNodeByAffinity")
+		if pvc.Annotations == nil {
+			pvc.Annotations = make(map[string]string)
 		}
-		qualifiedNodes = nodes
-	} else {
-		log.Debugf("Ignore affinity and taint")
-	}
+		if pvc.Annotations[SkipAffinity] == "true" {
+			log.Debugf("Skip Affinity ,qualifiedNodes len is %d", len(qualifiedNodes))
+			return qualifiedNodes
+		}
+		if vols[0].Annotations == nil {
+			vols[0].Annotations = make(map[string]string)
+		}
 
+		if (vols[0].Spec.ReplicaNumber > 1 && vols[0].Annotations[REPLICA_AFFINITY] != "forbid") || vols[0].Annotations[REPLICA_AFFINITY] == "need" {
+			nodes, err := s.filterNodeByTaint(vols[0], qualifiedNodes)
+			if err != nil {
+				logCtx.WithError(err).WithField("volumes", vols[0]).Debugf("fail to filterNodeByTaint")
+			}
+			nodes, err = s.filterNodeByAffinity(vols[0], nodes)
+			if err != nil {
+				logCtx.WithError(err).WithField("volumes", vols[0]).Debugf("fail to filterNodeByAffinity")
+			}
+			qualifiedNodes = nodes
+		} else {
+			log.Debugf("Ignore affinity and taint")
+		}
+	}
+	
 	log.Debugf("qualifiedNodes len is %d", len(qualifiedNodes))
 	return qualifiedNodes
 }
