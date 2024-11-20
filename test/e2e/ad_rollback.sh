@@ -2,52 +2,43 @@
 # simple scripts mng machine
 # link hosts
 
+#!/bin/bash
+
+
+
 if [ -z "$1" ]; then
   echo "Usage: $0 {k8s1.24|k8s1.25|...}"
   exit 1
 fi
 
-# 函数：设置通用变量
-#set_common_vars() {
-#  export GOVC_RESOURCE_POOL="fupan-adaptation-test"
-#}
-
-# 使用 case 语句以简化逻辑并提高可读性
 case $1 in
   k8s1.24)
     export hosts="adaptation-master adaptation-node1 adaptation-node2"
     export snapshot="k8s124"
-    kubectl config use-context k8s1.24
     ;;
   k8s1.25)
     export hosts="adaptation-master adaptation-node1 adaptation-node2"
     export snapshot="k8s125"
-    kubectl config use-context k8s1.25
     ;;
   k8s1.26)
-    export hosts="adaptation-master adaptation-node1 adaptation-node2"
-    export snapshot="k8s126"
-    kubectl config use-context k8s1.26
+    export hosts="fupan-rocky8.10-ad-10.6.113.120"
+    export snapshot="v1.26.15"
     ;;
   k8s1.27)
     export hosts="adaptation-master adaptation-node1 adaptation-node2"
     export snapshot="k8s127"
-    kubectl config use-context k8s1.27
     ;;
   k8s1.28)
     export hosts="adaptation-master adaptation-node1 adaptation-node2"
     export snapshot="k8s128"
-    kubectl config use-context k8s1.28
     ;;
   k8s1.29)
     export hosts="adaptation-master adaptation-node1 adaptation-node2"
     export snapshot="k8s129"
-    kubectl config use-context k8s1.29
     ;;
   k8s1.30)
-    export hosts="adaptation-master adaptation-node1 adaptation-node2"
-    export snapshot="k8s130"
-    kubectl config use-context k8s1.30
+    export hosts="fupan-rocky8.10-ad-10.6.113.120"
+    export snapshot="v1.26.15"
     ;;
   k8sc81)
     export hosts="fupan-ad-c81"
@@ -99,3 +90,45 @@ for i in `seq 1 15`; do
   echo -e "\033[35m === `date  '+%Y-%m-%d %H:%M:%S'` === \033[0m"
   sleep 6s
 done
+
+
+TARGET_IP="10.6.113.120"
+TIMEOUT=300
+INTERVAL=5
+
+START_TIME=$(date +%s)
+
+while true; do
+    if ping -c 1 "$TARGET_IP" &> /dev/null; then
+        echo "successfully pinged $TARGET_IP"
+        break
+    fi
+
+    CURRENT_TIME=$(date +%s)
+    ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
+
+    if [ "$ELAPSED_TIME" -ge "$TIMEOUT" ]; then
+        echo "failed to ping $TARGET_IP"
+        exit 1
+    fi
+
+    sleep "$INTERVAL"
+done
+
+
+
+sudo rm -rf /home/github/.kube/config
+sudo rm -rf /root/.kube/config
+
+sshpass -vp $password scp -rp -o StrictHostKeyChecking=no root@10.6.113.120:/root/.kube/config /home/github/.kube/config
+if [ $? -eq 0 ]; then
+    echo "Successfully copied .kube/config"
+else
+    echo "Copy Failure"
+fi
+
+sed -i 's|https://127.0.0.1:6443|https://10.6.113.120:6443|g' /home/github/.kube/config
+
+
+sudo cp -f /home/github/.kube/config /root/.kube/config
+
