@@ -21,8 +21,6 @@ on:
           - k8s1.28.0 & centos8.1
           - k8s1.28.0 & ubuntu2204
 #         - k8s1.23.3 & centos7.9_offline
-  schedule:
-    - cron: '0 18 ? * 5'
 
 
 jobs:

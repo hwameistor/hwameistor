@@ -107,7 +107,7 @@ func StartAdRollback(k8s string) error {
 		run := "sh arm_rollback.sh "
 		_, _ = RunInLinux(run)
 	} else {
-		logrus.Info("start ad_rollback" + k8s)
+		logrus.Info("start ad_rollback " + k8s)
 		run := "sh ad_rollback.sh " + k8s
 		_, _ = RunInLinux(run)
 	}

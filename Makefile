@@ -483,6 +483,15 @@ _gen-apis:
 	${OPERATOR_CMD} generate crds
 	GOPROXY=https://goproxy.cn,direct /code-generator/generate-groups.sh all github.com/hwameistor/hwameistor/pkg/apis/client github.com/hwameistor/hwameistor/pkg/apis "hwameistor:v1alpha1" --go-header-file /go/src/github.com/hwameistor/hwameistor/build/boilerplate.go.txt
 
+.PHONY: make_test_image
+make_test_image:
+	bash test/make_test_image.sh
+
+.PHONY: adaptation_test
+adaptation_test:
+	bash test/adaptation_test.sh
+
+
 .PHONY: e2e-test
 e2e-test:
 	bash test/e2e-test.sh
