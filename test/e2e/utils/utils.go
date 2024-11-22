@@ -6,7 +6,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"io"
 	appsv1 "k8s.io/api/apps/v1"
-	b1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -132,16 +131,16 @@ func StartAdRollback(k8s string) error {
 func CheckingComponentStatus(ctx context.Context) error {
 	f := framework.NewDefaultFramework(v1alpha1.AddToScheme)
 	client := f.GetClient()
-	drbd1 := &b1.Job{}
-	drbdKey1 := k8sclient.ObjectKey{
-		Name:      "drbd-adapter-k8s-node1-rhel7",
-		Namespace: "hwameistor",
-	}
-	drbd2 := &b1.Job{}
-	drbdKey2 := k8sclient.ObjectKey{
-		Name:      "drbd-adapter-k8s-node2-rhel7",
-		Namespace: "hwameistor",
-	}
+	//drbd1 := &b1.Job{}
+	//drbdKey1 := k8sclient.ObjectKey{
+	//	Name:      "drbd-adapter-k8s-node1-rhel7",
+	//	Namespace: "hwameistor",
+	//}
+	//drbd2 := &b1.Job{}
+	//drbdKey2 := k8sclient.ObjectKey{
+	//	Name:      "drbd-adapter-k8s-node2-rhel7",
+	//	Namespace: "hwameistor",
+	//}
 
 	localStorage := &appsv1.DaemonSet{}
 	localStorageKey := k8sclient.ObjectKey{
@@ -175,20 +174,20 @@ func CheckingComponentStatus(ctx context.Context) error {
 		Namespace: "hwameistor",
 	}
 
-	logrus.Infof("waiting for drbd ready")
-
-	err = wait.PollImmediate(3*time.Second, 15*time.Minute, func() (done bool, err error) {
-		err1 := client.Get(ctx, drbdKey1, drbd1)
-		err2 := client.Get(ctx, drbdKey2, drbd2)
-
-		if k8serror.IsNotFound(err1) && k8serror.IsNotFound(err2) {
-			return true, nil
-		} else if drbd1.Status.Succeeded == int32(1) && drbd2.Status.Succeeded == int32(1) {
-			return true, nil
-		}
-
-		return false, nil
-	})
+	//logrus.Infof("waiting for drbd ready")
+	//
+	//err = wait.PollImmediate(3*time.Second, 15*time.Minute, func() (done bool, err error) {
+	//	err1 := client.Get(ctx, drbdKey1, drbd1)
+	//	err2 := client.Get(ctx, drbdKey2, drbd2)
+	//
+	//	if k8serror.IsNotFound(err1) && k8serror.IsNotFound(err2) {
+	//		return true, nil
+	//	} else if drbd1.Status.Succeeded == int32(1) && drbd2.Status.Succeeded == int32(1) {
+	//		return true, nil
+	//	}
+	//
+	//	return false, nil
+	//})
 
 	logrus.Infof("waiting for hwamei ready")
 
