@@ -90,7 +90,7 @@ func (ad *auditorForLocalDisk) onUpdate(oldObj, newObj interface{}) {
 		ad.events.AddRecordForResource(ResourceTypeDisk, newInstance.Name, record)
 	}
 
-	if newInstance.Status.State != oldInstance.Spec.State {
+	if newInstance.Spec.State != oldInstance.Spec.State {
 		record := &localstorageapis.EventRecord{
 			Time:          metav1.Time{Time: time.Now()},
 			Action:        ActionDiskChange,
