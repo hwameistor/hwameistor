@@ -1,3 +1,20 @@
+v0.16.1/ 2024-11-25
+========================
+## LVM volume management enhancements
+- Solve the problem that pods may not be associated due to frequent cre… #1601(@peng9808 )
+## Disk Management Enhancements
+- local-disk-manager: Add GET_VOLUME_STATS capability #1604(@wokalski  )
+## Test
+- [Test]update ad test #1608(@FloatXD )
+- [Test]Modify drbd related code in e2e test #1611((@FloatXD )
+- [Test]Modify the disk name in the e2e test #1616((@FloatXD )
+## Documentation
+- Docs: Update encrypt as completed #1598(@SSmallMonster )
+## Others
+- fix: correct audit for disk status change #1615 (@SSmallMonster )
+
+
+
 v0.16.0/ 2024-10-25
 ========================
 
