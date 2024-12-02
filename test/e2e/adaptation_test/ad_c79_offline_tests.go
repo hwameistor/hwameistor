@@ -30,7 +30,7 @@ var _ = ginkgo.Describe("test localstorage volume", ginkgo.Label("centos7.9_offl
 	var client ctrlclient.Client
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
-		utils.StartAdRollback("centos7.9_offline")
+		utils.StartAdRollback()
 		f = framework.NewDefaultFramework(clientset.AddToScheme)
 		client = f.GetClient()
 		ctx = context.TODO()
