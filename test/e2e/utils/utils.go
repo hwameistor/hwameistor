@@ -100,16 +100,11 @@ func installHwameiStorByHelm_offline() error {
 	return err
 }
 
-func StartAdRollback(k8s string) error {
-	if k8s == "kylin10arm" {
-		logrus.Info("start arm_rollback")
-		run := "sh arm_rollback.sh "
-		_, _ = RunInLinux(run)
-	} else {
-		logrus.Info("start ad_rollback " + k8s)
-		run := "sh ad_rollback.sh " + k8s
-		_, _ = RunInLinux(run)
-	}
+func StartAdRollback() error {
+
+	logrus.Info("start ad_rollback")
+	run := "sh ad_rollback.sh"
+	_, _ = RunInLinux(run)
 
 	err := wait.PollImmediate(10*time.Second, 20*time.Minute, func() (done bool, err error) {
 		output, _ := RunInLinux("kubectl get pod -A  |grep -v Running |wc -l")

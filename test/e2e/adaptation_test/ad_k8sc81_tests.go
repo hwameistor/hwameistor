@@ -30,7 +30,7 @@ var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("k8sc81"), fun
 	var client ctrlclient.Client
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
-		utils.StartAdRollback("k8sc81")
+		utils.StartAdRollback()
 		f = framework.NewDefaultFramework(clientset.AddToScheme)
 		client = f.GetClient()
 	})

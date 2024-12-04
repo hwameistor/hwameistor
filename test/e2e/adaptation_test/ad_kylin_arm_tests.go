@@ -30,7 +30,7 @@ var _ = ginkgo.Describe("test localstorage volume ", ginkgo.Label("kylin10_arm")
 	var client ctrlclient.Client
 	ctx := context.TODO()
 	ginkgo.It("Configure the base environment", func() {
-		utils.StartAdRollback("kylin10arm")
+		utils.StartAdRollback()
 		f = framework.NewDefaultFramework(clientset.AddToScheme)
 		client = f.GetClient()
 		ctx = context.TODO()

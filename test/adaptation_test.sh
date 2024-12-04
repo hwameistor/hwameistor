@@ -43,5 +43,5 @@ function prepare_install_params() {
 prepare_install_params
 
 # Step3: go e2e test
-ginkgo -timeout=10h --fail-fast  --label-filter=${E2E_TESTING_LEVEL} test/e2e
+ginkgo -timeout=10h --fail-fast  --label-filter=ad_test test/e2e
 

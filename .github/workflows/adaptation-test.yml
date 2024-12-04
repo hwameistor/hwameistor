@@ -2,48 +2,12 @@ name: Adaptation-test
 
 on:
   workflow_dispatch:
-    inputs:
-      k8s-version:
-        description: 'choice'
-        required: false
-        default: 'ALL'
-        type: choice
-        options:
-          - ALL
-          - k8s1.25.3 & kylin10_arm
-          - k8s1.24.0 & centos7.6
-          - k8s1.25.0 & centos7.6
-          - k8s1.26.0 & centos7.6
-          - k8s1.27.0 & centos7.6
-          - k8s1.28.0 & centos7.6
-          - k8s1.29.0 & centos7.6
-#         - k8s1.23.3 & centos7.9
-          - k8s1.28.0 & centos8.1
-          - k8s1.28.0 & ubuntu2204
-#         - k8s1.23.3 & centos7.9_offline
+  schedule:
+    - cron: '0 18 ? * 5'
 
 
 jobs:
-  k8s1_24-test:
-    if: ${{ inputs.k8s-version == 'k8s1.24.0 & centos7.6' || inputs.k8s-version == 'ALL' || inputs.k8s-version == ''  }}
-    runs-on: [ "e2e" ]
-    timeout-minutes: 180
-    steps:
-      - name: delete
-        run: |
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
-          sudo rm -rf /home/github/actions-runner/_work/hwameistor/hwameistor/_build
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: e2e test
-        env:
-          E2E_TESTING_LEVEL: "k8s1.24"
-        run: make e2e-test
-  k8s1_25-test:
-    if: ${{ inputs.k8s-version == 'k8s1.25.0 & centos7.6' || inputs.k8s-version == 'ALL' || inputs.k8s-version == ''  }}
+  build_test_image:
     runs-on: ["e2e"]
     timeout-minutes: 180
     steps:
@@ -51,210 +15,31 @@ jobs:
         run: |
           sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
           sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
-          sudo rm -rf /home/github/actions-runner/_work/hwameistor/hwameistor/_build
+          sudo rm -rf /home/github/actions-runner/_work/hwameistor/hwameistor/_build/
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: e2e test
-        env:
-          E2E_TESTING_LEVEL: "k8s1.25"
-        run: make e2e-test
-  k8s1_26-test:
-    if: ${{ inputs.k8s-version == 'k8s1.26.0 & centos7.6' || inputs.k8s-version == 'ALL' || inputs.k8s-version == ''  }}
+      - name: build test image
+        run: make make_test_image
+  adaptation-test:
+    strategy:
+      matrix:
+        version: [ v1.26.15, v1.27.14 ]
     runs-on: ["e2e"]
+    needs: [build_test_image]
     timeout-minutes: 180
     steps:
       - name: delete
         run: |
           sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
           sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
-          sudo rm -rf /home/github/actions-runner/_work/hwameistor/hwameistor/_build
+          sudo rm -rf /home/github/actions-runner/_work/hwameistor/hwameistor/_build/
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: e2e test
+      - name: make adaptation test
         env:
-          E2E_TESTING_LEVEL: "k8s1.26"
-        run: make e2e-test
-  k8s1_27-test:
-    if: ${{ inputs.k8s-version == 'k8s1.27.0 & centos7.6' || inputs.k8s-version == 'ALL' || inputs.k8s-version == ''  }}
-    runs-on: ["e2e"]
-    timeout-minutes: 180
-    steps:
-      - name: delete
-        run: |
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
-          sudo rm -rf /home/github/actions-runner/_work/hwameistor/hwameistor/_build
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: e2e test
-        env:
-          E2E_TESTING_LEVEL: "k8s1.27"
-        run: make e2e-test
-  k8s1_28-test:
-    if: ${{ inputs.k8s-version == 'k8s1.28.0 & centos7.6' || inputs.k8s-version == 'ALL' || inputs.k8s-version == ''  }}
-    runs-on: [ "e2e" ]
-    timeout-minutes: 180
-    steps:
-      - name: delete
-        run: |
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
-          sudo rm -rf /home/github/actions-runner/_work/hwameistor/hwameistor/_build
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: e2e test
-        env:
-          E2E_TESTING_LEVEL: "k8s1.28"
-        run: make e2e-test
-  k8s1_29-test:
-    if: ${{ inputs.k8s-version == 'k8s1.29.0 & centos7.6' || inputs.k8s-version == 'ALL' || inputs.k8s-version == ''  }}
-    runs-on: [ "e2e" ]
-    timeout-minutes: 180
-    steps:
-      - name: delete
-        run: |
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
-          sudo rm -rf /home/github/actions-runner/_work/hwameistor/hwameistor/_build
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: e2e test
-        env:
-          E2E_TESTING_LEVEL: "k8s1.29"
-        run: make e2e-test
-  k8s1_30-test:
-    if: ${{ inputs.k8s-version == 'k8s1.30.0 & centos7.6' || inputs.k8s-version == 'ALL' || inputs.k8s-version == ''  }}
-    runs-on: [ "e2e" ]
-    timeout-minutes: 180
-    steps:
-      - name: delete
-        run: |
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
-          sudo rm -rf /home/github/actions-runner/_work/hwameistor/hwameistor/_build
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: e2e test
-        env:
-          E2E_TESTING_LEVEL: "k8s1.30"
-        run: make e2e-test
-  #  k8s1_23-test:
-#    if: ${{ inputs.k8s-version == 'k8s1.23.3 & centos7.9'|| inputs.k8s-version == 'ALL' || inputs.k8s-version == ''  }}
-#    runs-on: [ "vsphere" ]
-#    timeout-minutes: 180
-#    steps:
-#      - name: delete
-#        run: |
-#          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
-#          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
-#          sudo rm -rf /home/github/actions-runner/_work/hwameistor/hwameistor/_build
-#      - name: Checkout
-#        uses: actions/checkout@v3
-#        with:
-#          fetch-depth: 0
-#      - name: e2e test
-#        env:
-#          E2E_TESTING_LEVEL: "k8s1.23"
-#        run: make e2e-test
-  c81-test:
-    if: ${{ inputs.k8s-version == 'k8s1.28.0 & centos8.1' || inputs.k8s-version == 'ALL' || inputs.k8s-version == '' }}
-    runs-on: ["e2e"]
-    timeout-minutes: 180
-    steps:
-      - name: delete
-        run: |
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
-          sudo rm -rf /home/github/actions-runner/_work/hwameistor/hwameistor/_build
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: e2e test
-        env:
-          E2E_TESTING_LEVEL: "k8sc81"
-        run: make e2e-test
-  u2204-test:
-    if: ${{ inputs.k8s-version == 'k8s1.28.0 & ubuntu2204' || inputs.k8s-version == 'ALL' || inputs.k8s-version == ''  }}
-    runs-on: ["e2e"]
-    timeout-minutes: 180
-    steps:
-      - name: delete
-        run: |
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
-          sudo rm -rf /home/github/actions-runner/_work/hwameistor/hwameistor/_build
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: e2e test
-        env:
-          E2E_TESTING_LEVEL: "k8su2204"
-        run: make e2e-test
-  kylin10_arm-test:
-    if: ${{ inputs.k8s-version == 'k8s1.25.3 & kylin10_arm' || inputs.k8s-version == 'ALL' || inputs.k8s-version == '' }}
-    runs-on: ["e2e"]
-    timeout-minutes: 180
-    steps:
-      - name: delete
-        run: |
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
-          sudo rm -rf /home/github/actions-runner/_work/hwameistor/hwameistor/_build
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: e2e test
-        env:
-          E2E_TESTING_LEVEL: "kylin10_arm"
-          E2E_VERSION: "ARM"
-        run: make e2e-test
-#  centos7_6_offline-test:
-#    if: ${{ inputs.k8s-version == 'k8s1.23.3 & centos7.9_offline' || inputs.k8s-version == 'ALL' || inputs.k8s-version == '' }}
-#    runs-on: ["e2e"]
-#    timeout-minutes: 180
-#    steps:
-#      - name: delete
-#        run: |
-#          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
-#          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
-#          sudo rm -rf /home/github/actions-runner/_work/hwameistor/hwameistor/_build
-#      - name: Checkout
-#        uses: actions/checkout@v3
-#        with:
-#          fetch-depth: 0
-#      - name: e2e test
-#        env:
-#          E2E_TESTING_LEVEL: "centos7.9_offline"
-#        run: make e2e-test
-  shutdown-vm:
-    if: ${{ always() }}
-    needs: [ k8s1_25-test,k8s1_26-test,k8s1_27-test ]
-    runs-on: [ "e2e" ]
-    timeout-minutes: 180
-    steps:
-      - name: delete
-        run: |
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
-          sudo rm -rf /home/github/actions-runner/_work/hwameistor/hwameistor/_build
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: shutdown vm
-        run: make shutdownvm
+          K8S_VERSION: ${{ matrix.version }}
+        run: make adaptation_test
