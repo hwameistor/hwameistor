@@ -37,9 +37,9 @@
   },
   "sidebar.tutorialSidebar.category.Volumes Feature": {
     "message": "数据卷功能",
-    "description": "The label for category Volumes Feature Featur in sidebar tutorialSidebar"
+    "description": "The label for category Volumes Feature in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.Volumes Feature Feature.link.generated-index.description": {
+  "sidebar.tutorialSidebar.category.Volumes Feature.link.generated-index.description": {
     "message": "本章节介绍以下内容：",
     "description": "The generated-index page description for category Volumes Feature in sidebar tutorialSidebar"
   },
