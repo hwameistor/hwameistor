@@ -14,7 +14,7 @@ type localVolumeReplicaSnapshotManager struct {
 func newLocalVolumeReplicaSnapshotManager(lm *LocalManager) LocalVolumeReplicaSnapshotManager {
 	return &localVolumeReplicaSnapshotManager{
 		cmdExec: newLVMExecutor(lm),
-		ddExec:  newDDExecutor(),
+		ddExec:  newDDExecutor(lm.snapshotRestoreTimeout),
 		logger:  log.WithField("Module", "NodeManager/LocalVolumeReplicaSnapshotManager"),
 	}
 }

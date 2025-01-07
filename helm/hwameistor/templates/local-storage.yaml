@@ -73,6 +73,9 @@ spec:
         {{- if .Values.localStorage.member.config.maxMigrateCount}}
         - --max-migrate-count={{ .Values.localStorage.member.config.maxMigrateCount }}
         {{- end}}
+        {{- if .Values.localStorage.member.config.snapshotRestoreTimeout}}
+        - --snapshot-restore-timeout={{ .Values.localStorage.member.config.snapshotRestoreTimeout }}
+        {{- end}}
         env:
         - name: POD_NAME
           valueFrom:

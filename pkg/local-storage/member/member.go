@@ -20,6 +20,8 @@ import (
 // So, it's a global variable
 var nodeInstance localapis.LocalStorageMember
 
+var SnapshotRestoreTimeout = 60 * 10
+
 // Member gets member instance
 func Member() localapis.LocalStorageMember {
 	if nodeInstance == nil {
@@ -42,6 +44,8 @@ type localStorageMember struct {
 	namespace string
 
 	csiDriverName string
+
+	snapshotRestoreTimeout int
 
 	apiClient client.Client
 
@@ -69,13 +73,14 @@ func (m *localStorageMember) ConfigureBase(name string, namespace string, system
 	m.informersCache = informersCache
 	m.systemConfig = systemConfig
 	m.recorder = recorder
+	m.snapshotRestoreTimeout = SnapshotRestoreTimeout
 	return m
 }
 
 func (m *localStorageMember) ConfigureNode(scheme *runtime.Scheme) localapis.LocalStorageMember {
 	if m.nodeManager == nil {
 		var err error
-		m.nodeManager, err = localnode.New(m.name, m.namespace, m.apiClient, m.informersCache, m.systemConfig, scheme, m.recorder)
+		m.nodeManager, err = localnode.New(m.name, m.namespace, m.apiClient, m.informersCache, m.systemConfig, scheme, m.recorder, m.snapshotRestoreTimeout)
 		if err != nil {
 			panic(err)
 		}

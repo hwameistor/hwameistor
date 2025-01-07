@@ -10,10 +10,11 @@ import (
 
 // LocalManager struct
 type LocalManager struct {
-	apiClient client.Client
-	scheme    *runtime.Scheme
-	recorder  record.EventRecorder
-	nodeConf  *apisv1alpha1.NodeConfig
+	snapshotRestoreTimeout int
+	apiClient              client.Client
+	scheme                 *runtime.Scheme
+	recorder               record.EventRecorder
+	nodeConf               *apisv1alpha1.NodeConfig
 
 	registry                     LocalRegistry
 	poolManager                  LocalPoolManager
@@ -22,7 +23,7 @@ type LocalManager struct {
 }
 
 // NewLocalManager creates a local manager
-func NewLocalManager(nodeConf *apisv1alpha1.NodeConfig, cli client.Client, scheme *runtime.Scheme, recorder record.EventRecorder) *LocalManager {
+func NewLocalManager(nodeConf *apisv1alpha1.NodeConfig, cli client.Client, scheme *runtime.Scheme, recorder record.EventRecorder, snapshotRestoreTimeout int) *LocalManager {
 	lm := &LocalManager{
 		nodeConf:  nodeConf,
 		apiClient: cli,
@@ -33,7 +34,7 @@ func NewLocalManager(nodeConf *apisv1alpha1.NodeConfig, cli client.Client, schem
 	lm.volumeReplicaManager = newLocalVolumeReplicaManager(lm)
 	lm.volumeReplicaSnapshotManager = newLocalVolumeReplicaSnapshotManager(lm)
 	lm.poolManager = newLocalPoolManager(lm)
-
+	lm.snapshotRestoreTimeout = snapshotRestoreTimeout
 	return lm
 }
 

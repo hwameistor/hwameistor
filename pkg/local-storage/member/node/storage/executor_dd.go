@@ -11,8 +11,9 @@ import (
 )
 
 type ddExecutor struct {
-	cmdExec exechelper.Executor
-	logger  *log.Entry
+	cmdExec          exechelper.Executor
+	restoreTimeLimit int
+	logger           *log.Entry
 }
 
 var (
@@ -22,15 +23,15 @@ var (
 
 const (
 	DiskDumpCMD       = "dd"
-	DiskDumpTimeout   = 60 * 10 // seconds
 	DiskDumpBlockSize = "bs=10M"
 )
 
-func newDDExecutor() *ddExecutor {
+func newDDExecutor(restoreTimeLimit int) *ddExecutor {
 	once.Do(func() {
 		ddExecutorInstance = &ddExecutor{
-			cmdExec: nsexecutor.New(),
-			logger:  log.WithField("Module", "NodeManager/ddExecutor"),
+			cmdExec:          nsexecutor.New(),
+			restoreTimeLimit: restoreTimeLimit,
+			logger:           log.WithField("Module", "NodeManager/ddExecutor"),
 		}
 	})
 
@@ -55,7 +56,7 @@ func (dd *ddExecutor) RestoreVolumeReplicaSnapshot(snapshotRestore *apisv1alpha1
 			fmt.Sprintf("of=%s", outPutDevicePath),
 			DiskDumpBlockSize,
 		},
-		Timeout: DiskDumpTimeout,
+		Timeout: dd.restoreTimeLimit,
 	}
 
 	dd.logger.WithField("restoreVolume", outPutDevicePath).Info("Start restoring snapshot")
