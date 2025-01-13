@@ -131,6 +131,8 @@ localStorage:
       maxHAVolumeCount: 1000
       #Max LvMigrate count
       maxMigrateCount: 1
+      #Time to restore VolumeReplica Snapshot，in seconds
+      snapshotRestoreTimeout: 600
 
     imageRepository: hwameistor/local-storage
     tag: ""

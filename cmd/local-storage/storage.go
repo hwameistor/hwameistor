@@ -50,6 +50,7 @@ var (
 	logLevel                = flag.Int("v", 4 /*Log Info*/, "number for the log level verbosity")
 	migrateConcurrentNumber = flag.Int("max-migrate-count", 1, "Limit the number of concurrent migrations")
 	migrateDataNeedCheck    = flag.Bool("migrate-check", false, "Enable data verification during data migration")
+	snapshotRestoreTimeout  = flag.Int("snapshot-restore-timeout", 600, "Time to restore VolumeReplica Snapshot，in seconds")
 )
 
 var BUILDVERSION, BUILDTIME, GOVERSION string
@@ -112,6 +113,7 @@ func main() {
 
 	localctrl.MigrateConcurrentNumber = *migrateConcurrentNumber
 	localctrl.MigrateDataNeedCheck = *migrateDataNeedCheck
+	member.SnapshotRestoreTimeout = *snapshotRestoreTimeout
 
 	systemConfig, err := getSystemConfig()
 	if err != nil {
