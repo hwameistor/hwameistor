@@ -135,6 +135,10 @@ func (m *manager) volumeReplicaSnapshotReadyOrNot(snapshot *apisv1alpha1.LocalVo
 		return err
 	}
 
+	if err = m.storageMgr.Registry().SyncNodeResources(); err != nil {
+		return err
+	}
+
 	return m.apiClient.Status().Update(context.TODO(), snapshot)
 }
 
@@ -166,6 +170,10 @@ func (m *manager) volumeReplicaSnapshotDelete(snapshot *apisv1alpha1.LocalVolume
 		}
 	} else if err != storage.ErrorSnapshotNotFound {
 		logCtx.WithError(err).Error("Failed to get VolumeReplica Snapshot from host")
+		return err
+	}
+
+	if err := m.storageMgr.Registry().SyncNodeResources(); err != nil {
 		return err
 	}
 
