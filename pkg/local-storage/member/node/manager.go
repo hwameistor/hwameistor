@@ -323,7 +323,7 @@ func (m *manager) setupInformers() {
 
 func (m *manager) handleVolumeReplicaSnapshotRestoreAddEvent(newObject interface{}) {
 	volumeReplicaSnapshotRecover, ok := newObject.(*apisv1alpha1.LocalVolumeReplicaSnapshotRestore)
-	if ok {
+	if ok && volumeReplicaSnapshotRecover.Spec.NodeName == m.name {
 		m.volumeReplicaSnapshotRestoreTaskQueue.Add(volumeReplicaSnapshotRecover.Name)
 		return
 	}
