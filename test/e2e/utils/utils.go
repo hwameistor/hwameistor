@@ -278,6 +278,48 @@ func ConfigureEnvironment(ctx context.Context) error {
 	return err
 }
 
+func ConfigureUpdateEnvironment(ctx context.Context) error {
+	logrus.Info("start rollback")
+	_, _ = RunInLinux("sh rollback.sh")
+
+	err := wait.PollImmediate(10*time.Second, 20*time.Minute, func() (done bool, err error) {
+		output, _ := RunInLinux("kubectl get pod -A  |grep -v Running |wc -l")
+		if output != "1\n" {
+			return false, nil
+		} else {
+			logrus.Info("k8s ready")
+			return true, nil
+		}
+
+	})
+	if err != nil {
+		logrus.Error(err)
+	}
+	output, err := RunInLinux("sh install_hw.sh")
+	if err != nil {
+		logrus.Printf("Install the latest version ERROR:%+v ", err)
+		return err
+	}
+	logrus.Info("Install the latest version of hwameistor")
+	logrus.Info(output)
+	time.Sleep(2 * time.Minute)
+	logrus.Infof("helm upgrade hwameistor")
+	output, err = RunInLinux("helm upgrade hwameistor -n hwameistor ../../helm/hwameistor --create-namespace --set global.k8sImageRegistry=m.daocloud.io/registry.k8s.io")
+	if err != nil {
+		logrus.Printf(" installHwameiStorByHelm ERROR:%+v ", err)
+		return err
+	}
+	logrus.Info(output)
+
+	installDrbd()
+	if err != nil {
+		logrus.Error(err)
+	}
+	ApplyAdmissionCa()
+	err = CheckingComponentStatus(ctx)
+	return err
+}
+
 func ConfigureEnvironmentForPrTest(ctx context.Context) error {
 	err := wait.PollImmediate(10*time.Second, 10*time.Minute, func() (done bool, err error) {
 		output, _ := RunInLinux("kubectl get pod -A  |grep -v Running |wc -l")
