@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	volume "github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/controller/volume"
+	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/member/controller/volume"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 
@@ -85,11 +85,6 @@ func (s *Server) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublish
 }
 
 func (s *Server) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeStatsRequest) (*csi.NodeGetVolumeStatsResponse, error) {
-	vol, err := s.vm.GetVolumeInfo(req.VolumeId)
-	if err != nil {
-		return nil, fmt.Errorf("volume %s not found: %v", req.VolumeId, err)
-	}
-
 	ready, err := s.vm.VolumeIsReady(req.VolumeId)
 	if err != nil || !ready {
 		return &csi.NodeGetVolumeStatsResponse{
@@ -100,13 +95,13 @@ func (s *Server) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeS
 		}, nil
 	}
 
-	args := []string{"--output=size,used,avail,itotal,iused,iavail", "--block-size=1", vol.AttachPath}
+	args := []string{"--output=size,used,avail,itotal,iused,iavail", "--block-size=1", req.VolumePath}
 	out, err := utils.BashWithArgs("df", args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute df command: %v", err)
 	}
 
-	lines := strings.Split(string(out), "\n")
+	lines := strings.Split(out, "\n")
 	if len(lines) < 2 {
 		return nil, fmt.Errorf("unexpected df output format")
 	}
