@@ -1,0 +1,21 @@
+v0.16.2/ 2025-2-25
+========================
+## LVM volume management enhancements
+- csi: use volumePath from metrics request #1650 (@SSmallMonster )
+## Scheduler
+- Filter non-lsn nodes to optimize scheduling efficiency #1653 (@peng9808 )
+## Volume Snapshot
+- Added configuration snapshot restore time, default is 10 minutes #1639 (@peng9808 )
+- Fixed the issue that the snapshot volume was not calculated in the ca… #1640 (@peng9808 )
+- Compare nodename before enqueue replica snapshort restore task #1647 (@SSmallMonster )
+## Test
+- [Test]Refactoring the adaptation test #1625 (@FloatXD )
+- [Test]add more version in adaptation-test #1642 (@FloatXD )
+- [Test]add update test #1643 (@FloatXD )
+## Documentation
+- [DOC]fix doc for #1630 #1631 #1632 (@FloatXD )
+- [DOC]fix doc for #1629 #1633 (@FloatXD )
+- update docs disk.md #1652 (@peng9808 )
+## Others
+- fix: upgrade @node-rs/jieba from 1.10.3 to 1.10.4 #1644 (@windsonsea )
+- ci: push operator-sdk cli for builder #1655 (@SSmallMonster )
