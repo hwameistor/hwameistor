@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"strconv"
 	"strings"
 
@@ -56,6 +57,16 @@ func (s *LVMVolumeScheduler) CSIDriverName() string {
 }
 
 func (s *LVMVolumeScheduler) Filter(lvs []string, pendingPVCs []*corev1.PersistentVolumeClaim, node *corev1.Node) (bool, error) {
+	//Filter non-lsn nodes
+	lsn := v1alpha1.LocalStorageNode{}
+	if err := s.apiClient.Get(context.Background(), client.ObjectKey{Name: node.Name}, &lsn); err != nil {
+		if errors.IsNotFound(err) {
+			return false, nil
+		} else {
+			return false, err
+		}
+	}
+
 	canSchedule, err := s.filterForExistingLocalVolumes(lvs, node)
 	if err != nil {
 		return false, fmt.Errorf("failed to filter existing volume: %s", err)
