@@ -63,7 +63,7 @@ func TestNewLocalVolumeController(t *testing.T) {
 	r := ReconcileLocalVolume{
 		client:        cli,
 		scheme:        s,
-		storageMember: member.Member().ConfigureController(s).ConfigureBase(fakeNodename, fakeNamespace, systemConfig, cli, ca, fakeRecorder).ConfigureNode(s),
+		storageMember: member.Member().ConfigureController(s).ConfigureBase(fakeNodename, fakeNamespace, systemConfig, 0, cli, ca, fakeRecorder).ConfigureNode(s),
 	}
 
 	// Create LocalVolume

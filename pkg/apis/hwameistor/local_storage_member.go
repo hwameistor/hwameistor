@@ -27,7 +27,7 @@ type LocalStorageMember interface {
 	Run(stopCh <-chan struct{})
 
 	// ******  configuration ******* //
-	ConfigureBase(name string, namespace string, haSystemConfig apisv1alpha1.SystemConfig, cli client.Client, informersCache cache.Cache, recorder record.EventRecorder) LocalStorageMember
+	ConfigureBase(name string, namespace string, haSystemConfig apisv1alpha1.SystemConfig, pvMetadataSize int, cli client.Client, informersCache cache.Cache, recorder record.EventRecorder) LocalStorageMember
 
 	ConfigureNode(scheme *runtime.Scheme) LocalStorageMember
 

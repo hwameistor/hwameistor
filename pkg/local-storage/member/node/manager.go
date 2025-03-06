@@ -42,6 +42,8 @@ const (
 type manager struct {
 	name string
 
+	pvMetadataSize int
+
 	namespace string
 
 	snapshotRestoreTimeout int
@@ -97,7 +99,7 @@ type manager struct {
 
 // New node manager
 func New(name string, namespace string, cli client.Client, informersCache runtimecache.Cache, config apisv1alpha1.SystemConfig,
-	scheme *runtime.Scheme, recorder record.EventRecorder, snapshotRestoreTimeout int) (apis.NodeManager, error) {
+	scheme *runtime.Scheme, recorder record.EventRecorder, snapshotRestoreTimeout int, pvMetadataSize int) (apis.NodeManager, error) {
 	configManager, err := NewConfigManager(name, config, cli)
 	if err != nil {
 		return nil, err
@@ -131,6 +133,7 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 		scheme:           scheme,
 		recorder:         recorder,
 		mounter:          csi.NewLinuxMounter(log.WithField("Module", "NodeManager")),
+		pvMetadataSize:   pvMetadataSize,
 	}, nil
 }
 
