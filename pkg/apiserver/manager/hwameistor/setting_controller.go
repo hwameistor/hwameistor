@@ -83,7 +83,7 @@ func (settingController *SettingController) GetDRBDSetting() (*hwameistorapi.Drb
 			drbdSetting.Version = label
 		}
 		log.Infof("job.Status.Succeeded = %v, job.Status.Active = %v", job.Status.Succeeded, job.Status.Active)
-		if job.Status.Succeeded != 0 && (job.Status.Active == job.Status.Succeeded) {
+		if job.Status.Succeeded > 0 && job.Status.Active == 0 {
 			drbdSetting.State = hwameistorapi.DrbdModuleStatusEnabled
 			drbdSetting.Enable = true
 		} else {
