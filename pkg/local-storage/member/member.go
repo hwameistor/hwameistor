@@ -39,6 +39,8 @@ func newMember() localapis.LocalStorageMember {
 type localStorageMember struct {
 	name string
 
+	pvMetadataSize int
+
 	version string
 
 	namespace string
@@ -64,9 +66,10 @@ type localStorageMember struct {
 	recorder record.EventRecorder
 }
 
-func (m *localStorageMember) ConfigureBase(name string, namespace string, systemConfig apisv1alpha1.SystemConfig,
+func (m *localStorageMember) ConfigureBase(name string, namespace string, systemConfig apisv1alpha1.SystemConfig, pvMetadataSize int,
 	cli client.Client, informersCache cache.Cache, recorder record.EventRecorder) localapis.LocalStorageMember {
 	m.name = name
+	m.pvMetadataSize = pvMetadataSize
 	m.version = localapis.Version
 	m.namespace = namespace
 	m.apiClient = cli
@@ -80,7 +83,7 @@ func (m *localStorageMember) ConfigureBase(name string, namespace string, system
 func (m *localStorageMember) ConfigureNode(scheme *runtime.Scheme) localapis.LocalStorageMember {
 	if m.nodeManager == nil {
 		var err error
-		m.nodeManager, err = localnode.New(m.name, m.namespace, m.apiClient, m.informersCache, m.systemConfig, scheme, m.recorder, m.snapshotRestoreTimeout)
+		m.nodeManager, err = localnode.New(m.name, m.namespace, m.apiClient, m.informersCache, m.systemConfig, scheme, m.recorder, m.snapshotRestoreTimeout, m.pvMetadataSize)
 		if err != nil {
 			panic(err)
 		}
