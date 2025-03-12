@@ -62,7 +62,7 @@ func nodeGetRunE(_ *cobra.Command, args []string) error {
 				disk.Spec.Owner, disk.Spec.HasPartition, disk.Spec.DiskAttributes.Protocol})
 		}
 	}
-	formatter.PrintTable("Disks", disksHeader, disksRows)
+	formatter.PrintTable("Node Disks", disksHeader, disksRows)
 	// Print node's volumes
 	volumeController, err := manager.NewLocalVolumeController()
 	if err != nil {
