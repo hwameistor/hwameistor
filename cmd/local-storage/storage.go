@@ -51,6 +51,7 @@ var (
 	migrateConcurrentNumber = flag.Int("max-migrate-count", 1, "Limit the number of concurrent migrations")
 	migrateDataNeedCheck    = flag.Bool("migrate-check", false, "Enable data verification during data migration")
 	snapshotRestoreTimeout  = flag.Int("snapshot-restore-timeout", 600, "Time to restore VolumeReplica Snapshot，in seconds")
+	pvMetadataSize          = flag.Int("pv-metadata-size", 4*1024*1024, "The size of the metadata of the PV in Bytes, default 4MB")
 )
 
 var BUILDVERSION, BUILDTIME, GOVERSION string
@@ -162,7 +163,7 @@ func main() {
 
 	//initialize the local storage node/member as:
 	log.Info("Configuring the Local Storage Member")
-	storageMember := member.Member().ConfigureBase(*nodeName, *namespace, systemConfig, mgr.GetClient(), mgr.GetCache(),
+	storageMember := member.Member().ConfigureBase(*nodeName, *namespace, systemConfig, *pvMetadataSize, mgr.GetClient(), mgr.GetCache(),
 		mgr.GetEventRecorderFor(fmt.Sprintf("%s/%s", "localstoragemanager", *nodeName))).
 		ConfigureNode(mgr.GetScheme()).
 		ConfigureController(mgr.GetScheme()).

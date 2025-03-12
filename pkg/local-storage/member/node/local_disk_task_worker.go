@@ -148,6 +148,7 @@ func (m *manager) handleDiskStateChange(localDisk *apisv1alpha1.LocalDisk) {
 
 func (m *manager) needResizePVCapacity(currentCapacity, recordCapacity int64) bool {
 	// consider metadata size, the capacity in pv may smaller than actual disk capacity
-	var pe = 4 * 1024 * 1024
-	return math.Abs(float64(currentCapacity-recordCapacity)) > float64(pe)
+	// sometimes the difference between storage-pool capacity and disk capacity is bigger than metadata size
+	// more details can be found in #1660
+	return math.Abs(float64(currentCapacity-recordCapacity)) > float64(m.pvMetadataSize)
 }
