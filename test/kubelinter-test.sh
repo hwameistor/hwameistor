@@ -8,7 +8,7 @@ then
   echo "kube-linter could not be found"
   wget https://github.com/stackrox/kube-linter/releases/download/v0.7.2/kube-linter-linux.tar.gz
   tar -zxvf kube-linter-linux.tar.gz
-  sudo chmod +x kube-linter-linux
+  sudo chmod +x kube-linter
   sudo cp kube-linter /usr/local/bin/kube-linter
 else
   echo "kube-linter is installed"
