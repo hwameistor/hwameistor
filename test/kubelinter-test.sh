@@ -8,8 +8,8 @@ then
   echo "kube-linter could not be found"
   wget https://github.com/stackrox/kube-linter/releases/download/v0.7.2/kube-linter-linux.tar.gz
   tar -zxvf kube-linter-linux.tar.gz
-  chmod +x kube-linter-linux
-  cp kube-linter /usr/local/bin/kube-linter
+  sudo chmod +x kube-linter-linux
+  sudo cp kube-linter /usr/local/bin/kube-linter
 else
   echo "kube-linter is installed"
 fi
@@ -18,8 +18,8 @@ if ! command -v jq &> /dev/null
 then
   echo "jq could not be found"
   wget https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64
-  chmod +x jq-linux-amd64
-  cp jq-linux-amd64 /usr/local/bin/jq
+  sudo chmod +x jq-linux-amd64
+  sudo cp jq-linux-amd64 /usr/local/bin/jq
 else
   echo "jq is installed"
 fi
