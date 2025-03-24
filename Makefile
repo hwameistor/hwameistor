@@ -530,3 +530,4 @@ GOLANGLINT_BIN=$(shell go env GOPATH)/bin/golangci-lint
 else
 GOLANGLINT_BIN=$(shell which golangci-lint)
 endif
+
