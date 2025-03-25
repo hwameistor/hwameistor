@@ -41,15 +41,28 @@ func nodeGetRunE(_ *cobra.Command, args []string) error {
 	})
 
 	// Print node's disks
-	disks, err := c.LocalDiskListByNode(api.QueryPage{PageSize: -1, NodeName: nodeName})
-	disksHeader := table.Row{"#", "Path", "Status", "Reserved", "Raid", "Type", "Owner", "TotalCapacity"}
-	disksRows := make([]table.Row, len(disks.LocalDisks))
-	for i, disk := range disks.LocalDisks {
-		disksRows[i] = table.Row{i + 1, disk.Spec.DevicePath, disk.Status.State, disk.Spec.Reserved, disk.Spec.HasRAID,
-			disk.Spec.DiskAttributes.Type, disk.Spec.Owner, formatter.FormatBytesToSize(disk.TotalCapacityBytes)}
+	dc, err := manager.NewLocalDiskController()
+	if err != nil {
+		return err
 	}
-	formatter.PrintTable("Node disks", disksHeader, disksRows)
 
+	disks, err := dc.ListLocalDisk()
+	if err != nil {
+		return err
+	}
+	disksHeader := table.Row{"#", "DevPath", "Status", "Reserved", "Raid", "DiskType",
+		"Capacity", "Owner", "Partitioned", "Protocol"}
+	var disksRows []table.Row
+	index := 0
+	for _, disk := range disks.Items {
+		if nodeName == disk.Spec.NodeName {
+			index++
+			disksRows = append(disksRows, table.Row{index, disk.Spec.DevicePath, disk.Status.State,
+				disk.Spec.Reserved, disk.Spec.HasRAID, disk.Spec.DiskAttributes.Type, formatter.FormatBytesToSize(disk.Spec.Capacity),
+				disk.Spec.Owner, disk.Spec.HasPartition, disk.Spec.DiskAttributes.Protocol})
+		}
+	}
+	formatter.PrintTable("Node Disks", disksHeader, disksRows)
 	// Print node's volumes
 	volumeController, err := manager.NewLocalVolumeController()
 	if err != nil {
