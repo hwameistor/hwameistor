@@ -29,15 +29,13 @@ metadata:
   annotations:
     snapshot.storage.kubernetes.io/is-default-class: "true"
 parameters:
-  snapsize: "1073741824"
+  snapsize: "1073741824" # the size of VolumeSnapshot
 driver: lvm.hwameistor.io
 deletionPolicy: Delete
 ```
 
-- snapsize：It specifies the size of VolumeSnapshot
-
 :::note
-If the snapsize parameter is not specified, the size of the created snapshot is consistent with the size of the source volume.
+If the `snapsize` parameter is not specified, the size of the created snapshot is consistent with the size of the source volume.
 :::
 
 After you create a VolumeSnapshotClass, you can use it to create VolumeSnapshot.
@@ -54,10 +52,8 @@ metadata:
 spec:
   volumeSnapshotClassName: hwameistor-storage-lvm-snapshot
   source:
-    persistentVolumeClaimName: local-storage-pvc-lvm
+    persistentVolumeClaimName: local-storage-pvc-lvm # PVC to create VolumeSnapshot
 ```
-
-- persistentVolumeClaimName：It specifies the PVC to create the VolumeSnapshot
 
 After creating a VolumeSnapshot, you can check the VolumeSnapshot using the following command.
 
@@ -85,7 +81,7 @@ After creating a VolumeSnapshot, you can restore and rollback the VolumeSnapshot
 
 ## Restore VolumeSnapshot
 
-You can create pvc to restore VolumeSnapshot, as follows:
+You can create PVC to restore VolumeSnapshot, as follows:
 
 ```yaml
 apiVersion: v1
@@ -120,11 +116,9 @@ kind: LocalVolumeSnapshotRestore
 metadata:
   name: rollback-test
 spec:
-  sourceVolumeSnapshot: snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110
+  sourceVolumeSnapshot: snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110 # LocalVolumeSnapshot to be rollback
   restoreType: "rollback"
 ```
-
-- sourceVolumeSnapshot：It specifies the LocalVolumeSnapshot to be rollback.
 
 Observing the created LocalVolumeSnapshotRestore, you can understand the entire rollback process through the state. After the rollback is complete, the corresponding LocalVolumeSnapshotRestore will be deleted.
 
