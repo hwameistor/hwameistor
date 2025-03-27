@@ -29,15 +29,13 @@ metadata:
   annotations:
     snapshot.storage.kubernetes.io/is-default-class: "true"
 parameters:
-  snapsize: "1073741824"
+  snapsize: "1073741824" # 卷快照的大小
 driver: lvm.hwameistor.io
 deletionPolicy: Delete
 ```
 
-- snapsize：指定创建卷快照的大小。
-
 :::note
-如果不指定 snapsize 参数，那么创建的快照大小和源卷的大小一致。
+如果不指定 `snapsize` 参数，那么创建的快照大小和源卷的大小一致。
 :::
 
 创建 VolumeSnapshotClass 后，您可以使用它来创建 VolumeSnapshot。
@@ -54,10 +52,8 @@ metadata:
 spec:
   volumeSnapshotClassName: hwameistor-storage-lvm-snapshot
   source:
-    persistentVolumeClaimName: local-storage-pvc-lvm
+    persistentVolumeClaimName: local-storage-pvc-lvm # 要创建快照的 PVC
 ```
-
-- persistentVolumeClaimName：指定要创建快照的 PVC。
 
 创建 VolumeSnapshot 后，您可以使用如下命令检查 VolumeSnapshot。
 
@@ -85,7 +81,7 @@ snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110   1073741824   pvc-967baffd-ce1
 
 ## 对卷快照进行还原操作
 
-可以创建 pvc，对卷快照进行还原操作。具体如下：
+可以创建 PVC，对卷快照进行还原操作。具体如下：
 
 ```yaml
 apiVersion: v1
@@ -120,11 +116,9 @@ kind: LocalVolumeSnapshotRestore
 metadata:
   name: rollback-test
 spec:
-  sourceVolumeSnapshot: snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110
+  sourceVolumeSnapshot: snapcontent-0fc17697-68ea-49ce-8e4c-7a791e315110 # 要进行回滚操作的本地卷快照
   restoreType: "rollback"
 ```
-
-- sourceVolumeSnapshot：指定要进行回滚操作的本地卷快照。
 
 对创建的 LocalVolumeSnapshotRestore 进行观察，可以通过状态了解整个回滚的过程。回滚结束后，对应的 LocalVolumeSnapshotRestore 会被删除。
 
