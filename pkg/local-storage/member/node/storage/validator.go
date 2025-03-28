@@ -45,6 +45,7 @@ func (cr *validator) canCreateVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica,
 	if err := cr.checkPerVolumeCapacityLimit(vr, reg); err != nil {
 		return err
 	}
+	// TODO check thin pool
 	return nil
 }
 

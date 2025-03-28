@@ -29,6 +29,9 @@ type LocalVolumeReplicaSpec struct {
 	// VolumeEncrypt is the encryption config of the volume
 	VolumeEncrypt VolumeEncrypt `json:"volumeEncrypt,omitempty"`
 
+	// Thin is to indicate if the volume is thin provisioned or not
+	Thin bool `json:"thin,omitempty"`
+
 	// Delete is to indicate where the replica should be deleted or not.
 	// It's different from the regular resource delete interface in Kubernetes.
 	// The purpose is to protect it from any mistakes

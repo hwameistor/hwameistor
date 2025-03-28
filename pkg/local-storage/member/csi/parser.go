@@ -2,9 +2,10 @@ package csi
 
 import (
 	"fmt"
-	"github.com/container-storage-interface/spec/lib/go/csi"
 	"strconv"
 	"strings"
+
+	"github.com/container-storage-interface/spec/lib/go/csi"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
@@ -30,6 +31,7 @@ type volumeParameters struct {
 	snapshot           string
 	encryptSecretNName string
 	encryptType        string
+	thin               bool
 }
 
 func parseParameters(req *csi.CreateVolumeRequest) (*volumeParameters, error) {
@@ -79,6 +81,15 @@ func parseParameters(req *csi.CreateVolumeRequest) (*volumeParameters, error) {
 		snapshot = req.VolumeContentSource.GetSnapshot().SnapshotId
 	}
 
+	thin := false
+	thinValue, ok := params[apisv1alpha1.VolumeParameterThin]
+	if ok && strings.ToLower(thinValue) == "true" {
+		if convertible || replicaNumber != 1 {
+			return nil, fmt.Errorf("thin provision is not supported for HA volume")
+		}
+		thin = true
+	}
+
 	return &volumeParameters{
 		poolClass: poolClass,
 		// poolType:      poolType,
@@ -92,5 +103,6 @@ func parseParameters(req *csi.CreateVolumeRequest) (*volumeParameters, error) {
 		snapshot:           snapshot,
 		encryptSecretNName: params[encryptSecretNNameKey], /* optional */
 		encryptType:        params[encryptTypeKey],        /* optional */
+		thin:               thin,
 	}, nil
 }

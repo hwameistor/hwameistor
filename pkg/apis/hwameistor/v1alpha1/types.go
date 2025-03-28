@@ -133,6 +133,7 @@ const (
 	VolumeParameterConvertible      = "convertible"
 	VolumeParameterThroughput       = "provision-throughput-on-creation"
 	VolumeParameterIOPS             = "provision-iops-on-creation"
+	VolumeParameterThin             = "thin"
 )
 
 // consts for snapshot class

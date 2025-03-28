@@ -160,6 +160,7 @@ func (p *plugin) createEmptyVolumeFromRequest(ctx context.Context, req *csi.Crea
 	vol.Spec.PersistentVolumeClaimNamespace = params.pvcNamespace
 	vol.Spec.VolumeGroup = lvg.Name
 	vol.Spec.Accessibility.Nodes = lvg.Spec.Accessibility.Nodes
+	vol.Spec.Thin = params.thin
 	vol.Spec.VolumeQoS = apisv1alpha1.VolumeQoS{
 		Throughput: params.throughput,
 		IOPS:       params.iops,

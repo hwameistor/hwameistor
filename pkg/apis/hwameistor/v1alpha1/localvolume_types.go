@@ -49,6 +49,9 @@ type LocalVolumeSpec struct {
 	// Important: node will manage volume replica according this config
 	Config *VolumeConfig `json:"config,omitempty"`
 
+	// Thin is to indicate if the volume is thin provisioned or not
+	Thin bool `json:"thin,omitempty"`
+
 	// Delete is to indicate where the replica should be deleted or not.
 	// It's different from the regular resource delete interface in Kubernetes.
 	// The purpose is to protect it from any mistakes

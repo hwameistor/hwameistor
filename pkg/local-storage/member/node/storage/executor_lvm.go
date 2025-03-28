@@ -82,19 +82,21 @@ type lvsReportRecord struct {
 }
 
 type lvRecord struct {
-	LvPath        string `json:"lv_path"`
-	Name          string `json:"lv_name,omitempty"`
-	PoolName      string `json:"vg_name,omitempty"`
-	ThinPoolName  string `json:"pool_lv,omitempty"`
-	LvCapacity    string `json:"lv_size"`
-	Origin        string `json:"origin,omitempty"`
-	DataPercent   string `json:"data_percent,omitempty"`
-	LVSnapInvalid string `json:"lv_snapshot_invalid,omitempty"`
-	LVMergeFailed string `json:"lv_merge_failed,omitempty"`
-	SnapPercent   string `json:"snap_percent,omitempty"`
-	LVMerging     string `json:"lv_merging,omitempty"`
-	LVConverting  string `json:"lv_converting,omitempty"`
-	LVTime        string `json:"lv_time,omitempty"`
+	LvPath         string `json:"lv_path"`
+	Name           string `json:"lv_name,omitempty"`
+	PoolName       string `json:"vg_name,omitempty"`
+	ThinPoolName   string `json:"pool_lv,omitempty"`
+	LvCapacity     string `json:"lv_size"`
+	Origin         string `json:"origin,omitempty"`
+	DataPercent    string `json:"data_percent,omitempty"`
+	LVSnapInvalid  string `json:"lv_snapshot_invalid,omitempty"`
+	LVMergeFailed  string `json:"lv_merge_failed,omitempty"`
+	SnapPercent    string `json:"snap_percent,omitempty"`
+	LVMerging      string `json:"lv_merging,omitempty"`
+	LVConverting   string `json:"lv_converting,omitempty"`
+	LVTime         string `json:"lv_time,omitempty"`
+	Segtype        string `json:"segtype,omitempty"`
+	LvMetadataSize string `json:"lv_metadata_size,omitempty"`
 }
 
 // type vgStatus struct {
@@ -275,14 +277,21 @@ func (lvm *lvmExecutor) CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeRep
 	// 	stripNum = vgStatus.actPVCount
 	// }
 
+	sizeStr := utils.ConvertNumericToLVMBytes(replica.Spec.RequiredCapacityBytes)
 	options := []string{
-		"--size", utils.ConvertNumericToLVMBytes(replica.Spec.RequiredCapacityBytes),
 		"--stripes", fmt.Sprintf("%d", 1),
+	}
+	if replica.Spec.Thin {
+		// TODO 设计thin pool
+		options = append(options, "-V", sizeStr, "--thin", "--thinpool", "HwameistorThinPool", "-W", "y")
+	} else {
+		options = append(options, "--size", sizeStr)
 	}
 	if err := lvm.lvcreate(replica.Spec.VolumeName, replica.Spec.PoolName, options); err != nil {
 		return nil, err
 	}
 
+	// TODO 可以填充更多信息
 	// query current status of the replica
 	record, err := lvm.lvRecord(replica.Spec.VolumeName, replica.Spec.PoolName)
 	if err != nil {
@@ -877,7 +886,7 @@ func (lvm *lvmExecutor) lvs() (*lvsReport, error) {
 	params := exechelper.ExecParams{
 		CmdName: "lvs",
 		CmdArgs: []string{"-a", "-o", "lv_path,lv_name,vg_name,lv_attr,lv_size,pool_lv,origin,data_percent,metadata_percent,move_pv,mirror_log,copy_percent,convert_lv," +
-			"lv_snapshot_invalid,lv_merge_failed,snap_percent,lv_device_open,lv_merging,lv_converting,lv_time", "--reportformat", "json", "--units", "B"},
+			"lv_snapshot_invalid,lv_merge_failed,snap_percent,lv_device_open,lv_merging,lv_converting,lv_time,segtype,lv_metadata_size", "--reportformat", "json", "--units", "B"},
 	}
 	res := lvm.cmdExec.RunCommand(params)
 	if res.ExitCode != 0 {
