@@ -362,7 +362,3 @@ Steps to Disable Auto-Injection:
     ```
     This ensures that Pods in the labeled Namespace will not have hwameistor-scheduler auto-injected.
 
-**Notes:**
-    - This method is particularly useful for system-level Namespaces where hwameistor volumes are unnecessary.
-    - The default exclusion of kube-system and hwameistor Namespaces avoids conflicts in core system operations.
-
