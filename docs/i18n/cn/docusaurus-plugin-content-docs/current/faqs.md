@@ -326,5 +326,12 @@ https://kubernetes.io/blog/2021/12/15/kubernetes-1-23-prevent-persistentvolume-l
         - external-provisioner.volume.kubernetes.io/finalizer
    ```
 
+## Q9: 如何禁用 hwameistor-scheduler 自动注入？
+
+在一些场景下，用户可能不希望 hwameistor-scheduler 自动注入到 Pod 中，比如某些 Namespace 明确不使用 hwameistor 数据卷，
+像是一些系统级别 Namespace，那么可以通过给指定 Namespace 添加 `hwameistor.io/webhook=ignore` 的 Label 来禁用 hwameistor-scheduler 的自动注入。
+
+默认情况下，kube-system 和 hwameistor 命名空间会自动添加 `hwameistor.io/webhook=ignore` 的 Label。
+:::note
 
 

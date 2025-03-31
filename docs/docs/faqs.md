@@ -345,3 +345,24 @@ You can check whether the finalizers of the existing pv contain external-provisi
         - external-attacher/lvm-hwameistor-io
         - external-provisioner.volume.kubernetes.io/finalizer
    ```
+
+## Q9: How to Disable hwameistor-scheduler Auto-Injection?
+
+In some scenarios, users may want to prevent hwameistor-scheduler from being automatically injected into Pods.
+For example, specific Namespaces (such as system-level ones) that do not use hwameistor volumes can disable auto-injection
+by adding the label hwameistor.io/webhook=ignore to the target Namespace.
+
+By default, the **kube-system** and **hwameistor** Namespaces automatically have the `hwameistor.io/webhook=ignore` label applied.
+
+Steps to Disable Auto-Injection:
+1. Label the Namespace
+    Use the following command to add the label to a specific Namespace:
+    ```bash
+    kubectl label namespace <namespace-name> hwameistor.io/webhook=ignore
+    ```
+    This ensures that Pods in the labeled Namespace will not have hwameistor-scheduler auto-injected.
+
+**Notes:**
+    - This method is particularly useful for system-level Namespaces where hwameistor volumes are unnecessary.
+    - The default exclusion of kube-system and hwameistor Namespaces avoids conflicts in core system operations.
+
