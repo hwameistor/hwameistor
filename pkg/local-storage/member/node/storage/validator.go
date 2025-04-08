@@ -46,6 +46,8 @@ func (cr *validator) canCreateVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica,
 		return err
 	}
 	// TODO check thin pool
+
+	// TODO check over provision
 	return nil
 }
 
@@ -67,6 +69,7 @@ func (cr *validator) canExpandVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica,
 	// validate for to-extend capacity
 	newVr := vr.DeepCopy()
 	newVr.Spec.RequiredCapacityBytes = newCapacityBytes - vr.Status.AllocatedCapacityBytes
+	// TODO thin provision process
 	if err := cr.checkPoolCapacity(newVr, reg); err != nil {
 		return err
 	}

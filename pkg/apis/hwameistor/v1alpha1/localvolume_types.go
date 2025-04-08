@@ -7,6 +7,18 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+type OriginType string
+
+const (
+	OriginTypeVolume   = "volume"
+	OriginTypeSnapshot = "snapshot"
+)
+
+type ThinOrigin struct {
+	OriginType OriginType `json:"originType,omitempty"`
+	OriginId   string     `json:"originId,omitempty"`
+}
+
 // LocalVolumeSpec defines the desired state of LocalVolume
 type LocalVolumeSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -51,6 +63,9 @@ type LocalVolumeSpec struct {
 
 	// Thin is to indicate if the volume is thin provisioned or not
 	Thin bool `json:"thin,omitempty"`
+
+	// ThinOrigin is the origin info of a thin volume
+	ThinOrigin *ThinOrigin `json:"thinOrigin,omitempty"`
 
 	// Delete is to indicate where the replica should be deleted or not.
 	// It's different from the regular resource delete interface in Kubernetes.

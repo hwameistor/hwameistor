@@ -233,6 +233,7 @@ func (lvm *lvmExecutor) GetReplicas() (map[string]*apisv1alpha1.LocalVolumeRepli
 			Spec: apisv1alpha1.LocalVolumeReplicaSpec{
 				VolumeName: lvName,
 				PoolName:   lv.PoolName,
+				Thin:       lv.Segtype == "thin",
 			},
 			Status: apisv1alpha1.LocalVolumeReplicaStatus{
 				StoragePath:            lv.LvPath,
@@ -281,13 +282,18 @@ func (lvm *lvmExecutor) CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeRep
 	options := []string{
 		"--stripes", fmt.Sprintf("%d", 1),
 	}
+	position := replica.Spec.PoolName
 	if replica.Spec.Thin {
-		// TODO 设计thin pool
-		options = append(options, "-V", sizeStr, "--thin", "--thinpool", "HwameistorThinPool", "-W", "y")
+		if replica.Spec.ThinOriginVolume == nil {
+			options = append(options, "-V", sizeStr, "--thin", "--thinpool", apisv1alpha1.ThinPoolName, "-W", "y")
+		} else {
+			position = fmt.Sprintf("%s/%s", replica.Spec.PoolName, *replica.Spec.ThinOriginVolume)
+			options = append(options, "-s", "-k", "n", "--thinpool", apisv1alpha1.ThinPoolName)
+		}
 	} else {
 		options = append(options, "--size", sizeStr)
 	}
-	if err := lvm.lvcreate(replica.Spec.VolumeName, replica.Spec.PoolName, options); err != nil {
+	if err := lvm.lvcreate(replica.Spec.VolumeName, position, options); err != nil {
 		return nil, err
 	}
 
@@ -779,6 +785,8 @@ func (lvm *lvmExecutor) lvSnapCreate(snapName string, sourceVolumePath string, s
 			"--name", snapName,
 			// only supported read-only snapshots. By default, lvm snapshot is readable and writeable
 			"--permission", "r",
+			// always active this snapshot
+			"-k", "n",
 			"--size", snapSizeStr,
 			sourceVolumePath,
 		),
@@ -805,6 +813,7 @@ func (lvm *lvmExecutor) lvRecord(lvName string, vgName string) (*lvRecord, error
 	return nil, fmt.Errorf("not found")
 }
 
+// TODO Thin pool process
 func (lvm *lvmExecutor) lvdisplay(lvPath string) (*lvStatus, error) {
 	params := exechelper.ExecParams{
 		CmdName: "lvdisplay",

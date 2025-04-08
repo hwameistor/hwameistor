@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/encrypt"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 type localVolumeReplicaManager struct {
@@ -53,6 +54,17 @@ func (mgr *localVolumeReplicaManager) CreateVolumeReplica(replica *apisv1alpha1.
 		// case 3: failed to validate replica - shouldn't happen in normal case
 		mgr.logger.WithError(err).Errorf("Failed to validate volume replica %s.", replica.Spec.VolumeName)
 		return nil, err
+	}
+
+	// extend thin volume if needed
+	if replica.Spec.Thin && replica.Spec.ThinOriginVolume != nil && newReplica.Status.AllocatedCapacityBytes < replica.Spec.RequiredCapacityBytes {
+		var err error
+		lvName := fmt.Sprintf("%s/%s", replica.Spec.PoolName, replica.Spec.VolumeName)
+		mgr.logger.WithField("lvName", lvName).Info("Thin volume should be extended")
+		newReplica, err = mgr.ExpandVolumeReplica(newReplica, replica.Spec.RequiredCapacityBytes)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// encrypt volume if needed

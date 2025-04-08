@@ -124,6 +124,10 @@ const (
 	PoolTypeRegular = "REGULAR"
 )
 
+const (
+	ThinPoolName = "LocalStorage_ThinPool"
+)
+
 // consts
 const (
 	VolumeParameterPoolClassKey     = "poolClass"
