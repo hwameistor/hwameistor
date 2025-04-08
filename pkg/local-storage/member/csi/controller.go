@@ -872,7 +872,8 @@ func (p *plugin) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 	if vol.Status.State == apisv1alpha1.VolumeStateDeleted {
 		return resp, nil
 	}
-	if vol.Status.State == apisv1alpha1.VolumeStateToBeDeleted {
+	// thin provisioning volumes can be deleted immediately
+	if vol.Status.State == apisv1alpha1.VolumeStateToBeDeleted && !vol.Spec.Thin {
 		// volume will be deleted after all snapshots removed, return directly here
 		if vss, _ := listVolumeSnapshots(vol.Name, p.apiClient); len(vss) > 0 {
 			return resp, nil
