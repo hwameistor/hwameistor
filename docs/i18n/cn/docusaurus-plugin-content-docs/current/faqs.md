@@ -43,7 +43,7 @@ HwameiStor 提供了数据卷驱逐和迁移功能。在移除或者重启一个
    该命令可以将节点上的 Pod 驱逐，并重新调度。同时，也会自动触发 HwameiStor 的数据卷驱逐行为。
    HwameiStor 会自动将该节点上的所有数据卷副本迁移到其他节点，并确保数据仍然可用。
 
-2. 检查迁移进度。
+2. 检查迁移进度。<a name="remove2"></a>
 
    ```bash
    kubectl get localstoragenode NODE -o yaml
@@ -80,7 +80,7 @@ HwameiStor 提供了数据卷驱逐和迁移功能。在移除或者重启一个
          usedVolumeCount: 1
          volumeCapacityBytesLimit: 17175674880
          ## **** 确保 volumes 字段为空 **** ##
-         volumes:  
+         volumes:
      state: Ready
    ```
 
@@ -120,7 +120,7 @@ HwameiStor 可以立即将 Pod 调度到其他数据卷所在的可用节点，�
    ```
 
    - 如果执行了第 1 步，待第 2 步成功后，用户即可重启节点。
-   - 如果没有执行第 1 步，待第 2 步成功后，用户察看数据迁移是否完成（方法如同“移除节点”的第 2 步）。
+   - 如果没有执行第 1 步，待第 2 步成功后，用户察看数据迁移是否完成（方法如同[“移除节点”的第 2 步](#remove2)）。
      待数据迁移完成后，即可重启节点。
 
    在前两步成功之后，用户可以重启节点，并等待节点系统恢复正常。
@@ -162,7 +162,7 @@ HwameiStor 可以立即将 Pod 调度到其他数据卷所在的可用节点，�
    wipefs -a /dev/sd* # 磁盘清理
    ```
 
-## Q5: 使用 Hwameistor-operator 安装后为什么没有自动创建StorageClasses
+## Q5: 使用 Hwameistor-operator 安装后为什么没有自动创建 StorageClasses
 
 可能的原因：
 
@@ -173,7 +173,7 @@ HwameiStor 可以立即将 Pod 调度到其他数据卷所在的可用节点，�
    kubectl get lsn <node-name> -o yaml # 检查磁盘是否被正常纳管
    ```
 
-2. hwameistor相关组件【不包含drbd-adapter】没有正常工作，可通过如下命令进行检查：
+2. hwameistor 相关组件【不包含 drbd-adapter】没有正常工作，可通过如下命令进行检查：
 
    > drbd-adapter 组件只有在 HA 启用时候才生效，如果没有启用，可以忽略相关错误
 
@@ -190,7 +190,7 @@ HwameiStor 可以立即将 Pod 调度到其他数据卷所在的可用节点，�
 - 不同的磁盘使用了相同的序列号
   ([Issue #1450](https://github.com/hwameistor/hwameistor/issues/1450),
   [Issue #1449](https://github.com/hwameistor/hwameistor/issues/1449))
-  
+
 > 执行 `lsblk -o +SERIAL` 命令查看磁盘序列号。
 
 手动扩容步骤:
@@ -219,18 +219,19 @@ HwameiStor 可以立即将 Pod 调度到其他数据卷所在的可用节点，�
 2. 检查节点的存储池状态并确认磁盘已经添加到存储池中:
 
    ```bash
-   $ kubectl get lsn node1 -o yaml
+   kubectl get lsn node1 -o yaml
+   ```
 
+   ```yaml
    apiVersion: hwameistor.io/v1alpha1
    kind: LocalStorageNode
    ...
    pools:
-   LocalStorage_PoolHDD:
-   class: HDD
-   disks:
-   - capacityBytes: 17175674880
-   devPath: /dev/sdb
-   ...
+     LocalStorage_PoolHDD:
+     class: HDD
+     disks:
+       - capacityBytes: 17175674880
+     devPath: /dev/sdb
    ```
 
 ## Q7: 如何手动回收数据卷？
@@ -245,38 +246,44 @@ HwameiStor 可以立即将 Pod 调度到其他数据卷所在的可用节点，�
 1. 查看 LV（数据卷） 与 PVC 的映射表，找到确定不再使用的 PVC，则对应 LV 应该是需要被回收的:
 
    ```bash
-   $ kubectl get lv | awk '{print $1}' | grep -v NAME | xargs -I {} kubectl get lv {} -o jsonpath='{.metadata.name} -> {.spec.pvcNamespace}/{.spec.pvcName}{"\n"}'
+   kubectl get lv | awk '{print $1}' | grep -v NAME | xargs -I {} kubectl get lv {} -o jsonpath='{.metadata.name} -> {.spec.pvcNamespace}/{.spec.pvcName}{"\n"}'
+   ```
 
+   ```
    pvc-be53be2a-1c4b-430e-a45b-05777c791957 -> default/data-nginx-sts-0
    ```
-   
+
 2. 查看 PVC 是否存在，如存在则删除
 3. 查看 与 LV 同名的 PV 是否存在，如存在则删除
 4. 编辑 LV，修改 spec.delete=true
 
    ```bash
-   $ kubectl edit lv pvc-be53be2a-1c4b-430e-a45b-05777c791957
-  
+   kubectl edit lv pvc-be53be2a-1c4b-430e-a45b-05777c791957
+   ```
+
+   ```yaml
    ...
-      spec:
-        delete: true
+   spec:
+     delete: true
    ```
 
 ## Q8: 为什么会有 LocalVolume 资源残留？
 
-在先删除PV再删除PVC的情况下，LocalVolume资源不会被正常回收，需要在开启HonorPVReclaimPolicy特性后，才能正常回收。
+在先删除 PV 再删除 PVC 的情况下，LocalVolume 资源不会被正常回收，需要在开启 HonorPVReclaimPolicy 特性后，才能正常回收。
+
 :::note
-参考文档:
-
-https://kubernetes.io/blog/2021/12/15/kubernetes-1-23-prevent-persistentvolume-leaks-when-deleting-out-of-order/
+参考 [Kubernetes 文档](https://kubernetes.io/blog/2021/12/15/kubernetes-1-23-prevent-persistentvolume-leaks-when-deleting-out-of-order/)。
 :::
-开启HonorPVReclaimPolicy步骤:
 
-1. 修改kube-controller-manager:
+开启 HonorPVReclaimPolicy 步骤：
+
+1. 修改 kube-controller-manager：
 
    ```bash
-   $ vi /etc/kubernetes/manifests/kube-controller-manager.yaml
-  
+   vi /etc/kubernetes/manifests/kube-controller-manager.yaml
+   ```
+
+   ```yaml
    ...
    spec:
      containers:
@@ -286,11 +293,13 @@ https://kubernetes.io/blog/2021/12/15/kubernetes-1-23-prevent-persistentvolume-l
      - --feature-gates=HonorPVReclaimPolicy=true
    ```
 
-2. 修改csi-provisioner:
+2. 修改 csi-provisioner：
 
    ```bash
-   $ kubectl edit -n hwameistor deployment.apps/hwameistor-local-storage-csi-controller
-  
+   kubectl edit -n hwameistor deployment.apps/hwameistor-local-storage-csi-controller
+   ```
+
+   ```yaml
    ...
       containers:
       - args:
@@ -306,13 +315,16 @@ https://kubernetes.io/blog/2021/12/15/kubernetes-1-23-prevent-persistentvolume-l
           value: /csi/csi.sock
         image: k8s.m.daocloud.io/sig-storage/csi-provisioner:v3.5.0
    ```
+
 3. 检查配置是否生效:
 
-可以查看现有pv的finalizers是否包含external-provisioner.volume.kubernetes.io/finalizer
+   可以查看现有 pv 的 finalizers 是否包含 external-provisioner.volume.kubernetes.io/finalizer
 
    ```bash
-   $ kubectl get pv pvc-a7b7e3ba-f837-45ba-b243-dec7d8aaed53 -o yaml
-  
+   kubectl get pv pvc-a7b7e3ba-f837-45ba-b243-dec7d8aaed53 -o yaml
+   ```
+
+   ```yaml
    ...
       apiVersion: v1
       kind: PersistentVolume
@@ -329,9 +341,19 @@ https://kubernetes.io/blog/2021/12/15/kubernetes-1-23-prevent-persistentvolume-l
 ## Q9: 如何禁用 hwameistor-scheduler 自动注入？
 
 在一些场景下，用户可能不希望 hwameistor-scheduler 自动注入到 Pod 中，比如某些 Namespace 明确不使用 hwameistor 数据卷，
-像是一些系统级别 Namespace，那么可以通过给指定 Namespace 添加 `hwameistor.io/webhook=ignore` 的 Label 来禁用 hwameistor-scheduler 的自动注入。
+像是一些系统级别 Namespace，那么可以通过给指定 Namespace 添加 `hwameistor.io/webhook=ignore` 的
+Label 来禁用 hwameistor-scheduler 的自动注入。
 
 默认情况下，kube-system 和 hwameistor 命名空间会自动添加 `hwameistor.io/webhook=ignore` 的 Label。
-:::note
 
+禁用自动注入的步骤为：
 
+1. 为 Namespace 添加标签
+
+   使用以下命令为指定的 Namespace 添加标签：  
+
+   ```bash
+   kubectl label namespace <namespace-name> hwameistor.io/webhook=ignore
+   ```  
+
+   这样可以确保该 Namespace 中的 Pod 不会被自动注入 `hwameistor-scheduler`。

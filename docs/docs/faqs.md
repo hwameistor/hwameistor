@@ -7,7 +7,7 @@ sidebar_label: "FAQs"
 
 ## Q1: How does hwameistor-scheduler work in a Kubernetes platform?
 
-The hwameistor-scheduler is deployed as a pod in the hwameistor namespace.
+The hwameistor-scheduler is deployed as a pod in the `hwameistor` namespace.
 
 ![img](img/clip_image002.png)
 
@@ -19,19 +19,19 @@ be scheduled to the worker nodes on which HwameiStor is already configured.
 This question can be extended to:
 How does HwameiStor schedule applications with multi-replica workloads and how does it differ from traditional shared storage (NFS/block)?
 
-To efficiently schedule applications with multi-replica workloads, we highly recommend using StatefulSet.
+To efficiently schedule applications with multi-replica workloads, it's highly recommended to use StatefulSet.
 
 StatefulSet ensures that replicas are deployed on the same worker node as the original pod.
 It also creates a PV data volume for each replica. If you need to deploy replicas on different
-worker nodes, manual configuration with `pod affinity` is necessary.
+worker nodes, manual configuration with `pod affinity` is required.
 
 ![img](img/clip_image004.png)
 
-We suggest using a single pod for deployment because the block data volumes can not be shared.
+It is recommended to use a single pod for deployment because the block data volumes can not be shared.
 
 ## Q3: How to maintain a Kubernetes node?
 
-HwameiStor provides the volume eviction/migration functions to keep the Pods and HwameiStor
+HwameiStor provides the volume eviction/migration feature to keep the Pods and HwameiStor
 volumes' data running when retiring/rebooting a node.
 
 ### Remove a node
@@ -51,7 +51,7 @@ Follow these steps to remove a node:
    triggers HwameiStor's data volume eviction behavior. HwameiStor will automatically
    migrate all replicas of the data volumes from that node to other nodes, ensuring data availability.
 
-2. Check the migration progress.
+2. Check the migration progress. <a name="remove2"></a>
 
    ```bash
    kubectl get localstoragenode NODE -o yaml
@@ -105,7 +105,7 @@ Follow these steps to remove a node:
 
 ### Reboot a node
 
-It usually takes a long time (~10minutes) to reboot a node. All the Pods and volumes on
+It usually takes a long time (~10 minutes) to reboot a node. All the Pods and volumes on
 the node will not work until the node is back online. For some applications like DataBase,
 the long downtime is very costly and even unacceptable.
 
@@ -120,7 +120,7 @@ replicas of the data volumes.
 
 1. Add a label (optional)
 
-   If it is not required to migrate the volumes during the node reboots,
+   If it is not required to migrate the volumes when the node reboots,
    you can add the following label to the node before draining it.
 
    ```bash
@@ -135,7 +135,7 @@ replicas of the data volumes.
 
    - If Step 1 has been performed, you can reboot the node after Step 2 is successful.
    - If Step 1 has not been performed, you should check if the data migration is complete
-     after Step 2 is successful (similar to Step 2 in [remove node](#remove-a-node)).
+     after Step 2 is successful (similar to [Step 2 in remove node](#remove2)).
      After the data migration is complete, you can reboot the node.
 
    After the first two steps are successful, you can reboot the node and wait for the node system to return to normal.
@@ -238,8 +238,10 @@ Manual expansion steps:
 2. Check the status of the node storage pool and confirm that the disk is added to the storage pool like this:
 
    ```bash
-   $ kubectl get lsn node1 -o yaml
+   kubectl get lsn node1 -o yaml
+   ```
 
+   ```yaml
    apiVersion: hwameistor.io/v1alpha1
    kind: LocalStorageNode
    ...
@@ -261,11 +263,12 @@ When do you need to manually recycle a data volume?:
 
 Manually reclaim data volumes:
 
-1. Check the mapping table between LV (data volume) and PVC, and find the PVC that is no longer in use. The corresponding LV should be recycled.:
+1. Check the mapping table between LV (data volume) and PVC, and find the PVC that is no longer in use. The corresponding LV should be recycled.
 
    ```bash
-   $ kubectl get lv | awk '{print $1}' | grep -v NAME | xargs -I {} kubectl get lv {} -o jsonpath='{.metadata.name} -> {.spec.pvcNamespace}/{.spec.pvcName}{"\n"}'
+   kubectl get lv | awk '{print $1}' | grep -v NAME | xargs -I {} kubectl get lv {} -o jsonpath='{.metadata.name} -> {.spec.pvcNamespace}/{.spec.pvcName}{"\n"}'
 
+   ```
    pvc-be53be2a-1c4b-430e-a45b-05777c791957 -> default/data-nginx-sts-0
    ```
 
@@ -274,8 +277,10 @@ Manually reclaim data volumes:
 4. Edit LV, modify spec.delete=true
 
    ```bash
-   $ kubectl edit lv pvc-be53be2a-1c4b-430e-a45b-05777c791957
+   kubectl edit lv pvc-be53be2a-1c4b-430e-a45b-05777c791957
+   ```
   
+   ```yaml
    ...
       spec:
         delete: true
@@ -285,18 +290,20 @@ Manually reclaim data volumes:
 ## Q8: Why are there residual LocalVolume resources?
 
 If you delete PV first and then PVC, LocalVolume resources will not be reclaimed normally. You need to enable the HonorPVReclaimPolicy feature to reclaim them normally.
-:::note
-Reference Documents:
 
-https://kubernetes.io/blog/2021/12/15/kubernetes-1-23-prevent-persistentvolume-leaks-when-deleting-out-of-order/
+:::note
+See [Kubernetes reference documents](https://kubernetes.io/blog/2021/12/15/kubernetes-1-23-prevent-persistentvolume-leaks-when-deleting-out-of-order/).
 :::
+
 Steps to enable HonorPVReclaimPolicy:
 
 1. Modify kube-controller-manager:
 
    ```bash
-   $ vi /etc/kubernetes/manifests/kube-controller-manager.yaml
+   vi /etc/kubernetes/manifests/kube-controller-manager.yaml
+   ```
   
+   ```yaml
    ...
    spec:
      containers:
@@ -309,8 +316,10 @@ Steps to enable HonorPVReclaimPolicy:
 2. Modify csi-provisioner:
 
    ```bash
-   $ kubectl edit -n hwameistor deployment.apps/hwameistor-local-storage-csi-controller
+   kubectl edit -n hwameistor deployment.apps/hwameistor-local-storage-csi-controller
+   ```
   
+   ```yaml
    ...
       containers:
       - args:
@@ -326,13 +335,16 @@ Steps to enable HonorPVReclaimPolicy:
           value: /csi/csi.sock
         image: k8s.m.daocloud.io/sig-storage/csi-provisioner:v3.5.0
    ```
+
 3. Check whether the configuration is effective:
 
-You can check whether the finalizers of the existing pv contain external-provisioner.volume.kubernetes.io/finalizer
+   You can check whether the finalizers of the existing PV contain `external-provisioner.volume.kubernetes.io/finalizer`:
 
    ```bash
-   $ kubectl get pv pvc-a7b7e3ba-f837-45ba-b243-dec7d8aaed53 -o yaml
-  
+   kubectl get pv pvc-a7b7e3ba-f837-45ba-b243-dec7d8aaed53 -o yaml
+   ```
+
+   ```yaml
    ...
       apiVersion: v1
       kind: PersistentVolume
@@ -355,10 +367,13 @@ by adding the label hwameistor.io/webhook=ignore to the target Namespace.
 By default, the **kube-system** and **hwameistor** Namespaces automatically have the `hwameistor.io/webhook=ignore` label applied.
 
 Steps to Disable Auto-Injection:
-1. Label the Namespace
-    Use the following command to add the label to a specific Namespace:
-    ```bash
-    kubectl label namespace <namespace-name> hwameistor.io/webhook=ignore
-    ```
-    This ensures that Pods in the labeled Namespace will not have hwameistor-scheduler auto-injected.
 
+1. Label the Namespace
+
+   Use the following command to add the label to a specific Namespace:
+
+   ```bash
+   kubectl label namespace <namespace-name> hwameistor.io/webhook=ignore
+   ```
+
+   This ensures that Pods in the labeled Namespace will not have hwameistor-scheduler auto-injected.
