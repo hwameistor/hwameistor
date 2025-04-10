@@ -2,9 +2,10 @@ package storage
 
 import (
 	"context"
-	utils2 "github.com/hwameistor/hwameistor/pkg/utils"
 	"reflect"
 	"sync"
+
+	utils2 "github.com/hwameistor/hwameistor/pkg/utils"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -121,23 +122,34 @@ func (lr *localRegistry) registerVolumeReplica(replica *apisv1alpha1.LocalVolume
 	defer lr.lock.Unlock()
 
 	pool := lr.pools[replica.Spec.PoolName]
-	oldReplica, exists := lr.replicas[replica.Spec.VolumeName]
-	if exists {
-		if oldReplica.Status.AllocatedCapacityBytes == replica.Status.AllocatedCapacityBytes {
-			logCtx.Debug("Skipped the volume replica registration because of no size change")
-			return nil
+	if replica.Spec.Thin {
+		thinPools, err := lr.lm.poolManager.GetThinPools()
+		if err != nil {
+			logCtx.WithError(err).Error("Failed to get thin pools")
+			return err
 		}
-		// update volume replica registration data
-		pool.FreeCapacityBytes += oldReplica.Status.AllocatedCapacityBytes
-		pool.UsedCapacityBytes -= oldReplica.Status.AllocatedCapacityBytes
-		pool.FreeVolumeCount++
-		pool.UsedVolumeCount--
-	}
+		pool.ThinPool = thinPools[replica.Spec.PoolName]
+	} else {
+		oldReplica, exists := lr.replicas[replica.Spec.VolumeName]
+		if exists {
+			if oldReplica.Status.AllocatedCapacityBytes == replica.Status.AllocatedCapacityBytes {
+				logCtx.Debug("Skipped the volume replica registration because of no size change")
+				return nil
+			}
+			// update volume replica registration data
+			if !replica.Spec.Thin {
+				pool.FreeCapacityBytes += oldReplica.Status.AllocatedCapacityBytes
+				pool.UsedCapacityBytes -= oldReplica.Status.AllocatedCapacityBytes
+				pool.FreeVolumeCount++
+				pool.UsedVolumeCount--
+			}
+		}
 
-	pool.FreeCapacityBytes -= replica.Status.AllocatedCapacityBytes
-	pool.UsedCapacityBytes += replica.Status.AllocatedCapacityBytes
-	pool.FreeVolumeCount--
-	pool.UsedVolumeCount++
+		pool.FreeCapacityBytes -= replica.Status.AllocatedCapacityBytes
+		pool.UsedCapacityBytes += replica.Status.AllocatedCapacityBytes
+		pool.FreeVolumeCount--
+		pool.UsedVolumeCount++
+	}
 
 	pool.Volumes = utils.AddUniqueStringItem(pool.Volumes, replica.Spec.VolumeName)
 	lr.replicas[replica.Spec.VolumeName] = replica.DeepCopy()
@@ -154,15 +166,24 @@ func (lr *localRegistry) deregisterVolumeReplica(replica *apisv1alpha1.LocalVolu
 	defer lr.lock.Unlock()
 
 	pool := lr.pools[replica.Spec.PoolName]
-	if _, exists := lr.replicas[replica.Spec.VolumeName]; !exists {
-		logCtx.Info("Skipped the deregistration for un-registered volume replica")
-		return nil
-	}
+	if replica.Spec.Thin {
+		thinPools, err := lr.lm.poolManager.GetThinPools()
+		if err != nil {
+			logCtx.WithError(err).Error("Failed to get thin pools")
+			return err
+		}
+		pool.ThinPool = thinPools[replica.Spec.PoolName]
+	} else {
+		if _, exists := lr.replicas[replica.Spec.VolumeName]; !exists {
+			logCtx.Info("Skipped the deregistration for un-registered volume replica")
+			return nil
+		}
 
-	pool.FreeCapacityBytes += replica.Status.AllocatedCapacityBytes
-	pool.UsedCapacityBytes -= replica.Status.AllocatedCapacityBytes
-	pool.FreeVolumeCount++
-	pool.UsedVolumeCount--
+		pool.FreeCapacityBytes += replica.Status.AllocatedCapacityBytes
+		pool.UsedCapacityBytes -= replica.Status.AllocatedCapacityBytes
+		pool.FreeVolumeCount++
+		pool.UsedVolumeCount--
+	}
 
 	pool.Volumes = utils.RemoveStringItem(pool.Volumes, replica.Spec.VolumeName)
 	delete(lr.replicas, replica.Spec.VolumeName)
@@ -325,6 +346,33 @@ func (lr *localRegistry) UpdatePoolExtendRecord(pool string, record apisv1alpha1
 	}
 
 	return lr.apiClient.Status().Patch(context.TODO(), storageNode, client.MergeFrom(oldStorageNode))
+}
+
+func (lr *localRegistry) UpdateThinPoolExtendRecord(tpc *apisv1alpha1.ThinPoolClaim) error {
+	storageNode := &apisv1alpha1.LocalStorageNode{}
+	if err := lr.apiClient.Get(context.TODO(), types.NamespacedName{Name: lr.lm.nodeConf.Name}, storageNode); err != nil {
+		lr.logger.WithError(err).Error("Failed to query Node")
+		return err
+	}
+
+	if storageNode.Status.ThinPoolExtendRecords == nil {
+		storageNode.Status.ThinPoolExtendRecords = make(map[string][]apisv1alpha1.ThinPoolExtendRecord, 0)
+	}
+
+	// return if already exists
+	pool := tpc.Spec.Description.PoolName
+	for _, record := range storageNode.Status.ThinPoolExtendRecords[pool] {
+		if record.Uid == string(tpc.UID) {
+			return nil
+		}
+	}
+
+	storageNode.Status.ThinPoolExtendRecords[pool] = append(storageNode.Status.ThinPoolExtendRecords[pool], apisv1alpha1.ThinPoolExtendRecord{
+		Uid:               string(tpc.UID),
+		ThinPoolClaimSpec: tpc.Spec,
+	})
+
+	return lr.apiClient.Status().Update(context.TODO(), storageNode)
 }
 
 // showReplicaOnHost debug func for now

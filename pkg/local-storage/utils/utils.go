@@ -24,6 +24,13 @@ const (
 	leaderLeaseRetryDuration = 15 * time.Second
 )
 
+const (
+	Ki int64 = 1024
+	Mi int64 = 1024 * Ki
+	Gi int64 = 1024 * Mi
+	Ti int64 = 1024 * Gi
+)
+
 var unitMap = map[string]int64{
 	"b":  1,
 	"B":  1,
@@ -241,4 +248,15 @@ func TouchFile(filepath string) error {
 
 func GetSnapshotRestoreNameByVolume(volumeName string) string {
 	return fmt.Sprintf("snaprestore-%s", volumeName)
+}
+
+func CalculateOverProvisionRatio(records []apisv1alpha1.ThinPoolExtendRecord) float64 {
+	ratio := 1.0
+	for i := len(records) - 1; i >= 0; i-- {
+		if records[i].Description.OverProvisionRatio != nil {
+			ratio = *records[i].Description.OverProvisionRatio
+			break
+		}
+	}
+	return ratio
 }

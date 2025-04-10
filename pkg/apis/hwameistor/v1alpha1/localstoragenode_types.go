@@ -35,6 +35,13 @@ const (
 	StorageExpandSuccess StorageNodeConditionType = "ExpandSuccess"
 )
 
+const (
+	ThinPoolConditionTypePoolState string = "PoolState"
+
+	ThinPoolStateReasonNormal  string = "PoolStateNormal"
+	ThinPoolStateReasonWarning string = "PoolStateWarning"
+)
+
 // LocalStorageNodeSpec defines the desired state of LocalStorageNode
 type LocalStorageNodeSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -66,6 +73,9 @@ type LocalStorageNodeStatus struct {
 	// PoolExtendRecords record why disks are joined in the pool
 	// +optional
 	PoolExtendRecords map[string]LocalDiskClaimSpecArray `json:"poolExtendRecords,omitempty"`
+
+	// ThinPoolExtendRecords record why thin pools are joined
+	ThinPoolExtendRecords map[string][]ThinPoolExtendRecord `json:"thinPoolExtendRecords,omitempty"`
 }
 
 // StorageNodeCondition describes the state of a localstoragenode at a certain point.
@@ -137,6 +147,8 @@ type LocalPool struct {
 	Disks []LocalDevice `json:"disks,omitempty"`
 
 	Volumes []string `json:"volumes,omitempty"`
+
+	ThinPool *ThinPoolInfo `json:"thinPool,omitempty"`
 }
 
 // LocalDevice is disk struct
@@ -152,6 +164,24 @@ type LocalDevice struct {
 
 	// Possible state: Available, Inuse, Offline
 	State State `json:"state,omitempty"`
+}
+
+type ThinPoolInfo struct {
+	Name                  string           `json:"name,omitempty"`
+	Size                  int64            `json:"size,omitempty"`
+	MetadataSize          int64            `json:"metadataSize,omitempty"`
+	MetadataPercent       float64          `json:"metadataPercent,omitempty"`
+	DataPercent           float64          `json:"dataPercent,omitempty"`
+	TotalProvisionedSize  int64            `json:"totalProvisionedSize,omitempty"`
+	CurrentProvisionRatio float64          `json:"currentProvisionRatio,omitempty"`
+	OverProvisionRatio    float64          `json:"overProvisionRatio,omitempty"`
+	ThinVolumes           []string         `json:"thinVolumes,omitempty"`
+	State                 metav1.Condition `json:"state,omitempty"`
+}
+
+type ThinPoolExtendRecord struct {
+	ThinPoolClaimSpec
+	Uid string `json:"uid"`
 }
 
 // +genclient

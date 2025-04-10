@@ -26,7 +26,11 @@ var (
 type LocalPoolManager interface {
 	ExtendPools(localDisks []*apisv1alpha1.LocalDevice) (bool, error)
 
+	ExtendThinPool(*apisv1alpha1.ThinPoolClaim) error
+
 	GetPools() (map[string]*apisv1alpha1.LocalPool, error)
+
+	GetThinPools() (map[string]*apisv1alpha1.ThinPoolInfo, error)
 
 	GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error)
 
@@ -80,6 +84,7 @@ type LocalRegistry interface {
 	SyncNodeResources() error
 	UpdateCondition(condition apisv1alpha1.StorageNodeCondition) error
 	UpdatePoolExtendRecord(pool string, record apisv1alpha1.LocalDiskClaimSpec) error
+	UpdateThinPoolExtendRecord(*apisv1alpha1.ThinPoolClaim) error
 }
 
 /* A set of interface for executor to implement the above Hwameistor Local Object interface */
@@ -114,7 +119,9 @@ type LocalVolumeReplicaSnapshotExecutor interface {
 //go:generate mockgen -source=types.go -destination=../../../member/node/storage/pools_executor_mock.go  -package=storage
 type LocalPoolExecutor interface {
 	ExtendPools(localDisks []*apisv1alpha1.LocalDevice) (bool, error)
+	ExtendThinPool(*apisv1alpha1.ThinPoolClaim) error
 	GetPools() (map[string]*apisv1alpha1.LocalPool, error)
+	GetThinPools() (map[string]*apisv1alpha1.ThinPoolInfo, error)
 	GetReplicas() (map[string]*apisv1alpha1.LocalVolumeReplica, error)
 	ResizePhysicalVolumes(localDisks map[string]*apisv1alpha1.LocalDevice) error
 }
