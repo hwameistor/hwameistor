@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 	"unicode"
 
@@ -259,4 +260,12 @@ func CalculateOverProvisionRatio(records []apisv1alpha1.ThinPoolExtendRecord) fl
 		}
 	}
 	return ratio
+}
+
+func IsSupportThinProvisioning(params map[string]string) bool {
+	thinValue, ok := params[apisv1alpha1.VolumeParameterThin]
+	if ok && strings.ToLower(thinValue) == "true" {
+		return true
+	}
+	return false
 }

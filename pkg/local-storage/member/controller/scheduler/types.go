@@ -14,6 +14,8 @@ type storagePoolCollection struct {
 	capacities map[string]int64
 	// collection of volume numbers of each node
 	volumeCount map[string]int64
+	// collection of thin pool capacities of each node
+	thinPoolCapacities map[string]int64
 }
 
 func newStorageCollection() *storageCollection {
@@ -21,8 +23,9 @@ func newStorageCollection() *storageCollection {
 	poolNames := []string{apisv1alpha1.PoolNameForHDD, apisv1alpha1.PoolNameForSSD, apisv1alpha1.PoolNameForNVMe}
 	for _, poolName := range poolNames {
 		collection.pools[poolName] = storagePoolCollection{
-			capacities:  map[string]int64{},
-			volumeCount: map[string]int64{},
+			capacities:         map[string]int64{},
+			volumeCount:        map[string]int64{},
+			thinPoolCapacities: map[string]int64{},
 		}
 	}
 

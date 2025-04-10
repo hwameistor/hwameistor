@@ -417,6 +417,7 @@ func constructLocalVolumeForPVC(pvc *corev1.PersistentVolumeClaim, sc *storagev1
 	lv.Spec.RequiredCapacityBytes = storage.Value()
 	replica, _ := strconv.Atoi(sc.Parameters[apisv1alpha1.VolumeParameterReplicaNumberKey])
 	lv.Spec.ReplicaNumber = int64(replica)
+	lv.Spec.Thin = utils.IsSupportThinProvisioning(sc.Parameters)
 	return &lv, nil
 }
 
