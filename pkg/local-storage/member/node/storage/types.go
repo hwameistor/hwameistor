@@ -16,6 +16,7 @@ var (
 	ErrorLocalVolumeNotFoundInVolumeGroup = errors.New("failed to find logical volume")
 	ErrorInsufficientRequestResources     = errors.New("insufficient request resources")
 	ErrorOverLimitedRequestResource       = errors.New("over limited request resources")
+	ErrorThinPoolNotFound                 = errors.New("not found thin pool")
 )
 
 /* A set of interface for Hwameistor Local Object */
