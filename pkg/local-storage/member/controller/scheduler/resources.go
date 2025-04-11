@@ -318,9 +318,14 @@ func (r *resources) predicate(vol *apisv1alpha1.LocalVolume, nodeName string) er
 		totalPool := r.totalStorages.pools[poolName]
 		allocatedPool := r.allocatedStorages.pools[poolName]
 
-		if requiredThinCapacityBytes > totalPool.thinPoolCapacities[nodeName]-allocatedPool.thinPoolCapacities[nodeName] {
+		overProvisionRatio := 1.0
+		if r.storageNodes[nodeName].Status.Pools[poolName].ThinPool != nil {
+			overProvisionRatio = r.storageNodes[nodeName].Status.Pools[poolName].ThinPool.OverProvisionRatio
+		}
+		if float64(requiredThinCapacityBytes) > overProvisionRatio*float64(totalPool.thinPoolCapacities[nodeName])-float64(allocatedPool.thinPoolCapacities[nodeName]) {
 			r.logger.WithFields(log.Fields{"pool": poolName,
 				"requiredThinCapacityBytes": requiredThinCapacityBytes,
+				"overProvisionRatio":        overProvisionRatio,
 				"totalPoolCapacityBytes":    totalPool.thinPoolCapacities[nodeName],
 				"allocatedCapacityBytes":    allocatedPool.thinPoolCapacities[nodeName]}).Error("No enough thin pool capacity")
 			return fmt.Errorf("not enough thin pool capacity in pool %s", poolName)
