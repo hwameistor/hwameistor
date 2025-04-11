@@ -35,8 +35,10 @@ type resources struct {
 	freeResourceIDList   []int
 	maxHAVolumeCount     int
 
-	allocatedStorages *storageCollection
-	totalStorages     *storageCollection
+	// TODO Why we need this? we can get this by lsn.
+	allocatedStorages            *storageCollection
+	totalStorages                *storageCollection
+	thinPoolCapacityAllocatedSet map[string]map[string]struct{}
 
 	storageNodes map[string]*apisv1alpha1.LocalStorageNode
 
@@ -53,18 +55,19 @@ type resources struct {
 
 func newResources(maxHAVolumeCount int, apiClient client.Client) *resources {
 	return &resources{
-		apiClient:            apiClient,
-		logger:               log.WithField("Module", "Scheduler/Resources"),
-		allocatedResourceIDs: make(map[string]int),
-		freeResourceIDList:   make([]int, 0, maxHAVolumeCount),
-		maxHAVolumeCount:     maxHAVolumeCount,
-		allocatedStorages:    newStorageCollection(),
-		totalStorages:        newStorageCollection(),
-		storageNodes:         map[string]*apisv1alpha1.LocalStorageNode{},
-		podToPVCs:            map[string][]string{},
-		pvcToPods:            map[string][]string{},
-		pvcsMap:              map[string]*corev1.PersistentVolumeClaim{},
-		scsMap:               map[string]*storagev1.StorageClass{},
+		apiClient:                    apiClient,
+		logger:                       log.WithField("Module", "Scheduler/Resources"),
+		allocatedResourceIDs:         make(map[string]int),
+		freeResourceIDList:           make([]int, 0, maxHAVolumeCount),
+		maxHAVolumeCount:             maxHAVolumeCount,
+		allocatedStorages:            newStorageCollection(),
+		totalStorages:                newStorageCollection(),
+		thinPoolCapacityAllocatedSet: make(map[string]map[string]struct{}),
+		storageNodes:                 map[string]*apisv1alpha1.LocalStorageNode{},
+		podToPVCs:                    map[string][]string{},
+		pvcToPods:                    map[string][]string{},
+		pvcsMap:                      map[string]*corev1.PersistentVolumeClaim{},
+		scsMap:                       map[string]*storagev1.StorageClass{},
 	}
 }
 
@@ -593,6 +596,17 @@ func (r *resources) recycleAllocatedStorage(vol *apisv1alpha1.LocalVolume) {
 
 }
 
+// Some capacities may be used to create a thin pool, so we need to add it to the r.allocatedStorages if thin pool exists
+func (r *resources) addAllocatedStorageForThinPool(poolName, nodeName string, thinPoolCapacities int64) {
+	if _, ok := r.thinPoolCapacityAllocatedSet[poolName]; !ok {
+		r.thinPoolCapacityAllocatedSet[poolName] = make(map[string]struct{})
+	}
+	if _, ok := r.thinPoolCapacityAllocatedSet[poolName][nodeName]; !ok {
+		r.allocatedStorages.pools[poolName].capacities[nodeName] += thinPoolCapacities
+		r.thinPoolCapacityAllocatedSet[poolName][nodeName] = struct{}{}
+	}
+}
+
 func (r *resources) addTotalStorage(node *apisv1alpha1.LocalStorageNode) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
@@ -604,6 +618,7 @@ func (r *resources) addTotalStorage(node *apisv1alpha1.LocalStorageNode) {
 			r.totalStorages.pools[pool.Name].thinPoolCapacities[node.Name] = 0
 		} else {
 			r.totalStorages.pools[pool.Name].thinPoolCapacities[node.Name] = pool.ThinPool.Size
+			r.addAllocatedStorageForThinPool(pool.Name, node.Name, pool.ThinPool.Size+pool.ThinPool.MetadataSize)
 		}
 	}
 	r.storageNodes[node.Name] = node
