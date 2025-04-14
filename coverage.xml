@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE coverage SYSTEM "http://cobertura.sourceforge.net/xml/coverage-04.dtd">
+<coverage line-rate="0.30769232" branch-rate="0" lines-covered="8" lines-valid="26" branches-covered="0" branches-valid="0" complexity="0" version="" timestamp="1744616696549">
+	<packages>
+		<package name="github.com/hwameistor/hwameistor/pkg/local-storage/controller/localvolume" line-rate="0.30769232" branch-rate="0" complexity="0" line-count="26" line-hits="8">
+			<classes>
+				<class name="-" filename="pkg/local-storage/controller/localvolume/localvolume_controller.go" line-rate="0" branch-rate="0" complexity="0" line-count="17" line-hits="0">
+					<methods>
+						<method name="Add" signature="" line-rate="0" branch-rate="0" complexity="0" line-count="0" line-hits="0">
+							<lines>
+								<line number="29" hits="0"></line>
+							</lines>
+						</method>
+						<method name="newReconciler" signature="" line-rate="0" branch-rate="0" complexity="0" line-count="0" line-hits="0">
+							<lines>
+								<line number="34" hits="0"></line>
+							</lines>
+						</method>
+						<method name="add" signature="" line-rate="0" branch-rate="0" complexity="0" line-count="0" line-hits="0">
+							<lines>
+								<line number="44" hits="0"></line>
+								<line number="59" hits="0"></line>
+								<line number="60" hits="0"></line>
+								<line number="61" hits="0"></line>
+								<line number="65" hits="0"></line>
+								<line number="66" hits="0"></line>
+								<line number="67" hits="0"></line>
+								<line number="70" hits="0"></line>
+								<line number="71" hits="0"></line>
+								<line number="72" hits="0"></line>
+								<line number="75" hits="0"></line>
+							</lines>
+						</method>
+						<method name="@45:3" signature="" line-rate="0" branch-rate="0" complexity="0" line-count="0" line-hits="0">
+							<lines>
+								<line number="46" hits="0"></line>
+								<line number="47" hits="0"></line>
+								<line number="48" hits="0"></line>
+								<line number="51" hits="0"></line>
+							</lines>
+						</method>
+					</methods>
+					<lines>
+						<line number="29" hits="0"></line>
+						<line number="34" hits="0"></line>
+						<line number="44" hits="0"></line>
+						<line number="59" hits="0"></line>
+						<line number="60" hits="0"></line>
+						<line number="61" hits="0"></line>
+						<line number="65" hits="0"></line>
+						<line number="66" hits="0"></line>
+						<line number="67" hits="0"></line>
+						<line number="70" hits="0"></line>
+						<line number="71" hits="0"></line>
+						<line number="72" hits="0"></line>
+						<line number="75" hits="0"></line>
+						<line number="46" hits="0"></line>
+						<line number="47" hits="0"></line>
+						<line number="48" hits="0"></line>
+						<line number="51" hits="0"></line>
+					</lines>
+				</class>
+				<class name="ReconcileLocalVolume" filename="pkg/local-storage/controller/localvolume/localvolume_controller.go" line-rate="0.8888889" branch-rate="0" complexity="0" line-count="9" line-hits="8">
+					<methods>
+						<method name="Reconcile" signature="" line-rate="0.8888889" branch-rate="0" complexity="0" line-count="0" line-hits="0">
+							<lines>
+								<line number="101" hits="1"></line>
+								<line number="102" hits="1"></line>
+								<line number="103" hits="1"></line>
+								<line number="104" hits="1"></line>
+								<line number="108" hits="1"></line>
+								<line number="111" hits="0"></line>
+								<line number="114" hits="1"></line>
+								<line number="117" hits="1"></line>
+								<line number="119" hits="1"></line>
+							</lines>
+						</method>
+					</methods>
+					<lines>
+						<line number="101" hits="1"></line>
+						<line number="102" hits="1"></line>
+						<line number="103" hits="1"></line>
+						<line number="104" hits="1"></line>
+						<line number="108" hits="1"></line>
+						<line number="111" hits="0"></line>
+						<line number="114" hits="1"></line>
+						<line number="117" hits="1"></line>
+						<line number="119" hits="1"></line>
+					</lines>
+				</class>
+			</classes>
+		</package>
+	</packages>
+	<sources>
+		<source>/home/actions-runner/_work/hwameistor/hwameistor</source>
+	</sources>
+</coverage>

@@ -1,0 +1,39 @@
+2025-04-14 07:43:19,141 - cover_agent.CoverAgent - INFO - Current Coverage: 23.08%
+2025-04-14 07:43:19,141 - cover_agent.CoverAgent - INFO - Desired Coverage: 90%
+2025-04-14 07:43:49,254 - cover_agent.CoverAgent - INFO - Current Coverage: 30.77%
+2025-04-14 07:43:49,254 - cover_agent.CoverAgent - INFO - Desired Coverage: 90%
+2025-04-14 07:44:21,397 - cover_agent.CoverAgent - INFO - Current Coverage: 30.77%
+2025-04-14 07:44:21,397 - cover_agent.CoverAgent - INFO - Desired Coverage: 90%
+2025-04-14 07:44:53,745 - cover_agent.CoverAgent - INFO - Reached maximum iteration limit without achieving desired coverage. Current Coverage: 30.77%
+2025-04-14 07:44:53,746 - cover_agent.CoverAgent - INFO - Total number of input tokens used for LLM model gpt-4o-2024-11-20: 38770
+2025-04-14 07:44:53,746 - cover_agent.CoverAgent - INFO - Total number of output tokens used for LLM model gpt-4o-2024-11-20: 3814
+coverage.out | gocov-xml > coverage.xml"
+2025-04-14 07:43:35,826 - cover_agent.UnitTestValidator - INFO - Skipping a generated test that failed
+2025-04-14 07:43:40,504 - cover_agent.UnitTestValidator - INFO - Running test with the following command: "go test -coverprofile=coverage.out ./pkg/local-storage/controller/localvolume/  && gocov convert coverage.out | gocov-xml > coverage.xml"
+2025-04-14 07:43:43,440 - cover_agent.UnitTestValidator - INFO - Test passed and coverage increased. Current coverage: 30.77%
+2025-04-14 07:43:43,594 - cover_agent.UnitTestValidator - INFO - Running test with the following command: "go test -coverprofile=coverage.out ./pkg/local-storage/controller/localvolume/  && gocov convert coverage.out | gocov-xml > coverage.xml"
+2025-04-14 07:43:46,483 - cover_agent.UnitTestValidator - INFO - Test did not increase coverage. Rolling back.
+2025-04-14 07:43:46,528 - cover_agent.UnitTestValidator - INFO - Running build/test command to generate coverage report: "go test -coverprofile=coverage.out ./pkg/local-storage/controller/localvolume/  && gocov convert coverage.out | gocov-xml > coverage.xml"
+2025-04-14 07:43:49,254 - cover_agent.UnitTestValidator - INFO - Initial coverage: 30.77%
+2025-04-14 07:44:04,144 - cover_agent.UnitTestValidator - INFO - Running test with the following command: "go test -coverprofile=coverage.out ./pkg/local-storage/controller/localvolume/  && gocov convert coverage.out | gocov-xml > coverage.xml"
+2025-04-14 07:44:04,510 - cover_agent.UnitTestValidator - INFO - Skipping a generated test that failed
+2025-04-14 07:44:08,127 - cover_agent.UnitTestValidator - INFO - Running test with the following command: "go test -coverprofile=coverage.out ./pkg/local-storage/controller/localvolume/  && gocov convert coverage.out | gocov-xml > coverage.xml"
+2025-04-14 07:44:08,732 - cover_agent.UnitTestValidator - INFO - Skipping a generated test that failed
+2025-04-14 07:44:12,851 - cover_agent.UnitTestValidator - INFO - Running test with the following command: "go test -coverprofile=coverage.out ./pkg/local-storage/controller/localvolume/  && gocov convert coverage.out | gocov-xml > coverage.xml"
+2025-04-14 07:44:15,726 - cover_agent.UnitTestValidator - INFO - Test did not increase coverage. Rolling back.
+2025-04-14 07:44:15,752 - cover_agent.UnitTestValidator - INFO - Running test with the following command: "go test -coverprofile=coverage.out ./pkg/local-storage/controller/localvolume/  && gocov convert coverage.out | gocov-xml > coverage.xml"
+2025-04-14 07:44:18,685 - cover_agent.UnitTestValidator - INFO - Test did not increase coverage. Rolling back.
+2025-04-14 07:44:18,693 - cover_agent.UnitTestValidator - INFO - Running build/test command to generate coverage report: "go test -coverprofile=coverage.out ./pkg/local-storage/controller/localvolume/  && gocov convert coverage.out | gocov-xml > coverage.xml"
+2025-04-14 07:44:21,397 - cover_agent.UnitTestValidator - INFO - Initial coverage: 30.77%
+2025-04-14 07:44:35,986 - cover_agent.UnitTestValidator - INFO - Running test with the following command: "go test -coverprofile=coverage.out ./pkg/local-storage/controller/localvolume/  && gocov convert coverage.out | gocov-xml > coverage.xml"
+2025-04-14 07:44:36,613 - cover_agent.UnitTestValidator - INFO - Skipping a generated test that failed
+2025-04-14 07:44:39,924 - cover_agent.UnitTestValidator - INFO - Running test with the following command: "go test -coverprofile=coverage.out ./pkg/local-storage/controller/localvolume/  && gocov convert coverage.out | gocov-xml > coverage.xml"
+2025-04-14 07:44:40,582 - cover_agent.UnitTestValidator - INFO - Skipping a generated test that failed
+2025-04-14 07:44:45,063 - cover_agent.UnitTestValidator - INFO - Running test with the following command: "go test -coverprofile=coverage.out ./pkg/local-storage/controller/localvolume/  && gocov convert coverage.out | gocov-xml > coverage.xml"
+2025-04-14 07:44:47,778 - cover_agent.UnitTestValidator - INFO - Test did not increase coverage. Rolling back.
+2025-04-14 07:44:47,810 - cover_agent.UnitTestValidator - INFO - Running test with the following command: "go test -coverprofile=coverage.out ./pkg/local-storage/controller/localvolume/  && gocov convert coverage.out | gocov-xml > coverage.xml"
+2025-04-14 07:44:50,518 - cover_agent.UnitTestValidator - INFO - Test did not increase coverage. Rolling back.
+2025-04-14 07:44:50,981 - cover_agent.UnitTestValidator - INFO - Running build/test command to generate coverage report: "go test -coverprofile=coverage.out ./pkg/local-storage/controller/localvolume/  && gocov convert coverage.out | gocov-xml > coverage.xml"
+2025-04-14 07:44:53,745 - cover_agent.UnitTestValidator - INFO - Initial coverage: 30.77%
+2025-04-14 07:44:53,766 - cover_agent.UnitTestValidator - INFO - Running build/test command to generate coverage report: "go test -coverprofile=coverage.out ./pkg/local-storage/controller/localvolume/  && gocov convert coverage.out | gocov-xml > coverage.xml"
+2025-04-14 07:44:56,552 - cover_agent.UnitTestValidator - INFO - Initial coverage: 30.77%
