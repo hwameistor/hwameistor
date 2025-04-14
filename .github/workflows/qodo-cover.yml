@@ -12,7 +12,7 @@ on:
 
 jobs:
   kubelinter-test:
-    runs-on: ["vsphere"]
+    runs-on: ["ubuntu"]
     timeout-minutes: 180
     steps:
       - name: delete
