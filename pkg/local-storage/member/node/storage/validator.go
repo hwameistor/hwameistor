@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"strconv"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
@@ -109,7 +110,8 @@ func (cr *validator) checkPoolCapacity(vr *apisv1alpha1.LocalVolumeReplica, reg 
 		return ErrorThinPoolNotFound
 	}
 
-	totalThinPoolSize := float64(pool.ThinPool.Size) * pool.ThinPool.OverProvisionRatio
+	overProvisionRatio, _ := strconv.ParseFloat(pool.ThinPool.OverProvisionRatio, 64)
+	totalThinPoolSize := float64(pool.ThinPool.Size) * overProvisionRatio
 	if float64(requiredCapacityBytes+pool.ThinPool.TotalProvisionedSize) > totalThinPoolSize {
 		return ErrorInsufficientRequestResources
 	}

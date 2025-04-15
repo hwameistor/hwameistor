@@ -3,6 +3,7 @@ package thinpoolclaim
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -106,6 +107,21 @@ func (r *ReconcileThinPoolClaim) Reconcile(ctx context.Context, req reconcile.Re
 
 func (r *ReconcileThinPoolClaim) processThinPoolClaimEmpty(ctx context.Context, tpc *v1alpha1.ThinPoolClaim) error {
 	log.WithField("name", tpc.Name).Info("Start processing Empty ThinPoolClaim")
+
+	if tpc.Spec.Description.OverProvisionRatio != nil {
+		overProvisionRatio, err := strconv.ParseFloat(*tpc.Spec.Description.OverProvisionRatio, 64)
+		if err != nil {
+			err = fmt.Errorf("Fail to parse .spec.description.overProvisionRatio: %w", err)
+			r.Recorder.Eventf(tpc, corev1.EventTypeWarning, v1alpha1.ThinPoolClaimEventFailed, err.Error())
+			return err
+		}
+
+		if overProvisionRatio < 1.0 {
+			err = fmt.Errorf(".spec.description.overProvisionRatio must be greater than or equal to 1.0")
+			r.Recorder.Eventf(tpc, corev1.EventTypeWarning, v1alpha1.ThinPoolClaimEventFailed, err.Error())
+			return err
+		}
+	}
 
 	tpc.Status.Status = v1alpha1.ThinPoolClaimPhasePending
 	return r.Client.Status().Update(ctx, tpc)

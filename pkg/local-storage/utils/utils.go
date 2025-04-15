@@ -251,15 +251,13 @@ func GetSnapshotRestoreNameByVolume(volumeName string) string {
 	return fmt.Sprintf("snaprestore-%s", volumeName)
 }
 
-func CalculateOverProvisionRatio(records []apisv1alpha1.ThinPoolExtendRecord) float64 {
-	ratio := 1.0
+func CalculateOverProvisionRatio(records []apisv1alpha1.ThinPoolExtendRecord) string {
 	for i := len(records) - 1; i >= 0; i-- {
 		if records[i].Description.OverProvisionRatio != nil {
-			ratio = *records[i].Description.OverProvisionRatio
-			break
+			return *records[i].Description.OverProvisionRatio
 		}
 	}
-	return ratio
+	return "1.0"
 }
 
 func IsSupportThinProvisioning(params map[string]string) bool {

@@ -710,14 +710,12 @@ func (lvm *lvmExecutor) GetThinPools() (map[string]*apisv1alpha1.ThinPoolInfo, e
 			if lvRecord.Name == apisv1alpha1.ThinPoolName {
 				size, _ := utils.ConvertLVMBytesToNumeric(lvRecord.LvCapacity)
 				mdSize, _ := utils.ConvertLVMBytesToNumeric(lvRecord.LvMetadataSize)
-				dataPercent, _ := strconv.ParseFloat(lvRecord.DataPercent, 64)
-				mdPercent, _ := strconv.ParseFloat(lvRecord.MetadataPercent, 64)
 				thinPools[lvRecord.PoolName] = &apisv1alpha1.ThinPoolInfo{
 					Name:            lvRecord.Name,
 					Size:            size,
 					MetadataSize:    mdSize,
-					MetadataPercent: mdPercent,
-					DataPercent:     dataPercent,
+					MetadataPercent: lvRecord.MetadataPercent,
+					DataPercent:     lvRecord.DataPercent,
 				}
 			}
 		}
@@ -740,14 +738,18 @@ func (lvm *lvmExecutor) GetThinPools() (map[string]*apisv1alpha1.ThinPoolInfo, e
 			return nil, fmt.Errorf("no thin pool extend records found for %s", k)
 		}
 
-		thinPools[k].CurrentProvisionRatio = float64(thinPools[k].TotalProvisionedSize) / float64(thinPools[k].Size)
+		thinPools[k].CurrentProvisionRatio = fmt.Sprintf("%.2f", float64(thinPools[k].TotalProvisionedSize)/float64(thinPools[k].Size))
 		thinPools[k].OverProvisionRatio = utils.CalculateOverProvisionRatio(lsn.Status.ThinPoolExtendRecords[k])
 
+		currentProvisionRatioFloat, _ := strconv.ParseFloat(thinPools[k].CurrentProvisionRatio, 64)
+		overProvisionRatioFloat, _ := strconv.ParseFloat(thinPools[k].OverProvisionRatio, 64)
+		metadataPercentFloat, _ := strconv.ParseFloat(thinPools[k].MetadataPercent, 64)
+
 		warningMsgs := []string{}
-		if (thinPools[k].CurrentProvisionRatio/thinPools[k].OverProvisionRatio)*100 >= ProvisionRatioPercentThreshold {
+		if (currentProvisionRatioFloat/overProvisionRatioFloat)*100 >= ProvisionRatioPercentThreshold {
 			warningMsgs = append(warningMsgs, "current provision ratio is pretty high")
 		}
-		if thinPools[k].MetadataPercent >= MetadataPercentThreshold {
+		if metadataPercentFloat >= MetadataPercentThreshold {
 			warningMsgs = append(warningMsgs, "metadata usage is pretty high, please extend it")
 		}
 

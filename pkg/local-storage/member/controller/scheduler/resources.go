@@ -320,7 +320,7 @@ func (r *resources) predicate(vol *apisv1alpha1.LocalVolume, nodeName string) er
 
 		overProvisionRatio := 1.0
 		if r.storageNodes[nodeName].Status.Pools[poolName].ThinPool != nil {
-			overProvisionRatio = r.storageNodes[nodeName].Status.Pools[poolName].ThinPool.OverProvisionRatio
+			overProvisionRatio, _ = strconv.ParseFloat(r.storageNodes[nodeName].Status.Pools[poolName].ThinPool.OverProvisionRatio, 64)
 		}
 		if float64(requiredThinCapacityBytes) > overProvisionRatio*float64(totalPool.thinPoolCapacities[nodeName])-float64(allocatedPool.thinPoolCapacities[nodeName]) {
 			r.logger.WithFields(log.Fields{"pool": poolName,

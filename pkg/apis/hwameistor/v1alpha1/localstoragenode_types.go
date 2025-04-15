@@ -75,7 +75,7 @@ type LocalStorageNodeStatus struct {
 	PoolExtendRecords map[string]LocalDiskClaimSpecArray `json:"poolExtendRecords,omitempty"`
 
 	// ThinPoolExtendRecords record why thin pools are joined
-	ThinPoolExtendRecords map[string][]ThinPoolExtendRecord `json:"thinPoolExtendRecords,omitempty"`
+	ThinPoolExtendRecords map[string]ThinPoolExtendRecordArray `json:"thinPoolExtendRecords,omitempty"`
 }
 
 // StorageNodeCondition describes the state of a localstoragenode at a certain point.
@@ -170,18 +170,20 @@ type ThinPoolInfo struct {
 	Name                  string           `json:"name,omitempty"`
 	Size                  int64            `json:"size,omitempty"`
 	MetadataSize          int64            `json:"metadataSize,omitempty"`
-	MetadataPercent       float64          `json:"metadataPercent,omitempty"`
-	DataPercent           float64          `json:"dataPercent,omitempty"`
+	MetadataPercent       string           `json:"metadataPercent,omitempty"`
+	DataPercent           string           `json:"dataPercent,omitempty"`
 	TotalProvisionedSize  int64            `json:"totalProvisionedSize,omitempty"`
-	CurrentProvisionRatio float64          `json:"currentProvisionRatio,omitempty"`
-	OverProvisionRatio    float64          `json:"overProvisionRatio,omitempty"`
+	CurrentProvisionRatio string           `json:"currentProvisionRatio,omitempty"`
+	OverProvisionRatio    string           `json:"overProvisionRatio,omitempty"`
 	ThinVolumes           []string         `json:"thinVolumes,omitempty"`
 	State                 metav1.Condition `json:"state,omitempty"`
 }
 
+type ThinPoolExtendRecordArray []ThinPoolExtendRecord
 type ThinPoolExtendRecord struct {
-	ThinPoolClaimSpec
-	Uid string `json:"uid"`
+	NodeName    string                   `json:"nodeName"`
+	Description ThinPoolClaimDescription `json:"description"`
+	Uid         string                   `json:"uid"`
 }
 
 // +genclient

@@ -356,7 +356,7 @@ func (lr *localRegistry) UpdateThinPoolExtendRecord(tpc *apisv1alpha1.ThinPoolCl
 	}
 
 	if storageNode.Status.ThinPoolExtendRecords == nil {
-		storageNode.Status.ThinPoolExtendRecords = make(map[string][]apisv1alpha1.ThinPoolExtendRecord, 0)
+		storageNode.Status.ThinPoolExtendRecords = make(map[string]apisv1alpha1.ThinPoolExtendRecordArray, 0)
 	}
 
 	// return if already exists
@@ -368,8 +368,9 @@ func (lr *localRegistry) UpdateThinPoolExtendRecord(tpc *apisv1alpha1.ThinPoolCl
 	}
 
 	storageNode.Status.ThinPoolExtendRecords[pool] = append(storageNode.Status.ThinPoolExtendRecords[pool], apisv1alpha1.ThinPoolExtendRecord{
-		Uid:               string(tpc.UID),
-		ThinPoolClaimSpec: tpc.Spec,
+		Uid:         string(tpc.UID),
+		NodeName:    tpc.Spec.NodeName,
+		Description: tpc.Spec.Description,
 	})
 
 	return lr.apiClient.Status().Update(context.TODO(), storageNode)
