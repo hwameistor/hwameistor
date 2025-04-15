@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -181,6 +182,24 @@ func (m *manager) volumeSnapshotRestorePreCheck(snapshotRestore *apisv1alpha1.Lo
 	sourceVolume, err := m.getSourceVolumeFromSnapshot(snapshotRestore.Spec.SourceVolumeSnapshot)
 	if err != nil {
 		logCtx.Error("Failed to get source volume from snapshot")
+		return err
+	}
+
+	targetVolume := &apisv1alpha1.LocalVolume{}
+	if err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: snapshotRestore.Spec.TargetVolume}, targetVolume); err != nil {
+		logCtx.Error("Failed to get target volume from snapshot")
+		return err
+	}
+
+	if sourceVolume.Spec.Thin && targetVolume.Spec.Thin {
+		err := fmt.Errorf("LocalVolumeSnapshotRestore is not supported for thin provisioned volumes, please create pvc by snapshot directly")
+		if snapshotRestore.Status.Message != err.Error() {
+			snapshotRestore.Status.Message = err.Error()
+			updateErr := m.apiClient.Status().Update(context.Background(), snapshotRestore)
+			if updateErr != nil {
+				return updateErr
+			}
+		}
 		return err
 	}
 
