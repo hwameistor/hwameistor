@@ -32,6 +32,7 @@ const (
 const (
 	MetadataPercentThreshold       = 80
 	ProvisionRatioPercentThreshold = 80
+	DataPercentThreshold = 80
 )
 
 // LVMUnknownStatus this represents no error or this status is not set
@@ -297,9 +298,7 @@ func (lvm *lvmExecutor) CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeRep
 	// }
 
 	sizeStr := utils.ConvertNumericToLVMBytes(replica.Spec.RequiredCapacityBytes)
-	options := []string{
-		"--stripes", fmt.Sprintf("%d", 1),
-	}
+	options := []string{}
 	position := replica.Spec.PoolName
 	if replica.Spec.Thin {
 		if replica.Spec.ThinOriginVolume == nil {
@@ -309,7 +308,7 @@ func (lvm *lvmExecutor) CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeRep
 			options = append(options, "-s", "-k", "n", "--thinpool", apisv1alpha1.ThinPoolName)
 		}
 	} else {
-		options = append(options, "--size", sizeStr)
+		options = append(options, "--size", sizeStr, "--stripes", fmt.Sprintf("%d", 1))
 	}
 	if err := lvm.lvcreate(replica.Spec.VolumeName, position, options); err != nil {
 		return nil, err
@@ -744,6 +743,7 @@ func (lvm *lvmExecutor) GetThinPools() (map[string]*apisv1alpha1.ThinPoolInfo, e
 		currentProvisionRatioFloat, _ := strconv.ParseFloat(thinPools[k].CurrentProvisionRatio, 64)
 		overProvisionRatioFloat, _ := strconv.ParseFloat(thinPools[k].OverProvisionRatio, 64)
 		metadataPercentFloat, _ := strconv.ParseFloat(thinPools[k].MetadataPercent, 64)
+		dataPercentFloat, _ := strconv.ParseFloat(thinPools[k].DataPercent, 64)
 
 		warningMsgs := []string{}
 		if (currentProvisionRatioFloat/overProvisionRatioFloat)*100 >= ProvisionRatioPercentThreshold {
@@ -751,6 +751,9 @@ func (lvm *lvmExecutor) GetThinPools() (map[string]*apisv1alpha1.ThinPoolInfo, e
 		}
 		if metadataPercentFloat >= MetadataPercentThreshold {
 			warningMsgs = append(warningMsgs, "metadata usage is pretty high, please extend it")
+		}
+		if dataPercentFloat >= DataPercentThreshold {
+			warningMsgs = append(warningMsgs, "data usage is pretty high, please extend it")
 		}
 
 		state := metav1.Condition{
