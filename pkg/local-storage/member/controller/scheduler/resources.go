@@ -415,8 +415,6 @@ func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1a
 
 	ctx := context.TODO()
 	lvg := &apisv1alpha1.LocalVolumeGroup{}
-	// TODO vol.Spec.VolumeGroup 是否为""?
-	logCtx.Infof("pw debug: LocalVolume %s vol.Spec.VolumeGroup is %s", vol.Name, vol.Spec.VolumeGroup)
 	if err := r.apiClient.Get(ctx, types.NamespacedName{Name: vol.Spec.VolumeGroup}, lvg); err == nil {
 		// found LVG, check if firstly, if nodes are specified in LVG, return them
 		volReplicaNumber := 0
@@ -623,7 +621,8 @@ func (r *resources) addTotalStorage(node *apisv1alpha1.LocalStorageNode) {
 			r.totalStorages.pools[pool.Name].thinPoolCapacities[node.Name] = 0
 		} else {
 			r.totalStorages.pools[pool.Name].thinPoolCapacities[node.Name] = pool.ThinPool.Size
-			r.addAllocatedStorageForThinPool(pool.Name, node.Name, pool.ThinPool.Size+pool.ThinPool.MetadataSize)
+			// data size + metadata size + pmspare size
+			r.addAllocatedStorageForThinPool(pool.Name, node.Name, pool.ThinPool.Size+pool.ThinPool.MetadataSize*2)
 		}
 	}
 	r.storageNodes[node.Name] = node

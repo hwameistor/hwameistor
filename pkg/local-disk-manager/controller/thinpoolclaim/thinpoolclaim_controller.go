@@ -111,14 +111,12 @@ func (r *ReconcileThinPoolClaim) processThinPoolClaimEmpty(ctx context.Context, 
 	if tpc.Spec.Description.OverProvisionRatio != nil {
 		overProvisionRatio, err := strconv.ParseFloat(*tpc.Spec.Description.OverProvisionRatio, 64)
 		if err != nil {
-			err = fmt.Errorf("Fail to parse .spec.description.overProvisionRatio: %w", err)
-			r.Recorder.Eventf(tpc, corev1.EventTypeWarning, v1alpha1.ThinPoolClaimEventFailed, err.Error())
+			err = fmt.Errorf("fail to parse .spec.description.overProvisionRatio: %w", err)
 			return err
 		}
 
 		if overProvisionRatio < 1.0 {
 			err = fmt.Errorf(".spec.description.overProvisionRatio must be greater than or equal to 1.0")
-			r.Recorder.Eventf(tpc, corev1.EventTypeWarning, v1alpha1.ThinPoolClaimEventFailed, err.Error())
 			return err
 		}
 	}
@@ -148,7 +146,8 @@ func (r *ReconcileThinPoolClaim) processThinPoolClaimPending(ctx context.Context
 	}
 
 	// for new thin pool
-	requiredSize := (tpc.Spec.Description.Capacity + metadataSize) * utils.Gi
+	// data size + metadata size + pmspare size
+	requiredSize := (tpc.Spec.Description.Capacity + metadataSize*2) * utils.Gi
 
 	// for existing thin pool
 	if pool.ThinPool != nil {
@@ -163,7 +162,8 @@ func (r *ReconcileThinPoolClaim) processThinPoolClaimPending(ctx context.Context
 		metaDataExtendSize := metadataSize*utils.Gi - pool.ThinPool.MetadataSize
 		dataPoolExtendSize := tpc.Spec.Description.Capacity*utils.Gi - pool.ThinPool.Size
 
-		requiredSize = dataPoolExtendSize + metaDataExtendSize
+		// data size + metadata size + pmspare size
+		requiredSize = dataPoolExtendSize + metaDataExtendSize*2
 	}
 
 	if requiredSize > pool.FreeCapacityBytes {

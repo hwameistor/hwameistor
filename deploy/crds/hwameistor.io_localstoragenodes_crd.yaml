@@ -421,6 +421,7 @@ spec:
                           capacity:
                             description: Capacity of the thin pool in GiB
                             format: int64
+                            minimum: 1
                             type: integer
                           overProvisionRatio:
                             description: 'OverProvisionRatio represents the amount
