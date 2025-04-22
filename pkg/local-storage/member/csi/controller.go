@@ -631,7 +631,7 @@ func (p *plugin) createThinVolumeWithSource(ctx context.Context, req *csi.Create
 			return resp, status.Error(codes.Internal, err.Error())
 		}
 
-		sourceVolume := apisv1alpha1.LocalVolume{}
+		var sourceSize int64
 		var lvOrigin *apisv1alpha1.ThinOrigin
 
 		switch req.VolumeContentSource.GetType().(type) {
@@ -651,15 +651,13 @@ func (p *plugin) createThinVolumeWithSource(ctx context.Context, req *csi.Create
 				return resp, status.Errorf(codes.Internal, "source snapshot %s is not ready", volumeSnapshot.Name)
 			}
 
-			if err := p.apiClient.Get(ctx, client.ObjectKey{Name: volumeSnapshot.Spec.SourceVolume}, &sourceVolume); err != nil {
-				return resp, status.Error(codes.InvalidArgument, err.Error())
-			}
-
+			sourceSize = volumeSnapshot.Status.AllocatedCapacityBytes
 			lvOrigin = &apisv1alpha1.ThinOrigin{
 				OriginType: apisv1alpha1.OriginTypeSnapshot,
 				OriginId:   volumeSnapshotId,
 			}
 		case *csi.VolumeContentSource_Volume:
+			sourceVolume := apisv1alpha1.LocalVolume{}
 			sourceVolumeId := req.VolumeContentSource.GetVolume().VolumeId
 			if err := p.apiClient.Get(ctx, client.ObjectKey{Name: sourceVolumeId}, &sourceVolume); err != nil {
 				return resp, status.Error(codes.InvalidArgument, err.Error())
@@ -673,6 +671,7 @@ func (p *plugin) createThinVolumeWithSource(ctx context.Context, req *csi.Create
 				return resp, status.Errorf(codes.Internal, "source volume %s is not ready", sourceVolume.Name)
 			}
 
+			sourceSize = sourceVolume.Status.AllocatedCapacityBytes
 			lvOrigin = &apisv1alpha1.ThinOrigin{
 				OriginType: apisv1alpha1.OriginTypeVolume,
 				OriginId:   sourceVolumeId,
@@ -682,7 +681,7 @@ func (p *plugin) createThinVolumeWithSource(ctx context.Context, req *csi.Create
 		}
 
 		requiredCapacityBytes := req.CapacityRange.RequiredBytes
-		if requiredCapacityBytes < sourceVolume.Spec.RequiredCapacityBytes {
+		if requiredCapacityBytes < sourceSize {
 			return resp, status.Errorf(codes.InvalidArgument, "the new volume required capacity must be greater than the existing volume required capacity")
 		}
 
