@@ -1,3 +1,27 @@
+v0.16.3/ 2025-4-22
+========================
+## LVM volume management enhancements
+- fix: metadata size for pv is configurable now, default is 4MB #1666(@SSmallMonster )
+## Apiserver
+- [DOC]fix doc for #1629 #1633 (@peng9808 )
+- Fixed the issue with UI displaying dbrd installation #1665 (@peng9808 )
+## Hwameictl
+- Fix the problem of using Index to query disk failure #1673(@peng9808 )Fix the problem of using Index to query disk failure #1673(@peng9808 )
+## Test
+- add ut for hwameictl #1670 (@FloatXD )
+- [Test]add v1.31.6, v1.32.0 adaptation-test #1672(@FloatXD )
+- [Test]add KubeLinter Test #1686(@FloatXD )
+- [Test]add qodo cover #1697(@FloatXD )
+## Documentation
+- Added documentation for Metrics #1667 (@FloatXD )
+- [docs] move comments into the code block #1691(@windsonsea )
+- docs: add steps to disable hwameistor-scheduler auto-injection #1692(@SSmallMonster )
+- Update faqs.md #1693(@SSmallMonster )
+- [docs] Clean up docs/faqs.md #1696(@windsonsea )
+## Others
+- update golang.org/x/crypto #1659 (@FloatXD )
+- Add node permissions to hwameistor-role so that storage nodes can be … #1662 (@peng9808 )
+
 v0.16.2/ 2025-2-25
 ========================
 ## LVM volume management enhancements
