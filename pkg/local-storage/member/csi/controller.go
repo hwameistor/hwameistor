@@ -174,7 +174,7 @@ func (p *plugin) genLovalVolumeFromRequest(ctx context.Context, req *csi.CreateV
 	}
 
 	// override blow parameters when creating volume from snapshot
-	if len(params.snapshot) > 0 {
+	if len(params.snapshot) > 0 && !params.thin {
 		sourceVolume, err := getSourceVolumeFromSnapshot(params.snapshot, p.apiClient)
 		if err != nil {
 			p.logger.WithFields(log.Fields{"volName": vol.Name, "snapshot": params.snapshot}).WithError(err).Error("Failed to get source volume from snapshot")
@@ -258,12 +258,20 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 	var selectedNodes []string
 	// for snapshot restore, volume topology must keep same with source volume
 	if len(params.snapshot) > 0 {
-		sourceVolume, err := getSourceVolumeFromSnapshot(params.snapshot, p.apiClient)
-		if err != nil {
-			p.logger.WithField("snapshot", params.snapshot).WithError(err).Error("failed to get source volume from snapshot")
-			return nil, err
+		if params.thin {
+			volumeSnapshot := apisv1alpha1.LocalVolumeSnapshot{}
+			if err := p.apiClient.Get(context.Background(), client.ObjectKey{Name: params.snapshot}, &volumeSnapshot); err != nil {
+				return nil, err
+			}
+			selectedNodes = volumeSnapshot.Spec.Accessibility.Nodes
+		} else {
+			sourceVolume, err := getSourceVolumeFromSnapshot(params.snapshot, p.apiClient)
+			if err != nil {
+				p.logger.WithField("snapshot", params.snapshot).WithError(err).Error("failed to get source volume from snapshot")
+				return nil, err
+			}
+			selectedNodes = sourceVolume.Spec.Accessibility.Nodes
 		}
-		selectedNodes = sourceVolume.Spec.Accessibility.Nodes
 	} else {
 		candidateNodes := p.storageMember.Controller().VolumeScheduler().GetNodeCandidates(lvs)
 		foundThisNode := false
@@ -632,11 +640,13 @@ func (p *plugin) createThinVolumeWithSource(ctx context.Context, req *csi.Create
 		}
 
 		var sourceSize int64
+		var sourcePoolName string
 		var lvOrigin *apisv1alpha1.ThinOrigin
 
 		switch req.VolumeContentSource.GetType().(type) {
 		case *csi.VolumeContentSource_Snapshot:
 			volumeSnapshotId := req.VolumeContentSource.GetSnapshot().SnapshotId
+			logCtx.WithField("volumeSnapshotId", volumeSnapshotId).Info("creating a new local volume from a snapshot")
 
 			volumeSnapshot := apisv1alpha1.LocalVolumeSnapshot{}
 			if err := p.apiClient.Get(ctx, client.ObjectKey{Name: volumeSnapshotId}, &volumeSnapshot); err != nil {
@@ -651,7 +661,17 @@ func (p *plugin) createThinVolumeWithSource(ctx context.Context, req *csi.Create
 				return resp, status.Errorf(codes.Internal, "source snapshot %s is not ready", volumeSnapshot.Name)
 			}
 
+			if len(volumeSnapshot.Status.ReplicaSnapshots) != 1 {
+				return resp, status.Errorf(codes.Internal, "the replica number of snapshot %s is not 1", volumeSnapshot.Name)
+			}
+
+			volumeReplicaSnapshot := apisv1alpha1.LocalVolumeReplicaSnapshot{}
+			if err := p.apiClient.Get(ctx, client.ObjectKey{Name: volumeSnapshot.Status.ReplicaSnapshots[0]}, &volumeReplicaSnapshot); err != nil {
+				return resp, status.Error(codes.Internal, err.Error())
+			}
+
 			sourceSize = volumeSnapshot.Status.AllocatedCapacityBytes
+			sourcePoolName = volumeReplicaSnapshot.Spec.PoolName
 			lvOrigin = &apisv1alpha1.ThinOrigin{
 				OriginType: apisv1alpha1.OriginTypeSnapshot,
 				OriginId:   volumeSnapshotId,
@@ -659,6 +679,8 @@ func (p *plugin) createThinVolumeWithSource(ctx context.Context, req *csi.Create
 		case *csi.VolumeContentSource_Volume:
 			sourceVolume := apisv1alpha1.LocalVolume{}
 			sourceVolumeId := req.VolumeContentSource.GetVolume().VolumeId
+			logCtx.WithField("sourceVolumeId", sourceVolumeId).Info("creating a new local volume from an existing volume")
+
 			if err := p.apiClient.Get(ctx, client.ObjectKey{Name: sourceVolumeId}, &sourceVolume); err != nil {
 				return resp, status.Error(codes.InvalidArgument, err.Error())
 			}
@@ -672,6 +694,7 @@ func (p *plugin) createThinVolumeWithSource(ctx context.Context, req *csi.Create
 			}
 
 			sourceSize = sourceVolume.Status.AllocatedCapacityBytes
+			sourcePoolName = sourceVolume.Spec.PoolName
 			lvOrigin = &apisv1alpha1.ThinOrigin{
 				OriginType: apisv1alpha1.OriginTypeVolume,
 				OriginId:   sourceVolumeId,
@@ -689,8 +712,11 @@ func (p *plugin) createThinVolumeWithSource(ctx context.Context, req *csi.Create
 		if err != nil {
 			return resp, status.Error(codes.InvalidArgument, err.Error())
 		}
-		lv.Spec.ThinOrigin = lvOrigin
+		if sourcePoolName != lv.Spec.PoolName {
+			return resp, status.Errorf(codes.InvalidArgument, "the pool name of the source volume %s and the pool name of the new volume %s are different", sourcePoolName, lv.Spec.PoolName)
+		}
 
+		lv.Spec.ThinOrigin = lvOrigin
 		logCtx.Info("Creating local volume")
 		err = p.apiClient.Create(ctx, lv)
 		if err != nil {
