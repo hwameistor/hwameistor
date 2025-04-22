@@ -32,7 +32,7 @@ const (
 const (
 	MetadataPercentThreshold       = 80
 	ProvisionRatioPercentThreshold = 80
-	DataPercentThreshold = 80
+	DataPercentThreshold           = 80
 )
 
 // LVMUnknownStatus this represents no error or this status is not set
@@ -566,14 +566,17 @@ func (lvm *lvmExecutor) CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha
 		return err
 	}
 
-	if _, ok := existReplicas[replicaSnapshot.Spec.SourceVolume]; !ok {
+	isOriginThin := false
+	if replica, ok := existReplicas[replicaSnapshot.Spec.SourceVolume]; !ok {
 		logCtx.WithError(err).Error("Failed to get source volume replica on host")
 		return ErrReplicaNotFound
+	} else {
+		isOriginThin = replica.Spec.Thin
 	}
 
 	// use volume snapshot name as snapshot volume key - avoid duplicate volume replica snapshot with the same snapshot
 	if err = lvm.lvSnapCreate(replicaSnapshot.Spec.VolumeSnapshotName, path.Join(replicaSnapshot.Spec.PoolName, replicaSnapshot.Spec.SourceVolume),
-		replicaSnapshot.Spec.RequiredCapacityBytes); err != nil {
+		replicaSnapshot.Spec.RequiredCapacityBytes, isOriginThin); err != nil {
 		lvm.logger.WithError(err).Error("Failed to create volume replica snapshot")
 		return err
 	}
@@ -918,8 +921,13 @@ func (lvm *lvmExecutor) lvcreate(lvName string, vgName string, options []string)
 	return res.Error
 }
 
-func (lvm *lvmExecutor) lvSnapCreate(snapName string, sourceVolumePath string, snapSize int64, options ...string) error {
-	snapSizeStr := utils.ConvertNumericToLVMBytes(snapSize)
+func (lvm *lvmExecutor) lvSnapCreate(snapName string, sourceVolumePath string, snapSize int64, thin bool, options ...string) error {
+	// A size option must not be used when creating a thin snapshot, otherwise a COW snapshot will be created
+	if !thin {
+		snapSizeStr := utils.ConvertNumericToLVMBytes(snapSize)
+		options = append(options, "--size", snapSizeStr)
+	}
+
 	params := exechelper.ExecParams{
 		CmdName: "lvcreate",
 		CmdArgs: append(options,
@@ -929,7 +937,6 @@ func (lvm *lvmExecutor) lvSnapCreate(snapName string, sourceVolumePath string, s
 			"--permission", "r",
 			// always active this snapshot
 			"-k", "n",
-			"--size", snapSizeStr,
 			sourceVolumePath,
 		),
 	}
