@@ -61,7 +61,7 @@ func (mgr *localVolumeReplicaManager) CreateVolumeReplica(replica *apisv1alpha1.
 		var err error
 		lvName := fmt.Sprintf("%s/%s", replica.Spec.PoolName, replica.Spec.VolumeName)
 		mgr.logger.WithField("lvName", lvName).Info("Thin volume should be extended")
-		newReplica, err = mgr.ExpandVolumeReplica(newReplica, replica.Spec.RequiredCapacityBytes)
+		newReplica, err = mgr.cmdExec.ExpandVolumeReplica(newReplica, replica.Spec.RequiredCapacityBytes)
 		if err != nil {
 			return nil, err
 		}
