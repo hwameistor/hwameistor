@@ -122,6 +122,26 @@ func (lr *localRegistry) registerVolumeReplica(replica *apisv1alpha1.LocalVolume
 	defer lr.lock.Unlock()
 
 	pool := lr.pools[replica.Spec.PoolName]
+	oldReplica, exists := lr.replicas[replica.Spec.VolumeName]
+	if exists {
+		if oldReplica.Status.AllocatedCapacityBytes == replica.Status.AllocatedCapacityBytes {
+			logCtx.Debug("Skipped the volume replica registration because of no size change")
+			return nil
+		}
+		// update volume replica registration data
+		if !replica.Spec.Thin {
+			pool.FreeCapacityBytes = pool.FreeCapacityBytes + oldReplica.Status.AllocatedCapacityBytes - replica.Status.AllocatedCapacityBytes
+			pool.UsedCapacityBytes = pool.UsedCapacityBytes + replica.Status.AllocatedCapacityBytes - oldReplica.Status.AllocatedCapacityBytes
+		}
+	} else {
+		if !replica.Spec.Thin {
+			pool.FreeCapacityBytes -= replica.Status.AllocatedCapacityBytes
+			pool.UsedCapacityBytes += replica.Status.AllocatedCapacityBytes
+		}
+		pool.FreeVolumeCount--
+		pool.UsedVolumeCount++
+	}
+
 	if replica.Spec.Thin {
 		thinPools, err := lr.lm.poolManager.GetThinPools()
 		if err != nil {
@@ -129,26 +149,6 @@ func (lr *localRegistry) registerVolumeReplica(replica *apisv1alpha1.LocalVolume
 			return err
 		}
 		pool.ThinPool = thinPools[replica.Spec.PoolName]
-	} else {
-		oldReplica, exists := lr.replicas[replica.Spec.VolumeName]
-		if exists {
-			if oldReplica.Status.AllocatedCapacityBytes == replica.Status.AllocatedCapacityBytes {
-				logCtx.Debug("Skipped the volume replica registration because of no size change")
-				return nil
-			}
-			// update volume replica registration data
-			if !replica.Spec.Thin {
-				pool.FreeCapacityBytes += oldReplica.Status.AllocatedCapacityBytes
-				pool.UsedCapacityBytes -= oldReplica.Status.AllocatedCapacityBytes
-				pool.FreeVolumeCount++
-				pool.UsedVolumeCount--
-			}
-		}
-
-		pool.FreeCapacityBytes -= replica.Status.AllocatedCapacityBytes
-		pool.UsedCapacityBytes += replica.Status.AllocatedCapacityBytes
-		pool.FreeVolumeCount--
-		pool.UsedVolumeCount++
 	}
 
 	pool.Volumes = utils.AddUniqueStringItem(pool.Volumes, replica.Spec.VolumeName)
@@ -166,6 +166,11 @@ func (lr *localRegistry) deregisterVolumeReplica(replica *apisv1alpha1.LocalVolu
 	defer lr.lock.Unlock()
 
 	pool := lr.pools[replica.Spec.PoolName]
+	if _, exists := lr.replicas[replica.Spec.VolumeName]; !exists {
+		logCtx.Info("Skipped the deregistration for un-registered volume replica")
+		return nil
+	}
+
 	if replica.Spec.Thin {
 		thinPools, err := lr.lm.poolManager.GetThinPools()
 		if err != nil {
@@ -174,17 +179,12 @@ func (lr *localRegistry) deregisterVolumeReplica(replica *apisv1alpha1.LocalVolu
 		}
 		pool.ThinPool = thinPools[replica.Spec.PoolName]
 	} else {
-		if _, exists := lr.replicas[replica.Spec.VolumeName]; !exists {
-			logCtx.Info("Skipped the deregistration for un-registered volume replica")
-			return nil
-		}
-
 		pool.FreeCapacityBytes += replica.Status.AllocatedCapacityBytes
 		pool.UsedCapacityBytes -= replica.Status.AllocatedCapacityBytes
-		pool.FreeVolumeCount++
-		pool.UsedVolumeCount--
 	}
 
+	pool.FreeVolumeCount++
+	pool.UsedVolumeCount--
 	pool.Volumes = utils.RemoveStringItem(pool.Volumes, replica.Spec.VolumeName)
 	delete(lr.replicas, replica.Spec.VolumeName)
 
