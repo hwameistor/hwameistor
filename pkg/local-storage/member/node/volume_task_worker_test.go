@@ -37,12 +37,14 @@ var (
 	fakeLocalVolumeMigrateName      = "local-volume-migrate-example"
 	fakeLocalVolumeGroupMigrateName = "local-volume-group-migrate-example"
 	fakeLocalVolumeGroupConvertName = "local-volume-group-convert-example"
+	fakeThinPoolClaimName           = "thin-pool-claim-example"
 	fakeManagerName                 = "manager-example"
 	fakeLocalVolumeUID              = "local-volume-uid"
 	fakeLocalDiskUID                = "local-disk-uid"
 	fakeLocalDiskClaimUID           = "local-disk-claim-uid"
 	fakeDevicePath                  = "/dev/test"
 	fakeLocalVolumeGroupUID         = "local-volume-group-uid"
+	fakeThinPoolClaimUID            = "thin-pool-claim-uid"
 	fakeNamespace                   = "local-volume-test"
 	fakeNodenames                   = []string{"10-6-118-10"}
 	fakeNodename                    = "10-6-118-10"
@@ -76,6 +78,7 @@ var (
 	LocalDiskKind               = "localDisk"
 	LocalDiskClaimKind          = "LocalDiskClaim"
 	LocalStorageNodeKind        = "LocalStorageNode"
+	ThinPoolClaimKind           = "ThinPoolClaim"
 	LeaseKind                   = "Lease"
 	LocalVolumeReplicaKind      = "LocalVolumeReplica"
 	LocalVolumeConvertKind      = "LocalVolumeConvert"
@@ -710,6 +713,38 @@ func GenFakeLocalVolumeReplicaObject() *apisv1alpha1.LocalVolumeReplica {
 	return lvr
 }
 
+// GenFakeThinPoolClaimObject Create tpc request
+func GenFakeThinPoolClaimObject() *apisv1alpha1.ThinPoolClaim {
+	tpc := &apisv1alpha1.ThinPoolClaim{}
+
+	TypeMeta := metav1.TypeMeta{
+		Kind:       ThinPoolClaimKind,
+		APIVersion: apiversion,
+	}
+
+	ObjectMata := metav1.ObjectMeta{
+		Name:              fakeThinPoolClaimName,
+		ResourceVersion:   "",
+		UID:               types.UID(fakeThinPoolClaimUID),
+		CreationTimestamp: metav1.Time{Time: time.Now()},
+	}
+
+	Spec := apisv1alpha1.ThinPoolClaimSpec{
+		NodeName: fakeNodename,
+		Description: apisv1alpha1.ThinPoolClaimDescription{
+			PoolName: apisv1alpha1.PoolNameForHDD,
+			Capacity: fakeDiskCapacityBytes,
+		},
+	}
+
+	tpc.ObjectMeta = ObjectMata
+	tpc.TypeMeta = TypeMeta
+	tpc.Spec = Spec
+	tpc.Status.Status = apisv1alpha1.ThinPoolClaimPhaseEmpty
+
+	return tpc
+}
+
 // CreateFakeClient Create LocalVolume resource
 func CreateFakeClient() (client.Client, *runtime.Scheme) {
 
@@ -745,6 +780,14 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 		},
 	}
 
+	tpc := GenFakeThinPoolClaimObject()
+	tpcList := &apisv1alpha1.ThinPoolClaimList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       ThinPoolClaimKind,
+			APIVersion: apiversion,
+		},
+	}
+
 	s := scheme.Scheme
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lv)
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, lvList)
@@ -754,6 +797,8 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, ldList)
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, ldc)
 	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, ldcList)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, tpc)
+	s.AddKnownTypes(apisv1alpha1.SchemeGroupVersion, tpcList)
 
 	return fake.NewClientBuilder().WithScheme(s).Build(), s
 }
