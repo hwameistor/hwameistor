@@ -48,6 +48,7 @@ var (
 	defaultDiskManagerProvider   DiskManagerProvider   = disk.New
 	defaultLocalRegistryProvider LocalRegistryProvider = registry.New
 	defaultPoolManagerProvider   PoolManagerProvider   = pool.New
+	broadcastUnavailableEvent                          = false
 )
 
 // Manager  is responsible for managing node resources, including storage pools, disks, and processing-related resources.
@@ -409,7 +410,12 @@ func (m *nodeManager) updateStorageNodeCondition(storageNode *apisv1alpha1.Local
 	// only record StorageUnavailable events
 	switch condition.Type {
 	case apisv1alpha1.StorageUnAvailable:
-		m.recorder.Event(storageNode, v1.EventTypeWarning, condition.Reason, condition.Message)
+		// sometimes user won't use disk storage, thus we broadcast storage-unavailable event only when startup
+		// more details see #1654
+		if !broadcastUnavailableEvent {
+			m.recorder.Event(storageNode, v1.EventTypeNormal, condition.Reason, condition.Message)
+			broadcastUnavailableEvent = true
+		}
 	default:
 	}
 
