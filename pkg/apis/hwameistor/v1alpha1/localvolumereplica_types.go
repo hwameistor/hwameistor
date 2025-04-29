@@ -77,6 +77,9 @@ type LocalVolumeReplicaStatus struct {
 	// InUse is one of volume replica's states, which indicates the replica is used by a Pod or not
 	// +kubebuilder:default:=false
 	InUse bool `json:"inuse,omitempty"`
+
+	// Conditions records the information of the volume replica
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // HAState is state for ha replica

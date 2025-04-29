@@ -107,6 +107,13 @@ const (
 	VolumeMigratePhasePrune Phase = "Prune"
 )
 
+// condition types
+const (
+	VolumeReplicaConditionSubmit = "Submit"
+	VolumeReplicaConditionCreate = "Create"
+	VolumeReplicaConditionCheck  = "Check"
+)
+
 // disk class
 const (
 	DiskClassNameHDD  = "HDD"
