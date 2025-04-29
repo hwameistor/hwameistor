@@ -1,11 +1,11 @@
 package csi
 
 import (
+	errorspkg "errors"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"k8s.io/apimachinery/pkg/fields"
@@ -22,6 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -33,7 +34,7 @@ import (
 var (
 	_ csi.ControllerServer = (*plugin)(nil)
 
-	createLock sync.Mutex
+	createLock *VolumeLocks = NewVolumeLocks()
 )
 
 const (
@@ -51,9 +52,10 @@ func (p *plugin) ControllerGetCapabilities(ctx context.Context, req *csi.Control
 
 // CreateVolume implementation, idempotent
 func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
-
-	createLock.Lock()
-	defer createLock.Unlock()
+	if acquired := createLock.TryAcquire(req.GetName()); !acquired {
+		return &csi.CreateVolumeResponse{}, status.Errorf(codes.Aborted, "CreateVolume is in progress for %s", req.GetName())
+	}
+	defer createLock.Release(req.GetName())
 
 	if req.VolumeContentSource != nil {
 		params, err := parseParameters(req)
@@ -84,9 +86,8 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	})
 	logCtx.Debug("CreateVolume")
 	var (
-		volume         = apisv1alpha1.LocalVolume{}
-		resp           = &csi.CreateVolumeResponse{Volume: &csi.Volume{}}
-		lastSavedError error
+		volume = apisv1alpha1.LocalVolume{}
+		resp   = &csi.CreateVolumeResponse{Volume: &csi.Volume{}}
 	)
 
 	// 1. create volume if not exist
@@ -104,13 +105,11 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	if err := wait.PollUntil(RetryInterval, func() (done bool, err error) {
 		logCtx.Debugf("Checking if LocalVolume ready to use")
 		if err = p.apiClient.Get(ctx, client.ObjectKey{Name: req.Name}, &volume); err != nil {
-			lastSavedError = status.Errorf(codes.Unavailable, "failed to get volume %s %v", volume.Name, err)
 			return false, nil
 		}
 
 		if volume.Status.State != apisv1alpha1.VolumeStateReady {
-			lastSavedError = status.Errorf(codes.Unavailable, "LocalVolume %s is NotReady", volume.Name)
-			return false, nil
+			return false, p.handleLVRResourceExhaustion(ctx, logCtx, &volume)
 		}
 
 		// volume finally ready update response info
@@ -119,21 +118,18 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 			CapacityBytes: volume.Status.AllocatedCapacityBytes,
 			VolumeContext: req.Parameters,
 		}
-		lastSavedError = nil
 		return true, nil
 	}, ctx.Done()); err != nil {
-		// must be timeout error
-		lastSavedError = status.Errorf(codes.Unavailable, "LocalVolume %s is NotReady(deadline exceeded)", volume.Name)
+		logCtx.WithError(err).Errorf("CreateVolume failed")
+		if errorspkg.Is(err, wait.ErrWaitTimeout) {
+			return resp, status.Errorf(codes.Unavailable, "LocalVolume %s is NotReady(deadline exceeded)", volume.Name)
+		}
+		return resp, err
 	}
 
-	// complete the request when context deadline exceeded or volume is ready to use
-	if lastSavedError != nil {
-		logCtx.Debugf("CreateVolume failed due to at context deadline exceeded, lastSavedError => %v", lastSavedError)
-	} else {
-		logCtx.Debugf("CreateVolume successfully, volume info => %v", resp.Volume)
-	}
+	logCtx.Debugf("CreateVolume successfully, volume info => %v", resp.Volume)
 
-	return resp, lastSavedError
+	return resp, nil
 }
 
 func (p *plugin) genLovalVolumeFromRequest(ctx context.Context, req *csi.CreateVolumeRequest) (*apisv1alpha1.LocalVolume, error) {
@@ -1426,6 +1422,25 @@ func (p *plugin) ControllerExpandVolume(ctx context.Context, req *csi.Controller
 	return resp, fmt.Errorf("volume expansion in progress")
 }
 
+func (p *plugin) handleLVRResourceExhaustion(ctx context.Context, logCtx *log.Entry, volume *apisv1alpha1.LocalVolume) error {
+	if !isLVRCreateResourceExhausted(ctx, volume.Status.Replicas, p.apiClient) {
+		return nil
+	}
+
+	// reschedule when LVR resource exhausted
+	logCtx.Infof("Try to reschedule due to exhaustion of resources")
+
+	// clean the LV
+	newVolume := volume.DeepCopy()
+	newVolume.Spec.Delete = true
+	patchErr := p.apiClient.Patch(ctx, newVolume, client.MergeFrom(volume))
+	if patchErr != nil && !errors.IsNotFound(patchErr) {
+		logCtx.WithError(patchErr).Warnf("Failed to clean LocalVolume %s", volume.Name)
+		return status.Errorf(codes.Internal, fmt.Sprintf("try to reschedule, but failed to clean LocalVolume %s", volume.Name))
+	}
+	return status.Errorf(codes.ResourceExhausted, "LocalVolume %s cannot be created due to exhaustion of resources", volume.Name)
+}
+
 // validateSnapshotRequest is used to validate a snapshot request against the volume specification and validate
 func validateSnapshotRequest(req *csi.CreateSnapshotRequest) error {
 	if len(req.Name) == 0 {
@@ -1508,4 +1523,28 @@ func listVolumeSnapshots(volumeName string, apiClient client.Client) ([]apisv1al
 		return nil, err
 	}
 	return snapList.Items, nil
+}
+
+func isLVRCreateResourceExhausted(ctx context.Context, replicas []string, apiClient client.Client) bool {
+	for _, replica := range replicas {
+		replicaObj := apisv1alpha1.LocalVolumeReplica{}
+		if err := apiClient.Get(ctx, types.NamespacedName{Name: replica}, &replicaObj); err != nil {
+			return false
+		}
+		condition := meta.FindStatusCondition(replicaObj.Status.Conditions, apisv1alpha1.VolumeReplicaConditionCreate)
+		if condition != nil && condition.Status == metav1.ConditionFalse && isResourceExhausted(condition.Message) {
+			return true
+		}
+	}
+	return false
+}
+
+func isResourceExhausted(msg string) bool {
+	if msg == "" {
+		return false
+	}
+	// "insufficient free space" is the error message returned by LVM when there's no enough disk space
+	// "insufficient request resources" is the ErrorInsufficientRequestResources in "pkg/local-storage/member/node/storage"
+	msg = strings.ToLower(msg)
+	return strings.Contains(msg, "insufficient free space") || strings.Contains(msg, "insufficient request resources")
 }

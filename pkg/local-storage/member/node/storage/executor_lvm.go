@@ -9,6 +9,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -143,6 +144,10 @@ type lvmExecutor struct {
 	lm      *LocalManager
 	cmdExec exechelper.Executor
 	logger  *log.Entry
+
+	// if multiple coroutines create volumes, snapshots, and extend volumes simultaneously, it may exceed the thin pool size
+	// so it's required to use lock to make lvm resource operations more accurate
+	lock sync.Mutex
 }
 
 func (lvm *lvmExecutor) GetPools() (map[string]*apisv1alpha1.LocalPool, error) {
@@ -295,11 +300,19 @@ func (lvm *lvmExecutor) CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeRep
 	// if replica.Spec.Striped {
 	// 	stripNum = vgStatus.actPVCount
 	// }
+	lvm.lock.Lock()
+	defer lvm.lock.Unlock()
 
 	sizeStr := utils.ConvertNumericToLVMBytes(replica.Spec.RequiredCapacityBytes)
 	options := []string{}
 	position := replica.Spec.PoolName
 	if replica.Spec.Thin {
+		// validator check is based on LocalRegistry, which may not update in time
+		// so it's better to check again based on lvm.GetThinPools
+		if err := lvm.checkThinPoolCapacity(replica.Spec.PoolName, replica.Spec.RequiredCapacityBytes); err != nil {
+			return nil, err
+		}
+
 		if replica.Spec.ThinOriginVolume == nil {
 			options = append(options, "-V", sizeStr, "--thin", "--thinpool", apisv1alpha1.ThinPoolName, "-W", "y")
 		} else {
@@ -339,6 +352,16 @@ func (lvm *lvmExecutor) ExpandVolumeReplica(replica *apisv1alpha1.LocalVolumeRep
 
 	if replica.Status.AllocatedCapacityBytes == newCapacityBytes {
 		return replica, nil
+	}
+	lvm.lock.Lock()
+	defer lvm.lock.Unlock()
+
+	if replica.Spec.Thin {
+		// validator check is based on LocalRegistry, which may not update in time
+		// so it's better to check again based on lvm.GetThinPools
+		if err := lvm.checkThinPoolCapacity(replica.Spec.PoolName, newCapacityBytes-replica.Status.AllocatedCapacityBytes); err != nil {
+			return nil, err
+		}
 	}
 
 	newLVMCapacityBytes := utils.NumericToLVMBytes(newCapacityBytes)
@@ -552,6 +575,9 @@ func (lvm *lvmExecutor) ConsistencyCheck(crdReplicas map[string]*apisv1alpha1.Lo
 
 // CreateVolumeReplicaSnapshot creates a new COW volume replica snapshot
 func (lvm *lvmExecutor) CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error {
+	lvm.lock.Lock()
+	defer lvm.lock.Unlock()
+
 	logCtx := lvm.logger.WithFields(log.Fields{
 		"volumeSnapshot":        replicaSnapshot.Spec.VolumeSnapshotName,
 		"volumeReplicaSnapshot": replicaSnapshot.Name,
@@ -571,6 +597,14 @@ func (lvm *lvmExecutor) CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha
 		return ErrReplicaNotFound
 	} else {
 		isOriginThin = replica.Spec.Thin
+	}
+
+	if isOriginThin {
+		// validator check is based on LocalRegistry, which may not update in time
+		// so it's better to check again based on lvm.GetThinPools
+		if err := lvm.checkThinPoolCapacity(replicaSnapshot.Spec.PoolName, replicaSnapshot.Spec.RequiredCapacityBytes); err != nil {
+			return err
+		}
 	}
 
 	// use volume snapshot name as snapshot volume key - avoid duplicate volume replica snapshot with the same snapshot
@@ -1241,6 +1275,26 @@ func (lvm *lvmExecutor) lvconvert(options ...string) error {
 	if res.ExitCode != 0 {
 		lvm.logger.WithError(res.Error).Error("Failed to do lvconvert")
 		return res.Error
+	}
+
+	return nil
+}
+
+func (lvm *lvmExecutor) checkThinPoolCapacity(poolName string, capacity int64) error {
+	thinPools, err := lvm.GetThinPools()
+	if err != nil {
+		return err
+	}
+	thinPool := thinPools[poolName]
+	overProvisionRatio, _ := strconv.ParseFloat(thinPool.OverProvisionRatio, 64)
+	totalThinPoolSize := float64(thinPool.Size) * overProvisionRatio
+	if float64(capacity+thinPool.TotalProvisionedSize) > totalThinPoolSize {
+		lvm.logger.WithError(ErrorInsufficientRequestResources).WithFields(log.Fields{
+			"capacity":             capacity,
+			"totalThinPoolSize":    totalThinPoolSize,
+			"totalProvisionedSize": thinPool.TotalProvisionedSize,
+		}).Error("Requested size is greater than the thin pool available space")
+		return ErrorInsufficientRequestResources
 	}
 
 	return nil
