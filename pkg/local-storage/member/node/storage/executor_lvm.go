@@ -23,10 +23,9 @@ import (
 
 // consts
 const (
-	LVMask       = 1
-	VGMask       = 1 << 1
-	PVMask       = 1 << 2
-	ThinPoolMask = 1 << 3
+	LVMask = 1
+	VGMask = 1 << 1
+	PVMask = 1 << 2
 )
 
 const (
@@ -37,7 +36,6 @@ const (
 
 // LVMUnknownStatus this represents no error or this status is not set
 const LVMUnknownStatus = "unknown"
-const Gi = 1024 * 1024 * 1024
 
 // variables
 var (
