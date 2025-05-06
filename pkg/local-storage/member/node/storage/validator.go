@@ -6,6 +6,7 @@ import (
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type validator struct{}
@@ -44,6 +45,43 @@ func (cr *validator) canCreateVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica,
 		return err
 	}
 	if err := cr.checkPerVolumeCapacityLimit(vr, reg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (cr *validator) canCreateVolumeReplicaSnapshot(snap *apisv1alpha1.LocalVolumeReplicaSnapshot, reg LocalRegistry) error {
+	existReplicas := reg.VolumeReplicas()
+	// check snapshot existed or not
+	if _, ok := existReplicas[snap.Spec.VolumeSnapshotName]; ok {
+		return ErrorReplicaSnapshotExists
+	}
+
+	// check source volume exists
+	isOriginThin := false
+	if replica, ok := existReplicas[snap.Spec.SourceVolume]; !ok {
+		return ErrReplicaNotFound
+	} else {
+		isOriginThin = replica.Spec.Thin
+	}
+
+	// build a dummy volume replica for validation
+	dummyReplica := &apisv1alpha1.LocalVolumeReplica{
+		ObjectMeta: v1.ObjectMeta{Name: snap.Name},
+		Spec: apisv1alpha1.LocalVolumeReplicaSpec{
+			VolumeName:            snap.Spec.VolumeSnapshotName,
+			PoolName:              snap.Spec.PoolName,
+			NodeName:              snap.Spec.NodeName,
+			RequiredCapacityBytes: snap.Spec.RequiredCapacityBytes,
+			Thin:                  isOriginThin,
+		},
+	}
+
+	if err := cr.checkPoolVolumeCount(dummyReplica, reg); err != nil {
+		return err
+	}
+	if err := cr.checkPoolCapacity(dummyReplica, reg); err != nil {
 		return err
 	}
 

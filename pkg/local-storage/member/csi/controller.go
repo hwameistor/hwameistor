@@ -1281,6 +1281,24 @@ func (p *plugin) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequ
 		}
 
 		if snapshot.Status.State != apisv1alpha1.VolumeStateReady {
+			// check error for the snapshot creation
+			for _, replicaSnap := range snapshot.Status.ReplicaSnapshots {
+				snapObj := apisv1alpha1.LocalVolumeReplicaSnapshot{}
+				if err := p.apiClient.Get(ctx, types.NamespacedName{Name: replicaSnap}, &snapObj); err != nil {
+					return false, err
+				}
+
+				if snapObj.Status.State != apisv1alpha1.VolumeStateCreating {
+					continue
+				}
+
+				condition := meta.FindStatusCondition(snapObj.Status.Conditions, apisv1alpha1.VolumeReplicaSnapshotConditionCreate)
+				if condition != nil && condition.Status == metav1.ConditionFalse {
+					// return snapshot error detail to user
+					return false, fmt.Errorf("failed to create snapshot: %s", condition.Message)
+				}
+			}
+
 			return false, status.Errorf(codes.Internal, "LocalVolumeSnapshot %s is NotReady", snapshot.Name)
 		}
 
@@ -1416,6 +1434,30 @@ func (p *plugin) ControllerExpandVolume(ctx context.Context, req *csi.Controller
 		logCtx.WithField("newCapacity", expand.Spec.RequiredCapacityBytes).Info("Submitted volume expansion request")
 		// still return error, will check volume size at next visit
 		return resp, fmt.Errorf("volume expansion not completed yet")
+	}
+
+	// check error for the expansion
+	for _, replica := range vol.Status.Replicas {
+		replicaObj := apisv1alpha1.LocalVolumeReplica{}
+		if err := p.apiClient.Get(ctx, types.NamespacedName{Name: replica}, &replicaObj); err != nil {
+			return resp, err
+		}
+
+		condition := meta.FindStatusCondition(replicaObj.Status.Conditions, apisv1alpha1.VolumeReplicaConditionCheck)
+		if condition != nil && condition.Status == metav1.ConditionFalse {
+			// <Recovery from volume expansion failure>: https://github.com/kubernetes/enhancements/blob/master/keps/sig-storage/1790-recover-resize-failure/README.md
+			// abort this LocalVolumeExpand, so user can retry with a smaller target size later
+			if expand.Spec.RequiredCapacityBytes != req.CapacityRange.RequiredBytes && !expand.Spec.Abort {
+				newExpand := expand.DeepCopy()
+				newExpand.Spec.Abort = true
+				patchErr := p.apiClient.Patch(ctx, newExpand, client.MergeFrom(expand))
+				if patchErr != nil && !errors.IsNotFound(patchErr) {
+					logCtx.WithError(patchErr).Warnf("Failed to abort LocalVolumeExpand %s", expand.Name)
+				}
+			}
+			// return expansion error detail to user
+			return resp, fmt.Errorf("failed to expand volume: %s", condition.Message)
+		}
 	}
 
 	logCtx.WithFields(log.Fields{"spec": expand.Spec, "status": expand.Status}).Debug("Volume expansion is still in progress")

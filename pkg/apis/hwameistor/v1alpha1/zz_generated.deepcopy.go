@@ -1745,6 +1745,13 @@ func (in *LocalVolumeReplicaSnapshotStatus) DeepCopyInto(out *LocalVolumeReplica
 		*out = (*in).DeepCopy()
 	}
 	out.Attribute = in.Attribute
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make([]metav1.Condition, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	return
 }
 

@@ -112,6 +112,10 @@ const (
 	VolumeReplicaConditionSubmit = "Submit"
 	VolumeReplicaConditionCreate = "Create"
 	VolumeReplicaConditionCheck  = "Check"
+
+	VolumeReplicaSnapshotConditionSubmit     = "Submit"
+	VolumeReplicaSnapshotConditionCreate     = "Create"
+	VolumeReplicaSnapshotConditionReadyOrNot = "ReadyOrNot"
 )
 
 // disk class
