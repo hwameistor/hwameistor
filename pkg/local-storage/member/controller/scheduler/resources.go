@@ -35,7 +35,6 @@ type resources struct {
 	freeResourceIDList   []int
 	maxHAVolumeCount     int
 
-	// TODO Why we need this? we can get this by lsn.
 	allocatedStorages            *storageCollection
 	totalStorages                *storageCollection
 	thinPoolCapacityAllocatedSet map[string]map[string]struct{}
@@ -184,8 +183,8 @@ func (r *resources) initilizeResources() {
 	r.syncTotalStorage()
 
 	// initialize allocated capacity
-	for i := range volList.Items {
-		r.addAllocatedStorage(&volList.Items[i])
+	for _, node := range r.storageNodes {
+		r.updateAllocatedStorageByLSN(node)
 	}
 }
 
@@ -318,14 +317,10 @@ func (r *resources) predicate(vol *apisv1alpha1.LocalVolume, nodeName string) er
 		totalPool := r.totalStorages.pools[poolName]
 		allocatedPool := r.allocatedStorages.pools[poolName]
 
-		overProvisionRatio := 1.0
-		if r.storageNodes[nodeName].Status.Pools[poolName].ThinPool != nil {
-			overProvisionRatio, _ = strconv.ParseFloat(r.storageNodes[nodeName].Status.Pools[poolName].ThinPool.OverProvisionRatio, 64)
-		}
-		if float64(requiredThinCapacityBytes) > overProvisionRatio*float64(totalPool.thinPoolCapacities[nodeName])-float64(allocatedPool.thinPoolCapacities[nodeName]) {
+		if float64(requiredThinCapacityBytes) > float64(totalPool.thinPoolCapacities[nodeName])-float64(allocatedPool.thinPoolCapacities[nodeName]) {
 			r.logger.WithFields(log.Fields{"pool": poolName,
+				"node":                      nodeName,
 				"requiredThinCapacityBytes": requiredThinCapacityBytes,
-				"overProvisionRatio":        overProvisionRatio,
 				"totalPoolCapacityBytes":    totalPool.thinPoolCapacities[nodeName],
 				"allocatedCapacityBytes":    allocatedPool.thinPoolCapacities[nodeName]}).Error("No enough thin pool capacity")
 			return fmt.Errorf("not enough thin pool capacity in pool %s", poolName)
@@ -333,6 +328,7 @@ func (r *resources) predicate(vol *apisv1alpha1.LocalVolume, nodeName string) er
 
 		if requiredCapacityBytes > totalPool.capacities[nodeName]-allocatedPool.capacities[nodeName] {
 			r.logger.WithFields(log.Fields{"pool": poolName,
+				"node":                   nodeName,
 				"requireCapacityBytes":   requiredCapacityBytes,
 				"totalPoolCapacityBytes": totalPool.capacities[nodeName],
 				"allocatedCapacityBytes": allocatedPool.capacities[nodeName]}).Error("No enough capacity")
@@ -357,7 +353,8 @@ func (r *resources) Score(vol *apisv1alpha1.LocalVolume, nodeName string) (score
 }
 
 func (r *resources) score(vol *apisv1alpha1.LocalVolume, nodeName string) (int64, error) {
-	r.logger.WithFields(log.Fields{"namespace": vol.Spec.PersistentVolumeClaimNamespace, "pvc": vol.Spec.PersistentVolumeClaimName, "node": nodeName}).Debug("Scoring a volume against a node")
+	logCtx := r.logger.WithFields(log.Fields{"namespace": vol.Spec.PersistentVolumeClaimNamespace, "pvc": vol.Spec.PersistentVolumeClaimName, "node": nodeName})
+	logCtx.Debug("Scoring a volume against a node")
 	if _, ok := r.storageNodes[nodeName]; !ok {
 		r.logger.WithField("node", nodeName).Error("Storage node doesn't exist")
 		return 0, fmt.Errorf("storage node %s not exists", nodeName)
@@ -383,15 +380,23 @@ func (r *resources) score(vol *apisv1alpha1.LocalVolume, nodeName string) (int64
 		totalPool := r.totalStorages.pools[poolName]
 		allocatedPool := r.allocatedStorages.pools[poolName]
 
+		freeCapacities := float64(totalPool.capacities[nodeName] - allocatedPool.capacities[nodeName])
+		freeThinCapacities := float64(totalPool.thinPoolCapacities[nodeName] - allocatedPool.thinPoolCapacities[nodeName])
+
 		// for thick lv
-		score += int64(1-float64(requiredCapacityBytes)/float64(totalPool.capacities[nodeName]-allocatedPool.capacities[nodeName])) * 100
+		if requiredCapacityBytes > 0 && freeCapacities > 0 {
+			score += int64((1 - float64(requiredCapacityBytes)/freeCapacities) * 100)
+		}
 		// for thin lv
-		if requiredThinCapacityBytes != 0 && (totalPool.thinPoolCapacities[nodeName]-allocatedPool.thinPoolCapacities[nodeName] != 0) {
-			score += int64(1-float64(requiredThinCapacityBytes)/float64(totalPool.thinPoolCapacities[nodeName]-allocatedPool.thinPoolCapacities[nodeName])) * 100
+		if requiredThinCapacityBytes > 0 && freeThinCapacities > 0 {
+			score += int64((1 - float64(requiredThinCapacityBytes)/freeThinCapacities) * 100)
 		}
 	}
 
-	return score / int64(len(vols)), nil
+	score = score / int64(len(vols))
+	logCtx.WithField("score", score).Debug("Scoring successfully")
+
+	return score, nil
 }
 
 func (r *resources) getNodeCandidates(vol *apisv1alpha1.LocalVolume) ([]*apisv1alpha1.LocalStorageNode, error) {
@@ -530,6 +535,33 @@ func (r *resources) recycleResourceID(vol *apisv1alpha1.LocalVolume) {
 	}
 }
 
+func (r *resources) updateAllocatedStorageByLSN(node *apisv1alpha1.LocalStorageNode) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	for _, pool := range node.Status.Pools {
+		r.allocatedStorages.pools[pool.Name].capacities[node.Name] = pool.UsedCapacityBytes
+		r.allocatedStorages.pools[pool.Name].volumeCount[node.Name] = pool.UsedVolumeCount
+		if pool.ThinPool == nil {
+			r.allocatedStorages.pools[pool.Name].thinPoolCapacities[node.Name] = 0
+		} else {
+			r.allocatedStorages.pools[pool.Name].thinPoolCapacities[node.Name] = pool.ThinPool.TotalProvisionedSize
+		}
+	}
+}
+
+func (r *resources) delAllocatedStorageByLSN(node *apisv1alpha1.LocalStorageNode) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	for _, pool := range node.Status.Pools {
+		delete(r.allocatedStorages.pools[pool.Name].capacities, node.Name)
+		delete(r.allocatedStorages.pools[pool.Name].volumeCount, node.Name)
+		delete(r.allocatedStorages.pools[pool.Name].thinPoolCapacities, node.Name)
+	}
+}
+
+// Deprecated: addAllocatedStorage is deprecated and will be removed in future release
 func (r *resources) addAllocatedStorage(vol *apisv1alpha1.LocalVolume) {
 	if vol.Spec.Config == nil || len(vol.Spec.Config.Replicas) == 0 {
 		return
@@ -564,6 +596,7 @@ func (r *resources) addAllocatedStorage(vol *apisv1alpha1.LocalVolume) {
 	}
 }
 
+// Deprecated: recycleAllocatedStorage is deprecated and will be removed in future release
 func (r *resources) recycleAllocatedStorage(vol *apisv1alpha1.LocalVolume) {
 	if vol.Spec.Config == nil || len(vol.Spec.Config.Replicas) == 0 {
 		return
@@ -599,17 +632,6 @@ func (r *resources) recycleAllocatedStorage(vol *apisv1alpha1.LocalVolume) {
 
 }
 
-// Some capacities may be used to create a thin pool, so we need to add it to the r.allocatedStorages if thin pool exists
-func (r *resources) addAllocatedStorageForThinPool(poolName, nodeName string, thinPoolCapacities int64) {
-	if _, ok := r.thinPoolCapacityAllocatedSet[poolName]; !ok {
-		r.thinPoolCapacityAllocatedSet[poolName] = make(map[string]struct{})
-	}
-	if _, ok := r.thinPoolCapacityAllocatedSet[poolName][nodeName]; !ok {
-		r.allocatedStorages.pools[poolName].capacities[nodeName] += thinPoolCapacities
-		r.thinPoolCapacityAllocatedSet[poolName][nodeName] = struct{}{}
-	}
-}
-
 func (r *resources) addTotalStorage(node *apisv1alpha1.LocalStorageNode) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
@@ -620,9 +642,8 @@ func (r *resources) addTotalStorage(node *apisv1alpha1.LocalStorageNode) {
 		if pool.ThinPool == nil {
 			r.totalStorages.pools[pool.Name].thinPoolCapacities[node.Name] = 0
 		} else {
-			r.totalStorages.pools[pool.Name].thinPoolCapacities[node.Name] = pool.ThinPool.Size
-			// data size + metadata size + pmspare size
-			r.addAllocatedStorageForThinPool(pool.Name, node.Name, pool.ThinPool.Size+pool.ThinPool.MetadataSize*2)
+			overProvisionRatio, _ := strconv.ParseFloat(pool.ThinPool.OverProvisionRatio, 64)
+			r.totalStorages.pools[pool.Name].thinPoolCapacities[node.Name] = int64(float64(pool.ThinPool.Size) * overProvisionRatio)
 		}
 	}
 	r.storageNodes[node.Name] = node
@@ -642,33 +663,36 @@ func (r *resources) delTotalStorage(node *apisv1alpha1.LocalStorageNode) {
 
 func (r *resources) handleNodeAdd(obj interface{}) {
 	node := obj.(*apisv1alpha1.LocalStorageNode)
-	r.addTotalStorage(node)
+	if node.Status.State == apisv1alpha1.NodeStateReady {
+		r.addTotalStorage(node)
+		r.updateAllocatedStorageByLSN(node)
+	} else {
+		r.delTotalStorage(node)
+	}
 }
 
 func (r *resources) handleNodeUpdate(_, newObj interface{}) {
 	node := newObj.(*apisv1alpha1.LocalStorageNode)
-	r.addTotalStorage(node)
+	if node.Status.State == apisv1alpha1.NodeStateReady {
+		r.addTotalStorage(node)
+		r.updateAllocatedStorageByLSN(node)
+	} else {
+		r.delTotalStorage(node)
+	}
 }
 
 func (r *resources) handleNodeDelete(obj interface{}) {
 	node := obj.(*apisv1alpha1.LocalStorageNode)
 	r.delTotalStorage(node)
-
+	r.delAllocatedStorageByLSN(node)
 }
 
 func (r *resources) handleVolumeUpdate(oldObj, newObj interface{}) {
-	oVol := oldObj.(*apisv1alpha1.LocalVolume)
 	nVol := newObj.(*apisv1alpha1.LocalVolume)
 
-	// 1. calculate allocated capacity according to LocalVolume.Spec.Config
-	// recycle old volume
-	r.recycleAllocatedStorage(oVol)
-
-	// 2. recycle resource ID when LocalVolume is deleted
+	// recycle resource ID when LocalVolume is deleted
 	if nVol.Status.State == apisv1alpha1.VolumeStateDeleted {
 		r.recycleResourceID(nVol)
-	} else {
-		r.addAllocatedStorage(nVol)
 	}
 	if nVol.Spec.Config == nil {
 		r.recycleResourceID(nVol)
