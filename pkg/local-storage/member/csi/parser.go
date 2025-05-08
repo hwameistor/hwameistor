@@ -83,7 +83,7 @@ func parseParameters(req *csi.CreateVolumeRequest) (*volumeParameters, error) {
 
 	thin := utils.IsSupportThinProvisioning(params)
 	if thin && (convertible || replicaNumber != 1) {
-		return nil, fmt.Errorf("thin provision is not supported for HA volume")
+		return nil, fmt.Errorf("thin provision is not supported for HA volume or convertible")
 	}
 
 	return &volumeParameters{
