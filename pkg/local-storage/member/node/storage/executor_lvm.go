@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"path"
 	"strconv"
 	"strings"
@@ -726,7 +727,16 @@ func (lvm *lvmExecutor) GetThinPools() (map[string]*apisv1alpha1.ThinPoolInfo, e
 		for _, lvRecord := range lvsReportRecords.Records {
 			if _, ok := thinPools[lvRecord.PoolName]; ok && lvRecord.Segtype == "thin" && lvRecord.ThinPoolName == apisv1alpha1.ThinPoolName {
 				size, _ := utils.ConvertLVMBytesToNumeric(lvRecord.LvCapacity)
-				thinPools[lvRecord.PoolName].TotalProvisionedSize += size
+				// since snapshots are completely read-only and won't grow in capacity
+				// this would make the calculation more accurate
+				if strings.HasPrefix(lvRecord.Name, "snapcontent-") {
+					dataPercentFloat, _ := strconv.ParseFloat(lvRecord.DataPercent, 64)
+					dataPercentFloat = dataPercentFloat / 100
+					thinPools[lvRecord.PoolName].TotalProvisionedSize += int64(math.Ceil(float64(size) * dataPercentFloat))
+				} else {
+					thinPools[lvRecord.PoolName].TotalProvisionedSize += size
+				}
+
 				thinPools[lvRecord.PoolName].ThinVolumes = append(thinPools[lvRecord.PoolName].ThinVolumes, lvRecord.Name)
 			}
 		}
