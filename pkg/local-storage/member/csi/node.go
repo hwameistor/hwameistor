@@ -2,11 +2,12 @@ package csi
 
 import (
 	"fmt"
+	"path"
+	"strings"
+
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/encrypt"
 	v1 "k8s.io/api/core/v1"
-	"path"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	log "github.com/sirupsen/logrus"
@@ -150,6 +151,31 @@ func (p *plugin) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 	if err != nil {
 		p.logger.WithFields(log.Fields{"volume": req.VolumeId, "error": err.Error()}).Error("Failed to refresh QoS for LocalVolume")
 		return resp, err
+	}
+
+	// As we are supporting the restore of a volume to a bigger size and
+	// creating bigger size clone from a volume, we need to check filesystem
+	// resize is required, if required resize filesystem.
+	if req.GetVolumeCapability().GetBlock() == nil {
+		ok, err := p.mounter.NeedResize(devicePath, req.TargetPath)
+		if err != nil {
+			return resp, fmt.Errorf(
+				"need resize check failed on devicePath %s and targetPath %s, error: %v",
+				devicePath,
+				req.TargetPath,
+				err)
+		}
+		if ok {
+			p.logger.WithFields(log.Fields{
+				"volume":     req.VolumeId,
+				"devicePath": devicePath,
+				"targetPath": req.TargetPath,
+			}).Info("Need to resize filesystem")
+			err = p.expandFileSystemByMountPoint(req.TargetPath)
+			if err != nil {
+				return resp, fmt.Errorf("failed to expand file system by mount point %s", req.TargetPath)
+			}
+		}
 	}
 
 	return resp, nil

@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"os"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	snapshot "github.com/kubernetes-csi/external-snapshotter/client/v6/clientset/versioned/scheme"
 	log "github.com/sirupsen/logrus"
@@ -171,6 +172,8 @@ func (s *Scheduler) pvcRecordPodAffinity(affinity *corev1.Affinity, tolerations 
 		if p.Annotations == nil {
 			p.Annotations = make(map[string]string)
 		}
+		shouldPatch := false
+
 		if affinity != nil {
 			affinity_bytes, err := json.Marshal(affinity)
 			if err != nil {
@@ -178,7 +181,10 @@ func (s *Scheduler) pvcRecordPodAffinity(affinity *corev1.Affinity, tolerations 
 				return err
 			}
 			affinity_str := string(affinity_bytes)
-			p.Annotations["hwameistor.io/affinity-annotations"] = affinity_str
+			if p.Annotations[lvmscheduler.AFFINITY] != affinity_str {
+				p.Annotations[lvmscheduler.AFFINITY] = affinity_str
+				shouldPatch = true
+			}
 		}
 
 		if len(tolerations) > 0 {
@@ -188,16 +194,20 @@ func (s *Scheduler) pvcRecordPodAffinity(affinity *corev1.Affinity, tolerations 
 				return err
 			}
 			tolerations_str := string(tolerations_btyes)
-
-			p.Annotations["hwameistor.io/tolerations-annotations"] = tolerations_str
+			if p.Annotations[lvmscheduler.TOLERATION] != tolerations_str {
+				p.Annotations[lvmscheduler.TOLERATION] = tolerations_str
+				shouldPatch = true
+			}
 		}
 
-		err := s.apiClient.Patch(context.TODO(), p, client.MergeFrom(pvc))
-		if err != nil {
-			log.WithFields(log.Fields{"pvc": pvc.Name, "namespace": pvc.Namespace, "pv": pvc.Spec.VolumeName}).Error("set annotations-podAffinity fail!")
-			return err
+		if shouldPatch {
+			err := s.apiClient.Patch(context.TODO(), p, client.MergeFrom(pvc))
+			if err != nil {
+				log.WithFields(log.Fields{"pvc": pvc.Name, "namespace": pvc.Namespace, "pv": pvc.Spec.VolumeName}).Error("set annotations-podAffinity fail!")
+				return err
+			}
+			log.WithFields(log.Fields{"pvc": pvc.Name, "namespace": pvc.Namespace, "pv": pvc.Spec.VolumeName}).Debugf("set annotations-podAffinity success!")
 		}
-		log.WithFields(log.Fields{"pvc": pvc.Name, "namespace": pvc.Namespace, "pv": pvc.Spec.VolumeName}).Debugf("set annotations-podAffinity success!")
 	}
 	return nil
 }

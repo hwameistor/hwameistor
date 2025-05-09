@@ -75,6 +75,14 @@ spec:
                 format: int64
                 minimum: 4194304
                 type: integer
+              thin:
+                description: Thin is to indicate if the volume is thin provisioned
+                  or not
+                type: boolean
+              thinOriginVolume:
+                description: ThinOriginVolume is the name of the volume from which
+                  the thin volume is created
+                type: string
               volumeEncrypt:
                 description: VolumeEncrypt is the encryption config of the volume
                 properties:

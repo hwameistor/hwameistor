@@ -25,6 +25,9 @@ type LocalVolumeSnapshotSpec struct {
 	// +kubebuilder:validation:Minimum:=4194304
 	RequiredCapacityBytes int64 `json:"requiredCapacityBytes"`
 
+	// Thin indicates LocalVolumeSnapshot is thin provisioned or not
+	Thin bool `json:"thin,omitempty"`
+
 	// +kubebuilder:default:=false
 	Delete bool `json:"delete,omitempty"`
 }

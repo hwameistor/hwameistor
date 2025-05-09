@@ -56,6 +56,15 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	defer createLock.Unlock()
 
 	if req.VolumeContentSource != nil {
+		params, err := parseParameters(req)
+		if err != nil {
+			return &csi.CreateVolumeResponse{Volume: &csi.Volume{}}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		// for thin volume
+		if params.thin {
+			return p.createThinVolumeWithSource(ctx, req)
+		}
+		// for thick volume
 		if req.VolumeContentSource.GetSnapshot() != nil {
 			return p.restoreVolumeFromSnapshot(ctx, req)
 		}
@@ -127,32 +136,21 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	return resp, lastSavedError
 }
 
-// createEmptyVolumeFromRequest creates a volume with the given request - without snapshot and clone
-func (p *plugin) createEmptyVolumeFromRequest(ctx context.Context, req *csi.CreateVolumeRequest) error {
+func (p *plugin) genLovalVolumeFromRequest(ctx context.Context, req *csi.CreateVolumeRequest) (*apisv1alpha1.LocalVolume, error) {
 	params, err := parseParameters(req)
 	if err != nil {
 		p.logger.WithError(err).Error("Failed to parse parameters")
-		return err
+		return nil, err
 	}
 
 	lvg, err := p.getLocalVolumeGroupOrCreate(req, params)
 	if err != nil {
 		p.logger.WithError(err).Error("Failed to get or create LocalVolumeGroup")
-		return err
+		return nil, err
 	}
 
-	// return directly if exist already
 	vol := &apisv1alpha1.LocalVolume{}
-	if err = p.apiClient.Get(ctx, types.NamespacedName{Name: req.Name}, vol); err == nil {
-		return nil
-	}
 
-	if !errors.IsNotFound(err) {
-		p.logger.WithFields(log.Fields{"volName": req.Name, "error": err.Error()}).Error("Failed to query volume")
-		return err
-	}
-
-	// create volume if not exist
 	vol.Name = req.Name
 	vol.Spec.RequiredCapacityBytes = req.CapacityRange.RequiredBytes
 	vol.Spec.Convertible = params.convertible
@@ -160,6 +158,7 @@ func (p *plugin) createEmptyVolumeFromRequest(ctx context.Context, req *csi.Crea
 	vol.Spec.PersistentVolumeClaimNamespace = params.pvcNamespace
 	vol.Spec.VolumeGroup = lvg.Name
 	vol.Spec.Accessibility.Nodes = lvg.Spec.Accessibility.Nodes
+	vol.Spec.Thin = params.thin
 	vol.Spec.VolumeQoS = apisv1alpha1.VolumeQoS{
 		Throughput: params.throughput,
 		IOPS:       params.iops,
@@ -175,17 +174,39 @@ func (p *plugin) createEmptyVolumeFromRequest(ctx context.Context, req *csi.Crea
 	}
 
 	// override blow parameters when creating volume from snapshot
-	if len(params.snapshot) > 0 {
+	if len(params.snapshot) > 0 && !params.thin {
 		sourceVolume, err := getSourceVolumeFromSnapshot(params.snapshot, p.apiClient)
 		if err != nil {
 			p.logger.WithFields(log.Fields{"volName": vol.Name, "snapshot": params.snapshot}).WithError(err).Error("Failed to get source volume from snapshot")
-			return err
+			return nil, err
 		}
 		vol.Spec.ReplicaNumber = sourceVolume.Spec.ReplicaNumber
 		vol.Spec.PoolName = sourceVolume.Spec.PoolName
 	} else {
 		vol.Spec.ReplicaNumber = params.replicaNumber
 		vol.Spec.PoolName = params.poolName
+	}
+	return vol, nil
+}
+
+// createEmptyVolumeFromRequest creates a volume with the given request - without snapshot and clone
+func (p *plugin) createEmptyVolumeFromRequest(ctx context.Context, req *csi.CreateVolumeRequest) error {
+	vol := &apisv1alpha1.LocalVolume{}
+	err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.Name}, vol)
+	if err == nil {
+		// return directly if exist already
+		return nil
+	}
+
+	if !errors.IsNotFound(err) {
+		p.logger.WithFields(log.Fields{"volName": req.Name, "error": err.Error()}).Error("Failed to query volume")
+		return err
+	}
+
+	// create volume if not exist
+	vol, err = p.genLovalVolumeFromRequest(ctx, req)
+	if err != nil {
+		return err
 	}
 
 	p.logger.WithFields(log.Fields{"volume": vol}).Debug("Creating a volume")
@@ -237,12 +258,20 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 	var selectedNodes []string
 	// for snapshot restore, volume topology must keep same with source volume
 	if len(params.snapshot) > 0 {
-		sourceVolume, err := getSourceVolumeFromSnapshot(params.snapshot, p.apiClient)
-		if err != nil {
-			p.logger.WithField("snapshot", params.snapshot).WithError(err).Error("failed to get source volume from snapshot")
-			return nil, err
+		if params.thin {
+			volumeSnapshot := apisv1alpha1.LocalVolumeSnapshot{}
+			if err := p.apiClient.Get(context.Background(), client.ObjectKey{Name: params.snapshot}, &volumeSnapshot); err != nil {
+				return nil, err
+			}
+			selectedNodes = volumeSnapshot.Spec.Accessibility.Nodes
+		} else {
+			sourceVolume, err := getSourceVolumeFromSnapshot(params.snapshot, p.apiClient)
+			if err != nil {
+				p.logger.WithField("snapshot", params.snapshot).WithError(err).Error("failed to get source volume from snapshot")
+				return nil, err
+			}
+			selectedNodes = sourceVolume.Spec.Accessibility.Nodes
 		}
-		selectedNodes = sourceVolume.Spec.Accessibility.Nodes
 	} else {
 		candidateNodes := p.storageMember.Controller().VolumeScheduler().GetNodeCandidates(lvs)
 		foundThisNode := false
@@ -396,6 +425,7 @@ func constructLocalVolumeForPVC(pvc *corev1.PersistentVolumeClaim, sc *storagev1
 	lv.Spec.RequiredCapacityBytes = storage.Value()
 	replica, _ := strconv.Atoi(sc.Parameters[apisv1alpha1.VolumeParameterReplicaNumberKey])
 	lv.Spec.ReplicaNumber = int64(replica)
+	lv.Spec.Thin = utils.IsSupportThinProvisioning(sc.Parameters)
 	return &lv, nil
 }
 
@@ -588,6 +618,140 @@ func (p *plugin) validateVolumeCreateRequestForSnapshot(ctx context.Context, req
 	return nil
 }
 
+func (p *plugin) createThinVolumeWithSource(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
+	logCtx := p.logger.WithFields(log.Fields{
+		"volume":           req.Name,
+		"requiredCapacity": req.CapacityRange.RequiredBytes,
+		"limitedCapacity":  req.CapacityRange.LimitBytes,
+		"parameters":       req.Parameters,
+		"topology":         req.AccessibilityRequirements,
+		"capabilities":     req.VolumeCapabilities,
+	})
+	logCtx.Debug("createThinVolumeWithSource")
+
+	resp := &csi.CreateVolumeResponse{Volume: &csi.Volume{
+		ContentSource: req.VolumeContentSource,
+	}}
+
+	lv := &apisv1alpha1.LocalVolume{}
+	if err := p.apiClient.Get(ctx, types.NamespacedName{Name: req.Name}, lv); err != nil {
+		if !errors.IsNotFound(err) {
+			return resp, status.Error(codes.Internal, err.Error())
+		}
+
+		var sourceSize int64
+		var sourcePoolName string
+		var lvOrigin *apisv1alpha1.ThinOrigin
+
+		switch req.VolumeContentSource.GetType().(type) {
+		case *csi.VolumeContentSource_Snapshot:
+			volumeSnapshotId := req.VolumeContentSource.GetSnapshot().SnapshotId
+			logCtx.WithField("volumeSnapshotId", volumeSnapshotId).Info("creating a new local volume from a snapshot")
+
+			volumeSnapshot := apisv1alpha1.LocalVolumeSnapshot{}
+			if err := p.apiClient.Get(ctx, client.ObjectKey{Name: volumeSnapshotId}, &volumeSnapshot); err != nil {
+				return resp, status.Error(codes.InvalidArgument, err.Error())
+			}
+
+			if !volumeSnapshot.Spec.Thin {
+				return resp, status.Errorf(codes.InvalidArgument, "the source snapshot is not thin")
+			}
+
+			if volumeSnapshot.Status.State != apisv1alpha1.VolumeStateReady {
+				return resp, status.Errorf(codes.Internal, "source snapshot %s is not ready", volumeSnapshot.Name)
+			}
+
+			if len(volumeSnapshot.Status.ReplicaSnapshots) != 1 {
+				return resp, status.Errorf(codes.Internal, "the replica number of snapshot %s is not 1", volumeSnapshot.Name)
+			}
+
+			volumeReplicaSnapshot := apisv1alpha1.LocalVolumeReplicaSnapshot{}
+			if err := p.apiClient.Get(ctx, client.ObjectKey{Name: volumeSnapshot.Status.ReplicaSnapshots[0]}, &volumeReplicaSnapshot); err != nil {
+				return resp, status.Error(codes.Internal, err.Error())
+			}
+
+			sourceSize = volumeSnapshot.Status.AllocatedCapacityBytes
+			sourcePoolName = volumeReplicaSnapshot.Spec.PoolName
+			lvOrigin = &apisv1alpha1.ThinOrigin{
+				OriginType: apisv1alpha1.OriginTypeSnapshot,
+				OriginId:   volumeSnapshotId,
+			}
+		case *csi.VolumeContentSource_Volume:
+			sourceVolume := apisv1alpha1.LocalVolume{}
+			sourceVolumeId := req.VolumeContentSource.GetVolume().VolumeId
+			logCtx.WithField("sourceVolumeId", sourceVolumeId).Info("creating a new local volume from an existing volume")
+
+			if err := p.apiClient.Get(ctx, client.ObjectKey{Name: sourceVolumeId}, &sourceVolume); err != nil {
+				return resp, status.Error(codes.InvalidArgument, err.Error())
+			}
+
+			if !sourceVolume.Spec.Thin {
+				return resp, status.Errorf(codes.InvalidArgument, "the source volume is not thin")
+			}
+
+			if sourceVolume.Status.State != apisv1alpha1.VolumeStateReady {
+				return resp, status.Errorf(codes.Internal, "source volume %s is not ready", sourceVolume.Name)
+			}
+
+			sourceSize = sourceVolume.Status.AllocatedCapacityBytes
+			sourcePoolName = sourceVolume.Spec.PoolName
+			lvOrigin = &apisv1alpha1.ThinOrigin{
+				OriginType: apisv1alpha1.OriginTypeVolume,
+				OriginId:   sourceVolumeId,
+			}
+		default:
+			return resp, status.Errorf(codes.InvalidArgument, "not a proper volume source %v", req.VolumeContentSource)
+		}
+
+		requiredCapacityBytes := req.CapacityRange.RequiredBytes
+		if requiredCapacityBytes < sourceSize {
+			return resp, status.Errorf(codes.InvalidArgument, "the new volume required capacity must be greater than the existing volume required capacity")
+		}
+
+		lv, err = p.genLovalVolumeFromRequest(ctx, req)
+		if err != nil {
+			return resp, status.Error(codes.InvalidArgument, err.Error())
+		}
+		if sourcePoolName != lv.Spec.PoolName {
+			return resp, status.Errorf(codes.InvalidArgument, "the pool name of the source volume %s and the pool name of the new volume %s are different", sourcePoolName, lv.Spec.PoolName)
+		}
+
+		lv.Spec.ThinOrigin = lvOrigin
+		logCtx.Info("Creating local volume")
+		err = p.apiClient.Create(ctx, lv)
+		if err != nil {
+			return resp, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	if err := wait.PollUntil(RetryInterval, func() (done bool, err error) {
+		logCtx.Debugf("Checking if LocalVolume ready to use")
+		volume := &apisv1alpha1.LocalVolume{}
+		if err = p.apiClient.Get(ctx, client.ObjectKey{Name: req.Name}, volume); err != nil {
+			return false, nil
+		}
+
+		if volume.Status.State != apisv1alpha1.VolumeStateReady {
+			return false, nil
+		}
+
+		// volume finally ready update response info
+		resp.Volume = &csi.Volume{
+			VolumeId:      volume.Name,
+			CapacityBytes: volume.Status.AllocatedCapacityBytes,
+			ContentSource: req.VolumeContentSource,
+			VolumeContext: req.Parameters,
+		}
+		return true, nil
+	}, ctx.Done()); err != nil {
+		return resp, status.Errorf(codes.Unavailable, "LocalVolume %s is NotReady(deadline exceeded)", req.Name)
+	}
+
+	logCtx.Debugf("CreateVolume successfully, volume info => %v", req.Name)
+
+	return resp, nil
+}
+
 // cloneVolume creates a new volume from the given volume
 // Main steps
 // 1. take a snapshot of the given volume
@@ -734,7 +898,8 @@ func (p *plugin) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 	if vol.Status.State == apisv1alpha1.VolumeStateDeleted {
 		return resp, nil
 	}
-	if vol.Status.State == apisv1alpha1.VolumeStateToBeDeleted {
+	// thin provisioning volumes can be deleted immediately
+	if vol.Status.State == apisv1alpha1.VolumeStateToBeDeleted && !vol.Spec.Thin {
 		// volume will be deleted after all snapshots removed, return directly here
 		if vss, _ := listVolumeSnapshots(vol.Name, p.apiClient); len(vss) > 0 {
 			return resp, nil
@@ -1087,6 +1252,12 @@ func (p *plugin) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequ
 			return nil, status.Errorf(codes.Internal, "Failed to get volume access topology: %v", err)
 		}
 
+		isThin, err := isVolumeThin(req.SourceVolumeId, p.apiClient)
+		if err != nil {
+			logCtx.WithError(err).Error("Failed to check whether volume is thin")
+			return nil, status.Errorf(codes.Internal, "Failed to check whether volume is thin: %v", err)
+		}
+
 		// for now, we only support take snapshot on single replica volume
 		if len(accessTopology.Nodes) > 1 {
 			logCtx.WithField("topology", accessTopology.Nodes).Error("Haven't support take snapshot on HA-Volume")
@@ -1097,6 +1268,7 @@ func (p *plugin) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequ
 		snapshot.Spec.Accessibility = accessTopology
 		snapshot.Spec.RequiredCapacityBytes = snapsize
 		snapshot.Spec.SourceVolume = req.SourceVolumeId
+		snapshot.Spec.Thin = isThin
 
 		if err = p.apiClient.Create(ctx, snapshot); err != nil {
 			logCtx.WithError(err).Error("Failed to create LocalVolumeSnapshot")
@@ -1302,6 +1474,16 @@ func getVolumeAccessibility(volumeName string, apiClient client.Client) (apisv1a
 	}
 
 	return vol.Spec.Accessibility, nil
+}
+
+// isVolumeThin returns the thin provisioning flag from the given volume
+func isVolumeThin(volumeName string, apiClient client.Client) (bool, error) {
+	vol := apisv1alpha1.LocalVolume{}
+	if err := apiClient.Get(context.Background(), types.NamespacedName{Name: volumeName}, &vol); err != nil {
+		return false, err
+	}
+
+	return vol.Spec.Thin, nil
 }
 
 // getVolumeSnapshotAccessibility returns the access topology from the given volume
