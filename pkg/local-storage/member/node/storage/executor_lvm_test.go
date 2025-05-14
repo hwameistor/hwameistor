@@ -198,7 +198,7 @@ func Test_lvmExecutor_ExtendPools(t *testing.T) {
 	m.
 		EXPECT().
 		ExtendPools(disks).
-		Return(nil).
+		Return(true, nil).
 		Times(1)
 
 	_, err := m.ExtendPools(disks)

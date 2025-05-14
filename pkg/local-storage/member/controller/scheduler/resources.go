@@ -35,8 +35,10 @@ type resources struct {
 	freeResourceIDList   []int
 	maxHAVolumeCount     int
 
-	allocatedStorages *storageCollection
-	totalStorages     *storageCollection
+	// TODO Why we need this? we can get this by lsn.
+	allocatedStorages            *storageCollection
+	totalStorages                *storageCollection
+	thinPoolCapacityAllocatedSet map[string]map[string]struct{}
 
 	storageNodes map[string]*apisv1alpha1.LocalStorageNode
 
@@ -53,18 +55,19 @@ type resources struct {
 
 func newResources(maxHAVolumeCount int, apiClient client.Client) *resources {
 	return &resources{
-		apiClient:            apiClient,
-		logger:               log.WithField("Module", "Scheduler/Resources"),
-		allocatedResourceIDs: make(map[string]int),
-		freeResourceIDList:   make([]int, 0, maxHAVolumeCount),
-		maxHAVolumeCount:     maxHAVolumeCount,
-		allocatedStorages:    newStorageCollection(),
-		totalStorages:        newStorageCollection(),
-		storageNodes:         map[string]*apisv1alpha1.LocalStorageNode{},
-		podToPVCs:            map[string][]string{},
-		pvcToPods:            map[string][]string{},
-		pvcsMap:              map[string]*corev1.PersistentVolumeClaim{},
-		scsMap:               map[string]*storagev1.StorageClass{},
+		apiClient:                    apiClient,
+		logger:                       log.WithField("Module", "Scheduler/Resources"),
+		allocatedResourceIDs:         make(map[string]int),
+		freeResourceIDList:           make([]int, 0, maxHAVolumeCount),
+		maxHAVolumeCount:             maxHAVolumeCount,
+		allocatedStorages:            newStorageCollection(),
+		totalStorages:                newStorageCollection(),
+		thinPoolCapacityAllocatedSet: make(map[string]map[string]struct{}),
+		storageNodes:                 map[string]*apisv1alpha1.LocalStorageNode{},
+		podToPVCs:                    map[string][]string{},
+		pvcToPods:                    map[string][]string{},
+		pvcsMap:                      map[string]*corev1.PersistentVolumeClaim{},
+		scsMap:                       map[string]*storagev1.StorageClass{},
 	}
 }
 
@@ -270,6 +273,7 @@ func (r *resources) getAssociatedVolumes(vol *apisv1alpha1.LocalVolume) map[stri
 		lv.Spec.RequiredCapacityBytes = storage.Value()
 		replica, _ := strconv.Atoi(sc.Parameters[apisv1alpha1.VolumeParameterReplicaNumberKey])
 		lv.Spec.ReplicaNumber = int64(replica)
+		lv.Spec.Thin = utils.IsSupportThinProvisioning(sc.Parameters)
 		lvs[poolName] = append(lvs[poolName], lv)
 		r.logger.Debugf("adding associated LV(capacity: %d) to pool %s, current %d volume(s)", lv.Spec.RequiredCapacityBytes, poolName, len(lvs[poolName]))
 	}
@@ -293,12 +297,19 @@ func (r *resources) predicate(vol *apisv1alpha1.LocalVolume, nodeName string) er
 		volumeMaxCapacityBytes := int64(0)
 		requiredVolumeCount := len(lvs)
 		requiredCapacityBytes := int64(0)
+		requiredThinCapacityBytes := int64(0)
 
 		r.logger.Debugf("found %d volume(s) in pool %s", len(lvs), poolName)
 
 		for _, lv := range lvs {
-			requiredCapacityBytes += lv.Spec.RequiredCapacityBytes
-			r.logger.Debugf("adding requiredCapacity %d to pool %s, current requiredCapacity %d", lv.Spec.RequiredCapacityBytes, poolName, requiredCapacityBytes)
+			if !lv.Spec.Thin {
+				requiredCapacityBytes += lv.Spec.RequiredCapacityBytes
+				r.logger.Debugf("adding requiredCapacity %d to pool %s, current requiredCapacity %d", lv.Spec.RequiredCapacityBytes, poolName, requiredCapacityBytes)
+			} else {
+				requiredThinCapacityBytes += lv.Spec.RequiredCapacityBytes
+				r.logger.Debugf("adding requiredThinCapacity %d to pool %s, current requiredThinCapacity %d", lv.Spec.RequiredCapacityBytes, poolName, requiredThinCapacityBytes)
+			}
+
 			if lv.Spec.RequiredCapacityBytes > volumeMaxCapacityBytes {
 				volumeMaxCapacityBytes = lv.Spec.RequiredCapacityBytes
 			}
@@ -307,6 +318,19 @@ func (r *resources) predicate(vol *apisv1alpha1.LocalVolume, nodeName string) er
 		totalPool := r.totalStorages.pools[poolName]
 		allocatedPool := r.allocatedStorages.pools[poolName]
 
+		overProvisionRatio := 1.0
+		if r.storageNodes[nodeName].Status.Pools[poolName].ThinPool != nil {
+			overProvisionRatio, _ = strconv.ParseFloat(r.storageNodes[nodeName].Status.Pools[poolName].ThinPool.OverProvisionRatio, 64)
+		}
+		if float64(requiredThinCapacityBytes) > overProvisionRatio*float64(totalPool.thinPoolCapacities[nodeName])-float64(allocatedPool.thinPoolCapacities[nodeName]) {
+			r.logger.WithFields(log.Fields{"pool": poolName,
+				"requiredThinCapacityBytes": requiredThinCapacityBytes,
+				"overProvisionRatio":        overProvisionRatio,
+				"totalPoolCapacityBytes":    totalPool.thinPoolCapacities[nodeName],
+				"allocatedCapacityBytes":    allocatedPool.thinPoolCapacities[nodeName]}).Error("No enough thin pool capacity")
+			return fmt.Errorf("not enough thin pool capacity in pool %s", poolName)
+		}
+
 		if requiredCapacityBytes > totalPool.capacities[nodeName]-allocatedPool.capacities[nodeName] {
 			r.logger.WithFields(log.Fields{"pool": poolName,
 				"requireCapacityBytes":   requiredCapacityBytes,
@@ -314,6 +338,7 @@ func (r *resources) predicate(vol *apisv1alpha1.LocalVolume, nodeName string) er
 				"allocatedCapacityBytes": allocatedPool.capacities[nodeName]}).Error("No enough capacity")
 			return fmt.Errorf("not enough capacity in pool %s", poolName)
 		}
+
 		if totalPool.volumeCount[nodeName] < allocatedPool.volumeCount[nodeName]+int64(requiredVolumeCount) {
 			r.logger.WithField("pool", poolName).Error("No enough volume count")
 			return fmt.Errorf("not enough free volume count in pool %s", poolName)
@@ -346,12 +371,24 @@ func (r *resources) score(vol *apisv1alpha1.LocalVolume, nodeName string) (int64
 	}
 	for poolName, lvs := range vols {
 		requiredCapacityBytes := int64(0)
+		requiredThinCapacityBytes := int64(0)
+
 		for _, lv := range lvs {
-			requiredCapacityBytes += lv.Spec.RequiredCapacityBytes
+			if lv.Spec.Thin {
+				requiredThinCapacityBytes += lv.Spec.RequiredCapacityBytes
+			} else {
+				requiredCapacityBytes += lv.Spec.RequiredCapacityBytes
+			}
 		}
 		totalPool := r.totalStorages.pools[poolName]
 		allocatedPool := r.allocatedStorages.pools[poolName]
+
+		// for thick lv
 		score += int64(1-float64(requiredCapacityBytes)/float64(totalPool.capacities[nodeName]-allocatedPool.capacities[nodeName])) * 100
+		// for thin lv
+		if requiredThinCapacityBytes != 0 && (totalPool.thinPoolCapacities[nodeName]-allocatedPool.thinPoolCapacities[nodeName] != 0) {
+			score += int64(1-float64(requiredThinCapacityBytes)/float64(totalPool.thinPoolCapacities[nodeName]-allocatedPool.thinPoolCapacities[nodeName])) * 100
+		}
 	}
 
 	return score / int64(len(vols)), nil
@@ -504,16 +541,25 @@ func (r *resources) addAllocatedStorage(vol *apisv1alpha1.LocalVolume) {
 	defer r.lock.Unlock()
 
 	for _, replica := range vol.Spec.Config.Replicas {
-		// for capacity
+		// init if not exists
+		if _, exists := r.allocatedStorages.pools[vol.Spec.PoolName].thinPoolCapacities[replica.Hostname]; !exists {
+			r.allocatedStorages.pools[vol.Spec.PoolName].thinPoolCapacities[replica.Hostname] = 0
+		}
 		if _, exists := r.allocatedStorages.pools[vol.Spec.PoolName].capacities[replica.Hostname]; !exists {
 			r.allocatedStorages.pools[vol.Spec.PoolName].capacities[replica.Hostname] = 0
 		}
-		r.allocatedStorages.pools[vol.Spec.PoolName].capacities[replica.Hostname] += vol.Spec.Config.RequiredCapacityBytes
-
-		// for volume count
 		if _, exists := r.allocatedStorages.pools[vol.Spec.PoolName].volumeCount[replica.Hostname]; !exists {
 			r.allocatedStorages.pools[vol.Spec.PoolName].volumeCount[replica.Hostname] = 0
 		}
+
+		// for capacity
+		if vol.Spec.Thin {
+			r.allocatedStorages.pools[vol.Spec.PoolName].thinPoolCapacities[replica.Hostname] += vol.Spec.Config.RequiredCapacityBytes
+		} else {
+			r.allocatedStorages.pools[vol.Spec.PoolName].capacities[replica.Hostname] += vol.Spec.Config.RequiredCapacityBytes
+		}
+
+		// for volume count
 		r.allocatedStorages.pools[vol.Spec.PoolName].volumeCount[replica.Hostname]++
 	}
 }
@@ -529,19 +575,39 @@ func (r *resources) recycleAllocatedStorage(vol *apisv1alpha1.LocalVolume) {
 	defer r.lock.Unlock()
 
 	for _, replica := range vol.Spec.Config.Replicas {
-		// for capacity
+		// init if not exists
+		if _, exists := r.allocatedStorages.pools[vol.Spec.PoolName].thinPoolCapacities[replica.Hostname]; !exists {
+			r.allocatedStorages.pools[vol.Spec.PoolName].thinPoolCapacities[replica.Hostname] = 0
+		}
 		if _, exists := r.allocatedStorages.pools[vol.Spec.PoolName].capacities[replica.Hostname]; !exists {
 			r.allocatedStorages.pools[vol.Spec.PoolName].capacities[replica.Hostname] = 0
 		}
-		r.allocatedStorages.pools[vol.Spec.PoolName].capacities[replica.Hostname] -= vol.Spec.Config.RequiredCapacityBytes
-
-		// for volume count
 		if _, exists := r.allocatedStorages.pools[vol.Spec.PoolName].volumeCount[replica.Hostname]; !exists {
 			r.allocatedStorages.pools[vol.Spec.PoolName].volumeCount[replica.Hostname] = 0
 		}
+
+		// for capacity
+		if vol.Spec.Thin {
+			r.allocatedStorages.pools[vol.Spec.PoolName].thinPoolCapacities[replica.Hostname] -= vol.Spec.Config.RequiredCapacityBytes
+		} else {
+			r.allocatedStorages.pools[vol.Spec.PoolName].capacities[replica.Hostname] -= vol.Spec.Config.RequiredCapacityBytes
+		}
+
+		// for volume count
 		r.allocatedStorages.pools[vol.Spec.PoolName].volumeCount[replica.Hostname]--
 	}
 
+}
+
+// Some capacities may be used to create a thin pool, so we need to add it to the r.allocatedStorages if thin pool exists
+func (r *resources) addAllocatedStorageForThinPool(poolName, nodeName string, thinPoolCapacities int64) {
+	if _, ok := r.thinPoolCapacityAllocatedSet[poolName]; !ok {
+		r.thinPoolCapacityAllocatedSet[poolName] = make(map[string]struct{})
+	}
+	if _, ok := r.thinPoolCapacityAllocatedSet[poolName][nodeName]; !ok {
+		r.allocatedStorages.pools[poolName].capacities[nodeName] += thinPoolCapacities
+		r.thinPoolCapacityAllocatedSet[poolName][nodeName] = struct{}{}
+	}
 }
 
 func (r *resources) addTotalStorage(node *apisv1alpha1.LocalStorageNode) {
@@ -551,6 +617,13 @@ func (r *resources) addTotalStorage(node *apisv1alpha1.LocalStorageNode) {
 	for _, pool := range node.Status.Pools {
 		r.totalStorages.pools[pool.Name].capacities[node.Name] = pool.TotalCapacityBytes
 		r.totalStorages.pools[pool.Name].volumeCount[node.Name] = pool.TotalVolumeCount
+		if pool.ThinPool == nil {
+			r.totalStorages.pools[pool.Name].thinPoolCapacities[node.Name] = 0
+		} else {
+			r.totalStorages.pools[pool.Name].thinPoolCapacities[node.Name] = pool.ThinPool.Size
+			// data size + metadata size + pmspare size
+			r.addAllocatedStorageForThinPool(pool.Name, node.Name, pool.ThinPool.Size+pool.ThinPool.MetadataSize*2)
+		}
 	}
 	r.storageNodes[node.Name] = node
 }
@@ -562,6 +635,7 @@ func (r *resources) delTotalStorage(node *apisv1alpha1.LocalStorageNode) {
 	for _, pool := range node.Status.Pools {
 		delete(r.totalStorages.pools[pool.Name].capacities, node.Name)
 		delete(r.totalStorages.pools[pool.Name].volumeCount, node.Name)
+		delete(r.totalStorages.pools[pool.Name].thinPoolCapacities, node.Name)
 	}
 	delete(r.storageNodes, node.Name)
 }

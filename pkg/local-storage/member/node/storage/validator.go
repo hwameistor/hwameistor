@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"strconv"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
@@ -45,6 +46,7 @@ func (cr *validator) canCreateVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica,
 	if err := cr.checkPerVolumeCapacityLimit(vr, reg); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -66,6 +68,7 @@ func (cr *validator) canExpandVolumeReplica(vr *apisv1alpha1.LocalVolumeReplica,
 	// validate for to-extend capacity
 	newVr := vr.DeepCopy()
 	newVr.Spec.RequiredCapacityBytes = newCapacityBytes - vr.Status.AllocatedCapacityBytes
+
 	if err := cr.checkPoolCapacity(newVr, reg); err != nil {
 		return err
 	}
@@ -90,13 +93,29 @@ func (cr *validator) checkPoolVolumeCount(vr *apisv1alpha1.LocalVolumeReplica, r
 
 func (cr *validator) checkPoolCapacity(vr *apisv1alpha1.LocalVolumeReplica, reg LocalRegistry) error {
 	pools := reg.Pools()
-	if pool, has := pools[vr.Spec.PoolName]; has {
-		if pool.FreeCapacityBytes < utils.NumericToLVMBytes(vr.Spec.RequiredCapacityBytes) {
-			return ErrorInsufficientRequestResources
-		}
-	} else {
+	pool, has := pools[vr.Spec.PoolName]
+	if !has {
 		return ErrorPoolNotFound
 	}
+
+	requiredCapacityBytes := utils.NumericToLVMBytes(vr.Spec.RequiredCapacityBytes)
+	if !vr.Spec.Thin {
+		if pool.FreeCapacityBytes < requiredCapacityBytes {
+			return ErrorInsufficientRequestResources
+		}
+		return nil
+	}
+
+	if pool.ThinPool == nil {
+		return ErrorThinPoolNotFound
+	}
+
+	overProvisionRatio, _ := strconv.ParseFloat(pool.ThinPool.OverProvisionRatio, 64)
+	totalThinPoolSize := float64(pool.ThinPool.Size) * overProvisionRatio
+	if float64(requiredCapacityBytes+pool.ThinPool.TotalProvisionedSize) > totalThinPoolSize {
+		return ErrorInsufficientRequestResources
+	}
+
 	return nil
 }
 

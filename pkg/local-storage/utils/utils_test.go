@@ -241,3 +241,110 @@ func TestAddUniqueStringItem1(t *testing.T) {
 		})
 	}
 }
+
+func TestCalculateOverProvisionRatio(t *testing.T) {
+	tests := []struct {
+		name    string
+		records []apisv1alpha1.ThinPoolExtendRecord
+		want    string
+	}{
+		{
+			name: "should return default ratio when no records",
+			records: []apisv1alpha1.ThinPoolExtendRecord{},
+			want: "1.0",
+		},
+		{
+			name: "should return ratio from latest record",
+			records: []apisv1alpha1.ThinPoolExtendRecord{
+				{
+					Description: apisv1alpha1.ThinPoolClaimDescription{
+						OverProvisionRatio: stringPtr("1.5"),
+					},
+				},
+				{
+					Description: apisv1alpha1.ThinPoolClaimDescription{
+						OverProvisionRatio: stringPtr("2.0"),
+					},
+				},
+			},
+			want: "2.0",
+		},
+		{
+			name: "should skip records without ratio",
+			records: []apisv1alpha1.ThinPoolExtendRecord{
+				{
+					Description: apisv1alpha1.ThinPoolClaimDescription{},
+				},
+				{
+					Description: apisv1alpha1.ThinPoolClaimDescription{
+						OverProvisionRatio: stringPtr("1.8"),
+					},
+				},
+			},
+			want: "1.8",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CalculateOverProvisionRatio(tt.records); got != tt.want {
+				t.Errorf("CalculateOverProvisionRatio() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsSupportThinProvisioning(t *testing.T) {
+	tests := []struct {
+		name   string
+		params map[string]string
+		want   bool
+	}{
+		{
+			name:   "should return false when no thin parameter",
+			params: map[string]string{},
+			want:   false,
+		},
+		{
+			name: "should return true when thin is true",
+			params: map[string]string{
+				apisv1alpha1.VolumeParameterThin: "true",
+			},
+			want: true,
+		},
+		{
+			name: "should return true when thin is True (case insensitive)",
+			params: map[string]string{
+				apisv1alpha1.VolumeParameterThin: "True",
+			},
+			want: true,
+		},
+		{
+			name: "should return false when thin is false",
+			params: map[string]string{
+				apisv1alpha1.VolumeParameterThin: "false",
+			},
+			want: false,
+		},
+		{
+			name: "should return false when thin is other value",
+			params: map[string]string{
+				apisv1alpha1.VolumeParameterThin: "other",
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsSupportThinProvisioning(tt.params); got != tt.want {
+				t.Errorf("IsSupportThinProvisioning() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// Helper function to create string pointer
+func stringPtr(s string) *string {
+	return &s
+}

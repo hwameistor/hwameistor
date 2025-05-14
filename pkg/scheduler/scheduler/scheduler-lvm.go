@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils"
+	lsutils "github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"strconv"
@@ -342,6 +343,7 @@ func (s *LVMVolumeScheduler) constructLocalVolumeForPVC(pvc *corev1.PersistentVo
 	localVolume.Spec.RequiredCapacityBytes = storage.Value()
 	replica, _ := strconv.Atoi(sc.Parameters[v1alpha1.VolumeParameterReplicaNumberKey])
 	localVolume.Spec.ReplicaNumber = int64(replica)
+	localVolume.Spec.Thin = lsutils.IsSupportThinProvisioning(sc.Parameters)
 	return &localVolume, nil
 }
 

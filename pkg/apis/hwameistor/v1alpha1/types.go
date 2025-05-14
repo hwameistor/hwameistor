@@ -124,6 +124,10 @@ const (
 	PoolTypeRegular = "REGULAR"
 )
 
+const (
+	ThinPoolName = "LocalStorage_ThinPool"
+)
+
 // consts
 const (
 	VolumeParameterPoolClassKey     = "poolClass"
@@ -133,6 +137,7 @@ const (
 	VolumeParameterConvertible      = "convertible"
 	VolumeParameterThroughput       = "provision-throughput-on-creation"
 	VolumeParameterIOPS             = "provision-iops-on-creation"
+	VolumeParameterThin             = "thin"
 )
 
 // consts for snapshot class
