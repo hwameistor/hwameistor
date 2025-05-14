@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -37,6 +38,8 @@ import (
 const (
 	maxRetries   = 0
 	localStorage = "local-storage"
+
+	periodicDuration = 5 * time.Minute
 )
 
 type manager struct {
@@ -149,6 +152,8 @@ func (m *manager) Run(stopCh <-chan struct{}) {
 	m.register()
 
 	m.setupInformers()
+
+	go m.periodicSyncNodeResources(stopCh)
 
 	go m.startVolumeTaskWorker(stopCh)
 
@@ -450,6 +455,20 @@ func (m *manager) register() {
 	m.storageMgr = storage.NewLocalManager(nodeConfig, m.apiClient, m.scheme, m.recorder, m.snapshotRestoreTimeout)
 	if err := m.storageMgr.Register(); err != nil {
 		logCtx.WithError(err).Fatal("Failed to register node's storage manager")
+	}
+}
+
+// Periodic collection of node resource usage information is meaningful
+// as it allows users to know about the dataPercent and metadataPercent in thin pools
+func (m *manager) periodicSyncNodeResources(stopCh <-chan struct{}) {
+	tick := time.Tick(periodicDuration)
+	for {
+		select {
+		case <-stopCh:
+			return
+		case <-tick:
+			m.storageMgr.Registry().SyncNodeResources()
+		}
 	}
 }
 
