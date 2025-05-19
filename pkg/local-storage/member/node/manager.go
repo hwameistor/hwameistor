@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -37,6 +38,8 @@ import (
 const (
 	maxRetries   = 0
 	localStorage = "local-storage"
+
+	periodicDuration = 5 * time.Minute
 )
 
 type manager struct {
@@ -80,6 +83,8 @@ type manager struct {
 
 	localDiskClaimTaskQueue *common.TaskQueue
 
+	thinPoolClaimTaskQueue *common.TaskQueue
+
 	localDiskTaskQueue *common.TaskQueue
 
 	configManager *configManager
@@ -121,6 +126,7 @@ func New(name string, namespace string, cli client.Client, informersCache runtim
 		syncVolumeMountTaskQueue:              common.NewTaskQueue("RcloneVolumeMount", maxRetries),
 		volumeReplicaTaskQueue:                common.NewTaskQueue("VolumeReplicaTask", maxRetries),
 		localDiskClaimTaskQueue:               common.NewTaskQueue("LocalDiskClaim", maxRetries),
+		thinPoolClaimTaskQueue:                common.NewTaskQueue("ThinPoolClaim", maxRetries),
 		localDiskTaskQueue:                    common.NewTaskQueue("LocalDisk", maxRetries),
 		volumeSnapshotTaskQueue:               common.NewTaskQueue("VolumeSnapshotTask", maxRetries),
 		volumeReplicaSnapshotTaskQueue:        common.NewTaskQueue("VolumeReplicaSnapshotTask", maxRetries),
@@ -147,11 +153,15 @@ func (m *manager) Run(stopCh <-chan struct{}) {
 
 	m.setupInformers()
 
+	go m.periodicSyncNodeResources(stopCh)
+
 	go m.startVolumeTaskWorker(stopCh)
 
 	go m.startVolumeReplicaTaskWorker(stopCh)
 
 	go m.startLocalDiskClaimTaskWorker(stopCh)
+
+	go m.startThinPoolClaimTaskWorker(stopCh)
 
 	go m.startLocalDiskTaskWorker(stopCh)
 
@@ -265,6 +275,16 @@ func (m *manager) setupInformers() {
 	localDiskClaimInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    m.handleLocalDiskClaimAdd,
 		UpdateFunc: m.handleLocalDiskClaimUpdate,
+	})
+
+	thinPoolClaim, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.ThinPoolClaim{})
+	if err != nil {
+		m.logger.WithError(err).Fatal("Failed to get informer for ThinPoolClaim")
+	}
+
+	thinPoolClaim.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.handleThinPoolClaimAdd,
+		UpdateFunc: m.handleThinPoolClaimUpdate,
 	})
 
 	localDiskInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalDisk{})
@@ -438,6 +458,20 @@ func (m *manager) register() {
 	}
 }
 
+// Periodic collection of node resource usage information is meaningful
+// as it allows users to know about the dataPercent and metadataPercent in thin pools
+func (m *manager) periodicSyncNodeResources(stopCh <-chan struct{}) {
+	tick := time.Tick(periodicDuration)
+	for {
+		select {
+		case <-stopCh:
+			return
+		case <-tick:
+			m.storageMgr.Registry().SyncNodeResources()
+		}
+	}
+}
+
 func (m *manager) getNodeConf(node *apisv1alpha1.LocalStorageNode) *apisv1alpha1.NodeConfig {
 	return &apisv1alpha1.NodeConfig{
 		StorageIP: node.Spec.StorageIP,
@@ -540,6 +574,18 @@ func (m *manager) handleLocalDiskClaimAdd(obj interface{}) {
 		return
 	}
 	m.localDiskClaimTaskQueue.Add(localDiskClaim.Namespace + "/" + localDiskClaim.Name)
+}
+
+func (m *manager) handleThinPoolClaimUpdate(oldObj, newObj interface{}) {
+	m.handleThinPoolClaimAdd(newObj)
+}
+
+func (m *manager) handleThinPoolClaimAdd(obj interface{}) {
+	thinPoolClaim, _ := obj.(*apisv1alpha1.ThinPoolClaim)
+	if !(thinPoolClaim.Spec.NodeName == m.name && thinPoolClaim.Status.Status == apisv1alpha1.ThinPoolClaimPhaseToBeConsumed) {
+		return
+	}
+	m.thinPoolClaimTaskQueue.Add(thinPoolClaim.Name)
 }
 
 func (m *manager) handleLocalDiskUpdate(oldObj, newObj interface{}) {

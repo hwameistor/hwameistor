@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -109,8 +110,22 @@ func (m *manager) createVolumeReplica(vol *apisv1alpha1.LocalVolume) error {
 			RequiredCapacityBytes: vol.Spec.RequiredCapacityBytes,
 			VolumeQoS:             vol.Spec.VolumeQoS,
 			VolumeEncrypt:         vol.Spec.VolumeEncrypt,
+			Thin:                  vol.Spec.Thin,
 			NodeName:              m.name,
 		},
+	}
+
+	if vol.Spec.ThinOrigin != nil {
+		if p, ok := m.storageMgr.Registry().Pools()[vol.Spec.PoolName]; ok {
+			// p.Volumes contains all volumes and snapshots
+			if slices.Index(p.Volumes, vol.Spec.ThinOrigin.OriginId) == -1 {
+				return fmt.Errorf("volume %s does not exist in pool %s", vol.Spec.ThinOrigin.OriginId, vol.Spec.PoolName)
+			}
+			replica.Spec.ThinOriginVolume = &vol.Spec.ThinOrigin.OriginId
+		} else {
+			m.logger.WithField("pool", vol.Spec.PoolName).Error("Pool not found")
+			return fmt.Errorf("pool %s not found", vol.Spec.PoolName)
+		}
 	}
 
 	err := m.apiClient.Create(context.TODO(), replica)

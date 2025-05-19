@@ -101,6 +101,10 @@ spec:
               sourceVolume:
                 description: SourceVolume specifies the source volume of the snapshot
                 type: string
+              thin:
+                description: Thin indicates LocalVolumeSnapshot is thin provisioned
+                  or not
+                type: boolean
             required:
             - accessibility
             - requiredCapacityBytes

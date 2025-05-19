@@ -1,0 +1,116 @@
+package v1alpha1
+
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
+type ThinPoolClaimPhase string
+
+const (
+	// ThinPoolClaimPhaseEmpty represents that the ThinPoolClaim was just created.
+	ThinPoolClaimPhaseEmpty ThinPoolClaimPhase = ""
+
+	// ThinPoolClaimPhasePending represents thin pool has not been created yet.
+	ThinPoolClaimPhasePending ThinPoolClaimPhase = "Pending"
+
+	// ThinPoolClaimPhaseToBeConsumed represents thin pool is ready to be created.
+	ThinPoolClaimPhaseToBeConsumed ThinPoolClaimPhase = "ToBeConsumed"
+
+	// ThinPoolClaimPhaseConsumed represents this claim has been processed
+	ThinPoolClaimPhaseConsumed ThinPoolClaimPhase = "Consumed"
+
+	// ThinPoolClaimPhaseToBeDeleted represents this claim is going to be deleted after some clean job done
+	ThinPoolClaimPhaseToBeDeleted ThinPoolClaimPhase = "ToBeDeleted"
+
+	// ThinPoolClaimPhaseDeleted  represents this claim can be deleted
+	ThinPoolClaimPhaseDeleted ThinPoolClaimPhase = "Deleted"
+)
+
+const (
+	ThinPoolClaimEventFailed  = "ThinPoolClaimFail"
+	ThinPoolClaimEventSucceed = "ThinPoolClaimSucceed"
+)
+
+type ThinPoolClaimDescription struct {
+	// The name of pool which the thin pool will be created in
+	// +kubebuilder:validation:Required
+	PoolName string `json:"poolName"`
+
+	// Capacity of the thin pool in GiB
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Minimum:=1
+	Capacity int64 `json:"capacity"`
+
+	// OverProvisionRatio represents the amount of overprovisioning allowed for the data LV in thin pool.
+	// For example: If the OverProvisionRatio is `3.0`, data LV in pool size is 100GiB, then this pool can be overprovisioned upto (3*100) 300GiB.
+	// OverProvisionRatio can be updated. Hwameistor will pick the latest non-nil value as the final value, otherwise it will use the default value.
+	// The default and minimum ratio is 1.0.
+	// +optional
+	OverProvisionRatio *string `json:"overProvisionRatio,omitempty"`
+
+	// The size of thin pool metadata. Unit is GiB.
+	// The default and minimum size is 1GiB.
+	// It can be hard to predict the amount of metadata space that will
+	// be needed, so it is recommended to start with a size of 1GiB which
+	// should be enough for all practical purposes. A thin pool metadata
+	// LV can later be extended if needed.
+	// +optional
+	// +kubebuilder:validation:Minimum:=1
+	PoolMetadataSize *uint `json:"poolMetadataSize,omitempty"`
+}
+
+// ThinPoolClaimSpec defines the desired state of ThinPoolClaim
+type ThinPoolClaimSpec struct {
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
+	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+
+	// +kubebuilder:validation:Required
+	// NodeName represents the node where the thin pool will be claimed
+	NodeName string `json:"nodeName"`
+
+	// Description of the thin pool to be claimed
+	// +kubebuilder:validation:Required
+	Description ThinPoolClaimDescription `json:"description"`
+}
+
+// ThinPoolClaimStatus defines the observed state of ThinPoolClaim
+type ThinPoolClaimStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
+	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+
+	Status ThinPoolClaimPhase `json:"status,omitempty"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// ThinPoolClaim is the Schema for the thinpoolclaims API
+// +kubebuilder:validation:Required
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:JSONPath=".spec.nodeName",name=NodeName,type=string
+// +kubebuilder:printcolumn:JSONPath=".status.status",name=Phase,type=string
+// +kubebuilder:resource:scope=Cluster,shortName=tpc
+type ThinPoolClaim struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   ThinPoolClaimSpec   `json:"spec,omitempty"`
+	Status ThinPoolClaimStatus `json:"status,omitempty"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// ThinPoolClaimList contains a list of ThinPoolClaim
+type ThinPoolClaimList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []ThinPoolClaim `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&ThinPoolClaim{}, &ThinPoolClaimList{})
+}

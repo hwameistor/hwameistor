@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 	"unicode"
 
@@ -22,6 +23,13 @@ const (
 	leaderLeaseDuration      = 30 * time.Second
 	leaderLeaseRenewDeadLine = 25 * time.Second
 	leaderLeaseRetryDuration = 15 * time.Second
+)
+
+const (
+	Ki int64 = 1024
+	Mi int64 = 1024 * Ki
+	Gi int64 = 1024 * Mi
+	Ti int64 = 1024 * Gi
 )
 
 var unitMap = map[string]int64{
@@ -241,4 +249,21 @@ func TouchFile(filepath string) error {
 
 func GetSnapshotRestoreNameByVolume(volumeName string) string {
 	return fmt.Sprintf("snaprestore-%s", volumeName)
+}
+
+func CalculateOverProvisionRatio(records []apisv1alpha1.ThinPoolExtendRecord) string {
+	for i := len(records) - 1; i >= 0; i-- {
+		if records[i].Description.OverProvisionRatio != nil {
+			return *records[i].Description.OverProvisionRatio
+		}
+	}
+	return "1.0"
+}
+
+func IsSupportThinProvisioning(params map[string]string) bool {
+	thinValue, ok := params[apisv1alpha1.VolumeParameterThin]
+	if ok && strings.ToLower(thinValue) == "true" {
+		return true
+	}
+	return false
 }

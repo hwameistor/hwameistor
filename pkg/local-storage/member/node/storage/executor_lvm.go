@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
@@ -24,6 +27,12 @@ const (
 	LVMask = 1
 	VGMask = 1 << 1
 	PVMask = 1 << 2
+)
+
+const (
+	MetadataPercentThreshold       = 80
+	ProvisionRatioPercentThreshold = 80
+	DataPercentThreshold           = 80
 )
 
 // LVMUnknownStatus this represents no error or this status is not set
@@ -82,19 +91,22 @@ type lvsReportRecord struct {
 }
 
 type lvRecord struct {
-	LvPath        string `json:"lv_path"`
-	Name          string `json:"lv_name,omitempty"`
-	PoolName      string `json:"vg_name,omitempty"`
-	ThinPoolName  string `json:"pool_lv,omitempty"`
-	LvCapacity    string `json:"lv_size"`
-	Origin        string `json:"origin,omitempty"`
-	DataPercent   string `json:"data_percent,omitempty"`
-	LVSnapInvalid string `json:"lv_snapshot_invalid,omitempty"`
-	LVMergeFailed string `json:"lv_merge_failed,omitempty"`
-	SnapPercent   string `json:"snap_percent,omitempty"`
-	LVMerging     string `json:"lv_merging,omitempty"`
-	LVConverting  string `json:"lv_converting,omitempty"`
-	LVTime        string `json:"lv_time,omitempty"`
+	LvPath          string `json:"lv_path"`
+	Name            string `json:"lv_name,omitempty"`
+	PoolName        string `json:"vg_name,omitempty"`
+	ThinPoolName    string `json:"pool_lv,omitempty"`
+	LvCapacity      string `json:"lv_size"`
+	Origin          string `json:"origin,omitempty"`
+	DataPercent     string `json:"data_percent,omitempty"`
+	MetadataPercent string `json:"metadata_percent,omitempty"`
+	LVSnapInvalid   string `json:"lv_snapshot_invalid,omitempty"`
+	LVMergeFailed   string `json:"lv_merge_failed,omitempty"`
+	SnapPercent     string `json:"snap_percent,omitempty"`
+	LVMerging       string `json:"lv_merging,omitempty"`
+	LVConverting    string `json:"lv_converting,omitempty"`
+	LVTime          string `json:"lv_time,omitempty"`
+	Segtype         string `json:"segtype,omitempty"`
+	LvMetadataSize  string `json:"lv_metadata_size,omitempty"`
 }
 
 // type vgStatus struct {
@@ -138,6 +150,13 @@ func (lvm *lvmExecutor) GetPools() (map[string]*apisv1alpha1.LocalPool, error) {
 	lvmStatus, err := lvm.getLVMStatus(LVMask | VGMask | PVMask)
 	if err != nil {
 		lvm.logger.WithError(err).Error("Failed to query LVM stats.")
+		return nil, err
+	}
+
+	// Get thin pool status
+	thinPools, err := lvm.GetThinPools()
+	if err != nil {
+		lvm.logger.WithError(err).Error("Failed to get thin pools.")
 		return nil, err
 	}
 
@@ -200,6 +219,7 @@ func (lvm *lvmExecutor) GetPools() (map[string]*apisv1alpha1.LocalPool, error) {
 			FreeVolumeCount:          apisv1alpha1.LVMVolumeMaxCount - int64(len(poolVolumes)),
 			Disks:                    poolDisks,
 			Volumes:                  poolVolumes,
+			ThinPool:                 thinPools[vgName],
 		}
 	}
 
@@ -231,6 +251,7 @@ func (lvm *lvmExecutor) GetReplicas() (map[string]*apisv1alpha1.LocalVolumeRepli
 			Spec: apisv1alpha1.LocalVolumeReplicaSpec{
 				VolumeName: lvName,
 				PoolName:   lv.PoolName,
+				Thin:       lv.Segtype == "thin",
 			},
 			Status: apisv1alpha1.LocalVolumeReplicaStatus{
 				StoragePath:            lv.LvPath,
@@ -275,11 +296,20 @@ func (lvm *lvmExecutor) CreateVolumeReplica(replica *apisv1alpha1.LocalVolumeRep
 	// 	stripNum = vgStatus.actPVCount
 	// }
 
-	options := []string{
-		"--size", utils.ConvertNumericToLVMBytes(replica.Spec.RequiredCapacityBytes),
-		"--stripes", fmt.Sprintf("%d", 1),
+	sizeStr := utils.ConvertNumericToLVMBytes(replica.Spec.RequiredCapacityBytes)
+	options := []string{}
+	position := replica.Spec.PoolName
+	if replica.Spec.Thin {
+		if replica.Spec.ThinOriginVolume == nil {
+			options = append(options, "-V", sizeStr, "--thin", "--thinpool", apisv1alpha1.ThinPoolName, "-W", "y")
+		} else {
+			position = fmt.Sprintf("%s/%s", replica.Spec.PoolName, *replica.Spec.ThinOriginVolume)
+			options = append(options, "-s", "-k", "n", "--thinpool", apisv1alpha1.ThinPoolName)
+		}
+	} else {
+		options = append(options, "--size", sizeStr, "--stripes", fmt.Sprintf("%d", 1))
 	}
-	if err := lvm.lvcreate(replica.Spec.VolumeName, replica.Spec.PoolName, options); err != nil {
+	if err := lvm.lvcreate(replica.Spec.VolumeName, position, options); err != nil {
 		return nil, err
 	}
 
@@ -408,6 +438,46 @@ func (lvm *lvmExecutor) ExtendPools(localDevices []*apisv1alpha1.LocalDevice) (b
 	return extend, nil
 }
 
+func (lvm *lvmExecutor) ExtendThinPool(tpc *apisv1alpha1.ThinPoolClaim) error {
+	lvm.logger.Debugf("Start extending thin pool for ThinPoolClaim: %s", tpc.Name)
+
+	var metadataSize int64 = 1
+	if tpc.Spec.Description.PoolMetadataSize != nil {
+		metadataSize = int64(*tpc.Spec.Description.PoolMetadataSize)
+	}
+
+	options := []string{}
+	lv, _ := lvm.lvRecord(apisv1alpha1.ThinPoolName, tpc.Spec.Description.PoolName)
+	if lv == nil {
+		lvm.logger.Infof("Thin pool not found, create a new one")
+		options = append(options, fmt.Sprintf("--poolmetadatasize=%dG", metadataSize))
+		options = append(options, fmt.Sprintf("--size=%dG", tpc.Spec.Description.Capacity))
+		return lvm.thinPoolcreate(tpc.Spec.Description.PoolName, apisv1alpha1.ThinPoolName, options)
+	} else {
+		lvm.logger.Infof("Thin pool already exists, resizing it")
+		thinPoolDataSize, err := utils.ConvertLVMBytesToNumeric(lv.LvCapacity)
+		if err != nil {
+			return err
+		}
+		thinPoolMdSize, err := utils.ConvertLVMBytesToNumeric(lv.LvMetadataSize)
+		if err != nil {
+			return err
+		}
+
+		if tpc.Spec.Description.Capacity*utils.Gi > thinPoolDataSize {
+			options = append(options, fmt.Sprintf("--size=%dG", tpc.Spec.Description.Capacity))
+		}
+		if metadataSize*utils.Gi > thinPoolMdSize {
+			options = append(options, fmt.Sprintf("--poolmetadatasize=%dG", metadataSize))
+		}
+		if len(options) == 0 {
+			lvm.logger.Infof("No need to extend thin pool")
+			return nil
+		}
+		return lvm.thinPoolExtend(tpc.Spec.Description.PoolName, apisv1alpha1.ThinPoolName, options)
+	}
+}
+
 func (lvm *lvmExecutor) ResizePhysicalVolumes(localDevices map[string]*apisv1alpha1.LocalDevice) error {
 	lvm.logger.Debugf("Resizing pvsize, device(s): %+v, count: %d", localDevicesMap(localDevices).string(), len(localDevices))
 
@@ -495,14 +565,17 @@ func (lvm *lvmExecutor) CreateVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha
 		return err
 	}
 
-	if _, ok := existReplicas[replicaSnapshot.Spec.SourceVolume]; !ok {
+	isOriginThin := false
+	if replica, ok := existReplicas[replicaSnapshot.Spec.SourceVolume]; !ok {
 		logCtx.WithError(err).Error("Failed to get source volume replica on host")
 		return ErrReplicaNotFound
+	} else {
+		isOriginThin = replica.Spec.Thin
 	}
 
 	// use volume snapshot name as snapshot volume key - avoid duplicate volume replica snapshot with the same snapshot
 	if err = lvm.lvSnapCreate(replicaSnapshot.Spec.VolumeSnapshotName, path.Join(replicaSnapshot.Spec.PoolName, replicaSnapshot.Spec.SourceVolume),
-		replicaSnapshot.Spec.RequiredCapacityBytes); err != nil {
+		replicaSnapshot.Spec.RequiredCapacityBytes, isOriginThin); err != nil {
 		lvm.logger.WithError(err).Error("Failed to create volume replica snapshot")
 		return err
 	}
@@ -616,6 +689,101 @@ func (lvm *lvmExecutor) RollbackVolumeReplicaSnapshot(snapshotRestore *apisv1alp
 func (lvm *lvmExecutor) RestoreVolumeReplicaSnapshot(snapshotRestore *apisv1alpha1.LocalVolumeReplicaSnapshotRestore) error {
 	panic("have not implemented restore")
 	return nil
+}
+
+func (lvm *lvmExecutor) GetThinPools() (map[string]*apisv1alpha1.ThinPoolInfo, error) {
+	lvsReport, err := lvm.lvs()
+	if err != nil {
+		return nil, err
+	}
+
+	lsn := &apisv1alpha1.LocalStorageNode{}
+	err = lvm.lm.apiClient.Get(context.TODO(), types.NamespacedName{Name: lvm.lm.nodeConf.Name}, lsn)
+	if err != nil {
+		return nil, err
+	}
+
+	thinPools := make(map[string]*apisv1alpha1.ThinPoolInfo)
+
+	// find all thin pools
+	for _, lvsReportRecords := range lvsReport.Records {
+		for _, lvRecord := range lvsReportRecords.Records {
+			if lvRecord.Name == apisv1alpha1.ThinPoolName {
+				size, _ := utils.ConvertLVMBytesToNumeric(lvRecord.LvCapacity)
+				mdSize, _ := utils.ConvertLVMBytesToNumeric(lvRecord.LvMetadataSize)
+				thinPools[lvRecord.PoolName] = &apisv1alpha1.ThinPoolInfo{
+					Name:            lvRecord.Name,
+					Size:            size,
+					MetadataSize:    mdSize,
+					MetadataPercent: lvRecord.MetadataPercent,
+					DataPercent:     lvRecord.DataPercent,
+				}
+			}
+		}
+	}
+
+	// find all thin volumes
+	for _, lvsReportRecords := range lvsReport.Records {
+		for _, lvRecord := range lvsReportRecords.Records {
+			if _, ok := thinPools[lvRecord.PoolName]; ok && lvRecord.Segtype == "thin" && lvRecord.ThinPoolName == apisv1alpha1.ThinPoolName {
+				size, _ := utils.ConvertLVMBytesToNumeric(lvRecord.LvCapacity)
+				// since snapshots are completely read-only and won't grow in capacity
+				// this would make the calculation more accurate
+				if strings.HasPrefix(lvRecord.Name, "snapcontent-") {
+					dataPercentFloat, _ := strconv.ParseFloat(lvRecord.DataPercent, 64)
+					dataPercentFloat = dataPercentFloat / 100
+					thinPools[lvRecord.PoolName].TotalProvisionedSize += int64(math.Ceil(float64(size) * dataPercentFloat))
+				} else {
+					thinPools[lvRecord.PoolName].TotalProvisionedSize += size
+				}
+
+				thinPools[lvRecord.PoolName].ThinVolumes = append(thinPools[lvRecord.PoolName].ThinVolumes, lvRecord.Name)
+			}
+		}
+	}
+
+	// summarize thin pool information
+	for k := range thinPools {
+		if len(lsn.Status.ThinPoolExtendRecords[k]) == 0 {
+			return nil, fmt.Errorf("no thin pool extend records found for %s", k)
+		}
+
+		thinPools[k].CurrentProvisionRatio = fmt.Sprintf("%.2f", float64(thinPools[k].TotalProvisionedSize)/float64(thinPools[k].Size))
+		thinPools[k].OverProvisionRatio = utils.CalculateOverProvisionRatio(lsn.Status.ThinPoolExtendRecords[k])
+
+		currentProvisionRatioFloat, _ := strconv.ParseFloat(thinPools[k].CurrentProvisionRatio, 64)
+		overProvisionRatioFloat, _ := strconv.ParseFloat(thinPools[k].OverProvisionRatio, 64)
+		metadataPercentFloat, _ := strconv.ParseFloat(thinPools[k].MetadataPercent, 64)
+		dataPercentFloat, _ := strconv.ParseFloat(thinPools[k].DataPercent, 64)
+
+		warningMsgs := []string{}
+		if (currentProvisionRatioFloat/overProvisionRatioFloat)*100 >= ProvisionRatioPercentThreshold {
+			warningMsgs = append(warningMsgs, "current provision ratio is pretty high")
+		}
+		if metadataPercentFloat >= MetadataPercentThreshold {
+			warningMsgs = append(warningMsgs, "metadata usage is pretty high, please extend it")
+		}
+		if dataPercentFloat >= DataPercentThreshold {
+			warningMsgs = append(warningMsgs, "data usage is pretty high, please extend it")
+		}
+
+		state := metav1.Condition{
+			Type:               apisv1alpha1.ThinPoolConditionTypePoolState,
+			Status:             metav1.ConditionTrue,
+			LastTransitionTime: metav1.Now(),
+		}
+		if len(warningMsgs) > 0 {
+			state.Reason = apisv1alpha1.ThinPoolStateReasonWarning
+			state.Message = strings.Join(warningMsgs, ". ")
+		} else {
+			state.Reason = apisv1alpha1.ThinPoolStateReasonNormal
+			state.Message = "Thin pool is healthy"
+		}
+
+		thinPools[k].State = state
+	}
+
+	return thinPools, nil
 }
 
 func (lvm *lvmExecutor) getExistingPVs() (map[string]struct{}, error) {
@@ -761,8 +929,13 @@ func (lvm *lvmExecutor) lvcreate(lvName string, vgName string, options []string)
 	return res.Error
 }
 
-func (lvm *lvmExecutor) lvSnapCreate(snapName string, sourceVolumePath string, snapSize int64, options ...string) error {
-	snapSizeStr := utils.ConvertNumericToLVMBytes(snapSize)
+func (lvm *lvmExecutor) lvSnapCreate(snapName string, sourceVolumePath string, snapSize int64, thin bool, options ...string) error {
+	// A size option must not be used when creating a thin snapshot, otherwise a COW snapshot will be created
+	if !thin {
+		snapSizeStr := utils.ConvertNumericToLVMBytes(snapSize)
+		options = append(options, "--size", snapSizeStr)
+	}
+
 	params := exechelper.ExecParams{
 		CmdName: "lvcreate",
 		CmdArgs: append(options,
@@ -770,7 +943,8 @@ func (lvm *lvmExecutor) lvSnapCreate(snapName string, sourceVolumePath string, s
 			"--name", snapName,
 			// only supported read-only snapshots. By default, lvm snapshot is readable and writeable
 			"--permission", "r",
-			"--size", snapSizeStr,
+			// always active this snapshot
+			"-k", "n",
 			sourceVolumePath,
 		),
 	}
@@ -877,7 +1051,7 @@ func (lvm *lvmExecutor) lvs() (*lvsReport, error) {
 	params := exechelper.ExecParams{
 		CmdName: "lvs",
 		CmdArgs: []string{"-a", "-o", "lv_path,lv_name,vg_name,lv_attr,lv_size,pool_lv,origin,data_percent,metadata_percent,move_pv,mirror_log,copy_percent,convert_lv," +
-			"lv_snapshot_invalid,lv_merge_failed,snap_percent,lv_device_open,lv_merging,lv_converting,lv_time", "--reportformat", "json", "--units", "B"},
+			"lv_snapshot_invalid,lv_merge_failed,snap_percent,lv_device_open,lv_merging,lv_converting,lv_time,segtype,lv_metadata_size", "--reportformat", "json", "--units", "B"},
 	}
 	res := lvm.cmdExec.RunCommand(params)
 	if res.ExitCode != 0 {
@@ -934,6 +1108,34 @@ func (lvm *lvmExecutor) pvresize(pv string, options ...string) error {
 	return res.Error
 }
 
+func (lvm *lvmExecutor) thinPoolcreate(vgName, thinPoolName string, options []string) error {
+	params := exechelper.ExecParams{
+		CmdName: "lvcreate",
+		CmdArgs: append([]string{vgName, "--type", "thin-pool", "-n", thinPoolName, "-y"}, options...),
+		Timeout: 300,
+	}
+	res := lvm.cmdExec.RunCommand(params)
+	if res.ExitCode == 0 {
+		return nil
+	}
+
+	return res.Error
+}
+
+func (lvm *lvmExecutor) thinPoolExtend(vgName, thinPoolName string, options []string) error {
+	lvName := fmt.Sprintf("%s/%s", vgName, thinPoolName)
+	params := exechelper.ExecParams{
+		CmdName: "lvextend",
+		CmdArgs: append([]string{lvName, "-y"}, options...),
+		Timeout: 300,
+	}
+	res := lvm.cmdExec.RunCommand(params)
+	if res.ExitCode == 0 {
+		return nil
+	}
+	return res.Error
+}
+
 type lvmStatus struct {
 	lvs    map[string]lvRecord
 	pvs    map[string]pvRecord
@@ -983,6 +1185,17 @@ func (lvm *lvmExecutor) getLVMStatus(masks int) (*lvmStatus, error) {
 					lvRecord.Name = strings.TrimPrefix(lvRecord.Name, "[")
 					lvRecord.Name = strings.TrimSuffix(lvRecord.Name, "]")
 				}
+
+				// filter thin pool
+				if strings.HasPrefix(lvRecord.Name, apisv1alpha1.ThinPoolName) {
+					continue
+				}
+
+				// filter pmspare
+				if strings.Contains(lvRecord.Name, "pmspare") {
+					continue
+				}
+
 				status.lvs[lvRecord.Name] = lvRecord
 			}
 		}
