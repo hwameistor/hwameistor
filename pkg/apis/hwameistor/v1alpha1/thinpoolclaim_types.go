@@ -42,6 +42,7 @@ type ThinPoolClaimDescription struct {
 	// Capacity of the thin pool in GiB
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Minimum:=1
+	// +kubebuilder:validation:Maximum:=1048576
 	Capacity int64 `json:"capacity"`
 
 	// OverProvisionRatio represents the amount of overprovisioning allowed for the data LV in thin pool.
@@ -59,6 +60,7 @@ type ThinPoolClaimDescription struct {
 	// LV can later be extended if needed.
 	// +optional
 	// +kubebuilder:validation:Minimum:=1
+	// +kubebuilder:validation:Maximum:=1048576
 	PoolMetadataSize *uint `json:"poolMetadataSize,omitempty"`
 }
 
