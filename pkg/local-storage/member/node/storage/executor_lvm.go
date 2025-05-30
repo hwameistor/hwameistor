@@ -15,6 +15,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
@@ -92,22 +93,25 @@ type lvsReportRecord struct {
 }
 
 type lvRecord struct {
-	LvPath          string `json:"lv_path"`
-	Name            string `json:"lv_name,omitempty"`
-	PoolName        string `json:"vg_name,omitempty"`
-	ThinPoolName    string `json:"pool_lv,omitempty"`
-	LvCapacity      string `json:"lv_size"`
-	Origin          string `json:"origin,omitempty"`
-	DataPercent     string `json:"data_percent,omitempty"`
-	MetadataPercent string `json:"metadata_percent,omitempty"`
-	LVSnapInvalid   string `json:"lv_snapshot_invalid,omitempty"`
-	LVMergeFailed   string `json:"lv_merge_failed,omitempty"`
-	SnapPercent     string `json:"snap_percent,omitempty"`
-	LVMerging       string `json:"lv_merging,omitempty"`
-	LVConverting    string `json:"lv_converting,omitempty"`
-	LVTime          string `json:"lv_time,omitempty"`
-	Segtype         string `json:"segtype,omitempty"`
-	LvMetadataSize  string `json:"lv_metadata_size,omitempty"`
+	LvPath          string      `json:"lv_path"`
+	Name            string      `json:"lv_name,omitempty"`
+	PoolName        string      `json:"vg_name,omitempty"`
+	ThinPoolName    string      `json:"pool_lv,omitempty"`
+	LvCapacity      string      `json:"lv_size"`
+	Origin          string      `json:"origin,omitempty"`
+	DataPercent     string      `json:"data_percent,omitempty"`
+	MetadataPercent string      `json:"metadata_percent,omitempty"`
+	LVSnapInvalid   string      `json:"lv_snapshot_invalid,omitempty"`
+	LVMergeFailed   string      `json:"lv_merge_failed,omitempty"`
+	SnapPercent     string      `json:"snap_percent,omitempty"`
+	LVMerging       string      `json:"lv_merging,omitempty"`
+	LVConverting    string      `json:"lv_converting,omitempty"`
+	LVTime          string      `json:"lv_time,omitempty"`
+	Segtype         string      `json:"segtype,omitempty"`
+	LvMetadataSize  string      `json:"lv_metadata_size,omitempty"`
+	LvAttr          string      `json:"lv_attr,omitempty"`
+	Devices         string      `json:"devices,omitempty"`
+	Disks           sets.String `json:"-"`
 }
 
 // type vgStatus struct {
@@ -252,7 +256,7 @@ func (lvm *lvmExecutor) GetReplicas() (map[string]*apisv1alpha1.LocalVolumeRepli
 			return nil, err
 		}
 
-		replicaToTest := &apisv1alpha1.LocalVolumeReplica{
+		replicas[lvName] = &apisv1alpha1.LocalVolumeReplica{
 			Spec: apisv1alpha1.LocalVolumeReplicaSpec{
 				VolumeName: lvName,
 				PoolName:   lv.PoolName,
@@ -263,10 +267,10 @@ func (lvm *lvmExecutor) GetReplicas() (map[string]*apisv1alpha1.LocalVolumeRepli
 				DevicePath:             lv.LvPath,
 				AllocatedCapacityBytes: capacity,
 				Synced:                 true,
+				Disks:                  lv.Disks.UnsortedList(),
+				State:                  lvm.getReplicaStateByLvAttr(lv.LvAttr),
 			},
 		}
-		replica, _ := lvm.TestVolumeReplica(replicaToTest)
-		replicas[lvName] = replica
 		lvm.logger.WithField("volume", lvName).Debug("Detected a LVM volume")
 	}
 
@@ -416,6 +420,14 @@ func (lvm *lvmExecutor) TestVolumeReplica(replica *apisv1alpha1.LocalVolumeRepli
 	newReplica.Status.State = status.state
 
 	return newReplica, nil
+}
+
+func (lvm *lvmExecutor) getReplicaStateByLvAttr(lvAttr string) apisv1alpha1.State {
+	// the 5th char indicates whether a lv is active or not
+	if len(lvAttr) < 5 || lvAttr[4] != 'a' {
+		return apisv1alpha1.VolumeStateNotReady
+	}
+	return apisv1alpha1.VolumeStateReady
 }
 
 func (lvm *lvmExecutor) ExtendPools(localDevices []*apisv1alpha1.LocalDevice) (bool, error) {
@@ -1085,7 +1097,7 @@ func (lvm *lvmExecutor) lvs() (*lvsReport, error) {
 	params := exechelper.ExecParams{
 		CmdName: "lvs",
 		CmdArgs: []string{"-a", "-o", "lv_path,lv_name,vg_name,lv_attr,lv_size,pool_lv,origin,data_percent,metadata_percent,move_pv,mirror_log,copy_percent,convert_lv," +
-			"lv_snapshot_invalid,lv_merge_failed,snap_percent,lv_device_open,lv_merging,lv_converting,lv_time,segtype,lv_metadata_size", "--reportformat", "json", "--units", "B"},
+			"lv_snapshot_invalid,lv_merge_failed,snap_percent,lv_device_open,lv_merging,lv_converting,lv_time,segtype,lv_metadata_size,devices", "--reportformat", "json", "--units", "B"},
 	}
 	res := lvm.cmdExec.RunCommand(params)
 	if res.ExitCode != 0 {
@@ -1098,7 +1110,50 @@ func (lvm *lvmExecutor) lvs() (*lvsReport, error) {
 		lvm.logger.WithError(err).Error("Failed to parse LVs output")
 		return nil, err
 	}
-	return report, nil
+
+	// When LV data is distributed across multiple PVs (such as striping or mirroring scenes),
+	// "lvs -o devices" will display a separate row for each physical segment, resulting in multiple rows of records for the same LV, like this:
+	//   Path           LV    Devices
+	//   /dev/vg1/lvol0 lvol0 /dev/sdb(0)
+	//   /dev/vg1/lvol0 lvol0 /dev/sdb(537)
+	//   /dev/vg1/lvol0 lvol0 /dev/sdc(0)
+	// So, we should merge them into one lv record here
+	return lvm.mergeLvRecordsByDevices(report)
+}
+
+func (lvm *lvmExecutor) mergeLvRecordsByDevices(report *lvsReport) (*lvsReport, error) {
+	resReport := &lvsReport{}
+	for _, lvsReportRecords := range report.Records {
+		lvRecordSet := make(map[string]lvRecord)
+		for _, record := range lvsReportRecords.Records {
+			if record.Devices != "" {
+				// lvRecord.Disks should be like "/dev/sdb"
+				diskName := strings.Split(record.Devices, "(")[0]
+				record.Disks = sets.NewString(diskName)
+			}
+			if lr, ok := lvRecordSet[record.Name]; ok {
+				if lr.Disks.Len() != 0 && record.Disks.Len() != 0 {
+					lr.Disks.Insert(record.Disks.UnsortedList()...)
+					lvRecordSet[lr.Name] = lr
+				} else {
+					return nil, fmt.Errorf("failed to merge duplicate lv %s", record.Name)
+				}
+			} else {
+				lvRecordSet[record.Name] = record
+			}
+		}
+
+		lvRecords := make([]lvRecord, 0, len(lvRecordSet))
+		for _, record := range lvRecordSet {
+			lvRecords = append(lvRecords, record)
+		}
+
+		resReport.Records = append(resReport.Records, lvsReportRecord{
+			Records: lvRecords,
+		})
+	}
+
+	return resReport, nil
 }
 
 func (lvm *lvmExecutor) lvremove(lvPath string, options []string) error {
