@@ -693,6 +693,7 @@ func (lvm *lvmExecutor) GetVolumeReplicaSnapshot(replicaSnapshot *apisv1alpha1.L
 	actualSnapshotStatus.AllocatedCapacityBytes = capacity
 	actualSnapshotStatus.Attribute.Invalid = len(snapshotVolume.LVSnapInvalid) > 0 && snapshotVolume.LVSnapInvalid != LVMUnknownStatus
 	actualSnapshotStatus.Attribute.Merging = len(snapshotVolume.LVMerging) > 0
+	actualSnapshotStatus.Conditions = replicaSnapshot.Status.Conditions
 	if actualSnapshotStatus.Attribute.Invalid {
 		actualSnapshotStatus.Message = fmt.Sprintf("snapshot is invalid")
 		actualSnapshotStatus.State = apisv1alpha1.VolumeStateNotReady
