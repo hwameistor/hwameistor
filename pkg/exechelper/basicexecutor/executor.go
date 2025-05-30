@@ -87,9 +87,9 @@ func (e *basicExecutor) RunCommand(params exechelper.ExecParams) exechelper.Exec
 		"command": params.CmdName,
 		"args":    params.CmdArgs,
 		"timeout": params.Timeout,
-		"stdout":  result.OutBuf.String(),
-		"stderr":  result.ErrBuf.String(),
-		"error":   result.Error,
+		// "stdout":  result.OutBuf.String(),
+		"stderr": result.ErrBuf.String(),
+		"error":  result.Error,
 	}).Debug("Finished running command")
 
 	return result
