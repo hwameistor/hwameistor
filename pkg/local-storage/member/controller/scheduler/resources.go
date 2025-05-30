@@ -673,12 +673,8 @@ func (r *resources) handleNodeAdd(obj interface{}) {
 
 func (r *resources) handleNodeUpdate(_, newObj interface{}) {
 	node := newObj.(*apisv1alpha1.LocalStorageNode)
-	if node.Status.State == apisv1alpha1.NodeStateReady {
-		r.addTotalStorage(node)
-		r.updateAllocatedStorageByLSN(node)
-	} else {
-		r.delTotalStorage(node)
-	}
+	r.addTotalStorage(node)
+	r.updateAllocatedStorageByLSN(node)
 }
 
 func (r *resources) handleNodeDelete(obj interface{}) {
