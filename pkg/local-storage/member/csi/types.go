@@ -7,6 +7,10 @@ const (
 	VolumeReplicaKindKey       = "volumeReplicaKind"
 	VolumeEncryptSecretKey     = "volumeEncryptSecret"
 	VolumeEncryptTypeKey       = "volumeEncryptType"
+
+	// AnnSelectedNode annotation is added to a PVC that has been triggered by scheduler to
+	// be dynamically provisioned. Its value is the name of the selected node.
+	AnnSelectedNode = "volume.kubernetes.io/selected-node"
 )
 
 // VolumeMetrics struct
