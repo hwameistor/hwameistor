@@ -107,7 +107,7 @@ func (m *manager) volumeExpandStart(expand *apisv1alpha1.LocalVolumeExpand) erro
 		return err
 	}
 
-	if utils.NumericToLVMBytes(expand.Spec.RequiredCapacityBytes) > utils.NumericToLVMBytes(vol.Spec.RequiredCapacityBytes) {
+	if utils.NumericToLVMBytes(expand.Spec.RequiredCapacityBytes) > utils.NumericToLVMBytes(vol.Status.AllocatedCapacityBytes) {
 		vol.Spec.RequiredCapacityBytes = utils.NumericToLVMBytes(expand.Spec.RequiredCapacityBytes)
 		if err := m.apiClient.Update(ctx, vol); err != nil {
 			logCtx.WithError(err).Error("Failed to update Volume with new capacity")

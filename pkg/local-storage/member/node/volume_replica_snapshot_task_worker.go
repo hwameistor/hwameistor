@@ -3,10 +3,13 @@ package node
 import (
 	"context"
 	"fmt"
+
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/member/node/storage"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -77,12 +80,37 @@ func (m *manager) volumeReplicaSnapshotSubmit(snapshot *apisv1alpha1.LocalVolume
 	logCtx.Debug("Submit a VolumeReplica Snapshot")
 
 	snapshot.Status.State = apisv1alpha1.VolumeStateCreating
+	meta.SetStatusCondition(&snapshot.Status.Conditions, metav1.Condition{
+		Type:    apisv1alpha1.VolumeReplicaSnapshotConditionSubmit,
+		Reason:  apisv1alpha1.VolumeReplicaSnapshotConditionSubmit,
+		Status:  metav1.ConditionTrue,
+		Message: "",
+	})
 	return m.apiClient.Status().Update(context.TODO(), snapshot)
 }
 
-func (m *manager) volumeReplicaSnapshotCreate(snapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error {
+func (m *manager) volumeReplicaSnapshotCreate(snapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (err error) {
 	logCtx := m.logger.WithFields(log.Fields{"Snapshot": snapshot.Name, "Spec": snapshot.Spec})
 	logCtx.Debug("Create a VolumeReplica Snapshot")
+
+	defer func() {
+		condition := metav1.Condition{
+			Type:   apisv1alpha1.VolumeReplicaSnapshotConditionCreate,
+			Reason: apisv1alpha1.VolumeReplicaSnapshotConditionCreate,
+		}
+		if err != nil {
+			condition.Status = metav1.ConditionFalse
+			condition.Message = err.Error()
+		} else {
+			condition.Status = metav1.ConditionTrue
+			condition.Message = ""
+		}
+		meta.SetStatusCondition(&snapshot.Status.Conditions, condition)
+		updateErr := m.apiClient.Status().Update(context.TODO(), snapshot)
+		if updateErr != nil {
+			logCtx.WithError(updateErr).Warn("Failed to update status of VolumeReplica Snapshot in volumeReplicaSnapshotCreate")
+		}
+	}()
 
 	snapshotExistOnHost := func() (bool, error) {
 		_, err := m.storageMgr.VolumeReplicaSnapshotManager().GetVolumeReplicaSnapshot(snapshot)
@@ -106,12 +134,31 @@ func (m *manager) volumeReplicaSnapshotCreate(snapshot *apisv1alpha1.LocalVolume
 	}
 
 	snapshot.Status.State = apisv1alpha1.VolumeStateNotReady
-	return m.apiClient.Status().Update(context.TODO(), snapshot)
+	return nil
 }
 
-func (m *manager) volumeReplicaSnapshotReadyOrNot(snapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error {
+func (m *manager) volumeReplicaSnapshotReadyOrNot(snapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) (err error) {
 	logCtx := m.logger.WithFields(log.Fields{"Snapshot": snapshot.Name, "Spec": snapshot.Spec})
 	logCtx.Debug("Check a VolumeReplica Snapshot status")
+
+	defer func() {
+		condition := metav1.Condition{
+			Type:   apisv1alpha1.VolumeReplicaSnapshotConditionReadyOrNot,
+			Reason: apisv1alpha1.VolumeReplicaSnapshotConditionReadyOrNot,
+		}
+		if err != nil {
+			condition.Status = metav1.ConditionFalse
+			condition.Message = err.Error()
+		} else {
+			condition.Status = metav1.ConditionTrue
+			condition.Message = ""
+		}
+		meta.SetStatusCondition(&snapshot.Status.Conditions, condition)
+		updateErr := m.apiClient.Status().Update(context.TODO(), snapshot)
+		if updateErr != nil {
+			logCtx.WithError(updateErr).Warn("Failed to update status of VolumeReplica Snapshot in volumeReplicaSnapshotReadyOrNot")
+		}
+	}()
 
 	snapRealStatus, err := m.storageMgr.VolumeReplicaSnapshotManager().GetVolumeReplicaSnapshot(snapshot)
 	if err != nil {
@@ -120,26 +167,19 @@ func (m *manager) volumeReplicaSnapshotReadyOrNot(snapshot *apisv1alpha1.LocalVo
 		// keep monitoring the snapshot status until no error happens
 		snapshot.Status.State = apisv1alpha1.VolumeStateNotReady
 		snapshot.Status.Message = err.Error()
-		if err = m.apiClient.Status().Update(context.TODO(), snapshot); err != nil {
-			return err
-		}
 		return err
 	}
 
 	snapshot.Status = *snapRealStatus
 	if snapshot.Status.State != apisv1alpha1.NodeStateReady {
-		if err = m.apiClient.Status().Update(context.TODO(), snapshot); err != nil {
-			return err
-		}
-		err = fmt.Errorf(snapshot.Status.Message)
-		return err
+		return fmt.Errorf(snapshot.Status.Message)
 	}
 
 	if err = m.storageMgr.Registry().SyncNodeResources(); err != nil {
 		return err
 	}
 
-	return m.apiClient.Status().Update(context.TODO(), snapshot)
+	return nil
 }
 
 func (m *manager) volumeReplicaSnapshotCleanup(snapshot *apisv1alpha1.LocalVolumeReplicaSnapshot) error {

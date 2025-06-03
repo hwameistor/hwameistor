@@ -421,6 +421,7 @@ spec:
                           capacity:
                             description: Capacity of the thin pool in GiB
                             format: int64
+                            maximum: 1048576
                             minimum: 1
                             type: integer
                           overProvisionRatio:
@@ -440,6 +441,7 @@ spec:
                               needed, so it is recommended to start with a size of
                               1GiB which should be enough for all practical purposes.
                               A thin pool metadata LV can later be extended if needed.
+                            maximum: 1048576
                             minimum: 1
                             type: integer
                           poolName:

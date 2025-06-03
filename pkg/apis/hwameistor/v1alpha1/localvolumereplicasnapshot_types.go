@@ -54,6 +54,9 @@ type LocalVolumeReplicaSnapshotStatus struct {
 
 	// Message error message to describe some states
 	Message string `json:"reason,omitempty"`
+
+	// Conditions records the information of the volume replica snapshot
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // VolumeSnapshotAttr defines attrs of volume, e.g. invalid, merging...

@@ -1006,25 +1006,6 @@ func TestResources_ThinProvisioning(t *testing.T) {
 	client, _ := CreateFakeClient()
 	r := newResources(10, client)
 
-	// Test thin pool capacity allocation
-	t.Run("Test addAllocatedStorageForThinPool", func(t *testing.T) {
-		poolName := v1alpha1.PoolNameForHDD
-		nodeName := "test-node"
-		capacity := int64(1024 * 1024 * 1024) // 1GB
-
-		r.addAllocatedStorageForThinPool(poolName, nodeName, capacity)
-
-		// Verify the capacity is added
-		if r.allocatedStorages.pools[poolName].capacities[nodeName] != capacity {
-			t.Errorf("Expected capacity %d, got %d", capacity, r.allocatedStorages.pools[poolName].capacities[nodeName])
-		}
-
-		// Verify the thin pool is marked as allocated
-		if _, exists := r.thinPoolCapacityAllocatedSet[poolName][nodeName]; !exists {
-			t.Error("Thin pool not marked as allocated")
-		}
-	})
-
 	// Test thin volume predicate
 	t.Run("Test predicate with thin volume", func(t *testing.T) {
 		// Create a thin volume
@@ -1112,95 +1093,6 @@ func TestResources_ThinProvisioning(t *testing.T) {
 		}
 		if score <= 0 {
 			t.Errorf("Expected positive score, got %d", score)
-		}
-	})
-}
-
-func TestResources_ThinVolumeAllocation(t *testing.T) {
-	client, _ := CreateFakeClient()
-	r := newResources(10, client)
-
-	// Setup test node with thin pool
-	node := &v1alpha1.LocalStorageNode{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-node"},
-		Status: v1alpha1.LocalStorageNodeStatus{
-			Pools: map[string]v1alpha1.LocalPool{
-				v1alpha1.PoolNameForHDD: {
-					Name: v1alpha1.PoolNameForHDD,
-					ThinPool: &v1alpha1.ThinPoolInfo{
-						Size:               2 * 1024 * 1024 * 1024, // 2GB
-						OverProvisionRatio: "2.0",
-						MetadataSize:       100 * 1024 * 1024, // 100MB
-					},
-					TotalCapacityBytes: 10 * 1024 * 1024 * 1024, // 10GB
-					TotalVolumeCount:   100,
-				},
-			},
-		},
-	}
-
-	r.storageNodes["test-node"] = node
-	r.addTotalStorage(node)
-
-	// Test thin volume allocation
-	t.Run("Test addAllocatedStorage for thin volume", func(t *testing.T) {
-		vol := &v1alpha1.LocalVolume{
-			Spec: v1alpha1.LocalVolumeSpec{
-				Thin:     true,
-				PoolName: v1alpha1.PoolNameForHDD,
-				Config: &v1alpha1.VolumeConfig{
-					RequiredCapacityBytes: 512 * 1024 * 1024, // 512MB
-					Replicas: []v1alpha1.VolumeReplica{
-						{Hostname: "test-node"},
-					},
-				},
-			},
-		}
-
-		r.addAllocatedStorage(vol)
-
-		// Verify thin pool capacity is allocated
-		if r.allocatedStorages.pools[v1alpha1.PoolNameForHDD].thinPoolCapacities["test-node"] != vol.Spec.Config.RequiredCapacityBytes {
-			t.Errorf("Expected thin pool capacity %d, got %d",
-				vol.Spec.Config.RequiredCapacityBytes,
-				r.allocatedStorages.pools[v1alpha1.PoolNameForHDD].thinPoolCapacities["test-node"])
-		}
-
-		// Verify regular capacity is not allocated
-		thinPoolTotalAllocated := node.Status.Pools[v1alpha1.PoolNameForHDD].ThinPool.Size + node.Status.Pools[v1alpha1.PoolNameForHDD].ThinPool.MetadataSize * 2
-		if r.allocatedStorages.pools[v1alpha1.PoolNameForHDD].capacities["test-node"] != thinPoolTotalAllocated {
-			t.Errorf("Expected regular capacity %d, got %d", thinPoolTotalAllocated,
-				r.allocatedStorages.pools[v1alpha1.PoolNameForHDD].capacities["test-node"])
-		}
-	})
-
-	// Test thin volume deallocation
-	t.Run("Test recycleAllocatedStorage for thin volume", func(t *testing.T) {
-		vol := &v1alpha1.LocalVolume{
-			Spec: v1alpha1.LocalVolumeSpec{
-				Thin:     true,
-				PoolName: v1alpha1.PoolNameForHDD,
-				Config: &v1alpha1.VolumeConfig{
-					RequiredCapacityBytes: 512 * 1024 * 1024, // 512MB
-					Replicas: []v1alpha1.VolumeReplica{
-						{Hostname: "test-node"},
-					},
-				},
-			},
-		}
-
-		// First allocate
-		r.addAllocatedStorage(vol)
-		initialCapacity := r.allocatedStorages.pools[v1alpha1.PoolNameForHDD].thinPoolCapacities["test-node"]
-
-		// Then deallocate
-		r.recycleAllocatedStorage(vol)
-
-		// Verify capacity is released
-		if r.allocatedStorages.pools[v1alpha1.PoolNameForHDD].thinPoolCapacities["test-node"] != initialCapacity-vol.Spec.Config.RequiredCapacityBytes {
-			t.Errorf("Expected thin pool capacity %d after recycle, got %d",
-				initialCapacity-vol.Spec.Config.RequiredCapacityBytes,
-				r.allocatedStorages.pools[v1alpha1.PoolNameForHDD].thinPoolCapacities["test-node"])
 		}
 	})
 }

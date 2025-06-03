@@ -12,6 +12,7 @@ var (
 	ErrorReplicaNotFound                  = errors.New("not found replica")
 	ErrorSnapshotNotFound                 = errors.New("not found snapshot")
 	ErrorReplicaExists                    = errors.New("already exists replica")
+	ErrorReplicaSnapshotExists            = errors.New("already exists snapshot")
 	ErrorLocalVolumeExistsInVolumeGroup   = errors.New("already exists in volume group")
 	ErrorLocalVolumeNotFoundInVolumeGroup = errors.New("failed to find logical volume")
 	ErrorInsufficientRequestResources     = errors.New("insufficient request resources")
