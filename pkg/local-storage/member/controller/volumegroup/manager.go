@@ -688,41 +688,8 @@ func (m *manager) addPVC(pvc *corev1.PersistentVolumeClaim) error {
 	}
 
 	// can't find the corresponding localvolumegroup for this pvc, so it must have been rebound
-	// we should update lv and lvg to make sure they are consistent with this pvc
+	// we should update lvg to make sure they are consistent with this pvc
 
-	lv := &apisv1alpha1.LocalVolume{}
-	err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: pvc.Spec.VolumeName}, lv)
-	if err != nil {
-		return err
-	}
-
-	oldPvc := &corev1.PersistentVolumeClaim{}
-	err = m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: lv.Spec.PersistentVolumeClaimNamespace, Name: lv.Spec.PersistentVolumeClaimName}, oldPvc)
-	if err != nil && !errors.IsNotFound(err) {
-		return err
-	}
-	// this old pvc is not be deleted yet and still bound to lv, so we need to wait
-	if err == nil && oldPvc.Spec.VolumeName == lv.Name && oldPvc.Status.Phase == corev1.ClaimBound {
-		return fmt.Errorf("pvc %s/%s still exists, can't handle rebind, retry later", oldPvc.Namespace, oldPvc.Name)
-	}
-
-	// update lv with new pvc
-	if lv.Spec.PersistentVolumeClaimNamespace != pvc.Namespace && lv.Spec.PersistentVolumeClaimName != pvc.Name {
-		m.logger.WithFields(log.Fields{
-			"lv":              lv.Name,
-			"oldPvcName":      lv.Spec.PersistentVolumeClaimName,
-			"oldPvcNamespace": lv.Spec.PersistentVolumeClaimNamespace,
-			"newPvcName":      pvc.Name,
-			"newPvcNamespace": pvc.Namespace,
-		}).Info("replace pvc info in lv with a new pvc")
-		lv.Spec.PersistentVolumeClaimNamespace = pvc.Namespace
-		lv.Spec.PersistentVolumeClaimName = pvc.Name
-		if err := m.apiClient.Update(context.TODO(), lv); err != nil {
-			return err
-		}
-	}
-
-	// update lvg
 	lvgName, exists := m.localVolumeToVolumeGroups[pvc.Spec.VolumeName]
 	if !exists {
 		return fmt.Errorf("localvolume %s not found in localVolumeToVolumeGroups, retry later", pvc.Spec.VolumeName)
