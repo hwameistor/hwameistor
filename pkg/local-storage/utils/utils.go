@@ -17,6 +17,11 @@ import (
 	"k8s.io/client-go/rest"
 
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -266,4 +271,21 @@ func IsSupportThinProvisioning(params map[string]string) bool {
 		return true
 	}
 	return false
+}
+
+func IsHwameiStorLocalStoragePVC(pvc *corev1.PersistentVolumeClaim, apiClient client.Client, logger *log.Entry) bool {
+	if pvc.Spec.StorageClassName == nil {
+		return false
+	}
+	sc := &storagev1.StorageClass{}
+	err := apiClient.Get(context.TODO(), types.NamespacedName{Name: *pvc.Spec.StorageClassName}, sc)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			logger.WithFields(log.Fields{"namespace": pvc.Namespace, "pvc": pvc.Name, "storageclass": *pvc.Spec.StorageClassName}).Info("storageclass not found")
+			return false
+		}
+		logger.WithFields(log.Fields{"namespace": pvc.Namespace, "pvc": pvc.Name, "storageclass": *pvc.Spec.StorageClassName}).WithError(err).Error("Failed to fetch storageclass")
+		return false
+	}
+	return sc.Provisioner == apisv1alpha1.CSIDriverName
 }

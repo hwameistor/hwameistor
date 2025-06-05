@@ -364,9 +364,20 @@ func (p *plugin) getAssociatedVolumes(namespace string, pvcName string) ([]*apis
 			}
 		}
 	}
-	log.Debug("getAssociatedVolumes return empty")
-	return []*apisv1alpha1.LocalVolume{}, nil
 
+	// This pvc is not used by pod
+	// It must have "volume.kubernetes.io/selected-node" annotation for centain purpose
+	// so we should check it and allow it to create
+	p.logger.WithFields(log.Fields{
+		"namespace": namespace,
+		"pvcName":   pvcName,
+	}).Info("This PVC is not used by any Pods, it should have 'volume.kubernetes.io/selected-node' annotation")
+	lv, err := p.constructLocalVolumeForPVCWithNonePod(namespace, pvcName)
+	if err != nil {
+		return []*apisv1alpha1.LocalVolume{}, err
+	}
+
+	return []*apisv1alpha1.LocalVolume{lv}, nil
 }
 
 func (p *plugin) getHwameiStorPVCs(pod *corev1.Pod) ([]*apisv1alpha1.LocalVolume, error) {
@@ -401,6 +412,30 @@ func (p *plugin) getHwameiStorPVCs(pod *corev1.Pod) ([]*apisv1alpha1.LocalVolume
 		}
 	}
 	return lvs, nil
+}
+
+func (p *plugin) constructLocalVolumeForPVCWithNonePod(namespace string, pvcName string) (*apisv1alpha1.LocalVolume, error) {
+	ctx := context.Background()
+	pvc := &corev1.PersistentVolumeClaim{}
+	if err := p.apiClient.Get(ctx, types.NamespacedName{Namespace: namespace, Name: pvcName}, pvc); err != nil {
+		return nil, err
+	}
+
+	// Check whether this pvc has been bound to a node
+	if _, ok := pvc.Annotations[AnnSelectedNode]; !ok {
+		// This should never happen
+		return nil, fmt.Errorf("no selected node for pvc %s/%s", namespace, pvcName)
+	}
+
+	sc := &storagev1.StorageClass{}
+	if err := p.apiClient.Get(ctx, types.NamespacedName{Name: *pvc.Spec.StorageClassName}, sc); err != nil {
+		return nil, err
+	}
+	if sc.Provisioner == apisv1alpha1.CSIDriverName {
+		return constructLocalVolumeForPVC(pvc, sc)
+	}
+	// This should not happen
+	return nil, fmt.Errorf("unknown provisioner %s", sc.Provisioner)
 }
 
 func constructLocalVolumeForPVC(pvc *corev1.PersistentVolumeClaim, sc *storagev1.StorageClass) (*apisv1alpha1.LocalVolume, error) {
