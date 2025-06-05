@@ -485,6 +485,9 @@ func (m *manager) handlePvcAddEvent(obj interface{}) {
 	if pvc.Status.Phase != corev1.ClaimBound || pvc.Spec.VolumeName == "" {
 		return
 	}
+	if !utils.IsHwameiStorLocalStoragePVC(pvc, m.apiClient, m.logger) {
+		return
+	}
 	// try to trigger rebind for the localVolume
 	m.volumeTaskQueue.Add(pvc.Spec.VolumeName)
 }
