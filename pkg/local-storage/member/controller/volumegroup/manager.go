@@ -702,8 +702,7 @@ func (m *manager) addPVC(pvc *corev1.PersistentVolumeClaim) error {
 
 	for i := range lvg.Spec.Volumes {
 		if lvg.Spec.Volumes[i].LocalVolumeName == pvc.Spec.VolumeName &&
-			lvg.Spec.Volumes[i].PersistentVolumeClaimName != pvc.Name &&
-			lvg.Spec.Namespace != pvc.Namespace {
+			(lvg.Spec.Volumes[i].PersistentVolumeClaimName != pvc.Name || lvg.Spec.Namespace != pvc.Namespace) {
 			m.logger.WithFields(log.Fields{
 				"lvg":             lvgName,
 				"oldPvcName":      lvg.Spec.Volumes[i].PersistentVolumeClaimName,
