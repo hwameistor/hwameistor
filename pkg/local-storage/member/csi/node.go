@@ -105,7 +105,8 @@ func (p *plugin) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 	*/
 
 	// return directly if device has already mounted at TargetPath
-	if isStringInArray(req.GetTargetPath(), p.mounter.GetDeviceMountPoints(devicePath)) {
+	// use volumeID as identifier when kubelet workdir is symlink, see #1713 for detail
+	if isSubstringInArray(req.VolumeId, p.mounter.GetDeviceMountPoints(devicePath)) {
 		p.logger.WithFields(log.Fields{
 			"volume":     req.VolumeId,
 			"targetPath": req.TargetPath,

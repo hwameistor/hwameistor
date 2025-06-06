@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	csi "github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/gofrs/uuid"
 
 	"github.com/hwameistor/hwameistor/pkg/exechelper"
@@ -150,6 +150,15 @@ func getVolumeMetrics(mntPoint string) (*VolumeMetrics, error) {
 func isStringInArray(str string, strs []string) bool {
 	for _, s := range strs {
 		if str == s {
+			return true
+		}
+	}
+	return false
+}
+
+func isSubstringInArray(substring string, array []string) bool {
+	for _, str := range array {
+		if strings.Contains(str, substring) {
 			return true
 		}
 	}
