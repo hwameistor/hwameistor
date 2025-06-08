@@ -91,6 +91,25 @@ func TestNewLocalVolumeController(t *testing.T) {
 
 }
 
+func TestReconcileLocalVolumeNotFound(t *testing.T) {
+    cli, s := CreateFakeClient()
+    r := ReconcileLocalVolume{
+        client: cli,
+        scheme: s,
+        storageMember: member.Member().ConfigureController(s).ConfigureBase(fakeNodename, fakeNamespace, apisv1alpha1.SystemConfig{}, 0, cli, nil, fakeRecorder).ConfigureNode(s),
+    }
+
+    req := reconcile.Request{NamespacedName: types.NamespacedName{Namespace: fakeNamespace, Name: "non-existent-volume"}}
+    result, err := r.Reconcile(context.TODO(), req)
+    if err != nil {
+        t.Errorf("Reconcile returned an error: %v", err)
+    }
+    if result.Requeue {
+        t.Errorf("Reconcile unexpectedly requeued the request")
+    }
+}
+
+
 // DeleteFakeLocalVolume
 func (r *ReconcileLocalVolume) DeleteFakeLocalVolume(t *testing.T, lv *apisv1alpha1.LocalVolume) {
 	if err := r.client.Delete(context.Background(), lv); err != nil {
