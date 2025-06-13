@@ -75,7 +75,8 @@ func getVolumeMetrics(mntPoint string) (*VolumeMetrics, error) {
 		"Used",
 	}
 	dfFlags := []string{
-		"--sync",
+		// disable sync data to avoid causing a lot of disk I/O and that will reduce machine performance
+		// "--sync",
 		"--block-size=1",
 		"--output=itotal,iavail,iused,size,avail,used",
 		mntPoint,
