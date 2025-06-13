@@ -246,8 +246,9 @@ func (p *plugin) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeS
 	vol.Status.UsedCapacityBytes = metrics.UsedCapacityBytes
 	vol.Status.TotalInodes = metrics.TotalINodeNumber
 	vol.Status.UsedInodes = metrics.UsedINodeNumber
-	if err := p.apiClient.Status().Update(ctx, vol); err != nil {
+	if err = p.apiClient.Status().Update(ctx, vol); err != nil {
 		logCtx.WithFields(log.Fields{"volume": vol.Name, "status": vol.Status}).WithError(err).Error("Failed to update LocalVolume capacity status")
+		return resp, err
 	}
 
 	resp.Usage = []*csi.VolumeUsage{
