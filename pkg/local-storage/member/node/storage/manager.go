@@ -25,16 +25,16 @@ type LocalManager struct {
 // NewLocalManager creates a local manager
 func NewLocalManager(nodeConf *apisv1alpha1.NodeConfig, cli client.Client, scheme *runtime.Scheme, recorder record.EventRecorder, snapshotRestoreTimeout int) *LocalManager {
 	lm := &LocalManager{
-		nodeConf:  nodeConf,
-		apiClient: cli,
-		scheme:    scheme,
-		recorder:  recorder,
+		nodeConf:               nodeConf,
+		apiClient:              cli,
+		scheme:                 scheme,
+		recorder:               recorder,
+		snapshotRestoreTimeout: snapshotRestoreTimeout,
 	}
 	lm.registry = newLocalRegistry(lm)
 	lm.volumeReplicaManager = newLocalVolumeReplicaManager(lm)
 	lm.volumeReplicaSnapshotManager = newLocalVolumeReplicaSnapshotManager(lm)
 	lm.poolManager = newLocalPoolManager(lm)
-	lm.snapshotRestoreTimeout = snapshotRestoreTimeout
 	return lm
 }
 
