@@ -99,14 +99,9 @@ func (p *plugin) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 	encryptType := req.PublishContext[VolumeEncryptTypeKey]
 	encryptSecret := req.PublishContext[VolumeEncryptSecretKey]
 
-	/* ???
-	have to allow multiple mounts per node
-	in order to support Pod rolling upgrade
-	*/
-
-	// return directly if device has already mounted at TargetPath
-	// use volumeID as identifier when kubelet workdir is symlink, see #1713 for detail
-	if isSubstringInArray(req.VolumeId, p.mounter.GetDeviceMountPoints(devicePath)) {
+	// return directly if volume has already mounted at TargetPath
+	yes, _ := p.mounter.IsMountPoint(req.TargetPath)
+	if yes {
 		p.logger.WithFields(log.Fields{
 			"volume":     req.VolumeId,
 			"targetPath": req.TargetPath,
