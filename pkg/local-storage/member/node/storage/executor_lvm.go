@@ -1132,15 +1132,16 @@ func (lvm *lvmExecutor) mergeLvRecordsByDevices(report *lvsReport) (*lvsReport, 
 				diskName := strings.Split(record.Devices, "(")[0]
 				record.Disks = sets.NewString(diskName)
 			}
-			if lr, ok := lvRecordSet[record.Name]; ok {
+			recordKey := fmt.Sprintf("%s/%s", record.PoolName, record.Name)
+			if lr, ok := lvRecordSet[recordKey]; ok {
 				if lr.Disks.Len() != 0 && record.Disks.Len() != 0 {
 					lr.Disks.Insert(record.Disks.UnsortedList()...)
-					lvRecordSet[lr.Name] = lr
+					lvRecordSet[recordKey] = lr
 				} else {
 					return nil, fmt.Errorf("failed to merge duplicate lv %s", record.Name)
 				}
 			} else {
-				lvRecordSet[record.Name] = record
+				lvRecordSet[recordKey] = record
 			}
 		}
 
