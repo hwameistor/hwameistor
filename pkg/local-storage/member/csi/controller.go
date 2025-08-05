@@ -78,6 +78,7 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		volume         = apisv1alpha1.LocalVolume{}
 		resp           = &csi.CreateVolumeResponse{Volume: &csi.Volume{}}
 		lastSavedError error
+		accessiblityNodes = []string{}
 	)
 
 	// 1. create volume if not exist
@@ -86,7 +87,8 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 			return resp, status.Errorf(codes.Internal, "failed to get volume %v", err)
 		}
 
-		if err = p.createEmptyVolumeFromRequest(ctx, req); err != nil {
+		accessiblityNodes, err = p.createEmptyVolumeFromRequest(ctx, req)
+		if err != nil {
 			return resp, status.Errorf(codes.InvalidArgument, "failed to create volume %v", err)
 		}
 	}
@@ -124,32 +126,41 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		logCtx.Debugf("CreateVolume successfully, volume info => %v", resp.Volume)
 	}
 
+	if len(accessiblityNodes) > 0 {
+		resp.Volume.AccessibleTopology = []*csi.Topology{
+			{
+				Segments: map[string]string{apis.TopologyNodeKey: accessiblityNodes[0]},
+			},
+		}
+	}
+
 	return resp, lastSavedError
 }
 
 // createEmptyVolumeFromRequest creates a volume with the given request - without snapshot and clone
-func (p *plugin) createEmptyVolumeFromRequest(ctx context.Context, req *csi.CreateVolumeRequest) error {
+func (p *plugin) createEmptyVolumeFromRequest(ctx context.Context, req *csi.CreateVolumeRequest) ([]string, error) {
+	accessiblityNodes := []string{}
 	params, err := parseParameters(req)
 	if err != nil {
 		p.logger.WithError(err).Error("Failed to parse parameters")
-		return err
+		return accessiblityNodes, err
 	}
 
 	lvg, err := p.getLocalVolumeGroupOrCreate(req, params)
 	if err != nil {
 		p.logger.WithError(err).Error("Failed to get or create LocalVolumeGroup")
-		return err
+		return accessiblityNodes, err
 	}
 
 	// return directly if exist already
 	vol := &apisv1alpha1.LocalVolume{}
 	if err = p.apiClient.Get(ctx, types.NamespacedName{Name: req.Name}, vol); err == nil {
-		return nil
+		return accessiblityNodes, nil
 	}
 
 	if !errors.IsNotFound(err) {
 		p.logger.WithFields(log.Fields{"volName": req.Name, "error": err.Error()}).Error("Failed to query volume")
-		return err
+		return accessiblityNodes, err
 	}
 
 	// create volume if not exist
@@ -179,7 +190,7 @@ func (p *plugin) createEmptyVolumeFromRequest(ctx context.Context, req *csi.Crea
 		sourceVolume, err := getSourceVolumeFromSnapshot(params.snapshot, p.apiClient)
 		if err != nil {
 			p.logger.WithFields(log.Fields{"volName": vol.Name, "snapshot": params.snapshot}).WithError(err).Error("Failed to get source volume from snapshot")
-			return err
+			return accessiblityNodes, err
 		}
 		vol.Spec.ReplicaNumber = sourceVolume.Spec.ReplicaNumber
 		vol.Spec.PoolName = sourceVolume.Spec.PoolName
@@ -188,8 +199,9 @@ func (p *plugin) createEmptyVolumeFromRequest(ctx context.Context, req *csi.Crea
 		vol.Spec.PoolName = params.poolName
 	}
 
+	accessiblityNodes = vol.Spec.Accessibility.Nodes
 	p.logger.WithFields(log.Fields{"volume": vol}).Debug("Creating a volume")
-	return p.apiClient.Create(ctx, vol)
+	return accessiblityNodes, p.apiClient.Create(ctx, vol)
 }
 
 func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, params *volumeParameters) (*apisv1alpha1.LocalVolumeGroup, error) {
@@ -482,7 +494,8 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 	}
 
 	logCtx.Debugf("Step1: Start creating LocalVolume %s", req.GetName())
-	if err := p.createEmptyVolumeFromRequest(ctx, req); err != nil {
+	accessiblityNodes, err := p.createEmptyVolumeFromRequest(ctx, req)
+	if err != nil {
 		logCtx.WithError(err).Error("failed to create LocalVolume")
 		return resp, status.Errorf(codes.Internal, "failed to create LocalVolume")
 	}
@@ -558,6 +571,13 @@ func (p *plugin) restoreVolumeFromSnapshot(ctx context.Context, req *csi.CreateV
 	resp.Volume.CapacityBytes = volume.Status.AllocatedCapacityBytes
 	resp.Volume.VolumeContext = req.Parameters
 	resp.Volume.VolumeContext[apisv1alpha1.SourceVolumeSnapshotAnnoKey] = req.VolumeContentSource.GetSnapshot().SnapshotId
+	if len(accessiblityNodes) > 0 {
+		resp.Volume.AccessibleTopology = []*csi.Topology{
+			{
+				Segments: map[string]string{apis.TopologyNodeKey: accessiblityNodes[0]},
+			},
+		}
+	}
 	return resp, nil
 }
 
