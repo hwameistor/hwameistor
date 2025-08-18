@@ -1,6 +1,11 @@
 name: Period check
 on:
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Specify the branch to run the workflow on'
+        required: true
+        default: 'main'
   schedule:
     - cron: '0 18 * * *'
 
