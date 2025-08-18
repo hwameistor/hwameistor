@@ -16,6 +16,7 @@ on:
       - "build/**"
       - "helm/**"
       - "deploy/**"
+      - ".github/**"
 
 jobs:
   unit-test:
