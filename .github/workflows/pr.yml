@@ -19,19 +19,34 @@ on:
       - ".github/**"
 
 jobs:
-  e2e-test:
-    runs-on: ["vsphere"]
-    timeout-minutes: 600
+  unit-test:
+    runs-on: ubuntu-latest
     steps:
-      - name: delete
-        run: |
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: e2e test
-        env:
-          E2E_TESTING_LEVEL: "periodCheck"
-        run: make e2e-test
+      - name: Setup go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.21
+      - name: Setup smartmontools
+        run: sudo apt install smartmontools
+      - name: unit-test
+        run: make unit-test
+#  e2e-test:
+#    runs-on: ["vsphere"]
+#    timeout-minutes: 600
+#    steps:
+#      - name: delete
+#        run: |
+#          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
+#          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
+#      - name: Checkout
+#        uses: actions/checkout@v3
+#        with:
+#          fetch-depth: 0
+#      - name: e2e test
+#        env:
+#          E2E_TESTING_LEVEL: "periodCheck"
+#        run: make e2e-test
