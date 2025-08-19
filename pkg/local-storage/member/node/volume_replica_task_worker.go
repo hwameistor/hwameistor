@@ -3,10 +3,13 @@ package node
 import (
 	"context"
 	"fmt"
+
 	"k8s.io/apimachinery/pkg/fields"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -86,28 +89,77 @@ func (m *manager) processVolumeReplicaSubmit(replica *apisv1alpha1.LocalVolumeRe
 	logCtx.Debug("Submit a VolumeReplica")
 
 	replica.Status.State = apisv1alpha1.VolumeReplicaStateCreating
+
+	meta.SetStatusCondition(&replica.Status.Conditions, metav1.Condition{
+		Type:    apisv1alpha1.VolumeReplicaConditionSubmit,
+		Reason:  apisv1alpha1.VolumeReplicaConditionSubmit,
+		Status:  metav1.ConditionTrue,
+		Message: "",
+	})
 	return m.apiClient.Status().Update(context.TODO(), replica)
 }
 
-func (m *manager) processVolumeReplicaCreate(replica *apisv1alpha1.LocalVolumeReplica) error {
+func (m *manager) processVolumeReplicaCreate(replica *apisv1alpha1.LocalVolumeReplica) (err error) {
 	logCtx := m.logger.WithFields(log.Fields{"replica": replica.Name, "spec": replica.Spec})
 	logCtx.Debug("Creating a VolumeReplica")
 
+	var newReplica *apisv1alpha1.LocalVolumeReplica
+	var toBeUpdatedReplica *apisv1alpha1.LocalVolumeReplica = replica
+	defer func() {
+		condition := metav1.Condition{
+			Type:   apisv1alpha1.VolumeReplicaConditionCreate,
+			Reason: apisv1alpha1.VolumeReplicaConditionCreate,
+		}
+		if err != nil {
+			condition.Status = metav1.ConditionFalse
+			condition.Message = err.Error()
+		} else {
+			condition.Status = metav1.ConditionTrue
+			condition.Message = ""
+		}
+		meta.SetStatusCondition(&toBeUpdatedReplica.Status.Conditions, condition)
+		updateErr := m.apiClient.Status().Update(context.TODO(), toBeUpdatedReplica)
+		if updateErr != nil {
+			logCtx.WithError(updateErr).Warn("Failed to update status after processing on volume replica creation")
+		}
+	}()
+
 	// only create the first layer of the storage volume replica, e.g. LV, Disk, RAM
 	// idempotent operation
-	newReplica, err := m.Storage().VolumeReplicaManager().CreateVolumeReplica(replica)
+	newReplica, err = m.Storage().VolumeReplicaManager().CreateVolumeReplica(replica)
 	if err != nil {
 		m.logger.WithError(err).Error("Failed to process on volume replica creation.")
 		return err
 	}
 
 	newReplica.Status.State = apisv1alpha1.VolumeReplicaStateNotReady
-	return m.apiClient.Status().Update(context.TODO(), newReplica)
+	toBeUpdatedReplica = newReplica
+	return nil
 }
 
-func (m *manager) processVolumeReplicaCheck(replica *apisv1alpha1.LocalVolumeReplica) error {
+func (m *manager) processVolumeReplicaCheck(replica *apisv1alpha1.LocalVolumeReplica) (err error) {
 	logCtx := m.logger.WithFields(log.Fields{"replica": replica.Name, "spec": replica.Spec, "status": replica.Status})
 	logCtx.Debug("Checking a VolumeReplica")
+
+	var toBeUpdatedReplica *apisv1alpha1.LocalVolumeReplica = replica
+	defer func() {
+		condition := metav1.Condition{
+			Type:   apisv1alpha1.VolumeReplicaConditionCheck,
+			Reason: apisv1alpha1.VolumeReplicaConditionCheck,
+		}
+		if err != nil {
+			condition.Status = metav1.ConditionFalse
+			condition.Message = err.Error()
+		} else {
+			condition.Status = metav1.ConditionTrue
+			condition.Message = ""
+		}
+		meta.SetStatusCondition(&toBeUpdatedReplica.Status.Conditions, condition)
+		updateErr := m.apiClient.Status().Update(context.TODO(), toBeUpdatedReplica)
+		if updateErr != nil {
+			logCtx.WithError(updateErr).Warn("Failed to update status after processing on volume replica check")
+		}
+	}()
 
 	// for the case of capacity expansion, only for LVM volume
 	if replica.Status.State == apisv1alpha1.VolumeReplicaStateReady &&
@@ -118,7 +170,8 @@ func (m *manager) processVolumeReplicaCheck(replica *apisv1alpha1.LocalVolumeRep
 			return err
 		}
 		newReplica.Status.State = apisv1alpha1.VolumeReplicaStateNotReady
-		return m.apiClient.Status().Update(context.TODO(), newReplica)
+		toBeUpdatedReplica = newReplica
+		return nil
 	}
 
 	testReplica, err := m.Storage().VolumeReplicaManager().TestVolumeReplica(replica)
@@ -139,33 +192,36 @@ func (m *manager) processVolumeReplicaCheck(replica *apisv1alpha1.LocalVolumeRep
 	if err = m.configManager.EnsureConfig(testReplica); err != nil {
 		m.logger.WithError(err).Error("Failed to process on volume replica config.")
 		testReplica.Status.State = apisv1alpha1.VolumeReplicaStateNotReady
-		m.apiClient.Status().Update(context.TODO(), testReplica)
+		toBeUpdatedReplica = testReplica
 		return err
 	}
 
 	if err = m.configManager.TestVolumeReplica(testReplica); err != nil {
 		m.logger.WithError(err).Error("Failed to test configed VolumeReplica")
 		testReplica.Status.State = apisv1alpha1.VolumeReplicaStateNotReady
-		m.apiClient.Status().Update(context.TODO(), testReplica)
+		toBeUpdatedReplica = testReplica
 		return err
 	}
 
-	return m.apiClient.Status().Update(context.TODO(), testReplica)
+	toBeUpdatedReplica = testReplica
+	return nil
 }
 
 func (m *manager) processVolumeReplicaDelete(replica *apisv1alpha1.LocalVolumeReplica) error {
 	logCtx := m.logger.WithFields(log.Fields{"replica": replica.Name, "spec": replica.Spec, "status": replica.Status})
 	logCtx.Debug("Deleting a VolumeReplica")
 
-	// delay volume deletion until all snapshots removed, more details see: #1240
-	if snapshots, err := m.listVolumeReplicaSnapshots(replica); err != nil || len(snapshots) > 0 {
-		if err == nil {
-			err = fmt.Errorf("found %d snapshot(s) exist on volume", len(snapshots))
+	if !replica.Spec.Thin {
+		// delay volume deletion until all snapshots removed, more details see: #1240
+		if snapshots, err := m.listVolumeReplicaSnapshots(replica); err != nil || len(snapshots) > 0 {
+			if err == nil {
+				err = fmt.Errorf("found %d snapshot(s) exist on volume", len(snapshots))
+			}
+			logCtx.WithError(err).Debug("Failed to check VolumeReplica snapshots before deleting")
+			return err
 		}
-		logCtx.WithError(err).Debug("Failed to check VolumeReplica snapshots before deleting")
-		return err
+		logCtx.Debugf("no snapshots found, volume %s can safely delete now", replica.Name)
 	}
-	logCtx.Debugf("no snapshots found, volume %s can safely delete now", replica.Name)
 
 	if err := m.configManager.DeleteConfig(replica); err != nil {
 		logCtx.WithError(err).Debug("Failed to remove the config")

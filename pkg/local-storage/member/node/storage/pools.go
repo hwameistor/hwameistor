@@ -32,6 +32,14 @@ func (mgr *localPoolManager) ResizePhysicalVolumes(localDisks map[string]*apisv1
 	return mgr.cmdExec.ResizePhysicalVolumes(localDisks)
 }
 
+func (mgr *localPoolManager) ExtendThinPool(tpc *apisv1alpha1.ThinPoolClaim) error {
+	return mgr.cmdExec.ExtendThinPool(tpc)
+}
+
+func (mgr *localPoolManager) GetThinPools() (map[string]*apisv1alpha1.ThinPoolInfo, error) {
+	return mgr.cmdExec.GetThinPools()
+}
+
 func newLocalPoolManager(lm *LocalManager) LocalPoolManager {
 	return &localPoolManager{
 		cmdExec: newLVMExecutor(lm),

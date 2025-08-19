@@ -117,7 +117,7 @@ func Test_manager_getLocalDisksByDiskRefs(t *testing.T) {
 	if err != nil {
 		t.Errorf("Create LocalVolumeConvert fail %v", err)
 	}
-	var want []*apisv1alpha1.LocalDisk
+	want := []*apisv1alpha1.LocalDisk{ld}
 
 	tests := []struct {
 		name    string

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -195,7 +196,22 @@ func (m *manager) processVolumeReadyAndNotReady(vol *apisv1alpha1.LocalVolume) e
 		}
 	}
 
-	return m.apiClient.Status().Update(context.TODO(), vol)
+	// save the volume status
+	err = m.apiClient.Status().Update(context.TODO(), vol)
+	if err != nil {
+		return err
+	}
+
+	// handle pv rebind
+	pv := &corev1.PersistentVolume{}
+	if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: vol.Name}, pv); err == nil && pv.Status.Phase == corev1.VolumeBound {
+		return m.updatePvcInfoForLV(pv.Spec.ClaimRef, vol, logCtx)
+	} else if err != nil && !errors.IsNotFound(err) {
+		logCtx.WithError(err).Error("Failed to get PersistentVolume for LocalVolume")
+		return err
+	}
+
+	return nil
 }
 
 func (m *manager) processVolumeDelete(vol *apisv1alpha1.LocalVolume) error {
@@ -272,4 +288,38 @@ func isVolumeReplicaUp(replica *apisv1alpha1.LocalVolumeReplica) bool {
 func (m *manager) updateAccessibilityNodes(vol *apisv1alpha1.LocalVolume) error {
 	vol.UpdateAccessibilityNodesFromReplicas()
 	return m.apiClient.Update(context.TODO(), vol)
+}
+
+func (m *manager) updatePvcInfoForLV(pvcRef *corev1.ObjectReference, lv *apisv1alpha1.LocalVolume, logCtx *log.Entry) error {
+	if pvcRef == nil {
+		return nil
+	}
+	if pvcRef.Name == lv.Spec.PersistentVolumeClaimName && pvcRef.Namespace == lv.Spec.PersistentVolumeClaimNamespace {
+		// no need to update, the pvc info is already correct
+		return nil
+	}
+
+	oldPvc := &corev1.PersistentVolumeClaim{}
+	err := m.apiClient.Get(context.TODO(), types.NamespacedName{Namespace: lv.Spec.PersistentVolumeClaimNamespace, Name: lv.Spec.PersistentVolumeClaimName}, oldPvc)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+	// this old pvc is not be deleted yet and still bound to lv, so we need to wait
+	if err == nil && oldPvc.Spec.VolumeName == lv.Name && oldPvc.Status.Phase == corev1.ClaimBound {
+		return fmt.Errorf("pvc %s/%s still exists, can't handle rebind, retry later", oldPvc.Namespace, oldPvc.Name)
+	}
+
+	// update lv with new pvc
+	logCtx.WithFields(log.Fields{
+		"oldPvcName":      lv.Spec.PersistentVolumeClaimName,
+		"oldPvcNamespace": lv.Spec.PersistentVolumeClaimNamespace,
+		"newPvcName":      pvcRef.Name,
+		"newPvcNamespace": pvcRef.Namespace,
+	}).Info("replace pvc info in lv with a new pvc")
+
+	oldLv := lv.DeepCopy()
+	lv.Spec.PersistentVolumeClaimNamespace = pvcRef.Namespace
+	lv.Spec.PersistentVolumeClaimName = pvcRef.Name
+
+	return m.apiClient.Patch(context.TODO(), lv, client.MergeFrom(oldLv))
 }

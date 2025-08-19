@@ -107,6 +107,17 @@ const (
 	VolumeMigratePhasePrune Phase = "Prune"
 )
 
+// condition types
+const (
+	VolumeReplicaConditionSubmit = "Submit"
+	VolumeReplicaConditionCreate = "Create"
+	VolumeReplicaConditionCheck  = "Ready"
+
+	VolumeReplicaSnapshotConditionSubmit     = "Submit"
+	VolumeReplicaSnapshotConditionCreate     = "Create"
+	VolumeReplicaSnapshotConditionReadyOrNot = "Ready"
+)
+
 // disk class
 const (
 	DiskClassNameHDD  = "HDD"
@@ -124,6 +135,10 @@ const (
 	PoolTypeRegular = "REGULAR"
 )
 
+const (
+	ThinPoolName = "LocalStorage_ThinPool"
+)
+
 // consts
 const (
 	VolumeParameterPoolClassKey     = "poolClass"
@@ -133,6 +148,7 @@ const (
 	VolumeParameterConvertible      = "convertible"
 	VolumeParameterThroughput       = "provision-throughput-on-creation"
 	VolumeParameterIOPS             = "provision-iops-on-creation"
+	VolumeParameterThin             = "thin"
 )
 
 // consts for snapshot class

@@ -7,6 +7,8 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -51,13 +53,18 @@ func Test_newResources(t *testing.T) {
 		maxHAVolumeCount int
 	}
 	var resource = &resources{
-		logger:               log.WithField("Module", "Scheduler/Resources"),
-		allocatedResourceIDs: make(map[string]int),
-		freeResourceIDList:   make([]int, 0, 10),
-		maxHAVolumeCount:     10,
-		allocatedStorages:    newStorageCollection(),
-		totalStorages:        newStorageCollection(),
-		storageNodes:         map[string]*v1alpha1.LocalStorageNode{},
+		logger:                       log.WithField("Module", "Scheduler/Resources"),
+		allocatedResourceIDs:         make(map[string]int),
+		freeResourceIDList:           make([]int, 0, 10),
+		maxHAVolumeCount:             10,
+		allocatedStorages:            newStorageCollection(),
+		totalStorages:                newStorageCollection(),
+		storageNodes:                 map[string]*v1alpha1.LocalStorageNode{},
+		thinPoolCapacityAllocatedSet: make(map[string]map[string]struct{}),
+		podToPVCs:                    map[string][]string{},
+		pvcToPods:                    map[string][]string{},
+		pvcsMap:                      map[string]*corev1.PersistentVolumeClaim{},
+		scsMap:                       map[string]*storagev1.StorageClass{},
 	}
 	tests := []struct {
 		name string
@@ -108,7 +115,10 @@ func Test_resources_Score(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 		{
-			args:    args{vol: vol, nodeName: fakeNodename},
+			args: args{vol: vol, nodeName: fakeNodename},
+			fields: fields{
+				logger: log.WithField("Module", "Scheduler/Resources"),
+			},
 			wantErr: true,
 		},
 	}
@@ -952,11 +962,17 @@ func Test_resources_score(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 		{
-			args:    args{vol: vol, nodeName: nodeName},
+			args: args{vol: vol, nodeName: nodeName},
+			fields: fields{
+				logger: log.WithField("Module", "Scheduler/Resources"),
+			},
 			wantErr: true,
 		},
 		{
-			args:    args{vol: vol, nodeName: nodeName2},
+			args: args{vol: vol, nodeName: nodeName2},
+			fields: fields{
+				logger: log.WithField("Module", "Scheduler/Resources"),
+			},
 			wantErr: true,
 		},
 	}
@@ -983,4 +999,100 @@ func Test_resources_score(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestResources_ThinProvisioning(t *testing.T) {
+	// Setup test environment
+	client, _ := CreateFakeClient()
+	r := newResources(10, client)
+
+	// Test thin volume predicate
+	t.Run("Test predicate with thin volume", func(t *testing.T) {
+		// Create a thin volume
+		vol := &v1alpha1.LocalVolume{
+			Spec: v1alpha1.LocalVolumeSpec{
+				Thin:                  true,
+				RequiredCapacityBytes: 512 * 1024 * 1024,
+				PoolName:              v1alpha1.PoolNameForHDD,
+			},
+		}
+
+		// Setup test node with thin pool
+		node := &v1alpha1.LocalStorageNode{
+			ObjectMeta: metav1.ObjectMeta{Name: "test-node"},
+			Status: v1alpha1.LocalStorageNodeStatus{
+				Pools: map[string]v1alpha1.LocalPool{
+					v1alpha1.PoolNameForHDD: {
+						Name: v1alpha1.PoolNameForHDD,
+						ThinPool: &v1alpha1.ThinPoolInfo{
+							Size:               2 * 1024 * 1024 * 1024, // 2GB
+							OverProvisionRatio: "2.0",
+							MetadataSize:       100 * 1024 * 1024, // 100MB
+						},
+						FreeCapacityBytes:  10 * 1024 * 1024 * 1024,
+						TotalCapacityBytes: 10 * 1024 * 1024 * 1024, // 10GB
+						TotalVolumeCount:   1000,
+					},
+				},
+			},
+		}
+
+		r.storageNodes["test-node"] = node
+		r.addTotalStorage(node)
+
+		// Test predicate should pass
+		err := r.predicate(vol, "test-node")
+		if err != nil {
+			t.Errorf("Predicate failed for thin volume: %v", err)
+		}
+
+		// Test with insufficient thin pool capacity
+		vol.Spec.RequiredCapacityBytes = 5 * 1024 * 1024 * 1024 // 5GB
+		err = r.predicate(vol, "test-node")
+		if err == nil {
+			t.Error("Expected predicate to fail for insufficient thin pool capacity")
+		}
+	})
+
+	// Test thin volume scoring
+	t.Run("Test score with thin volume", func(t *testing.T) {
+		// Create a thin volume
+		vol := &v1alpha1.LocalVolume{
+			Spec: v1alpha1.LocalVolumeSpec{
+				Thin:                  true,
+				RequiredCapacityBytes: 512 * 1024 * 1024, // 512MB
+				PoolName:              v1alpha1.PoolNameForHDD,
+			},
+		}
+
+		// Setup test node with thin pool
+		node := &v1alpha1.LocalStorageNode{
+			ObjectMeta: metav1.ObjectMeta{Name: "test-node"},
+			Status: v1alpha1.LocalStorageNodeStatus{
+				Pools: map[string]v1alpha1.LocalPool{
+					v1alpha1.PoolNameForHDD: {
+						Name: v1alpha1.PoolNameForHDD,
+						ThinPool: &v1alpha1.ThinPoolInfo{
+							Size:               2 * 1024 * 1024 * 1024, // 2GB
+							OverProvisionRatio: "2.0",
+							MetadataSize:       100 * 1024 * 1024, // 100MB
+						},
+						TotalCapacityBytes: 10 * 1024 * 1024 * 1024, // 10GB
+					},
+				},
+			},
+		}
+
+		r.storageNodes["test-node"] = node
+		r.addTotalStorage(node)
+
+		// Test scoring
+		score, err := r.score(vol, "test-node")
+		if err != nil {
+			t.Errorf("Score failed for thin volume: %v", err)
+		}
+		if score <= 0 {
+			t.Errorf("Expected positive score, got %d", score)
+		}
+	})
 }

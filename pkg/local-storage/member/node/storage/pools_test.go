@@ -171,7 +171,7 @@ func Test_localPoolManager_ExtendPools(t *testing.T) {
 	m.
 		EXPECT().
 		ExtendPools(localDisks).
-		Return(nil).
+		Return(false, nil).
 		Times(1)
 
 	_, err := m.ExtendPools(localDisks)

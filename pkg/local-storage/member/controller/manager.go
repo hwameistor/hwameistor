@@ -253,6 +253,17 @@ func (m *manager) setupInformers() {
 		UpdateFunc: m.handleVolumeSnapshotRestoreUpdateEvent,
 		DeleteFunc: m.handleVolumeSnapshotRestoreDeleteEvent,
 	})
+
+	// setup pvc informer
+	pvcInformer, err := m.informersCache.GetInformer(context.TODO(), &corev1.PersistentVolumeClaim{})
+	if err != nil {
+		// error happens, crash the node
+		m.logger.WithError(err).Fatal("Failed to get informer for PersistentVolumeClaim")
+	}
+	pvcInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.handlePvcAddEvent,
+		UpdateFunc: m.handlePvcUpdateEvent,
+	})
 }
 
 func (m *manager) handleVolumeSnapshotDeleteEvent(newObj interface{}) {
@@ -467,4 +478,20 @@ func (m *manager) handlePodUpdateEvent(_, nObj interface{}) {
 func (m *manager) handlePodAddEvent(obj interface{}) {
 	pod, _ := obj.(*corev1.Pod)
 	m.gcSyncJobPod(pod)
+}
+
+func (m *manager) handlePvcAddEvent(obj interface{}) {
+	pvc, _ := obj.(*corev1.PersistentVolumeClaim)
+	if pvc.Status.Phase != corev1.ClaimBound || pvc.Spec.VolumeName == "" {
+		return
+	}
+	if !utils.IsHwameiStorLocalStoragePVC(pvc, m.apiClient, m.logger) {
+		return
+	}
+	// try to trigger rebind for the localVolume
+	m.volumeTaskQueue.Add(pvc.Spec.VolumeName)
+}
+
+func (m *manager) handlePvcUpdateEvent(_, obj interface{}) {
+	m.handlePvcAddEvent(obj)
 }

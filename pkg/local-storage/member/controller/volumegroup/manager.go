@@ -103,6 +103,7 @@ func (m *manager) Init(stopCh <-chan struct{}) {
 	}
 	pvcInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    m.handlePVCEventAdd,
+		UpdateFunc: m.handlePVCEventUpdate,
 		DeleteFunc: m.handlePVCEventDelete,
 	})
 
@@ -201,6 +202,10 @@ func (m *manager) handlePVCEventAdd(obj interface{}) {
 	if err := m.addPVC(instance); err != nil {
 		m.pvcQueue.Add(namespacedName(instance.Namespace, instance.Name))
 	}
+}
+
+func (m *manager) handlePVCEventUpdate(_, obj interface{}) {
+	m.handlePVCEventAdd(obj)
 }
 
 func (m *manager) handlePVCEventDelete(obj interface{}) {
@@ -668,9 +673,48 @@ func (m *manager) processPVC(nn string) error {
 	return m.addPVC(instance)
 }
 
-func (m *manager) addPVC(_ *corev1.PersistentVolumeClaim) error {
+// We should add pvc to localvolumegroup if pv rebind to this pvc
+func (m *manager) addPVC(pvc *corev1.PersistentVolumeClaim) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
+
+	if pvc.Status.Phase != corev1.ClaimBound || pvc.Spec.VolumeName == "" {
+		return nil
+	}
+
+	_, exists := m.pvcToVolumeGroups[namespacedName(pvc.Namespace, pvc.Name)]
+	if exists {
+		return nil
+	}
+
+	// can't find the corresponding localvolumegroup for this pvc, so it must have been rebound
+	// we should update lvg to make sure they are consistent with this pvc
+
+	lvgName, exists := m.localVolumeToVolumeGroups[pvc.Spec.VolumeName]
+	if !exists {
+		return fmt.Errorf("localvolume %s not found in localVolumeToVolumeGroups, retry later", pvc.Spec.VolumeName)
+	}
+
+	lvg, err := m.GetLocalVolumeGroupByName(lvgName)
+	if err != nil {
+		return err
+	}
+
+	for i := range lvg.Spec.Volumes {
+		if lvg.Spec.Volumes[i].LocalVolumeName == pvc.Spec.VolumeName &&
+			(lvg.Spec.Volumes[i].PersistentVolumeClaimName != pvc.Name || lvg.Spec.Namespace != pvc.Namespace) {
+			m.logger.WithFields(log.Fields{
+				"lvg":             lvgName,
+				"oldPvcName":      lvg.Spec.Volumes[i].PersistentVolumeClaimName,
+				"oldPvcNamespace": lvg.Spec.Namespace,
+				"newPvcName":      pvc.Name,
+				"newPvcNamespace": pvc.Namespace,
+			}).Info("update lvg with a new pvc")
+			lvg.Spec.Volumes[i].PersistentVolumeClaimName = pvc.Name
+			lvg.Spec.Namespace = pvc.Namespace
+			return m.apiClient.Update(context.TODO(), lvg, &client.UpdateOptions{})
+		}
+	}
 
 	return nil
 }

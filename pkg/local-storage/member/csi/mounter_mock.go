@@ -89,6 +89,21 @@ func (mr *MockMounterMockRecorder) MountRawBlock(devPath, mountpoint interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MountRawBlock", reflect.TypeOf((*MockMounter)(nil).MountRawBlock), devPath, mountpoint)
 }
 
+// NeedResize mocks base method.
+func (m *MockMounter) NeedResize(devicePath, deviceMountPath string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NeedResize", devicePath, deviceMountPath)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NeedResize indicates an expected call of NeedResize.
+func (mr *MockMounterMockRecorder) NeedResize(devicePath, deviceMountPath interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NeedResize", reflect.TypeOf((*MockMounter)(nil).NeedResize), devicePath, deviceMountPath)
+}
+
 // Unmount mocks base method.
 func (m *MockMounter) Unmount(mountpoint string) error {
 	m.ctrl.T.Helper()

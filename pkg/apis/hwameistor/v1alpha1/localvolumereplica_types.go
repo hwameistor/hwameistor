@@ -29,6 +29,12 @@ type LocalVolumeReplicaSpec struct {
 	// VolumeEncrypt is the encryption config of the volume
 	VolumeEncrypt VolumeEncrypt `json:"volumeEncrypt,omitempty"`
 
+	// Thin is to indicate if the volume is thin provisioned or not
+	Thin bool `json:"thin,omitempty"`
+
+	// ThinOriginVolume is the name of the volume from which the thin volume is created
+	ThinOriginVolume *string `json:"thinOriginVolume,omitempty"`
+
 	// Delete is to indicate where the replica should be deleted or not.
 	// It's different from the regular resource delete interface in Kubernetes.
 	// The purpose is to protect it from any mistakes
@@ -71,6 +77,9 @@ type LocalVolumeReplicaStatus struct {
 	// InUse is one of volume replica's states, which indicates the replica is used by a Pod or not
 	// +kubebuilder:default:=false
 	InUse bool `json:"inuse,omitempty"`
+
+	// Conditions records the information of the volume replica
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // HAState is state for ha replica

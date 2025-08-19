@@ -1,0 +1,97 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: thinpoolclaims.hwameistor.io
+spec:
+  group: hwameistor.io
+  names:
+    kind: ThinPoolClaim
+    listKind: ThinPoolClaimList
+    plural: thinpoolclaims
+    shortNames:
+    - tpc
+    singular: thinpoolclaim
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.nodeName
+      name: NodeName
+      type: string
+    - jsonPath: .status.status
+      name: Phase
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: ThinPoolClaim is the Schema for the thinpoolclaims API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ThinPoolClaimSpec defines the desired state of ThinPoolClaim
+            properties:
+              description:
+                description: Description of the thin pool to be claimed
+                properties:
+                  capacity:
+                    description: Capacity of the thin pool in GiB
+                    format: int64
+                    maximum: 1048576
+                    minimum: 1
+                    type: integer
+                  overProvisionRatio:
+                    description: 'OverProvisionRatio represents the amount of overprovisioning
+                      allowed for the data LV in thin pool. For example: If the OverProvisionRatio
+                      is `3.0`, data LV in pool size is 100GiB, then this pool can
+                      be overprovisioned upto (3*100) 300GiB. OverProvisionRatio can
+                      be updated. Hwameistor will pick the latest non-nil value as
+                      the final value, otherwise it will use the default value. The
+                      default and minimum ratio is 1.0.'
+                    type: string
+                  poolMetadataSize:
+                    description: The size of thin pool metadata. Unit is GiB. The
+                      default and minimum size is 1GiB. It can be hard to predict
+                      the amount of metadata space that will be needed, so it is recommended
+                      to start with a size of 1GiB which should be enough for all
+                      practical purposes. A thin pool metadata LV can later be extended
+                      if needed.
+                    maximum: 1048576
+                    minimum: 1
+                    type: integer
+                  poolName:
+                    description: The name of pool which the thin pool will be created
+                      in
+                    type: string
+                required:
+                - capacity
+                - poolName
+                type: object
+              nodeName:
+                description: NodeName represents the node where the thin pool will
+                  be claimed
+                type: string
+            required:
+            - description
+            - nodeName
+            type: object
+          status:
+            description: ThinPoolClaimStatus defines the observed state of ThinPoolClaim
+            properties:
+              status:
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
