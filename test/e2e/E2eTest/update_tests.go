@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-var _ = ginkgo.Describe("update test", ginkgo.Label("periodCheck"), func() {
+var _ = ginkgo.Describe("update test", ginkgo.Label("error"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
