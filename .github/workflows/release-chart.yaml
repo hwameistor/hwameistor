@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - release/v1.0.0
     paths:
       - "helm/hwameistor/Chart.yaml"
 
