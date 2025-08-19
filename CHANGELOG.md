@@ -1,3 +1,27 @@
+v0.16.5/ 2025-7-25
+========================
+## LVM volume management enhancements
+- fix error when mutil pods use same pvc #1727 (@SSmallMonster )
+- fix: snapshotRestoreTimeout typo #1724 (@AmazingPangWei )
+## Test
+- [Test] add multiple mount test #1729 (@FloatXD )
+## Documentation
+- [Docs] Clean up metrics.md #1722 (@windsonsea )
+
+
+v0.16.4/ 2025-6-20
+========================
+## LVM volume management enhancements
+- optimize the repeated mount detection check #1717 (@SSmallMonster )
+- fix error not handling for volume metrics #1718 (@SSmallMonster )
+- disable sync when fetching metrics #1719 (@SSmallMonster )
+
+## Disk Management Enhancements
+- only broadcast StorageUnavailable event when startup #1707 (@SSmallMonster )
+
+## Documentation
+- update ThinProvision as Planned #1708 (@SSmallMonster )
+
 v0.16.3/ 2025-4-22
 ========================
 ## LVM volume management enhancements

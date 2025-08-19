@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	csi "github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/gofrs/uuid"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -77,7 +77,8 @@ func getVolumeMetrics(mntPoint string) (*VolumeMetrics, error) {
 		"Used",
 	}
 	dfFlags := []string{
-		"--sync",
+		// disable sync data to avoid causing a lot of disk I/O and that will reduce machine performance
+		// "--sync",
 		"--block-size=1",
 		"--output=itotal,iavail,iused,size,avail,used",
 		mntPoint,
@@ -152,6 +153,15 @@ func getVolumeMetrics(mntPoint string) (*VolumeMetrics, error) {
 func isStringInArray(str string, strs []string) bool {
 	for _, s := range strs {
 		if str == s {
+			return true
+		}
+	}
+	return false
+}
+
+func isSubstringInArray(substring string, array []string) bool {
+	for _, str := range array {
+		if strings.Contains(str, substring) {
 			return true
 		}
 	}

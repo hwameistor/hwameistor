@@ -100,13 +100,9 @@ func (p *plugin) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 	encryptType := req.PublishContext[VolumeEncryptTypeKey]
 	encryptSecret := req.PublishContext[VolumeEncryptSecretKey]
 
-	/* ???
-	have to allow multiple mounts per node
-	in order to support Pod rolling upgrade
-	*/
-
-	// return directly if device has already mounted at TargetPath
-	if isStringInArray(req.GetTargetPath(), p.mounter.GetDeviceMountPoints(devicePath)) {
+	// return directly if volume has already mounted at TargetPath
+	yes, _ := p.mounter.IsMountPoint(req.TargetPath)
+	if yes {
 		p.logger.WithFields(log.Fields{
 			"volume":     req.VolumeId,
 			"targetPath": req.TargetPath,
@@ -271,8 +267,9 @@ func (p *plugin) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeS
 	vol.Status.UsedCapacityBytes = metrics.UsedCapacityBytes
 	vol.Status.TotalInodes = metrics.TotalINodeNumber
 	vol.Status.UsedInodes = metrics.UsedINodeNumber
-	if err := p.apiClient.Status().Update(ctx, vol); err != nil {
+	if err = p.apiClient.Status().Update(ctx, vol); err != nil {
 		logCtx.WithFields(log.Fields{"volume": vol.Name, "status": vol.Status}).WithError(err).Error("Failed to update LocalVolume capacity status")
+		return resp, err
 	}
 
 	resp.Usage = []*csi.VolumeUsage{

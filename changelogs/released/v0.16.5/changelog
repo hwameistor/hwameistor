@@ -1,0 +1,9 @@
+v0.16.5/ 2025-7-25
+========================
+## LVM volume management enhancements
+- fix error when mutil pods use same pvc #1727 (@SSmallMonster )
+- fix: snapshotRestoreTimeout typo #1724 (@AmazingPangWei )
+## Test
+- [Test] add multiple mount test #1729 (@FloatXD )
+## Documentation
+- [Docs] Clean up metrics.md #1722 (@windsonsea )

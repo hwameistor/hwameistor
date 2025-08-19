@@ -30,7 +30,7 @@ type Mounter interface {
 	FormatAndMount(devPath string, mountpoint string, fsType string, flags []string) error
 	Unmount(mountpoint string) error
 	GetDeviceMountPoints(devPath string) []string
-	NeedResize(devicePath string, deviceMountPath string) (bool, error)
+	IsMountPoint(file string) (bool, error)
 }
 
 type linuxMounter struct {
@@ -38,6 +38,10 @@ type linuxMounter struct {
 	resizer *mount.ResizeFs
 
 	logger *log.Entry
+}
+
+func (m *linuxMounter) IsMountPoint(file string) (bool, error) {
+	return m.mounter.IsMountPoint(file)
 }
 
 // NewLinuxMounter creates a mounter
