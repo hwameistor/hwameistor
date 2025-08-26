@@ -31,6 +31,7 @@ type Mounter interface {
 	Unmount(mountpoint string) error
 	GetDeviceMountPoints(devPath string) []string
 	IsMountPoint(file string) (bool, error)
+	NeedResize(devicePath string, deviceMountPath string) (bool, error)
 }
 
 type linuxMounter struct {
