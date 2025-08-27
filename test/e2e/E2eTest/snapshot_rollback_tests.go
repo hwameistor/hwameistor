@@ -25,7 +25,7 @@ import (
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = ginkgo.Describe("snapshot rollback test ", ginkgo.Label("test1"), func() {
+var _ = ginkgo.Describe("snapshot rollback test ", ginkgo.Label("error"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
