@@ -591,6 +591,11 @@ func (m *manager) addLocalVolume(lv *apisv1alpha1.LocalVolume) error {
 				lv.Spec.Accessibility.DeepCopyInto(&lvg.Spec.Accessibility)
 				return m.apiClient.Update(context.TODO(), lvg, &client.UpdateOptions{})
 			}
+			// if there is pvc associated with this lv, but pvc is not bound to lvg yet
+			// there might something wrong, we should try to process this pvc
+			if vol.PersistentVolumeClaimName == "" && (lv.Spec.PersistentVolumeClaimName != "" && lv.Spec.PersistentVolumeClaimNamespace != "") {
+				m.pvcQueue.Add(namespacedName(lv.Spec.PersistentVolumeClaimNamespace, lv.Spec.PersistentVolumeClaimName))
+			}
 			return nil
 		}
 		if vol.PersistentVolumeClaimName == lv.Spec.PersistentVolumeClaimName && lvg.Spec.Namespace == lv.Spec.PersistentVolumeClaimNamespace {
@@ -682,17 +687,24 @@ func (m *manager) addPVC(pvc *corev1.PersistentVolumeClaim) error {
 		return nil
 	}
 
-	_, exists := m.pvcToVolumeGroups[namespacedName(pvc.Namespace, pvc.Name)]
-	if exists {
-		return nil
-	}
-
 	// can't find the corresponding localvolumegroup for this pvc, so it must have been rebound
 	// we should update lvg to make sure they are consistent with this pvc
 
 	lvgName, exists := m.localVolumeToVolumeGroups[pvc.Spec.VolumeName]
 	if !exists {
 		return fmt.Errorf("localvolume %s not found in localVolumeToVolumeGroups, retry later", pvc.Spec.VolumeName)
+	}
+
+	pvcLvgName, exists := m.pvcToVolumeGroups[namespacedName(pvc.Namespace, pvc.Name)]
+	if exists {
+		if lvgName == pvcLvgName {
+			return nil
+		}
+		// lvg for pvc is different from lvg for lv, need to remove stale pvc info
+		err := m.removeStalePvcInfo(pvcLvgName, pvc)
+		if err != nil {
+			return err
+		}
 	}
 
 	lvg, err := m.GetLocalVolumeGroupByName(lvgName)
@@ -716,6 +728,34 @@ func (m *manager) addPVC(pvc *corev1.PersistentVolumeClaim) error {
 		}
 	}
 
+	return nil
+}
+
+func (m *manager) removeStalePvcInfo(lvgName string, pvc *corev1.PersistentVolumeClaim) error {
+	lvg, err := m.GetLocalVolumeGroupByName(lvgName)
+	if err != nil {
+		return err
+	}
+	volumes := make([]apisv1alpha1.VolumeInfo, 0, len(lvg.Spec.Volumes))
+	for _, volume := range lvg.Spec.Volumes {
+		if volume.LocalVolumeName == "" && volume.PersistentVolumeClaimName == pvc.Name {
+			continue
+		}
+		volumes = append(volumes, volume)
+	}
+	lvg.Spec.Volumes = volumes
+
+	m.logger.WithFields(log.Fields{
+		"lvg":     lvg.Name,
+		"pvc":     namespacedName(pvc.Namespace, pvc.Name),
+		"volumes": volumes,
+	}).Info("remove stale pvc info from lvg")
+	err = m.apiClient.Update(context.TODO(), lvg, &client.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+	// delete pvc info in cache
+	delete(m.pvcToVolumeGroups, namespacedName(pvc.Namespace, pvc.Name))
 	return nil
 }
 
