@@ -560,13 +560,13 @@ func (m *manager) processLocalVolume(lvName string) error {
 	err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: lvName}, lv)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			return m.deleteLocalVolume(lv.Name)
+			return m.deleteLocalVolume(lvName)
 		}
 		return err
 	}
 
-	if lv.Status.State == apisv1alpha1.VolumeStateDeleted {
-		return m.deleteLocalVolume(lv.Name)
+	if lv.Status.State == apisv1alpha1.VolumeStateDeleted || lv.DeletionTimestamp != nil {
+		return m.deleteLocalVolume(lvName)
 	}
 
 	return m.addLocalVolume(lv)
