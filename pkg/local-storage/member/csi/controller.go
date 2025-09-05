@@ -6,6 +6,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"k8s.io/apimachinery/pkg/fields"
@@ -35,6 +36,7 @@ var (
 	_ csi.ControllerServer = (*plugin)(nil)
 
 	createLock *VolumeLocks = NewVolumeLocks()
+	lvgLock    sync.Mutex
 )
 
 const (
@@ -144,6 +146,12 @@ func (p *plugin) genLovalVolumeFromRequest(ctx context.Context, req *csi.CreateV
 		p.logger.WithError(err).Error("Failed to get or create LocalVolumeGroup")
 		return nil, err
 	}
+	if len(lvg.Spec.Accessibility.Nodes) == 0 {
+		// func updateLocalVolumeGroupAccessibility in volumegroup manager will set Accessibility.Nodes to []
+		// if there are no lvs. It's a transient status, but which still can cause schedule error.
+		// So we should return here, and wait Accessibility.Nodes is not []
+		return nil, fmt.Errorf("no available nodes in LocalVolumeGroup %s, wait next reconcile", lvg.Name)
+	}
 
 	vol := &apisv1alpha1.LocalVolume{}
 
@@ -210,6 +218,9 @@ func (p *plugin) createEmptyVolumeFromRequest(ctx context.Context, req *csi.Crea
 }
 
 func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, params *volumeParameters) (*apisv1alpha1.LocalVolumeGroup, error) {
+	// all volume operations on LVG must be synchronized
+	lvgLock.Lock()
+	defer lvgLock.Unlock()
 
 	// case 1. if the pvc is in a LVG, return it
 	// case 2. if the pvc is not in any LVG, create a new one
@@ -319,7 +330,17 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 		return nil, err
 	}
 
-	return lvg, nil
+	// wait lvg cache ready
+	return lvg, wait.Poll(100*time.Millisecond, 5*time.Second, func() (bool, error) {
+		waitLvg := &apisv1alpha1.LocalVolumeGroup{}
+		if err := p.apiClient.Get(context.TODO(), client.ObjectKey{Name: lvg.Name, Namespace: lvg.Namespace}, waitLvg); err != nil {
+			if errors.IsNotFound(err) {
+				return false, nil
+			}
+			return false, fmt.Errorf("failed to get lvg %s: %v", lvg.Name, err)
+		}
+		return true, nil
+	})
 }
 
 func (p *plugin) getAssociatedVolumeGroupAndVolumesForPVC(pvcNamespace string, pvcName string) (*apisv1alpha1.LocalVolumeGroup, []*apisv1alpha1.LocalVolume, error) {
