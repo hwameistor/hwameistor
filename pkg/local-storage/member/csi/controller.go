@@ -34,7 +34,7 @@ import (
 var (
 	_ csi.ControllerServer = (*plugin)(nil)
 
-	createLock *VolumeLocks = NewVolumeLocks()
+	createLock = NewVolumeLocks()
 )
 
 const (
@@ -132,13 +132,14 @@ func (p *plugin) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	return resp, nil
 }
 
-func (p *plugin) genLovalVolumeFromRequest(ctx context.Context, req *csi.CreateVolumeRequest) (*apisv1alpha1.LocalVolume, error) {
+func (p *plugin) genLocalVolumeFromRequest(_ context.Context, req *csi.CreateVolumeRequest) (*apisv1alpha1.LocalVolume, error) {
 	params, err := parseParameters(req)
 	if err != nil {
 		p.logger.WithError(err).Error("Failed to parse parameters")
 		return nil, err
 	}
 
+	// LVG is necessary for creating volume
 	lvg, err := p.getLocalVolumeGroupOrCreate(req, params)
 	if err != nil {
 		p.logger.WithError(err).Error("Failed to get or create LocalVolumeGroup")
@@ -200,7 +201,7 @@ func (p *plugin) createEmptyVolumeFromRequest(ctx context.Context, req *csi.Crea
 	}
 
 	// create volume if not exist
-	vol, err = p.genLovalVolumeFromRequest(ctx, req)
+	vol, err = p.genLocalVolumeFromRequest(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -211,9 +212,9 @@ func (p *plugin) createEmptyVolumeFromRequest(ctx context.Context, req *csi.Crea
 
 func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, params *volumeParameters) (*apisv1alpha1.LocalVolumeGroup, error) {
 
-	// case 1. if the pvc is in a LVG, return it
+	// case 1. if the pvc is in an LVG, return it
 	// case 2. if the pvc is not in any LVG, create a new one
-	// case 3. if the pvc is not in any LVG but associated pvc is in a LVG, add it into the LVG
+	// case 3. if the pvc is not in any LVG but the associated pvc is in an LVG, add it into the LVG
 
 	if req.AccessibilityRequirements == nil || len(req.AccessibilityRequirements.Requisite) != 1 {
 		p.logger.WithFields(log.Fields{"volume": req.Name, "accessibility": req.AccessibilityRequirements}).Error("Not found accessibility requirements")
@@ -222,8 +223,6 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 	requiredNodeName := req.AccessibilityRequirements.Requisite[0].Segments[apis.TopologyNodeKey]
 
 	lvg, lvs, err := p.getAssociatedVolumeGroupAndVolumesForPVC(params.pvcNamespace, params.pvcName)
-	// // fetch the local volume group by PVC
-	// lvg, err := p.getLocalVolumeGroupByPVC(params.pvcNamespace, params.pvcName)
 	p.logger.WithFields(log.Fields{
 		"lvg":       lvg,
 		"lvs":       lvs,
@@ -249,6 +248,7 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 	}
 
 	// case 3: not found the local volume group, create it
+	// NOTE: this happens when the LVG cache is not updated
 	p.logger.WithFields(log.Fields{"pvc": params.pvcName, "namespace": params.pvcNamespace}).Debug("Not found the associated LocalVolumeGroup or LocalVolumes")
 
 	var selectedNodes []string
@@ -323,7 +323,7 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 }
 
 func (p *plugin) getAssociatedVolumeGroupAndVolumesForPVC(pvcNamespace string, pvcName string) (*apisv1alpha1.LocalVolumeGroup, []*apisv1alpha1.LocalVolume, error) {
-	lvs, err := p.getAssociatedVolumes(pvcNamespace, pvcName)
+	lvs, err := p.getAssociatedVolumesInOnePod(pvcNamespace, pvcName)
 	if err != nil {
 		p.logger.WithFields(log.Fields{"pvc": pvcName, "namespace": pvcNamespace}).WithError(err).Error("Not found associated volumes")
 		return nil, lvs, fmt.Errorf("not found associated volumes")
@@ -348,25 +348,27 @@ func (p *plugin) getAssociatedVolumeGroupAndVolumesForPVC(pvcNamespace string, p
 	return nil, lvs, nil
 }
 
-func (p *plugin) getAssociatedVolumes(namespace string, pvcName string) ([]*apisv1alpha1.LocalVolume, error) {
+func (p *plugin) getAssociatedVolumesInOnePod(namespace string, pvcName string) ([]*apisv1alpha1.LocalVolume, error) {
 	podList := corev1.PodList{}
 	if err := p.apiClient.List(context.TODO(), &podList, &client.ListOptions{Namespace: namespace}); err != nil {
 		p.logger.WithError(err).Error("Failed to list Pods")
 		return []*apisv1alpha1.LocalVolume{}, err
 	}
+
+	// find the pod which uses the pvc and return the associated local volumes behind all pvcs
 	for i, pod := range podList.Items {
 		for _, vol := range pod.Spec.Volumes {
 			if vol.PersistentVolumeClaim == nil {
 				continue
 			}
 			if vol.PersistentVolumeClaim.ClaimName == pvcName {
-				return p.getHwameiStorPVCs(&podList.Items[i])
+				return p.getHwameiStorVolumesByPod(&podList.Items[i])
 			}
 		}
 	}
 
 	// This pvc is not used by pod
-	// It must have "volume.kubernetes.io/selected-node" annotation for centain purpose
+	// It must have "volume.kubernetes.io/selected-node" annotation for certain purpose,
 	// so we should check it and allow it to create
 	p.logger.WithFields(log.Fields{
 		"namespace": namespace,
@@ -380,8 +382,8 @@ func (p *plugin) getAssociatedVolumes(namespace string, pvcName string) ([]*apis
 	return []*apisv1alpha1.LocalVolume{lv}, nil
 }
 
-func (p *plugin) getHwameiStorPVCs(pod *corev1.Pod) ([]*apisv1alpha1.LocalVolume, error) {
-	lvs := []*apisv1alpha1.LocalVolume{}
+func (p *plugin) getHwameiStorVolumesByPod(pod *corev1.Pod) ([]*apisv1alpha1.LocalVolume, error) {
+	var lvs []*apisv1alpha1.LocalVolume
 	p.logger.WithField("pod", pod.Name).Debug("Query hwameistor PVCs")
 
 	ctx := context.Background()
@@ -739,7 +741,7 @@ func (p *plugin) createThinVolumeWithSource(ctx context.Context, req *csi.Create
 			return resp, status.Errorf(codes.InvalidArgument, "the new volume required capacity must be greater than the existing volume required capacity")
 		}
 
-		lv, err = p.genLovalVolumeFromRequest(ctx, req)
+		lv, err = p.genLocalVolumeFromRequest(ctx, req)
 		if err != nil {
 			return resp, status.Error(codes.InvalidArgument, err.Error())
 		}
