@@ -63,7 +63,7 @@ type ControllerManager interface {
 
 	ReconcileVolume(vol *apisv1alpha1.LocalVolume)
 
-	ReconcileVolumeGroup(volGroup *apisv1alpha1.LocalVolumeGroup)
+	ReconcileVolumeGroup(volGroup string)
 
 	ReconcileVolumeExpand(expand *apisv1alpha1.LocalVolumeExpand)
 

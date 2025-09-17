@@ -336,6 +336,9 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 	return lvg, nil
 }
 
+// NOTE: volumes in LVG must have the same accessibility nodes,
+// so we can just use one volume to find the associated VolumeGroup to determine the accessibility nodes
+// getAssociatedVolumeGroupAndVolumesForPVC find all localvolumes used in one pod by pvc
 func (p *plugin) getAssociatedVolumeGroupAndVolumesForPVC(pvcNamespace string, pvcName string) (*apisv1alpha1.LocalVolumeGroup, []*apisv1alpha1.LocalVolume, error) {
 	lvs, err := p.getAssociatedVolumesInOnePod(pvcNamespace, pvcName)
 	if err != nil {
@@ -464,7 +467,7 @@ func constructLocalVolumeForPVC(pvc *corev1.PersistentVolumeClaim, sc *storagev1
 		return nil, err
 	}
 
-	//	lv.Name = pvc.Name
+	lv.Name = "pvc-" + string(pvc.UID)
 	lv.Spec.PersistentVolumeClaimNamespace = pvc.Namespace
 	lv.Spec.PersistentVolumeClaimName = pvc.Name
 	lv.Spec.PoolName = poolName

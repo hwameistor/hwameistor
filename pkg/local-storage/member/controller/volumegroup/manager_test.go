@@ -981,8 +981,8 @@ func Test_manager_Init(t *testing.T) {
 //				podToVolumeGroups:         make(map[string]string),
 //				logger:                    log.WithField("Module", "ControllerManager"),
 //			}
-//			if err := m.addLocalVolumeGroup(tt.args.lvg); (err != nil) != tt.wantErr {
-//				t.Logf("addLocalVolumeGroup() error = %v, wantErr %v", err, tt.wantErr)
+//			if err := m.updateLocalVolumeGroup(tt.args.lvg); (err != nil) != tt.wantErr {
+//				t.Logf("updateLocalVolumeGroup() error = %v, wantErr %v", err, tt.wantErr)
 //			}
 //		})
 //	}

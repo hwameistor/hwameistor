@@ -89,7 +89,7 @@ func (r *ReconcileLocalVolumeGroup) Reconcile(_ context.Context, request reconci
 		return reconcile.Result{}, err
 	}
 
-	r.storageMember.Controller().ReconcileVolumeGroup(instance)
+	r.storageMember.Controller().ReconcileVolumeGroup(instance.Name)
 
 	return reconcile.Result{}, nil
 }
