@@ -321,8 +321,8 @@ func (m *manager) ReconcileVolume(vol *apisv1alpha1.LocalVolume) {
 }
 
 // ReconcileVolumeGroup reconciles VolumeGroup CRD for any volume resource change
-func (m *manager) ReconcileVolumeGroup(volGroup *apisv1alpha1.LocalVolumeGroup) {
-	m.volumeGroupManager.ReconcileVolumeGroup(volGroup)
+func (m *manager) ReconcileVolumeGroup(lvgName string) {
+	m.volumeGroupManager.ReconcileVolumeGroup(lvgName)
 }
 
 // ReconcileVolumeExpand reconciles VolumeExpand CRD for any volume resource change
@@ -366,11 +366,8 @@ func (m *manager) handleVolumeCRDUpdateEvent(oldObj, newObj interface{}) {
 
 	// if volume's replica update, we should notify its group
 	if !reflect.DeepEqual(oldVol.Spec.Accessibility.Nodes, newVol.Spec.Accessibility.Nodes) {
-		lvg, err := m.queryLocalVolumeGroup(context.TODO(), newVol.Spec.VolumeGroup)
-		if err != nil {
-			m.logger.WithError(err).Error("Failed to query local volume group")
-		}
-		m.ReconcileVolumeGroup(lvg)
+		// only push lvg to the queue
+		m.ReconcileVolumeGroup(newVol.Spec.VolumeGroup)
 	}
 }
 

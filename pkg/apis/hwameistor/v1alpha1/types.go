@@ -281,7 +281,7 @@ type SystemConfig struct {
 //go:generate mockgen -source=types.go -destination=../../../member/controller/volumegroup/manager_mock.go  -package=volumegroup
 type VolumeGroupManager interface {
 	Init(stopCh <-chan struct{})
-	ReconcileVolumeGroup(volGroup *LocalVolumeGroup)
+	ReconcileVolumeGroup(lvgName string)
 	GetLocalVolumeGroupByName(lvgName string) (*LocalVolumeGroup, error)
 	GetLocalVolumeGroupByLocalVolume(lvName string) (*LocalVolumeGroup, error)
 	GetLocalVolumeGroupByPVC(pvcName string, pvcNamespace string) (*LocalVolumeGroup, error)
