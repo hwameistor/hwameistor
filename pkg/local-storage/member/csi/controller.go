@@ -213,8 +213,8 @@ func (p *plugin) createEmptyVolumeFromRequest(ctx context.Context, req *csi.Crea
 func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, params *volumeParameters) (*apisv1alpha1.LocalVolumeGroup, error) {
 
 	// case 1. if the pvc is in an LVG, return it
-	// case 2. if the pvc is not in any LVG, create a new one
-	// case 3. if the pvc is not in any LVG but the associated pvc is in an LVG, add it into the LVG
+	// case 2. has the LVG, but pvc info and volume info are not consistent, this may happen when volume rebound
+	// case 3. not found the local volume group, create it
 
 	if req.AccessibilityRequirements == nil || len(req.AccessibilityRequirements.Requisite) != 1 {
 		p.logger.WithFields(log.Fields{"volume": req.Name, "accessibility": req.AccessibilityRequirements}).Error("Not found accessibility requirements")
@@ -234,16 +234,30 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 		return nil, err
 	}
 	if lvg != nil && len(lvg.Name) > 0 {
+		if !isStringInArray(requiredNodeName, lvg.Spec.Accessibility.Nodes) {
+			p.logger.WithFields(log.Fields{"lvg": lvg.Name, "lvgAccessibilityNodes": lvg.Spec.Accessibility.Nodes, "pvc": params.pvcName, "requiredNodeName": requiredNodeName}).
+				Error("The required node is not exist in the relevant LVG")
+			return nil, fmt.Errorf("the required node is not exist in the relevant LVG")
+		}
+
 		// check if pvc is in the lvg, if not, add it
 		for _, vol := range lvg.Spec.Volumes {
 			if vol.PersistentVolumeClaimName == params.pvcName {
-				// case 1: in the LVG
-				return lvg, nil
+				if vol.LocalVolumeName == req.Name {
+					// case 1: in the LVG, do nothing, return it
+					p.logger.WithFields(log.Fields{"lvg": lvg.Name, "lvgAccessibilityNodes": lvg.Spec.Accessibility.Nodes, "pvc": params.pvcName, "requiredNodeName": requiredNodeName}).
+						Debug("Found pvc in the relevant LVG")
+					return lvg, nil
+				} else {
+					// case 2: has the LVG, but pvc info and volume info are not consistent, this may happen when volume rebound,
+					// modify the volume info to make it consistent
+					p.logger.WithFields(log.Fields{"lvg": lvg.Name, "pvc": params.pvcName, "originVolume": vol.LocalVolumeName, "currentVolume": req.Name}).Debug("Correct volume info in the relevant LVG")
+					vol.LocalVolumeName = req.Name
+				}
+				break
 			}
 		}
-		// case 2: has the LVG, but pvc is not in it. Add pvc into
-		lvg.Spec.Volumes = append(lvg.Spec.Volumes, apisv1alpha1.VolumeInfo{PersistentVolumeClaimName: params.pvcName})
-		p.logger.WithFields(log.Fields{"lvg": lvg.Name, "pvc": params.pvcName}).Debug("Adding a new PVC into the LVG")
+
 		return lvg, p.apiClient.Update(context.TODO(), lvg)
 	}
 
@@ -256,7 +270,7 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 	if len(params.snapshot) > 0 {
 		if params.thin {
 			volumeSnapshot := apisv1alpha1.LocalVolumeSnapshot{}
-			if err := p.apiClient.Get(context.Background(), client.ObjectKey{Name: params.snapshot}, &volumeSnapshot); err != nil {
+			if err = p.apiClient.Get(context.Background(), client.ObjectKey{Name: params.snapshot}, &volumeSnapshot); err != nil {
 				return nil, err
 			}
 			selectedNodes = volumeSnapshot.Spec.Accessibility.Nodes
@@ -269,29 +283,26 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 			selectedNodes = sourceVolume.Spec.Accessibility.Nodes
 		}
 	} else {
+		// get node candidates and make sure the requireNode is in the candidates
 		candidateNodes := p.storageMember.Controller().VolumeScheduler().GetNodeCandidates(lvs)
-		foundThisNode := false
+		foundRequiredNode := false
+
 		for _, nn := range candidateNodes {
+			if nn.Name == requiredNodeName {
+				foundRequiredNode = true
+			}
+			// if the number of selected nodes is enough, break
 			if len(selectedNodes) == int(params.replicaNumber) {
 				break
 			}
-			if nn.Name == requiredNodeName {
-				foundThisNode = true
-				selectedNodes = append(selectedNodes, nn.Name)
-			} else {
-				if len(selectedNodes) == int(params.replicaNumber-1) {
-					if foundThisNode {
-						selectedNodes = append(selectedNodes, nn.Name)
-					}
-				} else {
-					selectedNodes = append(selectedNodes, nn.Name)
-				}
-			}
+			selectedNodes = append(selectedNodes, nn.Name)
 		}
-		if !foundThisNode {
+
+		if !foundRequiredNode {
 			p.logger.WithField("requireNode", requiredNodeName).Errorf("requireNode is not exist in candidateNodes")
 			return nil, fmt.Errorf("requireNode %s is not ready", requiredNodeName)
 		}
+
 		if len(selectedNodes) < int(params.replicaNumber) {
 			p.logger.WithFields(log.Fields{"nodes": selectedNodes, "replica": params.replicaNumber}).Error("No enough nodes")
 			return nil, fmt.Errorf("no enough nodes")
@@ -304,17 +315,20 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 		},
 		Spec: apisv1alpha1.LocalVolumeGroupSpec{
 			Namespace: params.pvcNamespace,
-			Volumes:   []apisv1alpha1.VolumeInfo{},
+			Volumes: []apisv1alpha1.VolumeInfo{
+				{
+					PersistentVolumeClaimName: params.pvcName,
+					LocalVolumeName:           req.Name,
+				},
+			},
 			Accessibility: apisv1alpha1.AccessibilityTopology{
 				Nodes: selectedNodes,
 			},
 		},
 	}
-	for _, lv := range lvs {
-		lvg.Spec.Volumes = append(lvg.Spec.Volumes, apisv1alpha1.VolumeInfo{PersistentVolumeClaimName: lv.Spec.PersistentVolumeClaimName})
-	}
+
 	p.logger.WithFields(log.Fields{"lvg": lvg.Name, "spec": lvg.Spec}).Debug("Creating a new LVG ...")
-	if err := p.apiClient.Create(context.TODO(), lvg); err != nil {
+	if err = p.apiClient.Create(context.TODO(), lvg); err != nil {
 		p.logger.WithField("lvg", lvg.Name).WithError(err).Error("Failed to create LVG")
 		return nil, err
 	}
