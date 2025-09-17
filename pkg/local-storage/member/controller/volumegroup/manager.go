@@ -88,6 +88,16 @@ func (m *manager) debug() {
 }
 
 func (m *manager) Init(stopCh <-chan struct{}) {
+	volueGroupInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolumeGroup{})
+	if err != nil {
+		m.logger.WithError(err).Fatal("Failed to initiate informer for LocalVolumeGroup")
+	}
+	volueGroupInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    m.handleLocalVolumeGroupEventAdd,
+		DeleteFunc: m.handleLocalVolumeGroupEventDelete,
+		UpdateFunc: m.handleLocalVolumeGroupEventUpdate,
+	})
+
 	lvInformer, err := m.informersCache.GetInformer(context.TODO(), &apisv1alpha1.LocalVolume{})
 	if err != nil {
 		m.logger.WithError(err).Fatal("Failed to initiate informer for LocalVolume")
@@ -170,6 +180,21 @@ func (m *manager) GetLocalVolumeGroupByPVC(pvcNamespace string, pvcName string) 
 		return nil, err
 	}
 	return &lvg, nil
+}
+
+func (m *manager) handleLocalVolumeGroupEventAdd(obj interface{}) {
+	instance, ok := obj.(*apisv1alpha1.LocalVolumeGroup)
+	if ok {
+		m.localVolumeGroupQueue.Add(instance.Name)
+	}
+}
+
+func (m *manager) handleLocalVolumeGroupEventDelete(obj interface{}) {
+	m.handleLocalVolumeGroupEventAdd(obj)
+}
+
+func (m *manager) handleLocalVolumeGroupEventUpdate(_, newObj interface{}) {
+	m.handleLocalVolumeGroupEventAdd(newObj)
 }
 
 func (m *manager) handleLocalVolumeEventAdd(obj interface{}) {
@@ -370,25 +395,8 @@ func (m *manager) startPodWorker(stopCh <-chan struct{}) {
 	m.podQueue.Shutdown()
 }
 
-func (m *manager) ReconcileVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) {
-	m.logger.WithField("lvg", lvg.Name).Debug("Reconciling a VolumeGroup")
-
-	if lvg.DeletionTimestamp != nil {
-		// lvg is in Deleting state, waiting for finalizer to be clean up
-		if err := m.releaseLocalVolumeGroup(lvg); err != nil {
-			m.localVolumeGroupQueue.Add(lvg.Name)
-		}
-	} else if len(lvg.Spec.Volumes) == 0 {
-		// no pvc/lv associated with LVG, should delete it
-		if err := m.deleteLocalVolumeGroup(lvg); err != nil {
-			m.localVolumeGroupQueue.Add(lvg.Name)
-		}
-	} else {
-		// add or update LVG
-		if err := m.addLocalVolumeGroup(lvg); err != nil {
-			m.localVolumeGroupQueue.Add(lvg.Name)
-		}
-	}
+func (m *manager) ReconcileVolumeGroup(lvgName string) {
+	m.localVolumeGroupQueue.Add(lvgName)
 }
 
 func (m *manager) processLocalVolumeGroup(lvgName string) error {
@@ -408,10 +416,65 @@ func (m *manager) processLocalVolumeGroup(lvgName string) error {
 		return m.deleteLocalVolumeGroup(lvg)
 	}
 
-	return m.addLocalVolumeGroup(lvg)
+	// make sure pvc and localvolume are consistent in the LVG
+	if yes, err := m.checkAndCorrectVolumeConsistent(lvg); yes {
+		return err
+	}
+
+	return m.updateLocalVolumeGroup(lvg)
 }
 
-func (m *manager) addLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) error {
+func (m *manager) checkAndCorrectVolumeConsistent(lvg *apisv1alpha1.LocalVolumeGroup) (bool, error) {
+
+	removeEmptyVolume := func(lvg *apisv1alpha1.LocalVolumeGroup) (bool, error) {
+		var updateVolumes []apisv1alpha1.VolumeInfo
+		for _, vol := range lvg.Spec.Volumes {
+			if vol.LocalVolumeName == "" || vol.PersistentVolumeClaimName == "" {
+				m.logger.WithFields(log.Fields{"lvg": lvg.Name, "volume": vol, "pvcName": vol.PersistentVolumeClaimName}).Debug("Found empty volume info in LVG, remove it now")
+				continue
+			}
+			updateVolumes = append(updateVolumes, apisv1alpha1.VolumeInfo{PersistentVolumeClaimName: vol.PersistentVolumeClaimName, LocalVolumeName: vol.LocalVolumeName})
+		}
+
+		updateLVG := lvg.DeepCopy()
+		updateLVG.Spec.Volumes = updateVolumes
+		return len(updateVolumes) != len(lvg.Spec.Volumes), m.apiClient.Patch(context.TODO(), updateLVG, client.MergeFrom(lvg))
+	}
+
+	correctNoneExistVolume := func(lvg *apisv1alpha1.LocalVolumeGroup) (bool, error) {
+		var updateVolumes []apisv1alpha1.VolumeInfo
+		for _, vol := range lvg.Spec.Volumes {
+			localVolume := &apisv1alpha1.LocalVolume{}
+			if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: vol.LocalVolumeName}, localVolume); err != nil {
+				if errors.IsNotFound(err) {
+					m.logger.WithFields(log.Fields{"lvg": lvg.Name, "volume": vol}).Debug("Found none exist localvolume in LVG, remove it now")
+					continue
+				}
+				m.logger.WithFields(log.Fields{"lvg": lvg.Name, "volume": vol}).Debug("Failed to get localvolume, retry later ...")
+				return true, err
+			}
+			// compare pvc namespace and name is same with records localvolume
+			if localVolume.Spec.PersistentVolumeClaimName != vol.PersistentVolumeClaimName || localVolume.Spec.PersistentVolumeClaimNamespace != lvg.Spec.Namespace {
+				m.logger.WithFields(log.Fields{"lvg": lvg.Name, "lvgVolumeInfo": vol, "pvcName": localVolume.Spec.PersistentVolumeClaimName, "pvcNamespace": localVolume.Spec.PersistentVolumeClaimNamespace}).
+					Debug("Found inconsistent localvolume/pvc relationship in LVG compared with pvc recorded in LocalVolume, remove it now")
+				continue
+			}
+			updateVolumes = append(updateVolumes, apisv1alpha1.VolumeInfo{PersistentVolumeClaimName: vol.PersistentVolumeClaimName, LocalVolumeName: vol.LocalVolumeName})
+		}
+
+		updateLVG := lvg.DeepCopy()
+		updateLVG.Spec.Volumes = updateVolumes
+		return len(updateVolumes) != len(lvg.Spec.Volumes), m.apiClient.Patch(context.TODO(), updateLVG, client.MergeFrom(lvg))
+	}
+
+	if removed, err := removeEmptyVolume(lvg); removed {
+		return removed, err
+	}
+
+	return correctNoneExistVolume(lvg)
+}
+
+func (m *manager) updateLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
