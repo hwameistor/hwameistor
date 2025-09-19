@@ -285,22 +285,27 @@ func (p *plugin) getLocalVolumeGroupOrCreate(req *csi.CreateVolumeRequest, param
 	} else {
 		// get node candidates and make sure the requireNode is in the candidates
 		candidateNodes := p.storageMember.Controller().VolumeScheduler().GetNodeCandidates(lvs)
-		foundRequiredNode := false
-
 		for _, nn := range candidateNodes {
 			if nn.Name == requiredNodeName {
-				foundRequiredNode = true
+				selectedNodes = append(selectedNodes, nn.Name)
+				break
 			}
+		}
+
+		if len(selectedNodes) == 0 {
+			p.logger.WithField("requireNode", requiredNodeName).Errorf("requireNode is not exist in candidateNodes")
+			return nil, fmt.Errorf("requireNode %s is not ready", requiredNodeName)
+		}
+
+		for _, nn := range candidateNodes {
 			// if the number of selected nodes is enough, break
 			if len(selectedNodes) == int(params.replicaNumber) {
 				break
 			}
+			if nn.Name == requiredNodeName {
+				continue
+			}
 			selectedNodes = append(selectedNodes, nn.Name)
-		}
-
-		if !foundRequiredNode {
-			p.logger.WithField("requireNode", requiredNodeName).Errorf("requireNode is not exist in candidateNodes")
-			return nil, fmt.Errorf("requireNode %s is not ready", requiredNodeName)
 		}
 
 		if len(selectedNodes) < int(params.replicaNumber) {
