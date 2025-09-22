@@ -446,12 +446,18 @@ func (m *manager) checkAndCorrectVolumeConsistent(lvg *apisv1alpha1.LocalVolumeG
 		for _, vol := range lvg.Spec.Volumes {
 			localVolume := &apisv1alpha1.LocalVolume{}
 			if err := m.apiClient.Get(context.TODO(), types.NamespacedName{Name: vol.LocalVolumeName}, localVolume); err != nil {
-				if errors.IsNotFound(err) {
-					m.logger.WithFields(log.Fields{"lvg": lvg.Name, "volume": vol}).Debug("Found none exist localvolume in LVG, remove it now")
-					continue
+				if !errors.IsNotFound(err) {
+					m.logger.WithFields(log.Fields{"lvg": lvg.Name, "volume": vol}).Debug("Failed to get localvolume, retry later ...")
+					return true, err
 				}
-				m.logger.WithFields(log.Fields{"lvg": lvg.Name, "volume": vol}).Debug("Failed to get localvolume, retry later ...")
-				return true, err
+				// there are some reasons that we cannot remove none exist localvolume here
+				// 1. localvolume is created but not fetched by the client due to cache
+				// 2. localvolume is always created later than localvolumegroup when create new localvolume
+				// so we leave it here now
+				m.logger.WithFields(log.Fields{"lvg": lvg.Name, "volume": vol}).Debug("Found none exist localvolume in LVG, just keep it here")
+				updateVolumes = append(updateVolumes, apisv1alpha1.VolumeInfo{PersistentVolumeClaimName: vol.PersistentVolumeClaimName, LocalVolumeName: vol.LocalVolumeName})
+				continue
+
 			}
 			// compare pvc namespace and name is same with records localvolume
 			if localVolume.Spec.PersistentVolumeClaimName != vol.PersistentVolumeClaimName || localVolume.Spec.PersistentVolumeClaimNamespace != lvg.Spec.Namespace {
