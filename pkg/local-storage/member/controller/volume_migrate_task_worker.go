@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+
 	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils"
 	"github.com/hwameistor/hwameistor/pkg/local-storage/utils/datacopy"
@@ -440,7 +441,10 @@ func (m *manager) volumeMigrateCleanup(migrate *apisv1alpha1.LocalVolumeMigrate)
 		cm := &corev1.ConfigMap{}
 		if err := m.apiClient.Get(ctx, types.NamespacedName{Namespace: m.namespace, Name: cmName}, cm); err == nil {
 			logCtx.WithField("configmap", cmName).Debug("Cleanup the migrate config")
-			m.apiClient.Delete(ctx, cm)
+			if err = m.apiClient.Delete(ctx, cm); err != nil {
+				logCtx.WithError(err).WithField("configmap", cmName).Debug("Failed to cleanup the migrate config")
+				return err
+			}
 		}
 	}
 	return m.apiClient.Delete(ctx, migrate)

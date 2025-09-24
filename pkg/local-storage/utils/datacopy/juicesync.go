@@ -3,9 +3,11 @@ package datacopy
 import (
 	"context"
 	"fmt"
-	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"os"
 	"strings"
+
+	apisv1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	log "github.com/sirupsen/logrus"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -26,20 +28,40 @@ type JuiceSync struct {
 
 func (js *JuiceSync) Prepare(targetNodeName, sourceNodeName, volName string) (err error) {
 	ctx := context.TODO()
-
-	cmName := GetConfigMapName(SyncConfigMapName, volName)
-
-	cm := &corev1.ConfigMap{}
-	if err = js.apiClient.Get(ctx, types.NamespacedName{Namespace: js.namespace, Name: cmName}, cm); err == nil {
-		logger.WithField("configmap", cmName).Debug("The config of data sync already exists")
-		return nil
-	}
-
 	data := map[string]string{
 		SyncConfigVolumeNameKey:     volName,
 		SyncConfigSourceNodeNameKey: sourceNodeName,
 		SyncConfigTargetNodeNameKey: targetNodeName,
 	}
+
+	cmName := GetConfigMapName(SyncConfigMapName, volName)
+	cm := &corev1.ConfigMap{}
+	if err = js.apiClient.Get(ctx, types.NamespacedName{Namespace: js.namespace, Name: cmName}, cm); err == nil {
+		// configmap exists, check and correct if necessary
+		if cm.Data == nil {
+			cm.Data = data
+			logger.WithField("configmap", cmName).Debug("The config of data sync already exists, but no data found, update it now")
+			oldCM := cm.DeepCopy()
+			return js.apiClient.Patch(context.TODO(), cm, k8sclient.MergeFrom(oldCM))
+		}
+
+		if v, ok := cm.Data[SyncConfigVolumeNameKey]; ok && v != volName {
+			logger.WithFields(log.Fields{"configmap": cmName, "originVolume": v, "newVolume": volName}).Debug("The config of data sync already exists, but localvolume is changed")
+			return fmt.Errorf("migrate config %s is already exist and localvolume is changed, cannot start job now", cmName)
+		}
+
+		if v, ok := cm.Data[SyncConfigSourceNodeNameKey]; ok && v != sourceNodeName {
+			logger.WithFields(log.Fields{"configmap": cmName, "originSourceNode": v, "newSourceNode": sourceNodeName}).Debug("The config of data sync already exists, but sourceNode is changed")
+			return fmt.Errorf("migrate config %s is already exist and sourceNode is changed, cannot start job now", cmName)
+		}
+
+		if v, ok := cm.Data[SyncConfigTargetNodeNameKey]; ok && v != targetNodeName {
+			logger.WithFields(log.Fields{"configmap": cmName, "originTargetNode": v, "newTargetNode": targetNodeName}).Debug("The config of data sync already exists, but targetNode is changed")
+			return fmt.Errorf("migrate config %s is already exist and targetNode is changed, cannot start job now", cmName)
+		}
+		return nil
+	}
+
 	cm = &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cmName,
