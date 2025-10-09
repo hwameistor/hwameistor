@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-var _ = ginkgo.Describe("localstorage volume IOPS test ", ginkgo.Label("periodCheck"), func() {
+var _ = ginkgo.Describe("localstorage volume IOPS test", ginkgo.Label("periodCheck"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
