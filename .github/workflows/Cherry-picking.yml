@@ -9,6 +9,8 @@ on:
 jobs:
   cherry_pick_release_v1_0:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Allows the GITHUB_TOKEN to write to the repository
     name: Cherry pick into release-v1.0
     if: ${{ contains(github.event.pull_request.labels.*.name, 'cherry-pick-v1') && github.event.pull_request.merged == true }}
     steps:
