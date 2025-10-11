@@ -28,7 +28,7 @@ import (
 	"github.com/hwameistor/hwameistor/test/e2e/utils"
 )
 
-var _ = ginkgo.Describe("performance testing ", ginkgo.Label("performance-test"), func() {
+var _ = ginkgo.Describe("performance testing", ginkgo.Label("performance-test"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
