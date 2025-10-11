@@ -19,7 +19,7 @@ import (
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = ginkgo.Describe("Static Volume test ", ginkgo.Label("periodCheck"), func() {
+var _ = ginkgo.Describe("Static Volume test", ginkgo.Label("periodCheck"), func() {
 
 	var f *framework.Framework
 	var client ctrlclient.Client
