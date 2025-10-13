@@ -6,6 +6,7 @@ set -e
 source /etc/profile || true
 # common defines
 
+
 IMAGE_TAG=v${GITHUB_RUN_ID}
 export IMAGE_TAG=${IMAGE_TAG}
 
