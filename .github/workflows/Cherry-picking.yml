@@ -8,7 +8,7 @@ on:
       - labeled
 
 env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.MY_TOKEN }}
 
 jobs:
   cherry_pick_release_v1_0:
