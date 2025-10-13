@@ -21,9 +21,8 @@ jobs:
           fetch-depth: 0
       - name: Cherry pick into release-v1.0
         uses: carloscastrojumo/github-cherry-pick-action@v1.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.MY_TOKEN }}
         with:
+          token: '${{ secrets.MY_TOKEN }}'
           branch: release/v1.0.0
           labels: |
             cherry-pick
