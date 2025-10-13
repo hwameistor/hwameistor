@@ -10,7 +10,7 @@ import (
 
 var _ = ginkgo.Describe("apiserver check test", ginkgo.Label("periodCheck"), func() {
 
-	ginkgo.Context("check the fields of hwameistor-apiserver", func() {
+	ginkgo.Context("check the fields of hwameistor-apiserver ", func() {
 		ginkgo.It("check serviceAccountName", func() {
 			logrus.Infof("check serviceAccountName")
 			output, _ := utils.RunInLinux("cat ../../helm/hwameistor/templates/api-server.yaml |grep serviceAccountName |wc -l")
