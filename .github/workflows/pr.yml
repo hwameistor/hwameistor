@@ -8,6 +8,7 @@ on:
       - reopened
     branches:
       - main
+      - release/v1.0.0
     paths:
       - "pkg/**"
       - "cmd/**"
