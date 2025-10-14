@@ -3,7 +3,6 @@ package volumegroup
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"sort"
 	"strings"
 	"sync"
@@ -437,7 +436,7 @@ func (m *manager) addLocalVolumeGroup(lvg *apisv1alpha1.LocalVolumeGroup) error 
 }
 
 func (m *manager) updateLocalVolumeGroupAccessibility(lvg *apisv1alpha1.LocalVolumeGroup) error {
-	// check if needed to update group's accessibility
+	// check if need to update group's accessibility
 	volumes, err := m.GetLocalVolumeByLocalVolumeGroup(lvg)
 	if err != nil {
 		m.logger.WithError(err).Error("Fail to get LocalVolume by Group")
@@ -445,42 +444,35 @@ func (m *manager) updateLocalVolumeGroupAccessibility(lvg *apisv1alpha1.LocalVol
 	}
 
 	m.logger.WithField("volumes", len(volumes)).Debugf("found associated volumes in LocalVolumeGroup %s", lvg.Name)
-	volumeAccessNodes := map[string][]string{}
+	volumeAccessNodes := map[string]int{}
 	for _, volume := range volumes {
 		if volume.Spec.Config != nil {
 			for _, replica := range volume.Spec.Config.Replicas {
-				m.logger.WithField("LocalVolumeGroup", lvg.Name).Debugf("found replica on host %s from volume %s", replica.Hostname, volume.Name)
-				volumeAccessNodes[volume.Name] = append(volumeAccessNodes[volume.Name], replica.Hostname)
+				m.logger.WithField("volume", volume.Name).Debugf("found replica on host %s LocalVolumeGroup %s", replica.Hostname, lvg.Name)
+				volumeAccessNodes[replica.Hostname]++
 			}
 		}
 	}
 
-	// each volume accessibility should be equal
-	var updateAccessNodes []string
-	for _, accessNodes := range volumeAccessNodes {
-		if updateAccessNodes == nil {
-			updateAccessNodes = accessNodes
-			sort.Strings(updateAccessNodes)
-		}
-
-		sort.Strings(accessNodes)
-		if !reflect.DeepEqual(updateAccessNodes, accessNodes) {
+	count := -1
+	var nodes []string
+	// volumes in one group should always have the same accessibility with others
+	for nodeName, volumeCount := range volumeAccessNodes {
+		if count == -1 {
+			count = volumeCount
+		} else if count != volumeCount {
 			err = fmt.Errorf("found inconsistent node accessibility in LocalVolumeGroup %s", lvg.Name)
 			m.logger.WithError(err).WithField("volumeAccessNodes", volumeAccessNodes).Error("failed to update volume group accessibility")
 			return err
 		}
+		nodes = append(nodes, nodeName)
 	}
+	sort.Strings(nodes)
 
-	// compare if accessibility nodes in lvg are equal to updateAccessNodes
-	sort.Strings(lvg.Spec.Accessibility.Nodes)
-	if reflect.DeepEqual(lvg.Spec.Accessibility.Nodes, updateAccessNodes) {
-		return nil
-	}
-
+	m.logger.WithFields(log.Fields{"volumeGroup": lvg.Name, "accessibilityNodes": nodes}).Debugf("update LocalVolumeGroup accessibility nddes")
 	// update Group's accessibility nodes
-	m.logger.WithFields(log.Fields{"volumeGroup": lvg.Name, "originAccessibilityNodes": lvg.Spec.Accessibility.Nodes, "updateAccessibilityNodes": updateAccessNodes}).Debugf("update LocalVolumeGroup accessibility nddes")
 	nLvg := lvg.DeepCopy()
-	nLvg.SetAccessibilityNodes(updateAccessNodes)
+	nLvg.SetAccessibilityNodes(nodes)
 	return m.apiClient.Patch(context.TODO(), nLvg, client.MergeFrom(lvg))
 }
 
