@@ -117,6 +117,8 @@ func New(name string, namespace string, cli client.Client, scheme *runtime.Schem
 }
 
 func (m *manager) Run(stopCh <-chan struct{}) {
+	m.volumeGroupManager.Init(stopCh)
+
 	m.dataCopyManager.Run()
 
 	go m.start(stopCh)
@@ -127,9 +129,6 @@ func (m *manager) start(stopCh <-chan struct{}) {
 		m.logger.Info("Successfully became the cluster controller")
 
 		m.volumeScheduler.Init()
-
-		// start volumegroup manager on controller node
-		m.volumeGroupManager.Init(stopCh)
 
 		go m.syncNodesStatusForever(stopCh)
 		go m.startNodeTaskWorker(stopCh)
