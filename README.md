@@ -94,8 +94,8 @@ which have a replica on the node, will be detected and migrated out this node au
 ### HA module installer
 
 DRBD (Distributed Replicated Block Device) is one of third-party HA modules which the HwameiStor will leverage to provide HA volume.
-It composed of Linux kernel modules and related scripts
-to build high available clusters. It is implemented by mirroring the entire device over the network,
+It is composed of Linux kernel modules and related scripts
+to build highly available clusters. It is implemented by mirroring the entire device over the network,
 which can be thought of as a kind of network RAID. This installer can directly install DRBD to a
 container cluster.
 
@@ -146,13 +146,13 @@ please check the [adopters list](./adopters.md).
 
 ### Build and Preview Website Locally
 
-It's a good practice to build and preview your modifications locally before submit a PR to
+It's a good practice to build and preview your modifications locally before submitting a PR to
 [HwameiStor Website](https://hwameistor.io/).
 You can run the following commands to preview locally:
 
 ```bash
 cd docs
-npm run start  # for english
+npm run start  # for English
 npm run start -- --locale cn # for i18n/cn
 ```
 
@@ -208,11 +208,11 @@ For i18n/cn, you can change the nav in `current.json`:
 | LVM volume snapshot       | Completed | v0.12.0 | Snapshot of LVM volume                                                          |
 | LVM volume clone          | Completed | v0.13.1 | Clone LVM volume                                                                |
 | LVM volume thin provision | Planned  |         | LVM volume thin provision                                                       |
-| LVM volume stripe mode    | Unplaned  |         | LVM volume stripe read/write                                                    |
+| LVM volume stripe mode    | Unplanned  |         | LVM volume stripe read/write                                                    |
 | Data encryption           | Completed | v0.16.0 | Data encryption                                                                 |
 | System Consistency        | Planned   |         | Consistent check and recovery from a disaster                                   |
 | Volume backup             | Planned   |         | Backup the volume data to remote server and restore                             |
-| HwameiStor CLI command    | Completed | v0.12.4 | CLI command is to manage the HwameiStor cluster                                 |
+| HwameiStor CLI command    | Completed | v0.12.4 | The CLI command is used to manage the HwameiStor cluster                                 |
 | HwameiStor GUI            | Completed | v0.11.0 | Manage the HwameiStor cluster                                                   |
 | Cache Volume              | Completed | v0.14.5 | Accelerate dataset loading on node                                             |
 
@@ -238,11 +238,11 @@ HwameiStor tech-talk group:
 
 ## Discussion
 
-Welcome to follow our roadmap discussions [here](https://github.com/hwameistor/hwameistor/discussions)
+We welcome you to follow our roadmap discussions [here](https://github.com/hwameistor/hwameistor/discussions)
 
 ## Pull Requests and Issues
 
-Please feel free to raise requests on chats or by a PR.
+Please feel free to raise requests on chats or through a PR.
 
 We will try our best to respond to every issue reported on community channels,
 but the issues reported [here](https://github.com/hwameistor/hwameistor/discussions)
