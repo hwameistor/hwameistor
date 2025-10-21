@@ -1,3 +1,10 @@
+v1.0.1/ 2025-10-21
+========================
+## LVM volume management enhancements
+- Cherry pick #1758  (@SSmallMonster )
+## Test
+- [Test]add pr test for v1 #1782  (@FloatXD  )
+
 v1.0.0/ 2025-8-27
 ========================
 ## hwameistor v1 stable version is officially released. In the future, only bug fixes will be made, and no new features will be added.

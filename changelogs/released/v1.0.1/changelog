@@ -1,0 +1,6 @@
+v1.0.1/ 2025-10-21
+========================
+## LVM volume management enhancements
+- Cherry pick #1758  (@SSmallMonster )
+## Test
+- [Test]add pr test for v1 #1782  (@FloatXD  )
