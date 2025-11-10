@@ -658,7 +658,7 @@ func installDrbd() {
 
 }
 
-//Get the corresponding pod by deploy
+// Get the corresponding pod by deploy
 func GetPodsByDeploy(ctx context.Context, namespace, deployName string) (*corev1.PodList, error) {
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
@@ -681,7 +681,7 @@ func GetPodsByDeploy(ctx context.Context, namespace, deployName string) (*corev1
 	return podList, nil
 }
 
-//Output the events of the target podlist
+// Output the events of the target podlist
 func GetPodEvents(ctx context.Context, podList *corev1.PodList) {
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
@@ -698,7 +698,7 @@ func GetPodEvents(ctx context.Context, podList *corev1.PodList) {
 	}
 }
 
-//Output the events of all pods under the default namespace
+// Output the events of all pods under the default namespace
 func GetAllPodEventsInDefaultNamespace(ctx context.Context) {
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
@@ -724,7 +724,7 @@ func GetAllPodEventsInDefaultNamespace(ctx context.Context) {
 
 }
 
-//return All Pod In Hwameistor Namespace
+// return All Pod In Hwameistor Namespace
 func GetAllPodInHwameistorNamespace(ctx context.Context) *corev1.PodList {
 	f := framework.NewDefaultFramework(clientset.AddToScheme)
 	client := f.GetClient()
@@ -737,7 +737,7 @@ func GetAllPodInHwameistorNamespace(ctx context.Context) *corev1.PodList {
 	return podList
 }
 
-//Get logs of target pod
+// Get logs of target pod
 func getPodLogs(pod corev1.Pod) {
 	podLogOpts := corev1.PodLogOptions{}
 	config, err := config.GetConfig()
@@ -774,7 +774,7 @@ func getPodLogs(pod corev1.Pod) {
 
 }
 
-//return All Pod logs In Hwameistor Namespace
+// return All Pod logs In Hwameistor Namespace
 func GetAllPodLogsInHwameistorNamespace(ctx context.Context) {
 	podList := GetAllPodInHwameistorNamespace(ctx)
 	for _, pod := range podList.Items {
@@ -788,6 +788,10 @@ func ApplyAdmissionCa() {
 	output, err := RunInLinux("kubectl apply -f hwameistor-admission-ca.yaml")
 	if err != nil {
 		logrus.Error("kubectl apply -f hwameistor-admission-ca.yaml ERROR:%+v ", err)
+	}
+	output, err = RunInLinux("kubectl patch clusterrole hwameistor-role --type='json' -p='[{\"op\": \"add\", \"path\": \"/rules/-\", \"value\": {\"apiGroups\": [\"\"], \"resources\": [\"configmaps\"], \"verbs\": [\"delete\"]}}]'")
+	if err != nil {
+		logrus.Error("kubectl patch clusterrole hwameistor-role ERROR:%+v ", err)
 	}
 	logrus.Info("kubectl apply -f hwameistor-admission-ca.yaml", output)
 }
