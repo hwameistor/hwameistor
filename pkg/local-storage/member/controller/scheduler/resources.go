@@ -539,7 +539,15 @@ func (r *resources) updateAllocatedStorageByLSN(node *apisv1alpha1.LocalStorageN
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	for _, pool := range node.Status.Pools {
+	for poolName := range r.allocatedStorages.pools {
+		pool, ok := node.Status.Pools[poolName]
+		if !ok {
+			delete(r.allocatedStorages.pools[poolName].capacities, node.Name)
+			delete(r.allocatedStorages.pools[poolName].volumeCount, node.Name)
+			delete(r.allocatedStorages.pools[poolName].thinPoolCapacities, node.Name)
+			continue
+		}
+
 		r.allocatedStorages.pools[pool.Name].capacities[node.Name] = pool.UsedCapacityBytes
 		r.allocatedStorages.pools[pool.Name].volumeCount[node.Name] = pool.UsedVolumeCount
 		if pool.ThinPool == nil {
@@ -554,10 +562,10 @@ func (r *resources) delAllocatedStorageByLSN(node *apisv1alpha1.LocalStorageNode
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	for _, pool := range node.Status.Pools {
-		delete(r.allocatedStorages.pools[pool.Name].capacities, node.Name)
-		delete(r.allocatedStorages.pools[pool.Name].volumeCount, node.Name)
-		delete(r.allocatedStorages.pools[pool.Name].thinPoolCapacities, node.Name)
+	for poolName := range r.allocatedStorages.pools {
+		delete(r.allocatedStorages.pools[poolName].capacities, node.Name)
+		delete(r.allocatedStorages.pools[poolName].volumeCount, node.Name)
+		delete(r.allocatedStorages.pools[poolName].thinPoolCapacities, node.Name)
 	}
 }
 
@@ -636,7 +644,15 @@ func (r *resources) addTotalStorage(node *apisv1alpha1.LocalStorageNode) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	for _, pool := range node.Status.Pools {
+	for poolName := range r.totalStorages.pools {
+		pool, ok := node.Status.Pools[poolName]
+		if !ok {
+			delete(r.totalStorages.pools[poolName].capacities, node.Name)
+			delete(r.totalStorages.pools[poolName].volumeCount, node.Name)
+			delete(r.totalStorages.pools[poolName].thinPoolCapacities, node.Name)
+			continue
+		}
+
 		r.totalStorages.pools[pool.Name].capacities[node.Name] = pool.TotalCapacityBytes
 		r.totalStorages.pools[pool.Name].volumeCount[node.Name] = pool.TotalVolumeCount
 		if pool.ThinPool == nil {
@@ -653,10 +669,10 @@ func (r *resources) delTotalStorage(node *apisv1alpha1.LocalStorageNode) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	for _, pool := range node.Status.Pools {
-		delete(r.totalStorages.pools[pool.Name].capacities, node.Name)
-		delete(r.totalStorages.pools[pool.Name].volumeCount, node.Name)
-		delete(r.totalStorages.pools[pool.Name].thinPoolCapacities, node.Name)
+	for poolName := range r.totalStorages.pools {
+		delete(r.totalStorages.pools[poolName].capacities, node.Name)
+		delete(r.totalStorages.pools[poolName].volumeCount, node.Name)
+		delete(r.totalStorages.pools[poolName].thinPoolCapacities, node.Name)
 	}
 	delete(r.storageNodes, node.Name)
 }
