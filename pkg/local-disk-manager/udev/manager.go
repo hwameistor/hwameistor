@@ -1,12 +1,15 @@
 package udev
 
 import (
+	"errors"
 	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/pilebones/go-udev/crawler"
 	"github.com/pilebones/go-udev/netlink"
 	log "github.com/sirupsen/logrus"
-	"strings"
-	"time"
 
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/disk/manager"
 )
@@ -21,14 +24,29 @@ func NewDiskManager() DiskManager {
 
 // ListExist
 func (dm DiskManager) ListExist() []manager.Event {
-	events, err := getExistDeviceEvents(GenRuleForBlock())
-	if err != nil {
-		log.WithError(err).Errorf("Failed processing existing devices")
-		return nil
+	maxRetries := 10
+	retryDelay := 100 * time.Millisecond
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		events, err := getExistDeviceEvents(GenRuleForBlock())
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				log.WithField("attempt", attempt+1).
+					WithField("maxRetries", maxRetries).
+					Debug("Device scan failed due to transient device disappearance, retrying...")
+				time.Sleep(retryDelay)
+				continue
+			}
+			log.WithError(err).Errorf("Failed processing existing devices")
+			return nil
+		}
+
+		log.Info("Finished processing existing devices")
+		return events
 	}
 
-	log.Info("Finished processing existing devices")
-	return events
+	log.Errorf("Max retries exceeded for device scanning, returning empty events")
+	return []manager.Event{}
 }
 
 // Monitor
