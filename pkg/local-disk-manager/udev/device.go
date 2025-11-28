@@ -3,6 +3,7 @@ package udev
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
@@ -162,6 +163,7 @@ func parseUdevInfo(udevInfo string) map[string]interface{} {
 			}
 			if items[0] == "DEVLINKS" {
 				udevItems[items[0]] = strings.Split(items[1], " ")
+				slices.Sort(udevItems[items[0]].([]string))
 				continue
 			}
 			udevItems[items[0]] = items[1]
