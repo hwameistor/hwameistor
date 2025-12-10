@@ -39,8 +39,8 @@ jobs:
     steps:
       - name: delete
         run: |
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/_build
-          sudo rm -rf /github/actions-runner/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
+          sudo rm -rf /home/github/_work/hwameistor/hwameistor/_build
+          sudo rm -rf /home/github/_work/hwameistor/hwameistor/test/e2e/drbd-adapter/
       - name: Checkout
         uses: actions/checkout@v3
         with:
