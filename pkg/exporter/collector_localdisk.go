@@ -18,7 +18,7 @@ func newCollectorForLocalDisk(dataCache *metricsCache) prometheus.Collector {
 		capacityMetricsDesc: prometheus.NewDesc(
 			"hwameistor_localdisk_capacity",
 			"The capacity of the localdisk.",
-			[]string{"nodeName", "type", "devPath", "reserved", "owner", "status"},
+			[]string{"uuid", "nodeName", "type", "devPath", "reserved", "owner", "status"},
 			nil,
 		),
 	}
@@ -48,7 +48,7 @@ func (mc *LocalDiskMetricsCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(
 			mc.capacityMetricsDesc, prometheus.GaugeValue,
 			float64(disk.Spec.Capacity),
-			disk.Spec.NodeName, disk.Spec.DiskAttributes.Type, disk.Spec.DevicePath, reserved, owner, string(disk.Status.State),
+			disk.Spec.UUID, disk.Spec.NodeName, disk.Spec.DiskAttributes.Type, disk.Spec.DevicePath, reserved, owner, string(disk.Status.State),
 		)
 	}
 }
