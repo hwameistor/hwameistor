@@ -83,38 +83,36 @@ func (ctr *Controller) handleStaleDisks(existDisks []manager.Event) {
 		}
 
 		exist := false
-		// search by serial number
-		if ld.Spec.DiskAttributes.SerialNumber != "" {
-			for _, attr := range existDiskAttrs {
-				if ld.Spec.DiskAttributes.SerialNumber == attr.Serial {
-					log.WithField("serialNumber", attr.Serial).WithField("ldName", ld.Name).Info("Found existing disk serial number")
+		// get all devLinks of current ld
+		devLinkSet := make(map[string]struct{})
+		for _, devLink := range ld.Spec.DevLinks {
+			devLinkSet[devLink] = struct{}{}
+		}
+
+		// search by dev link
+		for _, attr := range existDiskAttrs {
+			existDevLinkSet := make(map[string]struct{})
+			for _, existDevLink := range attr.DevLinks {
+				existDevLinkSet[existDevLink] = struct{}{}
+			}
+			for key, _ := range devLinkSet {
+				// every key must exactly hit the existDiskAttrs
+				if _, ok := existDevLinkSet[key]; ok {
+					log.WithField("devLink", attr).WithField("ldName", ld.Name).Info("Found existing disk IDPath")
 					exist = true
+				} else {
+					// if one non-exist devLink was found, current attr will be ignored
+					log.WithField("devLink", attr).WithField("ldName", ld.Name).Info("Found a non-existing disk IDPath,")
+					exist = false
 					break
 				}
 			}
-		} else {
-			devLinkSet := make(map[string]struct{})
-			for _, devLink := range ld.Spec.DevLinks {
-				devLinkSet[devLink] = struct{}{}
-			}
-			// search by dev link
-			for _, attr := range existDiskAttrs {
-				existDevLinkSet := make(map[string]struct{})
-				for _, existDevLink := range attr.DevLinks {
-					existDevLinkSet[existDevLink] = struct{}{}
-				}
-				for key, _ := range devLinkSet {
-					if _, ok := existDevLinkSet[key]; ok {
-						log.WithField("devLink", attr).WithField("ldName", ld.Name).Info("Found existing disk IDPath")
-						exist = true
-						break
-					}
-				}
-				if exist {
-					break
-				}
+			if exist {
+				// find an existing disk corresponding to ld
+				break
 			}
 		}
+
 		// can't find device in exist disks, it must be removed from this node
 		if !exist {
 			log.WithField("ldName", ld.Name).Info("Stale disk found, mark it inactive")
