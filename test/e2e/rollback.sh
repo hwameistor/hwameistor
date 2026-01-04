@@ -1,5 +1,5 @@
 #! /usr/bin/env bash
-# simple scripts mng machine
+
 # link hosts
 export GOVC_INSECURE=1
 export GOVC_RESOURCE_POOL="fupan-k8s"
@@ -12,7 +12,7 @@ export snapshot="e2etest"
 # govc vm.info $hosts[0].Power state
 # govc find . -type m -runtime.powerState poweredOn
 # govc find . -type m -runtime.powerState poweredOn | xargs govc vm.info
-# govc vm.info $hosts
+
 
 for h in $hosts; do
   if [[ `govc vm.info $h | grep poweredOn | wc -l` -eq 1 ]]; then
