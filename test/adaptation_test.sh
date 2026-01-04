@@ -38,7 +38,6 @@ function prepare_install_params() {
 	 sed -i 's/tag: 1.53.2/tag: v1.1.2/' helm/hwameistor/values.yaml
 }
 
-
 # Step2: prepare install params included image tag or other install options
 prepare_install_params
 
