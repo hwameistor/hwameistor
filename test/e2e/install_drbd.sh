@@ -5,5 +5,5 @@
 #helm install drbd-adapter ./drbd-adapter \
 #    -n hwameistor --create-namespace \
 #    --set imagePullPolicy=Always
-
+echo "--------------------------------"
 echo "drbd is pre-installed"
