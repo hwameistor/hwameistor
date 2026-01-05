@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	log "github.com/sirupsen/logrus"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8s "k8s.io/client-go/kubernetes"
-	"os"
-	"path/filepath"
 
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/kubernetes"
 	"github.com/hwameistor/hwameistor/pkg/utils"
@@ -102,7 +103,7 @@ func CreateAdmissionConfig(caCert *bytes.Buffer) error {
 
 	ctx := context.Background()
 	if mutationCfgName != "" {
-		mutateConfig := &admissionregistrationv1.MutatingWebhookConfiguration{
+		updateMutateConfig := &admissionregistrationv1.MutatingWebhookConfiguration{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: mutationCfgName,
 			},
@@ -145,22 +146,32 @@ func CreateAdmissionConfig(caCert *bytes.Buffer) error {
 		}
 
 		mutateAdmissionClient := clientset.AdmissionregistrationV1().MutatingWebhookConfigurations()
-		m, err := mutateAdmissionClient.Get(ctx, mutationCfgName, metav1.GetOptions{})
+		existMutateConfig, err := mutateAdmissionClient.Get(ctx, mutationCfgName, metav1.GetOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
-				if _, err = mutateAdmissionClient.Create(ctx, mutateConfig, metav1.CreateOptions{}); err != nil {
+				if _, err = mutateAdmissionClient.Create(ctx, updateMutateConfig, metav1.CreateOptions{}); err != nil {
 					return err
 				}
 			} else {
 				return err
 			}
-		} else {
-			mutateConfig.ResourceVersion = m.ResourceVersion
-			if _, err = mutateAdmissionClient.Update(ctx, mutateConfig, metav1.UpdateOptions{}); err != nil {
-				return err
+		}
+
+		// don't update FailurePolicy and NamespaceSelector if the field is already exist
+		if len(existMutateConfig.Webhooks) > 0 {
+			if existMutateConfig.Webhooks[0].FailurePolicy != nil {
+				updateMutateConfig.Webhooks[0].FailurePolicy = existMutateConfig.Webhooks[0].FailurePolicy
+			}
+			if existMutateConfig.Webhooks[0].NamespaceSelector.MatchExpressions != nil ||
+				existMutateConfig.Webhooks[0].NamespaceSelector.MatchLabels != nil {
+				updateMutateConfig.Webhooks[0].NamespaceSelector = existMutateConfig.Webhooks[0].NamespaceSelector
 			}
 		}
 
+		updateMutateConfig.ResourceVersion = existMutateConfig.ResourceVersion
+		if _, err = mutateAdmissionClient.Update(ctx, updateMutateConfig, metav1.UpdateOptions{}); err != nil {
+			return err
+		}
 	}
 
 	return nil
