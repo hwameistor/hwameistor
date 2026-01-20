@@ -1,3 +1,10 @@
+v1.0.2/ 2026-1-20
+========================
+## LVM volume management enhancements
+- Fix the issue where the local disk exporter with multiple inactive no… #1802 (@Frank-svg-dev )
+## Test
+- add cherry-picking #1809 (@FloatXD )
+
 v1.0.1/ 2025-10-21
 ========================
 ## LVM volume management enhancements
