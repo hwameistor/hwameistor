@@ -18,7 +18,7 @@ on:
       - ".github/**"
 
 jobs:
-
+  pr-test:
     runs-on: ["e2e"]
     timeout-minutes: 180
     steps:
