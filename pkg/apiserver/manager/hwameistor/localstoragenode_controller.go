@@ -44,6 +44,13 @@ func NewLocalStorageNodeController(client client.Client, clientset *kubernetes.C
 func (lsnController *LocalStorageNodeController) SetLdHandler(handler *localdisk.Handler) {
 	lsnController.ldHandler = handler
 }
+
+func deviceShortName(devicePath string) string {
+	if devicePath == "" {
+		return ""
+	}
+	return strings.TrimPrefix(devicePath, hwameistorapi.DEV)
+}
 func (lsnController *LocalStorageNodeController) GetLocalStorageNode(key client.ObjectKey) (*apisv1alpha1.LocalStorageNode, error) {
 	lsn := &apisv1alpha1.LocalStorageNode{}
 	if err := lsnController.Client.Get(context.TODO(), key, lsn); err != nil {
@@ -401,8 +408,7 @@ func (lsnController *LocalStorageNodeController) ListStorageNodeDisks(queryPage 
 		disk.TotalCapacityBytes = diskList.Items[i].Spec.Capacity
 		availableCapacityBytes := lsnController.getAvailableDiskCapacity(queryPage.NodeName, diskList.Items[i].Spec.DevicePath, diskList.Items[i].Spec.DiskAttributes.Type)
 		disk.AvailableCapacityBytes = availableCapacityBytes
-		diskShortName := strings.Split(diskList.Items[i].Spec.DevicePath, hwameistorapi.DEV)[1]
-		disk.DiskPathShort = diskShortName
+		disk.DiskPathShort = deviceShortName(diskList.Items[i].Spec.DevicePath)
 
 		log.Infof("ListStorageNodeDisks queryPage.DiskState = %v", queryPage.DiskState)
 		if queryPage.DiskState == "" || (queryPage.DiskState != "" && queryPage.DiskState == disk.Status.State) {
@@ -533,8 +539,7 @@ func (lsnController *LocalStorageNodeController) GetStorageNodeDisk(page hwameis
 	}
 	ldi.LocalDisk = localDisks[0]
 	ldi.TotalCapacityBytes = localDisks[0].Spec.Capacity
-	diskShortName := strings.Split(localDisks[0].Spec.DevicePath, hwameistorapi.DEV)[1]
-	ldi.DiskPathShort = diskShortName
+	ldi.DiskPathShort = deviceShortName(localDisks[0].Spec.DevicePath)
 	if localDisks[0].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameHDD {
 		ldi.LocalStoragePooLName = hwameistorapi.PoolNameForHDD
 	} else if localDisks[0].Spec.DiskAttributes.Type == hwameistorapi.DiskClassNameSSD {
