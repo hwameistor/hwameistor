@@ -56,7 +56,7 @@ HwameiStor contains several modules:
 * [HA module installer](#ha-module-installer)
 * [Volume Snapshot](#volume-snapshot)
 * [Volume Auto Resize](#volume-auto-resize)
-* [Volume IO Throttling](#volume-io-throtting)
+* [Volume IO Throttling](#volume-io-throttling)
 * [App Failover](#app-failover)
 * [Audit](#audit)
 * [UI](#ui)
@@ -198,7 +198,7 @@ For i18n/cn, you can change the nav in `current.json`:
 | LVM Volume migration      | Completed | v0.4.0  | Migrate a LVM volume replica to a different node                                |
 | Volume Group              | Completed | v0.3.2  | Support volume group allocation                                                 |
 | Disk health check         | Completed | v0.7.0  | Disk fault prediction, status reporting                                         |
-| LVM HA Volume Recovery    | Planned   |         | Recover the LVM HA volume in problem                                            |
+| LVM HA Volume Recovery    | Planned   |         | Recover the LVM HA volume when problems occur                                            |
 | HwameiStor Operator       | Completed | v0.9.0  | Operator for HwameiStor install, maintain, etc.                                 |
 | Observability             | Completed | v0.9.2  | Observability, such as metrics, logs, etc.                                      |
 | Failover                  | Completed | v0.12.0 | Fail over the pod with HwameiStor volume                                        |
