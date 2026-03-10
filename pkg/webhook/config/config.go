@@ -157,16 +157,7 @@ func CreateAdmissionConfig(caCert *bytes.Buffer) error {
 			}
 		}
 
-		// don't update FailurePolicy and NamespaceSelector if the field is already exist
-		if len(existMutateConfig.Webhooks) > 0 {
-			if existMutateConfig.Webhooks[0].FailurePolicy != nil {
-				updateMutateConfig.Webhooks[0].FailurePolicy = existMutateConfig.Webhooks[0].FailurePolicy
-			}
-			if existMutateConfig.Webhooks[0].NamespaceSelector.MatchExpressions != nil ||
-				existMutateConfig.Webhooks[0].NamespaceSelector.MatchLabels != nil {
-				updateMutateConfig.Webhooks[0].NamespaceSelector = existMutateConfig.Webhooks[0].NamespaceSelector
-			}
-		}
+		mergeExistingWebhookSettings(updateMutateConfig, existMutateConfig)
 
 		updateMutateConfig.ResourceVersion = existMutateConfig.ResourceVersion
 		if _, err = mutateAdmissionClient.Update(ctx, updateMutateConfig, metav1.UpdateOptions{}); err != nil {
@@ -210,6 +201,22 @@ func ensureNameSpaceKeyExist(clientset *k8s.Clientset) error {
 	}
 
 	return nil
+}
+
+func mergeExistingWebhookSettings(updateMutateConfig, existMutateConfig *admissionregistrationv1.MutatingWebhookConfiguration) {
+	if updateMutateConfig == nil || existMutateConfig == nil {
+		return
+	}
+	if len(updateMutateConfig.Webhooks) == 0 || len(existMutateConfig.Webhooks) == 0 {
+		return
+	}
+
+	// Preserve any user-customized namespace selector, but allow failurePolicy
+	// to follow the current deployment configuration.
+	existingSelector := existMutateConfig.Webhooks[0].NamespaceSelector
+	if existingSelector != nil && (existingSelector.MatchExpressions != nil || existingSelector.MatchLabels != nil) {
+		updateMutateConfig.Webhooks[0].NamespaceSelector = existingSelector
+	}
 }
 
 func GetFailurePolicy() *admissionregistrationv1.FailurePolicyType {
