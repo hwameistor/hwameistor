@@ -56,7 +56,7 @@ HwameiStor contains several modules:
 * [HA module installer](#ha-module-installer)
 * [Volume Snapshot](#volume-snapshot)
 * [Volume Auto Resize](#volume-auto-resize)
-* [Volume IO Throtting](#volume-io-throtting)
+* [Volume IO Throttling](#volume-io-throtting)
 * [App Failover](#app-failover)
 * [Audit](#audit)
 * [UI](#ui)
@@ -112,19 +112,19 @@ Currently, the snapshot/restore feature works for LVM non-HA volume.
 
 ### Volume Auto Resize
 
-HwameiStor can automatically expand the LVM volume according the pre-defined resize policy.
+HwameiStor can automatically expand the LVM volume according to the pre-defined resize policy.
 User can define the preferred policy and describe how and when to expand the volume, and HwameiStor will take the policy into effect.
 [Learn more](docs/docs/volumes/pvc_autoresizing.md)
 
-### Volume IO Throtting
+### Volume IO Throttling
 
-HwameiStor can set a maxmium rate (e.g. bandwidth, IOPS) to access a volume.
+HwameiStor can set a maximum rate (e.g. bandwidth, IOPS) to access a volume.
 This feature is very important to prevent the Pod from crashing, especially in the low-resource condition.
 [Learn more](docs/docs/volumes/volume_provisioned_io.md)
 
 ### App Failover
 
-The feature of failover is to actively help the application to fail over to another health node with the volume replica, and continue the working.
+The feature of failover is to actively help the application to fail over to another health node with the volume replica, and continue working.
 [Learn more](docs/docs/fast_failover.md)
 
 ### Audit
