@@ -207,14 +207,14 @@ For i18n/cn, you can change the nav in `current.json`:
 | LVM volume auto-expansion | Completed | v0.12.0 | Expand LVM volume automatically                                                 |
 | LVM volume snapshot       | Completed | v0.12.0 | Snapshot of LVM volume                                                          |
 | LVM volume clone          | Completed | v0.13.1 | Clone LVM volume                                                                |
-| LVM volume thin provision | Planned  |         | LVM volume thin provision                                                       |
-| LVM volume stripe mode    | Unplanned  |         | LVM volume stripe read/write                                                    |
+| LVM volume thin provision | Planned   |         | LVM volume thin provisioning                                                   |
+| LVM volume stripe mode    | Unplanned |         | LVM volume stripe read/write                                                   |
 | Data encryption           | Completed | v0.16.0 | Data encryption                                                                 |
 | System Consistency        | Planned   |         | Consistent check and recovery from a disaster                                   |
 | Volume backup             | Planned   |         | Backup the volume data to remote server and restore                             |
-| HwameiStor CLI command    | Completed | v0.12.4 | The CLI command is used to manage the HwameiStor cluster                                 |
+| HwameiStor CLI command    | Completed | v0.12.4 | The CLI is used to manage the HwameiStor cluster                               |
 | HwameiStor GUI            | Completed | v0.11.0 | Manage the HwameiStor cluster                                                   |
-| Cache Volume              | Completed | v0.14.5 | Accelerate dataset loading on node                                             |
+| Cache Volume              | Completed | v0.14.5 | Accelerate dataset loading on nodes                                            |
 
 ## Community
 
