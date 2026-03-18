@@ -56,7 +56,7 @@ HwameiStor contains several modules:
 * [HA module installer](#ha-module-installer)
 * [Volume Snapshot](#volume-snapshot)
 * [Volume Auto Resize](#volume-auto-resize)
-* [Volume IO Throtting](#volume-io-throtting)
+* [Volume IO Throttling](#volume-io-throttling)
 * [App Failover](#app-failover)
 * [Audit](#audit)
 * [UI](#ui)
@@ -112,19 +112,19 @@ Currently, the snapshot/restore feature works for LVM non-HA volume.
 
 ### Volume Auto Resize
 
-HwameiStor can automatically expand the LVM volume according the pre-defined resize policy.
+HwameiStor can automatically expand the LVM volume according to the pre-defined resize policy.
 User can define the preferred policy and describe how and when to expand the volume, and HwameiStor will take the policy into effect.
 [Learn more](docs/docs/volumes/pvc_autoresizing.md)
 
-### Volume IO Throtting
+### Volume IO Throttling
 
-HwameiStor can set a maxmium rate (e.g. bandwidth, IOPS) to access a volume.
+HwameiStor can set a maximum rate (e.g. bandwidth, IOPS) to access a volume.
 This feature is very important to prevent the Pod from crashing, especially in the low-resource condition.
 [Learn more](docs/docs/volumes/volume_provisioned_io.md)
 
 ### App Failover
 
-The feature of failover is to actively help the application to fail over to another health node with the volume replica, and continue the working.
+The feature of failover is to actively help the application to fail over to another health node with the volume replica, and continue working.
 [Learn more](docs/docs/fast_failover.md)
 
 ### Audit
@@ -198,7 +198,7 @@ For i18n/cn, you can change the nav in `current.json`:
 | LVM Volume migration      | Completed | v0.4.0  | Migrate a LVM volume replica to a different node                                |
 | Volume Group              | Completed | v0.3.2  | Support volume group allocation                                                 |
 | Disk health check         | Completed | v0.7.0  | Disk fault prediction, status reporting                                         |
-| LVM HA Volume Recovery    | Planned   |         | Recover the LVM HA volume in problem                                            |
+| LVM HA Volume Recovery    | Planned   |         | Recover the LVM HA volume when problems occur                                            |
 | HwameiStor Operator       | Completed | v0.9.0  | Operator for HwameiStor install, maintain, etc.                                 |
 | Observability             | Completed | v0.9.2  | Observability, such as metrics, logs, etc.                                      |
 | Failover                  | Completed | v0.12.0 | Fail over the pod with HwameiStor volume                                        |
@@ -207,14 +207,14 @@ For i18n/cn, you can change the nav in `current.json`:
 | LVM volume auto-expansion | Completed | v0.12.0 | Expand LVM volume automatically                                                 |
 | LVM volume snapshot       | Completed | v0.12.0 | Snapshot of LVM volume                                                          |
 | LVM volume clone          | Completed | v0.13.1 | Clone LVM volume                                                                |
-| LVM volume thin provision | Planned  |         | LVM volume thin provision                                                       |
-| LVM volume stripe mode    | Unplanned  |         | LVM volume stripe read/write                                                    |
+| LVM volume thin provision | Planned   |         | LVM volume thin provisioning                                                   |
+| LVM volume stripe mode    | Unplanned |         | LVM volume stripe read/write                                                   |
 | Data encryption           | Completed | v0.16.0 | Data encryption                                                                 |
 | System Consistency        | Planned   |         | Consistent check and recovery from a disaster                                   |
 | Volume backup             | Planned   |         | Backup the volume data to remote server and restore                             |
-| HwameiStor CLI command    | Completed | v0.12.4 | The CLI command is used to manage the HwameiStor cluster                                 |
+| HwameiStor CLI command    | Completed | v0.12.4 | The CLI is used to manage the HwameiStor cluster                               |
 | HwameiStor GUI            | Completed | v0.11.0 | Manage the HwameiStor cluster                                                   |
-| Cache Volume              | Completed | v0.14.5 | Accelerate dataset loading on node                                             |
+| Cache Volume              | Completed | v0.14.5 | Accelerate dataset loading on nodes                                            |
 
 ## Community
 
