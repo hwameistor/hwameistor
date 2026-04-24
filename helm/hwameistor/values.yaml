@@ -137,6 +137,7 @@ localStorage:
     imageRepository: hwameistor/local-storage
     tag: ""
     resources: {}
+    extraEnv: []
   migrate:
     juicesync:
       imageRepository: hwameistor/hwameistor-juicesync
