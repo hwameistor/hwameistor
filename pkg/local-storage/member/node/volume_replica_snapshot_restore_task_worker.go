@@ -237,7 +237,7 @@ func (m *manager) getSourceVolumeFromSnapshot(volumeSnapshotName string) (*apisv
 	}
 
 	sourceVolume := &apisv1alpha1.LocalVolume{}
-	if err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: volumeSnapshot.Spec.SourceVolume}, volumeSnapshot); err != nil {
+	if err := m.apiClient.Get(context.Background(), client.ObjectKey{Name: volumeSnapshot.Spec.SourceVolume}, sourceVolume); err != nil {
 		return nil, err
 	}
 
