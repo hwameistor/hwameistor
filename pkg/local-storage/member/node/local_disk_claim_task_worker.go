@@ -40,7 +40,7 @@ func (m *manager) startLocalDiskClaimTaskWorker(stopCh <-chan struct{}) {
 	}()
 
 	<-stopCh
-	m.volumeReplicaTaskQueue.Shutdown()
+	m.localDiskClaimTaskQueue.Shutdown()
 }
 
 func (m *manager) processLocalDiskClaim(localDiskNameSpacedName string) error {
