@@ -62,7 +62,7 @@ func (ev *evictor) evictVolume(task string) error {
 		return fmt.Errorf("volume migration in progress")
 	}
 	if !errors.IsNotFound(err) {
-		logCtx.WithField("migrate", lvm.Name).WithError(err).Error("Failed to fetch the migration from cache")
+		logCtx.WithField("migrate", lvmName).WithError(err).Error("Failed to fetch the migration from cache")
 		return err
 	}
 
