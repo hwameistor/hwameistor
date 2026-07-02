@@ -31,4 +31,23 @@ jobs:
             cherry-pick
 #          reviewers: |
 #            aReviewerUser
-
+  cherry_pick_release_v1_1:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Allows the GITHUB_TOKEN to write to the repository
+      pull-requests: write
+    name: Cherry pick into release-v1.1
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'cherry-pick-v1.1') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Cherry pick into release-v1.1
+        uses: carloscastrojumo/github-cherry-pick-action@v1.0.1
+        with:
+          branch: release/v1.1
+          labels: |
+            cherry-pick
+#          reviewers: |
+#            aReviewerUser
