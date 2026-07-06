@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
+	kubeutils "github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/kubernetes"
 )
 
 var (
@@ -394,7 +395,14 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.LocalDiskNodeList{})
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.LocalDiskClaim{})
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.LocalDiskClaimList{})
-	return fake.NewClientBuilder().WithScheme(s).WithObjects(&v1alpha1.LocalDisk{}, &v1alpha1.LocalDiskNode{}).Build(), s
+	builder := fake.NewClientBuilder().WithScheme(s).WithObjects(&v1alpha1.LocalDisk{}, &v1alpha1.LocalDiskNode{})
+	for _, idx := range kubeutils.LocalDiskFieldIndexes {
+		builder = builder.WithIndex(&v1alpha1.LocalDisk{}, idx.Field, idx.Func)
+	}
+	for _, idx := range kubeutils.LocalDiskClaimFieldIndexes {
+		builder = builder.WithIndex(&v1alpha1.LocalDiskClaim{}, idx.Field, idx.Func)
+	}
+	return builder.Build(), s
 }
 
 // GenFakeLocalDiskObject Create disk

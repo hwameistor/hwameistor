@@ -18,9 +18,12 @@ package validating
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
+
+	"go.opentelemetry.io/otel/attribute"
 
 	v1 "k8s.io/api/admissionregistration/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -35,8 +38,8 @@ import (
 	endpointsrequest "k8s.io/apiserver/pkg/endpoints/request"
 	webhookutil "k8s.io/apiserver/pkg/util/webhook"
 	"k8s.io/apiserver/pkg/warning"
+	"k8s.io/component-base/tracing"
 	"k8s.io/klog/v2"
-	utiltrace "k8s.io/utils/trace"
 )
 
 const (
@@ -100,27 +103,62 @@ func (d *validatingDispatcher) Dispatch(ctx context.Context, attr admission.Attr
 	}
 
 	wg := sync.WaitGroup{}
-	errCh := make(chan error, len(relevantHooks))
+	errCh := make(chan error, 2*len(relevantHooks)) // double the length to handle extra errors for panics in the gofunc
 	wg.Add(len(relevantHooks))
 	for i := range relevantHooks {
 		go func(invocation *generic.WebhookInvocation, idx int) {
+			ignoreClientCallFailures := false
+			hookName := "unknown"
+			versionedAttr := versionedAttrs[invocation.Kind]
+			// The ordering of these two defers is critical. The wg.Done will release the parent go func to close the errCh
+			// that is used by the second defer to report errors. The recovery and error reporting must be done first.
 			defer wg.Done()
+			defer func() {
+				// HandleCrash has already called the crash handlers and it has been configured to utilruntime.ReallyCrash
+				// This block prevents the second panic from failing our process.
+				// This failure mode for the handler functions properly using the channel below.
+				recover()
+			}()
+			defer utilruntime.HandleCrash(
+				func(r interface{}) {
+					if r == nil {
+						return
+					}
+					if ignoreClientCallFailures {
+						// if failures are supposed to ignored, ignore it
+						klog.Warningf("Panic calling webhook, failing open %v: %v", hookName, r)
+						admissionmetrics.Metrics.ObserveWebhookFailOpen(ctx, hookName, "validating")
+						key := fmt.Sprintf("%sround_0_index_%d", ValidatingAuditAnnotationFailedOpenKeyPrefix, idx)
+						value := hookName
+						if err := versionedAttr.Attributes.AddAnnotation(key, value); err != nil {
+							klog.Warningf("Failed to set admission audit annotation %s to %s for validating webhook %s: %v", key, value, hookName, err)
+						}
+						return
+					}
+					// this ensures that the admission request fails and a message is provided.
+					errCh <- apierrors.NewInternalError(fmt.Errorf("ValidatingAdmissionWebhook/%v has panicked: %v", hookName, r))
+				},
+			)
+
 			hook, ok := invocation.Webhook.GetValidatingWebhook()
 			if !ok {
 				utilruntime.HandleError(fmt.Errorf("validating webhook dispatch requires v1.ValidatingWebhook, but got %T", hook))
 				return
 			}
-			versionedAttr := versionedAttrs[invocation.Kind]
+			hookName = hook.Name
+			ignoreClientCallFailures = hook.FailurePolicy != nil && *hook.FailurePolicy == v1.Ignore
 			t := time.Now()
 			err := d.callHook(ctx, hook, invocation, versionedAttr)
-			ignoreClientCallFailures := hook.FailurePolicy != nil && *hook.FailurePolicy == v1.Ignore
 			rejected := false
 			if err != nil {
 				switch err := err.(type) {
 				case *webhookutil.ErrCallingWebhook:
 					if !ignoreClientCallFailures {
 						rejected = true
-						admissionmetrics.Metrics.ObserveWebhookRejection(ctx, hook.Name, "validating", string(versionedAttr.Attributes.GetOperation()), admissionmetrics.WebhookRejectionCallingWebhookError, int(err.Status.ErrStatus.Code))
+						// Ignore context cancelled from webhook metrics
+						if !errors.Is(err.Reason, context.Canceled) {
+							admissionmetrics.Metrics.ObserveWebhookRejection(ctx, hook.Name, "validating", string(versionedAttr.Attributes.GetOperation()), admissionmetrics.WebhookRejectionCallingWebhookError, int(err.Status.ErrStatus.Code))
+						}
 					}
 					admissionmetrics.Metrics.ObserveWebhook(ctx, hook.Name, time.Since(t), rejected, versionedAttr.Attributes, "validating", int(err.Status.ErrStatus.Code))
 				case *webhookutil.ErrWebhookRejection:
@@ -139,12 +177,17 @@ func (d *validatingDispatcher) Dispatch(ctx context.Context, attr admission.Attr
 
 			if callErr, ok := err.(*webhookutil.ErrCallingWebhook); ok {
 				if ignoreClientCallFailures {
-					klog.Warningf("Failed calling webhook, failing open %v: %v", hook.Name, callErr)
-					admissionmetrics.Metrics.ObserveWebhookFailOpen(ctx, hook.Name, "validating")
-					key := fmt.Sprintf("%sround_0_index_%d", ValidatingAuditAnnotationFailedOpenKeyPrefix, idx)
-					value := hook.Name
-					if err := versionedAttr.Attributes.AddAnnotation(key, value); err != nil {
-						klog.Warningf("Failed to set admission audit annotation %s to %s for validating webhook %s: %v", key, value, hook.Name, err)
+					// Ignore context cancelled from webhook metrics
+					if errors.Is(callErr.Reason, context.Canceled) {
+						klog.Warningf("Context canceled when calling webhook %v", hook.Name)
+					} else {
+						klog.Warningf("Failed calling webhook, failing open %v: %v", hook.Name, callErr)
+						admissionmetrics.Metrics.ObserveWebhookFailOpen(ctx, hook.Name, "validating")
+						key := fmt.Sprintf("%sround_0_index_%d", ValidatingAuditAnnotationFailedOpenKeyPrefix, idx)
+						value := hook.Name
+						if err := versionedAttr.Attributes.AddAnnotation(key, value); err != nil {
+							klog.Warningf("Failed to set admission audit annotation %s to %s for validating webhook %s: %v", key, value, hook.Name, err)
+						}
 					}
 					utilruntime.HandleError(callErr)
 					return
@@ -200,14 +243,14 @@ func (d *validatingDispatcher) callHook(ctx context.Context, h *v1.ValidatingWeb
 	if err != nil {
 		return &webhookutil.ErrCallingWebhook{WebhookName: h.Name, Reason: fmt.Errorf("could not get REST client: %w", err), Status: apierrors.NewBadRequest("error getting REST client")}
 	}
-	trace := utiltrace.New("Call validating webhook",
-		utiltrace.Field{"configuration", invocation.Webhook.GetConfigurationName()},
-		utiltrace.Field{"webhook", h.Name},
-		utiltrace.Field{"resource", attr.GetResource()},
-		utiltrace.Field{"subresource", attr.GetSubresource()},
-		utiltrace.Field{"operation", attr.GetOperation()},
-		utiltrace.Field{"UID", uid})
-	defer trace.LogIfLong(500 * time.Millisecond)
+	ctx, span := tracing.Start(ctx, "Call validating webhook",
+		attribute.String("configuration", invocation.Webhook.GetConfigurationName()),
+		attribute.String("webhook", h.Name),
+		attribute.Stringer("resource", attr.GetResource()),
+		attribute.String("subresource", attr.GetSubresource()),
+		attribute.String("operation", string(attr.GetOperation())),
+		attribute.String("UID", string(uid)))
+	defer span.End(500 * time.Millisecond)
 
 	// if the webhook has a specific timeout, wrap the context to apply it
 	if h.TimeoutSeconds != nil {
@@ -246,7 +289,7 @@ func (d *validatingDispatcher) callHook(ctx context.Context, h *v1.ValidatingWeb
 		}
 		return &webhookutil.ErrCallingWebhook{WebhookName: h.Name, Reason: fmt.Errorf("failed to call webhook: %w", err), Status: status}
 	}
-	trace.Step("Request completed")
+	span.AddEvent("Request completed")
 
 	result, err := webhookrequest.VerifyAdmissionResponse(uid, false, response)
 	if err != nil {
