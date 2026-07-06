@@ -27,9 +27,10 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.18
+          go-version: '1.21.x'
+          check-latest: true
       - name: Setup smartmontools
         run: sudo apt install smartmontools
       - name: unit-test

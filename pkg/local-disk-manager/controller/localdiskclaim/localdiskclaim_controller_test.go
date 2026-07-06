@@ -16,6 +16,7 @@ import (
 
 	v1alpha1 "github.com/hwameistor/hwameistor/pkg/apis/hwameistor/v1alpha1"
 	"github.com/hwameistor/hwameistor/pkg/local-disk-manager/handler/localdiskclaim"
+	kubeutils "github.com/hwameistor/hwameistor/pkg/local-disk-manager/utils/kubernetes"
 )
 
 var (
@@ -498,5 +499,12 @@ func CreateFakeClient() (client.Client, *runtime.Scheme) {
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, diskList)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, claim)
 	s.AddKnownTypes(v1alpha1.SchemeGroupVersion, claimList)
-	return fake.NewClientBuilder().WithScheme(s).Build(), s
+	builder := fake.NewClientBuilder().WithScheme(s)
+	for _, idx := range kubeutils.LocalDiskFieldIndexes {
+		builder = builder.WithIndex(&v1alpha1.LocalDisk{}, idx.Field, idx.Func)
+	}
+	for _, idx := range kubeutils.LocalDiskClaimFieldIndexes {
+		builder = builder.WithIndex(&v1alpha1.LocalDiskClaim{}, idx.Field, idx.Func)
+	}
+	return builder.Build(), s
 }
