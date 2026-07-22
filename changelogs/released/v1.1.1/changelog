@@ -1,0 +1,27 @@
+v1.1.1/ 2026-7-22
+========================
+> Note: v1.1.0 was tagged but never published. Its release pipeline was blocked
+> by the image security gate (see Security below). v1.1.1 is the first official
+> release of the v1.1 line and includes everything planned for v1.1.0.
+
+## Security
+- Fix CRITICAL CVEs that blocked the v1.1.0 release #1851 (@SSmallMonster )
+  - CVE-2026-33186: upgrade google.golang.org/grpc v1.38.0 -> v1.79.3 (authorization bypass due to improper HTTP/2 path validation)
+  - CVE-2025-68121: upgrade Go toolchain 1.21.11 -> 1.24.13 (crypto/tls incorrect certificate validation during TLS session resumption); all release binaries are now built with go1.24.13
+
+## Scheduler
+- Bump vendored Kubernetes from 1.24 to 1.26 to fix scheduling failures #1850, #1848 (@SSmallMonster )
+
+## Admission
+- Skip updating the webhook configuration when FailurePolicy and NamespaceSelector are not empty #1819 (@SSmallMonster ) — first shipped release containing this fix
+
+## CI
+- Enable workflows on the release/v1.1 branch #1849 (@SSmallMonster )
+- Bump builder image Go to 1.24.13 #1852 (@SSmallMonster )
+- Add CVE scan workflow running the same CRITICAL gate as the release pipeline (PRs touching deps/build files, weekly schedule, manual pre-release check) #1851 (@SSmallMonster )
+
+## Test
+- Update test ca #1838 (@FloatXD )
+
+## Upgrade notes
+- Kubernetes >= 1.26 is now required (kubeVersion constraint in the chart)
