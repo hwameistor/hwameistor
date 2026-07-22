@@ -56,7 +56,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.20.4
+          go-version: 1.24.13
       - name: Build hwameictl
         run: make build_hwameictl OS=${{ matrix.os }} ARCH=${{ matrix.arch }}
       - name: Extract Version from Chart.yaml
