@@ -95,12 +95,14 @@ func (m *manager) processVolumeMigrate(vmName string) error {
 		return err
 	}
 
-	// state chain: (empty) -> Submitted -> Start -> InProgress -> Completed
+	// state chain: (empty) -> Preparing -> Submitted -> AddReplica -> SyncReplica -> PruneReplica -> Completed
 
 	logCtx = m.logger.WithFields(log.Fields{"migration": migrate.Name, "spec": migrate.Spec, "status": migrate.Status})
 	logCtx.Debug("Starting to process a VolumeMigrate task")
 	switch migrate.Status.State {
 	case "":
+		return m.volumeMigratePrepare(migrate)
+	case apisv1alpha1.OperationStatePreparing:
 		return m.volumeMigrateSubmit(migrate, vol, lvg)
 	case apisv1alpha1.OperationStateSubmitted:
 		return m.volumeMigrateStart(migrate, vol, lvg)
@@ -120,24 +122,17 @@ func (m *manager) processVolumeMigrate(vmName string) error {
 	return fmt.Errorf("invalid state/phase")
 }
 
+func (m *manager) volumeMigratePrepare(migrate *apisv1alpha1.LocalVolumeMigrate) error {
+	migrate.Status.State = apisv1alpha1.OperationStatePreparing
+	migrate.Status.Message = "Preparing volume migration"
+	return m.apiClient.Status().Update(context.TODO(), migrate)
+}
+
 func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, vol *apisv1alpha1.LocalVolume, lvg *apisv1alpha1.LocalVolumeGroup) error {
 	logCtx := m.logger.WithFields(log.Fields{"migration": migrate.Name, "spec": migrate.Spec})
 	logCtx.Debug("Submit a VolumeMigrate")
 
 	ctx := context.TODO()
-	//Indicates that lvm is being migrated
-	var anno map[string]string
-	if anno = vol.GetAnnotations(); anno == nil {
-		anno = make(map[string]string)
-	}
-	anno[apisv1alpha1.VolumeMigrateCompletedAnnoKey] = apisv1alpha1.MigrateStarted
-	vol.SetAnnotations(anno)
-	err := m.apiClient.Update(ctx, vol)
-	if err != nil {
-		logCtx.WithField("LocalVolume", vol.Name).WithError(err).Debug("lvm anno set file")
-		return err
-	}
-
 	// if LV is still in use, waiting for it to be released
 	if vol.Status.PublishedNodeName == migrate.Spec.SourceNode {
 		logCtx.WithField("PublishedNode", vol.Status.PublishedNodeName).Warning("LocalVolume is still in use by source node, try it later")
@@ -228,8 +223,25 @@ func (m *manager) volumeMigrateSubmit(migrate *apisv1alpha1.LocalVolumeMigrate, 
 			migrate.Status.Volumes = append(migrate.Status.Volumes, volList[i].Name)
 		}
 	}
+
+	// Mark the volume as migrating only after all submission prechecks pass.
+	// Patching from a deep copy limits the write to annotations and avoids
+	// overwriting concurrent changes to the volume spec or status.
+	oldVol := vol.DeepCopy()
+	annotations := vol.GetAnnotations()
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
+	annotations[apisv1alpha1.VolumeMigrateCompletedAnnoKey] = apisv1alpha1.MigrateStarted
+	vol.SetAnnotations(annotations)
+	if err := m.apiClient.Patch(ctx, vol, client.MergeFrom(oldVol)); err != nil {
+		logCtx.WithField("LocalVolume", vol.Name).WithError(err).Error("Failed to mark volume migration as started")
+		return err
+	}
+
 	migrate.Status.OriginalReplicaNumber = vol.Spec.ReplicaNumber
 	migrate.Status.State = apisv1alpha1.OperationStateSubmitted
+	migrate.Status.Message = ""
 	return m.apiClient.Status().Update(ctx, migrate)
 }
 

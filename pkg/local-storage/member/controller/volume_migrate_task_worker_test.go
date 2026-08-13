@@ -7,6 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -482,6 +483,43 @@ func Test_manager_volumeMigrateStart(t *testing.T) {
 	}
 }
 
+func TestVolumeMigratePrepare(t *testing.T) {
+	cli, _ := CreateFakeClient()
+	migrate := GenFakeLocalVolumeMigrateObject()
+	migrate.Name = fakeLocalVolumeMigrateName
+	volume := GenFakeLocalVolumeObject()
+	if err := cli.Create(context.Background(), volume); err != nil {
+		t.Fatalf("failed to create LocalVolume: %v", err)
+	}
+	if err := cli.Create(context.Background(), migrate); err != nil {
+		t.Fatalf("failed to create LocalVolumeMigrate: %v", err)
+	}
+
+	m := &manager{apiClient: cli}
+	if err := m.volumeMigratePrepare(migrate); err != nil {
+		t.Fatalf("volumeMigratePrepare() error = %v", err)
+	}
+
+	storedMigrate := &v1alpha1.LocalVolumeMigrate{}
+	if err := cli.Get(context.Background(), types.NamespacedName{Name: migrate.Name}, storedMigrate); err != nil {
+		t.Fatalf("failed to get LocalVolumeMigrate: %v", err)
+	}
+	if storedMigrate.Status.State != v1alpha1.OperationStatePreparing {
+		t.Fatalf("migration state = %q, want %q", storedMigrate.Status.State, v1alpha1.OperationStatePreparing)
+	}
+	if storedMigrate.Status.Message == "" {
+		t.Fatal("preparing migration should expose a status message")
+	}
+
+	storedVolume := &v1alpha1.LocalVolume{}
+	if err := cli.Get(context.Background(), types.NamespacedName{Name: volume.Name}, storedVolume); err != nil {
+		t.Fatalf("failed to get LocalVolume: %v", err)
+	}
+	if got := storedVolume.Annotations[v1alpha1.VolumeMigrateCompletedAnnoKey]; got == v1alpha1.MigrateStarted {
+		t.Fatal("preparing migration must not mark the volume as migrating")
+	}
+}
+
 func Test_manager_volumeMigrateSubmit(t *testing.T) {
 	type args struct {
 		migrate *v1alpha1.LocalVolumeMigrate
@@ -559,10 +597,110 @@ func Test_manager_volumeMigrateSubmit(t *testing.T) {
 				volumeConvertTaskQueue:      common.NewTaskQueue("VolumeConvertTask", maxRetries),
 				volumeGroupConvertTaskQueue: common.NewTaskQueue("VolumeGroupConvertTask", maxRetries),
 				localNodes:                  map[string]v1alpha1.State{},
+				migrateConcurrentNumber:     MigrateConcurrentNumber,
 				logger:                      log.WithField("Module", "ControllerManager"),
 			}
 			if err := m.volumeMigrateSubmit(tt.args.migrate, lv, lvg); (err != nil) != tt.wantErr {
 				t.Errorf("volumeMigrateSubmit() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			storedVolume := &v1alpha1.LocalVolume{}
+			if err := client.Get(context.Background(), types.NamespacedName{Name: lv.Name}, storedVolume); err != nil {
+				t.Fatalf("failed to get LocalVolume: %v", err)
+			}
+			if got := storedVolume.Annotations[v1alpha1.VolumeMigrateCompletedAnnoKey]; got != v1alpha1.MigrateStarted {
+				t.Fatalf("migration annotation = %q, want %q", got, v1alpha1.MigrateStarted)
+			}
+			storedMigrate := &v1alpha1.LocalVolumeMigrate{}
+			if err := client.Get(context.Background(), types.NamespacedName{Name: tt.args.migrate.Name, Namespace: tt.args.migrate.Namespace}, storedMigrate); err != nil {
+				t.Fatalf("failed to get LocalVolumeMigrate: %v", err)
+			}
+			if storedMigrate.Status.State != v1alpha1.OperationStateSubmitted {
+				t.Fatalf("migration state = %q, want %q", storedMigrate.Status.State, v1alpha1.OperationStateSubmitted)
+			}
+			if storedMigrate.Status.Message != "" {
+				t.Fatalf("submitted migration retained stale message %q", storedMigrate.Status.Message)
+			}
+		})
+	}
+}
+
+func TestVolumeMigrateSubmitDoesNotMarkVolumeBeforePrechecksPass(t *testing.T) {
+	tests := []struct {
+		name            string
+		prepare         func(*v1alpha1.LocalVolume, *v1alpha1.LocalVolumeMigrate)
+		concurrentLimit int
+		competingTask   bool
+	}{
+		{
+			name: "volume still published on source node",
+			prepare: func(volume *v1alpha1.LocalVolume, migrate *v1alpha1.LocalVolumeMigrate) {
+				migrate.Spec.SourceNode = volume.Status.PublishedNodeName
+			},
+			concurrentLimit: MigrateConcurrentNumber,
+		},
+		{
+			name: "non-convertible raw block volume",
+			prepare: func(volume *v1alpha1.LocalVolume, migrate *v1alpha1.LocalVolumeMigrate) {
+				volume.Status.PublishedNodeName = ""
+				volume.Status.PublishedRawBlock = true
+				volume.Spec.Convertible = false
+				migrate.Spec.SourceNode = "source-node"
+			},
+			concurrentLimit: MigrateConcurrentNumber,
+		},
+		{
+			name: "migration concurrency limit reached",
+			prepare: func(volume *v1alpha1.LocalVolume, migrate *v1alpha1.LocalVolumeMigrate) {
+				volume.Status.PublishedNodeName = ""
+				migrate.Spec.SourceNode = "source-node"
+			},
+			concurrentLimit: MigrateConcurrentNumber,
+			competingTask:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cli, _ := CreateFakeClient()
+			volume := GenFakeLocalVolumeObject()
+			volume.Spec.VolumeGroup = fakeLocalVolumeGroupName
+			migrate := GenFakeLocalVolumeMigrateObject()
+			migrate.Name = fakeLocalVolumeMigrateName
+			migrate.Spec.VolumeName = volume.Name
+			group := GenFakeLocalVolumeGroupObject()
+			tt.prepare(volume, migrate)
+
+			if err := cli.Create(context.Background(), volume); err != nil {
+				t.Fatalf("failed to create LocalVolume: %v", err)
+			}
+			if err := cli.Create(context.Background(), migrate); err != nil {
+				t.Fatalf("failed to create LocalVolumeMigrate: %v", err)
+			}
+			if tt.competingTask {
+				competingMigrate := GenFakeLocalVolumeMigrateObject()
+				competingMigrate.Name = "competing-migration"
+				competingMigrate.Status.State = v1alpha1.OperationStateSubmitted
+				if err := cli.Create(context.Background(), competingMigrate); err != nil {
+					t.Fatalf("failed to create competing LocalVolumeMigrate: %v", err)
+				}
+			}
+
+			m := &manager{
+				apiClient:               cli,
+				migrateConcurrentNumber: tt.concurrentLimit,
+				logger:                  log.WithField("Module", "ControllerManager"),
+			}
+			if err := m.volumeMigrateSubmit(migrate, volume, group); err == nil {
+				t.Fatal("volumeMigrateSubmit() expected a precheck error")
+			}
+
+			storedVolume := &v1alpha1.LocalVolume{}
+			if err := cli.Get(context.Background(), types.NamespacedName{Name: volume.Name}, storedVolume); err != nil {
+				t.Fatalf("failed to get LocalVolume: %v", err)
+			}
+			if got := storedVolume.Annotations[v1alpha1.VolumeMigrateCompletedAnnoKey]; got == v1alpha1.MigrateStarted {
+				t.Fatal("volume was marked as migrating before submission prechecks passed")
 			}
 		})
 	}
