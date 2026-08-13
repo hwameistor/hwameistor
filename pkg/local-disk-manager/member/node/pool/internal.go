@@ -58,7 +58,7 @@ func (p *diskPool) ExtendPool(poolName string, devLinks []string, serial string)
 
 	devName := strings.Split(actualDeviceLink, "/")[len(strings.Split(actualDeviceLink, "/"))-1]
 	poolDevicePath := types.ComposePoolDevicePath(poolName, devName)
-	exist, err := p.hu.PathExists(devName)
+	exist, err := p.hu.PathExists(poolDevicePath)
 	if exist || err != nil {
 		return exist, err
 	}
