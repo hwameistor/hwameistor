@@ -79,6 +79,7 @@ const (
 
 	// purpose of the following CRDs is for operational job,
 	// so, they will be in different state machine from volume/volumereplica
+	OperationStatePreparing           State = "Preparing"
 	OperationStateSubmitted           State = "Submitted"
 	OperationStateMigrateAddReplica   State = "AddReplica"
 	OperationStateMigrateSyncReplica  State = "SyncReplica"
