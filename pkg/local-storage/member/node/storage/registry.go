@@ -77,7 +77,7 @@ func (lr *localRegistry) SyncNodeResources() error {
 	// 3. rebuild replicas
 	rebuildReplicas, err := lr.lm.PoolManager().GetReplicas()
 	if err != nil {
-		lr.logger.WithError(err).Fatal("Failed to ConstructReplicas")
+		lr.logger.WithError(err).Error("Failed to ConstructReplicas")
 		return err
 	}
 	lr.replicas = rebuildReplicas
@@ -85,7 +85,7 @@ func (lr *localRegistry) SyncNodeResources() error {
 	// rebuild LocalStorageNode object
 	err = lr.syncToNodeCRD()
 	if err != nil {
-		lr.logger.WithError(err).Fatal("Failed to sync resource to LocalStorageNode")
+		lr.logger.WithError(err).Error("Failed to sync resource to LocalStorageNode")
 		return err
 	}
 
@@ -198,7 +198,7 @@ func (lr *localRegistry) syncToNodeCRD() error {
 	node := &apisv1alpha1.LocalStorageNode{}
 	if err := lr.apiClient.Get(context.TODO(), types.NamespacedName{Name: lr.lm.nodeConf.Name}, node); err != nil {
 		lr.logger.WithError(err).Error("Failed to query Node")
-		return nil
+		return err
 	}
 	node.Status.State = apisv1alpha1.NodeStateReady
 	node.Status.Pools = make(map[string]apisv1alpha1.LocalPool)
