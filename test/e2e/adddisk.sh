@@ -1,6 +1,5 @@
 #!/bin/bash
 # simple scripts mng machine
-# link hosts
 export GOVC_INSECURE=1
 export GOVC_RESOURCE_POOL="fupan-k8s"
 export hosts="fupan-k8s-work-1"
