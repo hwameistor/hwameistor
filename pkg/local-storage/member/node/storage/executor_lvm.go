@@ -502,7 +502,10 @@ func (lvm *lvmExecutor) ExtendThinPool(tpc *apisv1alpha1.ThinPoolClaim) error {
 		if tpc.Spec.Description.Capacity*utils.Gi > thinPoolDataSize {
 			options = append(options, fmt.Sprintf("--size=%dG", tpc.Spec.Description.Capacity))
 		}
-		if metadataSize*utils.Gi > thinPoolMdSize {
+		// An omitted metadata size uses the default only when creating a pool.
+		// For an existing pool, leave the metadata LV unchanged unless a target
+		// size was explicitly requested.
+		if tpc.Spec.Description.PoolMetadataSize != nil && metadataSize*utils.Gi > thinPoolMdSize {
 			options = append(options, fmt.Sprintf("--poolmetadatasize=%dG", metadataSize))
 		}
 		if len(options) == 0 {
