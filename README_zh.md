@@ -234,6 +234,10 @@ HwameiStor 技术沟通群：
 
 我们将尽力回应在社区报告的每个问题，但我们会首先解决在[此 repo 中报告的](https://github.com/hwameistor/hwameistor/discussions)问题。
 
+## 项目起源
+
+HwameiStor 最初由 [DaoCloud](https://www.daocloud.io/) 创建。有关背景信息，请参阅[仓库提交历史](https://github.com/hwameistor/hwameistor/commits/main/)。
+
 ## 许可证
 
 版权所有 (c) 2014-2023 HwameiStor 开发团队
