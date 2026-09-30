@@ -248,6 +248,12 @@ We will try our best to respond to every issue reported on community channels,
 but the issues reported [here](https://github.com/hwameistor/hwameistor/discussions)
 on this repo will be addressed first.
 
+## Origin
+
+HwameiStor was originally created by [DaoCloud](https://www.daocloud.io/).
+See the [repository history](https://github.com/hwameistor/hwameistor/commits/main/)
+for background.
+
 ## License
 
 Copyright (c) 2014-2023 The HwameiStor Authors
