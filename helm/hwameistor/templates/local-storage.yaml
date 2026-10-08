@@ -98,6 +98,9 @@ spec:
           value: localstorage.hwameistor.io/storage-ipv4
         - name: MIGRAGE_JUICESYNC_IMAGE
           value: {{ .Values.global.hwameistorImageRegistry }}/{{ .Values.localStorage.migrate.juicesync.imageRepository }}:{{ .Values.localStorage.migrate.juicesync.tag }}
+        {{- with .Values.localStorage.member.extraEnv }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
         image: {{ .Values.global.hwameistorImageRegistry }}/{{ .Values.localStorage.member.imageRepository }}:{{ template "hwameistor.localstorageImageTag" . }}
         imagePullPolicy: IfNotPresent
         name: member
