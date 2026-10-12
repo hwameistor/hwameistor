@@ -2,6 +2,8 @@ package thinpoolclaim
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -137,6 +139,91 @@ func TestReconcileThinPoolClaim_Reconcile_NotEnoughCapacity(t *testing.T) {
 	// Check claim status, should still be Pending
 	if claim.Status.Status != v1alpha1.ThinPoolClaimPhasePending {
 		t.Errorf("Expected status %v but got %v", v1alpha1.ThinPoolClaimPhasePending, claim.Status.Status)
+	}
+}
+
+func TestProcessThinPoolClaimPending_ExistingPoolMetadata(t *testing.T) {
+	oneGiB := uint(1)
+	twoGiB := uint(2)
+	tests := []struct {
+		name                 string
+		currentMetadataBytes int64
+		requestedMetadataGiB *uint
+		freeCapacityBytes    int64
+		wantStatus           v1alpha1.ThinPoolClaimPhase
+		wantError            string
+	}{
+		{
+			name:                 "omitted metadata preserves a value above the default",
+			currentMetadataBytes: 1400 * utils.Mi,
+			freeCapacityBytes:    utils.Gi,
+			wantStatus:           v1alpha1.ThinPoolClaimPhaseToBeConsumed,
+		},
+		{
+			name:                 "omitted metadata does not grow a value below the default",
+			currentMetadataBytes: 512 * utils.Mi,
+			freeCapacityBytes:    utils.Gi,
+			wantStatus:           v1alpha1.ThinPoolClaimPhaseToBeConsumed,
+		},
+		{
+			name:                 "explicit smaller metadata is rejected with matching units",
+			currentMetadataBytes: 1400 * utils.Mi,
+			requestedMetadataGiB: &oneGiB,
+			freeCapacityBytes:    10 * utils.Gi,
+			wantStatus:           v1alpha1.ThinPoolClaimPhasePending,
+			wantError:            fmt.Sprintf("metadata size %d bytes is larger than requested size %d bytes", 1400*utils.Mi, utils.Gi),
+		},
+		{
+			name:                 "explicit larger metadata accounts for metadata and pmspare",
+			currentMetadataBytes: utils.Gi,
+			requestedMetadataGiB: &twoGiB,
+			freeCapacityBytes:    2 * utils.Gi,
+			wantStatus:           v1alpha1.ThinPoolClaimPhasePending,
+			wantError:            fmt.Sprintf("Required %d bytes but only have %d bytes", 3*utils.Gi, 2*utils.Gi),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cli, s := CreateFakeClient()
+			node := GenFakeLocalStorageNodeObject()
+			pool := node.Status.Pools[poolName]
+			pool.FreeCapacityBytes = tt.freeCapacityBytes
+			pool.ThinPool = &v1alpha1.ThinPoolInfo{
+				Name:         poolName,
+				Size:         100 * utils.Gi,
+				MetadataSize: tt.currentMetadataBytes,
+			}
+			node.Status.Pools[poolName] = pool
+			if err := cli.Create(context.Background(), node); err != nil {
+				t.Fatalf("create LocalStorageNode: %v", err)
+			}
+
+			claim := GenFakeThinPoolClaimObject(v1alpha1.ThinPoolClaimPhasePending)
+			claim.Spec.Description.Capacity = 101
+			claim.Spec.Description.PoolMetadataSize = tt.requestedMetadataGiB
+			if err := cli.Create(context.Background(), claim); err != nil {
+				t.Fatalf("create ThinPoolClaim: %v", err)
+			}
+
+			r := &ReconcileThinPoolClaim{Client: cli, Scheme: s, Recorder: fakeRecorder}
+			err := r.processThinPoolClaimPending(context.Background(), claim)
+			if tt.wantError == "" {
+				if err != nil {
+					t.Fatalf("process pending claim: %v", err)
+				}
+			} else if err == nil || !strings.Contains(err.Error(), tt.wantError) {
+				t.Fatalf("process pending claim error = %v, want containing %q", err, tt.wantError)
+			}
+
+			storedClaim := &v1alpha1.ThinPoolClaim{}
+			if err := cli.Get(context.Background(), client.ObjectKeyFromObject(claim), storedClaim); err != nil {
+				t.Fatalf("get ThinPoolClaim: %v", err)
+			}
+			if storedClaim.Status.Status != tt.wantStatus {
+				t.Errorf("ThinPoolClaim phase = %q, want %q", storedClaim.Status.Status, tt.wantStatus)
+			}
+		})
 	}
 }
 

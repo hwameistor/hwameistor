@@ -144,26 +144,31 @@ func (r *ReconcileThinPoolClaim) processThinPoolClaimPending(ctx context.Context
 	if tpc.Spec.Description.PoolMetadataSize != nil {
 		metadataSize = int64(*tpc.Spec.Description.PoolMetadataSize)
 	}
+	metadataSizeBytes := metadataSize * utils.Gi
 
 	// for new thin pool
 	// data size + metadata size + pmspare size
-	requiredSize := (tpc.Spec.Description.Capacity + metadataSize*2) * utils.Gi
+	dataSizeBytes := tpc.Spec.Description.Capacity * utils.Gi
+	requiredSize := dataSizeBytes + metadataSizeBytes*2
 
 	// for existing thin pool
 	if pool.ThinPool != nil {
-		if pool.ThinPool.Size > tpc.Spec.Description.Capacity*utils.Gi {
-			return fmt.Errorf("thin pool %s size %d is larger than requested size %d", pool.ThinPool.Name, pool.ThinPool.Size, tpc.Spec.Description.Capacity)
+		if pool.ThinPool.Size > dataSizeBytes {
+			return fmt.Errorf("thin pool %s size %d bytes is larger than requested size %d bytes", pool.ThinPool.Name, pool.ThinPool.Size, dataSizeBytes)
 		}
 
-		if pool.ThinPool.MetadataSize > metadataSize*utils.Gi {
-			return fmt.Errorf("thin pool %s metadata size %d is larger than requested size %d", pool.ThinPool.Name, pool.ThinPool.MetadataSize, metadataSize)
+		metadataExtendSize := int64(0)
+		if tpc.Spec.Description.PoolMetadataSize != nil {
+			if pool.ThinPool.MetadataSize > metadataSizeBytes {
+				return fmt.Errorf("thin pool %s metadata size %d bytes is larger than requested size %d bytes", pool.ThinPool.Name, pool.ThinPool.MetadataSize, metadataSizeBytes)
+			}
+			metadataExtendSize = metadataSizeBytes - pool.ThinPool.MetadataSize
 		}
 
-		metaDataExtendSize := metadataSize*utils.Gi - pool.ThinPool.MetadataSize
-		dataPoolExtendSize := tpc.Spec.Description.Capacity*utils.Gi - pool.ThinPool.Size
+		dataPoolExtendSize := dataSizeBytes - pool.ThinPool.Size
 
 		// data size + metadata size + pmspare size
-		requiredSize = dataPoolExtendSize + metaDataExtendSize*2
+		requiredSize = dataPoolExtendSize + metadataExtendSize*2
 	}
 
 	if requiredSize > pool.FreeCapacityBytes {

@@ -53,7 +53,8 @@ type ThinPoolClaimDescription struct {
 	OverProvisionRatio *string `json:"overProvisionRatio,omitempty"`
 
 	// The size of thin pool metadata. Unit is GiB.
-	// The default and minimum size is 1GiB.
+	// When creating a thin pool, the default and minimum size is 1GiB.
+	// For an existing pool, omitting this field preserves its current metadata size.
 	// It can be hard to predict the amount of metadata space that will
 	// be needed, so it is recommended to start with a size of 1GiB which
 	// should be enough for all practical purposes. A thin pool metadata

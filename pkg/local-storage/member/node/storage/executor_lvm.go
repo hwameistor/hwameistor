@@ -502,12 +502,36 @@ func (lvm *lvmExecutor) ExtendThinPool(tpc *apisv1alpha1.ThinPoolClaim) error {
 		if tpc.Spec.Description.Capacity*utils.Gi > thinPoolDataSize {
 			options = append(options, fmt.Sprintf("--size=%dG", tpc.Spec.Description.Capacity))
 		}
-		if metadataSize*utils.Gi > thinPoolMdSize {
+		// An omitted metadata size uses the default only when creating a pool.
+		// For an existing pool, leave the metadata LV unchanged unless a target
+		// size was explicitly requested.
+		if tpc.Spec.Description.PoolMetadataSize != nil && metadataSize*utils.Gi > thinPoolMdSize {
 			options = append(options, fmt.Sprintf("--poolmetadatasize=%dG", metadataSize))
 		}
 		if len(options) == 0 {
 			lvm.logger.Infof("No need to extend thin pool")
 			return nil
+		}
+		if tpc.Spec.Description.PoolMetadataSize == nil || metadataSize*utils.Gi <= thinPoolMdSize {
+			// Naming the VG's PVs prevents LVM from automatically growing metadata
+			// with the data LV. Older LVM versions reject --poolmetadatasize when
+			// it matches the current size, so preserve it by specifying all VG PVs.
+			pvs, err := lvm.pvs()
+			if err != nil {
+				return err
+			}
+			pvNames := []string{}
+			for _, report := range pvs.Records {
+				for _, pv := range report.Records {
+					if pv.PoolName == tpc.Spec.Description.PoolName && pv.Name != "" {
+						pvNames = append(pvNames, pv.Name)
+					}
+				}
+			}
+			if len(pvNames) == 0 {
+				return fmt.Errorf("no physical volumes found for thin pool VG %s", tpc.Spec.Description.PoolName)
+			}
+			options = append(options, pvNames...)
 		}
 		return lvm.thinPoolExtend(tpc.Spec.Description.PoolName, apisv1alpha1.ThinPoolName, options)
 	}
