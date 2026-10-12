@@ -1,31 +1,98 @@
-name: cherry_pick
+name: Cherry pick
 
 on:
   pull_request_target:
     branches:
       - main
-    types: ['closed','labeled']
+    types: [closed, labeled]
+  workflow_dispatch:
+    inputs:
+      pull_number:
+        description: Merged main PR to backport using its current labels
+        required: true
+        type: string
 
-
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
-  cherry_pick_release_v1_0:
+  cherry_pick:
     runs-on: ubuntu-latest
-    name: Cherry pick into release-v1.0
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'cherry-pick-v1') && github.event.pull_request.merged == true }}
+    name: Cherry pick into release branches
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event.pull_request.merged == true &&
+       (contains(github.event.pull_request.labels.*.name, 'cherry-pick-v1') ||
+        contains(github.event.pull_request.labels.*.name, 'cherry-pick-v1.0') ||
+        contains(github.event.pull_request.labels.*.name, 'cherry-pick-v1.1')) &&
+       (github.event.action == 'closed' ||
+        contains(fromJSON('["cherry-pick-v1", "cherry-pick-v1.0", "cherry-pick-v1.1"]'), github.event.label.name)))
+    concurrency:
+      group: backport-${{ github.event.pull_request.number || inputs.pull_number }}
+      cancel-in-progress: false
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      # pull_request_target must only execute code from the trusted main branch.
+      - name: Checkout workflow helpers
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          fetch-depth: 0
-      - name: Cherry pick into release-v1.0
-        uses: carloscastrojumo/github-cherry-pick-action@v1.0.1
-        with:
-          branch: release/v1.0.0
-          labels: |
-            cherry-pick
-#          reviewers: |
-#            aReviewerUser
+          ref: main
+          persist-credentials: false
 
+      - name: Select targets and check for existing backports
+        id: prepare
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          SOURCE_PR_NUMBER: ${{ github.event.pull_request.number || inputs.pull_number }}
+        with:
+          script: |
+            const { prepareBackport } = require('./.github/scripts/prepare-backport.cjs');
+            await prepareBackport({ github, context, core, pullNumber: process.env.SOURCE_PR_NUMBER });
+
+      # A PAT or GitHub App token allows the new PR to trigger normal PR CI.
+      - name: Check backport token
+        if: steps.prepare.outputs.targets != ''
+        env:
+          BACKPORT_TOKEN: ${{ secrets.BACKPORT_TOKEN || secrets.MY_TOKEN }}
+        run: |
+          if [ -z "$BACKPORT_TOKEN" ]; then
+            echo '::error::Configure BACKPORT_TOKEN (or MY_TOKEN) with contents and pull request write access.'
+            exit 1
+          fi
+
+      - name: Checkout repository for cherry-picking
+        if: steps.prepare.outputs.targets != ''
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: main
+          path: backport-repository
+          fetch-depth: 0
+          token: ${{ secrets.BACKPORT_TOKEN || secrets.MY_TOKEN }}
+
+      - name: Create backport pull requests
+        if: steps.prepare.outputs.targets != ''
+        id: backport
+        uses: korthout/backport-action@8560fb503c275d433c56f05a2f64850093baa9f7 # v4.7.0
+        with:
+          github_token: ${{ secrets.BACKPORT_TOKEN || secrets.MY_TOKEN }}
+          github_workspace: ${{ github.workspace }}/backport-repository
+          source_pr_number: ${{ steps.prepare.outputs.pull_number }}
+          target_branches: ${{ steps.prepare.outputs.targets }}
+          label_pattern: ''
+          cherry_picking: auto
+          experimental: '{"conflict_resolution":"fail"}'
+          auto_merge_enabled: false
+          comment_style: summary
+          add_labels: cherry-pick
+          pull_title: 'Automated cherry pick of #${pull_number}: ${pull_title}'
+          pull_description: |
+            Backport of #${pull_number} to `${target_branch}`.
+            <!-- hwameistor-backport:${pull_number}:${target_branch} -->
+
+            ${pull_description}
+
+      - name: Report unsuccessful backports
+        if: steps.prepare.outputs.targets != '' && steps.backport.outputs.was_successful != 'true'
+        run: |
+          echo '::error::One or more backports failed. See the action logs and the comment on the original PR for details.'
+          exit 1
