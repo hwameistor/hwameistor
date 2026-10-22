@@ -17,8 +17,10 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
-	juiceSyncImageName = "ghcr.io/hwameistor/hwameistor-juicesync:v1.0.4-01"
+const (
+	juiceSyncImageName    = "ghcr.io/hwameistor/hwameistor-juicesync:v1.2.0-v1.4.1-01"
+	juiceFSVersionEnv     = "JUICEFS_VERSION"
+	defaultJuiceFSVersion = "1.2.0"
 )
 
 type JuiceSync struct {
@@ -89,7 +91,10 @@ func (js *JuiceSync) getStorageNodeIP(nodeName string) (string, error) {
 }
 
 func (js *JuiceSync) StartSync(jobName, volName, excludedRunningNodeName, runningNodeName string, dataCheckNeed bool) error {
-	job := js.buildJob(jobName, volName, excludedRunningNodeName, runningNodeName, dataCheckNeed)
+	job, err := js.buildJob(jobName, volName, excludedRunningNodeName, runningNodeName, dataCheckNeed)
+	if err != nil {
+		return err
+	}
 
 	if err := js.apiClient.Create(context.TODO(), job); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
@@ -101,9 +106,17 @@ func (js *JuiceSync) StartSync(jobName, volName, excludedRunningNodeName, runnin
 	return nil
 }
 
-func (js *JuiceSync) buildJob(jobName string, volName string, excludedRunningNodeName string, runningNodeName string, dataCheckNeed bool) *batchv1.Job {
+func (js *JuiceSync) buildJob(jobName string, volName string, excludedRunningNodeName string, runningNodeName string, dataCheckNeed bool) (*batchv1.Job, error) {
+	imageName := juiceSyncImageName
 	if value := os.Getenv("MIGRAGE_JUICESYNC_IMAGE"); len(value) > 0 {
-		juiceSyncImageName = value
+		imageName = value
+	}
+	version := os.Getenv(juiceFSVersionEnv)
+	if version == "" {
+		version = defaultJuiceFSVersion
+	}
+	if version != "1.2.0" && version != "1.4.1" {
+		return nil, fmt.Errorf("unsupported %s %q: expected 1.2.0 or 1.4.1", juiceFSVersionEnv, version)
 	}
 
 	runCommand := "sync_hwameistor_volumes.sh"
@@ -135,16 +148,13 @@ func (js *JuiceSync) buildJob(jobName string, volName string, excludedRunningNod
 	var sourceNodeIP, targetNodeIP string
 	cm, err := js.getConfigMap(volName)
 	if err != nil {
-		logger.WithError(err).Error("failed to get config map for job")
-		return nil
+		return nil, fmt.Errorf("get config map for sync job: %w", err)
 	} else {
 		if sourceNodeIP, err = js.getStorageNodeIP(cm.Data[SyncConfigSourceNodeNameKey]); err != nil {
-			logger.WithError(err).Error("failed to get source node ip from config map for job")
-			return nil
+			return nil, fmt.Errorf("get source node IP for sync job: %w", err)
 		}
 		if targetNodeIP, err = js.getStorageNodeIP(cm.Data[SyncConfigTargetNodeNameKey]); err != nil {
-			logger.WithError(err).Error("failed to get target node ip from config map for job")
-			return nil
+			return nil, fmt.Errorf("get target node IP for sync job: %w", err)
 		}
 	}
 
@@ -173,7 +183,7 @@ func (js *JuiceSync) buildJob(jobName string, volName string, excludedRunningNod
 					Containers: []corev1.Container{
 						{
 							Name:            syncMountContainerName,
-							Image:           juiceSyncImageName,
+							Image:           imageName,
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							SecurityContext: &corev1.SecurityContext{
 								Privileged: &privileged,
@@ -188,6 +198,10 @@ func (js *JuiceSync) buildJob(jobName string, volName string, excludedRunningNod
 							},
 							// overwrite sourceNode and targetNode with src/dst node ip
 							Env: []corev1.EnvVar{
+								{
+									Name:  juiceFSVersionEnv,
+									Value: version,
+								},
 								{
 									Name:  SyncConfigSourceNodeNameKey,
 									Value: sourceNodeIP,
@@ -288,7 +302,7 @@ func (js *JuiceSync) buildJob(jobName string, volName string, excludedRunningNod
 	baseStruct.Spec.Template.Spec.Containers[0].VolumeMounts = append(baseStruct.Spec.Template.Spec.Containers[0].VolumeMounts, etchostsVolumeMount)
 	baseStruct.Spec.Template.Spec.Volumes = append(baseStruct.Spec.Template.Spec.Volumes, etchostsVolume)
 
-	return baseStruct
+	return baseStruct, nil
 }
 
 func (js *JuiceSync) getConfigMap(volName string) (*corev1.ConfigMap, error) {

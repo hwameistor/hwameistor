@@ -1,0 +1,23 @@
+#!/bin/sh
+set -eu
+
+version=${JUICEFS_VERSION:-1.2.0}
+case "$version" in
+    1.2.0|1.4.1) ;;
+    *)
+        echo "Unsupported JUICEFS_VERSION '$version'; expected 1.2.0 or 1.4.1" >&2
+        exit 2
+        ;;
+esac
+
+check=off
+for arg in "$@"; do
+    case "$arg" in
+        --check-new|--check-all) check=$arg ;;
+    esac
+done
+echo "HwameiStor sync: JuiceFS $version, check=$check" >&2
+if [ "$version" = 1.4.1 ]; then
+    echo "Warning: JuiceFS 1.4.1 skips special files; content checks do not detect their absence" >&2
+fi
+exec "/opt/juicefs/$version/juicefs" sync "$@"

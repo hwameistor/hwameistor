@@ -470,9 +470,12 @@ tools: juicesync
 
 .PHONY: juicesync
 juicesync:
+	python3 build/juicesync/test_scripts.py
 	${DOCKER_BUILDX_CMD_AMD64} -t ${JUICESYNC_NAME}:${JUICESYNC_TAG}-amd64 -f ${JUICESYNC_DOCKERFILE}.amd64 ${PROJECT_SOURCE_CODE_DIR}
+	docker run --rm --platform=linux/amd64 -v "${PROJECT_SOURCE_CODE_DIR}/build/juicesync/smoke.sh:/tests/smoke.sh:ro" ${JUICESYNC_NAME}:${JUICESYNC_TAG}-amd64 sh /tests/smoke.sh
 	# build for arm64 version
 	${DOCKER_BUILDX_CMD_ARM64} -t ${JUICESYNC_NAME}:${JUICESYNC_TAG}-arm64 -f ${JUICESYNC_DOCKERFILE}.arm64 ${PROJECT_SOURCE_CODE_DIR}
+	docker run --rm --platform=linux/arm64 -v "${PROJECT_SOURCE_CODE_DIR}/build/juicesync/smoke.sh:/tests/smoke.sh:ro" ${JUICESYNC_NAME}:${JUICESYNC_TAG}-arm64 sh /tests/smoke.sh
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${JUICESYNC_NAME}:${JUICESYNC_TAG}
 

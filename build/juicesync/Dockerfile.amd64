@@ -1,8 +1,13 @@
-FROM alpine:latest
+FROM alpine:3.22.2 AS download
+RUN apk add --no-cache ca-certificates curl
+COPY build/juicesync/download.sh /tmp/download.sh
+RUN sh /tmp/download.sh amd64
 
-RUN cd /tmp && wget https://github.com/juicedata/juicesync/releases/download/v1.0.4/juicesync-1.0.4-linux-amd64.tar.gz && tar zxf juicesync-1.0.4-linux-amd64.tar.gz && mv juicesync /usr/bin
-
-COPY build/juicesync/sync_hwameistor_volumes.sh /usr/bin
-COPY build/juicesync/sync_hwameistor_volumes_check.sh /usr/bin
-RUN chmod +x /usr/bin/sync_hwameistor_volumes.sh
-RUN chmod +x /usr/bin/sync_hwameistor_volumes_check.sh
+FROM alpine:3.22.2
+RUN apk add --no-cache ca-certificates
+COPY --from=download /opt/juicefs /opt/juicefs
+ENV JUICEFS_VERSION=1.2.0
+COPY build/juicesync/juicesync build/juicesync/sync_hwameistor_volumes.sh build/juicesync/sync_hwameistor_volumes_check.sh /usr/bin/
+RUN chmod +x /usr/bin/juicesync /usr/bin/sync_hwameistor_volumes*.sh \
+    && /opt/juicefs/1.2.0/juicefs version \
+    && /opt/juicefs/1.4.1/juicefs version
