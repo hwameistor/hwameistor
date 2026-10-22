@@ -33,7 +33,7 @@ class SyncScriptsTest(unittest.TestCase):
                     actual = json.loads(capture.read_text())
                     expected = ["--links", "--dirs", "--perms", "--force-update"]
                     if checked:
-                        expected.append("--check-new")
+                        expected.append("--check-all")
                     expected += ["root@192.0.2.1:/source/space 中文 */", "root@192.0.2.2:/target/space 中文 */"]
                     self.assertEqual(actual["args"], expected)
                     self.assertEqual(actual["key"], "/root/.ssh/id_rsa")

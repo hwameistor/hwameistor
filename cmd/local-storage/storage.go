@@ -49,7 +49,7 @@ var (
 	httpPort                = flag.Int("http-port", restServerDefaultPort, "HTTP port for REST server")
 	logLevel                = flag.Int("v", 4 /*Log Info*/, "number for the log level verbosity")
 	migrateConcurrentNumber = flag.Int("max-migrate-count", 1, "Limit the number of concurrent migrations")
-	migrateDataNeedCheck    = flag.Bool("migrate-check", true, "Verify copied data during migration with JuiceFS --check-new")
+	migrateDataNeedCheck    = flag.Bool("migrate-check", true, "Verify copied data during migration with JuiceFS --check-all")
 	snapshotRestoreTimeout  = flag.Int("snapshot-restore-timeout", 600, "Time to restore VolumeReplica Snapshot，in seconds")
 	pvMetadataSize          = flag.Int("pv-metadata-size", 4*1024*1024, "The size of the metadata of the PV in Bytes, default 4MB")
 )

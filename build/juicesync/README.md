@@ -2,7 +2,7 @@
 
 The image bundles the official Linux JuiceFS 1.2.0 and 1.4.1 binaries. `/usr/bin/juicesync` selects a binary using `JUICEFS_VERSION` and invokes its `sync` subcommand. The default is `1.2.0`; other values except `1.4.1` fail. There is no automatic fallback after a failed copy.
 
-HwameiStor migration keeps `--links --dirs --perms --force-update`. Local Storage now defaults `--migrate-check` to true, selecting `sync_hwameistor_volumes_check.sh`, which adds `--check-new`. Explicit false selects the non-checking script. Direct invocations of the `juicesync` wrapper must supply their own sync flags.
+HwameiStor migration keeps `--links --dirs --perms --force-update`. Local Storage now defaults `--migrate-check` to true, selecting `sync_hwameistor_volumes_check.sh`, which adds `--check-all`. This verifies copied files as well as existing files that would otherwise be skipped based on size and modification time. Explicit false selects the non-checking script. Direct invocations of the `juicesync` wrapper must supply their own sync flags.
 
 For a direct HwameiStor Helm installation:
 

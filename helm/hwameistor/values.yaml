@@ -138,7 +138,7 @@ localStorage:
     tag: ""
     resources: {}
   migrate:
-    # Verify copied content with --check-new. Explicit false disables verification.
+    # Verify copied content with --check-all. Explicit false disables verification.
     check: true
     juicesync:
       imageRepository: hwameistor/hwameistor-juicesync
