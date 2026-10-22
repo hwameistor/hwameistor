@@ -2,7 +2,7 @@
 # Run inside the candidate image: sh /tests/smoke.sh
 set -eu
 test_root=$(mktemp -d)
-trap 'rm -rf "$test_root"' EXIT
+trap 'test_status=$?; if [ "$test_status" -ne 0 ]; then cat "$test_root"/*.log >&2 || :; fi; rm -rf "$test_root"; exit "$test_status"' EXIT
 mkdir -p "$test_root/source/directory" "$test_root/source/empty"
 printf 'migration content\n' > "$test_root/source/directory/file with spaces"
 ln -s directory "$test_root/source/link"
@@ -25,6 +25,30 @@ for version in default 1.2.0 1.4.1; do
     test "$(readlink "$test_root/$version/dangling")" = missing
     test -d "$test_root/$version/empty"
     echo "PASS: $version content, links, empty directory, check-all"
+
+    # Repeating the production flags must also preserve existing dangling links.
+    juicesync --links --dirs --perms --force-update --check-all \
+        "$test_root/source/" "$test_root/$version/" > "$test_root/$version-repeat.log" 2>&1
+    test "$(readlink "$test_root/$version/dangling")" = missing
+    echo "PASS: $version repeated sync preserves dangling links"
+
+    # Isolate regular-file checking from directory and symlink metadata behavior.
+    mkdir "$test_root/$version-check-source" "$test_root/$version-check-target"
+    source="$test_root/$version-check-source/file"
+    target="$test_root/$version-check-target/file"
+    printf 'migration content\n' > "$source"
+    printf 'corrupted content\n' > "$target"
+    touch -r "$source" "$target"
+    juicesync --links --dirs --perms --check-new \
+        "$test_root/$version-check-source/" "$test_root/$version-check-target/" > "$test_root/$version-check-new.log" 2>&1
+    if cmp -s "$source" "$target"; then
+        echo "check-new control unexpectedly repaired an unchanged-size/mtime file" >&2
+        exit 1
+    fi
+    juicesync --links --dirs --perms --check-all \
+        "$test_root/$version-check-source/" "$test_root/$version-check-target/" > "$test_root/$version-check-all.log" 2>&1
+    cmp "$source" "$target"
+    echo "PASS: $version check-all repairs different content with matching size and mtime"
 done
 
 if JUICEFS_VERSION=invalid juicesync --help > "$test_root/invalid.log" 2>&1; then
