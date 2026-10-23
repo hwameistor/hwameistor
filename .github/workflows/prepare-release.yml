@@ -1,0 +1,81 @@
+name: Prepare release
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: Target release branch
+        required: true
+        default: release/v1.1
+        type: string
+      version:
+        description: Version, for example v1.1.2-alpha1
+        required: true
+        type: string
+      from_tag_choice:
+        description: Automatic starting tag when from_tag is empty (highest SemVer first)
+        default: latest
+        type: choice
+        options:
+          - latest
+          - second-latest
+          - third-latest
+      from_tag:
+        description: Optional manual starting tag; overrides automatic selection
+        required: false
+        type: string
+      to_ref:
+        description: Ending ref (inclusive); empty means target branch HEAD
+        type: string
+      model:
+        description: Model for release notes (overrides ai.model)
+        required: true
+        default: gpt-6.1-sol
+        type: choice
+        options:
+          - gpt-6.1-sol
+          - gpt-6-astra
+          - gemini-4-argon
+          - gpt-5.3-codex
+          - gemini-3.8-flash
+      changelog_policy:
+        description: 'Advanced (optional): policy path or public HTTPS file URL; empty uses defaults'
+        required: false
+        type: string
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+concurrency:
+  group: prepare-release-${{ github.repository }}-${{ inputs.target_branch }}-${{ inputs.version }}
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-latest # Or a trusted self-hosted runner; no GPU needed.
+    outputs:
+      pull-request-url: ${{ steps.release.outputs.pull-request-url }}
+      from-tag: ${{ steps.release.outputs.from-tag }}
+      from-sha: ${{ steps.release.outputs.from-sha }}
+      recent-tags: ${{ steps.release.outputs.recent-tags }}
+    steps:
+      - uses: hwameistor/release-assistant@a774124f8f9b043838a54c28250233d457f03c8d # Release Assistant
+        id: release
+        with:
+          target-branch: ${{ inputs.target_branch }}
+          version: ${{ inputs.version }}
+          from-tag: ${{ inputs.from_tag }}
+          from-tag-choice: ${{ inputs.from_tag_choice }}
+          to-ref: ${{ inputs.to_ref }}
+          template-ref: refs/heads/main
+          model: ${{ inputs.model }}
+          changelog-policy: ${{ inputs.changelog_policy }}
+          publish: 'true'
+          token: ${{ secrets.RELEASE_ASSISTANT_TOKEN }}
+          copilot-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          api-key: ${{ secrets.RELEASE_ASSISTANT_API_KEY }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: release-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .release-assistant-output/
+          include-hidden-files: true
+          if-no-files-found: ignore

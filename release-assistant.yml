@@ -1,0 +1,17 @@
+schemaVersion: 1
+language: English
+# Optional: omit for bundled rules, or use a public HTTPS Markdown file URL.
+policy: .release-assistant/changelog-policy.md
+template: .release-assistant/changelog.md
+output:
+  changelog: CHANGELOG.md
+  releaseNotes: changelogs/released/{version}/changelog
+  charts:
+    - helm/hwameistor/Chart.yaml
+ai:
+  provider: copilot
+  model: gpt-6.1-sol # Used when no workflow/CLI model override is supplied.
+  timeoutSeconds: 600
+limits:
+  maxCommits: 300
+  maxPromptBytes: 160000
