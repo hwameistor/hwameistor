@@ -115,9 +115,6 @@ func (js *JuiceSync) buildJob(jobName string, volName string, excludedRunningNod
 	if version == "" {
 		version = defaultJuiceFSVersion
 	}
-	if version != "1.2.0" && version != "1.4.1" {
-		return nil, fmt.Errorf("unsupported %s %q: expected 1.2.0 or 1.4.1", juiceFSVersionEnv, version)
-	}
 
 	runCommand := "sync_hwameistor_volumes.sh"
 	if dataCheckNeed {

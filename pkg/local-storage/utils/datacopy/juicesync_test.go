@@ -41,6 +41,7 @@ func TestJuiceSyncJobConfiguration(t *testing.T) {
 		{"default", "", "", "1.2.0", "sync_hwameistor_volumes_check.sh", true},
 		{"explicit-baseline", "1.2.0", "example.com/sync:candidate", "1.2.0", "sync_hwameistor_volumes_check.sh", true},
 		{"alternate", "1.4.1", "", "1.4.1", "sync_hwameistor_volumes_check.sh", true},
+		{"custom-image-version", "custom-build", "example.com/sync:custom", "custom-build", "sync_hwameistor_volumes_check.sh", true},
 		{"check-disabled", "1.2.0", "", "1.2.0", "sync_hwameistor_volumes.sh", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -76,25 +77,17 @@ func TestJuiceSyncJobConfiguration(t *testing.T) {
 	}
 }
 
-func TestJuiceSyncInvalidConfigurationDoesNotCreateJob(t *testing.T) {
-	for _, version := range []string{"latest", "v1.2.0", "../../bin/sh"} {
-		t.Run(version, func(t *testing.T) {
-			t.Setenv(juiceFSVersionEnv, version)
-			js := testJuiceSync(t)
-			if err := js.StartSync("copy", "volume", "source", "", true); err == nil {
-				t.Fatal("invalid version accepted")
-			}
-			jobs := &batchv1.JobList{}
-			if err := js.apiClient.List(context.Background(), jobs); err != nil {
-				t.Fatal(err)
-			}
-			if len(jobs.Items) != 0 {
-				t.Fatal("created Job with invalid version")
-			}
-		})
-	}
+func TestJuiceSyncMissingConfigDoesNotCreateJob(t *testing.T) {
 	t.Setenv(juiceFSVersionEnv, "1.2.0")
-	if err := testJuiceSync(t).StartSync("copy", "missing-volume", "source", "", true); err == nil {
+	js := testJuiceSync(t)
+	if err := js.StartSync("copy", "missing-volume", "source", "", true); err == nil {
 		t.Fatal("missing config map did not return an error")
+	}
+	jobs := &batchv1.JobList{}
+	if err := js.apiClient.List(context.Background(), jobs); err != nil {
+		t.Fatal(err)
+	}
+	if len(jobs.Items) != 0 {
+		t.Fatal("created Job without a config map")
 	}
 }
