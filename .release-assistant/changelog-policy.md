@@ -32,6 +32,16 @@ Aim for 20-45 words across summary and impact in English, or one to two short se
 Use inline code for exact flags, Helm values, environment variables, resource fields and paths that users need to set. Do not list internal functions, implementation plumbing or all validation branches.
 Keep entries flat: no embedded headings, tables, lists, HTML or decorative emoji. Source links are added by the renderer.
 
+## Editorial examples and final pass
+
+These examples illustrate wording only; use their claims solely when the release evidence supports them:
+- Mechanics: "Set `--migrate-check=true` and reconcile existing DaemonSets." User outcome: "Migration checks, previously disabled by default, are now enabled for new and existing installations, so users no longer need to turn them on manually."
+- Mechanics: "Add `JUICEFS_VERSION`, preserve declaration order and set image tag `v1.2.0`." User outcome: "Select the migration binary through `localStorage.migrate.juicesync.version` to use an available version suited to your workloads without changing Operator code. The default is JuiceFS `1.2.0` in migration image `v1.2.0`."
+- Mechanics: "Change the retry loop." User outcome, only with supporting evidence: "Uploads now recover from a temporary connection failure instead of requiring users to restart the transfer."
+
+Keep a tool's version selection, associated image default and related configuration in one entry when they serve the same user outcome. Do not repeat the image bump as a separate item unless it has a distinct, evidenced impact.
+Before returning, read each entry without its PR or diff: can the user tell what problem is addressed, what task is newly possible, or how their existing behavior changes? Rewrite entries that only enumerate configuration fields. Remove trailing lists of argument handling, validation branches, reference order and unchanged implementation details unless they explain a specific user problem. Put required upgrade actions in upgradeNotes instead.
+
 ## Upgrade notes
 
 Upgrade notes appear before the change categories. Include only evidence-backed, actionable instructions for affected users.
