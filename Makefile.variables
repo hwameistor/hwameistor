@@ -105,7 +105,7 @@ BASE_IMAGE_DOCKERFILE = ${PROJECT_SOURCE_CODE_DIR}/build/base-image/Dockerfile
 JUICESYNC_NAME = ${IMAGE_REGISTRY}/${MODULE_NAME}-juicesync
 # Image release tag only; both binaries are always bundled.
 # JUICEFS_VERSION selects the binary at container runtime.
-JUICESYNC_TAG ?= v1.2.0-v1.4.1-01
+JUICESYNC_TAG ?= v1.2.0
 JUICESYNC_DOCKERFILE = ${PROJECT_SOURCE_CODE_DIR}/build/juicesync/Dockerfile
 JUICESYNC_MOUNT_DST_DIR = /go/src/github.com/hwameistor/hwameistor
 

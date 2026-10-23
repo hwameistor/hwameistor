@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	juiceSyncImageName    = "ghcr.io/hwameistor/hwameistor-juicesync:v1.2.0-v1.4.1-01"
+	juiceSyncImageName    = "ghcr.io/hwameistor/hwameistor-juicesync:v1.2.0"
 	juiceFSVersionEnv     = "JUICEFS_VERSION"
 	defaultJuiceFSVersion = "1.2.0"
 )

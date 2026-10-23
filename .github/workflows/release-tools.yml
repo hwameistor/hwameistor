@@ -4,7 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Migration image tag, for example v1.2.0-v1.4.1-01'
+        description: 'Migration image tag, independent of the bundled JuiceFS versions'
+        default: v1.2.0
         required: true
         type: string
 

@@ -12,7 +12,7 @@ localStorage:
     check: true
     juicesync:
       imageRepository: hwameistor/hwameistor-juicesync
-      tag: v1.2.0-v1.4.1-01
+      tag: v1.2.0
       version: "1.2.0"
 ```
 
