@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "localStorage": {
+      "type": "object",
+      "properties": {
+        "migrate": {
+          "type": "object",
+          "properties": {
+            "check": {
+              "type": "boolean"
+            },
+            "juicesync": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
