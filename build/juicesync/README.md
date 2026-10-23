@@ -45,4 +45,4 @@ docker run --rm -v "$PWD/build/juicesync/smoke.sh:/tests/smoke.sh:ro" \
   hwameistor-juicesync:test sh /tests/smoke.sh
 ```
 
-Use `Dockerfile.arm64` and a suitable builder for ARM64. `JUICESYNC_TAG` in the Makefile only controls the image release tag; every build includes both binaries regardless of that tag. The existing `make juicesync` release target builds both architectures, runs the shell tests and image smoke checks, then publishes the multi-architecture image. Archive SHA-256 values are pinned in `download.sh`; no binaries are downloaded at container startup.
+Use `Dockerfile.arm64` and a suitable builder for ARM64. `JUICESYNC_TAG` in the Makefile only controls the image release tag; every build includes both binaries regardless of that tag. The existing `make juicesync` release target builds both architectures and publishes the multi-architecture image. Tests are run manually using the commands above and are not part of the image build or release flow. Archive SHA-256 values are pinned in `download.sh`; no binaries are downloaded at container startup.

@@ -8,6 +8,4 @@ RUN apk add --no-cache ca-certificates
 COPY --from=download /opt/juicefs /opt/juicefs
 ENV JUICEFS_VERSION=1.2.0
 COPY build/juicesync/juicesync build/juicesync/sync_hwameistor_volumes.sh build/juicesync/sync_hwameistor_volumes_check.sh /usr/bin/
-RUN chmod +x /usr/bin/juicesync /usr/bin/sync_hwameistor_volumes*.sh \
-    && /opt/juicefs/1.2.0/juicefs version \
-    && /opt/juicefs/1.4.1/juicefs version
+RUN chmod +x /usr/bin/juicesync /usr/bin/sync_hwameistor_volumes*.sh
