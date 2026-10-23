@@ -4,8 +4,6 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Migration image tag, independent of the bundled JuiceFS versions'
-        default: v1.2.0
         required: true
         type: string
 
@@ -31,13 +29,11 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Set env
-        env:
-          REQUESTED_TAG: ${{ inputs.release_tag }}
         run: |
-          echo "RELEASE_TAG=${REQUESTED_TAG}" >> $GITHUB_ENV
+          echo "RELEASE_TAG=`[ "${{ inputs.release_tag }}" != "" ] && echo ${{ inputs.release_tag }} || echo $(git describe --tags --abbrev=0)`" >> $GITHUB_ENV
           echo "PROJECT_SOURCE_CODE_DIR=`echo ${GITHUB_WORKSPACE}`" >> $GITHUB_ENV
           echo "IMAGE_REGISTRY=`echo ghcr.io/$(echo ${{ github.repository_owner }} | tr 'A-Z' 'a-z')`" >> $GITHUB_ENV
           echo "SCAN_IMAGES=true" >> $GITHUB_ENV
       - name: Release tools
         run: |
-          PROJECT_SOURCE_CODE_DIR="${PROJECT_SOURCE_CODE_DIR}" IMAGE_REGISTRY="${IMAGE_REGISTRY}" JUICESYNC_TAG="${RELEASE_TAG}" SCAN_IMAGES="${SCAN_IMAGES}" make tools
+          PROJECT_SOURCE_CODE_DIR=${PROJECT_SOURCE_CODE_DIR} IMAGE_REGISTRY=${IMAGE_REGISTRY} RELEASE_TAG=${RELEASE_TAG} SCAN_IMAGES=${SCAN_IMAGES} make tools
