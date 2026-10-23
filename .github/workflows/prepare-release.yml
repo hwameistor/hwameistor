@@ -29,6 +29,10 @@ on:
           - gemini-4-argon
           - gpt-5.3-codex
           - gemini-3.8-flash
+      changelog_policy:
+        description: 'Advanced (optional): policy path or public HTTPS file URL; empty uses defaults'
+        required: false
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -38,7 +42,7 @@ jobs:
   prepare:
     runs-on: ubuntu-latest # Or a trusted self-hosted runner; no GPU needed.
     steps:
-      - uses: hwameistor/release-assistant@a455fb98474bd0d71afc641f01fc5156ce98cdbe # Release Assistant
+      - uses: hwameistor/release-assistant@e4ad31cbb98d94d59ca38843a6fad450f8136570 # Release Assistant
         with:
           target-branch: ${{ inputs.target_branch }}
           version: ${{ inputs.version }}
@@ -46,6 +50,7 @@ jobs:
           to-ref: ${{ inputs.to_ref }}
           template-ref: refs/heads/main
           model: ${{ inputs.model }}
+          changelog-policy: ${{ inputs.changelog_policy }}
           publish: 'true'
           token: ${{ secrets.RELEASE_ASSISTANT_TOKEN }}
           copilot-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}

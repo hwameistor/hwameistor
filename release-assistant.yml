@@ -1,5 +1,6 @@
 schemaVersion: 1
 language: English
+# Optional: omit for bundled rules, or use a public HTTPS Markdown file URL.
 policy: .release-assistant/changelog-policy.md
 template: .release-assistant/changelog.md
 output:
