@@ -1,0 +1,27 @@
+#!/bin/sh
+set -eu
+
+version=${JUICEFS_VERSION:-1.2.0}
+case "$version" in
+    */*|.|..)
+        echo "Invalid JUICEFS_VERSION '$version'; expected a directory name under /opt/juicefs" >&2
+        exit 2
+        ;;
+esac
+binary="/opt/juicefs/$version/juicefs"
+if [ ! -f "$binary" ] || [ ! -x "$binary" ]; then
+    echo "JuiceFS binary not found or not executable: $binary" >&2
+    exit 2
+fi
+
+check=off
+for arg in "$@"; do
+    case "$arg" in
+        --check-new|--check-all) check=$arg ;;
+    esac
+done
+echo "HwameiStor sync: JuiceFS $version, check=$check" >&2
+if [ "$version" = 1.4.1 ]; then
+    echo "Warning: JuiceFS 1.4.1 skips special files; content checks do not detect their absence" >&2
+fi
+exec "$binary" sync "$@"
