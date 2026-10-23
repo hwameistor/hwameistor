@@ -51,13 +51,14 @@ for version in default 1.2.0 1.4.1; do
     echo "PASS: $version check-all repairs different content with matching size and mtime"
 done
 
-if JUICEFS_VERSION=invalid juicesync --help > "$test_root/invalid.log" 2>&1; then
-    echo "Invalid version unexpectedly succeeded" >&2
+if JUICEFS_VERSION=not-installed juicesync --help > "$test_root/missing-binary.log" 2>&1; then
+    echo "Missing binary unexpectedly succeeded" >&2
     exit 1
 else
     test "$?" = 2
 fi
-echo "PASS: invalid version fails without fallback"
+grep -q 'JuiceFS binary not found or not executable: /opt/juicefs/not-installed/juicefs' "$test_root/missing-binary.log"
+echo "PASS: missing binary fails without fallback"
 
 # Unsupported objects must retain the documented difference between versions.
 mkdir "$test_root/special"

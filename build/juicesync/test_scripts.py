@@ -44,12 +44,54 @@ class SyncScriptsTest(unittest.TestCase):
             result = subprocess.run(["sh", str(SCRIPTS / script)], env=env, capture_output=True)
             self.assertNotEqual(result.returncode, 0)
 
-    def test_invalid_version_does_not_fallback(self):
-        for version in ("latest", "v1.2.0", "../../bin/sh"):
+    def wrapper_in(self, root):
+        # Redirect the fixed installation directory into an isolated filesystem fixture.
+        wrapper = root / "juicesync"
+        wrapper.write_text((SCRIPTS / "juicesync").read_text().replace("/opt/juicefs", str(root / "binaries")))
+        return wrapper
+
+    def test_wrapper_selects_installed_binary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = self.wrapper_in(root)
+            for version in ("1.2.0", "1.4.1", "1.5.0"):
+                binary = root / "binaries" / version / "juicefs"
+                binary.parent.mkdir(parents=True)
+                binary.write_text('#!/bin/sh\nprintf "%s\\n" "$0" "$@"\nexit 37\n')
+                binary.chmod(0o755)
+            for version in (None, "", "1.2.0", "1.4.1", "1.5.0"):
+                with self.subTest(version=version):
+                    env = dict(os.environ)
+                    env.pop("JUICEFS_VERSION", None)
+                    if version is not None:
+                        env["JUICEFS_VERSION"] = version
+                    args = ["--check-all", "/source/space 中文 *", "/target/path"]
+                    result = subprocess.run(["sh", str(wrapper), *args], env=env, capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 37, result.stderr)
+                    expected = root / "binaries" / (version or "1.2.0") / "juicefs"
+                    self.assertEqual(result.stdout.splitlines(), [str(expected), "sync", *args])
+
+    def test_unavailable_binary_does_not_fallback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = self.wrapper_in(root)
+            binary = root / "binaries" / "not-executable" / "juicefs"
+            binary.parent.mkdir(parents=True)
+            binary.touch(mode=0o644)
+            (root / "binaries" / "directory" / "juicefs").mkdir(parents=True)
+            for version in ("not-installed", "not-executable", "directory"):
+                result = subprocess.run(["sh", str(wrapper), "--help"],
+                                        env=dict(os.environ, JUICEFS_VERSION=version), capture_output=True, text=True)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("JuiceFS binary not found or not executable:", result.stderr)
+                self.assertIn(str(root / "binaries" / version / "juicefs"), result.stderr)
+
+    def test_version_cannot_traverse_directories(self):
+        for version in (".", "..", "../../bin/sh", "nested/version"):
             result = subprocess.run(["sh", str(SCRIPTS / "juicesync"), "--help"],
                                     env=dict(os.environ, JUICEFS_VERSION=version), capture_output=True, text=True)
             self.assertEqual(result.returncode, 2)
-            self.assertIn("Unsupported JUICEFS_VERSION", result.stderr)
+            self.assertIn("Invalid JUICEFS_VERSION", result.stderr)
 
 
 if __name__ == "__main__":
