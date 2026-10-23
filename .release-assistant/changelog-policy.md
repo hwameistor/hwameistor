@@ -9,7 +9,7 @@ The output is a curated account of released behavior, not a PR inventory or impl
 - Include notable user-visible capabilities, fixes, changed defaults and upgrade requirements. Group related changes across PRs and split unrelated outcomes from one PR when that makes the result clearer.
 - Exclude routine CI, tests, refactoring, dependency churn without demonstrated user impact and reverted work. Record every excluded source and a specific reason in excluded; never silently drop it. Include build or dependency changes when they affect installation, supported platforms, compatibility or runtime behavior.
 - Claims about data integrity, security, performance and compatibility require implementation or test evidence for the relevant component. Passing a flag to another component does not prove that component fixes a bug or verifies all data. A PR description or source comment alone is insufficient.
-- Mark unresolved interpretations with needsReview=true. Do not invent known issues or claim there are none.
+- Mark unresolved interpretations with needsReview=true. State only the supported behavior in the entry; do not add meta-commentary such as "the supplied diff does not prove" or discuss the generation process. Do not invent known issues or claim there are none.
 
 ## Entries
 
@@ -31,7 +31,7 @@ Keep entries flat: no embedded headings, tables, lists, HTML or decorative emoji
 ## Upgrade notes
 
 Upgrade notes appear before the change categories. Include only evidence-backed, actionable instructions for affected users.
-State the affected configuration or situation, then the required action or the concrete opt-out for a changed default. Avoid generic advice to back up, test or coordinate upgrades without a change-specific reason.
+State the affected configuration or situation, then the required action or the concrete opt-out for a changed default. Use the exact configurable field (for example an image tag field, not the enclosing object), and avoid prescribing changes to intentional overrides unless users want the new behavior. Avoid generic advice to back up, test or coordinate upgrades without a change-specific reason.
 Put each distinct action once in upgradeNotes; do not repeat the entry summary. Prefer one sentence per action and group related configuration steps.
 Do not infer automatic migration of existing settings, Jobs or data from new defaults. Distinguish defaults for new installations from preserved existing configuration when the code does.
 Leave upgradeNotes empty when no action is needed. Do not fill empty sections with "None", claim a release date, add a marketing introduction or invent download links.
