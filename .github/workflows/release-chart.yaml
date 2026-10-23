@@ -10,17 +10,38 @@ on:
 jobs:
   release-chart:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.notes.outputs.version }}
+      source-sha: ${{ steps.source.outputs.sha }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+          ref: ${{ github.sha }}
+      - name: Record release source
+        id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Read reviewed release notes
+        id: notes
+        uses: hwameistor/release-assistant@4c7f281cfb04d202c418fb6e63fa6417bc44817c # Release Assistant
+        with:
+          command: release-body
+          source-ref: ${{ steps.source.outputs.sha }}
+          chart-path: helm/hwameistor/Chart.yaml
+          token: ${{ github.token }}
+      - name: Include release notes in chart
+        env:
+          RELEASE_NOTES_FILE: ${{ steps.notes.outputs.body-path }}
+        run: cp -- "$RELEASE_NOTES_FILE" helm/hwameistor/RELEASE_NOTES.md
       - name: Configure Git
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
       - name: Install Helm
-        uses: azure/setup-helm@v1
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
         with:
           version: v3.7.1
       - name: Render Chart Values
@@ -38,6 +59,8 @@ jobs:
   release-hwameictl:
     name: release hwameictl
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     needs:
       - release-chart
     strategy:
@@ -50,39 +73,40 @@ jobs:
           - amd64
           - arm64
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.release-chart.outputs.source-sha }}
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version: 1.20.4
       - name: Build hwameictl
         run: make build_hwameictl OS=${{ matrix.os }} ARCH=${{ matrix.arch }}
-      - name: Extract Version from Chart.yaml
-        run: |
-          echo "CHART_VERSION=$(yq eval '.version' helm/hwameistor/Chart.yaml)" >> $GITHUB_ENV
       - name: Upload assets
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: |
             _build/hwameictl/hwameictl-${{ matrix.os }}-${{ matrix.arch }}
             _build/hwameictl/hwameictl-${{ matrix.os }}-${{ matrix.arch }}.exe
           token: "${{ secrets.GITHUB_TOKEN }}"
-          tag_name: "${{ env.CHART_VERSION }}"
+          tag_name: ${{ needs.release-chart.outputs.version }}
 
   release-image:
     runs-on: ubuntu-latest
     needs:
       - release-chart
     permissions:
+      contents: read
       packages: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+          ref: ${{ needs.release-chart.outputs.source-sha }}
       - name: Set up QEMU
         id: qemu
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
         with:
           image: tonistiigi/binfmt:latest
           platforms: all
@@ -92,8 +116,10 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Set env
+        env:
+          CHART_VERSION: ${{ needs.release-chart.outputs.version }}
         run: |
-          echo "RELEASE_TAG=`echo $(git describe --tags --abbrev=0)`" >> $GITHUB_ENV
+          echo "RELEASE_TAG=$CHART_VERSION" >> "$GITHUB_ENV"
           echo "PROJECT_SOURCE_CODE_DIR=`echo ${GITHUB_WORKSPACE}`" >> $GITHUB_ENV
           echo "IMAGE_REGISTRY=`echo ghcr.io/$(echo ${{ github.repository_owner }} | tr 'A-Z' 'a-z')`" >> $GITHUB_ENV
           echo "SCAN_IMAGES=true" >> $GITHUB_ENV
