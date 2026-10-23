@@ -11,7 +11,7 @@ output:
 ai:
   provider: copilot
   model: gpt-6.1-sol # Used when no workflow/CLI model override is supplied.
-  timeoutSeconds: 180
+  timeoutSeconds: 600
 limits:
   maxCommits: 300
   maxPromptBytes: 160000

@@ -43,6 +43,8 @@ on:
         type: string
 permissions:
   contents: read
+  issues: read
+  pull-requests: read
 concurrency:
   group: prepare-release-${{ github.repository }}-${{ inputs.target_branch }}-${{ inputs.version }}
   cancel-in-progress: false
@@ -55,7 +57,7 @@ jobs:
       from-sha: ${{ steps.release.outputs.from-sha }}
       recent-tags: ${{ steps.release.outputs.recent-tags }}
     steps:
-      - uses: hwameistor/release-assistant@4c7f281cfb04d202c418fb6e63fa6417bc44817c # Release Assistant
+      - uses: hwameistor/release-assistant@a3b3f118e1836a70393f4132a8314f8edcef38fa # Release Assistant
         id: release
         with:
           target-branch: ${{ inputs.target_branch }}

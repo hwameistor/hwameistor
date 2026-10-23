@@ -1,5 +1,9 @@
 # Release preparation
 
+Copilot actively reads release PRs and linked issues, follows relevant discussion and companion PRs, and inspects code at immutable revisions. It returns cited findings about the user problem, implementation, outcome and limitations before composing notes in the same session. The source range determines what ships; external references provide context only. Its read-only tools use `github.token` with Contents, Issues and Pull requests read permissions, separately from the publishing PAT and Copilot credential. No new Secret is needed for public linked repositories.
+
+Review `research.json` in the run artifacts for the findings and actual queries, evidence, URLs, timestamps, revisions and content hashes. Missing required investigation, unfetched evidence citations or exhausted budgets stop generation. Review the resulting claims and `needsReview` entries; tool activity alone does not prove semantic correctness. The model timeout is 600 seconds. Start a new workflow run after upgrading, because old runs retain their pinned tool version.
+
 After **Prepare release** succeeds, open the created or updated PR from the link at the top of the Actions run summary. The `prepare` job also exposes this URL as `pull-request-url`. The PR description shows the complete version Changelog, exactly as written to its file, with generation details collapsed below. **Re-run all jobs** replaces both the description and generated files with the latest notes while keeping the same PR link.
 
 Run **Prepare release** with a target branch, explicit version (including prereleases), automatic tag rank or manual starting tag, optional ending ref and a model from the dropdown. Install `RELEASE_ASSISTANT_TOKEN` (App token or fine-grained PAT with Contents and Pull requests write permission) and `COPILOT_GITHUB_TOKEN` (Copilot Requests permission), or configure a compatible model endpoint and `RELEASE_ASSISTANT_API_KEY`.
