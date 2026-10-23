@@ -41,8 +41,11 @@ concurrency:
 jobs:
   prepare:
     runs-on: ubuntu-latest # Or a trusted self-hosted runner; no GPU needed.
+    outputs:
+      pull-request-url: ${{ steps.release.outputs.pull-request-url }}
     steps:
-      - uses: hwameistor/release-assistant@e4ad31cbb98d94d59ca38843a6fad450f8136570 # Release Assistant
+      - uses: hwameistor/release-assistant@cc1f8c8a00c29b0b7c4343de90244ea26a921dab # Release Assistant
+        id: release
         with:
           target-branch: ${{ inputs.target_branch }}
           version: ${{ inputs.version }}
