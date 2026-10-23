@@ -1,4 +1,4 @@
-# Changelog policy v2
+# Changelog policy v3
 
 Write for users and operators deciding whether and how to upgrade. Use the requested language.
 The output is a curated account of released behavior, not a PR inventory or implementation report.
@@ -15,15 +15,19 @@ The output is a curated account of released behavior, not a PR inventory or impl
 
 Use categories breaking, features, fixes, changes, documentation and maintenance:
 - breaking: incompatible behavior, removals or changed contracts requiring user action.
-- features: newly supported user capabilities.
+- features: newly supported user capabilities; explain the task users can now accomplish.
 - fixes: corrected behavior; describe the trigger and the resulting behavior.
-- changes: changed defaults, configuration or existing behavior.
+- changes: changed defaults, configuration or existing behavior; explain the previous behavior and the practical difference for affected users.
 - documentation: guidance that materially helps users operate the product.
 - maintenance: other notable user-impacting maintenance, not routine internal work.
 
 Put the most significant entries first within each category. Never duplicate a change across categories.
+For every category, connect the affected scenario or previous limitation to the new behavior and its concrete benefit or trade-off. This is an editorial guide, not a requirement to label every change as a bug fix. A deliberate default change may have no defect to fix.
+When evidence explains the user problem, lead with that problem or the task it affects, then describe the result. A parameter, image tag, dependency bump or reconciliation detail alone is not enough. Avoid vague benefits such as "improves reliability"; explain what users can do differently or which specific failure is addressed.
+Do not invent motivation, earlier failures or guarantees to fill this pattern. If the supplied implementation only shows configuration of another component, describe that supported configuration benefit; do not claim it fixes a downstream issue without evidence of the relevant implementation or tests. Linked issues explain reported symptoms, not proof of a fix.
+Classify an incompatible change as breaking even when its required action is already in upgradeNotes. The upgrade action does not replace the Breaking Changes entry.
 Each summary should be one short sentence, starting with a recognizable component or user-facing capability when helpful.
-Use impact only for an additional practical consequence; leave it empty if the summary is sufficient.
+Use impact for the supported reason, result or trade-off not already clear in the summary; leave it empty when the summary already explains the user value. Avoid restating the same change in different words.
 Aim for 20-45 words across summary and impact in English, or one to two short sentences in other languages. Do not omit essential conditions merely to meet that target.
 Use inline code for exact flags, Helm values, environment variables, resource fields and paths that users need to set. Do not list internal functions, implementation plumbing or all validation branches.
 Keep entries flat: no embedded headings, tables, lists, HTML or decorative emoji. Source links are added by the renderer.
