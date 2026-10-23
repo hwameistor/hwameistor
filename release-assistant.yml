@@ -1,0 +1,16 @@
+schemaVersion: 1
+language: English
+policy: .release-assistant/changelog-policy.md
+template: .release-assistant/changelog.md
+output:
+  changelog: CHANGELOG.md
+  releaseNotes: changelogs/released/{version}/changelog
+  charts:
+    - helm/hwameistor/Chart.yaml
+ai:
+  provider: copilot
+  model: gpt-4.1 # Select a model enabled for your Copilot account.
+  timeoutSeconds: 180
+limits:
+  maxCommits: 300
+  maxPromptBytes: 160000

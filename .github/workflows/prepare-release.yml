@@ -1,0 +1,47 @@
+name: Prepare release
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: Target release branch
+        required: true
+        default: release/v1.1
+        type: string
+      version:
+        description: Version, for example v1.1.2-alpha1
+        required: true
+        type: string
+      from_tag:
+        description: Starting tag (exclusive), for example v1.1.1
+        required: true
+        type: string
+      to_ref:
+        description: Ending ref (inclusive); empty means target branch HEAD
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: prepare-release-${{ github.repository }}-${{ inputs.target_branch }}-${{ inputs.version }}
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-latest # Or a trusted self-hosted runner; no GPU needed.
+    steps:
+      - uses: hwameistor/release-assistant@13bf3e86b82d0a921e7952310c7bd0d2d9198bce # Release Assistant
+        with:
+          target-branch: ${{ inputs.target_branch }}
+          version: ${{ inputs.version }}
+          from-tag: ${{ inputs.from_tag }}
+          to-ref: ${{ inputs.to_ref }}
+          template-ref: refs/heads/main
+          publish: 'true'
+          token: ${{ secrets.RELEASE_ASSISTANT_TOKEN }}
+          copilot-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          api-key: ${{ secrets.RELEASE_ASSISTANT_API_KEY }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: release-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .release-assistant-output/
+          include-hidden-files: true
+          if-no-files-found: ignore
