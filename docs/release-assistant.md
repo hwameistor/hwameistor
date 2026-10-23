@@ -6,8 +6,8 @@ Policy, template and model configuration are read from the latest main branch on
 
 The PR contains the cumulative Changelog, version log, Chart version/appVersion and provenance. Dependency/tool image versions are managed separately. Review included changes, exclusions and uncertain statements, then mark the draft ready. Require **Validate release PR / validate** and an up-to-date branch before merging; install this workflow on each release branch as well.
 
-Merging the Chart version update triggers the existing publication pipeline. It reads the reviewed manifest and version log from the exact merged commit. Missing or changed notes stop publication. New manual version bumps must also provide matching reviewed release metadata; the pipeline no longer silently publishes the Chart description as release notes.
+After review, merging the Chart version update follows the repository's existing publication workflow and its existing triggers. This integration adds release preparation and PR validation only.
 
-Chart-releaser still packages the Chart and updates the index. The publication companion creates the Release with its prerelease/latest flags already set and uploads the Chart. Retries verify the tag, notes and existing archive content, retaining previously published assets. Binary and image jobs use the same source SHA and explicit version. For Operator manual dispatch, select the same workflow branch as the branch input.
+Generated notes are reviewed and committed in the Release PR. Automatically using them as the GitHub Release body, or changing prerelease/latest flags, would require a separately reviewed publication change. Accepting a version such as `v1.1.2-alpha1` in Prepare release does not change how the existing publication workflow handles it. Keep test Release PRs as drafts and do not merge them until an actual release is intended.
 
 This integration does not change the Chart version and does not publish a product release when merged. Configure and test the credentials and generation first. See https://github.com/hwameistor/release-assistant for the specification, tests and CLI usage.
