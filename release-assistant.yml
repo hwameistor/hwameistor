@@ -9,7 +9,7 @@ output:
     - helm/hwameistor/Chart.yaml
 ai:
   provider: copilot
-  model: gpt-4.1 # Select a model enabled for your Copilot account.
+  model: gpt-6.1-sol # Used when no workflow/CLI model override is supplied.
   timeoutSeconds: 180
 limits:
   maxCommits: 300

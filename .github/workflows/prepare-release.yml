@@ -18,6 +18,17 @@ on:
       to_ref:
         description: Ending ref (inclusive); empty means target branch HEAD
         type: string
+      model:
+        description: Model for release notes (overrides ai.model)
+        required: true
+        default: gpt-6.1-sol
+        type: choice
+        options:
+          - gpt-6.1-sol
+          - gpt-6-astra
+          - gemini-4-argon
+          - gpt-5.3-codex
+          - gemini-3.8-flash
 permissions:
   contents: read
 concurrency:
@@ -27,13 +38,14 @@ jobs:
   prepare:
     runs-on: ubuntu-latest # Or a trusted self-hosted runner; no GPU needed.
     steps:
-      - uses: hwameistor/release-assistant@13bf3e86b82d0a921e7952310c7bd0d2d9198bce # Release Assistant
+      - uses: hwameistor/release-assistant@a455fb98474bd0d71afc641f01fc5156ce98cdbe # Release Assistant
         with:
           target-branch: ${{ inputs.target_branch }}
           version: ${{ inputs.version }}
           from-tag: ${{ inputs.from_tag }}
           to-ref: ${{ inputs.to_ref }}
           template-ref: refs/heads/main
+          model: ${{ inputs.model }}
           publish: 'true'
           token: ${{ secrets.RELEASE_ASSISTANT_TOKEN }}
           copilot-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
