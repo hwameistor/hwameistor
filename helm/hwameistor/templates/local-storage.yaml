@@ -60,7 +60,7 @@ spec:
         - --csi-address=$(CSI_ENDPOINT)
         - --http-port=80
         - --v=5
-        - --migrate-check=false
+        - --migrate-check={{ if hasKey .Values.localStorage.migrate "check" }}{{ .Values.localStorage.migrate.check }}{{ else }}true{{ end }}
         {{- if .Values.localStorage.migrate.tool }}
         - --data-sync-tool={{ .Values.localStorage.migrate.tool }}
         {{- end }}
@@ -98,6 +98,8 @@ spec:
           value: localstorage.hwameistor.io/storage-ipv4
         - name: MIGRAGE_JUICESYNC_IMAGE
           value: {{ .Values.global.hwameistorImageRegistry }}/{{ .Values.localStorage.migrate.juicesync.imageRepository }}:{{ .Values.localStorage.migrate.juicesync.tag }}
+        - name: JUICEFS_VERSION
+          value: {{ .Values.localStorage.migrate.juicesync.version | default "1.2.0" | quote }}
         image: {{ .Values.global.hwameistorImageRegistry }}/{{ .Values.localStorage.member.imageRepository }}:{{ template "hwameistor.localstorageImageTag" . }}
         imagePullPolicy: IfNotPresent
         name: member

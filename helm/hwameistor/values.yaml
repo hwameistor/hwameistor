@@ -138,9 +138,13 @@ localStorage:
     tag: ""
     resources: {}
   migrate:
+    # Verify copied content with --check-all. Explicit false disables verification.
+    check: true
     juicesync:
       imageRepository: hwameistor/hwameistor-juicesync
-      tag: v1.0.4-01
+      tag: v1.2.0
+      # 1.4.1 skips special files, including device nodes, sockets and FIFOs.
+      version: "1.2.0"
   hostPaths:
     sshDir: /root/.ssh
     drbdDir: /etc/drbd.d
