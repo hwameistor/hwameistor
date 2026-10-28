@@ -4,12 +4,13 @@
 
 #### Fixes
 
-- Scheduler retries during slow PVC provisioning now preserve the selected node instead of misplacing Pods or rejecting in-progress volumes through duplicate capacity checks. ([#1866](https://github.com/hwameistor/hwameistor/pull/1866)) **Needs review.**
-- Migration image defaults `v1.0.4-01` → `v1.2.0` for directory-symlink SFTP errors and ignored listing failures; `localStorage.migrate.juicesync.version` selects JuiceFS (`1.2.0` default, `1.4.1` bundled), requiring compatible Local Storage and migration images. ([#1870](https://github.com/hwameistor/hwameistor/pull/1870)) **Needs review.**
+- Scheduler retries respect `selected-node` on Pending PVCs, preventing placement on another node and duplicate capacity checks during provisioning. ([#1866](https://github.com/hwameistor/hwameistor/pull/1866))
+- Migration image defaults `v1.0.4-01` → `v1.2.0`, incorporating JuiceFS fixes for directory-symlink SFTP errors and migration success incorrectly reported after listing failures. ([#1870](https://github.com/hwameistor/hwameistor/pull/1870))
 
 #### Changes
 
-- Migration verification defaults `false` → `true` through `localStorage.migrate.check`; new Jobs use `--check-all` instead of `--check-new`, checking copied and existing files. ([#1870](https://github.com/hwameistor/hwameistor/pull/1870)) **Needs review.**
+- Added `localStorage.migrate.juicesync.version` to select bundled JuiceFS `1.2.0` (default) or `1.4.1` for migration Jobs. ([#1870](https://github.com/hwameistor/hwameistor/pull/1870))
+- Migration checks default `false` → `true` via `localStorage.migrate.check`; when enabled, `--check-all` replaces `--check-new`, comparing copied and existing files. ([#1870](https://github.com/hwameistor/hwameistor/pull/1870))
 
 ---
 
@@ -17,7 +18,8 @@
 
 - **Operator-managed migrations:** upgrade to an [Operator containing #393](https://github.com/hwameistor/hwameistor-operator/pull/393) alongside Local Storage; set `spec.localStorage.member.juicesyncImage.tag=v1.2.0` when adopting the bundled image.
 - **Direct Helm image overrides:** to adopt the bundled image, set `localStorage.migrate.juicesync.tag=v1.2.0` alongside updated Local Storage.
-- **Special-file migrations:** keep `localStorage.migrate.juicesync.version=1.2.0`; `1.4.1` skips FIFOs, sockets, devices and whiteouts even with verification, while `1.2.0` fails.
+- **Existing migration Jobs:** updated settings apply only to new Jobs; existing Jobs and their retry Pods retain the original image, version and check settings.
+- **Special-file migrations:** JuiceFS `1.4.1` skips FIFOs, sockets and device nodes (including whiteouts) even with checks; `1.2.0` fails in tested cases. Neither preserves these objects.
 - **Checks intentionally disabled:** set `localStorage.migrate.check=false` explicitly to retain that behavior after upgrading.
 
 [Full diff](https://github.com/hwameistor/hwameistor/compare/8e8b04efb0a7268e61d5313f3fac8cc5acd39af5...186418f6642d33fe54da59993765b67d22b2e8e3)

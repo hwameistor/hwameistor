@@ -47,17 +47,17 @@
     "entries": [
       {
         "category": "fixes",
-        "summary": "Scheduler retries during slow PVC provisioning now preserve the selected node instead of misplacing Pods or rejecting in-progress volumes through duplicate capacity checks.",
+        "summary": "Scheduler retries respect `selected-node` on Pending PVCs, preventing placement on another node and duplicate capacity checks during provisioning.",
         "impact": "",
         "sources": [
           "pr:1866"
         ],
         "upgradeNotes": [],
-        "needsReview": true
+        "needsReview": false
       },
       {
         "category": "fixes",
-        "summary": "Migration image defaults `v1.0.4-01` → `v1.2.0` for directory-symlink SFTP errors and ignored listing failures; `localStorage.migrate.juicesync.version` selects JuiceFS (`1.2.0` default, `1.4.1` bundled), requiring compatible Local Storage and migration images.",
+        "summary": "Migration image defaults `v1.0.4-01` → `v1.2.0`, incorporating JuiceFS fixes for directory-symlink SFTP errors and migration success incorrectly reported after listing failures.",
         "impact": "",
         "sources": [
           "pr:1870"
@@ -65,13 +65,25 @@
         "upgradeNotes": [
           "**Operator-managed migrations:** upgrade to an [Operator containing #393](https://github.com/hwameistor/hwameistor-operator/pull/393) alongside Local Storage; set `spec.localStorage.member.juicesyncImage.tag=v1.2.0` when adopting the bundled image.",
           "**Direct Helm image overrides:** to adopt the bundled image, set `localStorage.migrate.juicesync.tag=v1.2.0` alongside updated Local Storage.",
-          "**Special-file migrations:** keep `localStorage.migrate.juicesync.version=1.2.0`; `1.4.1` skips FIFOs, sockets, devices and whiteouts even with verification, while `1.2.0` fails."
+          "**Existing migration Jobs:** updated settings apply only to new Jobs; existing Jobs and their retry Pods retain the original image, version and check settings."
         ],
-        "needsReview": true
+        "needsReview": false
       },
       {
         "category": "changes",
-        "summary": "Migration verification defaults `false` → `true` through `localStorage.migrate.check`; new Jobs use `--check-all` instead of `--check-new`, checking copied and existing files.",
+        "summary": "Added `localStorage.migrate.juicesync.version` to select bundled JuiceFS `1.2.0` (default) or `1.4.1` for migration Jobs.",
+        "impact": "",
+        "sources": [
+          "pr:1870"
+        ],
+        "upgradeNotes": [
+          "**Special-file migrations:** JuiceFS `1.4.1` skips FIFOs, sockets and device nodes (including whiteouts) even with checks; `1.2.0` fails in tested cases. Neither preserves these objects."
+        ],
+        "needsReview": false
+      },
+      {
+        "category": "changes",
+        "summary": "Migration checks default `false` → `true` via `localStorage.migrate.check`; when enabled, `--check-all` replaces `--check-new`, comparing copied and existing files.",
         "impact": "",
         "sources": [
           "pr:1870"
@@ -79,7 +91,7 @@
         "upgradeNotes": [
           "**Checks intentionally disabled:** set `localStorage.migrate.check=false` explicitly to retain that behavior after upgrading."
         ],
-        "needsReview": true
+        "needsReview": false
       }
     ],
     "excluded": [
@@ -104,8 +116,8 @@
     "pr:1872"
   ],
   "files": {
-    "CHANGELOG.md": "8c8c5cdafbd032a02b40573685c427683532f5caa049bcc38de9d14697d71526",
-    "changelogs/released/v1.1.2/changelog": "093ab2e945031a2c3420fd806d4630ec712336974d84dfa95c364bc8d8e73089",
+    "CHANGELOG.md": "c3835134d96a95514a533ef4fe8d82881230a5bc5359aa5319df031261193e47",
+    "changelogs/released/v1.1.2/changelog": "deaf441031923b88d58eb62f1930c048d27bcffb7160e676b1a6d5ec9b77d15c",
     "helm/hwameistor/Chart.yaml": "ed6bfd719b337d930055bee128d2800af827324a7f60d5646a9f2fa75aa0ff63"
   }
 }
