@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "repository": "hwameistor/hwameistor",
+  "targetBranch": "release/v1.1",
+  "version": "v1.1.2",
+  "fromTag": "v1.1.1",
+  "toRef": "refs/heads/release/v1.1",
+  "fromSha": "8e8b04efb0a7268e61d5313f3fac8cc5acd39af5",
+  "toSha": "186418f6642d33fe54da59993765b67d22b2e8e3",
+  "targetSha": "186418f6642d33fe54da59993765b67d22b2e8e3",
+  "createdAt": "2026-10-28T08:57:48.637Z",
+  "generatedPaths": [
+    "CHANGELOG.md",
+    "changelogs/released/v1.1.2/changelog",
+    "helm/hwameistor/Chart.yaml"
+  ],
+  "fromTagSelection": {
+    "choice": "latest",
+    "candidates": [
+      {
+        "name": "v1.1.1",
+        "sha": "8e8b04efb0a7268e61d5313f3fac8cc5acd39af5"
+      },
+      {
+        "name": "v1.1.0",
+        "sha": "fb61440fdf1560817289a588c38d69f1c6a521f6"
+      },
+      {
+        "name": "v1.0.2",
+        "sha": "e0692ff0191a53fdfa4f49651d694b131456cd29"
+      }
+    ]
+  },
+  "workflowRun": {
+    "repository": "hwameistor/hwameistor",
+    "runId": "40660546730"
+  }
+}
