@@ -1,0 +1,123 @@
+{
+  "snapshot": {
+    "schemaVersion": 1,
+    "repository": "hwameistor/hwameistor",
+    "targetBranch": "release/v1.1",
+    "version": "v1.1.2",
+    "fromTag": "v1.1.1",
+    "toRef": "refs/heads/release/v1.1",
+    "fromSha": "8e8b04efb0a7268e61d5313f3fac8cc5acd39af5",
+    "toSha": "186418f6642d33fe54da59993765b67d22b2e8e3",
+    "targetSha": "186418f6642d33fe54da59993765b67d22b2e8e3",
+    "createdAt": "2026-10-28T08:57:48.637Z",
+    "generatedPaths": [
+      "CHANGELOG.md",
+      "changelogs/released/v1.1.2/changelog",
+      "helm/hwameistor/Chart.yaml"
+    ],
+    "fromTagSelection": {
+      "choice": "latest",
+      "candidates": [
+        {
+          "name": "v1.1.1",
+          "sha": "8e8b04efb0a7268e61d5313f3fac8cc5acd39af5"
+        },
+        {
+          "name": "v1.1.0",
+          "sha": "fb61440fdf1560817289a588c38d69f1c6a521f6"
+        },
+        {
+          "name": "v1.0.2",
+          "sha": "e0692ff0191a53fdfa4f49651d694b131456cd29"
+        }
+      ]
+    },
+    "workflowRun": {
+      "repository": "hwameistor/hwameistor",
+      "runId": "40660546730"
+    }
+  },
+  "templateSha": "8b61fcc4c55f9860f2f51cb0b486ac16e0d79182",
+  "generatedAt": "2026-10-28T09:01:54.301Z",
+  "policyHash": "62bad62a890d90595e0fdfcd313225bd1b71f8f52fbe91f44c55ff186c7d5b48",
+  "templateHash": "59911745ccb25f01a89a0a1e88546ea15079fa765df1bdf5aa82e7e04cc4ca08",
+  "provider": "copilot",
+  "model": "gpt-6.1-sol",
+  "notes": {
+    "entries": [
+      {
+        "category": "fixes",
+        "summary": "Scheduler retries respect `selected-node` on Pending PVCs, preventing placement on another node and duplicate capacity checks during provisioning.",
+        "impact": "",
+        "sources": [
+          "pr:1866"
+        ],
+        "upgradeNotes": [],
+        "needsReview": false
+      },
+      {
+        "category": "fixes",
+        "summary": "Migration image defaults `v1.0.4-01` → `v1.2.0`, incorporating JuiceFS fixes for directory-symlink SFTP errors and migration success incorrectly reported after listing failures.",
+        "impact": "",
+        "sources": [
+          "pr:1870"
+        ],
+        "upgradeNotes": [
+          "**Operator-managed migrations:** upgrade to an [Operator containing #393](https://github.com/hwameistor/hwameistor-operator/pull/393) alongside Local Storage; set `spec.localStorage.member.juicesyncImage.tag=v1.2.0` when adopting the bundled image.",
+          "**Direct Helm image overrides:** to adopt the bundled image, set `localStorage.migrate.juicesync.tag=v1.2.0` alongside updated Local Storage.",
+          "**Existing migration Jobs:** updated settings apply only to new Jobs; existing Jobs and their retry Pods retain the original image, version and check settings."
+        ],
+        "needsReview": false
+      },
+      {
+        "category": "changes",
+        "summary": "Added `localStorage.migrate.juicesync.version` to select bundled JuiceFS `1.2.0` (default) or `1.4.1` for migration Jobs.",
+        "impact": "",
+        "sources": [
+          "pr:1870"
+        ],
+        "upgradeNotes": [
+          "**Special-file migrations:** JuiceFS `1.4.1` skips FIFOs, sockets and device nodes (including whiteouts) even with checks; `1.2.0` fails in tested cases. Neither preserves these objects."
+        ],
+        "needsReview": false
+      },
+      {
+        "category": "changes",
+        "summary": "Migration checks default `false` → `true` via `localStorage.migrate.check`; when enabled, `--check-all` replaces `--check-new`, comparing copied and existing files.",
+        "impact": "",
+        "sources": [
+          "pr:1870"
+        ],
+        "upgradeNotes": [
+          "**Checks intentionally disabled:** set `localStorage.migrate.check=false` explicitly to retain that behavior after upgrading."
+        ],
+        "needsReview": false
+      }
+    ],
+    "excluded": [
+      {
+        "sources": [
+          "pr:1855"
+        ],
+        "reason": "Records historical v1.1.1 release notes; the described product changes predate this release range."
+      },
+      {
+        "sources": [
+          "pr:1872"
+        ],
+        "reason": "Maintainer-only release automation, publication workflows and editorial configuration; no installed-product behavior changes."
+      }
+    ]
+  },
+  "sources": [
+    "pr:1855",
+    "pr:1866",
+    "pr:1870",
+    "pr:1872"
+  ],
+  "files": {
+    "CHANGELOG.md": "c3835134d96a95514a533ef4fe8d82881230a5bc5359aa5319df031261193e47",
+    "changelogs/released/v1.1.2/changelog": "deaf441031923b88d58eb62f1930c048d27bcffb7160e676b1a6d5ec9b77d15c",
+    "helm/hwameistor/Chart.yaml": "ed6bfd719b337d930055bee128d2800af827324a7f60d5646a9f2fa75aa0ff63"
+  }
+}

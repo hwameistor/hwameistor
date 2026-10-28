@@ -1,3 +1,33 @@
+# Changelog
+
+<!-- release-assistant:v1.1.2:start -->
+## v1.1.2
+
+### Release Changes
+
+#### Fixes
+
+- Scheduler retries respect `selected-node` on Pending PVCs, preventing placement on another node and duplicate capacity checks during provisioning. ([#1866](https://github.com/hwameistor/hwameistor/pull/1866))
+- Migration image defaults `v1.0.4-01` → `v1.2.0`, incorporating JuiceFS fixes for directory-symlink SFTP errors and migration success incorrectly reported after listing failures. ([#1870](https://github.com/hwameistor/hwameistor/pull/1870))
+
+#### Changes
+
+- Added `localStorage.migrate.juicesync.version` to select bundled JuiceFS `1.2.0` (default) or `1.4.1` for migration Jobs. ([#1870](https://github.com/hwameistor/hwameistor/pull/1870))
+- Migration checks default `false` → `true` via `localStorage.migrate.check`; when enabled, `--check-all` replaces `--check-new`, comparing copied and existing files. ([#1870](https://github.com/hwameistor/hwameistor/pull/1870))
+
+---
+
+### Upgrade Actions
+
+- **Operator-managed migrations:** upgrade to an [Operator containing #393](https://github.com/hwameistor/hwameistor-operator/pull/393) alongside Local Storage; set `spec.localStorage.member.juicesyncImage.tag=v1.2.0` when adopting the bundled image.
+- **Direct Helm image overrides:** to adopt the bundled image, set `localStorage.migrate.juicesync.tag=v1.2.0` alongside updated Local Storage.
+- **Existing migration Jobs:** updated settings apply only to new Jobs; existing Jobs and their retry Pods retain the original image, version and check settings.
+- **Special-file migrations:** JuiceFS `1.4.1` skips FIFOs, sockets and device nodes (including whiteouts) even with checks; `1.2.0` fails in tested cases. Neither preserves these objects.
+- **Checks intentionally disabled:** set `localStorage.migrate.check=false` explicitly to retain that behavior after upgrading.
+
+[Full diff](https://github.com/hwameistor/hwameistor/compare/8e8b04efb0a7268e61d5313f3fac8cc5acd39af5...186418f6642d33fe54da59993765b67d22b2e8e3)
+<!-- release-assistant:v1.1.2:end -->
+
 v1.1.1/ 2026-7-22
 ========================
 > Note: v1.1.0 was tagged but never published. Its release pipeline was blocked
