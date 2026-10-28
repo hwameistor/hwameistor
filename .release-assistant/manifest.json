@@ -1,0 +1,111 @@
+{
+  "snapshot": {
+    "schemaVersion": 1,
+    "repository": "hwameistor/hwameistor",
+    "targetBranch": "release/v1.1",
+    "version": "v1.1.2",
+    "fromTag": "v1.1.1",
+    "toRef": "refs/heads/release/v1.1",
+    "fromSha": "8e8b04efb0a7268e61d5313f3fac8cc5acd39af5",
+    "toSha": "186418f6642d33fe54da59993765b67d22b2e8e3",
+    "targetSha": "186418f6642d33fe54da59993765b67d22b2e8e3",
+    "createdAt": "2026-10-28T08:57:48.637Z",
+    "generatedPaths": [
+      "CHANGELOG.md",
+      "changelogs/released/v1.1.2/changelog",
+      "helm/hwameistor/Chart.yaml"
+    ],
+    "fromTagSelection": {
+      "choice": "latest",
+      "candidates": [
+        {
+          "name": "v1.1.1",
+          "sha": "8e8b04efb0a7268e61d5313f3fac8cc5acd39af5"
+        },
+        {
+          "name": "v1.1.0",
+          "sha": "fb61440fdf1560817289a588c38d69f1c6a521f6"
+        },
+        {
+          "name": "v1.0.2",
+          "sha": "e0692ff0191a53fdfa4f49651d694b131456cd29"
+        }
+      ]
+    },
+    "workflowRun": {
+      "repository": "hwameistor/hwameistor",
+      "runId": "40660546730"
+    }
+  },
+  "templateSha": "8b61fcc4c55f9860f2f51cb0b486ac16e0d79182",
+  "generatedAt": "2026-10-28T09:01:54.301Z",
+  "policyHash": "62bad62a890d90595e0fdfcd313225bd1b71f8f52fbe91f44c55ff186c7d5b48",
+  "templateHash": "59911745ccb25f01a89a0a1e88546ea15079fa765df1bdf5aa82e7e04cc4ca08",
+  "provider": "copilot",
+  "model": "gpt-6.1-sol",
+  "notes": {
+    "entries": [
+      {
+        "category": "fixes",
+        "summary": "Scheduler retries during slow PVC provisioning now preserve the selected node instead of misplacing Pods or rejecting in-progress volumes through duplicate capacity checks.",
+        "impact": "",
+        "sources": [
+          "pr:1866"
+        ],
+        "upgradeNotes": [],
+        "needsReview": true
+      },
+      {
+        "category": "fixes",
+        "summary": "Migration image defaults `v1.0.4-01` → `v1.2.0` for directory-symlink SFTP errors and ignored listing failures; `localStorage.migrate.juicesync.version` selects JuiceFS (`1.2.0` default, `1.4.1` bundled), requiring compatible Local Storage and migration images.",
+        "impact": "",
+        "sources": [
+          "pr:1870"
+        ],
+        "upgradeNotes": [
+          "**Operator-managed migrations:** upgrade to an [Operator containing #393](https://github.com/hwameistor/hwameistor-operator/pull/393) alongside Local Storage; set `spec.localStorage.member.juicesyncImage.tag=v1.2.0` when adopting the bundled image.",
+          "**Direct Helm image overrides:** to adopt the bundled image, set `localStorage.migrate.juicesync.tag=v1.2.0` alongside updated Local Storage.",
+          "**Special-file migrations:** keep `localStorage.migrate.juicesync.version=1.2.0`; `1.4.1` skips FIFOs, sockets, devices and whiteouts even with verification, while `1.2.0` fails."
+        ],
+        "needsReview": true
+      },
+      {
+        "category": "changes",
+        "summary": "Migration verification defaults `false` → `true` through `localStorage.migrate.check`; new Jobs use `--check-all` instead of `--check-new`, checking copied and existing files.",
+        "impact": "",
+        "sources": [
+          "pr:1870"
+        ],
+        "upgradeNotes": [
+          "**Checks intentionally disabled:** set `localStorage.migrate.check=false` explicitly to retain that behavior after upgrading."
+        ],
+        "needsReview": true
+      }
+    ],
+    "excluded": [
+      {
+        "sources": [
+          "pr:1855"
+        ],
+        "reason": "Records historical v1.1.1 release notes; the described product changes predate this release range."
+      },
+      {
+        "sources": [
+          "pr:1872"
+        ],
+        "reason": "Maintainer-only release automation, publication workflows and editorial configuration; no installed-product behavior changes."
+      }
+    ]
+  },
+  "sources": [
+    "pr:1855",
+    "pr:1866",
+    "pr:1870",
+    "pr:1872"
+  ],
+  "files": {
+    "CHANGELOG.md": "8c8c5cdafbd032a02b40573685c427683532f5caa049bcc38de9d14697d71526",
+    "changelogs/released/v1.1.2/changelog": "093ab2e945031a2c3420fd806d4630ec712336974d84dfa95c364bc8d8e73089",
+    "helm/hwameistor/Chart.yaml": "ed6bfd719b337d930055bee128d2800af827324a7f60d5646a9f2fa75aa0ff63"
+  }
+}

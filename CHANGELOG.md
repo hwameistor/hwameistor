@@ -1,3 +1,31 @@
+# Changelog
+
+<!-- release-assistant:v1.1.2:start -->
+## v1.1.2
+
+### Release Changes
+
+#### Fixes
+
+- Scheduler retries during slow PVC provisioning now preserve the selected node instead of misplacing Pods or rejecting in-progress volumes through duplicate capacity checks. ([#1866](https://github.com/hwameistor/hwameistor/pull/1866)) **Needs review.**
+- Migration image defaults `v1.0.4-01` → `v1.2.0` for directory-symlink SFTP errors and ignored listing failures; `localStorage.migrate.juicesync.version` selects JuiceFS (`1.2.0` default, `1.4.1` bundled), requiring compatible Local Storage and migration images. ([#1870](https://github.com/hwameistor/hwameistor/pull/1870)) **Needs review.**
+
+#### Changes
+
+- Migration verification defaults `false` → `true` through `localStorage.migrate.check`; new Jobs use `--check-all` instead of `--check-new`, checking copied and existing files. ([#1870](https://github.com/hwameistor/hwameistor/pull/1870)) **Needs review.**
+
+---
+
+### Upgrade Actions
+
+- **Operator-managed migrations:** upgrade to an [Operator containing #393](https://github.com/hwameistor/hwameistor-operator/pull/393) alongside Local Storage; set `spec.localStorage.member.juicesyncImage.tag=v1.2.0` when adopting the bundled image.
+- **Direct Helm image overrides:** to adopt the bundled image, set `localStorage.migrate.juicesync.tag=v1.2.0` alongside updated Local Storage.
+- **Special-file migrations:** keep `localStorage.migrate.juicesync.version=1.2.0`; `1.4.1` skips FIFOs, sockets, devices and whiteouts even with verification, while `1.2.0` fails.
+- **Checks intentionally disabled:** set `localStorage.migrate.check=false` explicitly to retain that behavior after upgrading.
+
+[Full diff](https://github.com/hwameistor/hwameistor/compare/8e8b04efb0a7268e61d5313f3fac8cc5acd39af5...186418f6642d33fe54da59993765b67d22b2e8e3)
+<!-- release-assistant:v1.1.2:end -->
+
 v1.1.1/ 2026-7-22
 ========================
 > Note: v1.1.0 was tagged but never published. Its release pipeline was blocked
