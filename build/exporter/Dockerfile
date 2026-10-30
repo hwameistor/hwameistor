@@ -1,6 +1,8 @@
 FROM rockylinux:8
 
-RUN yum install nss -y
+RUN yum update -y ca-certificates \
+    && yum install nss -y \
+    && yum clean all
 
 COPY ./_build/exporter /
 
