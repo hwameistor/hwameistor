@@ -92,7 +92,7 @@ jobs:
           tag_name: ${{ needs.release-chart.outputs.version }}
 
   release-image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - release-chart
     permissions:
