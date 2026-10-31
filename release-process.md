@@ -1,69 +1,93 @@
 # Release Process
 
-This is the process to follow to make a new release. Similar to [Semantic](https://semver.org/) Version. 
-The project refers to the respective components of this triple as < major >.< minor >.< patch >.
+[Release V2](.github/workflows/release.yaml) publishes Hwameistor when the root
+`VERSION` file changes on a supported branch. The version in that file determines
+the image tags, Git tag and GitHub Release name. All builds and the final tag use
+the exact commit that triggered the workflow, even if the branch advances later.
 
-The Hwameistor Project's release process is as follows:
-- [Minor Release Process](#Minor)
-- [Patch Release Process](#Patch)
+## Before release
 
-<span id="Minor"> </span>
-## Minor Release Process
+1. Merge the changes intended for this release and resolve release-blocking issues.
+2. Select the target branch. The workflow currently supports `main`,
+   `release/v1.0.0` and `release/v1.1`. Patch releases use the corresponding
+   maintenance branch; its major/minor version must match `VERSION`. Add any new
+   release branch to the workflow's branch filter before using it.
+3. Ensure required CI and release testing pass for the target branch. Vulnerability
+   checks are managed separately: Release V2 does not run CVE scans.
+4. Ensure Release V2 is installed on the target branch. When first introducing
+   `VERSION`, initialize it to that branch's current version. Initial file creation,
+   branch creation and whitespace-only version changes do not publish a release.
 
-A minor release is e.g. v0.1.0.
+## Prepare reviewed release notes
 
-A minor release requires 3 steps are as follows: 
+1. Run **Prepare release** for the target branch, desired version and starting tag.
+   Review its generated PR, including `CHANGELOG.md`,
+   `changelogs/released/<version>/changelog` and the release provenance files.
+2. Wait for **Validate release PR / validate** and the required checks to pass,
+   then merge the reviewed preparation PR into the target branch.
 
-### Before release
+Prepare release currently updates Chart metadata but does **not** update `VERSION`.
+After Release V2 is installed, merging those generated files alone does not publish
+a release. Use the separate version update below to trigger publication.
 
-1. Ensure all issues of `priority/critical-urgent` or `priority/important-soon` label have been resolved.
-2. Ensure all PRs about feature which should be included in this version have been merged.  
-3. Check the latest PeriodCheck based on main branch has passed.
-4. SmokeTest (optional)
+The version log and matching `.release-assistant/manifest.json` must already be
+present at the triggering commit. Release V2 checks the manifest's repository,
+version and log content hash. Missing or mismatched notes stop the workflow before
+building. Publication uses the reviewed log verbatim; it does not generate new notes
+with AI. Confirm that the notes still describe the changes on the target branch
+before advancing `VERSION`.
 
-### Core release
+## Trigger publication
 
-1. An issue is proposing a new release with a changelog since the latest release.
-2. Check out master, ensure it's upto date, and ensure you have a clean working directory.
-   1. Update `CHANGELOG.md` and create changelog under `changelogs/released/<version>` directory
-3. Create a new local release branch from master.
-4. Edit file `helm/hwameistor/Chart.yaml`
-   1. Modify version field to release version 
-   2. Modify appVersion field to release version
-   > NOTE: version and appVersion are consistent by default
-5. Commit all changes, push the branch, and PR it into master.
+1. Open a separate PR against the target branch that changes only the root
+   `VERSION` file to the prepared version, for example:
 
-### Post release
+   ```text
+   v1.1.3
+   ```
 
-1. Checkout release packages(includes helm packages, images) are generated correctly.
-2. Write release notes to explain the changes of this release corresponding to the changelog.
+   Use a `v`-prefixed [Semantic Version](https://semver.org/), such as `v1.1.3` or
+   `v1.1.3-alpha1`, greater than the previous value. Build metadata (`+...`) is not
+   supported. Do not create the Git tag or GitHub Release in advance.
+2. Review and merge the version PR. The resulting push starts **Release V2**.
+3. Follow the run in Actions. The workflow executes these stages in order:
 
-<span id="Patch"> </span>
-## Patch Release Process
+   - Validate the version and read the reviewed release notes at the triggering SHA.
+   - Build `hwameictl` for Linux, macOS and Windows, each for amd64 and arm64.
+   - Build all 11 component images for linux/amd64 and linux/arm64, then push them
+     to `ghcr.io/<repository-owner>` and verify their manifests against this build.
+   - Recheck the published image digests, create the version tag at the triggering
+     SHA, and create a draft GitHub Release.
+   - Upload the six CLI binaries, `images.json` and `SHA256SUMS`, then publish the
+     Release with the reviewed version log as its description.
 
-A minor release is e.g. v0.1.1.
+The tag is created only after all images have been pushed and verified. Prerelease
+versions are marked as prereleases; prereleases and older maintenance releases do
+not replace a newer stable release as **Latest**. This workflow does not publish
+Helm charts; changing `helm/hwameistor/Chart.yaml` no longer triggers publication.
 
-A patch release requires 3 steps are as follows:
+## Recover a failed run
 
-### Before release
+- For a transient failure before tag creation, use **Re-run failed jobs** on the
+  original run. Its source SHA and version remain fixed; changing `VERSION` again
+  is unnecessary. A failed push can leave some images in the registry, but the
+  workflow does not create a tag or Release before all images pass verification.
+- If `publish-release` fails after creating the tag or draft, rerun only that failed
+  job. It reuses the run's artifacts and existing tag/draft and retries attachment
+  upload. Rebuilding an already-tagged version is blocked. Keep the run artifacts
+  available for this retry.
+- A rerun does not pick up later repository fixes. If recovery requires code or
+  workflow changes, prepare a new release with a higher `VERSION`; do not move an
+  existing tag to another commit.
 
-1. Ensure all issues of `priority/critical-urgent` or `priority/important-soon` label have been resolved.
-2. Check the latest PeriodCheck based on main branch has passed.
-3. SmokeTest (optional)
+Release V2 currently has no manual dispatch entry. The existing **Release Image**
+workflow remains a separate image-only operation, with its existing CVE scanning;
+it does not finish Release V2's tag, notes or asset publication.
 
-### Core release
+## Verify the release
 
-1. An issue is proposing a new release with a changelog since the latest release.
-2. Check out master, ensure it's upto date, and ensure you have a clean working directory.
-   1. Update `CHANGELOG.md` and create changelog under `changelogs/released/<version>` directory
-3. Create a new local release branch from master.
-4. Edit file `helm/hwameistor/Chart.yaml`
-   1. Modify version field to release version
-   2. Modify appVersion field to release version
-   > NOTE: version and appVersion are consistent by default
-5. Commit all changes, push the branch, and PR it into master.
-
-### Post release
-
-1. Checkout release packages(includes helm packages, images) are generated correctly.
-2. Write release notes to explain the changes of this release corresponding to the changelog.
+Check that the tag resolves to the run's source SHA, all component images have both
+supported architectures, and the published Release contains the expected notes and
+eight assets. Use `images.json` for the source SHA and image digests, and
+`SHA256SUMS` for the CLI binary and image-report checksums. The Release URL appears
+in the `publish-release` job summary.

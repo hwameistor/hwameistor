@@ -1,0 +1,183 @@
+name: Release V2
+
+on:
+  push:
+    branches:
+      - main
+      - release/v1.0.0
+      - release/v1.1
+    paths:
+      - VERSION
+
+permissions:
+  contents: read
+
+# Serialize publication, including releases from different maintenance branches.
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      release: ${{ steps.version.outputs.release }}
+      version: ${{ steps.version.outputs.version }}
+      source-sha: ${{ steps.version.outputs.source-sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+      - name: Read and validate VERSION
+        id: version
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const { prepareRelease } = require('./.github/scripts/release.cjs');
+            await prepareRelease({ github, context, core });
+      - name: Read reviewed release notes
+        if: steps.version.outputs.release == 'true'
+        id: notes
+        uses: hwameistor/release-assistant@08fb6099ad17c568acc8b1b7ac5b61ed226c4c8d # Release Assistant
+        with:
+          command: release-body
+          version: ${{ steps.version.outputs.version }}
+          source-ref: ${{ steps.version.outputs.source-sha }}
+          token: ${{ github.token }}
+      - name: Save release body
+        if: steps.version.outputs.release == 'true'
+        env:
+          BODY_PATH: ${{ steps.notes.outputs.body-path }}
+        run: |
+          mkdir -p _release/notes
+          cp -- "$BODY_PATH" _release/notes/RELEASE_NOTES.md
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: steps.version.outputs.release == 'true'
+        with:
+          name: release-notes
+          path: _release/notes/RELEASE_NOTES.md
+          if-no-files-found: error
+          overwrite: true
+
+  build-hwameictl:
+    needs: prepare
+    if: needs.prepare.outputs.release == 'true'
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [linux, darwin, windows]
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.prepare.outputs.source-sha }}
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+      - name: Build hwameictl
+        env:
+          TARGET_OS: ${{ matrix.os }}
+          TARGET_ARCH: ${{ matrix.arch }}
+        run: make build_hwameictl "OS=$TARGET_OS" "ARCH=$TARGET_ARCH"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: hwameictl-${{ matrix.os }}-${{ matrix.arch }}
+          path: _build/hwameictl/*
+          if-no-files-found: error
+          overwrite: true
+
+  release-image:
+    needs: [prepare, build-hwameictl]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    permissions:
+      contents: read
+      packages: write
+    env:
+      RELEASE_TAG: ${{ needs.prepare.outputs.version }}
+      SOURCE_SHA: ${{ needs.prepare.outputs.source-sha }}
+      SCAN_IMAGES: 'false'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.prepare.outputs.source-sha }}
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+        with:
+          platforms: arm64
+      - name: Set image registry
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: echo "IMAGE_REGISTRY=ghcr.io/${OWNER,,}" >> "$GITHUB_ENV"
+      - name: Login registry
+        env:
+          REGISTRY_TOKEN: ${{ github.token }}
+        run: printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Build all component images
+        run: make release-build SCAN_IMAGES=false
+      - name: Check version is still unpublished
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const { assertUnreleased } = require('./.github/scripts/release.cjs');
+            await assertUnreleased({ github, context, version: process.env.RELEASE_TAG });
+      - name: Push all component images
+        run: make release-push SCAN_IMAGES=false
+      - name: Verify published images match this build
+        run: |
+          python3 build/util/verify-release-images.py \
+            --registry "$IMAGE_REGISTRY" --version "$RELEASE_TAG" \
+            --source-sha "$SOURCE_SHA" --report _release/images.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-images
+          path: _release/images.json
+          if-no-files-found: error
+          overwrite: true
+
+  publish-release:
+    needs: [prepare, release-image]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      packages: read
+    env:
+      RELEASE_TAG: ${{ needs.prepare.outputs.version }}
+      SOURCE_SHA: ${{ needs.prepare.outputs.source-sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.prepare.outputs.source-sha }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: hwameictl-*
+          merge-multiple: true
+          path: _release/assets
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-images
+          path: _release/assets
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-notes
+          path: _release/notes
+      - name: Login registry
+        env:
+          REGISTRY_TOKEN: ${{ github.token }}
+        run: printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Recheck images before creating the tag
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          python3 build/util/verify-release-images.py \
+            --registry "ghcr.io/${OWNER,,}" --version "$RELEASE_TAG" \
+            --source-sha "$SOURCE_SHA" --report _release/assets/images.json --verify-report
+      - name: Create tag and publish reviewed release
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const { publishRelease } = require('./.github/scripts/release.cjs');
+            await publishRelease({ github, context, core,
+              version: process.env.RELEASE_TAG,
+              directory: '_release/assets', notesPath: '_release/notes/RELEASE_NOTES.md' });
