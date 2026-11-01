@@ -13,9 +13,11 @@ permissions:
   contents: read
 
 # Serialize publication, including releases from different maintenance branches.
+# Retain up to 100 pending runs instead of replacing an earlier release request.
 concurrency:
   group: release-${{ github.repository }}
   cancel-in-progress: false
+  queue: max
 
 jobs:
   prepare:
