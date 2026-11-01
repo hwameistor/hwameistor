@@ -4,9 +4,9 @@ Merge the original PR into `main`, then use a label to request a backport:
 
 | Label on the original PR | Target branch |
 | --- | --- |
-| `cherry-pick-v1.0` | `release/v1.0.0` |
+| `cherry-pick-v1.0` | `release/v1.0` |
 | `cherry-pick-v1.1` | `release/v1.1` |
-| `cherry-pick-v1` (legacy alias) | `release/v1.0.0` |
+| `cherry-pick-v1` (legacy alias) | `release/v1.0` |
 
 Labels may also be added before merging: the workflow waits until the original
 PR is merged. Add both version labels to backport to both release branches.
