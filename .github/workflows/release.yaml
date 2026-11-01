@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - release/v1.0.0
+      - release/v1.0
       - release/v1.1
     paths:
       - VERSION

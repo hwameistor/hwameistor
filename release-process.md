@@ -9,7 +9,7 @@ the exact commit that triggered the workflow, even if the branch advances later.
 
 1. Merge the changes intended for this release and resolve release-blocking issues.
 2. Select the target branch. The workflow currently supports `main`,
-   `release/v1.0.0` and `release/v1.1`. Patch releases use the corresponding
+   `release/v1.0` and `release/v1.1`. Patch releases use the corresponding
    maintenance branch; its major/minor version must match `VERSION`. Add any new
    release branch to the workflow's branch filter before using it.
 3. Ensure required CI and release testing pass for the target branch. Vulnerability
