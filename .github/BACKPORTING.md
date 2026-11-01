@@ -41,14 +41,30 @@ line or the generated marker when editing the description.
 
 ## Conflicts and retries
 
-The workflow stops on cherry-pick conflicts and posts instructions on the
-original PR. Resolve conflicts locally and open a manual backport PR using
-the source line above. Conflicts are never resolved automatically by favoring
-one side.
+When a cherry-pick conflicts, the workflow creates a **draft backport PR** and
+links it from the original PR. A temporary `BACKPORT-CONFLICT` commit preserves
+the first conflicting pick. Earlier successful picks are retained; later commits
+have not been applied yet. The bot posts recovery commands on the draft PR.
+
+Use a clean checkout and follow those commands to recreate the cherry-pick
+conflict. `git status` and `git diff --name-only --diff-filter=U` list the files
+that need decisions, including modify/delete conflicts without text markers.
+Resolve them, stage the resolutions, and run `git cherry-pick --continue` until
+all remaining commits are applied. Push the repaired branch to the same PR with
+`git push --force-with-lease`, then mark it ready for review after checking the
+diff and tests. The force push replaces the temporary conflict commit; verify
+that no one else has updated the branch before replacing it.
+
+GitHub may consider the draft branch mergeable because the unresolved content
+was committed. Use the draft status and recovery instructions to track the
+conflicts, rather than relying on GitHub's **Resolve conflicts** button. Do not
+mark the draft ready merely because CI passes. A created draft is a successful
+handoff by the workflow, not a completed backport; auto-merge remains disabled.
 
 After fixing a transient failure, open **Actions → Cherry pick → Run workflow**,
 select `main`, and enter the original PR number. The workflow reads the PR's
-current labels and skips existing open or merged backports. If retrying a
+current labels and skips existing open (including draft) or merged backports.
+Continue resolving an existing draft instead of rerunning the workflow. If retrying a
 closed, unmerged backport, first delete its generated branch
 (`backport-<number>-to-<target branch>`), or reopen the existing PR instead.
 
