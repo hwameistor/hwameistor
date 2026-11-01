@@ -1,8 +1,9 @@
 # Release Process
 
 [Release V2](.github/workflows/release.yaml) publishes Hwameistor when the root
-`VERSION` file changes on a supported branch. The version in that file determines
-the image tags, Git tag and GitHub Release name. All builds and the final tag use
+`VERSION` file changes on a supported branch or a maintainer starts it manually.
+The version in that file determines the image tags, Git tag and GitHub Release
+name. All builds and the final tag use
 the exact commit that triggered the workflow, even if the branch advances later.
 
 ## Before release
@@ -11,7 +12,8 @@ the exact commit that triggered the workflow, even if the branch advances later.
 2. Select the target branch. The workflow currently supports `main`,
    `release/v1.0` and `release/v1.1`. Patch releases use the corresponding
    maintenance branch; its major/minor version must match `VERSION`. Add any new
-   release branch to the workflow's branch filter before using it.
+   release branch to the workflow's branch filter and the allowed branches in
+   `.github/scripts/release.cjs` before using it.
 3. Ensure required CI and release testing pass for the target branch. Vulnerability
    checks are managed separately: Release V2 does not run CVE scans.
 4. Ensure Release V2 is installed on the target branch. When first introducing
@@ -66,6 +68,21 @@ versions are marked as prereleases; prereleases and older maintenance releases d
 not replace a newer stable release as **Latest**. This workflow does not publish
 Helm charts; changing `helm/hwameistor/Chart.yaml` no longer triggers publication.
 
+## Publish manually
+
+1. Ensure the workflow is merged into both the default branch and the target
+   branch, with `VERSION` and matching reviewed release notes ready on the target.
+2. Open **Actions → Release V2 → Run workflow** and select `main`, `release/v1.0`
+   or `release/v1.1` in **Use workflow from**. Tag refs and other branches are
+   rejected.
+3. Click **Run workflow**. The version comes from `VERSION`; there is no separate
+   version input. The workflow pins all builds and the final tag to the selected
+   branch's commit at dispatch time, even if the branch advances while it runs.
+
+Manual publication uses the same build, image verification and release steps as
+automatic publication, without requiring `VERSION` to change again. Existing
+tags and Releases remain protected from replacement.
+
 ## Recover a failed run
 
 - For a transient failure before tag creation, use **Re-run failed jobs** on the
@@ -77,12 +94,15 @@ Helm charts; changing `helm/hwameistor/Chart.yaml` no longer triggers publicatio
   upload. Rebuilding an already-tagged version is blocked. Keep the run artifacts
   available for this retry.
 - A rerun does not pick up later repository fixes. If recovery requires code or
-  workflow changes, prepare a new release with a higher `VERSION`; do not move an
-  existing tag to another commit.
+  workflow changes and no tag or Release exists yet, merge the fixes and start a
+  new manual run on the target branch. It can reuse the unchanged `VERSION` and
+  rebuild any partially pushed images. Confirm the reviewed notes still describe
+  the release. Once a tag or Release exists, use a higher version for changed
+  source code; the workflow never moves an existing tag.
 
-Release V2 currently has no manual dispatch entry. The existing **Release Image**
-workflow remains a separate image-only operation, with its existing CVE scanning;
-it does not finish Release V2's tag, notes or asset publication.
+The existing **Release Image** workflow remains a separate image-only operation,
+with its existing CVE scanning; it does not finish Release V2's tag, notes or asset
+publication.
 
 ## Verify the release
 

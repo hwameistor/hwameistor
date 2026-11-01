@@ -68,25 +68,35 @@ async function assertUnreleased({ github, context, version }) {
 }
 
 async function prepareRelease({ github, context, core, git = args => execFileSync('git', args, { encoding: 'utf8' }).trim() }) {
+  if (!['push', 'workflow_dispatch'].includes(context.eventName)) {
+    throw new Error(`Unsupported release event: ${context.eventName}`);
+  }
+  if (!['refs/heads/main', 'refs/heads/release/v1.0', 'refs/heads/release/v1.1'].includes(context.ref)) {
+    throw new Error('Select main, release/v1.0 or release/v1.1 as the release branch');
+  }
   const sha = context.sha;
   if (git(['rev-parse', 'HEAD']) !== sha) throw new Error('Checkout does not match the triggering commit');
   const version = readVersion(git(['show', `${sha}:VERSION`]));
   core.setOutput('version', version);
   core.setOutput('source-sha', sha);
   core.setOutput('release', 'false');
-  const before = context.payload.before;
-  // Adding the workflow and VERSION, or creating a branch, is not a release.
-  if (!before || /^0+$/.test(before) || context.payload.created) {
-    core.info('Skipping branch initialization');
-    return;
+  // Manual recovery uses VERSION at the selected branch's event SHA without
+  // requiring another version bump. Push events still require an increase.
+  if (context.eventName === 'push') {
+    const before = context.payload.before;
+    // Adding the workflow and VERSION, or creating a branch, is not a release.
+    if (!before || /^0+$/.test(before) || context.payload.created) {
+      core.info('Skipping branch initialization');
+      return;
+    }
+    if (!git(['ls-tree', '--name-only', before, '--', 'VERSION'])) {
+      core.info('Skipping initial VERSION creation');
+      return;
+    }
+    const previous = readVersion(git(['show', `${before}:VERSION`]));
+    if (previous === version) { core.info('VERSION is unchanged'); return; }
+    if (compareVersions(version, previous) <= 0) throw new Error(`VERSION must advance beyond ${previous}`);
   }
-  if (!git(['ls-tree', '--name-only', before, '--', 'VERSION'])) {
-    core.info('Skipping initial VERSION creation');
-    return;
-  }
-  const previous = readVersion(git(['show', `${before}:VERSION`]));
-  if (previous === version) { core.info('VERSION is unchanged'); return; }
-  if (compareVersions(version, previous) <= 0) throw new Error(`VERSION must advance beyond ${previous}`);
   const branch = /^refs\/heads\/release\/v(\d+)\.(\d+)(?:\.\d+)?$/.exec(context.ref);
   if (branch && !version.startsWith(`v${branch[1]}.${branch[2]}.`)) {
     throw new Error(`VERSION ${version} does not match release branch ${context.ref}`);
@@ -98,6 +108,7 @@ async function prepareRelease({ github, context, core, git = args => execFileSyn
     if (release && !release.draft) { core.info(`${version} is already published from this commit`); return; }
   }
   await assertUnreleased({ github, context, version });
+  core.info(`Preparing ${version} from ${context.ref} at ${sha} (${context.eventName})`);
   core.setOutput('release', 'true');
 }
 
