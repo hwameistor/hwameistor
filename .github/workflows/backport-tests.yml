@@ -1,0 +1,27 @@
+name: Backport workflow tests
+
+on:
+  pull_request:
+    paths:
+      - .github/scripts/prepare-backport*
+      - .github/workflows/Cherry-picking.yml
+      - .github/workflows/backport-tests.yml
+  push:
+    branches: [main]
+    paths:
+      - .github/scripts/prepare-backport*
+      - .github/workflows/Cherry-picking.yml
+      - .github/workflows/backport-tests.yml
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Test label routing and duplicate detection
+        run: node --test .github/scripts/prepare-backport.test.cjs

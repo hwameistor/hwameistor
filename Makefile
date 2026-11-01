@@ -24,7 +24,22 @@ image: build_ldm_image build_ls_image build_scheduler_image build_admission_imag
 arm-image: build_ldm_image_arm64 build_ls_image_arm64 build_scheduler_image_arm64 build_admission_image_arm64 build_evictor_image_arm64 build_exporter_image_arm64 build_apiserver_image_arm64 build_failover_image_arm64 build_auditor_image_arm64 build_pvc-autoresizer_image_arm64 build_lda_image_arm64
 
 .PHONY: release
-release: release_ldm release_ls release_scheduler release_admission release_evictor release_exporter release_apiserver release_failover release_auditor release_pvc-autoresizer release_lda
+RELEASE_TARGETS = release_ldm release_ls release_scheduler release_admission release_evictor release_exporter release_apiserver release_failover release_auditor release_pvc-autoresizer release_lda
+RELEASE_IMAGES = ${LDM_IMAGE_NAME} ${LS_IMAGE_NAME} ${SCHEDULER_IMAGE_NAME} ${ADMISSION_IMAGE_NAME} ${EVICTOR_IMAGE_NAME} ${EXPORTER_IMAGE_NAME} ${APISERVER_IMAGE_NAME} ${FAILOVER_IMAGE_NAME} ${AUDITOR_IMAGE_NAME} ${PVC-AUTORESIZER_IMAGE_NAME} ${LDA_CONTROLLER_IMAGE_NAME}
+
+release: ${RELEASE_TARGETS}
+
+# Automatic releases build every component before publishing any image.
+.PHONY: release-build release-push release-image-list
+release-build: $(addprefix build_,${RELEASE_TARGETS})
+
+release-push:
+	@set -e; for image in ${RELEASE_IMAGES}; do \
+		${MUILT_ARCH_PUSH_CMD} -i "$${image}:${RELEASE_TAG}"; \
+	done
+
+release-image-list:
+	@printf '%s\n' ${RELEASE_IMAGES}
 
 .PHONY: unit-test
 unit-test:
@@ -60,14 +75,16 @@ build_ldm_image_arm64:
 	${DOCKER_MAKE_CMD} make compile_ldm_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${LDM_IMAGE_NAME}:${IMAGE_TAG} -f ${LDM_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
-.PHONY: release_ldm
-release_ldm:
+.PHONY: release_ldm build_release_ldm
+build_release_ldm:
 	# build for amd64 version
 	${DOCKER_MAKE_CMD} make compile_ldm
 	${DOCKER_BUILDX_CMD_AMD64} -t ${LDM_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${LDM_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
 	${DOCKER_MAKE_CMD} make compile_ldm_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${LDM_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${LDM_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+release_ldm: build_release_ldm
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${LDM_IMAGE_NAME}:${RELEASE_TAG}
 
@@ -96,14 +113,16 @@ build_ls_image_arm64:
 	${DOCKER_MAKE_CMD} make compile_ls_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${LS_IMAGE_NAME}:${IMAGE_TAG} -f ${LS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
-.PHONY: release_ls
-release_ls:
+.PHONY: release_ls build_release_ls
+build_release_ls:
 	# build for amd64 version
 	${DOCKER_MAKE_CMD} make compile_ls
 	${DOCKER_BUILDX_CMD_AMD64} -t ${LS_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${LS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
 	${DOCKER_MAKE_CMD} make compile_ls_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${LS_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${LS_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+release_ls: build_release_ls
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${LS_IMAGE_NAME}:${RELEASE_TAG}
 
@@ -132,14 +151,16 @@ build_scheduler_image_arm64:
 	${DOCKER_MAKE_CMD} make compile_scheduler_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${SCHEDULER_IMAGE_NAME}:${IMAGE_TAG} -f ${SCHEDULER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
-.PHONY: release_scheduler
-release_scheduler:
+.PHONY: release_scheduler build_release_scheduler
+build_release_scheduler:
 	# build for amd64 version
 	${DOCKER_MAKE_CMD} make compile_scheduler
 	${DOCKER_BUILDX_CMD_AMD64} -t ${SCHEDULER_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${SCHEDULER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
 	${DOCKER_MAKE_CMD} make compile_scheduler_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${SCHEDULER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${SCHEDULER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+release_scheduler: build_release_scheduler
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${SCHEDULER_IMAGE_NAME}:${RELEASE_TAG}
 
@@ -168,14 +189,16 @@ build_admission_image_arm64:
 	${DOCKER_MAKE_CMD} make compile_admission_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${ADMISSION_IMAGE_NAME}:${IMAGE_TAG} -f ${ADMISSION_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
-.PHONY: release_admission
-release_admission:
+.PHONY: release_admission build_release_admission
+build_release_admission:
 	# build for amd64 version
 	${DOCKER_MAKE_CMD} make compile_admission
 	${DOCKER_BUILDX_CMD_AMD64} -t ${ADMISSION_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${ADMISSION_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
 	${DOCKER_MAKE_CMD} make compile_admission_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${ADMISSION_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${ADMISSION_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+release_admission: build_release_admission
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${ADMISSION_IMAGE_NAME}:${RELEASE_TAG}
 
@@ -204,14 +227,16 @@ build_evictor_image_arm64:
 	${DOCKER_MAKE_CMD} make compile_evictor_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${EVICTOR_IMAGE_NAME}:${IMAGE_TAG} -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
-.PHONY: release_evictor
-release_evictor:
+.PHONY: release_evictor build_release_evictor
+build_release_evictor:
 	# build for amd64 version
 	${DOCKER_MAKE_CMD} make compile_evictor
 	${DOCKER_BUILDX_CMD_AMD64} -t ${EVICTOR_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
 	${DOCKER_MAKE_CMD} make compile_evictor_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${EVICTOR_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${EVICTOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+release_evictor: build_release_evictor
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${EVICTOR_IMAGE_NAME}:${RELEASE_TAG}
 
@@ -240,14 +265,16 @@ build_exporter_image_arm64:
 	${DOCKER_MAKE_CMD} make compile_exporter_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${EXPORTER_IMAGE_NAME}:${IMAGE_TAG} -f ${EXPORTER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
-.PHONY: release_exporter
-release_exporter:
+.PHONY: release_exporter build_release_exporter
+build_release_exporter:
 	# build for amd64 version
 	${DOCKER_MAKE_CMD} make compile_exporter
 	${DOCKER_BUILDX_CMD_AMD64} -t ${EXPORTER_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${EXPORTER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
 	${DOCKER_MAKE_CMD} make compile_exporter_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${EXPORTER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${EXPORTER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+release_exporter: build_release_exporter
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${EXPORTER_IMAGE_NAME}:${RELEASE_TAG}
 
@@ -276,14 +303,16 @@ build_apiserver_image_arm64:
 	${DOCKER_MAKE_CMD} make compile_apiserver_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${APISERVER_IMAGE_NAME}:${IMAGE_TAG} -f ${APISERVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
-.PHONY: release_apiserver
-release_apiserver:
+.PHONY: release_apiserver build_release_apiserver
+build_release_apiserver:
 	# build for amd64 version
 	${DOCKER_MAKE_CMD} make compile_apiserver
 	${DOCKER_BUILDX_CMD_AMD64} -t ${APISERVER_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${APISERVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
 	${DOCKER_MAKE_CMD} make compile_apiserver_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${APISERVER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${APISERVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+release_apiserver: build_release_apiserver
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${APISERVER_IMAGE_NAME}:${RELEASE_TAG}
 
@@ -312,14 +341,16 @@ build_failover_image_arm64:
 	${DOCKER_MAKE_CMD} make compile_failover_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${FAILOVER_IMAGE_NAME}:${IMAGE_TAG} -f ${FAILOVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
-.PHONY: release_failover
-release_failover:
+.PHONY: release_failover build_release_failover
+build_release_failover:
 	# build for amd64 version
 	${DOCKER_MAKE_CMD} make compile_failover
 	${DOCKER_BUILDX_CMD_AMD64} -t ${FAILOVER_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${FAILOVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
 	${DOCKER_MAKE_CMD} make compile_failover_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${FAILOVER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${FAILOVER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+release_failover: build_release_failover
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${FAILOVER_IMAGE_NAME}:${RELEASE_TAG}
 
@@ -348,14 +379,16 @@ build_auditor_image_arm64:
 	${DOCKER_MAKE_CMD} make compile_auditor_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${AUDITOR_IMAGE_NAME}:${IMAGE_TAG} -f ${AUDITOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
-.PHONY: release_auditor
-release_auditor:
+.PHONY: release_auditor build_release_auditor
+build_release_auditor:
 	# build for amd64 version
 	${DOCKER_MAKE_CMD} make compile_auditor
 	${DOCKER_BUILDX_CMD_AMD64} -t ${AUDITOR_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${AUDITOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
 	${DOCKER_MAKE_CMD} make compile_auditor_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${AUDITOR_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${AUDITOR_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+release_auditor: build_release_auditor
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${AUDITOR_IMAGE_NAME}:${RELEASE_TAG}
 
@@ -384,14 +417,16 @@ build_pvc-autoresizer_image_arm64:
 	${DOCKER_MAKE_CMD} make compile_pvc-autoresizer_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${PVC-AUTORESIZER_IMAGE_NAME}:${IMAGE_TAG} -f ${PVC-AUTORESIZER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
-.PHONY: release_pvc-autoresizer
-release_pvc-autoresizer:
+.PHONY: release_pvc-autoresizer build_release_pvc-autoresizer
+build_release_pvc-autoresizer:
     # build for amd64 version
 	${DOCKER_MAKE_CMD} make compile_pvc-autoresizer
 	${DOCKER_BUILDX_CMD_AMD64} -t ${PVC-AUTORESIZER_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${PVC-AUTORESIZER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
 	${DOCKER_MAKE_CMD} make compile_pvc-autoresizer_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${PVC-AUTORESIZER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${PVC-AUTORESIZER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+release_pvc-autoresizer: build_release_pvc-autoresizer
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${PVC-AUTORESIZER_IMAGE_NAME}:${RELEASE_TAG}
 
@@ -420,14 +455,16 @@ build_lda_image_arm64:
 	${DOCKER_MAKE_CMD} make compile_lda_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${LDA_CONTROLLER_IMAGE_NAME}:${IMAGE_TAG} -f ${LDA_CONTROLLER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 
-.PHONY: release_lda
-release_lda:
+.PHONY: release_lda build_release_lda
+build_release_lda:
 	# build for amd64 version
 	${DOCKER_MAKE_CMD} make compile_lda
 	${DOCKER_BUILDX_CMD_AMD64} -t ${LDA_CONTROLLER_IMAGE_NAME}:${RELEASE_TAG}-amd64 -f ${LDA_CONTROLLER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
 	# build for arm64 version
 	${DOCKER_MAKE_CMD} make compile_lda_arm64
 	${DOCKER_BUILDX_CMD_ARM64} -t ${LDA_CONTROLLER_IMAGE_NAME}:${RELEASE_TAG}-arm64 -f ${LDA_CONTROLLER_IMAGE_DOCKERFILE} ${PROJECT_SOURCE_CODE_DIR}
+
+release_lda: build_release_lda
 	# push to a public registry
 	${MUILT_ARCH_PUSH_CMD} -i ${LDA_CONTROLLER_IMAGE_NAME}:${RELEASE_TAG}
 
