@@ -63,7 +63,7 @@ function harness({ pull = {}, candidates = [], listError } = {}) {
 
 test('routes supported labels and deduplicates the legacy v1.0 alias', () => {
   assert.deepEqual(targetsForLabels(labels('cherry-pick-v1.1', 'cherry-pick-v1', 'cherry-pick-v1.0')),
-    [target, 'release/v1.0.0']);
+    [target, 'release/v1.0']);
   assert.deepEqual(targetsForLabels(labels('cherry-pick', 'cherry-pick-v1.2', 'backport main')), []);
 });
 
@@ -93,7 +93,7 @@ test('recognizes the generated branch only in the current repository', () => {
 test('skips open and merged PRs but permits closed unmerged PRs and other targets', () => {
   assert.equal(isBackportOf(candidate({ state: 'closed', merged_at: '2026-01-01' }), 1864, target, repository), true);
   assert.equal(isBackportOf(candidate({ state: 'closed' }), 1864, target, repository), false);
-  assert.equal(isBackportOf(candidate(), 1864, 'release/v1.0.0', repository), false);
+  assert.equal(isBackportOf(candidate(), 1864, 'release/v1.0', repository), false);
 });
 
 test('reads current API labels instead of stale event labels', async () => {
@@ -111,7 +111,7 @@ test('skips only targets with an existing open or merged backport and links to i
     candidates: [candidate()],
   });
   await h.run();
-  assert.equal(h.outputs.targets, 'release/v1.0.0');
+  assert.equal(h.outputs.targets, 'release/v1.0');
   assert.equal(h.calls.filter(([method]) => method === 'list').length, 2);
   assert.match(h.summary.join('\n'), /\[#1866\]\(https:\/\/github.com\/hwameistor\/hwameistor\/pull\/1866\)/);
 });

@@ -1,8 +1,8 @@
 'use strict';
 
 const targetByLabel = new Map([
-  ['cherry-pick-v1', 'release/v1.0.0'], // Legacy label.
-  ['cherry-pick-v1.0', 'release/v1.0.0'],
+  ['cherry-pick-v1', 'release/v1.0'], // Legacy label.
+  ['cherry-pick-v1.0', 'release/v1.0'],
   ['cherry-pick-v1.1', 'release/v1.1'],
 ]);
 
