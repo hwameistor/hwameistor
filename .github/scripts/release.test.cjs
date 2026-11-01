@@ -9,7 +9,8 @@ const { readVersion, compareVersions, prepareRelease, publishRelease, assertUnre
 
 const SHA = 'a'.repeat(40);
 const BEFORE = 'b'.repeat(40);
-const context = { sha: SHA, ref: 'refs/heads/release/v1.1', repo: { owner: 'hwameistor', repo: 'hwameistor' }, payload: { before: BEFORE } };
+const context = { eventName: 'push', sha: SHA, ref: 'refs/heads/release/v1.1', repo: { owner: 'hwameistor', repo: 'hwameistor' }, payload: { before: BEFORE } };
+const manualContext = { ...context, eventName: 'workflow_dispatch', payload: {} };
 const version = 'v1.1.3';
 const missing = () => { throw Object.assign(new Error('Not found'), { status: 404 }); };
 
@@ -107,6 +108,62 @@ test('new release locks source SHA but performs no mutations during preparation'
   const f = fixture();
   await prepareRelease({ ...f, context, git: gitFixture() });
   assert.deepEqual(f.outputs, { version, 'source-sha': SHA, release: 'true' });
+  assert.deepEqual(f.state.events, []);
+});
+
+test('manual recovery uses VERSION and the event SHA without requiring a version change', async () => {
+  for (const [ref, current] of [['refs/heads/main', 'v1.2.0'], ['refs/heads/release/v1.0', 'v1.0.2'], ['refs/heads/release/v1.1', 'v1.1.2']]) {
+    const f = fixture();
+    const git = args => {
+      if (args.join(' ') === 'rev-parse HEAD') return SHA;
+      if (args.join(' ') === `show ${SHA}:VERSION`) return current;
+      throw new Error(`Manual recovery must not resolve a moving branch or read a previous VERSION: ${args}`);
+    };
+    await prepareRelease({ ...f, context: { ...manualContext, ref }, git });
+    assert.deepEqual(f.outputs, { version: current, 'source-sha': SHA, release: 'true' });
+    assert.deepEqual(f.state.events, []);
+  }
+});
+
+test('manual recovery rejects tag refs and unsupported branches or events', async () => {
+  for (const ctx of [
+    { ...manualContext, ref: 'refs/tags/v1.1.3' },
+    { ...manualContext, ref: 'refs/heads/feature/release' },
+    { ...manualContext, ref: 'refs/heads/release/v1.2' },
+    { ...manualContext, eventName: 'pull_request' },
+  ]) {
+    const f = fixture();
+    await assert.rejects(prepareRelease({ ...f, context: ctx, git: gitFixture() }), /release branch|Unsupported release event/);
+    assert.deepEqual(f.state.events, []);
+  }
+});
+
+test('manual recovery still validates the checkout, version format and maintenance series', async () => {
+  for (const [options, error] of [[{ head: BEFORE }, /Checkout/], [{ current: 'invalid' }, /SemVer/], [{ current: 'v1.2.0' }, /does not match release branch/]]) {
+    const f = fixture();
+    await assert.rejects(prepareRelease({ ...f, context: manualContext, git: gitFixture(options) }), error);
+    assert.deepEqual(f.state.events, []);
+  }
+});
+
+test('manual recovery cannot rebuild an existing tag or an orphaned release', async () => {
+  for (const [options, error] of [
+    [{ tag: BEFORE }, /refusing to move/],
+    [{ tag: SHA }, /rerun only the failed publish-release job/],
+    [{ tag: SHA, release: { draft: true } }, /rerun only the failed publish-release job/],
+    [{ release: { draft: false } }, /already exists without its tag/],
+  ]) {
+    const f = fixture(options);
+    await assert.rejects(prepareRelease({ ...f, context: manualContext, git: gitFixture() }), error);
+    assert.equal(f.outputs.release, 'false');
+    assert.deepEqual(f.state.events, []);
+  }
+});
+
+test('manual dispatch of an already published source skips all builds', async () => {
+  const f = fixture({ tag: SHA, release: { draft: false } });
+  await prepareRelease({ ...f, context: manualContext, git: gitFixture() });
+  assert.equal(f.outputs.release, 'false');
   assert.deepEqual(f.state.events, []);
 });
 
