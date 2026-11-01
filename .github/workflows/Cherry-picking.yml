@@ -26,6 +26,7 @@ jobs:
       - name: Cherry pick into release-v1.0
         uses: carloscastrojumo/github-cherry-pick-action@v1.0.1
         with:
+<<<<<<< HEAD
           branch: release/v1.0.0
           labels: |
             cherry-pick
@@ -51,3 +52,35 @@ jobs:
             cherry-pick
 #          reviewers: |
 #            aReviewerUser
+=======
+          github_token: ${{ secrets.BACKPORT_TOKEN || secrets.MY_TOKEN }}
+          github_workspace: ${{ github.workspace }}/backport-repository
+          source_pr_number: ${{ steps.prepare.outputs.pull_number }}
+          target_branches: ${{ steps.prepare.outputs.targets }}
+          label_pattern: ''
+          cherry_picking: auto
+          # Keep conflicting backports visible as drafts with recovery instructions.
+          experimental: '{"conflict_resolution":"draft_commit_conflicts"}'
+          auto_merge_enabled: false
+          comment_style: summary
+          add_labels: cherry-pick
+          pull_title: 'Automated cherry pick of #${pull_number}: ${pull_title}'
+          pull_description: |
+            Backport of #${pull_number} to `${target_branch}`.
+            <!-- hwameistor-backport:${pull_number}:${target_branch} -->
+
+            If this PR is a draft, cherry-picking stopped at a conflict. The
+            `BACKPORT-CONFLICT` commit preserves the unresolved state; later
+            source commits may still need to be applied. Follow the bot's recovery
+            comment, then use `git status` and `git diff --name-only --diff-filter=U`
+            to list the conflicts. Resolve them and complete the remaining picks
+            before marking this PR ready for review.
+
+            ${pull_description}
+
+      - name: Report unsuccessful backports
+        if: steps.prepare.outputs.targets != '' && steps.backport.outputs.was_successful != 'true'
+        run: |
+          echo '::error::One or more backports failed. See the action logs and the comment on the original PR for details.'
+          exit 1
+>>>>>>> e7e6444b (ci: create draft backport PRs on conflicts (#1878))
