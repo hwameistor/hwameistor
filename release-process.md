@@ -100,9 +100,10 @@ tags and Releases remain protected from replacement.
   the release. Once a tag or Release exists, use a higher version for changed
   source code; the workflow never moves an existing tag.
 
-The existing **Release Image** workflow remains a separate image-only operation,
-with its existing CVE scanning; it does not finish Release V2's tag, notes or asset
-publication.
+Use **Release V2** for all component image releases and recovery. The legacy
+**Release Image** and **Release Exporter** workflows have been removed so they
+cannot overwrite images outside the release's version and source checks.
+**Release Tools** continues to publish the independently versioned JuiceFS image.
 
 ## Verify the release
 
