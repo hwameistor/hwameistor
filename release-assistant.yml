@@ -6,8 +6,9 @@ template: .release-assistant/changelog.md
 output:
   changelog: CHANGELOG.md
   releaseNotes: changelogs/released/{version}/changelog
-  charts:
-    - helm/hwameistor/Chart.yaml
+  versionFiles:
+    - path: VERSION
+      format: text
 ai:
   provider: copilot
   model: gpt-6.1-sol # Used when no workflow/CLI model override is supplied.
