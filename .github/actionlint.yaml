@@ -1,0 +1,8 @@
+self-hosted-runner:
+  labels: [vsphere, e2e, ubuntu]
+
+paths:
+  .github/workflows/release.yaml:
+    ignore:
+      # GitHub supports queue: max; actionlint 1.7.12 does not recognize it yet.
+      - '^unexpected key "queue" for "concurrency" section\.'
