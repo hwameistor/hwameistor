@@ -9,23 +9,11 @@ on:
       - ready_for_review
     branches:
       - main
-<<<<<<< HEAD
-      - release/v1.0.0
-      - release/v1.1
-    paths:
-      - "pkg/**"
-      - "cmd/**"
-      - "test/**"
-      - "build/**"
-      - "helm/**"
-      - "deploy/**"
-=======
       - release/v1.0
       - release/v1.1
 
 permissions:
   contents: read
->>>>>>> 363c9734 (ci: consolidate release publication and PR checks (#1888))
 
 jobs:
   changes:
@@ -37,13 +25,6 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
-<<<<<<< HEAD
-      - name: Setup go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.24.x'
-          check-latest: true
-=======
           persist-credentials: false
       - name: Classify all changed files
         id: paths
@@ -96,7 +77,6 @@ jobs:
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version: '1.24.x'
->>>>>>> 363c9734 (ci: consolidate release publication and PR checks (#1888))
       - name: Setup smartmontools
         run: sudo apt install smartmontools
       - name: unit-test
