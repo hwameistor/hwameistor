@@ -1,8 +1,10 @@
 FROM rockylinux:8
 
 
-RUN yum update -y ca-certificates \
+RUN yum -y --refresh upgrade ca-certificates 'glibc*' \
     && yum install -y xfsprogs e2fsprogs udev smartmontools lsscsi nss cryptsetup \
+    && glibc_version=$(rpm -q --qf '%{VERSION}-%{RELEASE}' glibc) \
+    && test "$(rpm --eval "%{lua:print(rpm.vercmp('$glibc_version', '2.28-251.el8_10.11'))}")" -ge 0 \
     && yum clean all
 
 COPY ./_build/local-storage /
