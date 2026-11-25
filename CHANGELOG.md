@@ -1,5 +1,19 @@
 # Changelog
 
+<!-- release-assistant:v1.1.3:start -->
+## v1.1.3
+
+### Release Changes
+
+#### Fixes
+
+- Rocky Linux 8 component images now upgrade glibc and enforce version `2.28-251.el8_10.11` or newer, addressing CVE-2024-2961 package findings. ([#1895](https://github.com/hwameistor/hwameistor/pull/1895)) **Needs review.**
+
+
+
+[Full diff](https://github.com/hwameistor/hwameistor/compare/1d2d50ccf095a8a8a54aecac677cd6441269e4f1...e4429aba661469b63bf40480a30262a2c4cd4261)
+<!-- release-assistant:v1.1.3:end -->
+
 <!-- release-assistant:v1.1.2:start -->
 ## v1.1.2
 

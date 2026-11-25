@@ -3,21 +3,25 @@
     "schemaVersion": 1,
     "repository": "hwameistor/hwameistor",
     "targetBranch": "release/v1.1",
-    "version": "v1.1.2",
-    "fromTag": "v1.1.1",
+    "version": "v1.1.3",
+    "fromTag": "v1.1.2",
     "toRef": "refs/heads/release/v1.1",
-    "fromSha": "8e8b04efb0a7268e61d5313f3fac8cc5acd39af5",
-    "toSha": "186418f6642d33fe54da59993765b67d22b2e8e3",
-    "targetSha": "186418f6642d33fe54da59993765b67d22b2e8e3",
-    "createdAt": "2026-10-28T08:57:48.637Z",
+    "fromSha": "1d2d50ccf095a8a8a54aecac677cd6441269e4f1",
+    "toSha": "e4429aba661469b63bf40480a30262a2c4cd4261",
+    "targetSha": "e4429aba661469b63bf40480a30262a2c4cd4261",
+    "createdAt": "2026-11-25T01:58:49.158Z",
     "generatedPaths": [
       "CHANGELOG.md",
-      "changelogs/released/v1.1.2/changelog",
-      "helm/hwameistor/Chart.yaml"
+      "changelogs/released/v1.1.3/changelog",
+      "VERSION"
     ],
     "fromTagSelection": {
       "choice": "latest",
       "candidates": [
+        {
+          "name": "v1.1.2",
+          "sha": "1d2d50ccf095a8a8a54aecac677cd6441269e4f1"
+        },
         {
           "name": "v1.1.1",
           "sha": "8e8b04efb0a7268e61d5313f3fac8cc5acd39af5"
@@ -25,20 +29,22 @@
         {
           "name": "v1.1.0",
           "sha": "fb61440fdf1560817289a588c38d69f1c6a521f6"
-        },
-        {
-          "name": "v1.0.2",
-          "sha": "e0692ff0191a53fdfa4f49651d694b131456cd29"
         }
       ]
     },
     "workflowRun": {
       "repository": "hwameistor/hwameistor",
-      "runId": "40660546730"
-    }
+      "runId": "45529604390"
+    },
+    "versionFiles": [
+      {
+        "path": "VERSION",
+        "format": "text"
+      }
+    ]
   },
-  "templateSha": "8b61fcc4c55f9860f2f51cb0b486ac16e0d79182",
-  "generatedAt": "2026-10-28T09:01:54.301Z",
+  "templateSha": "f76bdacfa21dcf1259f441b5b346297b2dd46b0a",
+  "generatedAt": "2026-11-25T02:00:36.203Z",
   "policyHash": "62bad62a890d90595e0fdfcd313225bd1b71f8f52fbe91f44c55ff186c7d5b48",
   "templateHash": "59911745ccb25f01a89a0a1e88546ea15079fa765df1bdf5aa82e7e04cc4ca08",
   "provider": "copilot",
@@ -47,77 +53,54 @@
     "entries": [
       {
         "category": "fixes",
-        "summary": "Scheduler retries respect `selected-node` on Pending PVCs, preventing placement on another node and duplicate capacity checks during provisioning.",
+        "summary": "Rocky Linux 8 component images now upgrade glibc and enforce version `2.28-251.el8_10.11` or newer, addressing CVE-2024-2961 package findings.",
         "impact": "",
         "sources": [
-          "pr:1866"
+          "pr:1895"
         ],
         "upgradeNotes": [],
-        "needsReview": false
-      },
-      {
-        "category": "fixes",
-        "summary": "Migration image defaults `v1.0.4-01` → `v1.2.0`, incorporating JuiceFS fixes for directory-symlink SFTP errors and migration success incorrectly reported after listing failures.",
-        "impact": "",
-        "sources": [
-          "pr:1870"
-        ],
-        "upgradeNotes": [
-          "**Operator-managed migrations:** upgrade to an [Operator containing #393](https://github.com/hwameistor/hwameistor-operator/pull/393) alongside Local Storage; set `spec.localStorage.member.juicesyncImage.tag=v1.2.0` when adopting the bundled image.",
-          "**Direct Helm image overrides:** to adopt the bundled image, set `localStorage.migrate.juicesync.tag=v1.2.0` alongside updated Local Storage.",
-          "**Existing migration Jobs:** updated settings apply only to new Jobs; existing Jobs and their retry Pods retain the original image, version and check settings."
-        ],
-        "needsReview": false
-      },
-      {
-        "category": "changes",
-        "summary": "Added `localStorage.migrate.juicesync.version` to select bundled JuiceFS `1.2.0` (default) or `1.4.1` for migration Jobs.",
-        "impact": "",
-        "sources": [
-          "pr:1870"
-        ],
-        "upgradeNotes": [
-          "**Special-file migrations:** JuiceFS `1.4.1` skips FIFOs, sockets and device nodes (including whiteouts) even with checks; `1.2.0` fails in tested cases. Neither preserves these objects."
-        ],
-        "needsReview": false
-      },
-      {
-        "category": "changes",
-        "summary": "Migration checks default `false` → `true` via `localStorage.migrate.check`; when enabled, `--check-all` replaces `--check-new`, comparing copied and existing files.",
-        "impact": "",
-        "sources": [
-          "pr:1870"
-        ],
-        "upgradeNotes": [
-          "**Checks intentionally disabled:** set `localStorage.migrate.check=false` explicitly to retain that behavior after upgrading."
-        ],
-        "needsReview": false
+        "needsReview": true
       }
     ],
     "excluded": [
       {
         "sources": [
-          "pr:1855"
+          "pr:1884"
         ],
-        "reason": "Records historical v1.1.1 release notes; the described product changes predate this release range."
+        "reason": "Release Tools runner and publication scan-gate changes only; tool image tags and runtime behavior are unchanged."
       },
       {
         "sources": [
-          "pr:1872"
+          "pr:1885"
         ],
-        "reason": "Maintainer-only release automation, publication workflows and editorial configuration; no installed-product behavior changes."
+        "reason": "Internal vulnerability-scanning CI now covers both image architectures; no runtime or supported-platform change."
+      },
+      {
+        "sources": [
+          "pr:1887"
+        ],
+        "reason": "Release-generation automation updates VERSION instead of legacy Chart metadata; no deployed application change."
+      },
+      {
+        "sources": [
+          "pr:1889",
+          "pr:1890"
+        ],
+        "reason": "Internal release workflows, PR checks and maintainer documentation; conflict cleanup resolves a regression introduced within this unreleased range."
       }
     ]
   },
   "sources": [
-    "pr:1855",
-    "pr:1866",
-    "pr:1870",
-    "pr:1872"
+    "pr:1884",
+    "pr:1885",
+    "pr:1887",
+    "pr:1889",
+    "pr:1890",
+    "pr:1895"
   ],
   "files": {
-    "CHANGELOG.md": "c3835134d96a95514a533ef4fe8d82881230a5bc5359aa5319df031261193e47",
-    "changelogs/released/v1.1.2/changelog": "deaf441031923b88d58eb62f1930c048d27bcffb7160e676b1a6d5ec9b77d15c",
-    "helm/hwameistor/Chart.yaml": "ed6bfd719b337d930055bee128d2800af827324a7f60d5646a9f2fa75aa0ff63"
+    "CHANGELOG.md": "c52809b5643d8ad45663fb888bd7f0925a99f28f8540564d35ce969a13385a7f",
+    "changelogs/released/v1.1.3/changelog": "a1376915713bc143f1da3ecebd5f4a0542818660e8569e6184f99803ce7d307c",
+    "VERSION": "b8af634a66d091d1c124675fbe2208a3c4d69db36832f7dcc4a99c6c30404cf0"
   }
 }
