@@ -16,7 +16,8 @@ HwameiStor designs a new CRD for every resource as below:
 ```yaml
 apiVersion: hwameistor.io/v1alpha1
 kind: Event
-  name: 
+metadata:
+  name:
 spec:
   resourceType: <Cluster | Node | StoragePool | Volume>
   resourceName:
