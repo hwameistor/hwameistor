@@ -15,7 +15,8 @@ sidebar_label: "审计日志"
 ```yaml
 apiVersion: hwameistor.io/v1alpha1
 kind: Event
-  name: 
+metadata:
+  name:
 spec:
   resourceType: <Cluster | Node | StoragePool | Volume>
   resourceName:
