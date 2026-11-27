@@ -318,7 +318,7 @@ func genConfigPath(resourceName string) string {
 
 // parseConfigFileName parse configFileName, return resourceName
 func parseConfigFileName(configName string) string {
-	return strings.TrimRight(configName, ".res")
+	return strings.TrimSuffix(configName, ".res")
 }
 
 // listNodeResourceNames list current node resources names by read config dir

@@ -334,3 +334,33 @@ func Test_handleDRBDEvent(t *testing.T) {
 	}
 
 }
+
+func Test_parseConfigFileName(t *testing.T) {
+	tests := []struct {
+		configName string
+		want       string
+	}{
+		{configName: "pvc-0d7f3c2a.res", want: "pvc-0d7f3c2a"},
+		// Names ending in any of the characters of ".res" must keep them.
+		{configName: "pvc-a1b2c3de.res", want: "pvc-a1b2c3de"},
+		{configName: "data-volumes.res", want: "data-volumes"},
+		{configName: "my-res.res", want: "my-res"},
+		{configName: "no-suffix", want: "no-suffix"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.configName, func(t *testing.T) {
+			if got := parseConfigFileName(tt.configName); got != tt.want {
+				t.Errorf("parseConfigFileName(%q) = %q, want %q", tt.configName, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_parseConfigFileNameReversesGenConfigPath(t *testing.T) {
+	for _, resourceName := range []string{"pvc-0d7f3c2a", "pvc-a1b2c3de", "vol-res"} {
+		configName := genConfigPath(resourceName)[len(configDir)+1:]
+		if got := parseConfigFileName(configName); got != resourceName {
+			t.Errorf("parseConfigFileName(%q) = %q, want %q", configName, got, resourceName)
+		}
+	}
+}
